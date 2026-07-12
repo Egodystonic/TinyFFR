@@ -17,6 +17,9 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 			UnderlyingModelInstance.Implementation.UpdateTextInstancePen(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), value);
 		}
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPen(FontPen pen) => Pen = pen;
+	
 	public FontString String {
 		get => UnderlyingModelInstance.Implementation.GetTextInstanceString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
 		set {
@@ -24,6 +27,8 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 			UnderlyingModelInstance.Implementation.UpdateTextInstanceString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), value);
 		}
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetString(FontString @string) => String = @string;
 
 	public TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string) {
 		UnderlyingModelInstance = underlyingModelInstance;
@@ -37,22 +42,10 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
-	public void SetTransformUsingFixedWidth(Location position, float width, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+	public void SetTransform(Location position, Direction facingDirection, float? textInstanceHeight, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
 		var @string = String;
 		var stringSize = @string.Size;
-		var transform = @string.Font.GetStringTransformUsingFixedWidth(stringSize, position, width, facingDirection, uprightDirection, positionAnchor);
-		UnderlyingModelInstance.SetTransform(transform);
-	}
-	public void SetTransformUsingFixedHeight(Location position, float height, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		var @string = String;
-		var stringSize = @string.Size;
-		var transform = @string.Font.GetStringTransformUsingFixedHeight(stringSize, position, height, facingDirection, uprightDirection, positionAnchor);
-		UnderlyingModelInstance.SetTransform(transform);
-	}
-	public void SetTransformUsingFixedWidthAndHeight(Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		var @string = String;
-		var stringSize = @string.Size;
-		var transform = @string.Font.GetStringTransformUsingFixedWidthAndHeight(stringSize, position, widthAndHeight, facingDirection, uprightDirection, positionAnchor);
+		var transform = @string.Font.GetTextInstanceTransform(stringSize, position, facingDirection, textInstanceHeight, textInstanceWidth, uprightDirection, positionAnchor);
 		UnderlyingModelInstance.SetTransform(transform);
 	}
 

@@ -1,0 +1,49 @@
+material {
+	name : %NAME%,
+	parameters : [
+		{
+			type : sampler2d,
+			name : sdf_map
+		},
+		{
+			type : float4,
+			name : text_color
+		},
+		{
+			type : float4,
+			name : outline_color
+		},
+		{
+			type : float,
+			name : outline_thickness
+		}
+	],
+	requires : [ uv0 ],
+	shadingModel : unlit,
+	blending : fade,
+	flipUV : false,
+}
+
+fragment {
+	// These constants mirror SdfOnEdgeValue / SdfPixelDistScale / SdfRenderPadding in LocalFontLoader.cs.
+	// MaxOutlineOffset is deliberately 4/5 of the SDF render padding: the outermost padding texel is reserved
+	// so the outline isoline always sits in live field gradient (for antialiasing) and never reaches the
+	// clamped-to-zero region or the quad border.
+	const float TextEdgeValue = 180.0 / 255.0;
+	const float MaxOutlineOffset = 144.0 / 255.0;
+
+	void material(inout MaterialInputs material) {
+		prepareMaterial(material);
+
+		float distanceValue = texture(materialParams_sdf_map, getUV0()).r;
+		float aaHalfWidth = max(fwidth(distanceValue) * 0.5, 1E-5);
+		float outlineEdgeValue = TextEdgeValue - materialParams.outline_thickness * MaxOutlineOffset;
+
+		float textCoverage = smoothstep(TextEdgeValue - aaHalfWidth, TextEdgeValue + aaHalfWidth, distanceValue);
+		float outlineCoverage = smoothstep(max(outlineEdgeValue - aaHalfWidth, 2.0 / 255.0), outlineEdgeValue + aaHalfWidth, distanceValue);
+
+		// Color params are expected premultiplied; the output must also be premultiplied because
+		// Filament's fade blending uses (ONE, ONE_MINUS_SRC_ALPHA) and unlit materials emit baseColor verbatim
+		material.baseColor = mix(materialParams.outline_color, materialParams.text_color, textCoverage) * outlineCoverage;
+	}
+}

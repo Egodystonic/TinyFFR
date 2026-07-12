@@ -17,6 +17,7 @@
 #include "assimp/GltfMaterial.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
+#include "stb/stb_truetype.h" // Re-included here (after the initial inclusion via our own header) so that STB_TRUETYPE_IMPLEMENTATION takes effect
 
 constexpr unsigned int MeshMaxCount = 1000000;
 constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;

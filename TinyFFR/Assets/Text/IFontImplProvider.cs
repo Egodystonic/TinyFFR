@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 public interface IFontImplProvider : IDisposableResourceImplProvider<Font> {
-	FontPen CreatePen(ResourceHandle<Font> handle, ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessMultiplier);
+	FontPen CreatePen(ResourceHandle<Font> handle, ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessNormalized);
 	FontString CreateString(ResourceHandle<Font> handle, ReadOnlySpan<char> text);
 	XYPair<float> MeasureString(ResourceHandle<Font> handle, ReadOnlySpan<char> text);
 	Material GetPenMaterial(ResourceHandle<Font> handle, nuint penHandle);
@@ -17,7 +17,5 @@ public interface IFontImplProvider : IDisposableResourceImplProvider<Font> {
 	XYPair<float> GetStringSize(ResourceHandle<Font> handle, nuint stringHandle);
 	void DisposePen(ResourceHandle<Font> handle, nuint penHandle);
 	void DisposeString(ResourceHandle<Font> handle, nuint stringHandle);
-	Transform GetStringTransformUsingFixedWidth(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float width, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
-	Transform GetStringTransformUsingFixedHeight(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float height, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
-	Transform GetStringTransformUsingFixedWidthAndHeight(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
+	Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
 }

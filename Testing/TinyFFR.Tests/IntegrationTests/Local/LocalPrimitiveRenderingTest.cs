@@ -34,7 +34,7 @@ class LocalPrimitiveRenderingTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Primitive Rendering Test");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Primitive Rendering Test (Space / S / 0 / 1 / 2)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 3, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
@@ -94,7 +94,6 @@ class LocalPrimitiveRenderingTest {
 				}
 			}
 			
-			window.SetTitle(loop.FramesPerSecondRecentAverage.ToString("N0"));
 			renderer.Render();
 		}
 

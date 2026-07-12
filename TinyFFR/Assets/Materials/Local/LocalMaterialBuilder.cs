@@ -71,6 +71,20 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(material, color.AsVector4, PrimitiveMaterialShader.ParamBaseColor);
 	}
 
+	public Material AllocateTextMaterialInstance(Texture sdfAtlas, ColorVect textColor, ColorVect outlineColor, float outlineThickness, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+
+		var shaderConstants = TextMaterialShader;
+
+		var result = InstantiateMaterial(shaderConstants.ShaderResourceName, name, shaderConstants);
+		ApplyMaterialParam(result, sdfAtlas, shaderConstants.ParamSdfMap);
+		ApplyMaterialParam(result, textColor.AsVector4, shaderConstants.ParamTextColor);
+		ApplyMaterialParam(result, outlineColor.AsVector4, shaderConstants.ParamOutlineColor);
+		ApplyMaterialParam(result, outlineThickness, shaderConstants.ParamOutlineThickness);
+
+		return result;
+	}
+
 	public Material CreateTestMaterial(bool ignoresLighting) {
 		ThrowIfThisIsDisposed();
 		

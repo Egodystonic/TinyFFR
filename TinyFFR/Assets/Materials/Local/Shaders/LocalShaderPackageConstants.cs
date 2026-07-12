@@ -447,6 +447,33 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 	}
 
+	public static TextMaterialShaderConstants TextMaterialShader { get; } = new();
+	public sealed class TextMaterialShaderConstants : IShaderPackageConstants {
+		public string ShaderResourceName { get; } = ResourceNamespace + "text" + ShaderResourceExtension;
+
+		public bool SupportsShadows { get; } = false;
+
+		public ReadOnlySpan<byte> ParamSdfMap => "sdf_map"u8;
+		public ReadOnlySpan<byte> ParamTextColor => "text_color"u8;
+		public ReadOnlySpan<byte> ParamOutlineColor => "outline_color"u8;
+		public ReadOnlySpan<byte> ParamOutlineThickness => "outline_thickness"u8;
+
+		public bool HasEffectUvTransform { get; } = false;
+		public bool HasEffectColorMap { get; } = false;
+		public bool HasEffectEmissiveMap { get; } = false;
+		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
+		public bool HasEffectOrmMap { get; } = false;
+		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+	}
+
 	static void Write(ref Span<char> dest, string str) {
 		str.CopyTo(dest);
 		dest = dest[str.Length..];

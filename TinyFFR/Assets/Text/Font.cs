@@ -37,8 +37,8 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	public ResourceHandle<Font> GetHandleWithoutDisposeCheck() => _handle;
 	
 	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor) => CreatePen(foregroundColor, backgroundColor, ColorVect.BlackTransparent, 0f);
-	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessMultiplier) {
-		return Implementation.CreatePen(_handle, foregroundColor, backgroundColor, outlineColor, outlineThicknessMultiplier);
+	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessNormalized) {
+		return Implementation.CreatePen(_handle, foregroundColor, backgroundColor, outlineColor, outlineThicknessNormalized);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -47,14 +47,8 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public FontString CreateString(ReadOnlySpan<char> str) => Implementation.CreateString(_handle, str);
 	
-	public Transform GetStringTransformUsingFixedWidth(XYPair<float> stringSize, Location position, float width, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		return Implementation.GetStringTransformUsingFixedWidth(_handle, stringSize, position, width, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
-	}
-	public Transform GetStringTransformUsingFixedHeight(XYPair<float> stringSize, Location position, float height, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		return Implementation.GetStringTransformUsingFixedHeight(_handle, stringSize, position, height, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
-	}
-	public Transform GetStringTransformUsingFixedWidthAndHeight(XYPair<float> stringSize, Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		return Implementation.GetStringTransformUsingFixedWidthAndHeight(_handle, stringSize, position, widthAndHeight, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
+	public Transform GetTextInstanceTransform(XYPair<float> stringSize, Location position, Direction facingDirection, float? textInstanceHeight, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		return Implementation.GetTextInstanceTransform(_handle, textInstanceWidth, textInstanceHeight, stringSize, position, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
 	}
 
 	#region Disposal
