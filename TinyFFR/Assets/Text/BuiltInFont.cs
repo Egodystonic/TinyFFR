@@ -4,5 +4,8 @@
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 public enum BuiltInFont {
-	Default
+	Default,
+	SansSerif = Default,
+	Serif,
+	Monospace
 }

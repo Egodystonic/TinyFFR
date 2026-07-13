@@ -300,7 +300,7 @@ SOFTWARE.
 
 ----
 
-### DejaVu Sans
+### DejaVu Sans / Serif / Mono
 > [!NOTE]
 > * Source: https://www.fontsquirrel.com/fonts/dejavu-sans
 > * License: Bitstream Vera Fonts Copyright (https://www.fontsquirrel.com/fonts/dejavu-sans)

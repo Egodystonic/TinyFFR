@@ -40,7 +40,7 @@ class LocalTextRenderingTest {
 		var pen1 = font.CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque, 1f);
 		var pen2 = font.CreatePen(new ColorVect(1f, 1f, 0f, 0.3f, true), new ColorVect(0f, 1f, 1f, 0.75f, true), 0.5f);
 		var pen3 = font.CreatePen(ColorVect.BlackOpaque, new ColorVect(1f, 1f, 1f, 0.04f, true));
-		var pen4 = font.CreatePen(ColorVect.BlackTransparent, ColorVect.RedOpaque, 1f, ColorVect.GreenOpaque);
+		var pen4 = font.CreatePen(ColorVect.BlackTransparent, ColorVect.RedOpaque, 0.35f, ColorVect.GreenOpaque);
 		var strings = new[] {
 			// ReSharper disable StringLiteralTypo
 			font.CreateString("AaBbÉé Ññ Œœ Δλ ΣΩ \"…\"—•† ‰ ™€ x⁴H₂O → ∑≠√∞ ┌┐■●◆ ▓ � ⁂"), // Smoke test (last char deliberately chosen to not be included -- tests fallback to �)

@@ -71,10 +71,21 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	public Font LoadFont(BuiltInFont font, in FontCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavusans.zip");
-		return config.Name.IsEmpty
-			? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In-Font Default" })
-			: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
+		switch (font) {
+			case BuiltInFont.Serif: {
+				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_serif.zip");	
+				return LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
+			}
+			case BuiltInFont.Monospace: {
+				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_mono.zip");	
+				return LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
+			}
+			case BuiltInFont.SansSerif:
+			default: {
+				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_sans.zip");	
+				return LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
+			}
+		}
 	}
 	public Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
 		ThrowIfThisIsDisposed();
