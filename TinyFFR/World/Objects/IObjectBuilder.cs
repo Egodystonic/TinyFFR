@@ -149,10 +149,10 @@ public interface IObjectBuilder {
 	#endregion
 	
 	#region Text
-	TextInstance CreateTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? facingDirection = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+	TextInstance CreateTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? facingDirection = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, bool rescaleHeightAccordingToLineCount = true, ReadOnlySpan<char> name = default) {
 		return CreateTextInstance(pen, @string, new ModelInstanceCreationConfig {
 			Name = name,
-			InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, facingDirection ?? Direction.Backward, textInstanceHeight, textInstanceWidth, uprightDirection, positionAnchor)
+			InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, facingDirection ?? Direction.Backward, textInstanceHeight, textInstanceWidth, uprightDirection, positionAnchor, rescaleHeightAccordingToLineCount)
 		});
 	}
 	TextInstance CreateTextInstance(FontPen pen, FontString @string, in ModelInstanceCreationConfig config) {

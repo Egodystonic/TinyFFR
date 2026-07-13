@@ -3,6 +3,8 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 
@@ -60,14 +62,32 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Remove(ModelInstance modelInstance) => Implementation.Remove(_handle, modelInstance);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(ModelInstanceGroup modelInstance) => Implementation.Add(_handle, modelInstance);
+	public void Add(ModelInstanceGroup modelInstanceGroup) => Implementation.Add(_handle, modelInstanceGroup);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Remove(ModelInstanceGroup modelInstance) => Implementation.Remove(_handle, modelInstance);
+	public void Remove(ModelInstanceGroup modelInstanceGroup) => Implementation.Remove(_handle, modelInstanceGroup);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Add(_handle, light);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Remove(_handle, light);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(QuadInstance quadInstance) => Add(quadInstance.UnderlyingModelInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(QuadInstance quadInstance) => Remove(quadInstance.UnderlyingModelInstance);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(MutableGridInstance quadInstance) => Add(quadInstance.UnderlyingModelInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(MutableGridInstance quadInstance) => Remove(quadInstance.UnderlyingModelInstance);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(TextInstance quadInstance) => Add(quadInstance.UnderlyingModelInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(TextInstance quadInstance) => Remove(quadInstance.UnderlyingModelInstance);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RemoveAll(bool includeModelInstances = true, bool includeLights = true) => Implementation.RemoveAll(_handle, includeModelInstances, includeLights);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BuiltInSceneBackdrop backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);

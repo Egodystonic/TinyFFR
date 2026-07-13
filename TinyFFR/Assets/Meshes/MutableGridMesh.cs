@@ -93,7 +93,7 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	#endregion
 }
 
-public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled, IEquatable<MutableGridInstance> {
+public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled, IEquatable<MutableGridInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
 	static readonly Lock _staticMutationLock = new();
 	static readonly HeapPool _sharedHeapPool = new();
 	static readonly ArrayPoolBackedMap<nuint, MutableGridInstance> _activeLeaseMap = new();
@@ -103,6 +103,58 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	readonly PooledHeapMemory<XYPair<float>> _precalculatedNormalizedCoords;
 	public ModelInstance UnderlyingModelInstance { get; }
 	public MutableGridMesh ParentGridMesh { get; }
+	
+	public Transform Transform {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Transform;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetTransform(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTransform(Transform transform) => Transform = transform;
+	
+	public Location Position {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Position;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetPosition(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(Location position) => Position = position;
+
+	public Rotation Rotation {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Rotation;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetRotation(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotation(Rotation rotation) => Rotation = rotation;
+
+	public Vect Scaling {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Scaling;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetScaling(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetScaling(Vect scaling) => Scaling = scaling;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+	
+	public Material? Material {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Material;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetMaterial(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetMaterial(Material? material) => Material = material;
+
+	public MaterialEffectController? MaterialEffects {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.MaterialEffects;
+	}
 
 	public MutableGridInstance(ModelInstance underlyingModelInstance, MutableGridMesh parentGridMesh) {
 		UnderlyingModelInstance = underlyingModelInstance;
@@ -239,6 +291,26 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void MoveBy(Vect translation) => UnderlyingModelInstance.MoveBy(translation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Rotation rotation, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotation, pivotPoint);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(float scalar) => UnderlyingModelInstance.ScaleBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(Vect vect) => UnderlyingModelInstance.ScaleBy(vect);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(float scalar) => UnderlyingModelInstance.AdjustScaleBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(Vect vect) => UnderlyingModelInstance.AdjustScaleBy(vect);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetNullMaterialBaseColor(ColorVect baseColor) => UnderlyingModelInstance.SetNullMaterialBaseColor(baseColor);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => UnderlyingModelInstance.SetNullMaterialShadingStyle(style);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() {
 		lock (_staticMutationLock) {
 			foreach (var instance in _activeLeaseMap.Values) {
@@ -255,9 +327,6 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	}
 
 	public override string ToString() => $"{ParentGridMesh.GridDimensions.X}x{ParentGridMesh.GridDimensions.Y} Mutable Grid {UnderlyingModelInstance}";
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator ModelInstance(MutableGridInstance operand) => operand.UnderlyingModelInstance;
 
 	#region Equality
 	public bool Equals(MutableGridInstance other) => UnderlyingModelInstance.Equals(other.UnderlyingModelInstance);

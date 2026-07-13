@@ -10,12 +10,12 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 
 public interface IFontImplProvider : IDisposableResourceImplProvider<Font> {
 	FontPen CreatePen(ResourceHandle<Font> handle, ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessNormalized);
-	FontString CreateString(ResourceHandle<Font> handle, ReadOnlySpan<char> text);
-	XYPair<float> MeasureString(ResourceHandle<Font> handle, ReadOnlySpan<char> text);
+	FontString CreateString(ResourceHandle<Font> handle, ReadOnlySpan<char> text, TextJustification multiLineJustification);
+	XYPair<float> MeasureString(ResourceHandle<Font> handle, ReadOnlySpan<char> text, TextJustification multiLineJustification);
 	Material GetPenMaterial(ResourceHandle<Font> handle, nuint penHandle);
 	Mesh GetStringMesh(ResourceHandle<Font> handle, nuint stringHandle);
 	XYPair<float> GetStringSize(ResourceHandle<Font> handle, nuint stringHandle);
 	void DisposePen(ResourceHandle<Font> handle, nuint penHandle);
 	void DisposeString(ResourceHandle<Font> handle, nuint stringHandle);
-	Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
+	Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor, bool rescaleHeightAccordingToLineCount);
 }

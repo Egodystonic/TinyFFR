@@ -18,9 +18,10 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable {
-	readonly record struct RenderedTextData(ManagedStringPool.RentedStringHandle Text, PooledHeapMemory<MeshVertex> Vertices, PooledHeapMemory<VertexTriangle> Triangles, XYPair<float> Size);
+	readonly record struct RenderedTextData(ManagedStringPool.RentedStringHandle Text, TextJustification Justification, PooledHeapMemory<MeshVertex> Vertices, PooledHeapMemory<VertexTriangle> Triangles, XYPair<float> Size);
 	readonly record struct AtlasRuneData(XYPair<float> AtlasUVOffset, XYPair<float> AtlasUVSize, XYPair<float> NibOffset, float AdvanceWidth);
-	readonly record struct FontData(Texture Atlas, float Ascent, float Descent, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<ulong, float> KerningMap, ArrayPoolBackedMap<nuint, PenData> ActivePens, ArrayPoolBackedMap<nuint, StringData> ActiveStrings, ArrayPoolBackedLruCache<int, RenderedTextData> RenderedTextCache);
+	readonly record struct TextLineRecord(int StartVertexIndex, float Width, float MinX, float MaxX);
+	readonly record struct FontData(Texture Atlas, float Ascent, float Descent, float LineAdvance, Rune LineBreakRune, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<ulong, float> KerningMap, ArrayPoolBackedMap<nuint, PenData> ActivePens, ArrayPoolBackedMap<nuint, StringData> ActiveStrings, ArrayPoolBackedLruCache<int, RenderedTextData> RenderedTextCache);
 	readonly record struct PenData(ResourceHandle<Font> OwningFont, Material Material);
 	readonly record struct StringData(ResourceHandle<Font> OwningFont, Mesh Mesh, XYPair<float> Size);
 
@@ -97,7 +98,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		}
 	}
 	int GetAtlasCellHeight(int renderHeight) => renderHeight + SdfRenderPadding * 2 + AdditionalAtlasGlyphCellPadding;
-	(int RenderHeight, float ScalingConstant, int AtlasDimension, float Ascent, float Descent) DetermineAppropriateFontRenderMetrics(UIntPtr fontHandle, in FontCreationConfig config) {
+	(int RenderHeight, float ScalingConstant, int AtlasDimension, float Ascent, float Descent, float LineGap) DetermineAppropriateFontRenderMetrics(UIntPtr fontHandle, in FontCreationConfig config) {
 		// Assumes _fontLoadRuneToGlyphMap has been populated
 		
 		for (var i = 0; i < _atlasSizeTargets.Length; ++i) {
@@ -113,7 +114,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 					out var scalingConstant,
 					out var ascent,
 					out var descent,
-					out _
+					out var lineGap
 				).ThrowIfFailure();
 				
 				var cellHeight = GetAtlasCellHeight(heightTargets[j]);
@@ -145,7 +146,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 					texelsRemainingInCurrentRow -= width + AdditionalAtlasGlyphCellPadding;
 				}
 				
-				return (heightTargets[j], scalingConstant, _atlasSizeTargets[i], ascent, descent);
+				return (heightTargets[j], scalingConstant, _atlasSizeTargets[i], ascent, descent, lineGap);
 				atlasTooSmall: continue;
 			}
 		}
@@ -180,7 +181,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				_fontLoadRuneToGlyphMap[runes[r]] = glyphIndex;
 			}
 			
-			var (renderHeight, scalingConstant, atlasDimension, ascent, descent) = DetermineAppropriateFontRenderMetrics(fontHandle, in config);
+			var (renderHeight, scalingConstant, atlasDimension, ascent, descent, lineGap) = DetermineAppropriateFontRenderMetrics(fontHandle, in config);
 			var atlasDimensionReciprocal = 1f / atlasDimension;
 			var cellHeight = GetAtlasCellHeight(renderHeight);
 			var runeMap = _runeMapPool.Rent();
@@ -289,9 +290,11 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				_activeFonts.Add(
 					handle, 
 					new FontData(
-						atlas, 
-						ascent * scalingConstant * atlasDimensionReciprocal, 
-						descent * scalingConstant * atlasDimensionReciprocal, 
+						atlas,
+						ascent * scalingConstant * atlasDimensionReciprocal,
+						descent * scalingConstant * atlasDimensionReciprocal,
+						(ascent - descent + lineGap) * scalingConstant * atlasDimensionReciprocal * config.LineSpacingMultiplier,
+						config.LineBreakRune,
 						runeMap,
 						kerningMap, 
 						_penMapPool.Rent(), 
@@ -312,26 +315,30 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		}
 	}
 
-	public XYPair<float> MeasureString(ResourceHandle<Font> handle, ReadOnlySpan<char> text) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var fontData = _activeFonts[handle];
-		var textHash = String.GetHashCode(text, StringComparison.Ordinal);
-		if (fontData.RenderedTextCache.TryGet(textHash, out var cachedTextData) && cachedTextData.Text.AsSpan.SequenceEqual(text)) {
-			return cachedTextData.Size;
-		}
-		
-		return RenderAndCacheText(handle, text, textHash).Size;
+	static int GetTextCacheKey(ReadOnlySpan<char> text, TextJustification justification) {
+		return HashCode.Combine(String.GetHashCode(text, StringComparison.Ordinal), justification);
 	}
 
-	public FontString CreateString(ResourceHandle<Font> handle, ReadOnlySpan<char> text) {
-		const string NameJoiningString = " text \"";
-		const string NameEndingString = "\"";
-		
+	public XYPair<float> MeasureString(ResourceHandle<Font> handle, ReadOnlySpan<char> text, TextJustification multiLineJustification) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var fontData = _activeFonts[handle];
-		var textHash = String.GetHashCode(text, StringComparison.Ordinal);
-		if (!fontData.RenderedTextCache.TryGet(textHash, out var textData) || !textData.Text.AsSpan.SequenceEqual(text)) {
-			textData = RenderAndCacheText(handle, text, textHash);
+		var cacheKey = GetTextCacheKey(text, multiLineJustification);
+		if (fontData.RenderedTextCache.TryGet(cacheKey, out var cachedTextData) && cachedTextData.Justification == multiLineJustification && cachedTextData.Text.AsSpan.SequenceEqual(text)) {
+			return cachedTextData.Size;
+		}
+
+		return RenderAndCacheText(handle, text, multiLineJustification, cacheKey).Size;
+	}
+
+	public FontString CreateString(ResourceHandle<Font> handle, ReadOnlySpan<char> text, TextJustification multiLineJustification) {
+		const string NameJoiningString = " text \"";
+		const string NameEndingString = "\"";
+
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		var cacheKey = GetTextCacheKey(text, multiLineJustification);
+		if (!fontData.RenderedTextCache.TryGet(cacheKey, out var textData) || textData.Justification != multiLineJustification || !textData.Text.AsSpan.SequenceEqual(text)) {
+			textData = RenderAndCacheText(handle, text, multiLineJustification, cacheKey);
 		}
 		
 		var nameLength = SpanUtils.GetConcatenatedLength(
@@ -360,14 +367,19 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		return new FontString(HandleToInstance(handle), _prevHandleId);
 	}
 
-	RenderedTextData RenderAndCacheText(ResourceHandle<Font> fontHandle, ReadOnlySpan<char> text, int textHash) {
+	RenderedTextData RenderAndCacheText(ResourceHandle<Font> fontHandle, ReadOnlySpan<char> text, TextJustification justification, int cacheKey) {
 		const int UnicodeReplacementChar = 0xFFFD;
+		var fontData = _activeFonts[fontHandle];
 		var runeCount = 0;
-		foreach (var _ in text.EnumerateRunes()) ++runeCount;
-		
+		var lineCount = 1;
+		foreach (var rune in text.EnumerateRunes()) {
+			++runeCount;
+			if (rune == fontData.LineBreakRune) ++lineCount;
+		}
+
 		var vertexBuffer = _globals.HeapPool.Borrow<MeshVertex>(runeCount * 4 + 4);
 		var triangleBuffer = _globals.HeapPool.Borrow<VertexTriangle>(runeCount * 2 + 2);
-		var fontData = _activeFonts[fontHandle];
+		using var lineRecordBuffer = _globals.HeapPool.Borrow<TextLineRecord>(lineCount);
 		var runeMap = fontData.RuneMap;
 		var kerningMap = fontData.KerningMap;
 		if (!runeMap.TryGetValue(new Rune(UnicodeReplacementChar), out var replacementRuneData)) {
@@ -377,12 +389,46 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		}
 
 		var runeIndex = 0;
+		var lineIndex = 0;
+		var lineStartVertexIndex = 4;
+		var lineWidth = 0f;
+		var lineMinX = Single.PositiveInfinity;
+		var lineMaxX = Single.NegativeInfinity;
 		var nibHorizontalLocation = 0f;
+		var nibVerticalLocation = 0f;
 		var tangentRotation = MeshVertex.CalculateTangentRotation(Direction.Right, Direction.Up, Direction.Backward);
-		var horizontalSize = 0f;
 		var backgroundBounds = (MinX: Single.PositiveInfinity, MaxX: Single.NegativeInfinity, MinY: Single.PositiveInfinity, MaxY: Single.NegativeInfinity);
 		Rune? previousRune = null;
 		foreach (var rune in text.EnumerateRunes()) {
+			var vertexStartIndex = runeIndex * 4 + 4;
+
+			if (rune == fontData.LineBreakRune) {
+				// A degenerate (zero-size) quad keeps the vertex/triangle indexing exact without rendering anything
+				var breakVertex = new MeshVertex(
+					location: new(nibHorizontalLocation, nibVerticalLocation, 0f),
+					textureCoords: XYPair<float>.Zero,
+					tangentRotation: tangentRotation
+				);
+				vertexBuffer.Span[vertexStartIndex + 0] = breakVertex;
+				vertexBuffer.Span[vertexStartIndex + 1] = breakVertex;
+				vertexBuffer.Span[vertexStartIndex + 2] = breakVertex;
+				vertexBuffer.Span[vertexStartIndex + 3] = breakVertex;
+				triangleBuffer.Span[runeIndex * 2 + 2] = new VertexTriangle(vertexStartIndex + 0, vertexStartIndex + 1, vertexStartIndex + 2);
+				triangleBuffer.Span[runeIndex * 2 + 3] = new VertexTriangle(vertexStartIndex + 0, vertexStartIndex + 2, vertexStartIndex + 3);
+
+				lineRecordBuffer.Span[lineIndex] = new TextLineRecord(lineStartVertexIndex, lineWidth, lineMinX, lineMaxX);
+				++lineIndex;
+				lineStartVertexIndex = vertexStartIndex + 4;
+				lineWidth = 0f;
+				lineMinX = Single.PositiveInfinity;
+				lineMaxX = Single.NegativeInfinity;
+				nibHorizontalLocation = 0f;
+				nibVerticalLocation -= fontData.LineAdvance;
+				previousRune = null;
+				++runeIndex;
+				continue;
+			}
+
 			if (!runeMap.TryGetValue(rune, out var runeData)) runeData = replacementRuneData;
 
 			if (previousRune is { } prev && kerningMap.TryGetValue(PackRunePair(prev, rune), out var kerningAdvance)) {
@@ -391,13 +437,12 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 
 			var quadStartPoint = new XYPair<float>(
 				nibHorizontalLocation - runeData.NibOffset.X,
-				-(runeData.NibOffset.Y + runeData.AtlasUVSize.Y)
+				nibVerticalLocation - (runeData.NibOffset.Y + runeData.AtlasUVSize.Y)
 			);
-			var vertexStartIndex = runeIndex * 4 + 4;
 
 			if (runeData.AtlasUVSize != XYPair<float>.Zero) {
-				backgroundBounds.MinX = Single.Min(backgroundBounds.MinX, quadStartPoint.X - runeData.AtlasUVSize.X);
-				backgroundBounds.MaxX = Single.Max(backgroundBounds.MaxX, quadStartPoint.X);
+				lineMinX = Single.Min(lineMinX, quadStartPoint.X - runeData.AtlasUVSize.X);
+				lineMaxX = Single.Max(lineMaxX, quadStartPoint.X);
 				backgroundBounds.MinY = Single.Min(backgroundBounds.MinY, quadStartPoint.Y);
 				backgroundBounds.MaxY = Single.Max(backgroundBounds.MaxY, quadStartPoint.Y + runeData.AtlasUVSize.Y);
 			}
@@ -426,10 +471,38 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			triangleBuffer.Span[runeIndex * 2 + 2] = new VertexTriangle(vertexStartIndex + 0, vertexStartIndex + 1, vertexStartIndex + 2);
 			triangleBuffer.Span[runeIndex * 2 + 3] = new VertexTriangle(vertexStartIndex + 0, vertexStartIndex + 2, vertexStartIndex + 3);
 
-			horizontalSize = -quadStartPoint.X + runeData.AtlasUVSize.X;
+			lineWidth = -quadStartPoint.X + runeData.AtlasUVSize.X;
 			++runeIndex;
 			nibHorizontalLocation -= runeData.AdvanceWidth;
 			previousRune = rune;
+		}
+		lineRecordBuffer.Span[lineIndex] = new TextLineRecord(lineStartVertexIndex, lineWidth, lineMinX, lineMaxX);
+
+		var maxLineWidth = 0f;
+		for (var l = 0; l < lineCount; ++l) {
+			maxLineWidth = Single.Max(maxLineWidth, lineRecordBuffer.Span[l].Width);
+		}
+
+		// Justification pass: lines are laid out flush at X = 0, then shifted towards negative X
+		// (the visual-right direction in mesh space) according to the block's widest line
+		for (var l = 0; l < lineCount; ++l) {
+			var lineRecord = lineRecordBuffer.Span[l];
+			var horizontalShift = justification switch {
+				TextJustification.Left => 0f,
+				TextJustification.Right => -(maxLineWidth - lineRecord.Width),
+				_ => (maxLineWidth - lineRecord.Width) * -0.5f
+			};
+			if (horizontalShift != 0f) {
+				var lineEndVertexIndex = l + 1 < lineCount ? lineRecordBuffer.Span[l + 1].StartVertexIndex : runeCount * 4 + 4;
+				for (var v = lineRecord.StartVertexIndex; v < lineEndVertexIndex; ++v) {
+					var vertex = vertexBuffer.Span[v];
+					vertexBuffer.Span[v] = vertex with { Location = vertex.Location with { X = vertex.Location.X + horizontalShift } };
+				}
+			}
+			if (lineRecord.MinX <= lineRecord.MaxX) {
+				backgroundBounds.MinX = Single.Min(backgroundBounds.MinX, lineRecord.MinX + horizontalShift);
+				backgroundBounds.MaxX = Single.Max(backgroundBounds.MaxX, lineRecord.MaxX + horizontalShift);
+			}
 		}
 
 		// The background quad occupies the first vertex/triangle slots so every glyph quad rasterizes after
@@ -458,9 +531,15 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		triangleBuffer.Span[0] = new VertexTriangle(0, 1, 2);
 		triangleBuffer.Span[1] = new VertexTriangle(0, 2, 3);
 
-		var result = new RenderedTextData(_globals.StringPool.RentAndCopy(text), vertexBuffer, triangleBuffer, new XYPair<float>(horizontalSize, fontData.Ascent - fontData.Descent));
-		if (fontData.RenderedTextCache.AddOrSet(textHash, result, out var previouslyCachedData)) {
-			TextCacheEvictionHandler(this, textHash, previouslyCachedData);
+		var result = new RenderedTextData(
+			_globals.StringPool.RentAndCopy(text),
+			justification,
+			vertexBuffer,
+			triangleBuffer,
+			new XYPair<float>(maxLineWidth, (fontData.Ascent - fontData.Descent) + (lineCount - 1) * fontData.LineAdvance)
+		);
+		if (fontData.RenderedTextCache.AddOrSet(cacheKey, result, out var previouslyCachedData)) {
+			TextCacheEvictionHandler(this, cacheKey, previouslyCachedData);
 		}
 		return result;
 	}
@@ -517,18 +596,22 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 
 	/* Maintainer's note:
 	 * To stop text instances 'jumping around' vertically as the string data changes, the vertical offsets are essentially hard-coded according to the font:
-	 *	Vertical top: Ascent
-	 *	Vertical bottom: Descent
-	 *	Vertical centre: Baseline
+	 *	Vertical top: First line's ascent
+	 *	Vertical bottom: Last line's descent (== Descent for single-line strings, derived via Ascent - blockHeight otherwise)
+	 *	Vertical centre: Mean baseline of all lines (== first baseline for single-line strings)
 	 */
-	public Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor) {
+	public Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor, bool rescaleHeightAccordingToLineCount) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var fontData = _activeFonts[handle];
+		// stringSize.Y == (Ascent - Descent) + (lineCount - 1) * LineAdvance, so this inverts it (rounding kills FP noise)
+		var heightMultiplier = rescaleHeightAccordingToLineCount && fontData.LineAdvance > 0f
+			? Single.Round((stringSize.Y - (fontData.Ascent - fontData.Descent)) / fontData.LineAdvance) + 1f
+			: 1f;
 		var scaling = (stringWidth: textInstanceWidth, stringHeight: textInstanceHeight) switch {
-			(null, not null) => new XYPair<float>(textInstanceHeight.Value) / stringSize.Y,
+			(null, not null) => new XYPair<float>(textInstanceHeight.Value * heightMultiplier) / stringSize.Y,
 			(not null, null) => new XYPair<float>(textInstanceWidth.Value) / stringSize.X,
-			(not null, not null) => new XYPair<float>(textInstanceWidth.Value / stringSize.X, textInstanceHeight.Value / stringSize.Y),
-			_ => new XYPair<float>(DefaultFontHeight) / stringSize.Y,
+			(not null, not null) => new XYPair<float>(textInstanceWidth.Value / stringSize.X, textInstanceHeight.Value * heightMultiplier / stringSize.Y),
+			_ => new XYPair<float>(DefaultFontHeight * heightMultiplier) / stringSize.Y,
 		};
 		
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection, enforceOrthogonality: false);
@@ -539,8 +622,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		};
 		var verticalTranslation = (Direction.Down * rotation) * positionAnchor.GetVerticalComponent() switch {
 			VerticalOrientation2D.Up => fontData.Ascent * scaling.Y,
-			VerticalOrientation2D.Down => fontData.Descent * scaling.Y,
-			_ => 0f
+			VerticalOrientation2D.Down => (fontData.Ascent - stringSize.Y) * scaling.Y,
+			_ => (fontData.Ascent - fontData.Descent - stringSize.Y) * 0.5f * scaling.Y
 		};
 		
 		return new Transform(

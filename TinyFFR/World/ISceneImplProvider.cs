@@ -26,6 +26,8 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color);
 	void RemoveBackdrop(ResourceHandle<Scene> handle);
 	
+	void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights);
+	
 	IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle);
 	IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle);
 }

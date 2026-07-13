@@ -99,7 +99,9 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ColorVect(float red, float green, float blue) : this(red, green, blue, 1f) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ColorVect(float red, float green, float blue, float alpha) : this(new Vector4(red, green, blue, alpha)) { }
+	public ColorVect(float red, float green, float blue, float alpha, bool multiplyAlpha = false) : this(new Vector4(red, green, blue, alpha)) {
+		if (multiplyAlpha) this = WithPremultipliedAlpha();
+	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal ColorVect(Vector4 v) { AsVector4 = v; }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

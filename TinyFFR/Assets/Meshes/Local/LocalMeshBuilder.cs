@@ -34,7 +34,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshAnimationTable> _activeMeshAnimationTables = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
-	nuint _nextHandleId = 0;
+	nuint _prevHandleId = 0;
 	int _meshAnimDirectoryVersion = 0;
 
 	public LocalMeshBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -147,8 +147,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			CheckTriangleIndex('C', i, triangles[i].IndexC, vertices.Length);
 		}
 		
-		_nextHandleId++;
-		var handle = new ResourceHandle<Mesh>(_nextHandleId);
+		_prevHandleId++;
+		var handle = new ResourceHandle<Mesh>(_prevHandleId);
 
 		var tempVertexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
 		var tempIndexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(triangles);

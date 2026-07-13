@@ -20,6 +20,7 @@ namespace Egodystonic.TinyFFR;
 [TestFixture, Explicit]
 class LocalTextRenderingTest {
 	const float TextHeight = 0.1f;
+	const float TextWidth = 1.5f;
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -33,12 +34,12 @@ class LocalTextRenderingTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Text Rendering Test (Space / 1 / 2 / 3 / 4 / A)");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Text Rendering Test (Space / 1 / 2 / 3 / 4 / A / S)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var font = factory.AssetLoader.LoadFont(CommonTestAssets.FindAsset("DejaVuSans.ttf"));
 		var pen1 = font.CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque, 1f);
-		var pen2 = font.CreatePen(new ColorVect(1f, 1f, 0f, 0.3f).WithPremultipliedAlpha(), new ColorVect(0f, 1f, 1f, 0.75f).WithPremultipliedAlpha(), 0.5f);
-		var pen3 = font.CreatePen(ColorVect.BlackOpaque, new ColorVect(1f, 1f, 1f, 0.04f).WithPremultipliedAlpha());
+		var pen2 = font.CreatePen(new ColorVect(1f, 1f, 0f, 0.3f, true), new ColorVect(0f, 1f, 1f, 0.75f, true), 0.5f);
+		var pen3 = font.CreatePen(ColorVect.BlackOpaque, new ColorVect(1f, 1f, 1f, 0.04f, true));
 		var pen4 = font.CreatePen(ColorVect.BlackTransparent, ColorVect.RedOpaque, 1f, ColorVect.GreenOpaque);
 		var strings = new[] {
 			// ReSharper disable StringLiteralTypo
@@ -52,6 +53,11 @@ class LocalTextRenderingTest {
 			font.CreateString("∀x: x ≤ y ∧ x ≠ ∅ · ∑ ∏ ∫ √ ∞ ∂ ∇ ∈ ∉ ⊂ ⊃ ∪ ∩ ≈ ≡ ≥ ± ∓ ⊕ ⊗ ⊥ ∠ ∴ ∝"), // Maths test
 			font.CreateString("■ □ ▲ △ ▶ ▷ ▼ ▽ ◀ ◁ ● ○ ◆ ◇ ◢ ◣ ▪ ▫ ◉ ◐ ◑ ┌──┬──┐  ╔══╦══╗   ░▒▓█ ▁▂▃▄▅▆▇█"), // Shapes test
 			font.CreateString("■■■"), // Anchor test
+			font.CreateString("Short\nA much longer middle line\nMid line", TextJustification.Left), // Multi-line left-justify test
+			font.CreateString("Short\nA much longer middle line\nMid line"), // Multi-line centre-justify test (default)
+			font.CreateString("Short\nA much longer middle line\nMid line", TextJustification.Right), // Multi-line right-justify test
+			font.CreateString("Trailing break + kerning per line:\nAVAST To Wave\nYe Types LTa VA\n"), // Multi-line trailing-break test
+			font.CreateString("\nStarting break"), // Multi-line starting-break test
 			// ReSharper restore StringLiteralTypo
 		};
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
@@ -65,8 +71,17 @@ class LocalTextRenderingTest {
 		};
 		var curAnchorIdx = Array.IndexOf(anchors, Orientation2D.None);
 		var curStringIdx = 0;
+		var useDefaultScalingParams = true;
 		scene.Add(textInstance.UnderlyingModelInstance);
 		
+		void UpdateInstanceTransform() {
+			if (useDefaultScalingParams) {
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx]);
+			}
+			else {
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, textInstanceHeight: null, textInstanceWidth: TextWidth, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx], rescaleHeightAccordingToLineCount: false);
+			}
+		}
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
@@ -80,7 +95,7 @@ class LocalTextRenderingTest {
 				++curStringIdx;
 				if (curStringIdx >= strings.Length) curStringIdx = 0;
 				textInstance.String = strings[curStringIdx];
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx]);
+				UpdateInstanceTransform();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) textInstance.SetPen(pen1);
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) textInstance.SetPen(pen2);
@@ -89,7 +104,11 @@ class LocalTextRenderingTest {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
 				++curAnchorIdx;
 				if (curAnchorIdx >= anchors.Length) curAnchorIdx = 0;
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx]);
+				UpdateInstanceTransform();
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S)) {
+				useDefaultScalingParams = !useDefaultScalingParams;
+				UpdateInstanceTransform();
 			}
 			
 			renderer.Render();

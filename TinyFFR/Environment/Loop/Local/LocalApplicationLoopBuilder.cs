@@ -41,7 +41,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	readonly LocalLatestInputRetriever _latestInputRetriever;
 	readonly int _iterationTimingBufferMask;
 #pragma warning restore CA2213
-	nuint _nextLoopHandleIndex = 1;
+	nuint _prevHandleId = 0;
 	bool _isDisposed = false;
 
 	public LocalApplicationLoopBuilder(LocalApplicationLoopBuilderConfig config, LocalFactoryGlobalObjectGroup globals) {
@@ -57,11 +57,10 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		config.ThrowIfInvalid();
 
 		var curTime = Stopwatch.GetTimestamp();
-		var handle = (ResourceHandle<ApplicationLoop>) _nextLoopHandleIndex;
+		var handle = (ResourceHandle<ApplicationLoop>) (++_prevHandleId);
 		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates));
 		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
-		_nextLoopHandleIndex++;
 		return new(handle, this);
 	}
 

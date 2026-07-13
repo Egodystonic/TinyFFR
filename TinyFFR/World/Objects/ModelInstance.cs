@@ -39,7 +39,7 @@ public enum NullMaterialShadingStyle {
 	Wireframe = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Wireframe
 }
 
-public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject {
+public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject {
 	readonly ResourceHandle<ModelInstance> _handle;
 	readonly IModelInstanceImplProvider _impl;
 
@@ -55,7 +55,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTransform(_handle, value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Implementation.SetTransform(_handle, transform);
 
 	public Location Position {

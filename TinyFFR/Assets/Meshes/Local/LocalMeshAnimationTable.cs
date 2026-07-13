@@ -37,7 +37,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		PooledHeapMemory<int> MutationTargetIndexMap,
 		Matrix4x4 ModelImportTransformMatrix
 	);
-	static nuint _nextHandleId = 0U;
+	static nuint _prevHandleId = 0U;
 	readonly MeshNodeImplProvider _meshNodeImplProvider;
 	readonly ArrayPoolBackedStringKeyMap<MeshAnimation> _animationNameMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<MeshAnimation>, AnimationData> _animationDataMap = new();
@@ -189,7 +189,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			}
 		}
 		
-		var handle = new ResourceHandle<MeshAnimation>(++_nextHandleId);
+		var handle = new ResourceHandle<MeshAnimation>(++_prevHandleId);
 		for (var m = 0; m < nodeMutations.Span.Length; ++m) {
 			try {
 				EnsureKeyframesOrderedByTime<SkeletalAnimationScalingKeyframe, Vect>(scalingKeyframes.Span.Slice(nodeMutations.Span[m].ScalingKeyframeStartIndex, nodeMutations.Span[m].ScalingKeyframeCount));

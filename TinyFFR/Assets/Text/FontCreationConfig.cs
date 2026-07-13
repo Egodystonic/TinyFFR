@@ -11,24 +11,35 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 	static readonly Rune[] _defaultSupportedRunes = BuildDefaultRuneSet();
 	public static ReadOnlySpan<Rune> DefaultSupportedRunes => _defaultSupportedRunes;
 	public ReadOnlySpan<Rune> SupportedRunes { get; init; } = DefaultSupportedRunes;
+	public Rune LineBreakRune { get; init; } = new Rune('\n');
+	public float LineSpacingMultiplier { get; init; } = 1f;
 	public ReadOnlySpan<char> Name { get; init; }
-	
+
 	public FontCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
 		if (SupportedRunes.Length == 0) {
 			throw new ArgumentOutOfRangeException(nameof(SupportedRunes), SupportedRunes.Length, "Must supplt at least one supported rune.");
 		}
+		if (!Single.IsFinite(LineSpacingMultiplier) || LineSpacingMultiplier < 0f) {
+			throw new ArgumentOutOfRangeException(nameof(LineSpacingMultiplier), LineSpacingMultiplier, "Line spacing multiplier must be a finite, non-negative value.");
+		}
 	}
 
 	public static int GetHeapStorageFormattedLength(in FontCreationConfig src) {
-		return SerializationSizeOfString(src.Name); // Name
+		return SerializationSizeOfInt() // LineBreakRune
+			+ SerializationSizeOfFloat() // LineSpacingMultiplier
+			+ SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in FontCreationConfig src) {
+		SerializationWriteInt(ref dest, src.LineBreakRune.Value);
+		SerializationWriteFloat(ref dest, src.LineSpacingMultiplier);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static FontCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new FontCreationConfig {
+			LineBreakRune = new Rune(SerializationReadInt(ref src)),
+			LineSpacingMultiplier = SerializationReadFloat(ref src),
 			Name = SerializationReadString(ref src)
 		};
 	}

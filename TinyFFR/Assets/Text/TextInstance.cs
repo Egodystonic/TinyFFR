@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
-public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEquatable<TextInstance> {
+public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEquatable<TextInstance>, ITransformedSceneObject {
 	public ModelInstance UnderlyingModelInstance { get; }
 	public FontPen Pen {
 		get => UnderlyingModelInstance.Implementation.GetTextInstancePen(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
@@ -29,6 +29,44 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetString(FontString @string) => String = @string;
+	
+	public Transform Transform {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Transform;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetTransform(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTransform(Transform transform) => Transform = transform;
+	
+	public Location Position {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Position;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetPosition(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(Location position) => Position = position;
+
+	public Rotation Rotation {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Rotation;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetRotation(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotation(Rotation rotation) => Rotation = rotation;
+
+	public Vect Scaling {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.Scaling;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetScaling(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetScaling(Vect scaling) => Scaling = scaling;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
 	public TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string) {
 		UnderlyingModelInstance = underlyingModelInstance;
@@ -42,12 +80,27 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
-	public void SetTransform(Location position, Direction facingDirection, float? textInstanceHeight, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+	public void SetTransform(Location position, Direction facingDirection, float? textInstanceHeight, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, bool rescaleHeightAccordingToLineCount = true) {
 		var @string = String;
 		var stringSize = @string.Size;
-		var transform = @string.Font.GetTextInstanceTransform(stringSize, position, facingDirection, textInstanceHeight, textInstanceWidth, uprightDirection, positionAnchor);
+		var transform = @string.Font.GetTextInstanceTransform(stringSize, position, facingDirection, textInstanceHeight, textInstanceWidth, uprightDirection, positionAnchor, rescaleHeightAccordingToLineCount);
 		UnderlyingModelInstance.SetTransform(transform);
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void MoveBy(Vect translation) => UnderlyingModelInstance.MoveBy(translation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Rotation rotation, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotation, pivotPoint);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(float scalar) => UnderlyingModelInstance.ScaleBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(Vect vect) => UnderlyingModelInstance.ScaleBy(vect);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(float scalar) => UnderlyingModelInstance.AdjustScaleBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(Vect vect) => UnderlyingModelInstance.AdjustScaleBy(vect);
 
 	public void Dispose() => UnderlyingModelInstance.Dispose();
 

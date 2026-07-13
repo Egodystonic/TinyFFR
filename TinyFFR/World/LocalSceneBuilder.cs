@@ -361,6 +361,49 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	}
 	#endregion
 
+	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		if (includeModelInstances) {
+			var modelInstanceVector = _modelInstanceMap[handle];
+			foreach (var modelInstance in modelInstanceVector) {
+				RemoveModelInstanceFromScene(
+					handle,
+					modelInstance.Handle
+				).ThrowIfFailure();	
+				_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+			}
+			
+			modelInstanceVector.Clear();
+		}
+		if (includeLights) {
+			var lightInstanceVector = _lightMap[handle];
+			foreach (var lightInstance in lightInstanceVector) {
+				RemoveLightFromScene(
+					handle,
+					lightInstance.Handle
+				).ThrowIfFailure();	
+				
+				switch (lightInstance.Type) {
+					case LightType.Point:
+						_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), (PointLight) lightInstance);
+						break;
+					case LightType.Spot:
+						_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), (SpotLight) lightInstance);
+						break;
+					case LightType.Directional:
+						_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), (DirectionalLight) lightInstance);
+						break;
+				}
+			}
+			
+			lightInstanceVector.Clear();
+		}
+
+		
+
+	}
+
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_scene")]
 	static extern InteropResult AllocateScene(
