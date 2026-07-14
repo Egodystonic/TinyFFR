@@ -18,10 +18,13 @@
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
             <Button Command="{Binding ToggleRenderingButtonPressed}" Content="Toggle Rendering" />
             <Button Command="{Binding ChangeLightColourButtonPressed}" Content="Change Light Colour" />
+            <CheckBox Content="Composite Mode" IsChecked="{Binding UseCompositor}" VerticalAlignment="Center" />
+            <Button Command="{Binding ToggleOverlayButtonPressed}" Content="Toggle Overlay" />
         </StackPanel>
         <tffrWpf:TinyFfrSceneView
             FallbackBrush="LightGray"
             InternalRenderResolution="300,150"
-            Renderer="{Binding Renderer}" />
+            Renderer="{Binding Renderer}"
+            Compositor="{Binding Compositor}" />
     </DockPanel>
 </Window>

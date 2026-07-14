@@ -21,10 +21,13 @@
             <Button Command="{Binding ChangeLightColourButtonPressed}" Content="Change Light Colour" />
             <CheckBox Content="Toggle Animated Rendering" IsChecked="{Binding Animate}" />
             <Button Command="{Binding RenderOnce}" Content="Render Manually" />
+            <CheckBox Content="Composite Mode" IsChecked="{Binding UseCompositor}" />
+            <Button Command="{Binding ToggleOverlayButtonPressed}" Content="Toggle Overlay" />
         </StackPanel>
         <tffrAvalonia:TinyFfrSceneView
             FallbackBrush="LightGray"
             InternalRenderResolution="300,150"
-            Renderer="{Binding Renderer}" />
+            Renderer="{Binding Renderer}"
+            Compositor="{Binding Compositor}" />
     </DockPanel>
 </UserControl>

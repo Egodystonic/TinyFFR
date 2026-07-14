@@ -10,6 +10,7 @@ namespace Egodystonic.TinyFFR.WinForms;
 public partial class TinyFfrSceneView : UserControl {
 	Bitmap? _bitmap;
 	Renderer? _renderer;
+	RendererCompositor? _compositor;
 	Size? _internalRenderResolution;
 
 	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -25,6 +26,24 @@ public partial class TinyFfrSceneView : UserControl {
 				BindableRendererImplProvider.StopHandlingFrames(oldRenderer);
 			}
 			_renderer = value;
+
+			IdempotentlyUpdateRendererStateAccordingToControlState();
+		}
+	}
+
+	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+	public RendererCompositor? Compositor {
+		get => _compositor;
+		set {
+			if (value != null && !BindableRendererCompositorImplProvider.IsBindableCompositor(value.Value)) {
+				throw new ArgumentException($"{nameof(Compositor)} must be bindable.", nameof(Compositor));
+			}
+
+
+			if (value == null && _compositor is { } oldCompositor) {
+				BindableRendererCompositorImplProvider.StopHandlingFrames(oldCompositor);
+			}
+			_compositor = value;
 
 			IdempotentlyUpdateRendererStateAccordingToControlState();
 		}
@@ -130,19 +149,26 @@ public partial class TinyFfrSceneView : UserControl {
 			&& (targetSize.Y is >= MinTextureDimensionXY and <= MaxTextureDimensionXY);
 
 		var rendererLocal = Renderer;
-		var shouldDisableFrameCapture = rendererLocal == null || !Visible || Parent == null || !targetSizeIsPermitted;
+		var compositorLocal = Compositor;
+		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !Visible || Parent == null || !targetSizeIsPermitted;
 		if (shouldDisableFrameCapture) {
 			_bitmap = null;
 			if (rendererLocal != null) {
 				BindableRendererImplProvider.StopHandlingFrames(rendererLocal.Value);
 			}
+			if (compositorLocal != null) {
+				BindableRendererCompositorImplProvider.StopHandlingFrames(compositorLocal.Value);
+			}
 			Invalidate();
 			return;
 		}
 
-#pragma warning disable CS8629 // Nullable value type may be null: Nope, it's checked above
-		BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
-#pragma warning restore CS8629
+		if (rendererLocal != null && compositorLocal != null) {
+			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
+		}
+
+		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
+		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, WriteFrame);
 	}
 }
 

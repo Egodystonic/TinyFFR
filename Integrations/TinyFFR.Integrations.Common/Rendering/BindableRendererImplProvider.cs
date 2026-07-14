@@ -1,4 +1,4 @@
-﻿// Created on 2025-08-21 by Ben Bowen
+// Created on 2025-08-21 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -11,6 +11,8 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Rendering;
 
 sealed class BindableRendererImplProvider : IRendererImplProvider {
+	enum ViewportOverrideKind { None, Fraction, Pixel }
+
 	const string DefaultRendererName = "Unnamed Bindable Renderer";
 	static nuint _previousHandleId = 0;
 	readonly IRendererBuilder _rendererBuilder;
@@ -21,9 +23,19 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	byte[] _serializedConfig;
 	Renderer _actualRenderer;
 	RenderOutputBuffer _actualRendererTarget;
+	bool? _frustumCullingEnabled;
+	ViewportOverrideKind _viewportOverrideKind = ViewportOverrideKind.None;
+	Orientation2D _viewportAnchor;
+	XYPair<float> _viewportFractionalOffset;
+	XYPair<float> _viewportFractionalDimensions;
+	XYPair<int> _viewportPixelOffset;
+	XYPair<int> _viewportPixelDimensions;
+	Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? _currentFrameHandler;
+	BindableRendererCompositorImplProvider? _attachedCompositor;
 	bool _isDisposed = false;
 
 	public Renderer BindableRendererInstance => new(_handle, this);
+	internal Renderer ActualRenderer => _actualRenderer;
 
 	public BindableRendererImplProvider(IRendererBuilder rendererBuilder, IResourceAllocator allocator, Scene scene, Camera camera, in BindableRendererCreationConfig config) {
 		ArgumentNullException.ThrowIfNull(rendererBuilder);
@@ -51,16 +63,21 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 
 	public static bool IsBindableRenderer(Renderer r) => r.Implementation is BindableRendererImplProvider;
 
-	static BindableRendererImplProvider GetBindableImplementationOrThrow(Renderer r) {
+	internal static BindableRendererImplProvider GetBindableImplementationOrThrow(Renderer r) {
 		return r.Implementation as BindableRendererImplProvider ?? throw new InvalidOperationException($"Given {nameof(Renderer)} ({r}) is not a bindable renderer.");
 	}
 
 	public static void StartOrContinueHandlingFrames(Renderer r, XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
-		GetBindableImplementationOrThrow(r).RecreateTargetBuffer(size, handler);
+		var impl = GetBindableImplementationOrThrow(r);
+		impl.ThrowIfAttachedToCompositor();
+		impl.RecreateTargetBuffer(size, handler);
 	}
 
 	public static void StopHandlingFrames(Renderer r) {
-		GetBindableImplementationOrThrow(r)._actualRendererTarget.StopReadingFrames(cancelQueuedFrames: true);
+		var impl = GetBindableImplementationOrThrow(r);
+		impl.ThrowIfAttachedToCompositor();
+		impl._actualRendererTarget.StopReadingFrames(cancelQueuedFrames: true);
+		impl._currentFrameHandler = null;
 	}
 
 	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
@@ -68,23 +85,83 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRendererTarget.Dispose();
 		CreateTargetBuffer(size, handler);
 	}
-	
+
 	void CreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
 		_actualRendererTarget = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
 			Name = $"{_name} output buffer",
 			TextureDimensions = size
 		});
 		if (handler != null) _actualRendererTarget.StartReadingFrames(handler, presentFramesTopToBottom: true);
+		_currentFrameHandler = handler;
+		CreateActualRenderer(_actualRendererTarget);
+	}
 
+	void CreateActualRenderer(RenderOutputBuffer target) {
 		var scene = _sceneAndCamera.GetNthResourceOfType<Scene>(0);
 		var camera = _sceneAndCamera.GetNthResourceOfType<Camera>(0);
 		_actualRenderer = _rendererBuilder.CreateRenderer(
 			scene,
 			camera,
-			_actualRendererTarget,
-			BindableRendererCreationConfig.ConvertFromAllocatedHeapStorage(_serializedConfig).BaseConfig
+			target,
+			BindableRendererCreationConfig.ConvertFromAllocatedHeapStorage(_serializedConfig).BaseConfig with { Name = _name }
 		);
-		if (_autoUpdateCameraAspectRatio && size.Ratio is { } ratio) camera.SetAspectRatio(ratio);
+		if (_frustumCullingEnabled is { } frustumCullingEnabled) _actualRenderer.SetFrustumCullingEnabled(frustumCullingEnabled);
+		switch (_viewportOverrideKind) {
+			case ViewportOverrideKind.Fraction:
+				_actualRenderer.SetRenderSubAreaFraction(_viewportAnchor, _viewportFractionalOffset, _viewportFractionalDimensions);
+				break;
+			case ViewportOverrideKind.Pixel:
+				_actualRenderer.SetRenderSubAreaPixels(_viewportAnchor, _viewportPixelOffset, _viewportPixelDimensions);
+				break;
+		}
+		if (_autoUpdateCameraAspectRatio && target.TextureDimensions.Ratio is { } ratio) camera.SetAspectRatio(ratio);
+	}
+
+	internal Renderer AttachToCompositor(BindableRendererCompositorImplProvider compositor, RenderOutputBuffer sharedBuffer) {
+		if (_isDisposed) throw new ObjectDisposedException(nameof(Renderer));
+		if (_attachedCompositor != null) {
+			throw new InvalidOperationException($"{BindableRendererInstance} has already been added to a bindable {nameof(RendererCompositor)}.");
+		}
+		if (_currentFrameHandler != null) {
+			throw new InvalidOperationException($"{BindableRendererInstance} is currently supplying frames directly (e.g. to a scene view control). Unbind it before adding it to a {nameof(RendererCompositor)}.");
+		}
+
+		_actualRenderer.Dispose();
+		_actualRendererTarget.Dispose();
+		_attachedCompositor = compositor;
+		CreateActualRenderer(sharedBuffer);
+		return _actualRenderer;
+	}
+
+	internal void DisposeActualRendererForCompositorRecreation() => _actualRenderer.Dispose();
+
+	internal Renderer RecreateActualRendererOnSharedBuffer(RenderOutputBuffer sharedBuffer) {
+		CreateActualRenderer(sharedBuffer);
+		return _actualRenderer;
+	}
+
+	internal void DetachFromCompositor() {
+		_actualRenderer.Dispose();
+		_attachedCompositor = null;
+		CreateTargetBuffer(BindableRendererCreationConfig.ConvertFromAllocatedHeapStorage(_serializedConfig).DefaultBufferSize, null);
+	}
+
+	internal void DisposeDueToOwningCompositorDisposal() {
+		if (_isDisposed) return;
+		try {
+			_actualRenderer.Dispose();
+			_sceneAndCamera.Dispose();
+			BindableRendererCreationConfig.DisposeAllocatedHeapStorage(_serializedConfig);
+		}
+		finally {
+			_isDisposed = true;
+		}
+	}
+
+	void ThrowIfAttachedToCompositor() {
+		if (_attachedCompositor != null) {
+			throw new InvalidOperationException($"{BindableRendererInstance} has been added to a bindable {nameof(RendererCompositor)}; frame handling is controlled by that compositor.");
+		}
 	}
 
 	public bool IsDisposed(ResourceHandle<Renderer> handle) {
@@ -94,6 +171,12 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	public void Dispose(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		if (_isDisposed) return;
+		if (_attachedCompositor != null) {
+			throw new InvalidOperationException(
+				$"{BindableRendererInstance} has been added to a bindable {nameof(RendererCompositor)} and can not be disposed directly. " +
+				$"Dispose the compositor instead (with 'disposeContainedRenderers' set to true to also dispose this renderer)."
+			);
+		}
 		try {
 			_actualRenderer.Dispose();
 			_actualRendererTarget.Dispose();
@@ -142,15 +225,24 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	}
 	public void SetFrustumCullingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_frustumCullingEnabled = enabled;
 		_actualRenderer.SetFrustumCullingEnabled(enabled);
 	}
 
 	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_viewportOverrideKind = ViewportOverrideKind.Fraction;
+		_viewportAnchor = anchor;
+		_viewportFractionalOffset = fractionalOffset;
+		_viewportFractionalDimensions = fractionalDimensions;
 		_actualRenderer.SetRenderSubAreaFraction(anchor, fractionalOffset, fractionalDimensions);
 	}
 	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<int> fractionalLocation, XYPair<int> pixelDimensions) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_viewportOverrideKind = ViewportOverrideKind.Pixel;
+		_viewportAnchor = anchor;
+		_viewportPixelOffset = fractionalLocation;
+		_viewportPixelDimensions = pixelDimensions;
 		_actualRenderer.SetRenderSubAreaPixels(anchor, fractionalLocation, pixelDimensions);
 	}
 	public void WaitForGpu(ResourceHandle<Renderer> handle) {
@@ -170,7 +262,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
-	
+
 	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);

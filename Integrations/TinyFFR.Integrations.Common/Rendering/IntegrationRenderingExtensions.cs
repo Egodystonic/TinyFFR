@@ -15,4 +15,12 @@ public static class IntegrationRenderingExtensions {
 		var impl = new BindableRendererImplProvider(@this, allocator, scene, camera, in config);
 		return impl.BindableRendererInstance;
 	}
+
+	public static RendererCompositor CreateBindableCompositor(this IRendererBuilder @this, ReadOnlySpan<char> name = default) {
+		return @this.CreateBindableCompositor(new BindableRendererCompositorCreationConfig { Name = name });
+	}
+	public static RendererCompositor CreateBindableCompositor(this IRendererBuilder @this, in BindableRendererCompositorCreationConfig config) {
+		var impl = new BindableRendererCompositorImplProvider(@this, in config);
+		return impl.BindableCompositorInstance;
+	}
 }
