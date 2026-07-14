@@ -8,6 +8,7 @@ using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -22,7 +23,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalDisposalProtectionTest {
+class LocalResourceDisposalTest {
 	char[] _nameDestinationBuffer = null!;
 
 	[SetUp]
@@ -148,6 +149,18 @@ class LocalDisposalProtectionTest {
 			v => _ = v.Mesh,
 		};
 		AssertUseAfterDisposalThrowsException(assetLoader.CreateModel(mesh, material), objectIsAlreadyDisposed: false, modelActions);
+		var font = assetLoader.LoadFont();
+		var fontActions = new Action<Font>[] {
+			v => _ = v.Handle,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
+			v => _ = v.MeasureString("Test"),
+			v => _ = v.CreatePen(ColorVect.WhiteOpaque),
+			v => { var s = v.CreateString("Test"); _ = s.Size; s.Dispose(); },
+			v => _ = v.GetTextInstanceTransform(new XYPair<float>(10f, 10f), Location.Origin, Direction.Forward, 1f)
+		};
+		AssertUseAfterDisposalThrowsException(assetLoader.LoadFont(), objectIsAlreadyDisposed: false, fontActions);
 		var objectBuilder = factory.ObjectBuilder;
 		var modelInstance = objectBuilder.CreateModelInstance(model);
 		var modelInstanceActions = new Action<ModelInstance>[] {
@@ -283,10 +296,23 @@ class LocalDisposalProtectionTest {
 			v => _ = v.TextureDimensions
 		};
 		AssertUseAfterDisposalThrowsException(rendererBuilder.CreateRenderOutputBuffer(), objectIsAlreadyDisposed: false, renderBufferActions);
+		var compositor = rendererBuilder.CreateCompositor(window);
+		var compositorActions = new Action<RendererCompositor>[] {
+			v => _ = v.Handle,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
+			v => _ = v.AddedRenderers,
+			v => v.Add(renderer, RenderCompositionType.Standard),
+			v => v.SetEnabledState(renderer, true),
+			v => v.RenderAll(),
+			v => v.WaitForGpu()
+		};
+		AssertUseAfterDisposalThrowsException(rendererBuilder.CreateCompositor(window), objectIsAlreadyDisposed: false, compositorActions);
 
 
 
-		// === Factory disposed here === 
+		// === Factory disposed here ===
 		AssertUseAfterDisposalThrowsException(
 			factory, objectIsAlreadyDisposed: false,
 			v => _ = v.ApplicationLoopBuilder,
@@ -311,6 +337,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(texture, objectIsAlreadyDisposed: true, textureActions);
 		AssertUseAfterDisposalThrowsException(material, objectIsAlreadyDisposed: true, materialActions);
 		AssertUseAfterDisposalThrowsException(model, objectIsAlreadyDisposed: true, modelActions);
+		AssertUseAfterDisposalThrowsException(font, objectIsAlreadyDisposed: true, fontActions);
 		AssertUseAfterDisposalThrowsException(modelInstance, objectIsAlreadyDisposed: true, modelInstanceActions);
 		AssertUseAfterDisposalThrowsException(pointLight, objectIsAlreadyDisposed: true, pointLightActions);
 		AssertUseAfterDisposalThrowsException(spotLight, objectIsAlreadyDisposed: true, spotLightActions);
@@ -318,6 +345,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(cubemap, objectIsAlreadyDisposed: true, cubemapActions);
 		AssertUseAfterDisposalThrowsException(renderer, objectIsAlreadyDisposed: true, rendererActions);
 		AssertUseAfterDisposalThrowsException(renderBuffer, objectIsAlreadyDisposed: true, renderBufferActions);
+		AssertUseAfterDisposalThrowsException(compositor, objectIsAlreadyDisposed: true, compositorActions);
 
 		AssertUseAfterDisposalThrowsException(
 			displayDiscoverer, objectIsAlreadyDisposed: true,
@@ -360,7 +388,8 @@ class LocalDisposalProtectionTest {
 			v => _ = v.MaterialBuilder,
 			v => _ = v.TextureBuilder,
 			v => _ = v.LoadTexture("", false),
-			v => _ = v.LoadMesh("")
+			v => _ = v.LoadMesh(""),
+			v => _ = v.LoadFont()
 		);
 		AssertUseAfterDisposalThrowsException(
 			meshBuilder, objectIsAlreadyDisposed: true,
@@ -386,7 +415,8 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(
 			rendererBuilder, objectIsAlreadyDisposed: true,
 			v => _ = v.CreateRenderer(scene, camera, window),
-			v => _ = v.CreateRenderer(default, default, default(Window))
+			v => _ = v.CreateRenderer(default, default, default(Window)),
+			v => _ = v.CreateCompositor(window)
 		);
 	}
 

@@ -420,7 +420,7 @@ public interface IAssetLoader {
 	#endregion
 	
 	#region Load Font
-	Font LoadFont(BuiltInFont font, ReadOnlySpan<char> name = default) {
+	Font LoadFont(BuiltInFont font = BuiltInFont.Default, ReadOnlySpan<char> name = default) {
 		return LoadFont(font, new FontCreationConfig { Name = name });
 	}
 	Font LoadFont(ReadOnlySpan<char> fontFilePath, ReadOnlySpan<char> name = default) {

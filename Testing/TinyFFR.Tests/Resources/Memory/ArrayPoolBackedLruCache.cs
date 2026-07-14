@@ -253,7 +253,7 @@ class ArrayPoolBackedLruCacheTest {
 
 		cache.Clear(invokeCacheEvictionCallbackOnAllContainedValues: true);
 		Assert.AreEqual(3, records.Count);
-		CollectionAssert.AreEquivalent(new[] { (1, 10), (2, 20), (3, 30) }, records);
+        Assert.That(records, Is.EquivalentTo(new[] { (1, 10), (2, 20), (3, 30) }));
 		Assert.IsFalse(cache.TryGet(1, out _));
 		Assert.IsFalse(cache.TryGet(2, out _));
 		Assert.IsFalse(cache.TryGet(3, out _));
@@ -320,7 +320,7 @@ class ArrayPoolBackedLruCacheTest {
 
 		cache.Dispose(invokeCacheEvictionCallbackOnAllContainedValues: true);
 		Assert.AreEqual(2, records.Count);
-		CollectionAssert.AreEquivalent(new[] { (1, 10), (2, 20) }, records);
+        Assert.That(records, Is.EquivalentTo(new[] { (1, 10), (2, 20) }));
 	}
 
 	[Test]
@@ -332,7 +332,7 @@ class ArrayPoolBackedLruCacheTest {
 		}
 
 		Assert.AreEqual(2, records.Count);
-		CollectionAssert.AreEquivalent(new[] { (1, 10), (2, 20) }, records);
+        Assert.That(records, Is.EquivalentTo(new[] { (1, 10), (2, 20) }));
 	}
 
 	[Test]

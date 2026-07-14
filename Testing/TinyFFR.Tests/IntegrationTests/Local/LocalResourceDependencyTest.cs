@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -21,7 +22,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalDependencyTest {
+class LocalResourceDependencyTest {
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -92,6 +93,31 @@ class LocalDependencyTest {
 			scene.Dispose();
 			camera.Dispose();
 
+			var compWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+			var compositor = factory.RendererBuilder.CreateCompositor(compWindow);
+			AssertDependency(compWindow, compositor);
+
+			compWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+			scene = factory.SceneBuilder.CreateScene();
+			camera = factory.CameraBuilder.CreateCamera();
+			renderer = factory.RendererBuilder.CreateRenderer(scene, camera, compWindow);
+			compositor = factory.RendererBuilder.CreateCompositor(compWindow);
+			compositor.Add(renderer, RenderCompositionType.Standard);
+			AssertDependency(renderer, compositor);
+			scene.Dispose();
+			camera.Dispose();
+			compWindow.Dispose();
+
+			var compBuffer = factory.RendererBuilder.CreateRenderOutputBuffer();
+			compositor = factory.RendererBuilder.CreateCompositor(compBuffer);
+			AssertDependency(compBuffer, compositor);
+
+			var font = factory.AssetLoader.LoadFont();
+			var pen = font.CreatePen(ColorVect.WhiteOpaque);
+			var fontString = font.CreateString("Test");
+			var textInstance = factory.ObjectBuilder.CreateTextInstance(pen, fontString);
+			AssertDependency(font, textInstance.UnderlyingModelInstance);
+
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.ApplicationLoopBuilder.CreateLoop());
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false));
 			var tempTex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
@@ -109,6 +135,9 @@ class LocalDependencyTest {
 			var tempWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCamera, tempScene, tempWindow, factory.RendererBuilder.CreateRenderer(tempScene, tempCamera, tempWindow));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.RendererBuilder.CreateRenderOutputBuffer());
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.AssetLoader.LoadFont());
+			var tempCompWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCompWindow, factory.RendererBuilder.CreateCompositor(tempCompWindow));
 
 			void CheckEffectsMaterial(Func<Texture, Material> matCreationFunc, Action<Texture, MaterialEffectController> assignBlendDestTexAction) {
 				using var map = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);

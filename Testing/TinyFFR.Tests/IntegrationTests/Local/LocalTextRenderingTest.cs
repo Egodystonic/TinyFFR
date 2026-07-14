@@ -53,9 +53,9 @@ class LocalTextRenderingTest {
 			font.CreateString("∀x: x ≤ y ∧ x ≠ ∅ · ∑ ∏ ∫ √ ∞ ∂ ∇ ∈ ∉ ⊂ ⊃ ∪ ∩ ≈ ≡ ≥ ± ∓ ⊕ ⊗ ⊥ ∠ ∴ ∝"), // Maths test
 			font.CreateString("■ □ ▲ △ ▶ ▷ ▼ ▽ ◀ ◁ ● ○ ◆ ◇ ◢ ◣ ▪ ▫ ◉ ◐ ◑ ┌──┬──┐  ╔══╦══╗   ░▒▓█ ▁▂▃▄▅▆▇█"), // Shapes test
 			font.CreateString("■■■"), // Anchor test
-			font.CreateString("Short\nA much longer middle line\nMid line", TextJustification.Left), // Multi-line left-justify test
-			font.CreateString("Short\nA much longer middle line\nMid line"), // Multi-line centre-justify test (default)
-			font.CreateString("Short\nA much longer middle line\nMid line", TextJustification.Right), // Multi-line right-justify test
+			font.CreateString("Short\nA much longer middle line\nMedium length line", TextJustification.Left), // Multi-line left-justify test
+			font.CreateString("Short\nA much longer middle line\nMedium length line"), // Multi-line centre-justify test (default)
+			font.CreateString("Short\nA much longer middle line\nMedium length line", TextJustification.Right), // Multi-line right-justify test
 			font.CreateString("Trailing break + kerning per line:\nAVAST To Wave\nYe Types LTa VA\n"), // Multi-line trailing-break test
 			font.CreateString("\nStarting break"), // Multi-line starting-break test
 			// ReSharper restore StringLiteralTypo

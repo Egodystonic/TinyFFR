@@ -571,6 +571,8 @@ class DirectionTest {
 
 				if (dirA.IsApproximatelyParallelTo(dirB, 4f)) continue;
 				AssertToleranceEquals(180f, Direction.FromDualOrthogonalization(dirA, dirB, true) ^ Direction.FromDualOrthogonalization(dirA, dirB, false), 4f);
+				AssertToleranceEquals(Direction.FromDualOrthogonalization(dirA, dirB), Direction.FastFromDualOrthogonalization(dirA, dirB), TestTolerance);
+				AssertToleranceEquals(Direction.FromDualOrthogonalization(dirB, dirA), Direction.FastFromDualOrthogonalization(dirB, dirA), TestTolerance);
 			}
 		}
 	}
@@ -634,6 +636,130 @@ class DirectionTest {
 					AssertToleranceEquals(90f, dirB.FastOrthogonalizedAgainst(dirA) ^ dirA, 1.5f);
 				}
 			}
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyOrthogonalizeAll() {
+		foreach (var cardinal in Direction.AllCardinals) {
+			var expectedSecondary = cardinal.AnyOrthogonal();
+			var expectedTertiary = Direction.FromDualOrthogonalization(cardinal, expectedSecondary);
+
+			var secondary = expectedSecondary;
+			var tertiary = expectedTertiary;
+			Direction.OrthogonalizeAll(cardinal, ref secondary, ref tertiary);
+			AssertToleranceEquals(expectedSecondary, secondary, TestTolerance);
+			AssertToleranceEquals(expectedTertiary, tertiary, TestTolerance);
+
+			var fastSecondary = expectedSecondary;
+			var fastTertiary = expectedTertiary;
+			Direction.FastOrthogonalizeAll(cardinal, ref fastSecondary, ref fastTertiary);
+			AssertToleranceEquals(secondary, fastSecondary, TestTolerance);
+			AssertToleranceEquals(tertiary, fastTertiary, TestTolerance);
+
+			secondary = expectedSecondary;
+			tertiary = -expectedTertiary;
+			Direction.OrthogonalizeAll(cardinal, ref secondary, ref tertiary);
+			AssertToleranceEquals(expectedSecondary, secondary, TestTolerance);
+			AssertToleranceEquals(-expectedTertiary, tertiary, TestTolerance);
+
+			fastSecondary = expectedSecondary;
+			fastTertiary = -expectedTertiary;
+			Direction.FastOrthogonalizeAll(cardinal, ref fastSecondary, ref fastTertiary);
+			AssertToleranceEquals(secondary, fastSecondary, TestTolerance);
+			AssertToleranceEquals(tertiary, fastTertiary, TestTolerance);
+		}
+
+		{
+			var secondary = new Direction(0f, 1f, 1f);
+			var tertiary = new Direction(1f, 1f, 0f);
+			Direction.OrthogonalizeAll(Direction.Forward, ref secondary, ref tertiary);
+			AssertToleranceEquals(Direction.Up, secondary, TestTolerance);
+			AssertToleranceEquals(Direction.Left, tertiary, TestTolerance);
+
+			var fastSecondary = new Direction(0f, 1f, 1f);
+			var fastTertiary = new Direction(1f, 1f, 0f);
+			Direction.FastOrthogonalizeAll(Direction.Forward, ref fastSecondary, ref fastTertiary);
+			AssertToleranceEquals(secondary, fastSecondary, TestTolerance);
+			AssertToleranceEquals(tertiary, fastTertiary, TestTolerance);
+
+			secondary = new Direction(0f, 1f, 1f);
+			tertiary = new Direction(-1f, 1f, 0f);
+			Direction.OrthogonalizeAll(Direction.Forward, ref secondary, ref tertiary);
+			AssertToleranceEquals(Direction.Up, secondary, TestTolerance);
+			AssertToleranceEquals(Direction.Right, tertiary, TestTolerance);
+
+			fastSecondary = new Direction(0f, 1f, 1f);
+			fastTertiary = new Direction(-1f, 1f, 0f);
+			Direction.FastOrthogonalizeAll(Direction.Forward, ref fastSecondary, ref fastTertiary);
+			AssertToleranceEquals(secondary, fastSecondary, TestTolerance);
+			AssertToleranceEquals(tertiary, fastTertiary, TestTolerance);
+		}
+
+		foreach (var cardinal in Direction.AllCardinals) {
+			foreach (var parallelSecondary in new[] { cardinal, -cardinal }) {
+				var secondary = parallelSecondary;
+				var tertiary = parallelSecondary;
+				Direction.OrthogonalizeAll(cardinal, ref secondary, ref tertiary);
+				Assert.IsTrue(secondary.IsOrthogonalTo(cardinal));
+				Assert.IsTrue(tertiary.IsOrthogonalTo(cardinal));
+				Assert.IsTrue(tertiary.IsOrthogonalTo(secondary));
+			}
+		}
+
+		var testList = new List<Direction>();
+		for (var x = -5f; x <= 5f; x += 2.5f) {
+			for (var y = -5f; y <= 5f; y += 2.5f) {
+				for (var z = -5f; z <= 5f; z += 2.5f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		foreach (var primary in testList) {
+			if (primary == Direction.None) continue;
+			foreach (var initialSecondary in Direction.AllCardinals) {
+				foreach (var initialTertiary in Direction.AllCardinals) {
+					var secondary = initialSecondary;
+					var tertiary = initialTertiary;
+					Direction.OrthogonalizeAll(primary, ref secondary, ref tertiary);
+					AssertToleranceEquals(90f, primary ^ secondary, 1.5f);
+					AssertToleranceEquals(90f, primary ^ tertiary, 1.5f);
+					AssertToleranceEquals(90f, secondary ^ tertiary, 1.5f);
+					Assert.GreaterOrEqual(tertiary.Dot(initialTertiary), 0f);
+
+					var anyPairParallel = primary.IsApproximatelyParallelTo(initialSecondary, 4f)
+						|| primary.IsApproximatelyParallelTo(initialTertiary, 4f)
+						|| initialSecondary.IsApproximatelyParallelTo(initialTertiary, 4f);
+					if (!anyPairParallel) {
+						var fastSecondary = initialSecondary;
+						var fastTertiary = initialTertiary;
+						Direction.FastOrthogonalizeAll(primary, ref fastSecondary, ref fastTertiary);
+						AssertToleranceEquals(secondary, fastSecondary, 0.1f);
+						AssertToleranceEquals(tertiary, fastTertiary, 0.1f);
+					}
+				}
+			}
+		}
+		
+		{
+			var secondary = OneTwoNegThree;
+			var tertiary = OneTwoNegThree;
+			Direction.OrthogonalizeAll(Direction.None, ref secondary, ref tertiary);
+			Assert.AreEqual(OneTwoNegThree, secondary);
+			AssertToleranceEquals(secondary ^ tertiary, Angle.QuarterCircle, TestTolerance);
+
+			secondary = Direction.None;
+			tertiary = OneTwoNegThree;
+			Direction.OrthogonalizeAll(Direction.Forward, ref secondary, ref tertiary);
+			Assert.AreEqual(Direction.None, secondary);
+			Assert.AreEqual(OneTwoNegThree.OrthogonalizedAgainst(Direction.Forward), tertiary);
+			
+			secondary = OneTwoNegThree;
+			tertiary = Direction.None;
+			Direction.OrthogonalizeAll(Direction.Forward, ref secondary, ref tertiary);
+			Assert.AreEqual(OneTwoNegThree.OrthogonalizedAgainst(Direction.Forward), secondary);
+			Assert.AreEqual(Direction.None, tertiary);
 		}
 	}
 

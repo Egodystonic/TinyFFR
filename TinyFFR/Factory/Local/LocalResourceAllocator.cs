@@ -71,6 +71,9 @@ sealed class LocalResourceAllocator : IResourceAllocator, IDisposable {
 
 	public IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null) => new ArrayPoolBackedVector<T>(initialCapacity ?? ArrayPoolBackedVector<T>.DefaultInitialCapacity);
 	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>() => new ArrayPoolBackedMap<TKey, TValue>();
+	public IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>() => new ArrayPoolBackedSet<T>();
+	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache);
+	public unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate*<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache, cacheEvictionCallback, cacheEvictionCallbackArg);
 
 	public void Dispose() {
 		if (_isDisposed) return;

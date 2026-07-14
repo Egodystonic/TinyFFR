@@ -74,9 +74,9 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 			_skeletalAnimationKeyframeDataPool.Dispose();
 			_animationAndNodeNameBuffer.Dispose();
 			_assetFilePathBuffer.Dispose();
+			_fontLoader.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();
-			_fontLoader.Dispose();
 
 			if (_testMaterialTextures.IsValueCreated) {
 				_testMaterialTextures.Value.Dispose(disposeContainedResources: true);

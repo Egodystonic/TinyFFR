@@ -49,7 +49,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	nuint _prevHandleId = 0U;
 	bool _isDisposed = false;
 	
-	static ArrayPoolBackedLruCache<int, RenderedTextData> CreateNewTextCache(LocalFontLoader @this) => new(@this._config.MaxCachedTextMeshesPerFont, &TextCacheEvictionHandler, @this);
+	static ArrayPoolBackedLruCache<int, RenderedTextData> CreateNewTextCache(LocalFontLoader @this) => new(Int32.Min(@this._config.MaxCachedTextMeshesPerFont, 1), &TextCacheEvictionHandler, @this);
 	static void TextCacheEvictionHandler(object? localFontLoader, int textHash, RenderedTextData data) {
 		var @this = (LocalFontLoader) localFontLoader!;
 		@this._globals.StringPool.Return(data.Text);
@@ -784,7 +784,15 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	void Dispose(ResourceHandle<Font> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		var data = _activeFonts[handle];
-		
+
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		foreach (var penHandle in data.ActivePens.Keys) {
+			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(data.ActivePens[penHandle].Material);
+		}
+		foreach (var stringHandle in data.ActiveStrings.Keys) {
+			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(data.ActiveStrings[stringHandle].Mesh);
+		}
+
 		foreach (var penHandle in data.ActivePens.Keys) {
 			DisposePen(handle, penHandle, false);
 		}

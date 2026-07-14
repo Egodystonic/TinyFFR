@@ -22,4 +22,7 @@ public interface IResourceAllocator {
 
 	IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null);
 	IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>();
+	IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>();
+	IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache);
+	unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null);
 }

@@ -5,7 +5,7 @@ using System.Buffers;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
-sealed unsafe class ArrayPoolBackedLruCache<TKey, TValue> : IDisposable {
+sealed unsafe class ArrayPoolBackedLruCache<TKey, TValue> : IArrayPoolBackedLruCache<TKey, TValue> {
 	const int NullIndex = -1;
 
 	struct Node {

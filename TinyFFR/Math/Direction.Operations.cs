@@ -225,8 +225,28 @@ partial struct Direction :
 	
 	// TODO xmldoc explain that primary will never be altered, secondary will only be orthogonalized against primary, and tertiary will be orthogonalized against both
 	public static void OrthogonalizeAll(Direction primary, ref Direction secondary, ref Direction tertiary) {
-		secondary = secondary.OrthogonalizedAgainst(primary) ?? primary.AnyOrthogonal();
-		var dualOrthogonal = FromDualOrthogonalization(primary, secondary);
+		switch (primary == None, secondary == None, tertiary == None) {
+			case (false, false, false):
+				secondary = secondary.OrthogonalizedAgainst(primary) ?? primary.AnyOrthogonal();
+				var dualOrthogonal = FromDualOrthogonalization(primary, secondary);
+				tertiary = dualOrthogonal.Dot(tertiary) < 0f ? -dualOrthogonal : dualOrthogonal;
+				break;
+			case (true, false, false):
+				tertiary = tertiary.OrthogonalizedAgainst(secondary) ?? secondary.AnyOrthogonal();
+				break;
+			case (false, true, false):
+				tertiary = tertiary.OrthogonalizedAgainst(primary) ?? primary.AnyOrthogonal();
+				break;
+			case (false, false, true):
+				secondary = secondary.OrthogonalizedAgainst(primary) ?? primary.AnyOrthogonal();
+				break;
+			// default: Do nothing (only one or zero inputs is non-None, so nothing to orthogonalize)
+		}
+	}
+	// TODO xmldoc expects that no direction is None and that none are parallel/antiparallel
+	public static void FastOrthogonalizeAll(Direction primary, ref Direction secondary, ref Direction tertiary) {
+		secondary = secondary.FastOrthogonalizedAgainst(primary);
+		var dualOrthogonal = FastFromDualOrthogonalization(primary, secondary);
 		tertiary = dualOrthogonal.Dot(tertiary) < 0f ? -dualOrthogonal : dualOrthogonal;
 	}
 	#endregion
