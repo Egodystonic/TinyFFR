@@ -4,6 +4,8 @@
 using System;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;
@@ -20,11 +22,15 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	const string BuiltInBackdropNameSuffix = "'";
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
-	readonly VectorPool<ModelInstance> _modelInstanceVectorPool;
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<QuadInstance>> _cameraLockedQuadInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<TextInstance>> _cameraLockedTextInstanceMap = new();
+	readonly SetPool<ModelInstance> _modelInstanceSetPool;
+	readonly SetPool<QuadInstance> _quadInstanceSetPool;
+	readonly SetPool<TextInstance> _textInstanceSetPool;
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
-	readonly VectorPool<Light> _lightVectorPool;
+	readonly SetPool<Light> _lightSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<BuiltInSceneBackdrop, BackdropTexture> _loadedBuiltInBackdropTextures = new();
@@ -37,8 +43,10 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 
 		_globals = globals;
 		_assetLoader = assetLoader;
-		_modelInstanceVectorPool = new(zeroMemoryOnReturn: false);
-		_lightVectorPool = new(zeroMemoryOnReturn: false);
+		_modelInstanceSetPool = new(zeroMemoryOnReturn: false);
+		_quadInstanceSetPool = new(zeroMemoryOnReturn: false);
+		_textInstanceSetPool = new(zeroMemoryOnReturn: false);
+		_lightSetPool = new(zeroMemoryOnReturn: false);
 	}
 
 	public Scene CreateScene(in SceneCreationConfig config) {
@@ -48,8 +56,10 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		).ThrowIfFailure();
 
 		_activeSceneHandles.Add(handle);
-		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
-		_lightMap.Add(handle, _lightVectorPool.Rent());
+		_modelInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
+		_cameraLockedQuadInstanceMap.Add(handle, _quadInstanceSetPool.Rent());
+		_cameraLockedTextInstanceMap.Add(handle, _textInstanceSetPool.Rent());
+		_lightMap.Add(handle, _lightSetPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
@@ -128,7 +138,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
 			var h = s.GetHandleWithoutDisposeCheck();
 			lsb.ThrowIfThisOrHandleIsDisposed(h);
-			return lsb._modelInstanceMap[h][index];
+			return lsb._modelInstanceMap[h].GetItemAtIndex(index);
 		}
 
 		return new IndirectEnumerable<Scene, ModelInstance>(
@@ -217,7 +227,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
 			var h = s.GetHandleWithoutDisposeCheck();
 			lsb.ThrowIfThisOrHandleIsDisposed(h);
-			return lsb._lightMap[h][index];
+			return lsb._lightMap[h].GetItemAtIndex(index);
 		}
 
 		return new IndirectEnumerable<Scene, Light>(
@@ -360,6 +370,18 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		if (curBackdropData.BackdropTex is { } backdropTex) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), backdropTex);
 	}
 	#endregion
+	
+	#region Camera-Locked Objects
+	public void PrepareCameraLockedObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
+		foreach (var quad in _cameraLockedQuadInstanceMap[handle]) {
+			quad.
+		}
+		
+		foreach (var text in _cameraLockedTextInstanceMap[handle]) {
+			text.SetTransform(
+		}
+	}
+	#endregion
 
 	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -375,6 +397,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			}
 			
 			modelInstanceVector.Clear();
+			_cameraLockedQuadInstanceMap[handle].Clear();
+			_cameraLockedTextInstanceMap[handle].Clear();
 		}
 		if (includeLights) {
 			var lightInstanceVector = _lightMap[handle];
@@ -514,7 +538,11 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			while (_activeSceneHandles.Count > 0) Dispose(_activeSceneHandles[^1]);
 
 			_modelInstanceMap.Dispose();
-			_modelInstanceVectorPool.Dispose();
+			_cameraLockedQuadInstanceMap.Dispose();
+			_cameraLockedTextInstanceMap.Dispose();
+			_modelInstanceSetPool.Dispose();
+			_quadInstanceSetPool.Dispose();
+			_textInstanceSetPool.Dispose();
 			
 			foreach (var builtInBackdropTex in _loadedBuiltInBackdropTextures.Values) {
 				builtInBackdropTex.Dispose();
@@ -523,7 +551,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			_loadedBuiltInBackdropTextures.Dispose();
 			_backdropMap.Dispose();
 			_lightMap.Dispose();
-			_lightVectorPool.Dispose();
+			_lightSetPool.Dispose();
 			_shadowQualityActivePresetMap.Dispose();
 
 			_activeSceneHandles.Dispose();
@@ -547,10 +575,14 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		
 		_backdropMap.Remove(handle);
 
-		_modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
+		_modelInstanceSetPool.Return(_modelInstanceMap[handle]);
 		_modelInstanceMap.Remove(handle);
+		_quadInstanceSetPool.Return(_cameraLockedQuadInstanceMap[handle]);
+		_cameraLockedQuadInstanceMap.Remove(handle);
+		_textInstanceSetPool.Return(_cameraLockedTextInstanceMap[handle]);
+		_cameraLockedTextInstanceMap.Remove(handle);
 
-		_lightVectorPool.Return(_lightMap[handle]);
+		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
 		
 		_activeSceneHandles.Remove(handle);

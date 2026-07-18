@@ -3,6 +3,8 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using static Egodystonic.TinyFFR.World.Scene;

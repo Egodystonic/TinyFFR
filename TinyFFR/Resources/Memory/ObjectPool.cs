@@ -107,3 +107,27 @@ sealed unsafe class MapPool<TKey, TValue> : IDisposable {
 
 	public void Dispose() => _objectPool.Dispose();
 }
+
+sealed unsafe class SetPool<T> : IDisposable {
+	readonly bool _zeroMemoryOnReturn;
+	readonly ObjectPool<ArrayPoolBackedSet<T>> _objectPool;
+
+	public SetPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<SetPool<T>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewSet, initialPoolCount) { }
+
+	public SetPool(bool zeroMemoryOnReturn, delegate*<ArrayPoolBackedSet<T>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<SetPool<T>>.DefaultInitialCapacity) {
+		_zeroMemoryOnReturn = zeroMemoryOnReturn;
+		_objectPool = new(newItemCreationFunc, initialPoolCount);
+	}
+
+	static ArrayPoolBackedSet<T> CreateNewSet() => new();
+
+	public ArrayPoolBackedSet<T> Rent() => _objectPool.Rent();
+
+	public void Return(ArrayPoolBackedSet<T> item) {
+		if (_zeroMemoryOnReturn) item.Clear();
+		else item.ClearWithoutZeroingMemory();
+		_objectPool.Return(item);
+	}
+
+	public void Dispose() => _objectPool.Dispose();
+}

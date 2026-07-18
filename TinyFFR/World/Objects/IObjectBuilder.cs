@@ -127,6 +127,27 @@ public interface IObjectBuilder {
 	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
 	}
+	
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedAxis = null, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateCameraLockedQuadInstance(
+			mesh,
+			material,
+			lockedAxis ?? Direction.None,
+			new ModelInstanceCreationConfig {
+				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(
+					position ?? Location.Origin, 
+					size ?? XYPair<float>.One, 
+					Direction.Forward, 
+					Direction.Up, 
+					positionAnchor
+				),
+				Name = name
+			}
+		);
+	}
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedAxis, in ModelInstanceCreationConfig config) {
+		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedAxis);
+	}
 	#endregion
 	
 	#region MutableGridMesh
