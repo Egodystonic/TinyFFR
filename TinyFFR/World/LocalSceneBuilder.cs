@@ -23,11 +23,11 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<QuadInstance>> _cameraLockedQuadInstanceMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<TextInstance>> _cameraLockedTextInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<CameraLockedQuadInstance>> _cameraLockedQuadInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<CameraLockedTextInstance>> _cameraLockedTextInstanceMap = new();
 	readonly SetPool<ModelInstance> _modelInstanceSetPool;
-	readonly SetPool<QuadInstance> _quadInstanceSetPool;
-	readonly SetPool<TextInstance> _textInstanceSetPool;
+	readonly SetPool<CameraLockedQuadInstance> _quadInstanceSetPool;
+	readonly SetPool<CameraLockedTextInstance> _textInstanceSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
 	readonly SetPool<Light> _lightSetPool;
@@ -107,7 +107,23 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			modelInstance.Handle
 		).ThrowIfFailure();
 
+		EvictFromCameraLockedSets(handle, modelInstance);
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+	}
+
+	void EvictFromCameraLockedSets(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		var lockedQuadSet = _cameraLockedQuadInstanceMap[handle];
+		foreach (var lockedQuad in lockedQuadSet) {
+			if (lockedQuad.UnderlyingQuadInstance.UnderlyingModelInstance != modelInstance) continue;
+			lockedQuadSet.Remove(lockedQuad);
+			break;
+		}
+		var lockedTextSet = _cameraLockedTextInstanceMap[handle];
+		foreach (var lockedText in lockedTextSet) {
+			if (lockedText.UnderlyingTextInstance.UnderlyingModelInstance != modelInstance) continue;
+			lockedTextSet.Remove(lockedText);
+			break;
+		}
 	}
 
 	public void Add(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup) {
@@ -372,14 +388,92 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	#endregion
 	
 	#region Camera-Locked Objects
+	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var instanceSet = _cameraLockedQuadInstanceMap[handle];
+		if (instanceSet.Contains(quad)) return;
+
+		Add(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
+		instanceSet.Add(quad);
+	}
+	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		// Eviction from the camera-locked set happens in Remove(handle, ModelInstance)
+		Remove(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
+	}
+
+	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var instanceSet = _cameraLockedTextInstanceMap[handle];
+		if (instanceSet.Contains(text)) return;
+
+		Add(handle, text.UnderlyingTextInstance.UnderlyingModelInstance);
+		instanceSet.Add(text);
+	}
+	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		// Eviction from the camera-locked set happens in Remove(handle, ModelInstance)
+		Remove(handle, text.UnderlyingTextInstance.UnderlyingModelInstance);
+	}
+
 	public void PrepareCameraLockedObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
-		foreach (var quad in _cameraLockedQuadInstanceMap[handle]) {
-			quad.
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var lockedQuadSet = _cameraLockedQuadInstanceMap[handle];
+		var lockedTextSet = _cameraLockedTextInstanceMap[handle];
+		if (lockedQuadSet.Count == 0 && lockedTextSet.Count == 0) return;
+
+		var cameraPosition = targetCamera.Position;
+		var cameraUpDirection = targetCamera.UpDirection;
+
+		foreach (var quad in lockedQuadSet) {
+			var curTransform = quad.UnderlyingQuadInstance.Transform;
+			var anchorOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), quad.PositionAnchor);
+			if (!TryCalculateCameraLockedTransform(curTransform, anchorOffset, Direction.Forward, quad.LockedAxis, cameraPosition, cameraUpDirection, out var newTransform)) continue;
+			quad.UnderlyingQuadInstance.SetTransform(newTransform);
 		}
-		
-		foreach (var text in _cameraLockedTextInstanceMap[handle]) {
-			text.SetTransform(
+
+		foreach (var text in lockedTextSet) {
+			var curTransform = text.UnderlyingTextInstance.Transform;
+			var @string = text.UnderlyingTextInstance.String;
+			var anchorOffset = @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), text.PositionAnchor);
+			if (!TryCalculateCameraLockedTransform(curTransform, anchorOffset, Direction.Backward, text.LockedAxis, cameraPosition, cameraUpDirection, out var newTransform)) continue;
+			text.UnderlyingTextInstance.SetTransform(newTransform);
 		}
+	}
+
+	// The invariant "Translation == anchor world position + (anchorOffsetMeshSpace * Rotation)" is established
+	// by the creation-time transform calculators and re-established here every tick; the camera-locked wrapper
+	// structs expose no rotation/raw-transform setters, so the stored transform is always component-form
+	internal static bool TryCalculateCameraLockedTransform(in Transform currentTransform, Vect anchorOffsetMeshSpace, Direction canonicalFacingDirection, Direction lockedAxis, Location cameraPosition, Direction cameraUpDirection, out Transform result) {
+		var anchorPosition = currentTransform.Translation - anchorOffsetMeshSpace * currentTransform.Rotation;
+		var directionToCamera = anchorPosition.AsLocation().DirectionTo(cameraPosition);
+		if (directionToCamera == Direction.None) {
+			result = currentTransform;
+			return false;
+		}
+
+		Direction facingDirection, uprightDirection;
+		if (lockedAxis == Direction.None) {
+			facingDirection = directionToCamera;
+			uprightDirection = cameraUpDirection.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal();
+		}
+		else {
+			var orthogonalizedFacing = directionToCamera.OrthogonalizedAgainst(lockedAxis);
+			if (orthogonalizedFacing is null) {
+				result = currentTransform;
+				return false;
+			}
+			facingDirection = orthogonalizedFacing.Value;
+			uprightDirection = lockedAxis;
+		}
+
+		var rotation = Rotation.FromStartAndEndOrientation(canonicalFacingDirection, Direction.Up, facingDirection, uprightDirection);
+		result = new Transform(
+			translation: anchorPosition + anchorOffsetMeshSpace * rotation,
+			rotation: rotation,
+			scaling: currentTransform.Scaling
+		);
+		return true;
 	}
 	#endregion
 

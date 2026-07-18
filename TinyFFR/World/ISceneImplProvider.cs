@@ -21,6 +21,12 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void Add<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight>;
 	void Remove<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight>;
 
+	void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad);
+	void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad);
+
+	void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text);
+	void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text);
+
 	void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation);
 	void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation);
 	void SetBackdrop(ResourceHandle<Scene> handle, ColorVect color, float indirectLightingIntensity);

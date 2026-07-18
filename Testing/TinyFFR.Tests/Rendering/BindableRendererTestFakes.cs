@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Resources;
@@ -255,6 +257,10 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void Remove(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup) { }
 	public void Add<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight> { }
 	public void Remove<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight> { }
+	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) { }
+	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) { }
+	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text) { }
+	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) { }
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) { }
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) { }

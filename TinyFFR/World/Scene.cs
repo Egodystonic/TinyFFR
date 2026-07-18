@@ -85,6 +85,16 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Add(TextInstance text) => Add(text.UnderlyingModelInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(TextInstance text) => Remove(text.UnderlyingModelInstance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(CameraLockedQuadInstance quad) => Implementation.Add(_handle, quad);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(CameraLockedQuadInstance quad) => Implementation.Remove(_handle, quad);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(CameraLockedTextInstance text) => Implementation.Add(_handle, text);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RemoveAll(bool includeModelInstances = true, bool includeLights = true) => Implementation.RemoveAll(_handle, includeModelInstances, includeLights);

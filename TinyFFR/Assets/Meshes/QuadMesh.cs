@@ -18,16 +18,19 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 
 	public static Transform CalculateTransformForStandardQuadMesh(Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
 		// Quad meshes are built as 1x1 squares on the XY plane facing forward with up being the upright direction by the IMeshBuilder default implementation
-		
+
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Forward, Direction.Up, facingDirection, uprightDirection ?? Direction.Up);
-		
-		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownLeft, positionAnchor) * -size;
-		
+
 		return new Transform(
-			translation: (new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f) * rotation) + position.AsVect(),
+			translation: (CalculateAnchorOffsetForStandardQuadMesh(size, positionAnchor) * rotation) + position.AsVect(),
 			rotation: rotation,
 			scaling: new Vect(size.X, size.Y, 1f)
 		);
+	}
+
+	public static Vect CalculateAnchorOffsetForStandardQuadMesh(XYPair<float> size, Orientation2D positionAnchor) {
+		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownLeft, positionAnchor) * -size;
+		return new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,10 +164,12 @@ public readonly struct QuadInstance : IDisposable, IStringSpanNameEnabled, IEqua
 public readonly struct CameraLockedQuadInstance : IDisposable, IStringSpanNameEnabled, IEquatable<CameraLockedQuadInstance>, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject {
 	public QuadInstance UnderlyingQuadInstance { get; }
 	public Direction LockedAxis { get; }
+	public Orientation2D PositionAnchor { get; }
 
-	public CameraLockedQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedAxis) {
+	public CameraLockedQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedAxis, Orientation2D positionAnchor) {
 		UnderlyingQuadInstance = underlyingQuadInstance;
 		LockedAxis = lockedAxis;
+		PositionAnchor = positionAnchor;
 	}
 	
 	public Location Position {

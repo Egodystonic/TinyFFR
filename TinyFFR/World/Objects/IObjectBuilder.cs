@@ -133,20 +133,21 @@ public interface IObjectBuilder {
 			mesh,
 			material,
 			lockedAxis ?? Direction.None,
+			positionAnchor,
 			new ModelInstanceCreationConfig {
 				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(
-					position ?? Location.Origin, 
-					size ?? XYPair<float>.One, 
-					Direction.Forward, 
-					Direction.Up, 
+					position ?? Location.Origin,
+					size ?? XYPair<float>.One,
+					Direction.Forward,
+					Direction.Up,
 					positionAnchor
 				),
 				Name = name
 			}
 		);
 	}
-	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedAxis, in ModelInstanceCreationConfig config) {
-		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedAxis);
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedAxis, Orientation2D positionAnchor, in ModelInstanceCreationConfig config) {
+		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedAxis, positionAnchor);
 	}
 	#endregion
 	
@@ -179,6 +180,22 @@ public interface IObjectBuilder {
 	TextInstance CreateTextInstance(FontPen pen, FontString @string, in ModelInstanceCreationConfig config) {
 		var underlyingInstance = CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config);
 		return new TextInstance(underlyingInstance, pen, @string);
+	}
+
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? lockedAxis = null, Orientation2D positionAnchor = Orientation2D.None, bool rescaleHeightAccordingToLineCount = true, ReadOnlySpan<char> name = default) {
+		return CreateCameraLockedTextInstance(
+			pen,
+			@string,
+			lockedAxis ?? Direction.None,
+			positionAnchor,
+			new ModelInstanceCreationConfig {
+				Name = name,
+				InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, Direction.Backward, textInstanceHeight, textInstanceWidth, Direction.Up, positionAnchor, rescaleHeightAccordingToLineCount)
+			}
+		);
+	}
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedAxis, Orientation2D positionAnchor, in ModelInstanceCreationConfig config) {
+		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, in config), lockedAxis, positionAnchor);
 	}
 	#endregion
 }

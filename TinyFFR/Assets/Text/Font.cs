@@ -57,6 +57,11 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 		return Implementation.GetTextInstanceTransform(_handle, textInstanceWidth, textInstanceHeight, stringSize, position, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor, rescaleHeightAccordingToLineCount);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect GetTextInstanceAnchorOffset(XYPair<float> stringSize, XYPair<float> scaling, Orientation2D positionAnchor) {
+		return Implementation.GetTextInstanceAnchorOffset(_handle, stringSize, scaling, positionAnchor);
+	}
+
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
