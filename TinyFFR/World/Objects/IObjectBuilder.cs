@@ -114,10 +114,10 @@ public interface IObjectBuilder {
 			material,
 			new ModelInstanceCreationConfig {
 				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(
-					position ?? Location.Origin, 
-					size ?? XYPair<float>.One, 
-					facingDirection ?? Direction.Forward, 
-					uprightDirection, 
+					position ?? Location.Origin,
+					size ?? XYPair<float>.One,
+					facingDirection ?? Direction.Backward,
+					uprightDirection,
 					positionAnchor
 				),
 				Name = name
@@ -126,6 +126,29 @@ public interface IObjectBuilder {
 	}
 	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
+	}
+	
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateCameraLockedQuadInstance(
+			mesh,
+			material,
+			lockedUprightDirection ?? Direction.None,
+			positionAnchor,
+			new ModelInstanceCreationConfig {
+				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(
+					position ?? Location.Origin,
+					size ?? XYPair<float>.One,
+					Direction.Backward,
+					Direction.Up,
+					positionAnchor
+				),
+				Name = name
+			}
+		);
+	}
+	// TODO xmldoc lockedUprightDirection can be None
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedUprightDirection, Orientation2D positionAnchor, in ModelInstanceCreationConfig config) {
+		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor);
 	}
 	#endregion
 	
@@ -158,6 +181,23 @@ public interface IObjectBuilder {
 	TextInstance CreateTextInstance(FontPen pen, FontString @string, in ModelInstanceCreationConfig config) {
 		var underlyingInstance = CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config);
 		return new TextInstance(underlyingInstance, pen, @string);
+	}
+
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, bool rescaleHeightAccordingToLineCount = true, ReadOnlySpan<char> name = default) {
+		return CreateCameraLockedTextInstance(
+			pen,
+			@string,
+			lockedUprightDirection ?? Direction.None,
+			positionAnchor,
+			new ModelInstanceCreationConfig {
+				Name = name,
+				InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, Direction.Backward, textInstanceHeight, textInstanceWidth, Direction.Up, positionAnchor, rescaleHeightAccordingToLineCount)
+			}
+		);
+	}
+	// TODO xmldoc lockedUprightDirection can be None
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, Orientation2D positionAnchor, in ModelInstanceCreationConfig config) {
+		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, in config), lockedUprightDirection, positionAnchor);
 	}
 	#endregion
 }

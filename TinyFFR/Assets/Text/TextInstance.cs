@@ -3,12 +3,11 @@
 
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
-using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
-public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEquatable<TextInstance>, ITransformedSceneObject {
+public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, ITransformedSceneObject {
 	public ModelInstance UnderlyingModelInstance { get; }
 	public FontPen Pen {
 		get => UnderlyingModelInstance.Implementation.GetTextInstancePen(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
@@ -68,7 +67,7 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
-	public TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string) {
+	internal TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string) {
 		UnderlyingModelInstance = underlyingModelInstance;
 		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string);
 	}

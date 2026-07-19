@@ -4,6 +4,8 @@
 using System;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;
@@ -20,11 +22,15 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	const string BuiltInBackdropNameSuffix = "'";
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
-	readonly VectorPool<ModelInstance> _modelInstanceVectorPool;
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedQuadInstance>> _camLockedQuadInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedTextInstance>> _camLockedTextInstanceMap = new();
+	readonly SetPool<ModelInstance> _modelInstanceSetPool;
+	readonly MapPool<ResourceHandle<ModelInstance>, CameraLockedQuadInstance> _camLockedQuadMapPool;
+	readonly MapPool<ResourceHandle<ModelInstance>, CameraLockedTextInstance> _camLockedTextMapPool;
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
-	readonly VectorPool<Light> _lightVectorPool;
+	readonly SetPool<Light> _lightSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<BuiltInSceneBackdrop, BackdropTexture> _loadedBuiltInBackdropTextures = new();
@@ -37,8 +43,10 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 
 		_globals = globals;
 		_assetLoader = assetLoader;
-		_modelInstanceVectorPool = new(zeroMemoryOnReturn: false);
-		_lightVectorPool = new(zeroMemoryOnReturn: false);
+		_modelInstanceSetPool = new(zeroMemoryOnReturn: false);
+		_camLockedQuadMapPool = new(zeroMemoryOnReturn: false);
+		_camLockedTextMapPool = new(zeroMemoryOnReturn: false);
+		_lightSetPool = new(zeroMemoryOnReturn: false);
 	}
 
 	public Scene CreateScene(in SceneCreationConfig config) {
@@ -48,8 +56,10 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		).ThrowIfFailure();
 
 		_activeSceneHandles.Add(handle);
-		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
-		_lightMap.Add(handle, _lightVectorPool.Rent());
+		_modelInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
+		_camLockedQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
+		_camLockedTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
+		_lightMap.Add(handle, _lightSetPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
@@ -91,6 +101,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _modelInstanceMap[handle];
 		if (!instanceVector.Remove(modelInstance)) return;
+		_camLockedQuadInstanceMap[handle].Remove(modelInstance.Handle);
+		_camLockedTextInstanceMap[handle].Remove(modelInstance.Handle);
 
 		RemoveModelInstanceFromScene(
 			handle,
@@ -128,7 +140,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
 			var h = s.GetHandleWithoutDisposeCheck();
 			lsb.ThrowIfThisOrHandleIsDisposed(h);
-			return lsb._modelInstanceMap[h][index];
+			return lsb._modelInstanceMap[h].GetItemAtIndex(index);
 		}
 
 		return new IndirectEnumerable<Scene, ModelInstance>(
@@ -217,7 +229,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
 			var h = s.GetHandleWithoutDisposeCheck();
 			lsb.ThrowIfThisOrHandleIsDisposed(h);
-			return lsb._lightMap[h][index];
+			return lsb._lightMap[h].GetItemAtIndex(index);
 		}
 
 		return new IndirectEnumerable<Scene, Light>(
@@ -360,6 +372,94 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		if (curBackdropData.BackdropTex is { } backdropTex) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), backdropTex);
 	}
 	#endregion
+	
+	#region Camera-Locked Objects
+	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var modelInstance = quad.UnderlyingQuadInstance.UnderlyingModelInstance;
+		if (_camLockedQuadInstanceMap[handle].TryAdd(modelInstance.Handle, quad)) Add(handle, modelInstance);
+	}
+	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
+		Remove(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
+	}
+
+	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var modelInstance = text.UnderlyingTextInstance.UnderlyingModelInstance;
+		if (_camLockedTextInstanceMap[handle].TryAdd(modelInstance.Handle, text)) Add(handle, modelInstance);
+	}
+	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
+		Remove(handle, text.UnderlyingTextInstance.UnderlyingModelInstance);
+	}
+
+	public void PrepareCameraLockedObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		var cameraPosition = targetCamera.Position;
+		var cameraUpDirection = targetCamera.UpDirection;
+		
+		static bool TryGetSphericalCameraLockedTransform(in Transform currentTransform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction cameraUpDirection, out Transform result) {
+			var anchorPosition = (currentTransform.Translation - meshSpaceAnchorOffset * currentTransform.Rotation).AsLocation();
+			var facingDirection = anchorPosition.DirectionTo(cameraPosition);
+			if (facingDirection == Direction.None) {
+				result = currentTransform;
+				return false;
+			}
+
+			var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, cameraUpDirection);
+			result = new Transform(
+				translation: anchorPosition.AsVect() + meshSpaceAnchorOffset * rotation,
+				rotation: rotation,
+				scaling: currentTransform.Scaling
+			);
+			return true;
+		}
+		
+		static bool TryGetCylindricalCameraLockedTransform(in Transform currentTransform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction lockedUpDirection, out Transform result) {
+			var anchorPosition = (currentTransform.Translation - meshSpaceAnchorOffset * currentTransform.Rotation).AsLocation();
+			var facingDirection = anchorPosition.DirectionTo(cameraPosition).OrthogonalizedAgainst(lockedUpDirection);
+			if (facingDirection == Direction.None || facingDirection == null) {
+				result = currentTransform;
+				return false;
+			}
+
+			var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection.Value, lockedUpDirection);
+			result = new Transform(
+				translation: anchorPosition.AsVect() + meshSpaceAnchorOffset * rotation,
+				rotation: rotation,
+				scaling: currentTransform.Scaling
+			);
+			return true;
+		}
+
+		foreach (var quad in _camLockedQuadInstanceMap[handle].Values) {
+			var curTransform = quad.UnderlyingQuadInstance.Transform;
+			var anchorOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), quad.PositionAnchor);
+			Transform newTransform;
+			if (quad.LockedUprightDirection == Direction.None) {
+				if (!TryGetSphericalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, cameraUpDirection, out newTransform)) continue;
+			}
+			else {
+				if (!TryGetCylindricalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, quad.LockedUprightDirection, out newTransform)) continue;
+			}
+			quad.UnderlyingQuadInstance.SetTransform(newTransform);
+		}
+
+		foreach (var text in _camLockedTextInstanceMap[handle].Values) {
+			var curTransform = text.UnderlyingTextInstance.Transform;
+			var @string = text.UnderlyingTextInstance.String;
+			var anchorOffset = @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), text.PositionAnchor);
+			Transform newTransform;
+			if (text.LockedUprightDirection == Direction.None) {
+				if (!TryGetSphericalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, cameraUpDirection, out newTransform)) continue;
+			}
+			else {
+				if (!TryGetCylindricalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, text.LockedUprightDirection, out newTransform)) continue;
+			}
+			text.UnderlyingTextInstance.SetTransform(newTransform);
+		}
+	}
+	#endregion
 
 	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -375,7 +475,10 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			}
 			
 			modelInstanceVector.Clear();
+			_camLockedQuadInstanceMap[handle].Clear();
+			_camLockedTextInstanceMap[handle].Clear();
 		}
+		
 		if (includeLights) {
 			var lightInstanceVector = _lightMap[handle];
 			foreach (var lightInstance in lightInstanceVector) {
@@ -399,9 +502,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			
 			lightInstanceVector.Clear();
 		}
-
-		
-
 	}
 
 	#region Native Methods
@@ -514,7 +614,11 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			while (_activeSceneHandles.Count > 0) Dispose(_activeSceneHandles[^1]);
 
 			_modelInstanceMap.Dispose();
-			_modelInstanceVectorPool.Dispose();
+			_camLockedQuadInstanceMap.Dispose();
+			_camLockedTextInstanceMap.Dispose();
+			_modelInstanceSetPool.Dispose();
+			_camLockedQuadMapPool.Dispose();
+			_camLockedTextMapPool.Dispose();
 			
 			foreach (var builtInBackdropTex in _loadedBuiltInBackdropTextures.Values) {
 				builtInBackdropTex.Dispose();
@@ -523,7 +627,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			_loadedBuiltInBackdropTextures.Dispose();
 			_backdropMap.Dispose();
 			_lightMap.Dispose();
-			_lightVectorPool.Dispose();
+			_lightSetPool.Dispose();
 			_shadowQualityActivePresetMap.Dispose();
 
 			_activeSceneHandles.Dispose();
@@ -547,10 +651,14 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		
 		_backdropMap.Remove(handle);
 
-		_modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
+		_modelInstanceSetPool.Return(_modelInstanceMap[handle]);
 		_modelInstanceMap.Remove(handle);
+		_camLockedQuadMapPool.Return(_camLockedQuadInstanceMap[handle]);
+		_camLockedQuadInstanceMap.Remove(handle);
+		_camLockedTextMapPool.Return(_camLockedTextInstanceMap[handle]);
+		_camLockedTextInstanceMap.Remove(handle);
 
-		_lightVectorPool.Return(_lightMap[handle]);
+		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
 		
 		_activeSceneHandles.Remove(handle);

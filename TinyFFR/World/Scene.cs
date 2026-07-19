@@ -72,19 +72,29 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Remove<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Remove(_handle, light);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(QuadInstance quadInstance) => Add(quadInstance.UnderlyingModelInstance);
+	public void Add(QuadInstance quad) => Add(quad.UnderlyingModelInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Remove(QuadInstance quadInstance) => Remove(quadInstance.UnderlyingModelInstance);
+	public void Remove(QuadInstance quad) => Remove(quad.UnderlyingModelInstance);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(MutableGridInstance quadInstance) => Add(quadInstance.UnderlyingModelInstance);
+	public void Add(MutableGridInstance grid) => Add(grid.UnderlyingModelInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Remove(MutableGridInstance quadInstance) => Remove(quadInstance.UnderlyingModelInstance);
+	public void Remove(MutableGridInstance grid) => Remove(grid.UnderlyingModelInstance);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(TextInstance quadInstance) => Add(quadInstance.UnderlyingModelInstance);
+	public void Add(TextInstance text) => Add(text.UnderlyingModelInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Remove(TextInstance quadInstance) => Remove(quadInstance.UnderlyingModelInstance);
+	public void Remove(TextInstance text) => Remove(text.UnderlyingModelInstance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(CameraLockedQuadInstance quad) => Implementation.Add(_handle, quad);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(CameraLockedQuadInstance quad) => Implementation.Remove(_handle, quad);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(CameraLockedTextInstance text) => Implementation.Add(_handle, text);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RemoveAll(bool includeModelInstances = true, bool includeLights = true) => Implementation.RemoveAll(_handle, includeModelInstances, includeLights);

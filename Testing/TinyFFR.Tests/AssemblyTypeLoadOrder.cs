@@ -52,6 +52,13 @@ sealed class AssemblyTypeLoadOrderAnchor {
 // Second stage: types that themselves embed a resource struct (the fragile shape described above) load
 // safely here because the first anchor has already forced their embedded resource types to load.
 sealed class AssemblyTypeLoadOrderAnchorStage2 {
+	QuadInstance _quadInstance;
 	TextInstance _textInstance;
+}
+
+// Third stage: types embedding the stage-2 types (one nesting level deeper).
+sealed class AssemblyTypeLoadOrderAnchorStage3 {
+	CameraLockedQuadInstance _cameraLockedQuadInstance;
+	CameraLockedTextInstance _cameraLockedTextInstance;
 }
 #pragma warning restore CS0169

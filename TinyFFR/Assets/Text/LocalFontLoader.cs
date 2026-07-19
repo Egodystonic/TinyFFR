@@ -626,22 +626,28 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		};
 		
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection, enforceOrthogonality: false);
-		var horizontalTranslation = (Direction.Left * rotation) * positionAnchor.GetHorizontalComponent() switch {
+
+		return new Transform(
+			translation: position.AsVect() + GetTextInstanceAnchorOffset(handle, stringSize, scaling, positionAnchor) * rotation,
+			rotation: rotation,
+			scaling: new Vect(scaling.X, scaling.Y, 1f)
+		);
+	}
+
+	public Vect GetTextInstanceAnchorOffset(ResourceHandle<Font> handle, XYPair<float> stringSize, XYPair<float> scaling, Orientation2D positionAnchor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		var horizontalOffset = Direction.Left * positionAnchor.GetHorizontalComponent() switch {
 			HorizontalOrientation2D.Right => stringSize.X * scaling.X,
 			HorizontalOrientation2D.Left => 0f,
 			_ => stringSize.X * scaling.X * 0.5f
 		};
-		var verticalTranslation = (Direction.Down * rotation) * positionAnchor.GetVerticalComponent() switch {
+		var verticalOffset = Direction.Down * positionAnchor.GetVerticalComponent() switch {
 			VerticalOrientation2D.Up => fontData.Ascent * scaling.Y,
 			VerticalOrientation2D.Down => (fontData.Ascent - stringSize.Y) * scaling.Y,
 			_ => (fontData.Ascent - fontData.Descent - stringSize.Y) * 0.5f * scaling.Y
 		};
-		
-		return new Transform(
-			translation: position.AsVect() + horizontalTranslation + verticalTranslation,
-			rotation: rotation,
-			scaling: new Vect(scaling.X, scaling.Y, 1f)
-		);
+		return horizontalOffset + verticalOffset;
 	}
 	
 	public string GetNameAsNewStringObject(ResourceHandle<Font> handle) {

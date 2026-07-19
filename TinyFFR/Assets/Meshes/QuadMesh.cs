@@ -17,17 +17,18 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 	}
 
 	public static Transform CalculateTransformForStandardQuadMesh(Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		// Quad meshes are built as 1x1 squares on the XY plane facing forward with up being the upright direction by the IMeshBuilder default implementation
-		
-		var rotation = Rotation.FromStartAndEndOrientation(Direction.Forward, Direction.Up, facingDirection, uprightDirection ?? Direction.Up);
-		
-		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownLeft, positionAnchor) * -size;
-		
+		// Quad meshes are built as 1x1 squares on the XY plane facing backward with up being the upright direction by the IMeshBuilder default implementation
+		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection ?? Direction.Up);
 		return new Transform(
-			translation: (new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f) * rotation) + position.AsVect(),
+			translation: (CalculateAnchorOffsetForStandardQuadMesh(size, positionAnchor) * rotation) + position.AsVect(),
 			rotation: rotation,
 			scaling: new Vect(size.X, size.Y, 1f)
 		);
+	}
+
+	public static Vect CalculateAnchorOffsetForStandardQuadMesh(XYPair<float> size, Orientation2D positionAnchor) {
+		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownRight, positionAnchor) * -size;
+		return new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -54,10 +55,12 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 	#endregion
 }
 
-public readonly struct QuadInstance : IDisposable, IStringSpanNameEnabled, IEquatable<QuadInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
+public interface IQuadInstance : IDisposable, IStringSpanNameEnabled;
+
+public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
 	public ModelInstance UnderlyingModelInstance { get; }
 
-	public QuadInstance(ModelInstance underlyingModelInstance) {
+	internal QuadInstance(ModelInstance underlyingModelInstance) {
 		UnderlyingModelInstance = underlyingModelInstance;
 	}
 	
@@ -155,5 +158,87 @@ public readonly struct QuadInstance : IDisposable, IStringSpanNameEnabled, IEqua
 	public override int GetHashCode() => UnderlyingModelInstance.GetHashCode();
 	public static bool operator ==(QuadInstance left, QuadInstance right) => left.Equals(right);
 	public static bool operator !=(QuadInstance left, QuadInstance right) => !left.Equals(right);
+	#endregion
+}
+
+public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<CameraLockedQuadInstance>, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject {
+	public QuadInstance UnderlyingQuadInstance { get; }
+	public Direction LockedUprightDirection { get; }
+	public Orientation2D PositionAnchor { get; }
+
+	internal CameraLockedQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedUprightDirection, Orientation2D positionAnchor) {
+		UnderlyingQuadInstance = underlyingQuadInstance;
+		LockedUprightDirection = lockedUprightDirection;
+		PositionAnchor = positionAnchor;
+	}
+	
+	public Location Position {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingQuadInstance.Position;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingQuadInstance.SetPosition(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(Location position) => Position = position;
+
+	public Vect Scaling {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingQuadInstance.Scaling;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingQuadInstance.SetScaling(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetScaling(Vect scaling) => Scaling = scaling;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+	
+	public Material? Material {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingQuadInstance.Material;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingQuadInstance.SetMaterial(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetMaterial(Material? material) => Material = material;
+
+	public MaterialEffectController? MaterialEffects {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingQuadInstance.MaterialEffects;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => UnderlyingQuadInstance.GetNameAsNewStringObject();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => UnderlyingQuadInstance.GetNameLength();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => UnderlyingQuadInstance.CopyName(destinationBuffer);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void MoveBy(Vect translation) => UnderlyingQuadInstance.MoveBy(translation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(float scalar) => UnderlyingQuadInstance.ScaleBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(Vect vect) => UnderlyingQuadInstance.ScaleBy(vect);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(float scalar) => UnderlyingQuadInstance.AdjustScaleBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(Vect vect) => UnderlyingQuadInstance.AdjustScaleBy(vect);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetNullMaterialBaseColor(ColorVect baseColor) => UnderlyingQuadInstance.SetNullMaterialBaseColor(baseColor);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => UnderlyingQuadInstance.SetNullMaterialShadingStyle(style);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Dispose() => UnderlyingQuadInstance.Dispose();
+
+	public override string ToString() => UnderlyingQuadInstance.ToString();
+
+	#region Equality
+	public bool Equals(CameraLockedQuadInstance other) => UnderlyingQuadInstance.Equals(other.UnderlyingQuadInstance);
+	public override bool Equals(object? obj) => obj is CameraLockedQuadInstance other && Equals(other);
+	public override int GetHashCode() => UnderlyingQuadInstance.GetHashCode();
+	public static bool operator ==(CameraLockedQuadInstance left, CameraLockedQuadInstance right) => left.Equals(right);
+	public static bool operator !=(CameraLockedQuadInstance left, CameraLockedQuadInstance right) => !left.Equals(right);
 	#endregion
 }

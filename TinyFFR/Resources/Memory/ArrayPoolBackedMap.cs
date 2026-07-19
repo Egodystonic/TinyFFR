@@ -171,6 +171,14 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		++Version;
 	}
 
+	public bool TryAdd(TKey key, TValue value) {
+		var bucket = GetBucket(key);
+		if (GetIndexFromBucket(bucket, key).HasValue) return false;
+		bucket.Add(new(key, value));
+		++Version;
+		return true;
+	}
+
 	public void Clear() {
 		for (var i = 0; i < NumBuckets; ++i) _buckets[i].Clear();
 		++Version;

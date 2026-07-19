@@ -156,7 +156,7 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		get => UnderlyingModelInstance.MaterialEffects;
 	}
 
-	public MutableGridInstance(ModelInstance underlyingModelInstance, MutableGridMesh parentGridMesh) {
+	internal MutableGridInstance(ModelInstance underlyingModelInstance, MutableGridMesh parentGridMesh) {
 		UnderlyingModelInstance = underlyingModelInstance;
 		ParentGridMesh = parentGridMesh;
 		lock (_staticMutationLock) {
