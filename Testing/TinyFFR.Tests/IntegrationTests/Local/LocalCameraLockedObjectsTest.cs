@@ -9,6 +9,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
@@ -24,43 +25,33 @@ class LocalCameraLockedObjectsTest {
 
 	[Test]
 	public void Execute() {
-		// Expected: the left quad always faces the camera exactly; the right quad only spins around the
-		// vertical axis to track the camera; the text should always be readable head-on. All three should
-		// pivot about their anchor points (visible when orbiting: the anchored corner/centre stays put).
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Camera-Locked Objects Test (fly around; Esc quits)");
-		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, 5f));
-		using var quadMesh = factory.MeshBuilder.CreateQuadMesh(twoSided: true, backSideInvertsTextures: false);
-		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
-		using var font = factory.AssetLoader.LoadFont(CommonTestAssets.FindAsset("DejaVuSans.ttf"));
-		var pen = font.CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque, 1f);
-		var @string = font.CreateString("Camera-Locked Text");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Camera-Locked Objects Test");
+		using var userControlledCamera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -2f));
+		using var staticCamera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -0.4f)); 
+		using var font = factory.AssetLoader.LoadFont(BuiltInFont.Monospace);
+		using var pen = font.CreatePen(BuiltInFontPenStyle.Default);
+		using var @string = font.CreateString("12345678");
 
-		using var freeLockedQuad = factory.ObjectBuilder.CreateCameraLockedQuadInstance(
-			quadMesh, mat,
-			position: new Location(-2f, 0f, 0f),
-			size: new XYPair<float>(1.5f, 1f),
-			positionAnchor: Orientation2D.DownLeft
-		);
-		using var axisLockedQuad = factory.ObjectBuilder.CreateCameraLockedQuadInstance(
-			quadMesh, mat,
-			position: new Location(2f, 0f, 0f),
-			size: new XYPair<float>(1.5f, 1f),
-			lockedUprightDirection: Direction.Up
-		);
 		using var lockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(
-			pen, @string,
-			position: new Location(0f, 2f, 0f),
-			textInstanceHeight: 0.3f
+			pen, 
+			@string,
+			lockedUprightDirection: Direction.Up,
+			textInstanceHeight: 0.1f
 		);
 
-		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
-		scene.Add(freeLockedQuad);
-		scene.Add(axisLockedQuad);
-		scene.Add(lockedText);
-		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-		using var camController = camera.CreateController<FreeFlyingCameraController>();
+		using var userControlledScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		using var staticScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		userControlledScene.Add(lockedText);
+		staticScene.Add(lockedText);
+		using var userControlledSceneRenderer = factory.RendererBuilder.CreateRenderer(userControlledScene, userControlledCamera, window);
+		using var staticSceneRenderer = factory.RendererBuilder.CreateRenderer(staticScene, staticCamera, window);
+		staticSceneRenderer.SetRenderSubAreaFraction(Orientation2D.DownRight, (0.02f, 0.02f), (0.2f, 0.2f));
+		using var compositor = factory.RendererBuilder.CreateCompositor(window);
+		compositor.Add(userControlledSceneRenderer, RenderCompositionType.Standard);
+		compositor.Add(staticSceneRenderer, RenderCompositionType.Standard);
+		using var camController = userControlledCamera.CreateController<InspectorCameraController>();
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
@@ -70,11 +61,10 @@ class LocalCameraLockedObjectsTest {
 			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camController, dt);
 			DefaultCameraInputHandler.Progress(camController, dt);
 
-			renderer.Render();
+			compositor.RenderAll();
 		}
 
-		scene.Remove(freeLockedQuad);
-		scene.Remove(axisLockedQuad);
-		scene.Remove(lockedText);
+		staticScene.RemoveAll();
+		userControlledScene.RemoveAll();
 	}
 }

@@ -8,6 +8,14 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
+public enum BuiltInFontPenStyle {
+	Default,
+	WhiteWithOutline,
+	BlackWithOutline,
+	WhiteWithBackground,
+	BlackWithBackground
+}
+
 public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	readonly ResourceHandle<Font> _handle;
 	readonly IFontImplProvider _impl;
@@ -45,6 +53,14 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	}
 	public FontPen CreatePen(ColorVect foregroundColor, ColorVect outlineColor, float outlineThicknessNormalized, ColorVect backgroundColor) {
 		return Implementation.CreatePen(_handle, foregroundColor, backgroundColor, outlineColor, outlineThicknessNormalized);
+	}
+	public FontPen CreatePen(BuiltInFontPenStyle builtInPenStyle) {
+		return builtInPenStyle switch {
+			BuiltInFontPenStyle.BlackWithBackground => CreatePen(ColorVect.BlackOpaque, ColorVect.WhiteOpaque),
+			BuiltInFontPenStyle.WhiteWithBackground => CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque),
+			BuiltInFontPenStyle.BlackWithOutline => CreatePen(ColorVect.BlackOpaque, ColorVect.WhiteOpaque, 0.2f),
+			_ => CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque, 0.5f)
+		};
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
