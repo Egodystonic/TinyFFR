@@ -36,6 +36,7 @@ public interface IRotatable<TSelf> :
 	where TSelf : IRotatable<TSelf> {
 	static abstract TSelf operator *(Rotation left, TSelf right);
 	TSelf RotatedBy(Rotation rot);
+	TSelf RotatedBy(Quaternion rotQuat);
 }
 
 public interface IPointRotatable<TSelf> :
@@ -47,6 +48,8 @@ public interface IPointRotatable<TSelf> :
 	static abstract TSelf operator *((Location Pivot, Rotation Rotation) left, TSelf right);
 	TSelf RotatedBy(Rotation rot, Location pivot);
 	TSelf RotatedAroundOriginBy(Rotation rot);
+	TSelf RotatedBy(Quaternion rotQuat, Location pivot);
+	TSelf RotatedAroundOriginBy(Quaternion rotQuat);
 }
 
 public interface ITranslatable<TSelf> :

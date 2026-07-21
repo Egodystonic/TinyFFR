@@ -20,6 +20,71 @@ class ArrayPoolBackedSetTest {
 	}
 
 	[Test]
+	public void ShouldGrowBucketCountToKeepLookupsConstantTime() {
+		const int GrowthTestValueCount = 20_000;
+
+		using var set = new ArrayPoolBackedSet<int>();
+		var initialBucketCount = set.NumBuckets;
+
+		for (var i = 0; i < GrowthTestValueCount; ++i) {
+			Assert.AreEqual(true, set.Add(i));
+			Assert.LessOrEqual(set.Count, set.NumBuckets * 4);
+		}
+
+		Assert.Greater(set.NumBuckets, initialBucketCount);
+		Assert.AreEqual(GrowthTestValueCount, set.Count);
+
+		for (var i = 0; i < GrowthTestValueCount; ++i) {
+			Assert.AreEqual(true, set.Contains(i));
+			Assert.AreEqual(false, set.Add(i));
+		}
+
+		var enumeratedLedger = new bool[GrowthTestValueCount];
+		var enumeratedCount = 0;
+		foreach (var item in set) {
+			Assert.AreEqual(false, enumeratedLedger[item]);
+			enumeratedLedger[item] = true;
+			++enumeratedCount;
+		}
+		Assert.AreEqual(GrowthTestValueCount, enumeratedCount);
+		Assert.IsTrue(enumeratedLedger.All(v => v));
+
+		var indexedLedger = new bool[GrowthTestValueCount];
+		for (var i = 0; i < GrowthTestValueCount; ++i) {
+			var item = set.GetItemAtIndex(i);
+			Assert.AreEqual(false, indexedLedger[item]);
+			indexedLedger[item] = true;
+		}
+		Assert.IsTrue(indexedLedger.All(v => v));
+
+		// Non-sequential indexed access must not be confused by the sequential-walk memo
+		Assert.AreEqual(set.GetItemAtIndex(0), set.GetItemAtIndex(0));
+		Assert.AreEqual(set.GetItemAtIndex(GrowthTestValueCount - 1), set.GetItemAtIndex(GrowthTestValueCount - 1));
+		Assert.AreEqual(set.GetItemAtIndex(7), set.GetItemAtIndex(7));
+		Assert.Throws<ArgumentOutOfRangeException>(() => set.GetItemAtIndex(GrowthTestValueCount));
+		Assert.Throws<ArgumentOutOfRangeException>(() => set.GetItemAtIndex(-1));
+
+		for (var i = 0; i < GrowthTestValueCount; i += 2) Assert.AreEqual(true, set.Remove(i));
+		Assert.AreEqual(GrowthTestValueCount / 2, set.Count);
+		for (var i = 1; i < GrowthTestValueCount; i += 2) Assert.AreEqual(true, set.Contains(i));
+		for (var i = 0; i < GrowthTestValueCount; i += 2) Assert.AreEqual(false, set.Contains(i));
+	}
+
+	[Test]
+	public void ShouldMaintainCountAcrossIntersectWith() {
+		using var set = new ArrayPoolBackedSet<int>();
+		for (var i = 0; i < 5_000; ++i) set.Add(i);
+
+		set.IntersectWith(Enumerable.Range(2_500, 5_000).ToArray());
+
+		Assert.AreEqual(2_500, set.Count);
+		var enumeratedCount = 0;
+		foreach (var _ in set) ++enumeratedCount;
+		Assert.AreEqual(2_500, enumeratedCount);
+		Assert.AreEqual(true, set.SetEquals(Enumerable.Range(2_500, 2_500).ToArray()));
+	}
+
+	[Test]
 	public void ShouldCorrectlyEnumerate() {
 		var items = new List<int>();
 

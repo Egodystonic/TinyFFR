@@ -27,22 +27,37 @@ class LocalCameraLockedObjectsTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Camera-Locked Objects Test");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Camera-Locked Objects Test [Space]");
 		using var userControlledCamera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -2f));
 		using var staticCamera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -0.4f)); 
+		using var userControlledScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		using var staticScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		
 		using var font = factory.AssetLoader.LoadFont(BuiltInFont.Monospace);
-		using var pen = font.CreatePen(BuiltInFontPenStyle.Default);
+		using var pen = font.CreatePen(BuiltInFontPenStyle.BlackWithBackground);
 		using var @string = font.CreateString("12345678");
-
-		using var lockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(
+		var curLockedTextAnchor = Orientation2D.None;
+		var lockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(
 			pen, 
 			@string,
 			lockedUprightDirection: Direction.Up,
-			textInstanceHeight: 0.1f
+			textInstanceHeight: 0.1f,
+			positionAnchor: curLockedTextAnchor
 		);
+		
+		using var quad = factory.MeshBuilder.CreateQuadMesh(twoSided: false);
+		using var quadTex = factory.TextureBuilder.CreateColorMap(
+			TexturePattern.GradientVertical(ColorVect.WhiteOpaque, ColorVect.BlackTransparent),
+			includeAlpha: true,
+			config: new TextureCreationConfig { IsLinearColorspace = false, RenderingConfig = new() { DisableTextureRepeat = true }}
+		);
+		using var quadMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(quadTex);
+		var lockedQuads = Enumerable.Range(0, 10000).Select(_ => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quad, quadMat, position: Location.Random(Sphere.UnitSphere), size: (0.005f, 0.005f))).ToArray();
+		foreach (var lq in lockedQuads) {
+			userControlledScene.Add(lq);
+			staticScene.Add(lq);	
+		}
 
-		using var userControlledScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
-		using var staticScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		userControlledScene.Add(lockedText);
 		staticScene.Add(lockedText);
 		using var userControlledSceneRenderer = factory.RendererBuilder.CreateRenderer(userControlledScene, userControlledCamera, window);
@@ -52,7 +67,9 @@ class LocalCameraLockedObjectsTest {
 		compositor.Add(userControlledSceneRenderer, RenderCompositionType.Standard);
 		compositor.Add(staticSceneRenderer, RenderCompositionType.Standard);
 		using var camController = userControlledCamera.CreateController<InspectorCameraController>();
+		camController.AllowUpsideDownFlip = true;
 
+		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
 			var dt = loop.IterateOnce().AsDeltaTime();
@@ -60,11 +77,36 @@ class LocalCameraLockedObjectsTest {
 			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camController, dt, window);
 			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camController, dt);
 			DefaultCameraInputHandler.Progress(camController, dt);
+			
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				var anchors = Enum.GetValues<Orientation2D>();
+				var newIdx = Array.IndexOf(anchors, curLockedTextAnchor) + 1;
+				if (newIdx >= anchors.Length) newIdx = 0;
+				curLockedTextAnchor = anchors[newIdx];
+				userControlledScene.Remove(lockedText);
+				staticScene.Remove(lockedText);
+				lockedText.Dispose();
+				lockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(
+					pen, 
+					@string,
+					lockedUprightDirection: Direction.Up,
+					textInstanceHeight: 0.1f,
+					positionAnchor: curLockedTextAnchor
+				);
+				userControlledScene.Add(lockedText);
+				staticScene.Add(lockedText);
+				window.SetTitle(curLockedTextAnchor.ToString());
+			}
 
 			compositor.RenderAll();
+			window.SetTitle(loop.FramesPerSecondRecentAverage.ToString("N0"));
 		}
 
 		staticScene.RemoveAll();
 		userControlledScene.RemoveAll();
+		lockedText.Dispose();
+		foreach (var lq in lockedQuads) {
+			lq.Dispose();
+		}
 	}
 }

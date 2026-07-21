@@ -106,11 +106,14 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	// TODO xmldoc -- by default follows right hand rule (index finger = dirA, middle finger = dirB, thumb = result)
 	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB) {
-		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
-		var crossLength = cross.LengthSquared();
+		const float PreNormalizedCrossLengthSquaredTolerance = 1E-5f;
+		const float ParallelInputsCrossLengthSquaredTolerance = 1E-8f;
 
-		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromVector3PreNormalized(cross);
-		else if (crossLength >= 0.001f) return FromVector3(cross);
+		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
+		var crossLengthSquared = cross.LengthSquared();
+
+		if (MathF.Abs(crossLengthSquared - 1f) <= PreNormalizedCrossLengthSquaredTolerance) return FromVector3PreNormalized(cross);
+		else if (crossLengthSquared >= ParallelInputsCrossLengthSquaredTolerance) return FromVector3(cross);
 		else if (dirA == None || dirB == None) return None;
 		else return dirA.AnyOrthogonal();
 	}

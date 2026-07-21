@@ -10,7 +10,8 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	public struct Enumerator : IEnumerator<T> {
 		readonly ArrayPoolBackedSet<T> _owner;
 		readonly int _version;
-		int _curIndex;
+		int _bucketIndex;
+		int _indexInBucket;
 
 		public T Current { get; private set; } = default!;
 		object IEnumerator.Current => Current!;
@@ -23,9 +24,15 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 
 		public bool MoveNext() {
 			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			if (++_curIndex < _owner.Count) {
-				Current = _owner.GetItemAtIndex(_curIndex);
-				return true;
+			while (_bucketIndex < _owner._numBuckets) {
+				var bucket = _owner._buckets[_bucketIndex];
+				if (++_indexInBucket < bucket.Count) {
+					Current = bucket[_indexInBucket];
+					return true;
+				}
+
+				++_bucketIndex;
+				_indexInBucket = -1;
 			}
 
 			Current = default!;
@@ -33,31 +40,43 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 		}
 
 		public void Reset() {
-			_curIndex = -1;
+			_bucketIndex = 0;
+			_indexInBucket = -1;
 			Current = default!;
 		}
 
 		public void Dispose() { /* no op */ }
 	}
 
-	const int HashMask = 0b11_1111;
-	internal const int NumBuckets = HashMask + 1;
-	readonly ArrayPoolBackedVector<T>[] _buckets;
+	const int InitialNumBuckets = 64;
+	// Bucket lookup is a linear scan, so without growing the bucket count every operation becomes O(Count / NumBuckets)
+	// and any per-element loop over the whole set becomes quadratic. Keeping the average bucket occupancy at or below
+	// this value keeps lookups constant-time regardless of Count.
+	const int MaxAverageBucketOccupancy = 4;
+	ArrayPoolBackedVector<T>[] _buckets;
+	int _numBuckets;
+	int _hashMask;
+	int _count;
+
+	// Memoises the previous GetItemAtIndex walk so that sequential enumeration doesn't restart from bucket zero each
+	// call (which would be O(NumBuckets) per item, and gets worse as the bucket count grows).
+	int _lastIndexLookupVersion = -1;
+	int _lastIndexLookupIndex;
+	int _lastIndexLookupBucket;
+	int _lastIndexLookupBucketStart;
 
 	public ArrayPoolBackedSet() {
-		_buckets = ArrayPool<ArrayPoolBackedVector<T>>.Shared.Rent(NumBuckets);
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<T>();
+		_numBuckets = InitialNumBuckets;
+		_hashMask = InitialNumBuckets - 1;
+		_buckets = ArrayPool<ArrayPoolBackedVector<T>>.Shared.Rent(_numBuckets);
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<T>();
 	}
 
 	public int Version { get; private set; } = 0;
 
-	public int Count {
-		get {
-			var result = 0;
-			for (var i = 0; i < NumBuckets; ++i) result += _buckets[i].Count;
-			return result;
-		}
-	}
+	public int Count => _count;
+	internal int NumBuckets => _numBuckets;
+
 	bool ICollection<T>.IsReadOnly { get; } = false;
 
 	public bool Add(T item) {
@@ -65,17 +84,21 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 		if (GetIndexFromBucket(bucket, item).HasValue) return false;
 
 		bucket.Add(item);
+		++_count;
 		++Version;
+		GrowBucketsIfOverloaded();
 		return true;
 	}
 	void ICollection<T>.Add(T item) => Add(item);
 
 	public void Clear() {
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i].Clear();
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
+		_count = 0;
 		++Version;
 	}
 	public void ClearWithoutZeroingMemory() {
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
+		_count = 0;
 		++Version;
 	}
 
@@ -86,16 +109,34 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 		var index = GetIndexFromBucket(bucket, item);
 		if (!index.HasValue) return false;
 		bucket.RemoveAt(index.Value);
+		--_count;
 		++Version;
 		return true;
 	}
 
 	public T GetItemAtIndex(int index) {
-		for (var i = 0; i < NumBuckets; ++i) {
-			var bucket = _buckets[i];
-			if (index < bucket.Count) return bucket[index];
+		if (index < 0) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be > 0 and < Count.");
 
-			index -= bucket.Count;
+		var bucketIndex = 0;
+		var remainder = index;
+		if (_lastIndexLookupVersion == Version && index >= _lastIndexLookupIndex) {
+			bucketIndex = _lastIndexLookupBucket;
+			remainder = index - _lastIndexLookupBucketStart;
+		}
+
+		var bucketStart = index - remainder;
+		for (var i = bucketIndex; i < _numBuckets; ++i) {
+			var bucket = _buckets[i];
+			if (remainder < bucket.Count) {
+				_lastIndexLookupVersion = Version;
+				_lastIndexLookupIndex = index;
+				_lastIndexLookupBucket = i;
+				_lastIndexLookupBucketStart = bucketStart;
+				return bucket[remainder];
+			}
+
+			remainder -= bucket.Count;
+			bucketStart += bucket.Count;
 		}
 
 		throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be > 0 and < Count.");
@@ -106,14 +147,14 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
 	public void CopyTo(T[] array, int arrayIndex) {
-		for (var i = 0; i < NumBuckets; ++i) {
+		for (var i = 0; i < _numBuckets; ++i) {
 			_buckets[i].CopyTo(array, arrayIndex);
 			arrayIndex += _buckets[i].Count;
 		}
 	}
 
 	public void CopyTo(Span<T> span) {
-		for (var i = 0; i < NumBuckets; ++i) {
+		for (var i = 0; i < _numBuckets; ++i) {
 			_buckets[i].AsSpan.CopyTo(span);
 			span = span[_buckets[i].Count..];
 		}
@@ -139,10 +180,12 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 		if (Count == 0) return;
 
 		using var otherSet = CreateTempSetFrom(other);
-		for (var i = 0; i < NumBuckets; ++i) {
+		for (var i = 0; i < _numBuckets; ++i) {
 			var bucket = _buckets[i];
 			for (var j = bucket.Count - 1; j >= 0; --j) {
-				if (!otherSet.Contains(bucket[j])) bucket.RemoveAt(j);
+				if (otherSet.Contains(bucket[j])) continue;
+				bucket.RemoveAt(j);
+				--_count;
 			}
 		}
 		++Version;
@@ -225,12 +268,45 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	}
 
 	public void Dispose() {
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i].Dispose();
-		ArrayPool<ArrayPoolBackedVector<T>>.Shared.Return(_buckets);
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Dispose();
+		ArrayPool<ArrayPoolBackedVector<T>>.Shared.Return(_buckets, clearArray: true);
 		++Version;
 	}
 
-	static int GetBucketIndex(T item) => (item?.GetHashCode() & HashMask) ?? 0;
+	void GrowBucketsIfOverloaded() {
+		if (_count <= _numBuckets * MaxAverageBucketOccupancy) return;
+
+		var newNumBuckets = _numBuckets * 2;
+		var newHashMask = newNumBuckets - 1;
+		var newBuckets = ArrayPool<ArrayPoolBackedVector<T>>.Shared.Rent(newNumBuckets);
+
+		// Bucket count is always a power of two, so widening the mask by one bit splits each existing bucket in to
+		// itself and exactly one new bucket. That lets us keep the existing bucket instances rather than reallocating all of them.
+		for (var i = 0; i < _numBuckets; ++i) newBuckets[i] = _buckets[i];
+		for (var i = _numBuckets; i < newNumBuckets; ++i) newBuckets[i] = new ArrayPoolBackedVector<T>();
+
+		for (var i = 0; i < _numBuckets; ++i) {
+			var bucket = newBuckets[i];
+			for (var j = bucket.Count - 1; j >= 0; --j) {
+				var item = bucket[j];
+				var newBucketIndex = GetBucketIndex(item, newHashMask);
+				if (newBucketIndex == i) continue;
+				newBuckets[newBucketIndex].Add(item);
+				bucket.RemoveAt(j);
+			}
+		}
+
+		ArrayPool<ArrayPoolBackedVector<T>>.Shared.Return(_buckets, clearArray: true);
+		_buckets = newBuckets;
+		_numBuckets = newNumBuckets;
+		_hashMask = newHashMask;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static int GetBucketIndex(T item, int hashMask) => (item?.GetHashCode() & hashMask) ?? 0;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	int GetBucketIndex(T item) => GetBucketIndex(item, _hashMask);
 
 	ArrayPoolBackedVector<T> GetBucket(T item) => _buckets[GetBucketIndex(item)];
 

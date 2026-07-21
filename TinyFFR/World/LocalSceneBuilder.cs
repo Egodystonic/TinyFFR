@@ -398,51 +398,71 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		var cameraPosition = targetCamera.Position;
 		var cameraUpDirection = targetCamera.UpDirection;
 		
+		// These stay in quaternion space throughout. Transform stores its rotation as a Quaternion and ToMatrix() consumes
+		// one directly, so routing via Rotation's axis-angle form would cost an acos to read the current rotation plus a
+		// sin/cos to write the new one, per instance per frame, for no benefit.
+		static Transform BuildCameraLockedTransform(Location anchorPosition, Vect meshSpaceAnchorOffset, Vect scaling, Direction facingDirection, Direction upDirection) {
+			// Rows are the images of the canonical mesh axes under the rotation being built: the mesh faces Direction.Backward
+			// and is upright along Direction.Up, so local +Z maps on to -facing and local +X (Direction.Left) maps on to facing x up.
+			var localX = Direction.FastFromDualOrthogonalization(facingDirection, upDirection).ToVector3();
+			var localY = upDirection.ToVector3();
+			var localZ = -facingDirection.ToVector3();
+
+			var rotationQuaternion = Quaternion.CreateFromRotationMatrix(new Matrix4x4(
+				localX.X, localX.Y, localX.Z, 0f,
+				localY.X, localY.Y, localY.Z, 0f,
+				localZ.X, localZ.Y, localZ.Z, 0f,
+				0f, 0f, 0f, 1f
+			));
+
+			var rotatedAnchorOffset = localX * meshSpaceAnchorOffset.X + localY * meshSpaceAnchorOffset.Y + localZ * meshSpaceAnchorOffset.Z;
+			return new Transform(
+				anchorPosition.AsVect() + Vect.FromVector3(rotatedAnchorOffset),
+				rotationQuaternion,
+				scaling
+			);
+		}
+
 		static bool TryGetSphericalCameraLockedTransform(in Transform currentTransform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction cameraUpDirection, out Transform result) {
-			var anchorPosition = (currentTransform.Translation - meshSpaceAnchorOffset * currentTransform.Rotation).AsLocation();
+			var anchorPosition = (currentTransform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, currentTransform.RotationQuaternion)).AsLocation();
 			var facingDirection = anchorPosition.DirectionTo(cameraPosition);
 			if (facingDirection == Direction.None) {
 				result = currentTransform;
 				return false;
 			}
 
-			var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, cameraUpDirection);
-			result = new Transform(
-				translation: anchorPosition.AsVect() + meshSpaceAnchorOffset * rotation,
-				rotation: rotation,
-				scaling: currentTransform.Scaling
-			);
+			var upDirection = cameraUpDirection.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal();
+			result = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, currentTransform.Scaling, facingDirection, upDirection);
 			return true;
 		}
-		
+
 		static bool TryGetCylindricalCameraLockedTransform(in Transform currentTransform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction lockedUpDirection, out Transform result) {
-			var anchorPosition = (currentTransform.Translation - meshSpaceAnchorOffset * currentTransform.Rotation).AsLocation();
+			var anchorPosition = (currentTransform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, currentTransform.RotationQuaternion)).AsLocation();
 			var facingDirection = anchorPosition.DirectionTo(cameraPosition).OrthogonalizedAgainst(lockedUpDirection);
 			if (facingDirection == Direction.None || facingDirection == null) {
 				result = currentTransform;
 				return false;
 			}
 
-			var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection.Value, lockedUpDirection);
-			result = new Transform(
-				translation: anchorPosition.AsVect() + meshSpaceAnchorOffset * rotation,
-				rotation: rotation,
-				scaling: currentTransform.Scaling
-			);
+			result = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, currentTransform.Scaling, facingDirection.Value, lockedUpDirection);
 			return true;
 		}
 
+		// foreach (var quad in _camLockedQuadInstanceMap[handle].Values) {
+		// 	var curTransform = quad.UnderlyingQuadInstance.Transform;
+		// 	var anchorOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), quad.PositionAnchor);
+		// 	Transform newTransform;
+		// 	if (quad.LockedUprightDirection == Direction.None) {
+		// 		if (!TryGetSphericalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, cameraUpDirection, out newTransform)) continue;
+		// 	}
+		// 	else {
+		// 		if (!TryGetCylindricalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, quad.LockedUprightDirection, out newTransform)) continue;
+		// 	}
+		// 	quad.UnderlyingQuadInstance.SetTransform(newTransform);
+		// }
+		var newRot = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, -targetCamera.ViewDirection, targetCamera.UpDirection);
 		foreach (var quad in _camLockedQuadInstanceMap[handle].Values) {
-			var curTransform = quad.UnderlyingQuadInstance.Transform;
-			var anchorOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), quad.PositionAnchor);
-			Transform newTransform;
-			if (quad.LockedUprightDirection == Direction.None) {
-				if (!TryGetSphericalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, cameraUpDirection, out newTransform)) continue;
-			}
-			else {
-				if (!TryGetCylindricalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, quad.LockedUprightDirection, out newTransform)) continue;
-			}
-			quad.UnderlyingQuadInstance.SetTransform(newTransform);
+			quad.UnderlyingQuadInstance.UnderlyingModelInstance.SetRotation(newRot);
 		}
 
 		foreach (var text in _camLockedTextInstanceMap[handle].Values) {

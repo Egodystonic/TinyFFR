@@ -14,9 +14,11 @@ public interface IPositionedSceneObject : IMovableSceneObject {
 
 public interface IReorientableSceneObject {
 	void RotateBy(Rotation rotation);
+	void RotateBy(Quaternion rotationQuaternion);
 }
 public interface IOrientedSceneObject : IReorientableSceneObject {
 	Rotation Rotation { get; set; }
+	Quaternion RotationQuaternion { get; set; }
 }
 
 public interface IRescalableSceneObject {
@@ -32,4 +34,5 @@ public interface IScaledSceneObject : IRescalableSceneObject {
 public interface ITransformedSceneObject : IPositionedSceneObject, IOrientedSceneObject, IScaledSceneObject {
 	Transform Transform { get; set; }
 	void RotateBy(Rotation rotation, Location pivotPoint);
+	void RotateBy(Quaternion rotationQuaternion, Location pivotPoint);
 }
