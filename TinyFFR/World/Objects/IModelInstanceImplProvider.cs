@@ -20,6 +20,9 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	Rotation GetRotation(ResourceHandle<ModelInstance> handle);
 	void SetRotation(ResourceHandle<ModelInstance> handle, Rotation newRotation);
 
+	Quaternion GetRotationQuaternion(ResourceHandle<ModelInstance> handle);
+	void SetRotationQuaternion(ResourceHandle<ModelInstance> handle, Quaternion newRotationQuaternion);
+
 	Vect GetScaling(ResourceHandle<ModelInstance> handle);
 	void SetScaling(ResourceHandle<ModelInstance> handle, Vect newScaling);
 
@@ -36,6 +39,8 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation, Location pivotPoint);
+	void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion);
+	void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion, Location pivotPoint);
 	void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
 	void ScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar);

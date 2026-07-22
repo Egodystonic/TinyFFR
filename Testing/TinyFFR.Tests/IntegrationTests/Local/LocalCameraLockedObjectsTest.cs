@@ -29,9 +29,9 @@ class LocalCameraLockedObjectsTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Camera-Locked Objects Test [Space]");
 		using var userControlledCamera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -2f));
-		using var staticCamera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -0.4f)); 
+		using var automaticCamera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -0.4f)); 
 		using var userControlledScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
-		using var staticScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		using var automaticScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		
 		using var font = factory.AssetLoader.LoadFont(BuiltInFont.Monospace);
 		using var pen = font.CreatePen(BuiltInFontPenStyle.BlackWithBackground);
@@ -54,29 +54,33 @@ class LocalCameraLockedObjectsTest {
 		using var quadMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(quadTex);
 		var lockedQuads = Enumerable.Range(0, 10000).Select(_ => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quad, quadMat, position: Location.Random(Sphere.UnitSphere), size: (0.005f, 0.005f))).ToArray();
 		foreach (var lq in lockedQuads) {
-			userControlledScene.Add(lq);
-			staticScene.Add(lq);	
+			userControlledScene.Add(lq, true);
+			automaticScene.Add(lq, true);	
 		}
 
 		userControlledScene.Add(lockedText);
-		staticScene.Add(lockedText);
+		automaticScene.Add(lockedText);
 		using var userControlledSceneRenderer = factory.RendererBuilder.CreateRenderer(userControlledScene, userControlledCamera, window);
-		using var staticSceneRenderer = factory.RendererBuilder.CreateRenderer(staticScene, staticCamera, window);
-		staticSceneRenderer.SetRenderSubAreaFraction(Orientation2D.DownRight, (0.02f, 0.02f), (0.2f, 0.2f));
+		using var automaticSceneRenderer = factory.RendererBuilder.CreateRenderer(automaticScene, automaticCamera, window);
+		automaticSceneRenderer.SetRenderSubAreaFraction(Orientation2D.DownRight, (0.02f, 0.02f), (0.2f, 0.2f));
 		using var compositor = factory.RendererBuilder.CreateCompositor(window);
 		compositor.Add(userControlledSceneRenderer, RenderCompositionType.Standard);
-		compositor.Add(staticSceneRenderer, RenderCompositionType.Standard);
-		using var camController = userControlledCamera.CreateController<InspectorCameraController>();
-		camController.AllowUpsideDownFlip = true;
+		compositor.Add(automaticSceneRenderer, RenderCompositionType.Standard);
+		using var userCamController = userControlledCamera.CreateController<InspectorCameraController>();
+		userCamController.AllowUpsideDownFlip = true;
+		using var autoCamController = automaticCamera.CreateController<OrbitalCameraController>();
 
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
 			var dt = loop.IterateOnce().AsDeltaTime();
 
-			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camController, dt, window);
-			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camController, dt);
-			DefaultCameraInputHandler.Progress(camController, dt);
+			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, userCamController, dt, window);
+			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, userCamController, dt);
+			DefaultCameraInputHandler.Progress(userCamController, dt);
+			
+			autoCamController.Angle += 20f * dt;
+			autoCamController.Progress(dt);
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 				var anchors = Enum.GetValues<Orientation2D>();
@@ -84,7 +88,7 @@ class LocalCameraLockedObjectsTest {
 				if (newIdx >= anchors.Length) newIdx = 0;
 				curLockedTextAnchor = anchors[newIdx];
 				userControlledScene.Remove(lockedText);
-				staticScene.Remove(lockedText);
+				automaticScene.Remove(lockedText);
 				lockedText.Dispose();
 				lockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(
 					pen, 
@@ -94,7 +98,7 @@ class LocalCameraLockedObjectsTest {
 					positionAnchor: curLockedTextAnchor
 				);
 				userControlledScene.Add(lockedText);
-				staticScene.Add(lockedText);
+				automaticScene.Add(lockedText);
 				window.SetTitle(curLockedTextAnchor.ToString());
 			}
 
@@ -102,7 +106,7 @@ class LocalCameraLockedObjectsTest {
 			window.SetTitle(loop.FramesPerSecondRecentAverage.ToString("N0"));
 		}
 
-		staticScene.RemoveAll();
+		automaticScene.RemoveAll();
 		userControlledScene.RemoveAll();
 		lockedText.Dispose();
 		foreach (var lq in lockedQuads) {

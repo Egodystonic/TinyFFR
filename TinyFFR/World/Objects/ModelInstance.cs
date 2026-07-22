@@ -76,6 +76,15 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
+	public Quaternion RotationQuaternion {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetRotationQuaternion(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetRotationQuaternion(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
+
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetScaling(_handle);
@@ -178,6 +187,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
 	public void RotateBy(Rotation rotation) => Implementation.RotateBy(_handle, rotation);
 	public void RotateBy(Rotation rotation, Location pivotPoint) => Implementation.RotateBy(_handle, rotation, pivotPoint);
+	public void RotateBy(Quaternion rotationQuaternion) => Implementation.RotateBy(_handle, rotationQuaternion);
+	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => Implementation.RotateBy(_handle, rotationQuaternion, pivotPoint);
 	public void ScaleBy(float scalar) => Implementation.ScaleBy(_handle, scalar);
 	public void ScaleBy(Vect vect) => Implementation.ScaleBy(_handle, vect);
 	public void AdjustScaleBy(float scalar) => Implementation.AdjustScaleBy(_handle, scalar);

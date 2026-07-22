@@ -86,13 +86,17 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(TextInstance text) => Remove(text.UnderlyingModelInstance);
 
+	// TODO xmldoc allowFastApproximationWherePossible is only honoured for instances that have no position anchor and no locked upright direction
+	// (anything else keeps the accurate path); when it is honoured the instance faces the camera plane rather than the camera position
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CameraLockedQuadInstance quad) => Implementation.Add(_handle, quad);
+	public void Add(CameraLockedQuadInstance quad, bool allowFastApproximationWherePossible = false) => Implementation.Add(_handle, quad, allowFastApproximationWherePossible);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(CameraLockedQuadInstance quad) => Implementation.Remove(_handle, quad);
 
+	// TODO xmldoc allowFastApproximationWherePossible is only honoured for instances that have no position anchor and no locked upright direction
+	// (anything else keeps the accurate path); when it is honoured the instance faces the camera plane rather than the camera position
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CameraLockedTextInstance text) => Implementation.Add(_handle, text);
+	public void Add(CameraLockedTextInstance text, bool allowFastApproximationWherePossible = false) => Implementation.Add(_handle, text, allowFastApproximationWherePossible);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
 	

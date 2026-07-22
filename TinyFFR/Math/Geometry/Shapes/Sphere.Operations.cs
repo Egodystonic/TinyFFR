@@ -324,7 +324,8 @@ partial struct Sphere {
 	#endregion
 
 	Location IConvexShape.GetRandomInternalLocation() {
-		return (Direction.Random() * RandomUtils.NextSingle(0f, Radius)).AsLocation();
+		// Cube root counteracts the fact that a sphere's volume grows with the cube of its radius
+		return (Direction.Random() * (Radius * MathF.Cbrt(RandomUtils.NextSingle()))).AsLocation();
 	}
 	
 	public Cuboid SmallestEnclosingCube {

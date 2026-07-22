@@ -143,6 +143,15 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle] with { Rotation = newRotation });
 	}
 
+	public Quaternion GetRotationQuaternion(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTransforms[handle].RotationQuaternion;
+	}
+	public void SetRotationQuaternion(ResourceHandle<ModelInstance> handle, Quaternion newRotationQuaternion) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle] with { RotationQuaternion = newRotationQuaternion });
+	}
+
 	public Vect GetScaling(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceTransforms[handle].Scaling;
@@ -165,8 +174,20 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		var curTransform = _activeInstanceTransforms[handle];
 		var curLoc = curTransform.Translation.AsLocation();
 		var pivotToCurLoc = pivotPoint >> curLoc;
-		var newLoc = pivotPoint + (pivotToCurLoc * rotation); 
+		var newLoc = pivotPoint + (pivotToCurLoc * rotation);
 		UpdateTransformAndMatrix(handle, (curTransform with { Translation = newLoc.AsVect() }).WithAdditionalRotation(rotation));
+	}
+	public void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithAdditionalRotation(rotationQuaternion));
+	}
+	public void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion, Location pivotPoint) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var curTransform = _activeInstanceTransforms[handle];
+		var curLoc = curTransform.Translation.AsLocation();
+		var pivotToCurLoc = pivotPoint >> curLoc;
+		var newLoc = pivotPoint + pivotToCurLoc.RotatedBy(rotationQuaternion);
+		UpdateTransformAndMatrix(handle, (curTransform with { Translation = newLoc.AsVect() }).WithAdditionalRotation(rotationQuaternion));
 	}
 	public void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);

@@ -372,28 +372,28 @@ public interface IMeshBuilder {
 		Span<VertexTriangle> triangles = stackalloc VertexTriangle[twoSided ? 4 : 2];
 		
 		vertices[0] = new MeshVertex(
-			new Location(0f, 0f, 0f),
+			new Location(-0.5f, -0.5f, 0f),
 			new XYPair<float>(1f, 0f) * generationConfig.TextureTransform,
 			new Direction(-1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
 			new Direction(0f, 0f, -1f)
 		);
 		vertices[1] = new MeshVertex(
-			new Location(1f, 0f, 0f),
+			new Location(0.5f, -0.5f, 0f),
 			new XYPair<float>(0f, 0f) * generationConfig.TextureTransform,
 			new Direction(-1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
 			new Direction(0f, 0f, -1f)
 		);
 		vertices[2] = new MeshVertex(
-			new Location(1f, 1f, 0f),
+			new Location(0.5f, 0.5f, 0f),
 			new XYPair<float>(0f, 1f) * generationConfig.TextureTransform,
 			new Direction(-1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
 			new Direction(0f, 0f, -1f)
 		);
 		vertices[3] = new MeshVertex(
-			new Location(0f, 1f, 0f),
+			new Location(-0.5f, 0.5f, 0f),
 			new XYPair<float>(1f, 1f) * generationConfig.TextureTransform,
 			new Direction(-1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
@@ -404,28 +404,28 @@ public interface IMeshBuilder {
 
 		if (twoSided) {
 			vertices[4] = new MeshVertex(
-				new Location(0f, 0f, 0f),
+				new Location(-0.5f, -0.5f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 0f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),
 				new Direction(0f, 0f, 1f)
 			);
 			vertices[5] = new MeshVertex(
-				new Location(1f, 0f, 0f),
+				new Location(0.5f, -0.5f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 0f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),
 				new Direction(0f, 0f, 1f)
 			);
 			vertices[6] = new MeshVertex(
-				new Location(1f, 1f, 0f),
+				new Location(0.5f, 0.5f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 1f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),
 				new Direction(0f, 0f, 1f)
 			);
 			vertices[7] = new MeshVertex(
-				new Location(0f, 1f, 0f),
+				new Location(-0.5f, 0.5f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 1f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),

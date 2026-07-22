@@ -25,6 +25,9 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedQuadInstance>> _camLockedQuadInstanceMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedTextInstance>> _camLockedTextInstanceMap = new();
+	// Instances eligible for the shared-rotation approximation are kept apart so the per-frame loop over them needs no per-item branching
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedQuadInstance>> _fastCamLockedQuadInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedTextInstance>> _fastCamLockedTextInstanceMap = new();
 	readonly SetPool<ModelInstance> _modelInstanceSetPool;
 	readonly MapPool<ResourceHandle<ModelInstance>, CameraLockedQuadInstance> _camLockedQuadMapPool;
 	readonly MapPool<ResourceHandle<ModelInstance>, CameraLockedTextInstance> _camLockedTextMapPool;
@@ -59,6 +62,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		_modelInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
 		_camLockedQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
 		_camLockedTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
+		_fastCamLockedQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
+		_fastCamLockedTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
@@ -103,6 +108,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		if (!instanceVector.Remove(modelInstance)) return;
 		_camLockedQuadInstanceMap[handle].Remove(modelInstance.Handle);
 		_camLockedTextInstanceMap[handle].Remove(modelInstance.Handle);
+		_fastCamLockedQuadInstanceMap[handle].Remove(modelInstance.Handle);
+		_fastCamLockedTextInstanceMap[handle].Remove(modelInstance.Handle);
 
 		RemoveModelInstanceFromScene(
 			handle,
@@ -374,19 +381,33 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	#endregion
 	
 	#region Camera-Locked Objects
-	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
+	// The approximation pivots about the mesh origin and faces the camera plane, so it's only valid when there's no anchor
+	// offset to honour and no upright direction to respect; anything else quietly keeps the accurate path
+	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad, bool allowFastApproximationWherePossible) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var modelInstance = quad.UnderlyingQuadInstance.UnderlyingModelInstance;
-		if (_camLockedQuadInstanceMap[handle].TryAdd(modelInstance.Handle, quad)) Add(handle, modelInstance);
+		var useFastMap = allowFastApproximationWherePossible
+			&& quad.PositionAnchor == Orientation2D.None
+			&& quad.LockedUprightDirection == Direction.None;
+		var targetMap = useFastMap ? _fastCamLockedQuadInstanceMap[handle] : _camLockedQuadInstanceMap[handle];
+		var siblingMap = useFastMap ? _camLockedQuadInstanceMap[handle] : _fastCamLockedQuadInstanceMap[handle];
+		if (siblingMap.ContainsKey(modelInstance.Handle)) return;
+		if (targetMap.TryAdd(modelInstance.Handle, quad)) Add(handle, modelInstance);
 	}
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
 		Remove(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
 	}
 
-	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
+	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text, bool allowFastApproximationWherePossible) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var modelInstance = text.UnderlyingTextInstance.UnderlyingModelInstance;
-		if (_camLockedTextInstanceMap[handle].TryAdd(modelInstance.Handle, text)) Add(handle, modelInstance);
+		var useFastMap = allowFastApproximationWherePossible
+			&& text.PositionAnchor == Orientation2D.None
+			&& text.LockedUprightDirection == Direction.None;
+		var targetMap = useFastMap ? _fastCamLockedTextInstanceMap[handle] : _camLockedTextInstanceMap[handle];
+		var siblingMap = useFastMap ? _camLockedTextInstanceMap[handle] : _fastCamLockedTextInstanceMap[handle];
+		if (siblingMap.ContainsKey(modelInstance.Handle)) return;
+		if (targetMap.TryAdd(modelInstance.Handle, text)) Add(handle, modelInstance);
 	}
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
 		Remove(handle, text.UnderlyingTextInstance.UnderlyingModelInstance);
@@ -407,14 +428,14 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			var localX = Direction.FastFromDualOrthogonalization(facingDirection, upDirection).ToVector3();
 			var localY = upDirection.ToVector3();
 			var localZ = -facingDirection.ToVector3();
-
+		
 			var rotationQuaternion = Quaternion.CreateFromRotationMatrix(new Matrix4x4(
 				localX.X, localX.Y, localX.Z, 0f,
 				localY.X, localY.Y, localY.Z, 0f,
 				localZ.X, localZ.Y, localZ.Z, 0f,
 				0f, 0f, 0f, 1f
 			));
-
+		
 			var rotatedAnchorOffset = localX * meshSpaceAnchorOffset.X + localY * meshSpaceAnchorOffset.Y + localZ * meshSpaceAnchorOffset.Z;
 			return new Transform(
 				anchorPosition.AsVect() + Vect.FromVector3(rotatedAnchorOffset),
@@ -423,60 +444,53 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			);
 		}
 
-		static bool TryGetSphericalCameraLockedTransform(in Transform currentTransform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction cameraUpDirection, out Transform result) {
-			var anchorPosition = (currentTransform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, currentTransform.RotationQuaternion)).AsLocation();
+		static void GetSphericalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction cameraUpDirection) {
+			var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
 			var facingDirection = anchorPosition.DirectionTo(cameraPosition);
-			if (facingDirection == Direction.None) {
-				result = currentTransform;
-				return false;
-			}
-
+			if (facingDirection == Direction.None) return;
+		
 			var upDirection = cameraUpDirection.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal();
-			result = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, currentTransform.Scaling, facingDirection, upDirection);
-			return true;
+			transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection, upDirection);
 		}
-
-		static bool TryGetCylindricalCameraLockedTransform(in Transform currentTransform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction lockedUpDirection, out Transform result) {
-			var anchorPosition = (currentTransform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, currentTransform.RotationQuaternion)).AsLocation();
+		
+		static void GetCylindricalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction lockedUpDirection) {
+			var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
 			var facingDirection = anchorPosition.DirectionTo(cameraPosition).OrthogonalizedAgainst(lockedUpDirection);
-			if (facingDirection == Direction.None || facingDirection == null) {
-				result = currentTransform;
-				return false;
-			}
-
-			result = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, currentTransform.Scaling, facingDirection.Value, lockedUpDirection);
-			return true;
+			if (facingDirection == Direction.None || facingDirection == null) return;
+		
+			transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection.Value, lockedUpDirection);
+		}
+		
+		var fastRotationQuat = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, -targetCamera.ViewDirection, cameraUpDirection).ToQuaternion();
+		foreach (var quad in _fastCamLockedQuadInstanceMap[handle].Values) {
+			quad.UnderlyingQuadInstance.UnderlyingModelInstance.SetRotationQuaternion(fastRotationQuat);
+		}
+		foreach (var text in _fastCamLockedTextInstanceMap[handle].Values) {
+			text.UnderlyingTextInstance.UnderlyingModelInstance.SetRotationQuaternion(fastRotationQuat);
 		}
 
-		// foreach (var quad in _camLockedQuadInstanceMap[handle].Values) {
-		// 	var curTransform = quad.UnderlyingQuadInstance.Transform;
-		// 	var anchorOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), quad.PositionAnchor);
-		// 	Transform newTransform;
-		// 	if (quad.LockedUprightDirection == Direction.None) {
-		// 		if (!TryGetSphericalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, cameraUpDirection, out newTransform)) continue;
-		// 	}
-		// 	else {
-		// 		if (!TryGetCylindricalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, quad.LockedUprightDirection, out newTransform)) continue;
-		// 	}
-		// 	quad.UnderlyingQuadInstance.SetTransform(newTransform);
-		// }
-		var newRot = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, -targetCamera.ViewDirection, targetCamera.UpDirection);
 		foreach (var quad in _camLockedQuadInstanceMap[handle].Values) {
-			quad.UnderlyingQuadInstance.UnderlyingModelInstance.SetRotation(newRot);
-		}
-
-		foreach (var text in _camLockedTextInstanceMap[handle].Values) {
-			var curTransform = text.UnderlyingTextInstance.Transform;
-			var @string = text.UnderlyingTextInstance.String;
-			var anchorOffset = @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(curTransform.Scaling.X, curTransform.Scaling.Y), text.PositionAnchor);
-			Transform newTransform;
-			if (text.LockedUprightDirection == Direction.None) {
-				if (!TryGetSphericalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, cameraUpDirection, out newTransform)) continue;
+			var transform = quad.UnderlyingQuadInstance.Transform;
+			var anchorOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(transform.Scaling.X, transform.Scaling.Y), quad.PositionAnchor);
+			if (quad.LockedUprightDirection == Direction.None) {
+				GetSphericalCameraLockedTransform(ref transform, anchorOffset, cameraPosition, cameraUpDirection);
 			}
 			else {
-				if (!TryGetCylindricalCameraLockedTransform(in curTransform, anchorOffset, cameraPosition, text.LockedUprightDirection, out newTransform)) continue;
+				GetCylindricalCameraLockedTransform(ref transform, anchorOffset, cameraPosition, quad.LockedUprightDirection);
 			}
-			text.UnderlyingTextInstance.SetTransform(newTransform);
+			quad.UnderlyingQuadInstance.SetTransform(transform);
+		}
+		foreach (var text in _camLockedTextInstanceMap[handle].Values) {
+			var transform = text.UnderlyingTextInstance.Transform;
+			var @string = text.UnderlyingTextInstance.String;
+			var anchorOffset = @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(transform.Scaling.X, transform.Scaling.Y), text.PositionAnchor);
+			if (text.LockedUprightDirection == Direction.None) {
+				GetSphericalCameraLockedTransform(ref transform, anchorOffset, cameraPosition, cameraUpDirection);
+			}
+			else {
+				GetCylindricalCameraLockedTransform(ref transform, anchorOffset, cameraPosition, text.LockedUprightDirection);
+			}
+			text.UnderlyingTextInstance.SetTransform(transform);
 		}
 	}
 	#endregion
@@ -497,6 +511,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			modelInstanceVector.Clear();
 			_camLockedQuadInstanceMap[handle].Clear();
 			_camLockedTextInstanceMap[handle].Clear();
+			_fastCamLockedQuadInstanceMap[handle].Clear();
+			_fastCamLockedTextInstanceMap[handle].Clear();
 		}
 		
 		if (includeLights) {
@@ -636,6 +652,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			_modelInstanceMap.Dispose();
 			_camLockedQuadInstanceMap.Dispose();
 			_camLockedTextInstanceMap.Dispose();
+			_fastCamLockedQuadInstanceMap.Dispose();
+			_fastCamLockedTextInstanceMap.Dispose();
 			_modelInstanceSetPool.Dispose();
 			_camLockedQuadMapPool.Dispose();
 			_camLockedTextMapPool.Dispose();
@@ -677,6 +695,10 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		_camLockedQuadInstanceMap.Remove(handle);
 		_camLockedTextMapPool.Return(_camLockedTextInstanceMap[handle]);
 		_camLockedTextInstanceMap.Remove(handle);
+		_camLockedQuadMapPool.Return(_fastCamLockedQuadInstanceMap[handle]);
+		_fastCamLockedQuadInstanceMap.Remove(handle);
+		_camLockedTextMapPool.Return(_fastCamLockedTextInstanceMap[handle]);
+		_fastCamLockedTextInstanceMap.Remove(handle);
 
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);

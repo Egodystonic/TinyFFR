@@ -125,6 +125,7 @@ public readonly struct TranslatedRotatedShape<T> : ITranslatedRotatedShape<Trans
 	public static TranslatedRotatedShape<T> operator *(TranslatedRotatedShape<T> left, Rotation right) => new(left.BaseShape, left.Translation, left.Rotation + right);
 	public static TranslatedRotatedShape<T> operator *(Rotation left, TranslatedRotatedShape<T> right) => new(right.BaseShape, right.Translation, right.Rotation + left);
 	public TranslatedRotatedShape<T> RotatedBy(Rotation rot) => new(BaseShape, Translation, Rotation + rot);
+	public TranslatedRotatedShape<T> RotatedBy(Quaternion rotQuat) => new(BaseShape, Translation, Rotation.CombinedAndNormalizedWith(rotQuat));
 	#endregion
 
 	#region Equality
@@ -259,6 +260,7 @@ public readonly struct TranslatedRotatedConvexShape<T> : ITranslatedRotatedConve
 	public static TranslatedRotatedConvexShape<T> operator *(Rotation left, TranslatedRotatedConvexShape<T> right) => left * ((TranslatedRotatedShape<T>) right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TranslatedRotatedConvexShape<T> RotatedBy(Rotation rot) => ((TranslatedRotatedShape<T>) this).RotatedBy(rot);
+	public TranslatedRotatedConvexShape<T> RotatedBy(Quaternion rotQuat) => ((TranslatedRotatedShape<T>) this).RotatedBy(rotQuat);
 	#endregion
 
 	#region Equality

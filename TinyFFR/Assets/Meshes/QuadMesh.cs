@@ -17,7 +17,7 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 	}
 
 	public static Transform CalculateTransformForStandardQuadMesh(Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		// Quad meshes are built as 1x1 squares on the XY plane facing backward with up being the upright direction by the IMeshBuilder default implementation
+		// Quad meshes are built as 1x1 squares centred on their origin on the XY plane facing backward with up being the upright direction by the IMeshBuilder default implementation
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection ?? Direction.Up);
 		return new Transform(
 			translation: (CalculateAnchorOffsetForStandardQuadMesh(size, positionAnchor) * rotation) + position.AsVect(),
@@ -27,7 +27,8 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 	}
 
 	public static Vect CalculateAnchorOffsetForStandardQuadMesh(XYPair<float> size, Orientation2D positionAnchor) {
-		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownRight, positionAnchor) * -size;
+		// The normalized offset is measured from the down-right corner, so subtracting a half re-bases it on to the mesh's centre origin
+		var translatedAnchorPoint = (UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownRight, positionAnchor) - new XYPair<float>(0.5f)) * -size;
 		return new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f);
 	}
 
@@ -91,6 +92,15 @@ public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
+	public Quaternion RotationQuaternion {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.RotationQuaternion;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetRotationQuaternion(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
+
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Scaling;
@@ -133,6 +143,10 @@ public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, I
 	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotation, pivotPoint);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Quaternion rotationQuaternion) => UnderlyingModelInstance.RotateBy(rotationQuaternion);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotationQuaternion, pivotPoint);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ScaleBy(float scalar) => UnderlyingModelInstance.ScaleBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

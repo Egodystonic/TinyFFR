@@ -45,6 +45,8 @@ partial struct Rotation :
 	public Rotation NormalizedDifferenceTo(Rotation other) => CombineAndNormalize(other, Reversed);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation CombinedAndNormalizedWith(Rotation other) => CombineAndNormalize(this, other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation CombinedAndNormalizedWith(Quaternion other) => FromQuaternionPreNormalized(CombineAndNormalize(ToQuaternion(), other));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation CombineAndNormalize(Rotation initial, Rotation following) => FromQuaternionPreNormalized(CombineAndNormalize(initial.ToQuaternion(), following.ToQuaternion()));

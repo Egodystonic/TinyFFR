@@ -131,6 +131,15 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
+	public Quaternion RotationQuaternion {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance.RotationQuaternion;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingModelInstance.SetRotationQuaternion(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
+
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Scaling;
@@ -296,6 +305,10 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotation, pivotPoint);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Quaternion rotationQuaternion) => UnderlyingModelInstance.RotateBy(rotationQuaternion);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotationQuaternion, pivotPoint);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ScaleBy(float scalar) => UnderlyingModelInstance.ScaleBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -298,6 +298,8 @@ partial struct Direction :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotatedBy(Rotation rotation) => rotation.Rotate(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction RotatedBy(Quaternion rotationQuaternion) => Rotation.Rotate(this, rotationQuaternion);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator *(Direction d, Rotation r) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator *(Rotation r, Direction d) => r.Rotate(d);

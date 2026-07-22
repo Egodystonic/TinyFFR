@@ -55,6 +55,10 @@ public readonly partial struct Ray : IPhysicalValidityDeterminable {
 	public Ray RotatedBy(Rotation rotation) => new(StartPoint, Direction.RotatedBy(rotation));
 
 	public Ray RotatedAroundOriginBy(Rotation rot) => new(StartPoint.AsVect().RotatedBy(rot).AsLocation(), Direction.RotatedBy(rot));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray RotatedBy(Quaternion rotationQuaternion) => new(StartPoint, Direction.RotatedBy(rotationQuaternion));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray RotatedAroundOriginBy(Quaternion rotQuat) => new(StartPoint.AsVect().RotatedBy(rotQuat).AsLocation(), Direction.RotatedBy(rotQuat));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray operator *(Ray ray, (Rotation Rotation, Location Pivot) pivotRotationTuple) => ray.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
@@ -69,6 +73,12 @@ public readonly partial struct Ray : IPhysicalValidityDeterminable {
 		var boundedRay = new BoundedRay(StartPoint, UnboundedLocationAtDistance(UnboundedDistanceAtPointClosestTo(pivot)));
 		var rotatedRay = boundedRay.RotatedBy(rotation, pivot);
 		return new Ray(rotatedRay.StartPoint, Direction * rotation);
+	}
+	public Ray RotatedBy(Quaternion rotationQuaternion, float signedPivotDistance) => RotatedBy(rotationQuaternion, UnboundedLocationAtDistance(signedPivotDistance));
+	public Ray RotatedBy(Quaternion rotationQuaternion, Location pivot) {
+		var boundedRay = new BoundedRay(StartPoint, UnboundedLocationAtDistance(UnboundedDistanceAtPointClosestTo(pivot)));
+		var rotatedRay = boundedRay.RotatedBy(rotationQuaternion, pivot);
+		return new Ray(rotatedRay.StartPoint, Direction.RotatedBy(rotationQuaternion));
 	}
 	#endregion
 

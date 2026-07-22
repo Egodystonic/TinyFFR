@@ -214,6 +214,8 @@ partial struct Vect :
 	public static Vect operator *(Rotation r, Vect d) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect RotatedBy(Rotation rotation) => rotation.Rotate(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect RotatedBy(Quaternion rotationQuaternion) => Rotation.Rotate(this, rotationQuaternion);
 	#endregion
 
 	#region Clamping and Interpolation

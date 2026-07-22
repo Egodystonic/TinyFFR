@@ -370,7 +370,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			textData.Vertices.Span, 
 			textData.Triangles.Span, 
 			new MeshCreationConfig {
-				Name = nameBuffer.Span
+				Name = nameBuffer.Span,
+				OriginTranslation = -GetTextMeshOriginOffset(fontData, textData.Size)
 			}
 		);
 		++_prevHandleId;
@@ -606,11 +607,23 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	}
 
 	/* Maintainer's note:
+	 * Text meshes are built with their origin at the block's left edge and first baseline, then shifted on to their centre origin
+	 * (horizontal centre, mean baseline) via OriginTranslation when the mesh is created in CreateString. GetTextMeshOriginOffset below
+	 * is the single source of truth for that shift: the mesh build subtracts it and the anchor query adds it back, so the two must never
+	 * be allowed to drift apart or camera-locked text accumulates positional error every frame.
+	 *
 	 * To stop text instances 'jumping around' vertically as the string data changes, the vertical offsets are essentially hard-coded according to the font:
 	 *	Vertical top: First line's ascent
 	 *	Vertical bottom: Last line's descent (== Descent for single-line strings, derived via Ascent - blockHeight otherwise)
 	 *	Vertical centre: Mean baseline of all lines (== first baseline for single-line strings)
 	 */
+	// stringSize.Y is (Ascent - Descent) + (lineCount - 1) * LineAdvance, so the Y term is exactly half the total line advance without needing to recover the line count
+	static Vect GetTextMeshOriginOffset(in FontData fontData, XYPair<float> stringSize) => new(
+		stringSize.X * 0.5f,
+		(stringSize.Y - (fontData.Ascent - fontData.Descent)) * 0.5f,
+		0f
+	);
+
 	public Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor, bool rescaleHeightAccordingToLineCount) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var fontData = _activeFonts[handle];
@@ -637,16 +650,17 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	public Vect GetTextInstanceAnchorOffset(ResourceHandle<Font> handle, XYPair<float> stringSize, XYPair<float> scaling, Orientation2D positionAnchor) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var fontData = _activeFonts[handle];
-		var horizontalOffset = Direction.Left * positionAnchor.GetHorizontalComponent() switch {
+		var originOffset = GetTextMeshOriginOffset(fontData, stringSize);
+		var horizontalOffset = Direction.Left * ((positionAnchor.GetHorizontalComponent() switch {
 			HorizontalOrientation2D.Right => stringSize.X * scaling.X,
 			HorizontalOrientation2D.Left => 0f,
 			_ => stringSize.X * scaling.X * 0.5f
-		};
-		var verticalOffset = Direction.Down * positionAnchor.GetVerticalComponent() switch {
+		}) - originOffset.X * scaling.X);
+		var verticalOffset = Direction.Down * ((positionAnchor.GetVerticalComponent() switch {
 			VerticalOrientation2D.Up => fontData.Ascent * scaling.Y,
 			VerticalOrientation2D.Down => (fontData.Ascent - stringSize.Y) * scaling.Y,
 			_ => (fontData.Ascent - fontData.Descent - stringSize.Y) * 0.5f * scaling.Y
-		};
+		}) + originOffset.Y * scaling.Y);
 		return horizontalOffset + verticalOffset;
 	}
 	

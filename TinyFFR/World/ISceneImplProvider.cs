@@ -21,10 +21,10 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void Add<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight>;
 	void Remove<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight>;
 
-	void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad);
+	void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad, bool allowFastApproximationWherePossible);
 	void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad);
 
-	void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text);
+	void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text, bool allowFastApproximationWherePossible);
 	void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text);
 
 	void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation);
