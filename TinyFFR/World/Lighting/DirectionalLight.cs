@@ -134,7 +134,6 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 		set => Direction = DirectionalLightCreationConfig.DefaultInitialDirection * value;
 	}
 
-	// Orientation is stored as a direction rather than a quaternion, so the getter can only convert; the setter and RotateBy do not.
 	Quaternion IOrientedSceneObject.RotationQuaternion {
 		get => Rotation.FromStartAndEndDirection(DirectionalLightCreationConfig.DefaultInitialDirection, Direction).ToQuaternion();
 		set => Direction = DirectionalLightCreationConfig.DefaultInitialDirection.RotatedBy(value);

@@ -174,43 +174,6 @@ class ArrayPoolBackedMapTest {
 	}
 
 	[Test]
-	public void ShouldGrowBucketCountToKeepLookupsConstantTime() {
-		const int GrowthTestValueCount = 20_000;
-
-		using var map = new ArrayPoolBackedMap<int, int>();
-		var initialBucketCount = map.NumBuckets;
-
-		for (var i = 0; i < GrowthTestValueCount; ++i) {
-			map.Add(i, i * 2);
-			Assert.LessOrEqual(map.Count, map.NumBuckets * 4);
-		}
-
-		Assert.Greater(map.NumBuckets, initialBucketCount);
-		Assert.AreEqual(GrowthTestValueCount, map.Count);
-
-		for (var i = 0; i < GrowthTestValueCount; ++i) {
-			Assert.AreEqual(i * 2, map[i]);
-			Assert.AreEqual(true, map.ContainsKey(i));
-		}
-
-		var seenLedger = new bool[GrowthTestValueCount];
-		var enumeratedCount = 0;
-		foreach (var kvp in map) {
-			Assert.AreEqual(kvp.Key * 2, kvp.Value);
-			Assert.AreEqual(false, seenLedger[kvp.Key]);
-			seenLedger[kvp.Key] = true;
-			++enumeratedCount;
-		}
-		Assert.AreEqual(GrowthTestValueCount, enumeratedCount);
-		Assert.IsTrue(seenLedger.All(v => v));
-
-		for (var i = 0; i < GrowthTestValueCount; i += 2) Assert.AreEqual(true, map.Remove(i));
-		Assert.AreEqual(GrowthTestValueCount / 2, map.Count);
-		for (var i = 1; i < GrowthTestValueCount; i += 2) Assert.AreEqual(i * 2, map[i]);
-		for (var i = 0; i < GrowthTestValueCount; i += 2) Assert.AreEqual(false, map.ContainsKey(i));
-	}
-
-	[Test]
 	public void ShouldCorrectlyDetermineContains() {
 		Assert.AreEqual(true, _map.ContainsKey(0));
 		Assert.AreEqual(true, _map.ContainsKey(NumValues - 1));

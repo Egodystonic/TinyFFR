@@ -172,7 +172,6 @@ public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IO
 		set => ConeDirection = SpotLightCreationConfig.DefaultInitialConeDirection * value;
 	}
 
-	// Orientation is stored as a cone direction rather than a quaternion, so the getter can only convert; the setter and RotateBy do not.
 	Quaternion IOrientedSceneObject.RotationQuaternion {
 		get => Rotation.FromStartAndEndDirection(SpotLightCreationConfig.DefaultInitialConeDirection, ConeDirection).ToQuaternion();
 		set => ConeDirection = SpotLightCreationConfig.DefaultInitialConeDirection.RotatedBy(value);

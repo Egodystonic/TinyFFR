@@ -323,11 +323,9 @@ partial struct Sphere {
 	public static Sphere Interpolate(Sphere start, Sphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
 	#endregion
 
-	Location IConvexShape.GetRandomInternalLocation() {
-		// Cube root counteracts the fact that a sphere's volume grows with the cube of its radius
-		return (Direction.Random() * (Radius * MathF.Cbrt(RandomUtils.NextSingle()))).AsLocation();
-	}
-	
+	// Maintainer's note: Cube root creates a uniform distribution (i.e. the volume of a sphere grows with the cube of its radius)
+	Location IConvexShape.GetRandomInternalLocation() => (Direction.Random() * (Radius * MathF.Cbrt(RandomUtils.NextSingle()))).AsLocation();
+
 	public Cuboid SmallestEnclosingCube {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(Diameter);

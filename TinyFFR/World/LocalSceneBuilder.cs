@@ -25,7 +25,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedQuadInstance>> _camLockedQuadInstanceMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedTextInstance>> _camLockedTextInstanceMap = new();
-	// Instances eligible for the shared-rotation approximation are kept apart so the per-frame loop over them needs no per-item branching
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedQuadInstance>> _fastCamLockedQuadInstanceMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedTextInstance>> _fastCamLockedTextInstanceMap = new();
 	readonly SetPool<ModelInstance> _modelInstanceSetPool;
@@ -381,8 +380,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	#endregion
 	
 	#region Camera-Locked Objects
-	// The approximation pivots about the mesh origin and faces the camera plane, so it's only valid when there's no anchor
-	// offset to honour and no upright direction to respect; anything else quietly keeps the accurate path
 	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad, bool allowFastApproximationWherePossible) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var modelInstance = quad.UnderlyingQuadInstance.UnderlyingModelInstance;
@@ -416,15 +413,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	public void PrepareCameraLockedObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
-		var cameraPosition = targetCamera.Position;
-		var cameraUpDirection = targetCamera.UpDirection;
-		
-		// These stay in quaternion space throughout. Transform stores its rotation as a Quaternion and ToMatrix() consumes
-		// one directly, so routing via Rotation's axis-angle form would cost an acos to read the current rotation plus a
-		// sin/cos to write the new one, per instance per frame, for no benefit.
 		static Transform BuildCameraLockedTransform(Location anchorPosition, Vect meshSpaceAnchorOffset, Vect scaling, Direction facingDirection, Direction upDirection) {
-			// Rows are the images of the canonical mesh axes under the rotation being built: the mesh faces Direction.Backward
-			// and is upright along Direction.Up, so local +Z maps on to -facing and local +X (Direction.Left) maps on to facing x up.
 			var localX = Direction.FastFromDualOrthogonalization(facingDirection, upDirection).ToVector3();
 			var localY = upDirection.ToVector3();
 			var localZ = -facingDirection.ToVector3();
@@ -461,7 +450,11 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection.Value, lockedUpDirection);
 		}
 		
-		var fastRotationQuat = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, -targetCamera.ViewDirection, cameraUpDirection).ToQuaternion();
+		var cameraPosition = targetCamera.Position;
+		var cameraViewDirection = targetCamera.ViewDirection;
+		var cameraUpDirection = targetCamera.UpDirection;
+		
+		var fastRotationQuat = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, -cameraViewDirection, cameraUpDirection).ToQuaternion();
 		foreach (var quad in _fastCamLockedQuadInstanceMap[handle].Values) {
 			quad.UnderlyingQuadInstance.UnderlyingModelInstance.SetRotationQuaternion(fastRotationQuat);
 		}

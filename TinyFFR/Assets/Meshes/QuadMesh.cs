@@ -27,7 +27,6 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 	}
 
 	public static Vect CalculateAnchorOffsetForStandardQuadMesh(XYPair<float> size, Orientation2D positionAnchor) {
-		// The normalized offset is measured from the down-right corner, so subtracting a half re-bases it on to the mesh's centre origin
 		var translatedAnchorPoint = (UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownRight, positionAnchor) - new XYPair<float>(0.5f)) * -size;
 		return new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f);
 	}

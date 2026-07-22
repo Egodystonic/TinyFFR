@@ -17,6 +17,9 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalCameraLockedObjectsTest {
+	const int QuadCount = 10_000;
+	const float QuadSize = 0.005f;
+	
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -52,7 +55,7 @@ class LocalCameraLockedObjectsTest {
 			config: new TextureCreationConfig { IsLinearColorspace = false, RenderingConfig = new() { DisableTextureRepeat = true }}
 		);
 		using var quadMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(quadTex);
-		var lockedQuads = Enumerable.Range(0, 10000).Select(_ => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quad, quadMat, position: Location.Random(Sphere.UnitSphere), size: (0.005f, 0.005f))).ToArray();
+		var lockedQuads = Enumerable.Range(0, QuadCount).Select(_ => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quad, quadMat, position: Location.Random(Sphere.UnitSphere), size: XYPair<float>.One * QuadSize)).ToArray();
 		foreach (var lq in lockedQuads) {
 			userControlledScene.Add(lq, true);
 			automaticScene.Add(lq, true);	

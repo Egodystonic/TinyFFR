@@ -1,6 +1,7 @@
 // Created on 2026-04-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Numerics;
 using System.Reflection;
 
 namespace Egodystonic.TinyFFR;
@@ -84,7 +85,7 @@ class PositionedRotatedCuboidTest {
 			if (type == typeof(object)) return null;
 			if (type == typeof(string)) return PositionedRotatedCuboid.Random().ToString("G", null);
 			if (type == typeof(IFormatProvider)) return null;
-			if (type == typeof(System.Numerics.Quaternion)) return Rotation.Random().ToQuaternion();
+			if (type == typeof(Quaternion)) return Rotation.Random().ToQuaternion();
 			var randomMethod = type.GetMethod("Random", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
 			if (randomMethod != null) return randomMethod.Invoke(null, null);
 			throw new InvalidOperationException($"Don't know how to generate random {type.Name}");

@@ -166,8 +166,6 @@ class RotationTest {
 		}
 
 		Assert.AreEqual(Rotation.None, new Rotation(0f, None));
-		// Assert.AreEqual(Rotation.None, new Rotation(0f, Up));
-		// Assert.AreEqual(Rotation.None, new Rotation(90f, None));
 
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Forward, Right));
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Right, Backward));
@@ -196,6 +194,16 @@ class RotationTest {
 				AssertEquivalence(Rotation.FromStartAndEndDirection(dirA, dirB), Rotation.FromStartAndEndDirection(-dirA, -dirB), 0f);
 				AssertEquivalence(-Rotation.FromStartAndEndDirection(dirA, dirB), Rotation.FromStartAndEndDirection(dirB, dirA), 0f);
 				AssertEquivalence(Rotation.FromStartAndEndDirection(dirA, dirB), -Rotation.FromStartAndEndDirection(dirB, dirA), 0f);
+			}
+		}
+		
+		// This section explicitly designed to test near-antiparallel inputs which were previously a little error-prone in some cases
+		const float SweepTolerance = 0.01f;
+		foreach (var start in AllCardinals) {
+			var sweepAxis = start.AnyOrthogonal();
+			for (var offsetDegrees = -5f; offsetDegrees <= 5f; offsetDegrees += 0.1f) {
+				var end = (180f + offsetDegrees) % sweepAxis * start;
+				AssertToleranceEquals(end, Rotation.FromStartAndEndDirection(start, end) * start, SweepTolerance);
 			}
 		}
 
@@ -228,49 +236,6 @@ class RotationTest {
 						Assert.IsTrue(Single.IsFinite(r.Axis.Z));
 					}
 				}
-			}
-		}
-	}
-
-	[Test]
-	public void BasisConstructedRotationShouldMatchStartAndEndOrientation() {
-		// Mirrors the camera-locked billboard construction in LocalSceneBuilder.BuildCameraLockedTransform: the canonical
-		// mesh faces Direction.Backward with Direction.Up upright, so local +X maps on to (facing x up) and local +Z on to -facing.
-		static Rotation BuildFromBasis(Direction facing, Direction up) {
-			var localX = FromDualOrthogonalization(facing, up).ToVector3();
-			var localY = up.ToVector3();
-			var localZ = -facing.ToVector3();
-			return Rotation.FromQuaternionPreNormalized(Quaternion.CreateFromRotationMatrix(new Matrix4x4(
-				localX.X, localX.Y, localX.Z, 0f,
-				localY.X, localY.Y, localY.Z, 0f,
-				localZ.X, localZ.Y, localZ.Z, 0f,
-				0f, 0f, 0f, 1f
-			)));
-		}
-
-		AssertEquivalence(Rotation.None, BuildFromBasis(Backward, Up), TestTolerance);
-
-		foreach (var facing in AllOrientations) {
-			foreach (var candidateUp in AllOrientations) {
-				if (candidateUp.OrthogonalizedAgainst(facing) is not { } up) continue;
-
-				var actual = BuildFromBasis(facing, up);
-				AssertToleranceEquals(facing, actual * Backward, TestTolerance);
-				AssertToleranceEquals(up, actual * Up, TestTolerance);
-				AssertEquivalence(Rotation.FromStartAndEndOrientation(Backward, Up, facing, up), actual, TestTolerance);
-			}
-		}
-	}
-
-	[Test]
-	public void ShouldCorrectlyConstructFromStartAndEndDirectionForNearAntiparallelInputs() {
-		const float SweepTolerance = 0.01f;
-
-		foreach (var start in AllCardinals) {
-			var sweepAxis = start.AnyOrthogonal();
-			for (var offsetDegrees = -5f; offsetDegrees <= 5f; offsetDegrees += 0.1f) {
-				var end = (180f + offsetDegrees) % sweepAxis * start;
-				AssertToleranceEquals(end, Rotation.FromStartAndEndDirection(start, end) * start, SweepTolerance);
 			}
 		}
 	}

@@ -48,26 +48,22 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 		public void Dispose() { /* no op */ }
 	}
 
-	const int InitialNumBuckets = 64;
-	// Bucket lookup is a linear scan, so without growing the bucket count every operation becomes O(Count / NumBuckets)
-	// and any per-element loop over the whole set becomes quadratic. Keeping the average bucket occupancy at or below
-	// this value keeps lookups constant-time regardless of Count.
-	const int MaxAverageBucketOccupancy = 4;
+	const int InitialBucketCount = 4; // Must be power of two
+	const int MaxAverageTargetBucketOccupancy = 4;
 	ArrayPoolBackedVector<T>[] _buckets;
 	int _numBuckets;
 	int _hashMask;
 	int _count;
 
-	// Memoises the previous GetItemAtIndex walk so that sequential enumeration doesn't restart from bucket zero each
-	// call (which would be O(NumBuckets) per item, and gets worse as the bucket count grows).
+	// These fields memoise lookup to make conseecutive scan a little better
 	int _lastIndexLookupVersion = -1;
 	int _lastIndexLookupIndex;
 	int _lastIndexLookupBucket;
 	int _lastIndexLookupBucketStart;
 
 	public ArrayPoolBackedSet() {
-		_numBuckets = InitialNumBuckets;
-		_hashMask = InitialNumBuckets - 1;
+		_numBuckets = InitialBucketCount;
+		_hashMask = InitialBucketCount - 1;
 		_buckets = ArrayPool<ArrayPoolBackedVector<T>>.Shared.Rent(_numBuckets);
 		for (var i = 0; i < _numBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<T>();
 	}
@@ -75,7 +71,6 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	public int Version { get; private set; } = 0;
 
 	public int Count => _count;
-	internal int NumBuckets => _numBuckets;
 
 	bool ICollection<T>.IsReadOnly { get; } = false;
 
@@ -274,12 +269,13 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	}
 
 	void GrowBucketsIfOverloaded() {
-		if (_count <= _numBuckets * MaxAverageBucketOccupancy) return;
+		if (_count <= _numBuckets * MaxAverageTargetBucketOccupancy) return;
 
 		var newNumBuckets = _numBuckets * 2;
 		var newHashMask = newNumBuckets - 1;
 		var newBuckets = ArrayPool<ArrayPoolBackedVector<T>>.Shared.Rent(newNumBuckets);
 
+		// Maintainer's note:
 		// Bucket count is always a power of two, so widening the mask by one bit splits each existing bucket in to
 		// itself and exactly one new bucket. That lets us keep the existing bucket instances rather than reallocating all of them.
 		for (var i = 0; i < _numBuckets; ++i) newBuckets[i] = _buckets[i];
