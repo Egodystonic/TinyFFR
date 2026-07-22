@@ -2560,4 +2560,27 @@ class LineTest {
 		AssertAngle(180f, Direction.Down, Direction.Left, Direction.Right);
 		AssertAngle(0f, Direction.Down, Direction.Left, Direction.Left);
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var line = new Line(new Location(1f, 2f, 3f), new Direction(1f, 1f, 0f));
+		var pivot = new Location(3f, -2f, 7f);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			AssertToleranceEquals(line.RotatedBy(rot), line.RotatedBy(quat), TestTolerance);
+			AssertToleranceEquals(line.RotatedAroundOriginBy(rot), line.RotatedAroundOriginBy(quat), TestTolerance);
+			AssertToleranceEquals(line.RotatedBy(rot, pivot), line.RotatedBy(quat, pivot), TestTolerance);
+			AssertToleranceEquals(line.RotatedBy(rot, 2.5f), line.RotatedBy(quat, 2.5f), TestTolerance);
+		}
+	}
 }

@@ -439,4 +439,26 @@ class PositionedRotatedCuboidTest {
 		Assert.IsTrue(bigRot.IsIntersectedBy(smallRot));
 		Assert.IsTrue(smallRot.IsIntersectedBy(bigRot));
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var cuboid = new PositionedRotatedCuboid(2f, 3f, 4f, new Location(1f, 1f, 1f), 25f % Direction.Up);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			var expected = cuboid.RotatedBy(rot);
+			var actual = cuboid.RotatedBy(quat);
+			AssertToleranceEquals(expected.Position, actual.Position, TestTolerance);
+			Assert.IsTrue(expected.Rotation.IsEquivalentForAllDirectionsTo(actual.Rotation, TestTolerance));
+		}
+	}
 }

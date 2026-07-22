@@ -1225,4 +1225,30 @@ class PlaneTest {
 		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyOrthogonalTo(b));
 		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyOrthogonalTo(b, new Angle(10f)));
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var plane = new Plane(new Direction(1f, 2f, 3f), new Location(0f, 4f, 0f));
+		var pivot = new Location(3f, -2f, 7f);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			AssertToleranceEquals(plane.RotatedAroundOriginBy(rot), plane.RotatedAroundOriginBy(quat), TestTolerance);
+			AssertToleranceEquals(plane.RotatedBy(rot, pivot), plane.RotatedBy(quat, pivot), TestTolerance);
+			AssertToleranceEquals(
+				((IRotatable<Plane>) plane).RotatedBy(rot),
+				((IRotatable<Plane>) plane).RotatedBy(quat),
+				TestTolerance
+			);
+		}
+	}
 }

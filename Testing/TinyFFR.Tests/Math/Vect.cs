@@ -1066,4 +1066,23 @@ class VectTest {
 			}
 		}
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var vect = new Vect(1f, -2f, 3f);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			AssertToleranceEquals(vect.RotatedBy(rot), vect.RotatedBy(quat), TestTolerance);
+		}
+	}
 }

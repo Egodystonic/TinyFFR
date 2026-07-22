@@ -917,4 +917,25 @@ class RotationTest {
 		AssertEquivalence(NinetyAroundDown * 2.5f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 2.5f)), TestTolerance);
 		AssertEquivalence(NinetyAroundDown * 0f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 0f)), TestTolerance);
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var start = 31f % new Direction(1f, -2f, 4f);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			var expected = start.CombinedAndNormalizedWith(rot);
+			var actual = start.CombinedAndNormalizedWith(quat);
+			Assert.IsTrue(expected.IsEquivalentForAllDirectionsTo(actual, TestTolerance));
+		}
+	}
 }
