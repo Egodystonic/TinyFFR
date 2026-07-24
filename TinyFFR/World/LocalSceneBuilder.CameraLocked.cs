@@ -10,6 +10,8 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed partial class LocalSceneBuilder {
+	// Ledger of all camera-locked instances so we can 
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _cameraLockedInstancesCanary = new();
 	// Plane-trivial: FaceCameraPlane + no upright + centre anchor + Standard scaling. Needs only the shared plane rotation per frame,
 	// so it stores just the ModelInstance rather than the whole camera-locked instance struct.
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _planeTrivialQuadInstanceMap = new();
@@ -48,12 +50,11 @@ sealed partial class LocalSceneBuilder {
 		else {
 			added = _generalQuadInstanceMap[handle].TryAdd(modelInstance.Handle, quad);
 		}
-		if (added) Add(handle, modelInstance);
+		if (added) {
+			_cameraLockedInstancesCanary[handle].Add(modelInstance);
+			Add(handle, modelInstance);
+		}
 	}
-	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
-		Remove(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
-	}
-
 	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var modelInstance = text.UnderlyingTextInstance.UnderlyingModelInstance;
@@ -66,10 +67,28 @@ sealed partial class LocalSceneBuilder {
 		else {
 			added = _generalTextInstanceMap[handle].TryAdd(modelInstance.Handle, text);
 		}
-		if (added) Add(handle, modelInstance);
+		if (added) {
+			_cameraLockedInstancesCanary[handle].Add(modelInstance);
+			Add(handle, modelInstance);
+		}
+	}
+	
+	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
+		Remove(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
 	}
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
 		Remove(handle, text.UnderlyingTextInstance.UnderlyingModelInstance);
+	}
+	void RemoveInstanceFromCameraLockedMaps(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		if (!_cameraLockedInstancesCanary[handle].Remove(modelInstance)) return;
+		
+		var miHandle = modelInstance.Handle;
+		_planeTrivialQuadInstanceMap[handle].Remove(modelInstance);
+		_planeTrivialTextInstanceMap[handle].Remove(modelInstance);
+		_planeScaledQuadInstanceMap[handle].Remove(miHandle);
+		_planeScaledTextInstanceMap[handle].Remove(miHandle);
+		_generalQuadInstanceMap[handle].Remove(miHandle);
+		_generalTextInstanceMap[handle].Remove(miHandle);
 	}
 	
 	public void PrepareCameraLockedObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {

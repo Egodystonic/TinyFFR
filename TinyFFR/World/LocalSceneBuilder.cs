@@ -59,6 +59,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_planeScaledTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
 		_generalQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
 		_generalTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
+		_cameraLockedInstancesCanary.Add(handle, _modelInstanceSetPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
@@ -99,14 +100,9 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 	public void Remove(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var instanceVector = _modelInstanceMap[handle];
-		if (!instanceVector.Remove(modelInstance)) return;
-		_planeTrivialQuadInstanceMap[handle].Remove(modelInstance);
-		_planeTrivialTextInstanceMap[handle].Remove(modelInstance);
-		_planeScaledQuadInstanceMap[handle].Remove(modelInstance.Handle);
-		_planeScaledTextInstanceMap[handle].Remove(modelInstance.Handle);
-		_generalQuadInstanceMap[handle].Remove(modelInstance.Handle);
-		_generalTextInstanceMap[handle].Remove(modelInstance.Handle);
+		if (!_modelInstanceMap[handle].Remove(modelInstance)) return;
+		
+		RemoveInstanceFromCameraLockedMaps(handle, modelInstance);
 
 		RemoveModelInstanceFromScene(
 			handle,
@@ -397,6 +393,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			_planeScaledTextInstanceMap[handle].Clear();
 			_generalQuadInstanceMap[handle].Clear();
 			_generalTextInstanceMap[handle].Clear();
+			_cameraLockedInstancesCanary[handle].Clear();
 		}
 		
 		if (includeLights) {
@@ -540,6 +537,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			_planeScaledTextInstanceMap.Dispose();
 			_generalQuadInstanceMap.Dispose();
 			_generalTextInstanceMap.Dispose();
+			_cameraLockedInstancesCanary.Dispose();
 			_modelInstanceSetPool.Dispose();
 			_camLockedQuadMapPool.Dispose();
 			_camLockedTextMapPool.Dispose();
@@ -589,6 +587,8 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_generalQuadInstanceMap.Remove(handle);
 		_camLockedTextMapPool.Return(_generalTextInstanceMap[handle]);
 		_generalTextInstanceMap.Remove(handle);
+		_modelInstanceSetPool.Return(_cameraLockedInstancesCanary[handle]);
+		_cameraLockedInstancesCanary.Remove(handle);
 
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
