@@ -201,6 +201,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	
 	public void SetNullMaterialBaseColor(ColorVect baseColor) => Implementation.SetNullMaterialBaseColor(_handle, baseColor);
 	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => Implementation.SetNullMaterialShadingStyle(_handle, style);
+	public void SetKeyedMaterialColor(ColorChannel key, ColorVect color) => Implementation.SetKeyedMaterialColor(_handle, key, color);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetMaterialEffectTransform(Transform2D newTransform) => Implementation.SetMaterialEffectTransform(_handle, newTransform);

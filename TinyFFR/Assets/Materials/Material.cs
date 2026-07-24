@@ -21,6 +21,11 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetSupportsPerInstanceEffects(_handle);
 	}
+	
+	public bool SupportsColorKeying {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSupportsColorKeying(_handle);
+	}
 
 	internal Material(ResourceHandle<Material> handle, IMaterialImplProvider impl) {
 		_handle = handle;
@@ -45,6 +50,9 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetEffectBlendDistance(MaterialEffectMapType mapType, float distance) => Implementation.SetEffectBlendDistance(_handle, mapType, distance);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetKeyedColor(ColorChannel key, ColorVect color) => Implementation.SetKeyedColor(_handle, key, color);
 
 	static Material IResource<Material>.CreateFromHandleAndImpl(ResourceHandle<Material> handle, IResourceImplProvider impl) {
 		return new Material(handle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));

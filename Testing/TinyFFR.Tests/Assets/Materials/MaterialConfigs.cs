@@ -85,7 +85,51 @@ class MaterialConfigsTest {
 
 		AssertPropertiesAccountedFor<LightingIgnoringMaterialCreationConfig>()
 			.Including(nameof(LightingIgnoringMaterialCreationConfig.ColorMap))
-			.Including(nameof(LightingIgnoringMaterialCreationConfig.Name));
+			.Including(nameof(LightingIgnoringMaterialCreationConfig.Name))
+			.End();
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertColorKeyedMaterialCreationConfigToAndFromHeapStorageFormat() {
+		var keyTexImplSub = Substitute.For<ITextureImplProvider>();
+		keyTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
+		var testConfigA = new ColorKeyedMaterialCreationConfig {
+			Name = "Aa Aa",
+			OutputIncludesAlphaChannel = true,
+			KeyMap = new Texture(111, keyTexImplSub),
+		};
+		var testConfigB = new ColorKeyedMaterialCreationConfig {
+			Name = "BBBbbb",
+			OutputIncludesAlphaChannel = false,
+			KeyMap = new Texture(1111, keyTexImplSub),
+		};
+
+		void CompareConfigs(ColorKeyedMaterialCreationConfig expected, ColorKeyedMaterialCreationConfig actual) {
+			Assert.AreEqual(expected.KeyMap, actual.KeyMap);
+			Assert.AreEqual(expected.OutputIncludesAlphaChannel, actual.OutputIncludesAlphaChannel);
+			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
+		}
+
+		AssertRoundTripHeapStorage(testConfigA, CompareConfigs);
+		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
+
+		AssertHeapSerializationWithObjects<ColorKeyedMaterialCreationConfig>()
+			.Resource(testConfigA.KeyMap)
+			.Bool(true)
+			.SubConfig(testConfigA.BaseConfig)
+			.For(testConfigA);
+
+		AssertHeapSerializationWithObjects<ColorKeyedMaterialCreationConfig>()
+			.Resource(testConfigB.KeyMap)
+			.Bool(false)
+			.SubConfig(testConfigB.BaseConfig)
+			.For(testConfigB);
+
+		AssertPropertiesAccountedFor<ColorKeyedMaterialCreationConfig>()
+			.Including(nameof(ColorKeyedMaterialCreationConfig.KeyMap))
+			.Including(nameof(ColorKeyedMaterialCreationConfig.OutputIncludesAlphaChannel))
+			.Including(nameof(ColorKeyedMaterialCreationConfig.Name))
+			.End();
 	}
 
 	[Test]
@@ -169,7 +213,8 @@ class MaterialConfigsTest {
 			.Including(nameof(StandardMaterialCreationConfig.EmissiveMap))
 			.Including(nameof(StandardMaterialCreationConfig.ClearCoatMap))
 			.Including(nameof(StandardMaterialCreationConfig.AlphaMode))
-			.Including(nameof(StandardMaterialCreationConfig.Name));
+			.Including(nameof(StandardMaterialCreationConfig.Name))
+			.End();
 	}
 
 	[Test]
@@ -261,6 +306,7 @@ class MaterialConfigsTest {
 			.Including(nameof(TransmissiveMaterialCreationConfig.RefractionThickness))
 			.Including(nameof(TransmissiveMaterialCreationConfig.Quality))
 			.Including(nameof(TransmissiveMaterialCreationConfig.AlphaMode))
-			.Including(nameof(TransmissiveMaterialCreationConfig.Name));
+			.Including(nameof(TransmissiveMaterialCreationConfig.Name))
+			.End();
 	}
 }

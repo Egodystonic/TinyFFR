@@ -23,6 +23,15 @@ public interface IMaterialBuilder {
 	}
 	Material CreateLightingIgnoringMaterial(in LightingIgnoringMaterialCreationConfig config);
 
+	Material CreateColorKeyedMaterial(Texture keyMap, bool outputIncludesAlphaChannel = false, ReadOnlySpan<char> name = default) {
+		return CreateColorKeyedMaterial(new ColorKeyedMaterialCreationConfig {
+			KeyMap = keyMap,
+			OutputIncludesAlphaChannel = outputIncludesAlphaChannel,
+			Name = name
+		});
+	}
+	Material CreateColorKeyedMaterial(in ColorKeyedMaterialCreationConfig config);
+
 	Material CreateStandardMaterial(Texture colorMap, Texture? normalMap = null, Texture? ormOrOrmrMap = null, Texture? anisotropyMap = null, Texture? emissiveMap = null, Texture? clearCoatMap = null, StandardMaterialAlphaMode? alphaMode = null, bool enablePerInstanceEffects = false, ReadOnlySpan<char> name = default) {
 		return CreateStandardMaterial(new StandardMaterialCreationConfig {
 			ColorMap = colorMap,

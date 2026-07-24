@@ -456,20 +456,22 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode };
 	}
 
+	public void SetKeyedMaterialColor(ResourceHandle<ModelInstance> handle, ColorChannel key, ColorVect color) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetOrCreateColorKeyedMaterialCopy(handle)?.SetKeyedColor(key, color);
+	}
+
 	public void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
-		effectsMaterialInstance?.SetEffectTransform(newTransform);
+		GetOrCreateEffectMaterialCopy(handle)?.SetEffectTransform(newTransform);
 	}
 	public void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
-		effectsMaterialInstance?.SetEffectBlendTexture(mapType, mapTexture);
+		GetOrCreateEffectMaterialCopy(handle)?.SetEffectBlendTexture(mapType, mapTexture);
 	}
 	public void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
-		effectsMaterialInstance?.SetEffectBlendDistance(mapType, distance);
+		GetOrCreateEffectMaterialCopy(handle)?.SetEffectBlendDistance(mapType, distance);
 	}
 
 	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
@@ -479,10 +481,25 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 		var curMat = GetMaterial(handle);
 		if (curMat?.SupportsPerInstanceEffects != true) return null;
-		
+
+		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat.Value);
+	}
+
+	Material? GetOrCreateColorKeyedMaterialCopy(ResourceHandle<ModelInstance> handle) {
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsPrimitive) {
+			return privateMatData.Material;
+		}
+
+		var curMat = GetMaterial(handle);
+		if (curMat?.SupportsColorKeying != true) return null;
+
+		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat.Value);
+	}
+
+	Material DuplicateAndTrackPrivateMaterialCopy(ResourceHandle<ModelInstance> handle, Material curMat) {
 		DisposePrivateMaterialIfPresent(handle);
 
-		var result = curMat.Value.Duplicate();
+		var result = curMat.Duplicate();
 		SetModelInstanceMaterial(
 			handle,
 			result.Handle

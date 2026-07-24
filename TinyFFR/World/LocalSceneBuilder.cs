@@ -587,6 +587,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_primitiveMap.Remove(handle);
 		
 		_activeSceneHandles.Remove(handle);
+		DisposePrimitiveResources();
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Scene> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));

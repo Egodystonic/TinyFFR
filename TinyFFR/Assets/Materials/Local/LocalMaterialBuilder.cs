@@ -133,6 +133,28 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return result;
 	}
 
+	public Material CreateColorKeyedMaterial(in ColorKeyedMaterialCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		var shaderConstants = ColorKeyedMaterialShader;
+
+		var alphaModeVariant = config.OutputIncludesAlphaChannel
+			? ColorKeyedMaterialShaderConstants.AlphaModeVariant.AlphaOn
+			: ColorKeyedMaterialShaderConstants.AlphaModeVariant.AlphaOff;
+
+		var shaderResourceName = shaderConstants.GetShaderResourceName(alphaModeVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name, shaderConstants);
+
+		ApplyMaterialParam(result, config.KeyMap, shaderConstants.ParamKeyMap);
+		ApplyMaterialParam(result, new Vector4(1f, 0f, 0f, 1f), shaderConstants.ParamXChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 1f, 0f, 1f), shaderConstants.ParamYChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 0f, 1f, 1f), shaderConstants.ParamZChannelColor);
+		ApplyMaterialParam(result, new Vector4(1f, 1f, 1f, 1f), shaderConstants.ParamWChannelColor);
+
+		return result;
+	}
+
 	public Material CreateStandardMaterial(in StandardMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -320,6 +342,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].SupportedEffects != 0;
 	}
+	
+	public bool GetSupportsColorKeying(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMaterials[handle].PackageConstants == ColorKeyedMaterialShader;
+	}
 
 	public bool GetSupportsShadows(ResourceHandle<Material> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -421,6 +448,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		if (!Single.IsFinite(distance)) distance = 0f;
 		ApplyMaterialParam(HandleToInstance(handle), distance, param);
+	}
+
+	public void SetKeyedColor(ResourceHandle<Material> handle, ColorChannel key, ColorVect color) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_activeMaterials[handle].PackageConstants != ColorKeyedMaterialShader) return;
+		var param = key switch {
+			ColorChannel.R => ColorKeyedMaterialShader.ParamXChannelColor,
+			ColorChannel.G => ColorKeyedMaterialShader.ParamYChannelColor,
+			ColorChannel.B => ColorKeyedMaterialShader.ParamZChannelColor,
+			ColorChannel.A => ColorKeyedMaterialShader.ParamWChannelColor,
+			_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)
+		};
+		ApplyMaterialParam(HandleToInstance(handle), color.AsVector4, param);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
