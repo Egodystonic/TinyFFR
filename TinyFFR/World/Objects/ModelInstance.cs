@@ -58,6 +58,11 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Implementation.SetTransform(_handle, transform);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTransformWithoutUpdatingWorldMatrix(in Transform newTransform) => Implementation.SetTransformWithoutUpdatingWorldMatrix(_handle, newTransform);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetWorldMatrixWithoutUpdatingTransform(in Matrix4x4 worldMatrix) => Implementation.SetWorldMatrixWithoutUpdatingTransform(_handle, worldMatrix);
+
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetPosition(_handle);

@@ -57,8 +57,66 @@ class LocalCameraLockedObjectsTest {
 		using var quadMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(quadTex);
 		var lockedQuads = Enumerable.Range(0, QuadCount).Select(_ => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quad, quadMat, position: Location.Random(Sphere.UnitSphere), size: XYPair<float>.One * QuadSize)).ToArray();
 		foreach (var lq in lockedQuads) {
-			userControlledScene.Add(lq, true);
-			automaticScene.Add(lq, true);	
+			userControlledScene.Add(lq, useFastApproximationWherePossible: true);
+			automaticScene.Add(lq, useFastApproximationWherePossible: true);	
+		}
+		
+		using var redPen = font.CreatePen(ColorVect.RedOpaque, ColorVect.BlackOpaque, 0.5f);
+		using var greenPen = font.CreatePen(ColorVect.GreenOpaque, ColorVect.BlackOpaque, 0.5f);
+		using var yellowPen = font.CreatePen(ColorVect.YellowOpaque, ColorVect.BlackOpaque, 0.5f);
+		using var bluePen = font.CreatePen(ColorVect.BlueOpaque, ColorVect.BlackOpaque, 0.5f);
+		using var pinkPen = font.CreatePen(ColorVect.PinkOpaque, ColorVect.BlackOpaque, 0.5f);
+		var scaledTextStrings = new[] {
+			font.CreateString("Hello"),	
+			font.CreateString("Hello this is a long string"),	
+			font.CreateString("!"),	
+		};
+		var curScaledTextStringIndex = 0;
+		
+		CameraLockedTextInstance[] CreateScaledTextInstances() {
+			return new[] {
+				factory.ObjectBuilder.CreateCameraLockedTextInstance(
+					redPen,
+					scaledTextStrings[curScaledTextStringIndex],
+					position: new Location(1f, 0f, 0f),
+					textInstanceHeight: 0.05f,
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeight
+				),
+				factory.ObjectBuilder.CreateCameraLockedTextInstance(
+					greenPen,
+					scaledTextStrings[curScaledTextStringIndex],
+					position: new Location(0f, 0f, 1f),
+					textInstanceHeight: 0.05f,
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidth
+				),
+				factory.ObjectBuilder.CreateCameraLockedTextInstance(
+					yellowPen,
+					scaledTextStrings[curScaledTextStringIndex],
+					position: new Location(-1f, 0f, 0f),
+					textInstanceHeight: 0.05f,
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeightPlusPreservedAspectRatio
+				),
+				factory.ObjectBuilder.CreateCameraLockedTextInstance(
+					bluePen,
+					scaledTextStrings[curScaledTextStringIndex],
+					position: new Location(0f, 0f, -1f),
+					textInstanceHeight: 0.05f,
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthPlusPreservedAspectRatio
+				),
+				factory.ObjectBuilder.CreateCameraLockedTextInstance(
+					pinkPen,
+					scaledTextStrings[curScaledTextStringIndex],
+					position: new Location(0f, 1f, 0f),
+					textInstanceHeight: 0.05f,
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthAndHeight
+				),
+			};
+		}
+		
+		var scaledTextInstances = CreateScaledTextInstances();
+		foreach (var sti in scaledTextInstances) {
+			userControlledScene.Add(sti);
+			automaticScene.Add(sti);	
 		}
 
 		userControlledScene.Add(lockedText);
@@ -72,6 +130,9 @@ class LocalCameraLockedObjectsTest {
 		using var userCamController = userControlledCamera.CreateController<InspectorCameraController>();
 		userCamController.AllowUpsideDownFlip = true;
 		using var autoCamController = automaticCamera.CreateController<OrbitalCameraController>();
+		autoCamController.Distance = 1.1f;
+		autoCamController.MinHeight = null;
+		autoCamController.Height = 0f;
 
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
@@ -104,6 +165,24 @@ class LocalCameraLockedObjectsTest {
 				automaticScene.Add(lockedText);
 				window.SetTitle(curLockedTextAnchor.ToString());
 			}
+			
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S)) {
+				++curScaledTextStringIndex;
+				if (curScaledTextStringIndex >= scaledTextStrings.Length) curScaledTextStringIndex = 0;
+				
+				foreach (var sti in scaledTextInstances) {
+					userControlledScene.Remove(sti);
+					automaticScene.Remove(sti);	
+					sti.Dispose();
+				}
+				
+				scaledTextInstances = CreateScaledTextInstances();
+				
+				foreach (var sti in scaledTextInstances) {
+					userControlledScene.Add(sti);
+					automaticScene.Add(sti);	
+				}
+			}
 
 			compositor.RenderAll();
 			window.SetTitle(loop.FramesPerSecondRecentAverage.ToString("N0"));
@@ -114,6 +193,9 @@ class LocalCameraLockedObjectsTest {
 		lockedText.Dispose();
 		foreach (var lq in lockedQuads) {
 			lq.Dispose();
+		}
+		foreach (var sti in scaledTextInstances) {
+			sti.Dispose();	
 		}
 	}
 }

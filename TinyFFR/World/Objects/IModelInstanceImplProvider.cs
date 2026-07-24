@@ -13,7 +13,9 @@ namespace Egodystonic.TinyFFR.World;
 public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<ModelInstance> {
 	Transform GetTransform(ResourceHandle<ModelInstance> handle);
 	void SetTransform(ResourceHandle<ModelInstance> handle, Transform newTransform);
-	
+	void SetTransformWithoutUpdatingWorldMatrix(ResourceHandle<ModelInstance> handle, in Transform newTransform);
+	void SetWorldMatrixWithoutUpdatingTransform(ResourceHandle<ModelInstance> handle, in Matrix4x4 worldMatrix);
+
 	Location GetPosition(ResourceHandle<ModelInstance> handle);
 	void SetPosition(ResourceHandle<ModelInstance> handle, Location newPosition);
 

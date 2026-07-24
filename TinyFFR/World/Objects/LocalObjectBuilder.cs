@@ -125,6 +125,15 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_activeInstanceTransforms[handle] = newTransform;
 	}
 
+	public void SetTransformWithoutUpdatingWorldMatrix(ResourceHandle<ModelInstance> handle, in Transform newTransform) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTransforms[handle] = newTransform;
+	}
+	public void SetWorldMatrixWithoutUpdatingTransform(ResourceHandle<ModelInstance> handle, in Matrix4x4 worldMatrix) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetModelInstanceWorldMatrix(handle, worldMatrix).ThrowIfFailure();
+	}
+
 	public Location GetPosition(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceTransforms[handle].Translation.AsLocation();

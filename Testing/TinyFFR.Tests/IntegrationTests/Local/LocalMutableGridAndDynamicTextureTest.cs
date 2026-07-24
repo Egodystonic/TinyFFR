@@ -84,7 +84,7 @@ class LocalMutableGridAndDynamicTextureTest {
 			texture.OverwriteTexels(texels);
 			
 			window.SetTitle(
-				$"Keys: [XYUO2] | " +
+				$"Keys: [XYUVO2M] | " +
 				$"{(!flipX ? "X=Default" : "X=Flipped")} " +
 				$"{(!flipY ? "Y=Default" : "Y=Flipped")} " +
 				$"{(!flipUp ? "Up=Default" : "Up=Flipped")} " +

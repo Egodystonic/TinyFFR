@@ -257,9 +257,9 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void Remove(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup) { }
 	public void Add<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight> { }
 	public void Remove<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight> { }
-	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad, bool allowFastApproximationWherePossible) { }
+	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad, bool useFastApproximationWherePossible) { }
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) { }
-	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text, bool allowFastApproximationWherePossible) { }
+	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text, bool useFastApproximationWherePossible) { }
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) { }
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) { }

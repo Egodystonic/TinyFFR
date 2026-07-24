@@ -20,11 +20,17 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	public static readonly ColorVect RedOpaque = new(1f, 0f, 0f, 1f);
 	public static readonly ColorVect GreenOpaque = new(0f, 1f, 0f, 1f);
 	public static readonly ColorVect BlueOpaque = new(0f, 0f, 1f, 1f);
+	public static readonly ColorVect YellowOpaque = new(1f, 1f, 0f, 1f);
+	public static readonly ColorVect CyanOpaque = new(0f, 1f, 1f, 1f);
+	public static readonly ColorVect PinkOpaque = new(1f, 0f, 1f, 1f);
 	public static readonly ColorVect WhiteTransparent = new(1f, 1f, 1f, 0f);
 	public static readonly ColorVect BlackTransparent = new(0f, 0f, 0f, 0f);
 	public static readonly ColorVect RedTransparent = new(1f, 0f, 0f, 0f);
 	public static readonly ColorVect GreenTransparent = new(0f, 1f, 0f, 0f);
 	public static readonly ColorVect BlueTransparent = new(0f, 0f, 1f, 0f);
+	public static readonly ColorVect YellowTransparent = new(1f, 1f, 0f, 0f);
+	public static readonly ColorVect CyanTransparent = new(0f, 1f, 1f, 0f);
+	public static readonly ColorVect PinkTransparent = new(1f, 0f, 1f, 0f);
 
 	internal readonly Vector4 AsVector4;
 

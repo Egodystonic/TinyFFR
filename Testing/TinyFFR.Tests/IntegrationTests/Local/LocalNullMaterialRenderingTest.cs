@@ -17,7 +17,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalPrimitiveRenderingTest {
+class LocalNullMaterialRenderingTest {
 	const int NumInstances = 1000;
 	const float MinDistanceForRandomObjects = 2f;
 	const float MaxDistanceForRandomObjects = 100f;
