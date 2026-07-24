@@ -36,6 +36,11 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	
 	void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights);
 	
+	ScenePrimitive CreatePrimitive(ResourceHandle<Scene> handle);
+	void SetPrimitivePaintbrush(ResourceHandle<Scene> handle, nuint primitiveHandle, in PrimitivePaintbrush paintbrush);
+	void DisposePrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle);
+	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Location point);
+	
 	IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle);
 	IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle);
 }

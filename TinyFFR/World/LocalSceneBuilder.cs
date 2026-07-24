@@ -31,18 +31,20 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<BuiltInSceneBackdrop, BackdropTexture> _loadedBuiltInBackdropTextures = new();
 	readonly LocalAssetLoader _assetLoader;
-	
+	readonly LocalObjectBuilder _objectBuilder;
 	bool _isDisposed = false;
 
-	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoader assetLoader) {
+	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoader assetLoader, LocalObjectBuilder objectBuilder) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
 		_assetLoader = assetLoader;
-		_modelInstanceSetPool = new(zeroMemoryOnReturn: false);
-		_camLockedAbridgedInstanceMapPool = new(zeroMemoryOnReturn: false);
-		_camLockedFullInstanceMapPool = new(zeroMemoryOnReturn: false);
-		_lightSetPool = new(zeroMemoryOnReturn: false);
+		_objectBuilder = objectBuilder;
+		_modelInstanceSetPool = new(zeroMemoryOnReturn: true);
+		_camLockedAbridgedInstanceMapPool = new(zeroMemoryOnReturn: true);
+		_camLockedFullInstanceMapPool = new(zeroMemoryOnReturn: true);
+		_lightSetPool = new(zeroMemoryOnReturn: true);
+		_primitiveMapPool = new(zeroMemoryOnReturn: true);
 	}
 
 	public Scene CreateScene(in SceneCreationConfig config) {
@@ -58,6 +60,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_camLockedFullInstanceMap.Add(handle, _camLockedFullInstanceMapPool.Rent());
 		_cameraLockedInstancesCanary.Add(handle, _modelInstanceSetPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
+		_primitiveMap.Add(handle, _primitiveMapPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
@@ -541,6 +544,8 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			_backdropMap.Dispose();
 			_lightMap.Dispose();
 			_lightSetPool.Dispose();
+			_primitiveMap.Dispose();
+			_primitiveMapPool.Dispose();
 			_shadowQualityActivePresetMap.Dispose();
 
 			_activeSceneHandles.Dispose();
@@ -577,6 +582,9 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
+		
+		_primitiveMapPool.Return(_primitiveMap[handle]);
+		_primitiveMap.Remove(handle);
 		
 		_activeSceneHandles.Remove(handle);
 	}

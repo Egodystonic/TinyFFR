@@ -86,15 +86,11 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(TextInstance text) => Remove(text.UnderlyingModelInstance);
 
-	// TODO xmldoc the instance's CameraLockStyle (set at creation) determines whether it faces the camera plane or the camera position;
-	// FaceCameraPlane with no position anchor, no locked upright direction, and Standard scaling mode uses the cheapest shared-rotation path
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(CameraLockedQuadInstance quad) => Implementation.Add(_handle, quad);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(CameraLockedQuadInstance quad) => Implementation.Remove(_handle, quad);
 
-	// TODO xmldoc the instance's CameraLockStyle (set at creation) determines whether it faces the camera plane or the camera position;
-	// FaceCameraPlane with no position anchor, no locked upright direction, and Standard scaling mode uses the cheapest shared-rotation path
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(CameraLockedTextInstance text) => Implementation.Add(_handle, text);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -115,6 +111,22 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void SetBackdropWithoutIndirectLighting(ColorVect color) => Implementation.SetBackdropWithoutIndirectLighting(_handle, color);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RemoveBackdrop() => Implementation.RemoveBackdrop(_handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScenePrimitive AddPrimitive() => Implementation.CreatePrimitive(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetPrimitivePaintbrush(nuint primitiveHandle, in PrimitivePaintbrush paintbrush) => Implementation.SetPrimitivePaintbrush(_handle, primitiveHandle, in paintbrush);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void DisposePrimitive(nuint primitiveHandle) => Implementation.DisposePrimitive(_handle, primitiveHandle);
+	
+	public ScenePrimitive AddPrimitive(Location point, in PrimitivePaintbrush paintbrush) {
+		var result = AddPrimitive();
+		result.SetPaintbrush(in paintbrush);
+		result.SetGeometry(point);
+		return result;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetPrimitiveGeometry(nuint primitiveHandle, Location point) => Implementation.SetPrimitiveGeometry(_handle, primitiveHandle, point);
 
 	public static float LuxToBrightness(float lux) {
 		if (!lux.IsNonNegativeAndFinite()) return 0f;
