@@ -53,10 +53,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		_activeSceneHandles.Add(handle);
 		_modelInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
-		_camLockedQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
-		_camLockedTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
-		_fastCamLockedQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
-		_fastCamLockedTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
+		_planeTrivialQuadInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
+		_planeTrivialTextInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
+		_planeScaledQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
+		_planeScaledTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
+		_generalQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
+		_generalTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
@@ -99,10 +101,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _modelInstanceMap[handle];
 		if (!instanceVector.Remove(modelInstance)) return;
-		_camLockedQuadInstanceMap[handle].Remove(modelInstance.Handle);
-		_camLockedTextInstanceMap[handle].Remove(modelInstance.Handle);
-		_fastCamLockedQuadInstanceMap[handle].Remove(modelInstance.Handle);
-		_fastCamLockedTextInstanceMap[handle].Remove(modelInstance.Handle);
+		_planeTrivialQuadInstanceMap[handle].Remove(modelInstance);
+		_planeTrivialTextInstanceMap[handle].Remove(modelInstance);
+		_planeScaledQuadInstanceMap[handle].Remove(modelInstance.Handle);
+		_planeScaledTextInstanceMap[handle].Remove(modelInstance.Handle);
+		_generalQuadInstanceMap[handle].Remove(modelInstance.Handle);
+		_generalTextInstanceMap[handle].Remove(modelInstance.Handle);
 
 		RemoveModelInstanceFromScene(
 			handle,
@@ -372,40 +376,6 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		if (curBackdropData.BackdropTex is { } backdropTex) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), backdropTex);
 	}
 	#endregion
-	
-	#region Camera-Locked Objects
-	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad, bool useFastApproximationWherePossible) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var modelInstance = quad.UnderlyingQuadInstance.UnderlyingModelInstance;
-		var useFastMap = useFastApproximationWherePossible
-			&& quad.ScalingMode == CameraLockedScalingMode.Standard
-			&& quad.PositionAnchor == Orientation2D.None
-			&& quad.LockedUprightDirection == Direction.None;
-		var targetMap = useFastMap ? _fastCamLockedQuadInstanceMap[handle] : _camLockedQuadInstanceMap[handle];
-		var siblingMap = useFastMap ? _camLockedQuadInstanceMap[handle] : _fastCamLockedQuadInstanceMap[handle];
-		if (siblingMap.ContainsKey(modelInstance.Handle)) return;
-		if (targetMap.TryAdd(modelInstance.Handle, quad)) Add(handle, modelInstance);
-	}
-	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
-		Remove(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
-	}
-
-	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text, bool useFastApproximationWherePossible) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var modelInstance = text.UnderlyingTextInstance.UnderlyingModelInstance;
-		var useFastMap = useFastApproximationWherePossible
-			&& text.ScalingMode == CameraLockedScalingMode.Standard
-			&& text.PositionAnchor == Orientation2D.None
-			&& text.LockedUprightDirection == Direction.None;
-		var targetMap = useFastMap ? _fastCamLockedTextInstanceMap[handle] : _camLockedTextInstanceMap[handle];
-		var siblingMap = useFastMap ? _camLockedTextInstanceMap[handle] : _fastCamLockedTextInstanceMap[handle];
-		if (siblingMap.ContainsKey(modelInstance.Handle)) return;
-		if (targetMap.TryAdd(modelInstance.Handle, text)) Add(handle, modelInstance);
-	}
-	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
-		Remove(handle, text.UnderlyingTextInstance.UnderlyingModelInstance);
-	}
-	#endregion
 
 	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -421,10 +391,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			}
 			
 			modelInstanceVector.Clear();
-			_camLockedQuadInstanceMap[handle].Clear();
-			_camLockedTextInstanceMap[handle].Clear();
-			_fastCamLockedQuadInstanceMap[handle].Clear();
-			_fastCamLockedTextInstanceMap[handle].Clear();
+			_planeTrivialQuadInstanceMap[handle].Clear();
+			_planeTrivialTextInstanceMap[handle].Clear();
+			_planeScaledQuadInstanceMap[handle].Clear();
+			_planeScaledTextInstanceMap[handle].Clear();
+			_generalQuadInstanceMap[handle].Clear();
+			_generalTextInstanceMap[handle].Clear();
 		}
 		
 		if (includeLights) {
@@ -562,10 +534,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			while (_activeSceneHandles.Count > 0) Dispose(_activeSceneHandles[^1]);
 
 			_modelInstanceMap.Dispose();
-			_camLockedQuadInstanceMap.Dispose();
-			_camLockedTextInstanceMap.Dispose();
-			_fastCamLockedQuadInstanceMap.Dispose();
-			_fastCamLockedTextInstanceMap.Dispose();
+			_planeTrivialQuadInstanceMap.Dispose();
+			_planeTrivialTextInstanceMap.Dispose();
+			_planeScaledQuadInstanceMap.Dispose();
+			_planeScaledTextInstanceMap.Dispose();
+			_generalQuadInstanceMap.Dispose();
+			_generalTextInstanceMap.Dispose();
 			_modelInstanceSetPool.Dispose();
 			_camLockedQuadMapPool.Dispose();
 			_camLockedTextMapPool.Dispose();
@@ -603,14 +577,18 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		_modelInstanceSetPool.Return(_modelInstanceMap[handle]);
 		_modelInstanceMap.Remove(handle);
-		_camLockedQuadMapPool.Return(_camLockedQuadInstanceMap[handle]);
-		_camLockedQuadInstanceMap.Remove(handle);
-		_camLockedTextMapPool.Return(_camLockedTextInstanceMap[handle]);
-		_camLockedTextInstanceMap.Remove(handle);
-		_camLockedQuadMapPool.Return(_fastCamLockedQuadInstanceMap[handle]);
-		_fastCamLockedQuadInstanceMap.Remove(handle);
-		_camLockedTextMapPool.Return(_fastCamLockedTextInstanceMap[handle]);
-		_fastCamLockedTextInstanceMap.Remove(handle);
+		_modelInstanceSetPool.Return(_planeTrivialQuadInstanceMap[handle]);
+		_planeTrivialQuadInstanceMap.Remove(handle);
+		_modelInstanceSetPool.Return(_planeTrivialTextInstanceMap[handle]);
+		_planeTrivialTextInstanceMap.Remove(handle);
+		_camLockedQuadMapPool.Return(_planeScaledQuadInstanceMap[handle]);
+		_planeScaledQuadInstanceMap.Remove(handle);
+		_camLockedTextMapPool.Return(_planeScaledTextInstanceMap[handle]);
+		_planeScaledTextInstanceMap.Remove(handle);
+		_camLockedQuadMapPool.Return(_generalQuadInstanceMap[handle]);
+		_generalQuadInstanceMap.Remove(handle);
+		_camLockedTextMapPool.Return(_generalTextInstanceMap[handle]);
+		_generalTextInstanceMap.Remove(handle);
 
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);

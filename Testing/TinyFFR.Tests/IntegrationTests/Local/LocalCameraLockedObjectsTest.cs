@@ -55,10 +55,12 @@ class LocalCameraLockedObjectsTest {
 			config: new TextureCreationConfig { IsLinearColorspace = false, RenderingConfig = new() { DisableTextureRepeat = true }}
 		);
 		using var quadMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(quadTex);
-		var lockedQuads = Enumerable.Range(0, QuadCount).Select(_ => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quad, quadMat, position: Location.Random(Sphere.UnitSphere), size: XYPair<float>.One * QuadSize)).ToArray();
+		var lockedQuads = Enumerable.Range(0, QuadCount).Select(
+			_ => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quad, quadMat, position: Location.Random(Sphere.UnitSphere), size: XYPair<float>.One * QuadSize, lockStyle: CameraLockStyle.FaceCameraPlane)
+		).ToArray();
 		foreach (var lq in lockedQuads) {
-			userControlledScene.Add(lq, useFastApproximationWherePossible: true);
-			automaticScene.Add(lq, useFastApproximationWherePossible: true);	
+			userControlledScene.Add(lq);
+			automaticScene.Add(lq);
 		}
 		
 		using var redPen = font.CreatePen(ColorVect.RedOpaque, ColorVect.BlackOpaque, 0.5f);
@@ -80,35 +82,40 @@ class LocalCameraLockedObjectsTest {
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(1f, 0f, 0f),
 					textInstanceHeight: 0.05f,
-					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeight
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeight,
+					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
 				factory.ObjectBuilder.CreateCameraLockedTextInstance(
 					greenPen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(0f, 0f, 1f),
 					textInstanceHeight: 0.05f,
-					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidth
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidth,
+					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
 				factory.ObjectBuilder.CreateCameraLockedTextInstance(
 					yellowPen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(-1f, 0f, 0f),
 					textInstanceHeight: 0.05f,
-					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeightPlusPreservedAspectRatio
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeightPlusPreservedAspectRatio,
+					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
 				factory.ObjectBuilder.CreateCameraLockedTextInstance(
 					bluePen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(0f, 0f, -1f),
 					textInstanceHeight: 0.05f,
-					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthPlusPreservedAspectRatio
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthPlusPreservedAspectRatio,
+					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
 				factory.ObjectBuilder.CreateCameraLockedTextInstance(
 					pinkPen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(0f, 1f, 0f),
 					textInstanceHeight: 0.05f,
-					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthAndHeight
+					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthAndHeight,
+					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
 			};
 		}

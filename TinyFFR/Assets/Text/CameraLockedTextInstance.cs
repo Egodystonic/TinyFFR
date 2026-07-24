@@ -13,12 +13,14 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 	public Direction LockedUprightDirection { get; } // Can be None
 	public Orientation2D PositionAnchor { get; }
 	public CameraLockedScalingMode ScalingMode { get; }
+	public CameraLockStyle LockStyle { get; }
 
-	internal CameraLockedTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode) {
+	internal CameraLockedTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
 		UnderlyingTextInstance = underlyingTextInstance;
 		LockedUprightDirection = lockedUprightDirection;
 		PositionAnchor = positionAnchor;
 		ScalingMode = scalingMode;
+		LockStyle = lockStyle;
 	}
 
 	public FontPen Pen {

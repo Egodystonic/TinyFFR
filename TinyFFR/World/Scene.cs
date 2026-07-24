@@ -86,17 +86,17 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(TextInstance text) => Remove(text.UnderlyingModelInstance);
 
-	// TODO xmldoc useFastApproximationWherePossible is only honoured for instances that have no position anchor, no locked upright direction, and Standard scaling mode
-	// when it is honoured the instance faces the camera plane rather than the camera position
+	// TODO xmldoc the instance's CameraLockStyle (set at creation) determines whether it faces the camera plane or the camera position;
+	// FaceCameraPlane with no position anchor, no locked upright direction, and Standard scaling mode uses the cheapest shared-rotation path
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CameraLockedQuadInstance quad, bool useFastApproximationWherePossible = false) => Implementation.Add(_handle, quad, useFastApproximationWherePossible);
+	public void Add(CameraLockedQuadInstance quad) => Implementation.Add(_handle, quad);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(CameraLockedQuadInstance quad) => Implementation.Remove(_handle, quad);
 
-	// TODO xmldoc useFastApproximationWherePossible is only honoured for instances that have no position anchor, no locked upright direction, and Standard scaling mode
-	// when it is honoured the instance faces the camera plane rather than the camera position
+	// TODO xmldoc the instance's CameraLockStyle (set at creation) determines whether it faces the camera plane or the camera position;
+	// FaceCameraPlane with no position anchor, no locked upright direction, and Standard scaling mode uses the cheapest shared-rotation path
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CameraLockedTextInstance text, bool useFastApproximationWherePossible = false) => Implementation.Add(_handle, text, useFastApproximationWherePossible);
+	public void Add(CameraLockedTextInstance text) => Implementation.Add(_handle, text);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
 	

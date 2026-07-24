@@ -179,12 +179,14 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<Came
 	public Direction LockedUprightDirection { get; }
 	public Orientation2D PositionAnchor { get; }
 	public CameraLockedScalingMode ScalingMode { get; }
+	public CameraLockStyle LockStyle { get; }
 
-	internal CameraLockedQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode) {
+	internal CameraLockedQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
 		UnderlyingQuadInstance = underlyingQuadInstance;
 		LockedUprightDirection = lockedUprightDirection;
 		PositionAnchor = positionAnchor;
 		ScalingMode = scalingMode;
+		LockStyle = lockStyle;
 	}
 	
 	public Location Position {

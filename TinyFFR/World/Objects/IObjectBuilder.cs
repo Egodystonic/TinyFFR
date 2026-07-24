@@ -128,13 +128,14 @@ public interface IObjectBuilder {
 		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
 	}
 	
-	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, ReadOnlySpan<char> name = default) {
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
 		return CreateCameraLockedQuadInstance(
 			mesh,
 			material,
 			lockedUprightDirection ?? Direction.None,
 			positionAnchor,
 			scalingMode,
+			lockStyle,
 			new ModelInstanceCreationConfig {
 				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(
 					position ?? Location.Origin,
@@ -148,8 +149,8 @@ public interface IObjectBuilder {
 		);
 	}
 	// TODO xmldoc lockedUprightDirection can be None
-	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, in ModelInstanceCreationConfig config) {
-		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor, scalingMode);
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
+		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
 	}
 	#endregion
 	
@@ -184,13 +185,14 @@ public interface IObjectBuilder {
 		return new TextInstance(underlyingInstance, pen, @string);
 	}
 
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, bool rescaleHeightAccordingToLineCount = true, ReadOnlySpan<char> name = default) {
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, bool rescaleHeightAccordingToLineCount = true, ReadOnlySpan<char> name = default) {
 		return CreateCameraLockedTextInstance(
 			pen,
 			@string,
 			lockedUprightDirection ?? Direction.None,
 			positionAnchor,
 			scalingMode,
+			lockStyle,
 			new ModelInstanceCreationConfig {
 				Name = name,
 				InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, Direction.Backward, textInstanceHeight, textInstanceWidth, Direction.Up, positionAnchor, rescaleHeightAccordingToLineCount)
@@ -198,8 +200,8 @@ public interface IObjectBuilder {
 		);
 	}
 	// TODO xmldoc lockedUprightDirection can be None
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, in ModelInstanceCreationConfig config) {
-		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, in config), lockedUprightDirection, positionAnchor, scalingMode);
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
+		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
 	}
 	#endregion
 }
