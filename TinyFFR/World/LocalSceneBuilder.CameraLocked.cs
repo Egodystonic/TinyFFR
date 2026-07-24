@@ -10,21 +10,35 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed partial class LocalSceneBuilder {
-	// Ledger of all camera-locked instances so we can 
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _cameraLockedInstancesCanary = new();
-	// Plane-trivial: FaceCameraPlane + no upright + centre anchor + Standard scaling. Needs only the shared plane rotation per frame,
-	// so it stores just the ModelInstance rather than the whole camera-locked instance struct.
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _planeTrivialQuadInstanceMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _planeTrivialTextInstanceMap = new();
-	// Plane-scaled: FaceCameraPlane + no upright + centre anchor + screen-scaled. Shared rotation, but per-instance derived scale.
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedQuadInstance>> _planeScaledQuadInstanceMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedTextInstance>> _planeScaledTextInstanceMap = new();
-	// General: everything else (all FaceCameraPosition; plus FaceCameraPlane with upright and/or offset anchor). Full per-instance billboard.
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedQuadInstance>> _generalQuadInstanceMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockedTextInstance>> _generalTextInstanceMap = new();
-	readonly MapPool<ResourceHandle<ModelInstance>, CameraLockedQuadInstance> _camLockedQuadMapPool;
-	readonly MapPool<ResourceHandle<ModelInstance>, CameraLockedTextInstance> _camLockedTextMapPool;
+	readonly record struct FullCameraLockedInstanceData(
+		CameraLockedScalingMode ScalingMode,
+		CameraLockStyle LockStyle,
+		Direction LockedUprightDirection,
+		Orientation2D PositionAnchor,
+		QuadInstance? Quad,
+		TextInstance? Text
+	) {
+		public ModelInstance ModelInstance => Quad?.UnderlyingModelInstance ?? Text!.Value.UnderlyingModelInstance;
+		
+		public Vect GetGeneralAnchorOffset(Vect worldScaling) {
+			var size = new XYPair<float>(worldScaling.X, worldScaling.Y);
+			if (Text is not { } text) return QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(size, PositionAnchor);
+			
+			var @string = text.String;
+			return @string.Font.GetTextInstanceAnchorOffset(@string.Size, size, PositionAnchor);
+		}
+	}
 	
+	readonly record struct AbridgedCameraLockedInstanceData(CameraLockedScalingMode ScalingMode, ModelInstance ModelInstance);
+
+	// Ledger of all camera-locked instances so we can skip the per-bucket lookups in Remove when an instance was never camera-locked.
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _cameraLockedInstancesCanary = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _camLockedTrivialInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, AbridgedCameraLockedInstanceData>> _camLockedAbridgedInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, FullCameraLockedInstanceData>> _camLockedFullInstanceMap = new();
+	readonly MapPool<ResourceHandle<ModelInstance>, AbridgedCameraLockedInstanceData> _camLockedAbridgedInstanceMapPool;
+	readonly MapPool<ResourceHandle<ModelInstance>, FullCameraLockedInstanceData> _camLockedFullInstanceMapPool;
+
 	readonly record struct ScreenScalingContext(
 		CameraProjectionType ProjectionType,
 		float HalfHorizontalFovTangent,
@@ -40,39 +54,29 @@ sealed partial class LocalSceneBuilder {
 
 	public void Add(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var modelInstance = quad.UnderlyingQuadInstance.UnderlyingModelInstance;
-		bool added;
-		if (InstanceUsesSharedPlaneRotation(quad.LockStyle, quad.LockedUprightDirection, quad.PositionAnchor)) {
-			added = quad.ScalingMode == CameraLockedScalingMode.Standard
-				? _planeTrivialQuadInstanceMap[handle].Add(modelInstance)
-				: _planeScaledQuadInstanceMap[handle].TryAdd(modelInstance.Handle, quad);
-		}
-		else {
-			added = _generalQuadInstanceMap[handle].TryAdd(modelInstance.Handle, quad);
-		}
-		if (added) {
-			_cameraLockedInstancesCanary[handle].Add(modelInstance);
-			Add(handle, modelInstance);
-		}
+		AddCameraLockedInstance(handle, new FullCameraLockedInstanceData(quad.ScalingMode, quad.LockStyle, quad.LockedUprightDirection, quad.PositionAnchor, quad.UnderlyingQuadInstance, null));
 	}
 	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var modelInstance = text.UnderlyingTextInstance.UnderlyingModelInstance;
+		AddCameraLockedInstance(handle, new FullCameraLockedInstanceData(text.ScalingMode, text.LockStyle, text.LockedUprightDirection, text.PositionAnchor, null, text.UnderlyingTextInstance));
+	}
+	void AddCameraLockedInstance(ResourceHandle<Scene> handle, in FullCameraLockedInstanceData data) {
+		var modelInstance = data.ModelInstance;
 		bool added;
-		if (InstanceUsesSharedPlaneRotation(text.LockStyle, text.LockedUprightDirection, text.PositionAnchor)) {
-			added = text.ScalingMode == CameraLockedScalingMode.Standard
-				? _planeTrivialTextInstanceMap[handle].Add(modelInstance)
-				: _planeScaledTextInstanceMap[handle].TryAdd(modelInstance.Handle, text);
+		if (InstanceUsesSharedPlaneRotation(data.LockStyle, data.LockedUprightDirection, data.PositionAnchor)) {
+			added = data.ScalingMode == CameraLockedScalingMode.Standard
+				? _camLockedTrivialInstanceMap[handle].Add(modelInstance)
+				: _camLockedAbridgedInstanceMap[handle].TryAdd(modelInstance.Handle, new(data.ScalingMode, data.ModelInstance));
 		}
 		else {
-			added = _generalTextInstanceMap[handle].TryAdd(modelInstance.Handle, text);
+			added = _camLockedFullInstanceMap[handle].TryAdd(modelInstance.Handle, data);
 		}
 		if (added) {
 			_cameraLockedInstancesCanary[handle].Add(modelInstance);
 			Add(handle, modelInstance);
 		}
 	}
-	
+
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) {
 		Remove(handle, quad.UnderlyingQuadInstance.UnderlyingModelInstance);
 	}
@@ -81,14 +85,11 @@ sealed partial class LocalSceneBuilder {
 	}
 	void RemoveInstanceFromCameraLockedMaps(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		if (!_cameraLockedInstancesCanary[handle].Remove(modelInstance)) return;
-		
+
 		var miHandle = modelInstance.Handle;
-		_planeTrivialQuadInstanceMap[handle].Remove(modelInstance);
-		_planeTrivialTextInstanceMap[handle].Remove(modelInstance);
-		_planeScaledQuadInstanceMap[handle].Remove(miHandle);
-		_planeScaledTextInstanceMap[handle].Remove(miHandle);
-		_generalQuadInstanceMap[handle].Remove(miHandle);
-		_generalTextInstanceMap[handle].Remove(miHandle);
+		_camLockedTrivialInstanceMap[handle].Remove(modelInstance);
+		_camLockedAbridgedInstanceMap[handle].Remove(miHandle);
+		_camLockedFullInstanceMap[handle].Remove(miHandle);
 	}
 	
 	public void PrepareCameraLockedObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
@@ -110,45 +111,26 @@ sealed partial class LocalSceneBuilder {
 			cameraViewDirection
 		);
 
-		// Plane-trivial: one shared rotation, nothing else per instance.
-		foreach (var modelInstance in _planeTrivialQuadInstanceMap[handle]) {
-			modelInstance.SetRotationQuaternion(planeRotationQuat);
-		}
-		foreach (var modelInstance in _planeTrivialTextInstanceMap[handle]) {
+		foreach (var modelInstance in _camLockedTrivialInstanceMap[handle]) {
 			modelInstance.SetRotationQuaternion(planeRotationQuat);
 		}
 
-		// Plane-scaled: shared rotation + per-instance derived world scale, pushed as a world matrix so the stored fraction is untouched.
-		foreach (var quad in _planeScaledQuadInstanceMap[handle].Values) {
-			var storedTransform = quad.UnderlyingQuadInstance.Transform;
-			var worldScaling = CalculateWorldScaling(quad.ScalingMode, storedTransform.Scaling, storedTransform.Translation, in screenScaling);
+		foreach (var inst in _camLockedAbridgedInstanceMap[handle].Values) {
+			var modelInstance = inst.ModelInstance;
+			var storedTransform = modelInstance.Transform;
+			var worldScaling = CalculateWorldScaling(inst.ScalingMode, storedTransform.Scaling, storedTransform.Translation, in screenScaling);
 			var worldMatrix = new Transform(storedTransform.Translation, planeRotationQuat, worldScaling).ToMatrix();
-			quad.UnderlyingQuadInstance.UnderlyingModelInstance.SetWorldMatrixWithoutUpdatingTransform(worldMatrix);
-		}
-		foreach (var text in _planeScaledTextInstanceMap[handle].Values) {
-			var storedTransform = text.UnderlyingTextInstance.Transform;
-			var worldScaling = CalculateWorldScaling(text.ScalingMode, storedTransform.Scaling, storedTransform.Translation, in screenScaling);
-			var worldMatrix = new Transform(storedTransform.Translation, planeRotationQuat, worldScaling).ToMatrix();
-			text.UnderlyingTextInstance.UnderlyingModelInstance.SetWorldMatrixWithoutUpdatingTransform(worldMatrix);
+			modelInstance.SetWorldMatrixWithoutUpdatingTransform(worldMatrix);
 		}
 
-		// General: full per-instance billboard, honouring the instance's CameraLockStyle and locked upright.
-		foreach (var quad in _generalQuadInstanceMap[handle].Values) {
-			var storedTransform = quad.UnderlyingQuadInstance.Transform;
-			var worldScaling = CalculateWorldScaling(quad.ScalingMode, storedTransform.Scaling, storedTransform.Translation, in screenScaling);
+		foreach (var inst in _camLockedFullInstanceMap[handle].Values) {
+			var modelInstance = inst.ModelInstance;
+			var storedTransform = modelInstance.Transform;
+			var worldScaling = CalculateWorldScaling(inst.ScalingMode, storedTransform.Scaling, storedTransform.Translation, in screenScaling);
 			var billboard = storedTransform with { Scaling = worldScaling };
-			var anchorOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(worldScaling.X, worldScaling.Y), quad.PositionAnchor);
-			ApplyGeneralCameraLockedFacing(ref billboard, anchorOffset, quad.LockStyle, quad.LockedUprightDirection, cameraPosition, cameraUpDirection, planeFacingDirection);
-			CommitCameraLockedTransform(quad.UnderlyingQuadInstance.UnderlyingModelInstance, in billboard, quad.ScalingMode, storedTransform.Scaling);
-		}
-		foreach (var text in _generalTextInstanceMap[handle].Values) {
-			var storedTransform = text.UnderlyingTextInstance.Transform;
-			var @string = text.UnderlyingTextInstance.String;
-			var worldScaling = CalculateWorldScaling(text.ScalingMode, storedTransform.Scaling, storedTransform.Translation, in screenScaling);
-			var billboard = storedTransform with { Scaling = worldScaling };
-			var anchorOffset = @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(worldScaling.X, worldScaling.Y), text.PositionAnchor);
-			ApplyGeneralCameraLockedFacing(ref billboard, anchorOffset, text.LockStyle, text.LockedUprightDirection, cameraPosition, cameraUpDirection, planeFacingDirection);
-			CommitCameraLockedTransform(text.UnderlyingTextInstance.UnderlyingModelInstance, in billboard, text.ScalingMode, storedTransform.Scaling);
+			var anchorOffset = inst.GetGeneralAnchorOffset(worldScaling);
+			ApplyGeneralCameraLockedFacing(ref billboard, anchorOffset, inst.LockStyle, inst.LockedUprightDirection, cameraPosition, cameraUpDirection, planeFacingDirection);
+			CommitCameraLockedTransform(modelInstance, in billboard, inst.ScalingMode, storedTransform.Scaling);
 		}
 	}
 

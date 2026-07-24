@@ -49,7 +49,7 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	}
 
 	const int InitialBucketCount = 4; // Must be power of two
-	const int MaxAverageTargetBucketOccupancy = 4;
+	const int MaxAverageTargetBucketOccupancy = 8;
 	ArrayPoolBackedVector<T>[] _buckets;
 	int _numBuckets;
 	int _hashMask;

@@ -40,8 +40,8 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_globals = globals;
 		_assetLoader = assetLoader;
 		_modelInstanceSetPool = new(zeroMemoryOnReturn: false);
-		_camLockedQuadMapPool = new(zeroMemoryOnReturn: false);
-		_camLockedTextMapPool = new(zeroMemoryOnReturn: false);
+		_camLockedAbridgedInstanceMapPool = new(zeroMemoryOnReturn: false);
+		_camLockedFullInstanceMapPool = new(zeroMemoryOnReturn: false);
 		_lightSetPool = new(zeroMemoryOnReturn: false);
 	}
 
@@ -53,12 +53,9 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		_activeSceneHandles.Add(handle);
 		_modelInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
-		_planeTrivialQuadInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
-		_planeTrivialTextInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
-		_planeScaledQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
-		_planeScaledTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
-		_generalQuadInstanceMap.Add(handle, _camLockedQuadMapPool.Rent());
-		_generalTextInstanceMap.Add(handle, _camLockedTextMapPool.Rent());
+		_camLockedTrivialInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
+		_camLockedAbridgedInstanceMap.Add(handle, _camLockedAbridgedInstanceMapPool.Rent());
+		_camLockedFullInstanceMap.Add(handle, _camLockedFullInstanceMapPool.Rent());
 		_cameraLockedInstancesCanary.Add(handle, _modelInstanceSetPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
 
@@ -387,12 +384,9 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			}
 			
 			modelInstanceVector.Clear();
-			_planeTrivialQuadInstanceMap[handle].Clear();
-			_planeTrivialTextInstanceMap[handle].Clear();
-			_planeScaledQuadInstanceMap[handle].Clear();
-			_planeScaledTextInstanceMap[handle].Clear();
-			_generalQuadInstanceMap[handle].Clear();
-			_generalTextInstanceMap[handle].Clear();
+			_camLockedTrivialInstanceMap[handle].Clear();
+			_camLockedAbridgedInstanceMap[handle].Clear();
+			_camLockedFullInstanceMap[handle].Clear();
 			_cameraLockedInstancesCanary[handle].Clear();
 		}
 		
@@ -531,16 +525,13 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			while (_activeSceneHandles.Count > 0) Dispose(_activeSceneHandles[^1]);
 
 			_modelInstanceMap.Dispose();
-			_planeTrivialQuadInstanceMap.Dispose();
-			_planeTrivialTextInstanceMap.Dispose();
-			_planeScaledQuadInstanceMap.Dispose();
-			_planeScaledTextInstanceMap.Dispose();
-			_generalQuadInstanceMap.Dispose();
-			_generalTextInstanceMap.Dispose();
+			_camLockedTrivialInstanceMap.Dispose();
+			_camLockedAbridgedInstanceMap.Dispose();
+			_camLockedFullInstanceMap.Dispose();
 			_cameraLockedInstancesCanary.Dispose();
 			_modelInstanceSetPool.Dispose();
-			_camLockedQuadMapPool.Dispose();
-			_camLockedTextMapPool.Dispose();
+			_camLockedAbridgedInstanceMapPool.Dispose();
+			_camLockedFullInstanceMapPool.Dispose();
 			
 			foreach (var builtInBackdropTex in _loadedBuiltInBackdropTextures.Values) {
 				builtInBackdropTex.Dispose();
@@ -575,18 +566,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		_modelInstanceSetPool.Return(_modelInstanceMap[handle]);
 		_modelInstanceMap.Remove(handle);
-		_modelInstanceSetPool.Return(_planeTrivialQuadInstanceMap[handle]);
-		_planeTrivialQuadInstanceMap.Remove(handle);
-		_modelInstanceSetPool.Return(_planeTrivialTextInstanceMap[handle]);
-		_planeTrivialTextInstanceMap.Remove(handle);
-		_camLockedQuadMapPool.Return(_planeScaledQuadInstanceMap[handle]);
-		_planeScaledQuadInstanceMap.Remove(handle);
-		_camLockedTextMapPool.Return(_planeScaledTextInstanceMap[handle]);
-		_planeScaledTextInstanceMap.Remove(handle);
-		_camLockedQuadMapPool.Return(_generalQuadInstanceMap[handle]);
-		_generalQuadInstanceMap.Remove(handle);
-		_camLockedTextMapPool.Return(_generalTextInstanceMap[handle]);
-		_generalTextInstanceMap.Remove(handle);
+		_modelInstanceSetPool.Return(_camLockedTrivialInstanceMap[handle]);
+		_camLockedTrivialInstanceMap.Remove(handle);
+		_camLockedAbridgedInstanceMapPool.Return(_camLockedAbridgedInstanceMap[handle]);
+		_camLockedAbridgedInstanceMap.Remove(handle);
+		_camLockedFullInstanceMapPool.Return(_camLockedFullInstanceMap[handle]);
+		_camLockedFullInstanceMap.Remove(handle);
 		_modelInstanceSetPool.Return(_cameraLockedInstancesCanary[handle]);
 		_cameraLockedInstancesCanary.Remove(handle);
 

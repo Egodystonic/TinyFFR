@@ -139,7 +139,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	}
 
 	const int InitialBucketCount = 4; // Must be power of two
-	const int MaxAverageTargetBucketOccupancy = 4;
+	const int MaxAverageTargetBucketOccupancy = 8;
 	ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>[] _buckets;
 	int _numBuckets;
 	int _hashMask;
