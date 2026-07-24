@@ -63,7 +63,7 @@ class LocalTextRenderingTest {
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		using var camController = camera.CreateController<FreeFlyingCameraController>();
-		using var textInstance = factory.ObjectBuilder.CreateTextInstance(pen1, strings[0], position: new(0f, 0f, 1f), textInstanceHeight: TextHeight);
+		using var textInstance = factory.ObjectBuilder.CreateTextInstance(pen1, strings[0], position: new(0f, 0f, 1f), layout: new(TextHeight));
 		var anchors = new[] {
 			Orientation2D.UpRight, Orientation2D.Up, Orientation2D.UpLeft,
 			Orientation2D.Right, Orientation2D.None, Orientation2D.Left,
@@ -71,15 +71,18 @@ class LocalTextRenderingTest {
 		};
 		var curAnchorIdx = Array.IndexOf(anchors, Orientation2D.None);
 		var curStringIdx = 0;
-		var useDefaultScalingParams = true;
+		var curScalingParamsIdx = 0;
 		scene.Add(textInstance.UnderlyingModelInstance);
 		
 		void UpdateInstanceTransform() {
-			if (useDefaultScalingParams) {
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx]);
+			if (curScalingParamsIdx == 0) {
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextMeshLayout(TextHeight, anchors[curAnchorIdx]));
+			}
+			else if (curScalingParamsIdx == 1) {
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextMeshLayout(TextHeight, anchors[curAnchorIdx], null, true));
 			}
 			else {
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, textInstanceHeight: null, textInstanceWidth: TextWidth, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx], rescaleHeightAccordingToLineCount: false);
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextMeshLayout(null, anchors[curAnchorIdx], TextWidth, false));
 			}
 		}
 		
@@ -95,7 +98,6 @@ class LocalTextRenderingTest {
 				++curStringIdx;
 				if (curStringIdx >= strings.Length) curStringIdx = 0;
 				textInstance.String = strings[curStringIdx];
-				UpdateInstanceTransform();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) textInstance.SetPen(pen1);
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) textInstance.SetPen(pen2);
@@ -107,7 +109,8 @@ class LocalTextRenderingTest {
 				UpdateInstanceTransform();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S)) {
-				useDefaultScalingParams = !useDefaultScalingParams;
+				++curScalingParamsIdx;
+				if (curScalingParamsIdx > 2) curScalingParamsIdx = 0;
 				UpdateInstanceTransform();
 			}
 			

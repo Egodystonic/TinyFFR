@@ -174,34 +174,36 @@ public interface IObjectBuilder {
 	#endregion
 	
 	#region Text
-	TextInstance CreateTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? facingDirection = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, bool rescaleHeightAccordingToLineCount = true, ReadOnlySpan<char> name = default) {
-		return CreateTextInstance(pen, @string, new ModelInstanceCreationConfig {
+	TextInstance CreateTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? facingDirection = null, Direction? uprightDirection = null, TextMeshLayout? layout = null, ReadOnlySpan<char> name = default) {
+		layout ??= new TextMeshLayout();
+		return CreateTextInstance(pen, @string, layout.Value, new ModelInstanceCreationConfig {
 			Name = name,
-			InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, facingDirection ?? Direction.Backward, textInstanceHeight, textInstanceWidth, uprightDirection, positionAnchor, rescaleHeightAccordingToLineCount)
+			InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, facingDirection ?? Direction.Backward, uprightDirection, layout.Value)
 		});
 	}
-	TextInstance CreateTextInstance(FontPen pen, FontString @string, in ModelInstanceCreationConfig config) {
+	TextInstance CreateTextInstance(FontPen pen, FontString @string, TextMeshLayout layout, in ModelInstanceCreationConfig config) {
 		var underlyingInstance = CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config);
-		return new TextInstance(underlyingInstance, pen, @string);
+		return new TextInstance(underlyingInstance, pen, @string, layout);
 	}
 
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, float? textInstanceHeight = null, float? textInstanceWidth = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, bool rescaleHeightAccordingToLineCount = true, ReadOnlySpan<char> name = default) {
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextMeshLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+		layout ??= new TextMeshLayout();
 		return CreateCameraLockedTextInstance(
 			pen,
 			@string,
 			lockedUprightDirection ?? Direction.None,
-			positionAnchor,
+			layout.Value,
 			scalingMode,
 			lockStyle,
 			new ModelInstanceCreationConfig {
 				Name = name,
-				InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, Direction.Backward, textInstanceHeight, textInstanceWidth, Direction.Up, positionAnchor, rescaleHeightAccordingToLineCount)
+				InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, Direction.Backward, Direction.Up, layout.Value)
 			}
 		);
 	}
 	// TODO xmldoc lockedUprightDirection can be None
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
-		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, TextMeshLayout layout, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
+		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, layout, in config), lockedUprightDirection, layout.PositionAnchor, scalingMode, lockStyle);
 	}
 	#endregion
 }

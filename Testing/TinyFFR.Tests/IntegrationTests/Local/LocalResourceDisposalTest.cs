@@ -158,7 +158,7 @@ class LocalResourceDisposalTest {
 			v => _ = v.MeasureString("Test"),
 			v => _ = v.CreatePen(ColorVect.WhiteOpaque),
 			v => { var s = v.CreateString("Test"); _ = s.Size; s.Dispose(); },
-			v => _ = v.GetTextInstanceTransform(new XYPair<float>(10f, 10f), Location.Origin, Direction.Forward, 1f)
+			v => _ = v.GetTextInstanceTransform(new XYPair<float>(10f, 10f), Location.Origin, Direction.Forward, null, new(1f))
 		};
 		AssertUseAfterDisposalThrowsException(assetLoader.LoadFont(), objectIsAlreadyDisposed: false, fontActions);
 		var objectBuilder = factory.ObjectBuilder;

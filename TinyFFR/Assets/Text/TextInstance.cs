@@ -76,9 +76,9 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
-	internal TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string) {
+	internal TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextMeshLayout layout) {
 		UnderlyingModelInstance = underlyingModelInstance;
-		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string);
+		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string, layout);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,10 +88,11 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
-	public void SetTransform(Location position, Direction facingDirection, float? textInstanceHeight, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, bool rescaleHeightAccordingToLineCount = true) {
+	public void SetTransform(Location position, Direction facingDirection, Direction? uprightDirection, TextMeshLayout layout) {
+		UnderlyingModelInstance.Implementation.SetTextInstanceLayout(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), layout);
+		
 		var @string = String;
-		var stringSize = @string.Size;
-		var transform = @string.Font.GetTextInstanceTransform(stringSize, position, facingDirection, textInstanceHeight, textInstanceWidth, uprightDirection, positionAnchor, rescaleHeightAccordingToLineCount);
+		var transform = @string.Font.GetTextInstanceTransform(@string.Size, position, facingDirection, uprightDirection, layout);
 		UnderlyingModelInstance.SetTransform(transform);
 	}
 	

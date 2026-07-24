@@ -17,6 +17,7 @@ public interface IFontImplProvider : IDisposableResourceImplProvider<Font> {
 	XYPair<float> GetStringSize(ResourceHandle<Font> handle, nuint stringHandle);
 	void DisposePen(ResourceHandle<Font> handle, nuint penHandle);
 	void DisposeString(ResourceHandle<Font> handle, nuint stringHandle);
-	Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor, bool rescaleHeightAccordingToLineCount);
+	XYPair<float> GetTextInstanceScaling(ResourceHandle<Font> handle, XYPair<float> stringSize, float? textInstanceWidth, float? textInstanceHeight, bool disableAutomaticLineCountBasedHeightScaling);
+	Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor, bool disableAutomaticLineCountBasedHeightScaling);
 	Vect GetTextInstanceAnchorOffset(ResourceHandle<Font> handle, XYPair<float> stringSize, XYPair<float> scaling, Orientation2D positionAnchor);
 }

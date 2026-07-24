@@ -44,8 +44,7 @@ class LocalCameraLockedObjectsTest {
 			pen, 
 			@string,
 			lockedUprightDirection: Direction.Up,
-			textInstanceHeight: 0.1f,
-			positionAnchor: curLockedTextAnchor
+			layout: new TextMeshLayout(0.1f, curLockedTextAnchor)
 		);
 		
 		using var quad = factory.MeshBuilder.CreateQuadMesh(twoSided: false);
@@ -81,7 +80,7 @@ class LocalCameraLockedObjectsTest {
 					redPen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(1f, 0f, 0f),
-					textInstanceHeight: 0.05f,
+					layout: new(0.05f),
 					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeight,
 					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
@@ -89,7 +88,7 @@ class LocalCameraLockedObjectsTest {
 					greenPen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(0f, 0f, 1f),
-					textInstanceHeight: 0.05f,
+					layout: new(null, Orientation2D.None, 0.15f, false),
 					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidth,
 					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
@@ -97,7 +96,7 @@ class LocalCameraLockedObjectsTest {
 					yellowPen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(-1f, 0f, 0f),
-					textInstanceHeight: 0.05f,
+					layout: new(0.05f),
 					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeightPlusPreservedAspectRatio,
 					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
@@ -105,7 +104,7 @@ class LocalCameraLockedObjectsTest {
 					bluePen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(0f, 0f, -1f),
-					textInstanceHeight: 0.05f,
+					layout: new(null, Orientation2D.None, 0.15f, false),
 					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthPlusPreservedAspectRatio,
 					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
@@ -113,7 +112,7 @@ class LocalCameraLockedObjectsTest {
 					pinkPen,
 					scaledTextStrings[curScaledTextStringIndex],
 					position: new Location(0f, 1f, 0f),
-					textInstanceHeight: 0.05f,
+					layout: new(0.05f),
 					scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidthAndHeight,
 					lockStyle: CameraLockStyle.FaceCameraPlane
 				),
@@ -165,8 +164,7 @@ class LocalCameraLockedObjectsTest {
 					pen, 
 					@string,
 					lockedUprightDirection: Direction.Up,
-					textInstanceHeight: 0.1f,
-					positionAnchor: curLockedTextAnchor
+					layout: new TextMeshLayout(0.1f, curLockedTextAnchor)
 				);
 				userControlledScene.Add(lockedText);
 				automaticScene.Add(lockedText);
@@ -178,16 +176,7 @@ class LocalCameraLockedObjectsTest {
 				if (curScaledTextStringIndex >= scaledTextStrings.Length) curScaledTextStringIndex = 0;
 				
 				foreach (var sti in scaledTextInstances) {
-					userControlledScene.Remove(sti);
-					automaticScene.Remove(sti);	
-					sti.Dispose();
-				}
-				
-				scaledTextInstances = CreateScaledTextInstances();
-				
-				foreach (var sti in scaledTextInstances) {
-					userControlledScene.Add(sti);
-					automaticScene.Add(sti);	
+					sti.String = scaledTextStrings[curScaledTextStringIndex];
 				}
 			}
 

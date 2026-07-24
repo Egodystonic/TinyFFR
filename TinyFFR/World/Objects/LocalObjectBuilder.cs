@@ -20,7 +20,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 	readonly record struct PrivateMaterialData(Material Material, bool IsPrimitive, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
-	readonly record struct TextInstanceData(FontPen Pen, FontString String);
+	readonly record struct TextInstanceData(FontPen Pen, FontString String, TextMeshLayout Layout);
 	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3DOpaque;
@@ -491,17 +491,35 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		return result;
 	}
 
-	public void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string) {
+	public void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextMeshLayout layout) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_activeInstanceTextInstanceData[handle] = new(pen, @string);
+		_activeInstanceTextInstanceData[handle] = new(pen, @string, layout);
 	}
 	public void UpdateTextInstancePen(ResourceHandle<ModelInstance> handle, FontPen pen) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { Pen = pen };
 	}
+	public void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextMeshLayout layout) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { Layout = layout };
+	}
 	public void UpdateTextInstanceString(ResourceHandle<ModelInstance> handle, FontString @string) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { String = @string };
+		var data = _activeInstanceTextInstanceData[handle];
+		_activeInstanceTextInstanceData[handle] = data with { String = @string };
+		
+		var layout = data.Layout;
+		var font = @string.Font;
+		
+		var currentTransform = _activeInstanceTransforms[handle];
+		var currentScaling = font.GetTextInstanceScaling(data.String.Size, layout);
+		var currentOffset = font.GetTextInstanceAnchorOffset(data.String.Size, currentScaling, layout.PositionAnchor);
+		
+		var anchorPoint = currentTransform.Translation - currentOffset * currentTransform.Rotation;
+		var newScaling = font.GetTextInstanceScaling(@string.Size, layout);
+		var newOffset = font.GetTextInstanceAnchorOffset(@string.Size, newScaling, layout.PositionAnchor);
+		
+		UpdateTransformAndMatrix(handle, new Transform(anchorPoint + newOffset * currentTransform.Rotation, currentTransform.Rotation, new Vect(newScaling.X, newScaling.Y, 1f)));
 	}
 	public FontPen GetTextInstancePen(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);

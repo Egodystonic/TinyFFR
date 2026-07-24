@@ -69,8 +69,13 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public FontString CreateString(ReadOnlySpan<char> str, TextJustification multiLineJustification = TextJustification.Center) => Implementation.CreateString(_handle, str, multiLineJustification);
 	
-	public Transform GetTextInstanceTransform(XYPair<float> stringSize, Location position, Direction facingDirection, float? textInstanceHeight, float? textInstanceWidth = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, bool rescaleHeightAccordingToLineCount = true) {
-		return Implementation.GetTextInstanceTransform(_handle, textInstanceWidth, textInstanceHeight, stringSize, position, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor, rescaleHeightAccordingToLineCount);
+	public Transform GetTextInstanceTransform(XYPair<float> stringSize, Location position, Direction facingDirection, Direction? uprightDirection, TextMeshLayout layout) {
+		return Implementation.GetTextInstanceTransform(_handle, layout.Width, layout.Height, stringSize, position, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), layout.PositionAnchor, layout.DisableAutomaticLineCountBasedHeightScaling);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float> GetTextInstanceScaling(XYPair<float> stringSize, TextMeshLayout layout) {
+		return Implementation.GetTextInstanceScaling(_handle, stringSize, layout.Width, layout.Height, layout.DisableAutomaticLineCountBasedHeightScaling);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -624,20 +624,24 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		0f
 	);
 
-	public Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor, bool rescaleHeightAccordingToLineCount) {
+	public XYPair<float> GetTextInstanceScaling(ResourceHandle<Font> handle, XYPair<float> stringSize, float? textInstanceWidth, float? textInstanceHeight, bool disableAutomaticLineCountBasedHeightScaling) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var fontData = _activeFonts[handle];
 		// stringSize.Y == (Ascent - Descent) + (lineCount - 1) * LineAdvance, so this inverts it (rounding kills FP noise)
-		var heightMultiplier = rescaleHeightAccordingToLineCount && fontData.LineAdvance > 0f
+		var heightMultiplier = !disableAutomaticLineCountBasedHeightScaling && fontData.LineAdvance > 0f
 			? Single.Round((stringSize.Y - (fontData.Ascent - fontData.Descent)) / fontData.LineAdvance) + 1f
 			: 1f;
-		var scaling = (stringWidth: textInstanceWidth, stringHeight: textInstanceHeight) switch {
+		return (stringWidth: textInstanceWidth, stringHeight: textInstanceHeight) switch {
 			(null, not null) => new XYPair<float>(textInstanceHeight.Value * heightMultiplier) / stringSize.Y,
 			(not null, null) => new XYPair<float>(textInstanceWidth.Value) / stringSize.X,
 			(not null, not null) => new XYPair<float>(textInstanceWidth.Value / stringSize.X, textInstanceHeight.Value * heightMultiplier / stringSize.Y),
 			_ => new XYPair<float>(DefaultFontHeight * heightMultiplier) / stringSize.Y,
 		};
-		
+	}
+
+	public Transform GetTextInstanceTransform(ResourceHandle<Font> handle, float? textInstanceWidth, float? textInstanceHeight, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor, bool disableAutomaticLineCountBasedHeightScaling) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var scaling = GetTextInstanceScaling(handle, stringSize, textInstanceWidth, textInstanceHeight, disableAutomaticLineCountBasedHeightScaling);
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection, enforceOrthogonality: false);
 
 		return new Transform(
