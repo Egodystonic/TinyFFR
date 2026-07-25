@@ -16,7 +16,7 @@ public enum BuiltInSceneBackdrop {
 	Starfield
 }
 
-public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
+public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public const float DefaultLux = 10_000f;
 	public const float MaxBrightness = 1E15f;
 
@@ -97,7 +97,7 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RemoveAll(bool includeModelInstances = true, bool includeLights = true) => Implementation.RemoveAll(_handle, includeModelInstances, includeLights);
+	public void RemoveAll(bool includeModelInstances = true, bool includeLights = true, bool includePrimitives = true) => Implementation.RemoveAll(_handle, includeModelInstances, includeLights, includePrimitives);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BuiltInSceneBackdrop backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
@@ -118,15 +118,6 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	internal void SetPrimitivePaintbrush(nuint primitiveHandle, in PrimitivePaintbrush paintbrush) => Implementation.SetPrimitivePaintbrush(_handle, primitiveHandle, in paintbrush);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void DisposePrimitive(nuint primitiveHandle) => Implementation.DisposePrimitive(_handle, primitiveHandle);
-	
-	public ScenePrimitive AddPrimitive(Location point, in PrimitivePaintbrush paintbrush) {
-		var result = AddPrimitive();
-		result.SetPaintbrush(in paintbrush);
-		result.SetGeometry(point);
-		return result;
-	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void SetPrimitiveGeometry(nuint primitiveHandle, Location point) => Implementation.SetPrimitiveGeometry(_handle, primitiveHandle, point);
 
 	public static float LuxToBrightness(float lux) {
 		if (!lux.IsNonNegativeAndFinite()) return 0f;

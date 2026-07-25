@@ -9,6 +9,9 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 
 public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, ITransformedSceneObject {
 	public ModelInstance UnderlyingModelInstance { get; }
+	
+	public Font Font => String.Font;
+
 	public FontPen Pen {
 		get => UnderlyingModelInstance.Implementation.GetTextInstancePen(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
 		set {
@@ -65,16 +68,23 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
 
-	public Vect Scaling {
+	Vect IScaledSceneObject.Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Scaling;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingModelInstance.SetScaling(value);
 	}
+	public XYPair<float> Scaling {
+		get {
+			var scalingVect = UnderlyingModelInstance.Scaling;
+			return (scalingVect.X, scalingVect.Y);
+		}
+		set {
+			UnderlyingModelInstance.SetScaling(new Vect(value.X, value.Y, 1f));
+		}
+	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetScaling(Vect scaling) => Scaling = scaling;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 
 	internal TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextMeshLayout layout) {
 		UnderlyingModelInstance = underlyingModelInstance;

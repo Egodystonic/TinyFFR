@@ -47,9 +47,33 @@ static partial class TestMain {
 		//		The Tick function passed to BeginDefaultLoop should return `true` to exit the loop.
 		//		If you pass a CameraController to BeginDefaultLoop, it will be possible to control the camera with keyboard/mouse or gamepad using the default controller input mapping.
 		
+		var primitives = new List<ScenePrimitive>();
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				var p = context.Scene.AddPrimitive(context.Camera.Position + context.Camera.ViewDirection * 0.5f, "Hello this is a string");
+				primitives.Add(p);
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
+				foreach (var p in primitives) {
+					p.SetGeometry(Location.Random(new PositionedSphere(0.33f, context.Camera.Position + context.Camera.ViewDirection * 0.5f)));
+				}
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+				foreach (var p in primitives) {
+					p.SetPaintbrush(new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.GreenOpaque));
+				}
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
+				foreach (var p in primitives) {
+					p.SetPaintbrush(new PrimitivePaintbrush(ColorVect.BlueOpaque));
+				}
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.C)) {
+				context.Scene.RemoveAll(false, false, true);
+				primitives.Clear();
+			}
 			
 			context.Renderer.Render();
 			return context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape);

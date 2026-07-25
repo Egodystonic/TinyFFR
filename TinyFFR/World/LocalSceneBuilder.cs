@@ -23,6 +23,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
+	readonly ArrayPoolBackedVector<ModelInstance> _removeAllScratchVector = new();
 	readonly SetPool<ModelInstance> _modelInstanceSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
@@ -373,24 +374,37 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	}
 	#endregion
 
-	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights) {
+	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
-		if (includeModelInstances) {
+		if (includePrimitives) {
+			RemoveAllPrimitives(handle, true);
+			
+			if (includeModelInstances) {
+				var modelInstanceVector = _modelInstanceMap[handle];
+				foreach (var modelInstance in modelInstanceVector) {
+					RemoveModelInstanceFromScene(
+						handle,
+						modelInstance.Handle
+					).ThrowIfFailure();	
+					_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+				}
+				
+				modelInstanceVector.Clear();
+				_camLockedTrivialInstanceMap[handle].Clear();
+				_camLockedAbridgedInstanceMap[handle].Clear();
+				_camLockedFullInstanceMap[handle].Clear();
+				_cameraLockedInstancesCanary[handle].Clear();
+			}
+		}
+		else if (includeModelInstances) {
 			var modelInstanceVector = _modelInstanceMap[handle];
 			foreach (var modelInstance in modelInstanceVector) {
-				RemoveModelInstanceFromScene(
-					handle,
-					modelInstance.Handle
-				).ThrowIfFailure();	
-				_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+				if (!IsPrimitiveInstance(handle, modelInstance)) _removeAllScratchVector.Add(modelInstance);
 			}
 			
-			modelInstanceVector.Clear();
-			_camLockedTrivialInstanceMap[handle].Clear();
-			_camLockedAbridgedInstanceMap[handle].Clear();
-			_camLockedFullInstanceMap[handle].Clear();
-			_cameraLockedInstancesCanary[handle].Clear();
+			foreach (var modelInstance in _removeAllScratchVector) Remove(handle, modelInstance);
+			_removeAllScratchVector.Clear();
 		}
 		
 		if (includeLights) {
@@ -527,6 +541,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		try {
 			while (_activeSceneHandles.Count > 0) Dispose(_activeSceneHandles[^1]);
 
+			DisposePrimitiveResources();
 			_modelInstanceMap.Dispose();
 			_camLockedTrivialInstanceMap.Dispose();
 			_camLockedAbridgedInstanceMap.Dispose();
@@ -549,6 +564,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			_shadowQualityActivePresetMap.Dispose();
 
 			_activeSceneHandles.Dispose();
+			_removeAllScratchVector.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -561,13 +577,18 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		if (IsDisposed(handle)) return;
 		
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-
-		RemoveBackdrop(handle);
+		
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
-		DisposeScene(handle).ThrowIfFailure();
 		
+		RemoveAllPrimitives(handle, false);
+		_primitiveMapPool.Return(_primitiveMap[handle]);
+		_primitiveMap.Remove(handle);
+		
+		RemoveBackdrop(handle);
 		_backdropMap.Remove(handle);
+		
+		DisposeScene(handle).ThrowIfFailure();
 
 		_modelInstanceSetPool.Return(_modelInstanceMap[handle]);
 		_modelInstanceMap.Remove(handle);
@@ -583,11 +604,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
 		
-		_primitiveMapPool.Return(_primitiveMap[handle]);
-		_primitiveMap.Remove(handle);
-		
 		_activeSceneHandles.Remove(handle);
-		DisposePrimitiveResources();
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Scene> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));

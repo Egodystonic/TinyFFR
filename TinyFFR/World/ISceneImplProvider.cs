@@ -34,12 +34,13 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color);
 	void RemoveBackdrop(ResourceHandle<Scene> handle);
 	
-	void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights);
+	void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives);
 	
 	ScenePrimitive CreatePrimitive(ResourceHandle<Scene> handle);
 	void SetPrimitivePaintbrush(ResourceHandle<Scene> handle, nuint primitiveHandle, in PrimitivePaintbrush paintbrush);
 	void DisposePrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle);
-	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Location point);
+	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Location point, float size, bool constantScreenSize);
+	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Location position, ReadOnlySpan<char> str, float size, bool constantScreenSize);
 	
 	IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle);
 	IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle);

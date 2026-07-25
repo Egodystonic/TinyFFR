@@ -147,10 +147,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var result = InstantiateMaterial(shaderResourceName, config.Name, shaderConstants);
 
 		ApplyMaterialParam(result, config.KeyMap, shaderConstants.ParamKeyMap);
-		ApplyMaterialParam(result, new Vector4(1f, 0f, 0f, 1f), shaderConstants.ParamXChannelColor);
-		ApplyMaterialParam(result, new Vector4(0f, 1f, 0f, 1f), shaderConstants.ParamYChannelColor);
-		ApplyMaterialParam(result, new Vector4(0f, 0f, 1f, 1f), shaderConstants.ParamZChannelColor);
-		ApplyMaterialParam(result, new Vector4(1f, 1f, 1f, 1f), shaderConstants.ParamWChannelColor);
+		ApplyMaterialParam(result, new Vector4(1f, 0f, 0f, 0f), shaderConstants.ParamXChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 1f, 0f, 0f), shaderConstants.ParamYChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 0f, 1f, 0f), shaderConstants.ParamZChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 0f, 0f, 1f), shaderConstants.ParamWChannelColor);
 
 		return result;
 	}

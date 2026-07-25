@@ -261,6 +261,11 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedQuadInstance quad) { }
 	public void Add(ResourceHandle<Scene> handle, CameraLockedTextInstance text) { }
 	public void Remove(ResourceHandle<Scene> handle, CameraLockedTextInstance text) { }
+	public ScenePrimitive CreatePrimitive(ResourceHandle<Scene> handle) { throw new NotSupportedException(); }
+	public void SetPrimitivePaintbrush(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, in PrimitivePaintbrush paintbrush) { }
+	public void DisposePrimitive(ResourceHandle<Scene> handle, UIntPtr primitiveHandle) { }
+	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location point, float size, bool constantScreenSize) { }
+	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location position, ReadOnlySpan<char> str, float size, bool constantScreenSize) { }
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) { }
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) { }
@@ -268,7 +273,7 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation) { }
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color) { }
 	public void RemoveBackdrop(ResourceHandle<Scene> handle) { }
-	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights) { }
+	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives) { }
 
 	public IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle) => throw new NotSupportedException();
 	public IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle) => throw new NotSupportedException();

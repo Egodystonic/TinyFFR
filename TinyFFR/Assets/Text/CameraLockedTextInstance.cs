@@ -22,6 +22,8 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 		ScalingMode = scalingMode;
 		LockStyle = lockStyle;
 	}
+	
+	public Font Font => UnderlyingTextInstance.Font;
 
 	public FontPen Pen {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -50,16 +52,20 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetPosition(Location position) => Position = position;
 
-	public Vect Scaling {
+	Vect IScaledSceneObject.Scaling {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingTextInstance.UnderlyingModelInstance.Scaling;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingTextInstance.UnderlyingModelInstance.SetScaling(value);
+	}
+	public XYPair<float> Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingTextInstance.Scaling;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingTextInstance.SetScaling(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetScaling(Vect scaling) => Scaling = scaling;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingTextInstance.GetNameAsNewStringObject();

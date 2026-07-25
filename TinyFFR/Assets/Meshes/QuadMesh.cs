@@ -100,16 +100,23 @@ public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
 
-	public Vect Scaling {
+	Vect IScaledSceneObject.Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Scaling;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingModelInstance.SetScaling(value);
 	}
+	public XYPair<float> Scaling {
+		get {
+			var scalingVect = UnderlyingModelInstance.Scaling;
+			return (scalingVect.X, scalingVect.Y);
+		}
+		set {
+			UnderlyingModelInstance.SetScaling(new Vect(value.X, value.Y, 1f));
+		}
+	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetScaling(Vect scaling) => Scaling = scaling;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 	
 	public Material? Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -198,16 +205,20 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<Came
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetPosition(Location position) => Position = position;
 
-	public Vect Scaling {
+	Vect IScaledSceneObject.Scaling {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingQuadInstance.UnderlyingModelInstance.Scaling;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => UnderlyingQuadInstance.UnderlyingModelInstance.SetScaling(value);
+	}
+	public XYPair<float> Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingQuadInstance.Scaling;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingQuadInstance.SetScaling(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetScaling(Vect scaling) => Scaling = scaling;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 	
 	public Material? Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

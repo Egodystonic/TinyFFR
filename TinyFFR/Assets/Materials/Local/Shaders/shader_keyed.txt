@@ -27,6 +27,7 @@
 	],
 	shadingModel : unlit,
 	flipUV : false,
+	postLightingBlending : opaque,
 #option AlphaMode
 #variant AlphaOff
 	blending : opaque
@@ -42,12 +43,6 @@ fragment {
 		prepareMaterial(material);
 
 		vec4 keys = texture(materialParams_key_map, uv0).xyzw;
-		
-#option AlphaMode
-#variant AlphaOff
-		material.baseColor.rgb = (materialParams.x_channel_color * keys.x + materialParams.y_channel_color * keys.y + materialParams.z_channel_color * keys.z + materialParams.w_channel_color * keys.w).rgb;
-#variant AlphaOn
-		material.baseColor.rgba = (materialParams.x_channel_color * keys.x + materialParams.y_channel_color * keys.y + materialParams.z_channel_color * keys.z + materialParams.w_channel_color * keys.w).rgba;
-#endoption
+		material.postLightingColor = saturate(materialParams.x_channel_color * keys.x + materialParams.y_channel_color * keys.y + materialParams.z_channel_color * keys.z + materialParams.w_channel_color * keys.w);
 	}
 }
