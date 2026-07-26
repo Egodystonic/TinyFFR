@@ -52,7 +52,7 @@ partial struct Scene {
 		return result;
 	}
 	
-	public ScenePrimitive AddPrimitive(Location position, ReadOnlySpan<char> str, Magnitude size = Magnitude.Default, bool constantScreenSize = DefaultConstantScreenSizeFlag) => AddPrimitive(position, str, in DefaultPaintbrushPoint, ConvertMagnitudeToSize(size), constantScreenSize);
+	public ScenePrimitive AddPrimitive(Location position, ReadOnlySpan<char> str, Magnitude size = Magnitude.Default, bool constantScreenSize = DefaultConstantScreenSizeFlag) => AddPrimitive(position, str, in DefaultPaintbrushString, ConvertMagnitudeToSize(size), constantScreenSize);
 	public ScenePrimitive AddPrimitive(Location position, ReadOnlySpan<char> str, in PrimitivePaintbrush paintbrush, Magnitude size = Magnitude.Default, bool constantScreenSize = DefaultConstantScreenSizeFlag) => AddPrimitive(position, str, in paintbrush, ConvertMagnitudeToSize(size), constantScreenSize);
 	public ScenePrimitive AddPrimitive(Location position, ReadOnlySpan<char> str, in PrimitivePaintbrush paintbrush, float size, bool constantScreenSize) {
 		var result = AddPrimitive();

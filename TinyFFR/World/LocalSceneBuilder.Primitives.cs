@@ -1,12 +1,13 @@
 // Created on 2026-07-23 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using System;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Egodystonic.TinyFFR.World;
 
@@ -38,13 +39,11 @@ sealed partial class LocalSceneBuilder {
 		var data = new PrimitiveData(quad, null, paintbrush);
 		_primitiveMap[handle].Add(primitiveHandle, data);
 		Add(handle, quad);
-		ApplyPaintbrush(in data, in paintbrush);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in CameraLockedTextInstance text, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(null, text, paintbrush);
 		_primitiveMap[handle].Add(primitiveHandle, data);
 		Add(handle, text);
-		ApplyPaintbrush(in data, in paintbrush);
 	}
 	
 	QuadMesh GetSharedQuadMesh() {
@@ -58,13 +57,10 @@ sealed partial class LocalSceneBuilder {
 		
 		_primitiveMap[handle][primitiveHandle] = data with { Paintbrush = paintbrush };
 		
-		ApplyPaintbrush(in data, in paintbrush);
-	}
-	void ApplyPaintbrush(in PrimitiveData data, in PrimitivePaintbrush paintbrush) {
 		if (data.Quad is { } q) {
-			q.Material?.SetKeyedColor(ColorChannel.R, paintbrush.PrimaryColor);
-			q.Material?.SetKeyedColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
-			q.Material?.SetKeyedColor(ColorChannel.A, ColorVect.BlackTransparent);
+			q.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
+			q.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
+			q.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
 		}
 		else if (data.Text is { } t) {
 			var oldPen = t.Pen;
@@ -113,7 +109,10 @@ sealed partial class LocalSceneBuilder {
 			lockStyle: CameraLockStyle.FaceCameraPlane,
 			name: "Primitive Point"
 		);
-		
+		instance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
+		instance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
+		instance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+
 		RegisterPrimitive(handle, primitiveHandle, in instance, in paintbrush);
 	}
 

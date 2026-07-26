@@ -52,22 +52,17 @@ static partial class TestMain {
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
 			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				var p = context.Scene.AddPrimitive(context.Camera.Position + context.Camera.ViewDirection * 0.5f, "Hello this is a string");
+				var p = context.Scene.AddPrimitive(context.Camera.Position + context.Camera.ViewDirection * 0.5f, "Hello this is a string", Magnitude.VeryLarge);
 				primitives.Add(p);
 			}
 			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
 				foreach (var p in primitives) {
-					p.SetGeometry(Location.Random(new PositionedSphere(0.33f, context.Camera.Position + context.Camera.ViewDirection * 0.5f)));
+					p.SetGeometry(Location.Random(new PositionedSphere(0.33f, context.Camera.Position + context.Camera.ViewDirection * 0.5f)), Magnitude.VeryLarge);
 				}
 			}
-			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
 				foreach (var p in primitives) {
-					p.SetPaintbrush(new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.GreenOpaque));
-				}
-			}
-			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
-				foreach (var p in primitives) {
-					p.SetPaintbrush(new PrimitivePaintbrush(ColorVect.BlueOpaque));
+					p.SetPaintbrush(new PrimitivePaintbrush(ColorVect.Random(), ColorVect.Random()));
 				}
 			}
 			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.C)) {
