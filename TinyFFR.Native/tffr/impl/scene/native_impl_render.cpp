@@ -16,6 +16,10 @@
 
 extern "C" void* macos_get_cocoa_view(NSWindow* nsWindow);
 
+#elif defined(TFFR_WIN)
+
+#undef OPAQUE
+
 #endif
 
 using namespace utils;
