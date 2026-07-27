@@ -13,7 +13,8 @@ namespace Egodystonic.TinyFFR.World;
 
 sealed partial class LocalSceneBuilder {
 	readonly record struct PrimitiveLineData(ModelInstance StartPoint, ModelInstance? EndPoint);
-	readonly record struct PrimitiveData(ModelInstance? ModelInstance, TextInstance? TextInstance, PrimitiveLineData? LinePoints, PrimitivePaintbrush Paintbrush);
+	readonly record struct PrimitiveLineBodyData(BoundedRay Ray, float Width, bool ConstantScreenSize);
+	readonly record struct PrimitiveData(ModelInstance? ModelInstance, TextInstance? TextInstance, PrimitiveLineData? LinePoints, PrimitivePaintbrush Paintbrush, PrimitiveLineBodyData? LineBody = null);
 	
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<nuint, PrimitiveData>> _primitiveMap = new();
 	readonly MapPool<nuint, PrimitiveData> _primitiveMapPool;
@@ -56,6 +57,19 @@ sealed partial class LocalSceneBuilder {
 		Add(handle, quad);
 		Add(handle, lineStartPoint);
 		Add(handle, lineEndPoint);
+	}
+	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in QuadInstance lineBody, in PrimitiveLineBodyData lineBodyData, in CameraLockedQuadInstance startPoint, in CameraLockedQuadInstance endPoint, in PrimitivePaintbrush paintbrush) {
+		var data = new PrimitiveData(
+			lineBody.UnderlyingModelInstance,
+			null,
+			new PrimitiveLineData(startPoint.UnderlyingQuadInstance.UnderlyingModelInstance, endPoint.UnderlyingQuadInstance.UnderlyingModelInstance),
+			paintbrush,
+			lineBodyData
+		);
+		_primitiveMap[handle].Add(primitiveHandle, data);
+		Add(handle, lineBody.UnderlyingModelInstance);
+		Add(handle, startPoint);
+		Add(handle, endPoint);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance modelInstance, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(modelInstance, null, null, paintbrush);
@@ -287,22 +301,19 @@ sealed partial class LocalSceneBuilder {
 		
 		var resources = GetSharedLineResources();
 		
-		var lineInstance = ((IObjectBuilder) _objectBuilder).CreateCameraLockedQuadInstance(
+		var lineInstance = ((IObjectBuilder) _objectBuilder).CreateQuadInstance(
 			GetSharedQuadMesh(),
 			resources.Materials[0],
 			position: ray.MiddlePoint,
-			lockedUprightDirection: ray.Direction,
 			size: new(size, ray.Length),
-			scalingMode: constantScreenSize ? CameraLockedScalingMode.ViewportFractionalFixedWidth : CameraLockedScalingMode.Standard,
-			lockStyle: CameraLockStyle.FaceCameraPosition,
 			name: "Primitive Bounded Ray"
 		);
-		lineInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
-		lineInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
-		lineInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
-		
+		lineInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
+		lineInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
+		lineInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+
 		var pointResources = GetSharedPointResources();
-		
+
 		var startPointInstance = ((IObjectBuilder) _objectBuilder).CreateCameraLockedQuadInstance(
 			GetSharedQuadMesh(),
 			pointResources.Materials[0],
@@ -329,9 +340,9 @@ sealed partial class LocalSceneBuilder {
 		endPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 		endPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
 
-		RegisterPrimitive(handle, primitiveHandle, in lineInstance, startPointInstance, endPointInstance, in paintbrush);
+		RegisterPrimitive(handle, primitiveHandle, in lineInstance, new PrimitiveLineBodyData(ray, size, constantScreenSize), startPointInstance, endPointInstance, in paintbrush);
 	}
-	
+
 	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Ray ray, float size, bool constantScreenSize) {
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
 		
@@ -340,9 +351,9 @@ sealed partial class LocalSceneBuilder {
 		var lineInstance = ((IObjectBuilder) _objectBuilder).CreateCameraLockedQuadInstance(
 			GetSharedQuadMesh(),
 			resources.Materials[0],
-			position: ray.UnboundedLocationAtDistance(0.25f),
+			position: ray.UnboundedLocationAtDistance(500f),
 			lockedUprightDirection: ray.Direction,
-			size: new(size, 0.5f),
+			size: new(size, 1000f),
 			scalingMode: constantScreenSize ? CameraLockedScalingMode.ViewportFractionalFixedWidth : CameraLockedScalingMode.Standard,
 			lockStyle: CameraLockStyle.FaceCameraPosition,
 			name: "Primitive Ray"
@@ -370,7 +381,55 @@ sealed partial class LocalSceneBuilder {
 	}
 	
 	public void PrepareCameraSensitivePrimitivesForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
-		
+		var cameraPosition = targetCamera.Position;
+		var cameraViewDirection = targetCamera.ViewDirection;
+		var nearPlane = new Plane(cameraViewDirection, cameraPosition + cameraViewDirection * targetCamera.NearPlaneDistance);
+		var screenScaling = new ScreenScalingContext(
+			targetCamera.ProjectionType,
+			MathF.Tan(targetCamera.HorizontalFieldOfView.Radians * 0.5f),
+			MathF.Tan(targetCamera.VerticalFieldOfView.Radians * 0.5f),
+			targetCamera.OrthographicHeight,
+			targetCamera.AspectRatio,
+			cameraPosition,
+			cameraViewDirection
+		);
+
+		foreach (var data in _primitiveMap[handle].Values) {
+			if (data.LineBody is not { } lineBody || data.ModelInstance is not { } bodyInstance) continue;
+			UpdateLineBodyBillboard(bodyInstance, in lineBody, in nearPlane, in screenScaling);
+		}
+	}
+
+	static void UpdateLineBodyBillboard(ModelInstance bodyInstance, in PrimitiveLineBodyData lineBody, in Plane nearPlane, in ScreenScalingContext screenScaling) {
+		var ray = lineBody.Ray;
+		var startInFront = nearPlane.SignedDistanceFrom(ray.StartPoint) > 0f;
+		var endInFront = nearPlane.SignedDistanceFrom(ray.EndPoint) > 0f;
+
+		if (!startInFront && !endInFront) {
+			bodyInstance.SetTransform(new Transform(ray.MiddlePoint.AsVect(), Rotation.None, Vect.Zero));
+			return;
+		}
+
+		var clipStart = ray.StartPoint;
+		var clipEnd = ray.EndPoint;
+		if (startInFront != endInFront && ray.IntersectionWith(nearPlane) is { } intersection) {
+			if (!startInFront) clipStart = intersection;
+			else clipEnd = intersection;
+		}
+
+		var midpoint = (clipStart.AsVect() + clipEnd.AsVect()) * 0.5f;
+		var length = clipStart.DistanceFrom(clipEnd);
+		var scalingMode = lineBody.ConstantScreenSize ? CameraLockedScalingMode.ViewportFractionalFixedWidth : CameraLockedScalingMode.Standard;
+		var worldScaling = CalculateWorldScaling(scalingMode, new Vect(lineBody.Width, length, 1f), midpoint, in screenScaling);
+
+		var billboard = new Transform(midpoint, Rotation.None, worldScaling);
+		if (screenScaling.ProjectionType == CameraProjectionType.Orthographic) {
+			GetPlanarCylindricalCameraLockedTransform(ref billboard, Vect.Zero, -screenScaling.CameraViewDirection, ray.Direction);
+		}
+		else {
+			GetCylindricalCameraLockedTransform(ref billboard, Vect.Zero, screenScaling.CameraPosition, ray.Direction);
+		}
+		bodyInstance.SetTransform(billboard);
 	}
 
 	public void DisposePrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle) {

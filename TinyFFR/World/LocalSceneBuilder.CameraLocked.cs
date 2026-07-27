@@ -177,10 +177,16 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	static void GetCylindricalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction lockedUpDirection) {
+		// var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
+		// // When the locked axis points ~straight at/away from the camera the facing can not be resolved; fall back to
+		// // any valid facing rather than leaving a stale (edge-on) transform frozen from a previous frame.
+		// var facingOrNull = anchorPosition.DirectionTo(cameraPosition).OrthogonalizedAgainst(lockedUpDirection);
+		// var facingDirection = facingOrNull == null || facingOrNull == Direction.None ? lockedUpDirection.AnyOrthogonal() : facingOrNull.Value;
+		//
+		// transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection, lockedUpDirection);
 		var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
 		var facingDirection = anchorPosition.DirectionTo(cameraPosition).OrthogonalizedAgainst(lockedUpDirection);
 		if (facingDirection == Direction.None || facingDirection == null) return;
-
 		transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection.Value, lockedUpDirection);
 	}
 
@@ -191,9 +197,17 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	static void GetPlanarCylindricalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Direction planeFacingDirection, Direction lockedUpDirection) {
+		// // When the locked axis points ~straight at/away from the camera the facing can not be resolved. Rather than
+		// // leaving a stale transform (which freezes the quad edge-on), fall back to any valid facing: the quad stays on
+		// // its axis and foreshortens to a point naturally under projection.
+		// var facingOrNull = planeFacingDirection.OrthogonalizedAgainst(lockedUpDirection);
+		// var facingDirection = facingOrNull == null || facingOrNull == Direction.None ? lockedUpDirection.AnyOrthogonal() : facingOrNull.Value;
+		//
+		// var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
+		// transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection, lockedUpDirection);
+		
 		var facingDirection = planeFacingDirection.OrthogonalizedAgainst(lockedUpDirection);
 		if (facingDirection == Direction.None || facingDirection == null) return;
-
 		var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
 		transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection.Value, lockedUpDirection);
 	}

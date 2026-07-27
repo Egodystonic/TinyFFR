@@ -54,7 +54,7 @@ static partial class TestMain {
 			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 				var startPoint = context.Camera.Position + Direction.Random(context.Camera.ViewDirection, 60f) * Real.Random(0.3f, 0.8f);
 				var endPoint = context.Camera.Position + Direction.Random(context.Camera.ViewDirection, 60f) * Real.Random(0.3f, 0.8f);
-				var p = context.Scene.AddPrimitive(new BoundedRay(startPoint, endPoint).WithLength(0.5f), constantScreenSize: true);
+				var p = context.Scene.AddPrimitive(new Ray(startPoint, (startPoint >> endPoint).Direction), constantScreenSize: true);
 				primitives.Add(p);
 			}
 			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
