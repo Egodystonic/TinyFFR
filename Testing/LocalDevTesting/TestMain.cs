@@ -52,7 +52,9 @@ static partial class TestMain {
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
 			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				var p = context.Scene.AddPrimitive(context.Camera.Position + context.Camera.ViewDirection * 0.5f, "Hello this is a string", Magnitude.VeryLarge);
+				var startPoint = context.Camera.Position + Direction.Random(context.Camera.ViewDirection, 60f) * Real.Random(0.3f, 0.8f);
+				var endPoint = context.Camera.Position + Direction.Random(context.Camera.ViewDirection, 60f) * Real.Random(0.3f, 0.8f);
+				var p = context.Scene.AddPrimitive(new BoundedRay(startPoint, endPoint).WithLength(0.5f), constantScreenSize: true);
 				primitives.Add(p);
 			}
 			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {

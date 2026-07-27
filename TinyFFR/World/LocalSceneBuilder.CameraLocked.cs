@@ -92,8 +92,10 @@ sealed partial class LocalSceneBuilder {
 		_camLockedFullInstanceMap[handle].Remove(miHandle);
 	}
 	
-	public void PrepareCameraLockedObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
+	public void PrepareCameraSensitiveObjectsForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		PrepareCameraSensitivePrimitivesForRender(handle, targetCamera);
 
 		var cameraPosition = targetCamera.Position;
 		var cameraViewDirection = targetCamera.ViewDirection;

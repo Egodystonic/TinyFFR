@@ -266,6 +266,10 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void DisposePrimitive(ResourceHandle<Scene> handle, UIntPtr primitiveHandle) { }
 	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location point, float size, bool constantScreenSize) { }
 	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location position, ReadOnlySpan<char> str, float size, bool constantScreenSize) { }
+	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, PositionedRotatedCuboid cuboid, bool wireframe) { }
+	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, PositionedSphere sphere, bool wireframe) { }
+	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, BoundedRay ray, float size, bool constantScreenSize) { }
+	public void SetPrimitiveGeometry(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Ray ray, float size, bool constantScreenSize) { }
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) { }
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) { }

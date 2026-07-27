@@ -954,7 +954,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		var localSceneImpl = (LocalSceneBuilder) scene.Implementation;
 		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
-		localSceneImpl.PrepareCameraLockedObjectsForRender(sceneHandle, _loadedRenderers[handle].Camera);
+		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, _loadedRenderers[handle].Camera);
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
 		switch (quality) {
