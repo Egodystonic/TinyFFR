@@ -3,9 +3,42 @@
 
 using Egodystonic.TinyFFR.World;
 using System;
+using Egodystonic.TinyFFR.Rendering;
 using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
+
+public readonly record struct TextureRenderingConfig {
+	public bool DisableTextureRepeat { get; init; }
+	public bool DisableTexelBlending {
+		get; 
+		init {
+			field = value;
+			AnisotropyLevel = CalcAnisotropy(value, AnisotropicFilteringQuality);
+		}
+	}
+	public Quality AnisotropicFilteringQuality {
+		get;
+		init {
+			field = value;
+			AnisotropyLevel = CalcAnisotropy(DisableTexelBlending, value);
+		}
+	}
+	internal float AnisotropyLevel { get; init; } = CalcAnisotropy(false, Quality.Standard);
+
+	public TextureRenderingConfig() { }
+
+	public TextureRenderingConfig(bool disableTextureRepeat, bool disableTexelBlending, Quality anisotropicFilteringQuality) {
+		DisableTextureRepeat = disableTextureRepeat;
+		DisableTexelBlending = disableTexelBlending;
+		AnisotropicFilteringQuality = anisotropicFilteringQuality;
+	}
+	
+	static float CalcAnisotropy(bool disableBlending, Quality filteringQuality) {
+		if (disableBlending || !Enum.IsDefined(filteringQuality)) return 1f;
+		else return 1 << (((int) filteringQuality) - ((int) Quality.VeryLow));
+	}
+}
 
 public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> {
 	public bool IncludeWAlphaChannel { get; init; } = true;
@@ -35,24 +68,44 @@ public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> 
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
 	public bool GenerateMipMaps { get; init; } = true;
 	public required bool IsLinearColorspace { get; init; }
+	public bool AllowsDynamicWrites {
+		get; 
+		init {
+			if (value) GenerateMipMaps = false;
+			field = value;
+		}
+	} = false;
+	public TextureRenderingConfig RenderingConfig { get; init; } = new();
 	public ReadOnlySpan<char> Name { get; init; }
 	public TextureProcessingConfig ProcessingToApply { get; init; } = TextureProcessingConfig.None;
 
 	public TextureCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
-		/* no-op */
+		if (AllowsDynamicWrites && GenerateMipMaps) {
+			throw new InvalidOperationException(
+				$"It is not permitted for both {nameof(GenerateMipMaps)} and {nameof(AllowsDynamicWrites)} to be true simultaneously."
+			);
+		}
 	}
 
 	public static int GetHeapStorageFormattedLength(in TextureCreationConfig src) {
 		return	SerializationSizeOfBool() // GenerateMipMaps
 			+	SerializationSizeOfBool() // IsLinearColorspace
+			+	SerializationSizeOfBool() // AllowsDynamicWrites
+			+	SerializationSizeOfBool() // SamplingConfig.DisableTextureRepeat
+			+	SerializationSizeOfBool() // SamplingConfig.DisableTexelBlending
+			+	SerializationSizeOfInt() // SamplingConfig.AnisotropicFilteringQuality
 			+	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOfSubConfig(src.ProcessingToApply);
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCreationConfig src) {
 		SerializationWriteBool(ref dest, src.GenerateMipMaps);
 		SerializationWriteBool(ref dest, src.IsLinearColorspace);
+		SerializationWriteBool(ref dest, src.AllowsDynamicWrites);
+		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTextureRepeat);
+		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTexelBlending);
+		SerializationWriteInt(ref dest, (int) src.RenderingConfig.AnisotropicFilteringQuality);
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteSubConfig(ref dest, src.ProcessingToApply);
 	}
@@ -60,6 +113,8 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		return new TextureCreationConfig {
 			GenerateMipMaps = SerializationReadBool(ref src),
 			IsLinearColorspace = SerializationReadBool(ref src),
+			AllowsDynamicWrites = SerializationReadBool(ref src),
+			RenderingConfig = new(SerializationReadBool(ref src), SerializationReadBool(ref src), (Quality) SerializationReadInt(ref src)),
 			Name = SerializationReadString(ref src),
 			ProcessingToApply = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
 		};

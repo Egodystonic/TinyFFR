@@ -40,10 +40,20 @@ public:
 	};
 	PopSafeStructPacking
 	static_assert(sizeof(MeshVertexSkeletal) == 56);
+	
+	PushSafeStructPacking
+	struct MeshVertexPrimitive {
+		float3 Position;
+		float4 Color;
+		float4 Tangent;
+	};
+	PopSafeStructPacking
+	static_assert(sizeof(MeshVertexPrimitive) == 44);
 
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void update_vertex_buffer(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, int32_t startingIndex);
 	static void allocate_vertex_buffer_skeletal(BufferIdentity bufferIdentity, MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
+	static void allocate_vertex_buffer_primitive(BufferIdentity bufferIdentity, MeshVertexPrimitive* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);
 	static void dispose_index_buffer(IndexBufferHandle buffer);
@@ -51,13 +61,16 @@ public:
 
 	static void load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture);
 	static void load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture);
+	static void update_texture_rgb_24(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height);
+	static void update_texture_rgba_32(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height);
 	static void dispose_texture(TextureHandle texture);
 
 	static void load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle);
 	static void create_material(PackageHandle package, MaterialHandle* outMaterial);
 	static void duplicate_material(MaterialHandle targetMaterial, MaterialHandle* outMaterial);
-	static void set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture);
+	static void set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture, interop_bool disableMinMapFiltering, interop_bool disableBilinearFiltering, interop_bool disableTextureRepeat, float_t anisotropyLevel);
 	static void set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val);
+	static void set_material_parameter_vect(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float4 val);
 	static void set_material_parameter_matrix(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, mat4f& valRef);
 	static void dispose_material(MaterialHandle material);
 	static void dispose_shader_package(PackageHandle handle);

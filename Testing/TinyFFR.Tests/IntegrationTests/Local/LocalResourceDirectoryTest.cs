@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -42,7 +43,8 @@ class LocalResourceDirectoryTest {
 
 		
 		TestDirectoryRetrieval(n => factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: n));
-		using (var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "bbbbb")) {
+		TestDirectoryRetrieval(n => factory.AssetLoader.LoadFont(name: n));
+		using (var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: "bbbbb")) {
 			TestDirectoryRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
 			using (var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f))) {
 				using (var mat = factory.MaterialBuilder.CreateStandardMaterial(tex, name: "bbbbb")) {
@@ -51,7 +53,7 @@ class LocalResourceDirectoryTest {
 				}
 			}
 		}
-		TestDirectoryRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: n));
+		TestDirectoryRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
 		TestDirectoryRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
 		TestDirectoryRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
@@ -63,6 +65,7 @@ class LocalResourceDirectoryTest {
 			using var window = factory.WindowBuilder.CreateWindow(primaryDisplay);
 			using var camera = factory.CameraBuilder.CreateCamera();
 			TestDirectoryRetrieval(n => factory.RendererBuilder.CreateRenderer(scene, camera, window, name: n));
+			TestDirectoryRetrieval(n => factory.RendererBuilder.CreateCompositor(window, name: n));
 		}
 		TestDirectoryRetrieval(n => factory.ResourceAllocator.CreateResourceGroup(false, name: n));
 		TestDirectoryRetrieval(n => factory.CameraBuilder.CreateCamera(name: n));

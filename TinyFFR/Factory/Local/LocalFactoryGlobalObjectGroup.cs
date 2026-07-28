@@ -20,8 +20,9 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public ManagedStringPool StringPool { get; }
 	public HeapPool HeapPool { get; }
 	public LocalResourceGroupImplProvider ResourceGroupProvider => _resourceGroupProvider;
+	public bool InEnhancedSecurityEnvironment { get; }
 
-	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef) {
+	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, bool inEnhancedSecurityEnvironment) {
 		ArgumentNullException.ThrowIfNull(factory);
 		ArgumentNullException.ThrowIfNull(resourceNameMap);
 		ArgumentNullException.ThrowIfNull(dependencyTracker);
@@ -35,6 +36,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 		StringPool = stringPool;
 		HeapPool = heapPool;
 		_resourceGroupProvider = resourceGroupProviderRef;
+		InEnhancedSecurityEnvironment = inEnhancedSecurityEnvironment;
 	}
 
 	public void StoreResourceNameOrDefaultIfEmpty(ResourceIdent ident, ReadOnlySpan<char> name, ReadOnlySpan<char> fallbackStart) {

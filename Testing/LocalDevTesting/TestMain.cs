@@ -47,9 +47,37 @@ static partial class TestMain {
 		//		The Tick function passed to BeginDefaultLoop should return `true` to exit the loop.
 		//		If you pass a CameraController to BeginDefaultLoop, it will be possible to control the camera with keyboard/mouse or gamepad using the default controller input mapping.
 		
+		var primitives = new List<ScenePrimitive>();
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				var p = context.Scene.AddPrimitiveShape(new BoundedRay(Location.Random(new PositionedSphere(1f, context.Camera.Position + context.Camera.ViewDirection * 1.5f)), Location.Random(new PositionedSphere(1f, context.Camera.Position + context.Camera.ViewDirection * 1.5f))), size: Magnitude.VeryLarge);
+				// var p = context.Scene.AddPrimitiveShape(new PositionedSphere(0.4f, context.Camera.Position + context.Camera.ViewDirection * 0.5f), true);
+				//var p = context.Scene.AddPrimitiveGrid(Location.Origin);
+				//var p = context.Scene.AddPrimitiveShape(new Plane(Direction.Random(), context.Camera.Position + context.Camera.ViewDirection * 0.5f));
+				//var p = context.Scene.AddPrimitivePoint(context.Camera.Position + context.Camera.ViewDirection * 0.5f, size: Magnitude.VeryLarge, constantScreenSize: false);
+				primitives.Add(p);
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
+				foreach (var p in primitives) {
+					p.SetGeometryPoint(Location.Random(new PositionedSphere(0.33f, context.Camera.Position + context.Camera.ViewDirection * 0.5f)));
+				}
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
+				foreach (var p in primitives) {
+					p.SetPaintbrush(new PrimitivePaintbrush(ColorVect.Random(), ColorVect.Random(), ColorVect.Random()));
+				}
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.O)) {
+				foreach (var p in primitives) {
+					p.SetPaintbrush(new PrimitivePaintbrush(ColorVect.RandomOpaque(), ColorVect.RandomOpaque(), ColorVect.RandomOpaque()));
+				}
+			}
+			if (context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.C)) {
+				context.Scene.RemoveAll(false, false, true);
+				primitives.Clear();
+			}
 			
 			context.Renderer.Render();
 			return context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape);

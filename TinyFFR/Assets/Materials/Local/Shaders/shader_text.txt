@@ -1,0 +1,55 @@
+material {
+	name : %NAME%,
+	parameters : [
+		{
+			type : sampler2d,
+			name : sdf_map
+		},
+		{
+			type : float4,
+			name : text_color
+		},
+		{
+			type : float4,
+			name : outline_color
+		},
+		{
+			type : float4,
+			name : background_color
+		},
+		{
+			type : float,
+			name : outline_thickness
+		}
+	],
+	requires : [ uv0 ],
+	shadingModel : unlit,
+	blending : fade,
+	flipUV : false,
+}
+
+fragment {
+	// These constants mirror SdfOnEdgeValue / SdfRenderPadding in LocalFontLoader.cs. Changing these require changing the values there too.
+	// MaxOutlineOffset is deliberately 4/5 of the SDF render padding: the outermost padding texel is reserved
+	// so the outline isoline always sits in live field gradient (for antialiasing) and never reaches the
+	// clamped-to-zero region or the quad border.
+	const float SdfPadding = 5.0;
+	const float OnEdgeValue = 180.0;
+	const float TextEdgeValue = OnEdgeValue / 255.0;
+	const float MaxOutlineOffset = (OnEdgeValue * ((SdfPadding - 1.0) / SdfPadding)) / 255.0;
+
+	void material(inout MaterialInputs material) {
+		prepareMaterial(material);
+
+		vec3 atlasTexel = texture(materialParams_sdf_map, getUV0()).rgb;
+		float distanceValue = atlasTexel.r;
+		float backgroundFactor = atlasTexel.b;
+		float aaHalfWidth = max(fwidth(distanceValue) * 0.5, 1E-5);
+		float outlineEdgeValue = TextEdgeValue - materialParams.outline_thickness * MaxOutlineOffset;
+
+		float textCoverage = smoothstep(TextEdgeValue - aaHalfWidth, TextEdgeValue + aaHalfWidth, distanceValue);
+		float outlineCoverage = smoothstep(max(outlineEdgeValue - aaHalfWidth, 2.0 / 255.0), outlineEdgeValue + aaHalfWidth, distanceValue);
+
+		material.baseColor = mix(materialParams.outline_color, materialParams.text_color, textCoverage) * outlineCoverage + materialParams.background_color * backgroundFactor;
+	}
+}

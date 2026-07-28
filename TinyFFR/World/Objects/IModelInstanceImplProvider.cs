@@ -5,6 +5,7 @@ using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
@@ -12,34 +13,53 @@ namespace Egodystonic.TinyFFR.World;
 public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<ModelInstance> {
 	Transform GetTransform(ResourceHandle<ModelInstance> handle);
 	void SetTransform(ResourceHandle<ModelInstance> handle, Transform newTransform);
-	
+	void SetTransformWithoutUpdatingWorldMatrix(ResourceHandle<ModelInstance> handle, in Transform newTransform);
+	void SetWorldMatrixWithoutUpdatingTransform(ResourceHandle<ModelInstance> handle, in Matrix4x4 worldMatrix);
+
 	Location GetPosition(ResourceHandle<ModelInstance> handle);
 	void SetPosition(ResourceHandle<ModelInstance> handle, Location newPosition);
 
 	Rotation GetRotation(ResourceHandle<ModelInstance> handle);
 	void SetRotation(ResourceHandle<ModelInstance> handle, Rotation newRotation);
 
+	Quaternion GetRotationQuaternion(ResourceHandle<ModelInstance> handle);
+	void SetRotationQuaternion(ResourceHandle<ModelInstance> handle, Quaternion newRotationQuaternion);
+
 	Vect GetScaling(ResourceHandle<ModelInstance> handle);
 	void SetScaling(ResourceHandle<ModelInstance> handle, Vect newScaling);
 
-	Material GetMaterial(ResourceHandle<ModelInstance> handle);
-	void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial);
+	Material? GetMaterial(ResourceHandle<ModelInstance> handle);
+	void SetMaterial(ResourceHandle<ModelInstance> handle, Material? newMaterial);
 
 	Mesh GetMesh(ResourceHandle<ModelInstance> handle);
 	void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh);
 
-	void ModifyVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox);
-	ReadOnlySpan<MeshVertex> GetModifiedVerticesIfMutableOrThrow(ResourceHandle<ModelInstance> handle);
+	ScopedSpanLease<MeshVertex> BorrowVerticesSpan(ResourceHandle<ModelInstance> handle, Range range, bool recalculateBoundingBox);
+	ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<ModelInstance> handle);
+	void TriggerManualBoundingBoxRecalculation(ResourceHandle<ModelInstance> handle);
 
 	void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation, Location pivotPoint);
+	void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion);
+	void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion, Location pivotPoint);
 	void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
 	void ScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
+	
+	void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor);
+	void SetNullMaterialShadingStyle(ResourceHandle<ModelInstance> handle, NullMaterialShadingStyle newStyle);
+	void SetKeyedMaterialColor(ResourceHandle<ModelInstance> handle, ColorChannel key, ColorVect color);
 
 	void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform);
 	void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture);
 	void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance);
+	
+	void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextMeshLayout layout);
+	void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextMeshLayout layout);
+	void UpdateTextInstancePen(ResourceHandle<ModelInstance> handle, FontPen pen);
+	void UpdateTextInstanceString(ResourceHandle<ModelInstance> handle, FontString @string);
+	FontPen GetTextInstancePen(ResourceHandle<ModelInstance> handle);
+	FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle);
 }

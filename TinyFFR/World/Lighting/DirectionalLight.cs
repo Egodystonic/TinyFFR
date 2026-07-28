@@ -134,7 +134,13 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 		set => Direction = DirectionalLightCreationConfig.DefaultInitialDirection * value;
 	}
 
+	Quaternion IOrientedSceneObject.RotationQuaternion {
+		get => Rotation.FromStartAndEndDirection(DirectionalLightCreationConfig.DefaultInitialDirection, Direction).ToQuaternion();
+		set => Direction = DirectionalLightCreationConfig.DefaultInitialDirection.RotatedBy(value);
+	}
+
 	public void RotateBy(Rotation rotation) => Direction *= rotation;
+	public void RotateBy(Quaternion rotationQuaternion) => Direction = Direction.RotatedBy(rotationQuaternion);
 
 	public void SetSunDiscParameters(SunDiscConfig config) => Implementation.SetDirectionalLightSunDiscParameters(Handle, config);
 

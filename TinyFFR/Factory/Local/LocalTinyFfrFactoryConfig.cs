@@ -13,6 +13,7 @@ public sealed class LocalTinyFfrFactoryConfig {
 	public const int MaxMaxCpuToGpuAssetTransferSizeBytes = 1 << 29;
 	public const int DefaultMaxCpuToGpuAssetTransferSizeBytes = 1024 * 1024 * 100; // 100 MB  
 	public static readonly MemoryUsageRubric DefaultMemoryUsageRubric = MemoryUsageRubric.Standard;
+	public const bool DefaultEnhanceSecurity = false;
 
 	public int MaxCpuToGpuAssetTransferSizeBytes {
 		get;
@@ -33,5 +34,5 @@ public sealed class LocalTinyFfrFactoryConfig {
 		}
 	} = DefaultMemoryUsageRubric;
 	
-	
+	public bool EnhanceSecurity { get; init; } = DefaultEnhanceSecurity;
 }

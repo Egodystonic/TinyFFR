@@ -42,14 +42,14 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 	public void Add(Polygon p, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null) {
 		p.FillInMissingTriangulationParameters(ref textureUDirection, ref textureVDirection, ref textureOrigin);
 
-		var vertexListSpaceRemaining = (_vertexList?.Buffer.Length ?? 0) - TotalVertexCount;
+		var vertexListSpaceRemaining = (_vertexList?.Span.Length ?? 0) - TotalVertexCount;
 		if (_vertexList == null || vertexListSpaceRemaining < p.VertexCount) IncreaseVertexListSize(TotalVertexCount + p.VertexCount);
 
-		var metadataListSpaceRemaining = (_metadataList?.Buffer.Length ?? 0) - TotalPolygonCount;
+		var metadataListSpaceRemaining = (_metadataList?.Span.Length ?? 0) - TotalPolygonCount;
 		if (_metadataList == null || metadataListSpaceRemaining <= 0) IncreaseMetadataListSize(TotalPolygonCount + 1);
 
-		var vertexDest = _vertexList.Value.Buffer[TotalVertexCount..];
-		var metadataDest = _metadataList.Value.Buffer[TotalPolygonCount..];
+		var vertexDest = _vertexList.Value.Span[TotalVertexCount..];
+		var metadataDest = _metadataList.Value.Span[TotalPolygonCount..];
 
 		p.Vertices.CopyTo(vertexDest);
 		metadataDest[0] = (TotalVertexCount, p.VertexCount, p.Normal, p.IsWoundClockwise, textureUDirection.Value, textureVDirection.Value, textureOrigin.Value);
@@ -64,7 +64,7 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 	[MemberNotNull(nameof(_vertexList))]
 	void IncreaseVertexListSize(int minSize) {
 		var newList = _poolAccessFunc(_parentBuilder).Borrow<Location>(minSize * 2);
-		_vertexList?.Buffer.CopyTo(newList.Buffer);
+		_vertexList?.Span.CopyTo(newList.Span);
 		_vertexList?.Dispose();
 		_vertexList = newList;
 	}
@@ -72,7 +72,7 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 	[MemberNotNull(nameof(_metadataList))]
 	void IncreaseMetadataListSize(int minSize) {
 		var newList = _poolAccessFunc(_parentBuilder).Borrow<MetadataEntry>(minSize * 2);
-		_metadataList?.Buffer.CopyTo(newList.Buffer);
+		_metadataList?.Span.CopyTo(newList.Span);
 		_metadataList?.Dispose();
 		_metadataList = newList;
 	}
@@ -82,11 +82,11 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 			throw new ArgumentOutOfRangeException(nameof(index), index, $"Total number of polygons = {TotalPolygonCount}. No polygon exists at given index.");
 		}
 
-		var metadata = _metadataList!.Value.Buffer[index];
+		var metadata = _metadataList!.Value.Span[index];
 		textureU = metadata.TexU;
 		textureV = metadata.TexV;
 		textureOrigin = metadata.TexOrigin;
-		return new(_vertexList!.Value.Buffer.Slice(metadata.VertexListStart, metadata.VertexListCount), metadata.Normal, metadata.IsClockwise);
+		return new(_vertexList!.Value.Span.Slice(metadata.VertexListStart, metadata.VertexListCount), metadata.Normal, metadata.IsClockwise);
 	}
 
 	public void Clear() {
@@ -102,16 +102,16 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 	public Span<XYPair<float>> Reallocate2DBufferForCurrentCount() {
 		_twoDimensionalBuffer?.Dispose();
 		_twoDimensionalBuffer = _poolAccessFunc(_parentBuilder).Borrow<XYPair<float>>(HighestIndividualVertexCount);
-		return _twoDimensionalBuffer.Value.Buffer;
+		return _twoDimensionalBuffer.Value.Span;
 	}
 	public Span<MeshVertex> ReallocateVertexBufferForCurrentCount() {
 		_vertexBuffer?.Dispose();
 		_vertexBuffer = _poolAccessFunc(_parentBuilder).Borrow<MeshVertex>(TotalVertexCount);
-		return _vertexBuffer.Value.Buffer;
+		return _vertexBuffer.Value.Span;
 	}
 	public Span<VertexTriangle> ReallocateTriangleBufferForCurrentCount() {
 		_triangleBuffer?.Dispose();
 		_triangleBuffer = _poolAccessFunc(_parentBuilder).Borrow<VertexTriangle>(TotalTriangleCount);
-		return _triangleBuffer.Value.Buffer;
+		return _triangleBuffer.Value.Span;
 	}
 }

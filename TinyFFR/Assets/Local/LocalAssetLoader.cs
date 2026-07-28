@@ -8,6 +8,7 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
@@ -33,6 +34,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_meshBuilder = new LocalMeshBuilder(globals);
 		_textureBuilder = new LocalTextureBuilder(globals, config);
 		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder, _testMaterialTextures);
+		_fontLoader = new LocalFontLoader(globals, config, _meshBuilder, _textureBuilder, _materialBuilder);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_animationAndNodeNameBuffer = new InteropStringBuffer(config.MaxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
 		_vertexTriangleBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxAssetVertexIndexBufferSizeBytes);
@@ -72,6 +74,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 			_skeletalAnimationKeyframeDataPool.Dispose();
 			_animationAndNodeNameBuffer.Dispose();
 			_assetFilePathBuffer.Dispose();
+			_fontLoader.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();
 

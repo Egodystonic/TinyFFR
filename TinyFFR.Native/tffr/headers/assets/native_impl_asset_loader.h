@@ -6,9 +6,11 @@
 #include "assimp/cimport.h"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
+#include "stb/stb_truetype.h"
 
 typedef const aiScene* MemoryLoadedAssetHandle;
 typedef unsigned char* MemoryLoadedTextureRgba32DataPtr;
+typedef stbtt_fontinfo* FontHandle;
 
 class native_impl_asset_loader {
 public:
@@ -99,10 +101,21 @@ public:
 	static void get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount);
 	static void load_texture_file_in_to_memory(const char* filePath, interop_bool includeWAlphaChannel, int32_t* outWidth, int32_t* outHeight, MemoryLoadedTextureRgba32DataPtr* outTextureData);
 	static void unload_texture_file_from_memory(MemoryLoadedTextureRgba32DataPtr textureData);
-	static void write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data);	
+	static void write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data);
 
 	static void load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
 	static void unload_skybox_file_from_memory(TextureHandle textureHandle);
 	static void load_ibl_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
 	static void unload_ibl_file_from_memory(TextureHandle textureHandle);
+	
+	static void font_load(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle);
+	static void font_get_vertical_metrics(FontHandle font, float pixelHeight, float* outScalingConstant, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap);
+	static void font_get_codepoint_glyph_index(FontHandle font, int32_t codepoint, int32_t* outGlyphIndex);
+	static void font_get_glyph_advance(FontHandle font, int32_t glyphIndex, int32_t* outAdvanceWidth);
+	static void font_get_glyph_pair_kern_advance(FontHandle font, int32_t glyphIndex1, int32_t glyphIndex2, int32_t* outKernAdvance);
+	static void font_get_kerning_data_present(FontHandle font, interop_bool* outResult);
+	static void font_get_sdf_buffer_dimensions(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, int32_t* outWidth, int32_t* outHeight);
+	static void font_generate_sdf_buffer(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outPotentialBufferPtr);
+	static void font_free_sdf_buffer(uint8_t* bufferPtr);
+	static void font_dispose(FontHandle font);
 };

@@ -1,6 +1,7 @@
 // Created on 2026-04-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Numerics;
 using System.Reflection;
 
 namespace Egodystonic.TinyFFR;
@@ -84,6 +85,7 @@ class PositionedRotatedCuboidTest {
 			if (type == typeof(object)) return null;
 			if (type == typeof(string)) return PositionedRotatedCuboid.Random().ToString("G", null);
 			if (type == typeof(IFormatProvider)) return null;
+			if (type == typeof(Quaternion)) return Rotation.Random().ToQuaternion();
 			var randomMethod = type.GetMethod("Random", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
 			if (randomMethod != null) return randomMethod.Invoke(null, null);
 			throw new InvalidOperationException($"Don't know how to generate random {type.Name}");
@@ -436,5 +438,27 @@ class PositionedRotatedCuboidTest {
 		Assert.AreEqual(0f, smallRot.DistanceFrom(bigRot), TestTolerance);
 		Assert.IsTrue(bigRot.IsIntersectedBy(smallRot));
 		Assert.IsTrue(smallRot.IsIntersectedBy(bigRot));
+	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var cuboid = new PositionedRotatedCuboid(2f, 3f, 4f, new Location(1f, 1f, 1f), 25f % Direction.Up);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			var expected = cuboid.RotatedBy(rot);
+			var actual = cuboid.RotatedBy(quat);
+			AssertToleranceEquals(expected.Position, actual.Position, TestTolerance);
+			Assert.IsTrue(expected.Rotation.IsEquivalentForAllDirectionsTo(actual.Rotation, TestTolerance));
+		}
 	}
 }

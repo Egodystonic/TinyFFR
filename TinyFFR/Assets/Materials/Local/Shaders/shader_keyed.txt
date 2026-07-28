@@ -1,0 +1,48 @@
+﻿material {
+	name : %NAME%,
+	parameters : [
+		{
+			type : sampler2d,
+			name : key_map
+		},
+		{
+			type : float4,
+			name : x_channel_color
+		},
+		{
+			type : float4,
+			name : y_channel_color
+		},
+		{
+			type : float4,
+			name : z_channel_color
+		},
+		{
+			type : float4,
+			name : w_channel_color
+		}
+	],
+	requires : [
+		uv0
+	],
+	shadingModel : unlit,
+	flipUV : false,
+	postLightingBlending : opaque,
+#option AlphaMode
+#variant AlphaOff
+	blending : masked
+#variant AlphaOn
+	blending : fade
+#endoption
+}
+
+fragment {
+	void material(inout MaterialInputs material) {
+		vec2 uv0 = getUV0();
+
+		prepareMaterial(material);
+
+		vec4 keys = texture(materialParams_key_map, uv0).xyzw;
+		material.postLightingColor = saturate(materialParams.x_channel_color * keys.x + materialParams.y_channel_color * keys.y + materialParams.z_channel_color * keys.z + materialParams.w_channel_color * keys.w);
+	}
+}

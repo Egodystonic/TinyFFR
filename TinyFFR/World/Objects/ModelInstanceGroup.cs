@@ -58,6 +58,16 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
+	public Quaternion RotationQuaternion {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FirstInstance?.RotationQuaternion ?? Quaternion.Identity;
+		set {
+			for (var i = 0; i < Count; ++i) Instances[i].SetRotationQuaternion(value);
+		}
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
+
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Scaling ?? Vect.One;
@@ -78,6 +88,12 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	}
 	public void RotateBy(Rotation rotation, Location pivotPoint) {
 		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotation, pivotPoint);
+	}
+	public void RotateBy(Quaternion rotationQuaternion) {
+		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotationQuaternion);
+	}
+	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) {
+		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotationQuaternion, pivotPoint);
 	}
 	public void ScaleBy(float scalar) {
 		for (var i = 0; i < Count; ++i) Instances[i].ScaleBy(scalar);

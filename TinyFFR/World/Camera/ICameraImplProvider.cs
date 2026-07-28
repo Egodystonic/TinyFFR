@@ -44,6 +44,7 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 
 	void Translate(ResourceHandle<Camera> handle, Vect translation);
 	void Rotate(ResourceHandle<Camera> handle, Rotation rotation);
+	void Rotate(ResourceHandle<Camera> handle, Quaternion rotationQuaternion);
 	
 	Ray CastRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord);
 }

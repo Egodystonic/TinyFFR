@@ -23,7 +23,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable {
-	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType);
+	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType, bool AllowsDynamicWrites, bool ContainsMipMaps, TextureRenderingConfig RenderingConfig);
 	const string DefaultTextureName = "Unnamed Texture";
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -86,7 +86,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(generationConfig.Dimensions, TTexel.BlitType));
+		_loadedTextures.Add(handle, new(generationConfig.Dimensions, TTexel.BlitType, config.AllowsDynamicWrites, config.GenerateMipMaps, config.RenderingConfig));
 		return HandleToInstance(handle);
 	}
 
@@ -122,6 +122,77 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	}
 	#endregion
 
+	#region Dynamic Overwrite
+	public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var data = _loadedTextures[handle];
+
+		if (!data.AllowsDynamicWrites) {
+			throw new InvalidOperationException(
+				$"Can not modify texels of {HandleToInstance(handle)} as it was not created with the " +
+				$"'{nameof(TextureCreationConfig.AllowsDynamicWrites)}' flag set to true."
+			);
+		}
+		
+		if (offset.X < 0 || offset.Y < 0) {
+			throw new ArgumentOutOfRangeException(nameof(offset), offset, "Offset X and Y can not be negative.");
+		}
+		if (dimensions.X < 1 || dimensions.Y < 1) {
+			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, "Dimensions X and Y must both be positive.");
+		}
+		var farEdge = offset + dimensions;
+		if (farEdge.X > data.Dimensions.X || farEdge.Y > data.Dimensions.Y) {
+			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, $"Dimensions ({dimensions}) + offset ({offset}) exceeds texture dimensions (sum {farEdge} vs texture dimensions {data.Dimensions}).");
+		}
+		
+		var writeArea = dimensions.Area;
+		if (newTexels.Length < writeArea) {
+			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, $"Dimensions had area of {writeArea} texels but given texel buffer span had length {newTexels.Length}.");
+		}
+		
+		var sourceBufferMatchesBlitType = TTexel.BlitType == data.TexelType;
+		
+		switch (data.TexelType) {
+			case TexelType.Rgb24: {
+				var holdingBuffer = _globals.CreateGpuHoldingBuffer<TexelRgb24>(writeArea);
+				if (sourceBufferMatchesBlitType) newTexels[..writeArea].CopyTo(holdingBuffer.AsSpan<TTexel>());
+				else TextureUtils.Convert(newTexels[..writeArea], holdingBuffer.AsSpan<TexelRgb24>());
+				
+				UpdateTextureRgb24(
+					handle,
+					holdingBuffer.BufferIdentity,
+					(TexelRgb24*) holdingBuffer.DataPtr,
+					holdingBuffer.DataLengthBytes,
+					(uint) offset.X,
+					(uint) offset.Y,
+					(uint) dimensions.X,
+					(uint) dimensions.Y
+				).ThrowIfFailure();
+				break;
+			}
+			case TexelType.Rgba32: {
+				var holdingBuffer = _globals.CreateGpuHoldingBuffer<TexelRgba32>(writeArea);
+				if (sourceBufferMatchesBlitType) newTexels[..writeArea].CopyTo(holdingBuffer.AsSpan<TTexel>());
+				else TextureUtils.Convert(newTexels[..writeArea], holdingBuffer.AsSpan<TexelRgba32>());
+				
+				UpdateTextureRgba32(
+					handle,
+					holdingBuffer.BufferIdentity,
+					(TexelRgba32*) holdingBuffer.DataPtr,
+					holdingBuffer.DataLengthBytes,
+					(uint) offset.X,
+					(uint) offset.Y,
+					(uint) dimensions.X,
+					(uint) dimensions.Y
+				).ThrowIfFailure();
+				break;
+			}
+			default:
+				throw new InvalidOperationException($"Unexpected texture texel type ({data.TexelType}).");
+		}
+	}
+	#endregion
+
 	#region Texture Properties
 	public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -130,6 +201,18 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	public TexelType GetTexelType(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedTextures[handle].TexelType;
+	}
+	public bool GetAllowsDynamicWrites(ResourceHandle<Texture> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedTextures[handle].AllowsDynamicWrites;
+	}
+	public bool GetContainsMipMaps(ResourceHandle<Texture> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedTextures[handle].ContainsMipMaps;
+	}
+	public TextureRenderingConfig GetRenderingConfig(ResourceHandle<Texture> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedTextures[handle].RenderingConfig;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) {
@@ -169,6 +252,30 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		InteropBool generateMipmaps,
 		InteropBool isLinearColorspace,
 		out UIntPtr outTextureHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_texture_rgb_24")]
+	static extern InteropResult UpdateTextureRgb24(
+		UIntPtr textureHandle,
+		nuint bufferId,
+		TexelRgb24* bufferPtr,
+		int bufferLength,
+		uint xOffset,
+		uint yOffset,
+		uint width,
+		uint height
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_texture_rgba_32")]
+	static extern InteropResult UpdateTextureRgba32(
+		UIntPtr textureHandle,
+		nuint bufferId,
+		TexelRgba32* bufferPtr,
+		int bufferLength,
+		uint xOffset,
+		uint yOffset,
+		uint width,
+		uint height
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_texture")]

@@ -359,5 +359,5 @@ public static class MathUtils {
 			maxZ - minZ,
 			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
 		);
-	}
+	} 
 }

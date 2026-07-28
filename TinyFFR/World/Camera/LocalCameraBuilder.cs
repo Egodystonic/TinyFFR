@@ -276,6 +276,10 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetViewDirection(handle, _activeCameras[handle].ViewDirection * rotation);
 	}
+	public void Rotate(ResourceHandle<Camera> handle, Quaternion rotationQuaternion) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetViewDirection(handle, _activeCameras[handle].ViewDirection.RotatedBy(rotationQuaternion));
+	}
 
 	void UpdateProjectionMatrixFromParameters(ResourceHandle<Camera> handle) {
 		var parameters = _activeCameras[handle];

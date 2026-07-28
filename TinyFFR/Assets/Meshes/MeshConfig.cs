@@ -94,6 +94,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	public PositionedCuboid? BoundingBoxOverride { get; init; } = null;
 	public float BoundingBoxAdditionalMargin { get; init; } = DefaultBoundingBoxAdditionalMargin;
 	public bool AllowsPerInstanceVertexMutation { get; init; } = false;
+	public bool GenerateWireframeData { get; init; } = false;
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public MeshCreationConfig() { }
@@ -113,6 +114,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			+	SerializationSizeOfNullable<PositionedCuboid>() // BoundingBoxOverride
 			+	SerializationSizeOfFloat() // BoundingBoxAdditionalMargin
 			+	SerializationSizeOfBool() // AllowPerInstanceVertexMutation
+			+	SerializationSizeOfBool() // GenerateWireframeData
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshCreationConfig src) {
@@ -124,6 +126,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 		SerializationWriteNullable(ref dest, src.BoundingBoxOverride);
 		SerializationWriteFloat(ref dest, src.BoundingBoxAdditionalMargin);
 		SerializationWriteBool(ref dest, src.AllowsPerInstanceVertexMutation);
+		SerializationWriteBool(ref dest, src.GenerateWireframeData);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static MeshCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -136,6 +139,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			BoundingBoxOverride = SerializationReadNullable<PositionedCuboid>(ref src),
 			BoundingBoxAdditionalMargin = SerializationReadFloat(ref src),
 			AllowsPerInstanceVertexMutation = SerializationReadBool(ref src),
+			GenerateWireframeData = SerializationReadBool(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

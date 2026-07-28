@@ -393,6 +393,7 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedRotatedCuboid operator *(PositionedRotatedCuboid left, Rotation right) => left._impl * right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedRotatedCuboid operator *(Rotation left, PositionedRotatedCuboid right) => left * right._impl;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedRotatedCuboid RotatedBy(Rotation rot) => _impl.RotatedBy(rot);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedRotatedCuboid RotatedBy(Quaternion rotQuat) => _impl.RotatedBy(rotQuat);
 	Location IConvexShape.GetRandomInternalLocation() => ((IConvexShape) _impl).GetRandomInternalLocation();
 	#endregion
 }

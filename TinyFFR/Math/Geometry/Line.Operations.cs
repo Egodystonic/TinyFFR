@@ -57,6 +57,10 @@ public readonly partial struct Line : IPhysicalValidityDeterminable {
 	public Line RotatedBy(Rotation rotation) => new(PointOnLine, Direction.RotatedBy(rotation));
 
 	public Line RotatedAroundOriginBy(Rotation rot) => new(PointOnLine.AsVect().RotatedBy(rot).AsLocation(), Direction.RotatedBy(rot));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line RotatedBy(Quaternion rotationQuaternion) => new(PointOnLine, Direction.RotatedBy(rotationQuaternion));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line RotatedAroundOriginBy(Quaternion rotQuat) => new(PointOnLine.AsVect().RotatedBy(rotQuat).AsLocation(), Direction.RotatedBy(rotQuat));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator *(Line line, (Rotation Rotation, Location Pivot) pivotRotationTuple) => line.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
@@ -69,6 +73,10 @@ public readonly partial struct Line : IPhysicalValidityDeterminable {
 	public Line RotatedBy(Rotation rotation, float signedPivotDistance) => RotatedBy(rotation, LocationAtDistance(signedPivotDistance));
 	public Line RotatedBy(Rotation rotation, Location pivot) {
 		return new(pivot + (pivot >> PointClosestTo(pivot)) * rotation, Direction * rotation);
+	}
+	public Line RotatedBy(Quaternion rotationQuaternion, float signedPivotDistance) => RotatedBy(rotationQuaternion, LocationAtDistance(signedPivotDistance));
+	public Line RotatedBy(Quaternion rotationQuaternion, Location pivot) {
+		return new(pivot + (pivot >> PointClosestTo(pivot)).RotatedBy(rotationQuaternion), Direction.RotatedBy(rotationQuaternion));
 	}
 	#endregion
 

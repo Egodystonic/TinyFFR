@@ -74,6 +74,9 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 
 	public static TexelRgb24 ConvertFrom(ColorVect v) => new(v);
 	static TexelRgb24 IConversionSupplyingTexel<TexelRgb24, TexelRgb24>.ConvertFrom(TexelRgb24 t) => t;
+	ColorVect IConversionSupplyingTexel<TexelRgb24, ColorVect>.Convert() => ToColorVect();
+	TexelRgb24 IConversionSupplyingTexel<TexelRgb24, TexelRgb24>.Convert() => this;
+	TexelRgba32 IConversionSupplyingTexel<TexelRgb24, TexelRgba32>.Convert() => ToRgba32();
 	public static TexelRgb24 ConvertFrom(TexelRgba32 t) => t.ToRgb24();
 	public static TexelRgb24 ConvertFrom<T>(T v) where T : unmanaged, IThreeByteChannelTexel<T> => new(v[0], v[1], v[2]);
 

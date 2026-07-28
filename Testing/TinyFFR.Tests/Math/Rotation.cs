@@ -166,8 +166,6 @@ class RotationTest {
 		}
 
 		Assert.AreEqual(Rotation.None, new Rotation(0f, None));
-		// Assert.AreEqual(Rotation.None, new Rotation(0f, Up));
-		// Assert.AreEqual(Rotation.None, new Rotation(90f, None));
 
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Forward, Right));
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Right, Backward));
@@ -196,6 +194,16 @@ class RotationTest {
 				AssertEquivalence(Rotation.FromStartAndEndDirection(dirA, dirB), Rotation.FromStartAndEndDirection(-dirA, -dirB), 0f);
 				AssertEquivalence(-Rotation.FromStartAndEndDirection(dirA, dirB), Rotation.FromStartAndEndDirection(dirB, dirA), 0f);
 				AssertEquivalence(Rotation.FromStartAndEndDirection(dirA, dirB), -Rotation.FromStartAndEndDirection(dirB, dirA), 0f);
+			}
+		}
+		
+		// This section explicitly designed to test near-antiparallel inputs which were previously a little error-prone in some cases
+		const float SweepTolerance = 0.01f;
+		foreach (var start in AllCardinals) {
+			var sweepAxis = start.AnyOrthogonal();
+			for (var offsetDegrees = -5f; offsetDegrees <= 5f; offsetDegrees += 0.1f) {
+				var end = (180f + offsetDegrees) % sweepAxis * start;
+				AssertToleranceEquals(end, Rotation.FromStartAndEndDirection(start, end) * start, SweepTolerance);
 			}
 		}
 
@@ -230,6 +238,89 @@ class RotationTest {
 				}
 			}
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyConstructFromStartAndEndOrientation() {
+		AssertEquivalence(NinetyAroundDown, Rotation.FromStartAndEndOrientation(Forward, Up, Right, Up), TestTolerance);
+		AssertEquivalence(NinetyAroundUp, Rotation.FromStartAndEndOrientation(Right, Up, Forward, Up), TestTolerance);
+
+		var rollRot = Rotation.FromStartAndEndOrientation(Forward, Up, Forward, Left);
+		AssertToleranceEquals(Forward, rollRot * Forward, TestTolerance);
+		AssertToleranceEquals(Left, rollRot * Up, TestTolerance);
+
+		var upFlipRot = Rotation.FromStartAndEndOrientation(Forward, Up, Forward, Down);
+		AssertToleranceEquals(Forward, upFlipRot * Forward, TestTolerance);
+		AssertToleranceEquals(Down, upFlipRot * Up, TestTolerance);
+
+		var forwardFlipRot = Rotation.FromStartAndEndOrientation(Up, Forward, Down, Forward);
+		AssertToleranceEquals(Down, forwardFlipRot * Up, TestTolerance);
+		AssertToleranceEquals(Forward, forwardFlipRot * Forward, TestTolerance);
+
+		var nearFlippedUp = 179f % Forward * Up;
+		var nearFlipRot = Rotation.FromStartAndEndOrientation(Forward, Up, Forward, nearFlippedUp);
+		AssertToleranceEquals(Forward, nearFlipRot * Forward, 0.01f);
+		AssertToleranceEquals(nearFlippedUp, nearFlipRot * Up, 0.01f);
+
+		foreach (var fwd in AllCardinals) {
+			foreach (var up in AllCardinals) {
+				if (!up.IsOrthogonalTo(fwd)) continue;
+				AssertEquivalence(Rotation.None, Rotation.FromStartAndEndOrientation(fwd, up, fwd, up), TestTolerance);
+			}
+		}
+
+		foreach (var startForward in AllCardinals) {
+			foreach (var startUp in AllCardinals) {
+				if (!startUp.IsOrthogonalTo(startForward)) continue;
+				foreach (var endForward in AllCardinals) {
+					foreach (var endUp in AllCardinals) {
+						if (!endUp.IsOrthogonalTo(endForward)) continue;
+
+						var rot = Rotation.FromStartAndEndOrientation(startForward, startUp, endForward, endUp);
+						AssertToleranceEquals(endForward, rot * startForward, TestTolerance);
+						AssertToleranceEquals(endUp, rot * startUp, TestTolerance);
+
+						AssertEquivalence(
+							rot,
+							Rotation.FromStartAndEndOrientation(startForward, startUp, endForward, endUp, enforceOrthogonality: false),
+							TestTolerance
+						);
+					}
+				}
+			}
+		}
+
+		var skewedStartUp = new Direction(0f, 1f, 1f);
+		AssertEquivalence(
+			Rotation.FromStartAndEndOrientation(Forward, Up, Right, Up),
+			Rotation.FromStartAndEndOrientation(Forward, skewedStartUp, Right, Up),
+			TestTolerance
+		);
+		AssertEquivalence(
+			Rotation.FromStartAndEndOrientation(Forward, Up, Right, Up),
+			Rotation.FromStartAndEndOrientation(Forward, Up, Right, new Direction(-1f, 1f, 0f)),
+			TestTolerance
+		);
+		Assert.IsFalse(
+			Rotation.FromStartAndEndOrientation(Forward, skewedStartUp, Right, Up, enforceOrthogonality: false)
+				.IsEquivalentForAllDirectionsTo(Rotation.FromStartAndEndOrientation(Forward, skewedStartUp, Right, Up), TestTolerance)
+		);
+
+		var parallelUpRot = Rotation.FromStartAndEndOrientation(Forward, Forward, Right, Up);
+		AssertToleranceEquals(Right, parallelUpRot * Forward, TestTolerance);
+		Assert.IsTrue(Single.IsFinite(parallelUpRot.Angle.Radians));
+		Assert.IsTrue(Single.IsFinite(parallelUpRot.Axis.X));
+		Assert.IsTrue(Single.IsFinite(parallelUpRot.Axis.Y));
+		Assert.IsTrue(Single.IsFinite(parallelUpRot.Axis.Z));
+
+		var noneRot = Rotation.FromStartAndEndOrientation(None, None, None, None);
+		AssertEquivalence(Rotation.None, noneRot, TestTolerance);
+
+		var mixedNoneRot = Rotation.FromStartAndEndOrientation(None, Up, Forward, Up);
+		Assert.IsTrue(Single.IsFinite(mixedNoneRot.Angle.Radians));
+		Assert.IsTrue(Single.IsFinite(mixedNoneRot.Axis.X));
+		Assert.IsTrue(Single.IsFinite(mixedNoneRot.Axis.Y));
+		Assert.IsTrue(Single.IsFinite(mixedNoneRot.Axis.Z));
 	}
 
 	[Test]
@@ -825,5 +916,26 @@ class RotationTest {
 		AssertEquivalence(NinetyAroundDown * 1.5f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 1.5f)), TestTolerance);
 		AssertEquivalence(NinetyAroundDown * 2.5f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 2.5f)), TestTolerance);
 		AssertEquivalence(NinetyAroundDown * 0f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 0f)), TestTolerance);
+	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var start = 31f % new Direction(1f, -2f, 4f);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			var expected = start.CombinedAndNormalizedWith(rot);
+			var actual = start.CombinedAndNormalizedWith(quat);
+			Assert.IsTrue(expected.IsEquivalentForAllDirectionsTo(actual, TestTolerance));
+		}
 	}
 }

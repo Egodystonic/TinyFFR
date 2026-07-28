@@ -561,4 +561,27 @@ class TransformTest {
 			Assert.AreEqual(false, t.IsInternallyRepresentedByMatrix);
 		}
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var transform = new Transform(new Vect(1f, 2f, 3f), 40f % Direction.Left, new Vect(2f, 2f, 2f));
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			var expected = ((IRotatable<Transform>) transform).RotatedBy(rot);
+			var actual = ((IRotatable<Transform>) transform).RotatedBy(quat);
+			AssertToleranceEquals(expected.Translation, actual.Translation, TestTolerance);
+			AssertToleranceEquals(expected.Scaling, actual.Scaling, TestTolerance);
+			Assert.IsTrue(expected.Rotation.IsEquivalentForAllDirectionsTo(actual.Rotation, TestTolerance));
+		}
+	}
 }

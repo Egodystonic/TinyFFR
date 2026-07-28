@@ -2494,4 +2494,27 @@ class RayTest {
 		AssertAngle(180f, Direction.Down, Direction.Left, Direction.Right);
 		AssertAngle(0f, Direction.Down, Direction.Left, Direction.Left);
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var ray = new Ray(new Location(-1f, 0f, 4f), new Direction(0f, 1f, 1f));
+		var pivot = new Location(3f, -2f, 7f);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			AssertToleranceEquals(ray.RotatedBy(rot), ray.RotatedBy(quat), TestTolerance);
+			AssertToleranceEquals(ray.RotatedAroundOriginBy(rot), ray.RotatedAroundOriginBy(quat), TestTolerance);
+			AssertToleranceEquals(ray.RotatedBy(rot, pivot), ray.RotatedBy(quat, pivot), TestTolerance);
+			AssertToleranceEquals(ray.RotatedBy(rot, 2.5f), ray.RotatedBy(quat, 2.5f), TestTolerance);
+		}
+	}
 }

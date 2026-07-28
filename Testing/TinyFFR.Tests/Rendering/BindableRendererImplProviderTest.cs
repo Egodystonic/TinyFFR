@@ -1,0 +1,143 @@
+// Created on 2026-07-14 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2026
+
+using System;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.World;
+
+namespace Egodystonic.TinyFFR.Rendering;
+
+[TestFixture]
+class BindableRendererImplProviderTest {
+	FakeRendererBuilder _builder = null!;
+	FakeResourceAllocator _allocator = null!;
+	Scene _scene;
+	Camera _camera;
+	FakeCameraImplProvider _cameraImpl = null!;
+
+	[SetUp]
+	public void SetUpTest() {
+		_builder = new FakeRendererBuilder();
+		_allocator = new FakeResourceAllocator();
+		_scene = BindableRendererTestScaffold.CreateScene();
+		(_camera, _cameraImpl) = BindableRendererTestScaffold.CreateCamera();
+	}
+
+	[TearDown]
+	public void TearDownTest() {
+		_scene.Dispose();
+		_camera.Dispose();
+	}
+
+	static void NoopFrameHandler(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) { }
+
+	Renderer CreateRenderer(in BindableRendererCreationConfig config) => _builder.CreateBindableRenderer(_scene, _camera, _allocator, in config);
+	Renderer CreateRenderer() => CreateRenderer(new BindableRendererCreationConfig());
+
+	[Test]
+	public void ShouldPersistFrustumCullingSettingAcrossBufferRecreation() {
+		var renderer = CreateRenderer();
+		renderer.SetFrustumCullingEnabled(false);
+		Assert.AreEqual(new[] { false }, _builder.CreatedRenderers[0].FrustumCullingCalls);
+
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler);
+
+		Assert.AreEqual(2, _builder.CreatedRenderers.Count);
+		Assert.AreEqual(new[] { false }, _builder.CreatedRenderers[1].FrustumCullingCalls);
+	}
+
+	[Test]
+	public void ShouldNotSetFrustumCullingWhenNeverConfigured() {
+		var renderer = CreateRenderer();
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler);
+
+		Assert.AreEqual(0, _builder.CreatedRenderers[0].FrustumCullingCalls.Count);
+		Assert.AreEqual(0, _builder.CreatedRenderers[1].FrustumCullingCalls.Count);
+	}
+
+	[Test]
+	public void ShouldPersistViewportSubAreaAcrossBufferRecreation() {
+		var renderer = CreateRenderer();
+		renderer.SetRenderSubAreaFraction(Orientation2D.UpLeft, (0.1f, 0.2f), (0.5f, 0.6f));
+
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler);
+
+		var secondRenderer = _builder.CreatedRenderers[1];
+		Assert.AreEqual(1, secondRenderer.SubAreaFractionCalls.Count);
+		Assert.AreEqual((Orientation2D.UpLeft, new XYPair<float>(0.1f, 0.2f), new XYPair<float>(0.5f, 0.6f)), secondRenderer.SubAreaFractionCalls[0]);
+
+		renderer.SetRenderSubAreaPixels(Orientation2D.DownRight, (10, 20), (50, 60));
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (200, 100), NoopFrameHandler);
+
+		var thirdRenderer = _builder.CreatedRenderers[2];
+		Assert.AreEqual(0, thirdRenderer.SubAreaFractionCalls.Count);
+		Assert.AreEqual(1, thirdRenderer.SubAreaPixelCalls.Count);
+		Assert.AreEqual((Orientation2D.DownRight, new XYPair<int>(10, 20), new XYPair<int>(50, 60)), thirdRenderer.SubAreaPixelCalls[0]);
+	}
+
+	[Test]
+	public void ShouldForwardResolvedNameToActualRendererAndBuffer() {
+		var unnamedRenderer = CreateRenderer();
+		var generatedName = unnamedRenderer.GetNameAsNewStringObject();
+		Assert.AreEqual(false, String.IsNullOrEmpty(generatedName));
+		Assert.AreEqual(generatedName, _builder.CreatedRenderers[0].Name);
+		Assert.AreEqual($"{generatedName} output buffer", _builder.CreatedBuffers[0].Name);
+
+		_ = CreateRenderer(new BindableRendererCreationConfig { Name = "Test Renderer" });
+		Assert.AreEqual("Test Renderer", _builder.CreatedRenderers[1].Name);
+		Assert.AreEqual("Test Renderer output buffer", _builder.CreatedBuffers[1].Name);
+	}
+
+	[Test]
+	public void ShouldPersistQualityConfigAcrossBufferRecreation() {
+		var renderer = CreateRenderer();
+		renderer.SetQuality(new RenderQualityConfig { ShadowQuality = Quality.VeryHigh });
+
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler);
+
+		Assert.AreEqual(Quality.VeryHigh, _builder.CreatedRenderers[1].Quality.ShadowQuality);
+	}
+
+	[Test]
+	public void ShouldRegisterFrameHandlerOnRecreatedBuffer() {
+		var renderer = CreateRenderer();
+		Assert.AreEqual(null, _builder.CreatedBuffers[0].CurrentHandler);
+
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler);
+
+		var secondBuffer = _builder.CreatedBuffers[1];
+		Assert.AreEqual(new XYPair<int>(100, 50), secondBuffer.TextureDimensions);
+		Assert.AreNotEqual(null, secondBuffer.CurrentHandler);
+		Assert.AreEqual(true, secondBuffer.LastHandlerLowestAddressesRepresentFrameTop);
+		Assert.AreEqual(true, _builder.CreatedBuffers[0].Disposed);
+		Assert.AreEqual(true, _builder.CreatedRenderers[0].Disposed);
+
+		BindableRendererImplProvider.StopHandlingFrames(renderer);
+		Assert.AreEqual(null, secondBuffer.CurrentHandler);
+		Assert.AreEqual(1, secondBuffer.ClearHandlersCallCount);
+	}
+
+	[Test]
+	public void ShouldUpdateCameraAspectRatioWhenConfigured() {
+		_ = CreateRenderer(new BindableRendererCreationConfig { DefaultBufferSize = (200, 100) });
+		Assert.AreEqual(new[] { 2f }, _cameraImpl.AspectRatioCalls);
+
+		_cameraImpl.AspectRatioCalls.Clear();
+		var renderer = CreateRenderer(new BindableRendererCreationConfig { AutoUpdateCameraAspectRatio = false });
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler);
+		Assert.AreEqual(0, _cameraImpl.AspectRatioCalls.Count);
+	}
+
+	[Test]
+	public void ShouldDisposeOwnedResourcesOnDisposal() {
+		var renderer = CreateRenderer();
+		renderer.Dispose();
+
+		Assert.AreEqual(true, _builder.CreatedRenderers[0].Disposed);
+		Assert.AreEqual(true, _builder.CreatedBuffers[0].Disposed);
+		Assert.AreEqual(true, _allocator.CreatedGroups[0].Disposed);
+		Assert.AreEqual(true, renderer.IsDisposed);
+		Assert.DoesNotThrow(renderer.Dispose);
+	}
+}

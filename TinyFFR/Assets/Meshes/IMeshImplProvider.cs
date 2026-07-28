@@ -8,9 +8,10 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	MeshBufferData GetBufferData(ResourceHandle<Mesh> handle);
+	MeshBufferData? GetWireframeBufferData(ResourceHandle<Mesh> handle);
 	PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle);
 	bool GetAllowsPerInstanceVertexMutation(ResourceHandle<Mesh> handle);
-	ReadOnlySpan<MeshVertex> GetDefaultVerticesIfMutableOrThrow(ResourceHandle<Mesh> handle);
+	ScopedReadOnlySpanLease<MeshVertex> BorrowDefaultVerticesSpan(ResourceHandle<Mesh> handle, Range range);
 	IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(ResourceHandle<Mesh> handle, MeshAnimationType? type);
 	IndirectEnumerable<Mesh, MeshNode> GetNodes(ResourceHandle<Mesh> handle);
 	MeshAnimation? TryGetAnimationByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name, MeshAnimationType? type);

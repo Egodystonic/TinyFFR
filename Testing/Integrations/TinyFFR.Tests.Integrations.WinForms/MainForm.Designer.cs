@@ -25,6 +25,8 @@
 		private void InitializeComponent() {
 			toggleRenderingButton = new Button();
 			changeLightColourButton = new Button();
+			compositeModeCheckBox = new CheckBox();
+			toggleOverlayButton = new Button();
 			sceneView = new Egodystonic.TinyFFR.WinForms.TinyFfrSceneView();
 			SuspendLayout();
 			// 
@@ -47,9 +49,28 @@
 			changeLightColourButton.Text = "Change Light Colour";
 			changeLightColourButton.UseVisualStyleBackColor = true;
 			changeLightColourButton.Click += changeLightColourButton_Click;
-			// 
+			//
+			// compositeModeCheckBox
+			//
+			compositeModeCheckBox.Location = new Point(481, 12);
+			compositeModeCheckBox.Name = "compositeModeCheckBox";
+			compositeModeCheckBox.Size = new Size(203, 34);
+			compositeModeCheckBox.TabIndex = 3;
+			compositeModeCheckBox.Text = "Composite Mode";
+			compositeModeCheckBox.UseVisualStyleBackColor = true;
+			//
+			// toggleOverlayButton
+			//
+			toggleOverlayButton.Location = new Point(690, 12);
+			toggleOverlayButton.Name = "toggleOverlayButton";
+			toggleOverlayButton.Size = new Size(203, 34);
+			toggleOverlayButton.TabIndex = 4;
+			toggleOverlayButton.Text = "Toggle Overlay";
+			toggleOverlayButton.UseVisualStyleBackColor = true;
+			toggleOverlayButton.Click += toggleOverlayButton_Click;
+			//
 			// sceneView
-			// 
+			//
 			sceneView.InternalRenderResolution = new Size(300, 150);
 			sceneView.Location = new Point(12, 64);
 			sceneView.Name = "sceneView";
@@ -64,6 +85,8 @@
 			Controls.Add(sceneView);
 			Controls.Add(changeLightColourButton);
 			Controls.Add(toggleRenderingButton);
+			Controls.Add(compositeModeCheckBox);
+			Controls.Add(toggleOverlayButton);
 			Name = "MainForm";
 			Text = "MainForm";
 			ResumeLayout(false);
@@ -73,6 +96,8 @@
 
 		private Button toggleRenderingButton;
 		private Button changeLightColourButton;
+		private CheckBox compositeModeCheckBox;
+		private Button toggleOverlayButton;
 		private Egodystonic.TinyFFR.WinForms.TinyFfrSceneView sceneView;
 	}
 }

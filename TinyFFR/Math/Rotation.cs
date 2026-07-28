@@ -44,6 +44,21 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		// return new(Angle.HalfCircle, perpVec);
 		return new(startDirection.AngleTo(endDirection), Direction.FromDualOrthogonalization(startDirection, endDirection));
 	}
+	
+	public static Rotation FromStartAndEndOrientation(Direction startingForwardDirection, Direction startingUpDirection, Direction endForwardDirection, Direction endUpDirection, bool enforceOrthogonality = true) {
+		const float MinAngleRadiansForNearAntiparallelUpCorrection = 178f * (MathF.Tau / 360f);
+
+		if (enforceOrthogonality) {
+			startingUpDirection = startingUpDirection.OrthogonalizedAgainst(startingForwardDirection) ?? startingForwardDirection.AnyOrthogonal();
+			endUpDirection = endUpDirection.OrthogonalizedAgainst(endForwardDirection) ?? endForwardDirection.AnyOrthogonal();
+		}
+		var forwardRot = startingForwardDirection >> endForwardDirection;
+		var carriedUp = startingUpDirection * forwardRot;
+		if ((carriedUp ^ endUpDirection) >= Angle.FromRadians(MinAngleRadiansForNearAntiparallelUpCorrection)) {
+			return forwardRot + new Rotation(carriedUp.SignedAngleTo(endUpDirection, endForwardDirection), endForwardDirection);
+		}
+		return forwardRot + (carriedUp >> endUpDirection);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Quaternion ToQuaternion() {

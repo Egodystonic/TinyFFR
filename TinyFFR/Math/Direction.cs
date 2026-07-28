@@ -106,16 +106,23 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	// TODO xmldoc -- by default follows right hand rule (index finger = dirA, middle finger = dirB, thumb = result)
 	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB) {
-		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
-		var crossLength = cross.LengthSquared();
+		const float PreNormalizedCrossLengthSquaredTolerance = 1E-5f;
+		const float ParallelInputsCrossLengthSquaredTolerance = 1E-8f;
 
-		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromVector3PreNormalized(cross);
-		else if (crossLength >= 0.001f) return FromVector3(cross);
+		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
+		var crossLengthSquared = cross.LengthSquared();
+
+		if (MathF.Abs(crossLengthSquared - 1f) <= PreNormalizedCrossLengthSquaredTolerance) return FromVector3PreNormalized(cross);
+		else if (crossLengthSquared >= ParallelInputsCrossLengthSquaredTolerance) return FromVector3(cross);
 		else if (dirA == None || dirB == None) return None;
 		else return dirA.AnyOrthogonal();
 	}
 	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB, bool rightHanded) {
 		return rightHanded ? FromDualOrthogonalization(dirA, dirB) : FromDualOrthogonalization(dirB, dirA);
+	}
+	// TODO xmldoc expects that dirA and dirB are definitely orthogonal already and not None
+	public static Direction FastFromDualOrthogonalization(Direction dirA, Direction dirB) {
+		return FromVector3(Vector3.Cross(dirA.ToVector3(), dirB.ToVector3()));
 	}
 
 	// TODO xmldoc: Imagine a plane, and imagine one direction along the plane is set as "zero". This factory method lets you specify directions as a polar angle offset from the zero direction on the plane
@@ -148,15 +155,43 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	#region Random
 	public static Direction Random() {
-		Direction result;
-		do {
-			result = new(
-				RandomUtils.NextSingleNegOneToOneInclusive(),
-				RandomUtils.NextSingleNegOneToOneInclusive(),
-				RandomUtils.NextSingleNegOneToOneInclusive()
-			);
-		} while (result == None);
-		return result;
+		/* Maintainer's note:
+		 * Previously this sampled a point inside a unit cube and then projected on the sphere surface, but that overrepresents the 8 diagonal axes in the distribution
+		 * (as there is more space in the unit cube around those corners outside of the sphere than anywhere else). 
+		 * 
+		 * Instead here is the Marsaglia Polar Method for uniform distribution around a unit sphere's surface, it assumes the Achimedes Hat Theorem and then projects
+		 * a randomly selected point on the 2D circle (with radius 1) upwards knowing that all surface area is distributed evenly according to that theorem.
+		 *
+		 * Wiki article: https://en.wikipedia.org/wiki/Marsaglia_polar_method
+		 *
+		 * I did wonder whether sumSq >= 1 should in fact be sumSq > 1 (as at the moment it's possible to get result (0, 0, 1) but not (0, 0, -1) which feels
+		 * anti-uniform). Here's Claude's answer:
+		 *
+		 * Uniformity is a property of the probability measure, not of the set of points that are reachable. Adding or removing a measure-zero set — a single point, or a curve — never changes a distribution.
+		 * The south pole (0, 0, −1) has probability zero of being hit regardless, so its absence can't make the distribution non-uniform, and its presence can't make it "more" uniform.
+		 * A perfectly uniform distribution on the sphere is completely unbothered by whether one individual point is attainable.
+		 *
+		 * So switching >= to > accepts the boundary circle u² + v² = 1, but that circle is a 1D curve in the 2D disk — it has area zero.
+		 * In exact real arithmetic the change is a no-op for the distribution: same uniform measure, plus one now-reachable point that still gets chosen with probability zero.
+		 *
+		 * In floating point it's actually a hair worse, not better. Look at what the map does on that boundary: when sumSq is exactly 1, scalar = 2·√(1−1) = 0, so the return is (u·0, v·0, 1−2) = (0, 0, −1) —
+		 * the south pole, no matter what direction (u, v) pointed.
+		 * The entire boundary circle collapses onto that single point. Now, a handful of float pairs do compute sumSq to exactly 1.0f — most obviously (±1, 0) and (0, ±1). With >= those are correctly discarded.
+		 * With > they'd all be accepted and every one of them would return the exact same point (0, 0, −1).
+		 * That gives the south pole a tiny excess weight — a point-mass, the one genuinely non-uniform thing you could introduce here. Vanishingly small, but it's a nudge in the wrong direction.
+		 *
+		 * So the current code has it right: rejecting >= 1 throws away the degenerate boundary rather than piling it onto one pole.
+		 * The distribution you already have is the uniform one. What tripped your intuition is the natural feeling that "uniform" should mean "every point is reachable and symmetric" —
+		 * but for continuous distributions, symmetry of the measure is what matters, and that's intact even with a pole missing.
+		 */
+		while (true) {
+			var u = RandomUtils.NextSingleNegOneToOneInclusive();
+			var v = RandomUtils.NextSingleNegOneToOneInclusive();
+			var uvSquared = u * u + v * v;
+			if (uvSquared >= 1f) continue;
+			var hatScalar = 2f * MathF.Sqrt(1f - uvSquared);
+			return new(u * hatScalar, v * hatScalar, 1f - 2f * uvSquared);
+		}
 	}
 	public static Direction Random(Direction minInclusive, Direction maxExclusive) {
 		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
@@ -165,8 +200,11 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static Direction Random(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
 		if (coneCentre == None) return Random();
 
+		// Uniform in the cosine of the polar angle rather than the angle itself; otherwise results cluster towards the cone's centre
+		var maxCosine = coneAngleMax.ClampZeroToHalfCircle().Cosine;
+		var minCosine = coneAngleMin.ClampZeroToHalfCircle().Cosine;
 		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()) with {
-			Angle = Angle.Random(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle())
+			Angle = Angle.FromCosine(RandomUtils.NextSingleInclusive(maxCosine, minCosine))
 		};
 		return offset * new Rotation(Angle.Random(Angle.Zero, Angle.FullCircle), coneCentre);
 	}

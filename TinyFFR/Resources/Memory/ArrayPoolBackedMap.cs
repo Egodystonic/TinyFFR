@@ -1,4 +1,4 @@
-﻿// Created on 2024-02-03 by Ben Bowen
+// Created on 2024-02-03 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Buffers;
@@ -10,7 +10,8 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
 		readonly int _version;
-		int _curIndex;
+		int _bucketIndex;
+		int _indexInBucket;
 
 		public KeyValuePair<TKey, TValue> Current { get; private set; } = default;
 		object IEnumerator.Current => Current!;
@@ -23,17 +24,24 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 		public bool MoveNext() {
 			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			if (++_curIndex < _owner.Count) {
-				Current = _owner.GetPairAtIndex(_curIndex);
-				return true;
+			while (_bucketIndex < _owner._numBuckets) {
+				var bucket = _owner._buckets[_bucketIndex];
+				if (++_indexInBucket < bucket.Count) {
+					Current = bucket[_indexInBucket];
+					return true;
+				}
+
+				++_bucketIndex;
+				_indexInBucket = -1;
 			}
-			
+
 			Current = default!;
 			return false;
 		}
 
 		public void Reset() {
-			_curIndex = -1;
+			_bucketIndex = 0;
+			_indexInBucket = -1;
 			Current = default!;
 		}
 
@@ -43,7 +51,8 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	public struct KeyEnumerator : IEnumerator<TKey>, IEnumerable<TKey> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
 		readonly int _version;
-		int _curIndex;
+		int _bucketIndex;
+		int _indexInBucket;
 
 		public TKey Current { get; private set; } = default!;
 		object IEnumerator.Current => Current!;
@@ -56,17 +65,24 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 		public bool MoveNext() {
 			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			if (++_curIndex < _owner.Count) {
-				Current = _owner.GetPairAtIndex(_curIndex).Key;
-				return true;
+			while (_bucketIndex < _owner._numBuckets) {
+				var bucket = _owner._buckets[_bucketIndex];
+				if (++_indexInBucket < bucket.Count) {
+					Current = bucket[_indexInBucket].Key;
+					return true;
+				}
+
+				++_bucketIndex;
+				_indexInBucket = -1;
 			}
-			
+
 			Current = default!;
 			return false;
 		}
 
 		public void Reset() {
-			_curIndex = -1;
+			_bucketIndex = 0;
+			_indexInBucket = -1;
 			Current = default!;
 		}
 
@@ -80,7 +96,8 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	public struct ValueEnumerator : IEnumerator<TValue>, IEnumerable<TValue> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
 		readonly int _version;
-		int _curIndex;
+		int _bucketIndex;
+		int _indexInBucket;
 
 		public TValue Current { get; private set; } = default!;
 		object IEnumerator.Current => Current!;
@@ -93,17 +110,24 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 		public bool MoveNext() {
 			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			if (++_curIndex < _owner.Count) {
-				Current = _owner.GetPairAtIndex(_curIndex).Value;
-				return true;
+			while (_bucketIndex < _owner._numBuckets) {
+				var bucket = _owner._buckets[_bucketIndex];
+				if (++_indexInBucket < bucket.Count) {
+					Current = bucket[_indexInBucket].Value;
+					return true;
+				}
+
+				++_bucketIndex;
+				_indexInBucket = -1;
 			}
-			
+
 			Current = default!;
 			return false;
 		}
 
 		public void Reset() {
-			_curIndex = -1;
+			_bucketIndex = 0;
+			_indexInBucket = -1;
 			Current = default!;
 		}
 
@@ -114,24 +138,30 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		public ValueEnumerator GetEnumerator() => this;
 	}
 
-	const int HashMask = 0b11_1111;
-	internal const int NumBuckets = HashMask + 1;
-	readonly ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>[] _buckets;
+	const int InitialBucketCount = 4; // Must be power of two
+	const int MaxAverageTargetBucketOccupancy = 8;
+	ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>[] _buckets;
+	int _numBuckets;
+	int _hashMask;
+	int _count;
 	
+	// These fields memoise lookup to make conseecutive scan a little better
+	int _lastIndexLookupVersion = -1;
+	int _lastIndexLookupIndex;
+	int _lastIndexLookupBucket;
+	int _lastIndexLookupBucketStart;
+
 	public ArrayPoolBackedMap() {
-		_buckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(NumBuckets);
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>();
+		_numBuckets = InitialBucketCount;
+		_hashMask = InitialBucketCount - 1;
+		_buckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(_numBuckets);
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>();
 	}
-	
+
 	public int Version { get; private set; } = 0;
 
-	public int Count {
-		get {
-			var result = 0;
-			for (var i = 0; i < NumBuckets; ++i) result += _buckets[i].Count;
-			return result;
-		}
-	}
+	public int Count => _count;
+
 	public TValue this[TKey key] {
 		get => (GetKvpFromKey(key) ?? throw new KeyNotFoundException($"Key '{key}' was not found in this map.")).Value;
 		set {
@@ -139,7 +169,12 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 			var index = GetIndexFromBucket(bucket, key);
 
 			if (index is { } i) bucket[i] = new(key, value);
-			else bucket.Add(new(key, value));
+			else {
+				bucket.Add(new(key, value));
+				++_count;
+				++Version;
+				GrowBucketsIfOverloaded();
+			}
 		}
 	}
 	ICollection<TKey> IDictionary<TKey, TValue>.Keys {
@@ -165,29 +200,60 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	public void Add(TKey key, TValue value) => Add(new(key, value));
 	public void Add(KeyValuePair<TKey, TValue> item) {
 		var bucket = GetBucket(item.Key);
-		if (ContainsKey(item.Key)) throw new ArgumentException($"Key '{item.Key}' already exists in this map.");
+		if (GetIndexFromBucket(bucket, item.Key).HasValue) throw new ArgumentException($"Key '{item.Key}' already exists in this map.");
 
 		bucket.Add(item);
+		++_count;
 		++Version;
+		GrowBucketsIfOverloaded();
+	}
+
+	public bool TryAdd(TKey key, TValue value) {
+		var bucket = GetBucket(key);
+		if (GetIndexFromBucket(bucket, key).HasValue) return false;
+		bucket.Add(new(key, value));
+		++_count;
+		++Version;
+		GrowBucketsIfOverloaded();
+		return true;
 	}
 
 	public void Clear() {
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i].Clear();
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
+		_count = 0;
 		++Version;
 	}
 	public void ClearWithoutZeroingMemory() {
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
+		_count = 0;
 		++Version;
 	}
 
 	public bool ContainsKey(TKey key) => GetIndexFromBucket(GetBucket(key), key).HasValue;
 
 	public KeyValuePair<TKey, TValue> GetPairAtIndex(int index) {
-		for (var i = 0; i < NumBuckets; ++i) {
-			var bucket = _buckets[i];
-			if (index < bucket.Count) return bucket[index];
+		if (index < 0) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be > 0 and < Count.");
 
-			index -= bucket.Count;
+		var bucketIndex = 0;
+		var remainder = index;
+		if (_lastIndexLookupVersion == Version && index >= _lastIndexLookupIndex) {
+			bucketIndex = _lastIndexLookupBucket;
+			remainder = index - _lastIndexLookupBucketStart;
+		}
+
+		var bucketStart = index - remainder;
+		for (var i = bucketIndex; i < _numBuckets; ++i) {
+			var bucket = _buckets[i];
+			if (remainder < bucket.Count) {
+				_lastIndexLookupVersion = Version;
+				_lastIndexLookupIndex = index;
+				_lastIndexLookupBucket = i;
+				_lastIndexLookupBucketStart = bucketStart;
+				return bucket[remainder];
+			}
+
+			remainder -= bucket.Count;
+			bucketStart += bucket.Count;
 		}
 
 		throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be > 0 and < Count.");
@@ -221,6 +287,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		var index = GetIndexFromBucket(bucket, key);
 		if (!index.HasValue) return false;
 		bucket.RemoveAt(index.Value);
+		--_count;
 		++Version;
 		return true;
 	}
@@ -234,26 +301,27 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 		if (!valueComparer.Equals(bucket[index.Value].Value, item.Value)) return false;
 		bucket.RemoveAt(index.Value);
+		--_count;
 		++Version;
 		return true;
 	}
 
 	public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) {
-		for (var i = 0; i < NumBuckets; ++i) {
+		for (var i = 0; i < _numBuckets; ++i) {
 			_buckets[i].CopyTo(array, arrayIndex);
 			arrayIndex += _buckets[i].Count;
 		}
 	}
 
 	public void CopyTo(Span<KeyValuePair<TKey, TValue>> span) {
-		for (var i = 0; i < NumBuckets; ++i) {
+		for (var i = 0; i < _numBuckets; ++i) {
 			_buckets[i].AsSpan.CopyTo(span);
 			span = span[_buckets[i].Count..];
 		}
 	}
 
 	public void CopyKeysTo(Span<TKey> span) {
-		for (var i = 0; i < NumBuckets; ++i) {
+		for (var i = 0; i < _numBuckets; ++i) {
 			for (var j = 0; j < _buckets[i].Count; ++j) {
 				span[0] = _buckets[i][j].Key;
 				span = span[1..];
@@ -262,7 +330,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	}
 
 	public void CopyValuesTo(Span<TValue> span) {
-		for (var i = 0; i < NumBuckets; ++i) {
+		for (var i = 0; i < _numBuckets; ++i) {
 			for (var j = 0; j < _buckets[i].Count; ++j) {
 				span[0] = _buckets[i][j].Value;
 				span = span[1..];
@@ -271,12 +339,46 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	}
 
 	public void Dispose() {
-		for (var i = 0; i < NumBuckets; ++i) _buckets[i].Dispose();
-		ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets);
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Dispose();
+		ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
 		++Version;
 	}
 
-	static int GetBucketIndex(TKey key) => (key?.GetHashCode() & HashMask) ?? 0;
+	void GrowBucketsIfOverloaded() {
+		if (_count <= _numBuckets * MaxAverageTargetBucketOccupancy) return;
+
+		var newNumBuckets = _numBuckets * 2;
+		var newHashMask = newNumBuckets - 1;
+		var newBuckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(newNumBuckets);
+
+		// Maintainer's note:
+		// Bucket count is always a power of two, so widening the mask by one bit splits each existing bucket in to
+		// itself and exactly one new bucket. That lets us keep the existing bucket instances rather than reallocating all of them.
+		for (var i = 0; i < _numBuckets; ++i) newBuckets[i] = _buckets[i];
+		for (var i = _numBuckets; i < newNumBuckets; ++i) newBuckets[i] = new ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>();
+
+		for (var i = 0; i < _numBuckets; ++i) {
+			var bucket = newBuckets[i];
+			for (var j = bucket.Count - 1; j >= 0; --j) {
+				var kvp = bucket[j];
+				var newBucketIndex = GetBucketIndex(kvp.Key, newHashMask);
+				if (newBucketIndex == i) continue;
+				newBuckets[newBucketIndex].Add(kvp);
+				bucket.RemoveAt(j);
+			}
+		}
+
+		ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
+		_buckets = newBuckets;
+		_numBuckets = newNumBuckets;
+		_hashMask = newHashMask;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static int GetBucketIndex(TKey key, int hashMask) => (key?.GetHashCode() & hashMask) ?? 0;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	int GetBucketIndex(TKey key) => GetBucketIndex(key, _hashMask);
 
 	ArrayPoolBackedVector<KeyValuePair<TKey, TValue>> GetBucket(TKey key) => _buckets[GetBucketIndex(key)];
 

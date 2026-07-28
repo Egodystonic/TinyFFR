@@ -4,36 +4,50 @@
 using System;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants.PrimitiveMaterialShaderConstants;
 
 namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
-	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
-
+	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
+	readonly record struct PrivateMaterialData(Material Material, bool IsPrimitive, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
+	readonly record struct TextInstanceData(FontPen Pen, FontString String, TextMeshLayout Layout);
+	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
+	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3DOpaque;
+	static readonly ColorVect DefaultPrimitiveBaseColor = ColorVect.WhiteOpaque;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	// Because these properties are set frequently, they're all kept in their own separate maps for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, PrivateMaterialData> _privateMaterialInstances = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, TextInstanceData> _activeInstanceTextInstanceData = new();
+	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
+	readonly LocalMaterialBuilder _materialBuilder;
 	bool _isDisposed = false;
 
-	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals, LocalMaterialBuilder materialBuilder) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
+		_materialBuilder = materialBuilder;
+		_vertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleVertexLeaseDisposal, this);
 	}
 
-	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
+	public ModelInstance CreateModelInstance(Mesh mesh, Material? material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var meshBufferData = mesh.BufferData;
 		var aabb = mesh.BoundingBox;
+		
+		var materialActual = material ?? _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
 
 		AllocateModelInstance(
 			config.InitialTransform.ToMatrix(),
@@ -42,17 +56,19 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			meshBufferData.IndexBufferStartIndex,
 			meshBufferData.IndexBufferCount,
 			meshBufferData.BoneCount,
-			material.Handle,
+			materialActual.Handle,
 			aabb.Position.ToVector3(),
 			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth),
 			out var handle
 		).ThrowIfFailure();
 
 		var result = HandleToInstance(handle);
+		SetShadowOptionsAccordingToMaterial(handle, materialActual);
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
-		_globals.DependencyTracker.RegisterDependency(result, material);
+		if (material != null) _globals.DependencyTracker.RegisterDependency(result, materialActual);
+		else _privateMaterialInstances[handle] = new(materialActual, true, DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
 
 		if (meshBufferData.BoneCount > 0) mesh.ApplySkeletalBindPose(result);
 		return result;
@@ -109,6 +125,15 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_activeInstanceTransforms[handle] = newTransform;
 	}
 
+	public void SetTransformWithoutUpdatingWorldMatrix(ResourceHandle<ModelInstance> handle, in Transform newTransform) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTransforms[handle] = newTransform;
+	}
+	public void SetWorldMatrixWithoutUpdatingTransform(ResourceHandle<ModelInstance> handle, in Matrix4x4 worldMatrix) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetModelInstanceWorldMatrix(handle, worldMatrix).ThrowIfFailure();
+	}
+
 	public Location GetPosition(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceTransforms[handle].Translation.AsLocation();
@@ -125,6 +150,15 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	public void SetRotation(ResourceHandle<ModelInstance> handle, Rotation newRotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle] with { Rotation = newRotation });
+	}
+
+	public Quaternion GetRotationQuaternion(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTransforms[handle].RotationQuaternion;
+	}
+	public void SetRotationQuaternion(ResourceHandle<ModelInstance> handle, Quaternion newRotationQuaternion) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle] with { RotationQuaternion = newRotationQuaternion });
 	}
 
 	public Vect GetScaling(ResourceHandle<ModelInstance> handle) {
@@ -149,8 +183,20 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		var curTransform = _activeInstanceTransforms[handle];
 		var curLoc = curTransform.Translation.AsLocation();
 		var pivotToCurLoc = pivotPoint >> curLoc;
-		var newLoc = pivotPoint + (pivotToCurLoc * rotation); 
+		var newLoc = pivotPoint + (pivotToCurLoc * rotation);
 		UpdateTransformAndMatrix(handle, (curTransform with { Translation = newLoc.AsVect() }).WithAdditionalRotation(rotation));
+	}
+	public void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithAdditionalRotation(rotationQuaternion));
+	}
+	public void RotateBy(ResourceHandle<ModelInstance> handle, Quaternion rotationQuaternion, Location pivotPoint) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var curTransform = _activeInstanceTransforms[handle];
+		var curLoc = curTransform.Translation.AsLocation();
+		var pivotToCurLoc = pivotPoint >> curLoc;
+		var newLoc = pivotPoint + pivotToCurLoc.RotatedBy(rotationQuaternion);
+		UpdateTransformAndMatrix(handle, (curTransform with { Translation = newLoc.AsVect() }).WithAdditionalRotation(rotationQuaternion));
 	}
 	public void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -175,51 +221,60 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var meshBufferData = newMesh.BufferData;
-		var aabb = newMesh.BoundingBox;
+		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
+		
+		var newMeshBufferData = newMesh.BufferData;
+		var newMeshBoundingBox = newMesh.BoundingBox;
+
+		DisposeMutationDataIfPresent(handle);
+
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) && privateMaterialData is { IsPrimitive: true, CurrentShadingMode: ShadingModeVariant.Wireframe }) {
+			if (newMesh.WireframeBufferData is { } newWireframeData) newMeshBufferData = newWireframeData;
+			else {
+				var replacementPrimitiveMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, privateMaterialData.BaseColor);
+				SetModelInstanceMaterial(handle, replacementPrimitiveMaterial.GetHandleWithoutDisposeCheck()).ThrowIfFailure();
+				privateMaterialData.Material.Dispose();
+				_privateMaterialInstances[handle] = privateMaterialData with { CurrentShadingMode = DefaultPrimitiveShadingMode, Material = replacementPrimitiveMaterial };
+			}
+		}
+		
 		SetModelInstanceMesh(
 			handle,
-			meshBufferData.VertexBufferHandle,
-			meshBufferData.IndexBufferHandle,
-			meshBufferData.IndexBufferStartIndex,
-			meshBufferData.IndexBufferCount
+			newMeshBufferData.VertexBufferHandle,
+			newMeshBufferData.IndexBufferHandle,
+			newMeshBufferData.IndexBufferStartIndex,
+			newMeshBufferData.IndexBufferCount
 		).ThrowIfFailure();
 		SetModelInstanceAabb(
 			handle,
-			aabb.Position.ToVector3(),
-			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth)
+			newMeshBoundingBox.Position.ToVector3(),
+			new Vector3(newMeshBoundingBox.HalfWidth, newMeshBoundingBox.HalfHeight, newMeshBoundingBox.HalfDepth)
 		).ThrowIfFailure();
+		
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMesh(handle));
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
 	}
 
-	public void ModifyVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox) {
+	LocalVertexMutationData GetOrAllocateActiveVertexMutationData(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var mesh = GetMesh(handle);
-		var defaultVertices = mesh.GetDefaultVerticesIfMutableOrThrow();
-
-		if (startIndex < 0) {
-			throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, "Start index must be non-negative.");
-		}
-		checked {
-			if (startIndex + replacementVertices.Length > defaultVertices.Length) {
-				throw new ArgumentOutOfRangeException(
-					nameof(replacementVertices), 
-					$"Start index ({startIndex}) + replacement vertex span length ({replacementVertices.Length}) " +
-					$"would exceed mesh vertex count ({defaultVertices.Length})."
-				);
-			}	
+		if (!mesh.AllowsPerInstanceVertexMutation) {
+			throw new InvalidOperationException(
+				$"Can not load or modify vertices for instances of {mesh} as it was not created " +
+				$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+			);
 		}
 
-		if (!_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) {
-			var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertices);
-			replacementVertices.CopyTo(currentVertexData.Buffer[startIndex..]);
-			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Buffer);
+		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) return vertexMutationData;
+		
+		using (var defaultVertsLease = mesh.BorrowDefaultVerticesSpan()) {
+			var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertsLease.Span);
+			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Span);
 
 			var allocResult = AllocateVertexBuffer(
-				gpuHoldingBuffer.BufferIdentity, 
-				(MeshVertex*) gpuHoldingBuffer.DataPtr, 
-				defaultVertices.Length, 
+				gpuHoldingBuffer.BufferIdentity,
+				(MeshVertex*) gpuHoldingBuffer.DataPtr,
+				defaultVertsLease.Span.Length,
 				out var privateVbHandle
 			);
 			if (!allocResult) {
@@ -227,8 +282,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 				allocResult.ThrowIfFailure();
 				throw new InvalidOperationException(); // Should never reach here but it's a guard just in case
 			}
-			_activeInstanceVertexMutationData[handle] = vertexMutationData = new(privateVbHandle, currentVertexData); 
-			
+			vertexMutationData = _activeInstanceVertexMutationData[handle] = new(privateVbHandle, currentVertexData);
+
 			var meshBufferData = mesh.BufferData;
 			SetModelInstanceMesh(
 				handle,
@@ -238,97 +293,258 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 				meshBufferData.IndexBufferCount
 			).ThrowIfFailure();
 		}
-		else {
-			replacementVertices.CopyTo(vertexMutationData.CurrentVertices.Buffer[startIndex..]);
-			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(replacementVertices);
-			UpdateVertexBuffer(
-				vertexMutationData.PrivateVertexBufferHandle,
-				gpuHoldingBuffer.BufferIdentity,
-				(MeshVertex*) gpuHoldingBuffer.DataPtr,
-				replacementVertices.Length,
-				startIndex
-			).ThrowIfFailure();
-			
-			// var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertexMutationData.CurrentVertices.Buffer);
-			// UpdateVertexBuffer(
-			// 	vertexMutationData.PrivateVertexBufferHandle,
-			// 	gpuHoldingBuffer.BufferIdentity,
-			// 	(MeshVertex*) gpuHoldingBuffer.DataPtr,
-			// 	vertexMutationData.CurrentVertices.Buffer.Length,
-			// 	0
-			// ).ThrowIfFailure();
-		}
 		
-		if (recalculateBoundingBox) {
-			var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Buffer, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
-			SetModelInstanceAabb(
-				handle,
-				newAabb.Position.ToVector3(),
-				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
-			).ThrowIfFailure();
-		}
+		return vertexMutationData;
 	}
-
-	public ReadOnlySpan<MeshVertex> GetModifiedVerticesIfMutableOrThrow(ResourceHandle<ModelInstance> handle) {
+	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<ModelInstance> handle) {
+		var vertexMutationData = GetOrAllocateActiveVertexMutationData(handle);
+		return _vertexLeaseTracker.CreateScopedLeaseOrThrow(handle, vertexMutationData.CurrentVertices.Span);
+	}
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(ResourceHandle<ModelInstance> handle, Range range, bool recalculateBoundingBox) {
+		var vertexMutationData = GetOrAllocateActiveVertexMutationData(handle);
+		return _vertexLeaseTracker.CreateScopedLeaseOrThrow(handle, vertexMutationData.CurrentVertices.Span[range], new VertexLeaseData(range, recalculateBoundingBox));
+	}
+	static void HandleVertexLeaseDisposal(object? builder, ResourceHandle handle, VertexLeaseData leaseData, int _) {
+		((LocalObjectBuilder) builder!).ExecuteVertexMutation((ResourceHandle<ModelInstance>) handle, leaseData);
+	} 
+	void ExecuteVertexMutation(ResourceHandle<ModelInstance> handle, VertexLeaseData leaseData) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var mesh = GetMesh(handle);
-		if (!mesh.AllowsPerInstanceVertexMutation) {
-			throw new InvalidOperationException(
-				$"Can not load or modify vertices for instances of {mesh} as it was not created " +
-				$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+		var vertexMutationData = _activeInstanceVertexMutationData[handle];
+
+		// In theory, this isn't possible. But we'll check anyway in case something went very wrong
+		// as the consequence is potentially passing out-of-bounds arguments to native side
+		var vertexCount = vertexMutationData.CurrentVertices.Span.Length;
+		var (startIndex, length) = leaseData.Range.GetOffsetAndLength(vertexCount);
+		if (startIndex < 0 || startIndex + length > vertexCount) {
+			throw new ArgumentOutOfRangeException(
+				nameof(leaseData), 
+				$"Start index ({startIndex}) + replacement vertex span length ({length}) " +
+				$"would exceed mesh vertex count ({vertexCount}). This is a bug in TinyFFR."
 			);
 		}
+
+		var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertexMutationData.CurrentVertices.Span[leaseData.Range]);
+		UpdateVertexBuffer(
+			vertexMutationData.PrivateVertexBufferHandle,
+			gpuHoldingBuffer.BufferIdentity,
+			(MeshVertex*) gpuHoldingBuffer.DataPtr,
+			length,
+			startIndex
+		).ThrowIfFailure();
 		
-		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData)) return mutationData.CurrentVertices.Buffer;
-		else return mesh.GetDefaultVerticesIfMutableOrThrow();
+		if (leaseData.RecalculateBoundingBox) CalculateAndUpdateBoundingBox(handle, vertexMutationData);
+	}
+	public void TriggerManualBoundingBoxRecalculation(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) CalculateAndUpdateBoundingBox(handle, vertexMutationData);
+	}
+	void CalculateAndUpdateBoundingBox(ResourceHandle<ModelInstance> handle, LocalVertexMutationData vertexMutationData) {
+		var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
+		SetModelInstanceAabb(
+			handle,
+			newAabb.Position.ToVector3(),
+			new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+		).ThrowIfFailure();
 	}
 
-	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
+	public Material? GetMaterial(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, IMaterialImplProvider>(HandleToInstance(handle))[0];
+		var targets = _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, IMaterialImplProvider>(HandleToInstance(handle));
+		if (targets.Count > 0) return targets[0];
+		else return null;
 	}
-	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
+	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material? newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
+		var oldMat = GetMaterial(handle);
+		if (oldMat != null) {
+			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat.Value);
+		}
+		else if (newMaterial == null) return; // Return early if old mat is null and we're setting null again (no-op)
+
+		if (newMaterial == null) {
+			var primitiveMat = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
+			SetModelInstanceMaterial(
+				handle,
+				primitiveMat.Handle
+			).ThrowIfFailure();
+			SetShadowOptionsAccordingToMaterial(handle, primitiveMat);
+			DisposePrivateMaterialIfPresent(handle);
+			_privateMaterialInstances[handle] = new(primitiveMat, true, DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
+		}
+		else {
+			SetModelInstanceMaterial(
+				handle,
+				newMaterial.Value.Handle
+			).ThrowIfFailure();
+			SetShadowOptionsAccordingToMaterial(handle, newMaterial.Value);
+			DisposePrivateMaterialIfPresent(handle);
+			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial.Value);
+		}
+	}
+
+	void SetShadowOptionsAccordingToMaterial(ResourceHandle<ModelInstance> handle, Material material) {
+		var supportsShadows = _materialBuilder.GetSupportsShadows(material.GetHandleWithoutDisposeCheck());
+		SetModelInstanceShadowOptions(handle, supportsShadows, supportsShadows).ThrowIfFailure();
+	}
+
+	ShadingModeVariant DetermineCorrectShadingModeVariant(ShadingModeVariant targetMode, ColorVect baseColor) {
+		return targetMode switch {
+			(ShadingModeVariant.Plain3D or ShadingModeVariant.Plain3DOpaque) when baseColor.Alpha < 1f => ShadingModeVariant.Plain3D, 
+			(ShadingModeVariant.Plain3D or ShadingModeVariant.Plain3DOpaque) => ShadingModeVariant.Plain3DOpaque,
+			(ShadingModeVariant.Plain or ShadingModeVariant.PlainOpaque) when baseColor.Alpha < 1f => ShadingModeVariant.Plain, 
+			(ShadingModeVariant.Plain or ShadingModeVariant.PlainOpaque) => ShadingModeVariant.PlainOpaque,
+			_ => targetMode	
+		};
+	}
+	public void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
+		var newShadingMode = DetermineCorrectShadingModeVariant(privateMaterialData.CurrentShadingMode, newBaseColor);
+		if (newShadingMode != privateMaterialData.CurrentShadingMode) {
+			var replacementMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(newShadingMode, newBaseColor);
+			SetModelInstanceMaterial(
+				handle,
+				replacementMaterial.GetHandleWithoutDisposeCheck()
+			).ThrowIfFailure();
+			privateMaterialData.Material.Dispose();
+			_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode, BaseColor = newBaseColor };
+		}
+		else {
+			_materialBuilder.SetPrimitiveMaterialBaseColor(privateMaterialData.Material, newBaseColor);
+			_privateMaterialInstances[handle] = privateMaterialData with { BaseColor = newBaseColor };
+		}
+	}
+	public void SetNullMaterialShadingStyle(ResourceHandle<ModelInstance> handle, NullMaterialShadingStyle newStyle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
+		
+		var newShadingMode = DetermineCorrectShadingModeVariant((ShadingModeVariant) newStyle, privateMaterialData.BaseColor);
+		var oldShadingMode = privateMaterialData.CurrentShadingMode;
+		if (newShadingMode == oldShadingMode) return;
+
+		if (newShadingMode == ShadingModeVariant.Wireframe) {
+			if (GetMesh(handle).WireframeBufferData is not { } wireframeBufferData) return;
+			SetModelInstanceMesh(
+				handle,
+				wireframeBufferData.VertexBufferHandle,
+				wireframeBufferData.IndexBufferHandle,
+				wireframeBufferData.IndexBufferStartIndex,
+				wireframeBufferData.IndexBufferCount
+			).ThrowIfFailure();
+		}
+		else if (oldShadingMode == ShadingModeVariant.Wireframe) {
+			var nonWireframeBufferData = GetMesh(handle).BufferData;
+			SetModelInstanceMesh(
+				handle,
+				// Maintainer's note: Shouldn't be possible right now because we don't allow generation of wireframe data at the same time as setting the mutation-permitted flag
+				// But it's possible that might change in the future and in case we forget to alter this area I'm pre-emptively checking for it here
+				_activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData) ? mutationData.PrivateVertexBufferHandle : nonWireframeBufferData.VertexBufferHandle,
+				nonWireframeBufferData.IndexBufferHandle,
+				nonWireframeBufferData.IndexBufferStartIndex,
+				nonWireframeBufferData.IndexBufferCount
+			).ThrowIfFailure();
+		}
+
+		var replacementMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(newShadingMode, privateMaterialData.BaseColor);
 		SetModelInstanceMaterial(
 			handle,
-			newMaterial.Handle
+			replacementMaterial.GetHandleWithoutDisposeCheck()
 		).ThrowIfFailure();
-		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMaterial(handle));
-		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial);
+		SetShadowOptionsAccordingToMaterial(handle, replacementMaterial);
+		privateMaterialData.Material.Dispose();
+		_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode };
+	}
 
-		DisposeEffectMaterialCopyIfPresent(handle);
+	public void SetKeyedMaterialColor(ResourceHandle<ModelInstance> handle, ColorChannel key, ColorVect color) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetOrCreateColorKeyedMaterialCopy(handle)?.SetKeyedColor(key, color);
 	}
 
 	public void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
-		effectsMaterialInstance?.SetEffectTransform(newTransform);
+		GetOrCreateEffectMaterialCopy(handle)?.SetEffectTransform(newTransform);
 	}
 	public void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
-		effectsMaterialInstance?.SetEffectBlendTexture(mapType, mapTexture);
+		GetOrCreateEffectMaterialCopy(handle)?.SetEffectBlendTexture(mapType, mapTexture);
 	}
 	public void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
-		effectsMaterialInstance?.SetEffectBlendDistance(mapType, distance);
+		GetOrCreateEffectMaterialCopy(handle)?.SetEffectBlendDistance(mapType, distance);
 	}
 
 	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
-		if (_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return effectsData.PerInstanceEffectMaterialCopy;
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsPrimitive) {
+			return privateMatData.Material;
+		}
 
 		var curMat = GetMaterial(handle);
-		if (!curMat.SupportsPerInstanceEffects) return null;
+		if (curMat?.SupportsPerInstanceEffects != true) return null;
+
+		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat.Value);
+	}
+
+	Material? GetOrCreateColorKeyedMaterialCopy(ResourceHandle<ModelInstance> handle) {
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsPrimitive) {
+			return privateMatData.Material;
+		}
+
+		var curMat = GetMaterial(handle);
+		if (curMat?.SupportsColorKeying != true) return null;
+
+		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat.Value);
+	}
+
+	Material DuplicateAndTrackPrivateMaterialCopy(ResourceHandle<ModelInstance> handle, Material curMat) {
+		DisposePrivateMaterialIfPresent(handle);
 
 		var result = curMat.Duplicate();
 		SetModelInstanceMaterial(
 			handle,
 			result.Handle
 		).ThrowIfFailure();
-		_activeInstanceEffectsData[handle] = new(result);
+		_privateMaterialInstances[handle] = new(result, false, default, default);
 		return result;
+	}
+
+	public void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextMeshLayout layout) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTextInstanceData[handle] = new(pen, @string, layout);
+	}
+	public void UpdateTextInstancePen(ResourceHandle<ModelInstance> handle, FontPen pen) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { Pen = pen };
+	}
+	public void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextMeshLayout layout) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { Layout = layout };
+	}
+	public void UpdateTextInstanceString(ResourceHandle<ModelInstance> handle, FontString @string) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var data = _activeInstanceTextInstanceData[handle];
+		_activeInstanceTextInstanceData[handle] = data with { String = @string };
+		
+		var layout = data.Layout;
+		var font = @string.Font;
+		
+		var currentTransform = _activeInstanceTransforms[handle];
+		var currentScaling = font.GetTextInstanceScaling(data.String.Size, layout);
+		var currentOffset = font.GetTextInstanceAnchorOffset(data.String.Size, currentScaling, layout.PositionAnchor);
+		
+		var anchorPoint = currentTransform.Translation - currentOffset * currentTransform.Rotation;
+		var newScaling = font.GetTextInstanceScaling(@string.Size, layout);
+		var newOffset = font.GetTextInstanceAnchorOffset(@string.Size, newScaling, layout.PositionAnchor);
+		
+		UpdateTransformAndMatrix(handle, new Transform(anchorPoint + newOffset * currentTransform.Rotation, currentTransform.Rotation, new Vect(newScaling.X, newScaling.Y, 1f)));
+	}
+	public FontPen GetTextInstancePen(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData[handle].Pen;
+	}
+	public FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData[handle].String;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
@@ -431,6 +647,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		UIntPtr materialHandle
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_shadow_options")]
+	static extern InteropResult SetModelInstanceShadowOptions(
+		UIntPtr modelInstanceHandle,
+		InteropBool castShadows,
+		InteropBool receiveShadows
+	);
+
 	[SuppressGCTransition]
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_world_mat")]
 	static extern InteropResult SetModelInstanceWorldMatrix(
@@ -450,19 +673,18 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	void Dispose(ResourceHandle<ModelInstance> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeModelInstance(handle).ThrowIfFailure();
-		DisposeEffectMaterialCopyIfPresent(handle);
+		DisposePrivateMaterialIfPresent(handle);
 		DisposeMutationDataIfPresent(handle);
+		DisposeTextInstanceDataIfPresent(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
 	
-	void DisposeEffectMaterialCopyIfPresent(ResourceHandle<ModelInstance> handle) {
-		if (!_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return;
-
-		effectsData.PerInstanceEffectMaterialCopy.Dispose();
-		_activeInstanceEffectsData.Remove(handle);
+	void DisposePrivateMaterialIfPresent(ResourceHandle<ModelInstance> handle) {
+		if (_privateMaterialInstances.Remove(handle, out var privateMatData)) privateMatData.Material.Dispose();
 	}
 
 	void DisposeMutationDataIfPresent(ResourceHandle<ModelInstance> handle) {
@@ -471,14 +693,18 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		LocalFrameSynchronizationManager.QueueResourceDisposal(mutationData.PrivateVertexBufferHandle, &DisposeVertexBuffer);
 		mutationData.CurrentVertices.Dispose();
 	}
+	
+	void DisposeTextInstanceDataIfPresent(ResourceHandle<ModelInstance> handle) => _activeInstanceTextInstanceData.Remove(handle);
 
 	public void Dispose() {
 		try {
 			if (_isDisposed) return;
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
-			_activeInstanceEffectsData.Dispose();
+			_privateMaterialInstances.Dispose();
+			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();
+			_activeInstanceTextInstanceData.Dispose();
 		}
 		finally {
 			_isDisposed = true;

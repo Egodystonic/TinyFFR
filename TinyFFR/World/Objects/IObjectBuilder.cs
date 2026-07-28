@@ -5,6 +5,7 @@ using System;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -21,7 +22,7 @@ public interface IObjectBuilder {
 			name
 		);
 	}
-	ModelInstance CreateModelInstance(Mesh mesh, Material material, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+	ModelInstance CreateModelInstance(Mesh mesh, Material? material = null, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
 		return CreateModelInstance(
 			mesh,
 			material,
@@ -66,7 +67,7 @@ public interface IObjectBuilder {
 			name
 		);
 	}
-	ModelInstance CreateModelInstance(Mesh mesh, Material material, Transform initialTransform, ReadOnlySpan<char> name = default) {
+	ModelInstance CreateModelInstance(Mesh mesh, Material? material, Transform initialTransform, ReadOnlySpan<char> name = default) {
 		return CreateModelInstance(
 			mesh,
 			material,
@@ -96,13 +97,113 @@ public interface IObjectBuilder {
 	}
 	
 	
-
 	ModelInstance CreateModelInstance(Model model, in ModelInstanceCreationConfig config) => CreateModelInstance(model.Mesh, model.Material, in config);
-	ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config);
+	ModelInstance CreateModelInstance(Mesh mesh, Material? material, in ModelInstanceCreationConfig config);
+
 	
 	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, in ModelInstanceCreationConfig config);
 	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model>;
 	ModelInstanceGroup GroupModelInstances(params ReadOnlySpan<ModelInstance> instances) => GroupModelInstances(instances, true, default);
 	ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name);
 	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, bool disposingGroupDisposesInstances = true, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
+	
+	#region QuadMesh
+	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? facingDirection = null, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateQuadInstance(
+			mesh,
+			material,
+			new ModelInstanceCreationConfig {
+				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(
+					position ?? Location.Origin,
+					size ?? XYPair<float>.One,
+					facingDirection ?? Direction.Backward,
+					uprightDirection,
+					positionAnchor
+				),
+				Name = name
+			}
+		);
+	}
+	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
+		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
+	}
+	
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+		return CreateCameraLockedQuadInstance(
+			mesh,
+			material,
+			lockedUprightDirection ?? Direction.None,
+			positionAnchor,
+			scalingMode,
+			lockStyle,
+			new ModelInstanceCreationConfig {
+				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(
+					position ?? Location.Origin,
+					size ?? XYPair<float>.One,
+					Direction.Backward,
+					Direction.Up,
+					positionAnchor
+				),
+				Name = name
+			}
+		);
+	}
+	// TODO xmldoc lockedUprightDirection can be None
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
+		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+	}
+	#endregion
+	
+	#region MutableGridMesh
+	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, ReadOnlySpan<char> name = default) {
+		return CreateMutableGridInstance(
+			mesh,
+			material,
+			new ModelInstanceCreationConfig {
+				InitialTransform = mesh.CalculateTransform(
+					position ?? Location.Origin, 
+					size ?? XYPair<float>.One
+				),
+				Name = name
+			}
+		);
+	}
+	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, in ModelInstanceCreationConfig config) {
+		return new MutableGridInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config), mesh);
+	}
+	#endregion
+	
+	#region Text
+	TextInstance CreateTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? facingDirection = null, Direction? uprightDirection = null, TextMeshLayout? layout = null, ReadOnlySpan<char> name = default) {
+		layout ??= new TextMeshLayout();
+		return CreateTextInstance(pen, @string, layout.Value, new ModelInstanceCreationConfig {
+			Name = name,
+			InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, facingDirection ?? Direction.Backward, uprightDirection, layout.Value)
+		});
+	}
+	TextInstance CreateTextInstance(FontPen pen, FontString @string, TextMeshLayout layout, in ModelInstanceCreationConfig config) {
+		var underlyingInstance = CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config);
+		return new TextInstance(underlyingInstance, pen, @string, layout);
+	}
+
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextMeshLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+		layout ??= new TextMeshLayout();
+		return CreateCameraLockedTextInstance(
+			pen,
+			@string,
+			lockedUprightDirection ?? Direction.None,
+			layout.Value,
+			scalingMode,
+			lockStyle,
+			new ModelInstanceCreationConfig {
+				Name = name,
+				InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, Direction.Backward, Direction.Up, layout.Value)
+			}
+		);
+	}
+	// TODO xmldoc lockedUprightDirection can be None
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, TextMeshLayout layout, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
+		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, layout, in config), lockedUprightDirection, layout.PositionAnchor, scalingMode, lockStyle);
+	}
+	#endregion
 }

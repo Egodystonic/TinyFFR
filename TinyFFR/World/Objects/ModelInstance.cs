@@ -3,6 +3,7 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Resources;
@@ -30,7 +31,15 @@ public readonly record struct MaterialEffectController {
 	}
 }
 
-public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject {
+#pragma warning disable CA1027 // This isn't a bitfield enum
+public enum NullMaterialShadingStyle {
+#pragma warning restore CA1027
+	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3DOpaque,
+	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.PlainOpaque,
+	Wireframe = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Wireframe
+}
+
+public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject {
 	readonly ResourceHandle<ModelInstance> _handle;
 	readonly IModelInstanceImplProvider _impl;
 
@@ -46,8 +55,13 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTransform(_handle, value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Implementation.SetTransform(_handle, transform);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTransformWithoutUpdatingWorldMatrix(in Transform newTransform) => Implementation.SetTransformWithoutUpdatingWorldMatrix(_handle, newTransform);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetWorldMatrixWithoutUpdatingTransform(in Matrix4x4 worldMatrix) => Implementation.SetWorldMatrixWithoutUpdatingTransform(_handle, worldMatrix);
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,6 +81,15 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
+	public Quaternion RotationQuaternion {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetRotationQuaternion(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetRotationQuaternion(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
+
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetScaling(_handle);
@@ -78,18 +101,18 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
-	public Material Material {
+	public Material? Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetMaterial(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetMaterial(_handle, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaterial(Material material) => Material = material;
+	public void SetMaterial(Material? material) => Material = material;
 
 	public MaterialEffectController? MaterialEffects {
 		get {
-			if (!Material.SupportsPerInstanceEffects) return null;
+			if (Material?.SupportsPerInstanceEffects != true) return null;
 			return new MaterialEffectController(this);
 		}
 	}
@@ -118,16 +141,6 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		get => Mesh.AllowsPerInstanceVertexMutation;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ModifyVertices(int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox = false) => Implementation.ModifyVertices(_handle, startIndex, replacementVertices, recalculateBoundingBox);
-	
-	public int CopyModifiedVerticesIfAllowsMutation(Span<MeshVertex> destination) {
-		if (!Mesh.AllowsPerInstanceVertexMutation) throw new InvalidOperationException(Mesh + " does not allow vertex mutation.");
-		var src = Implementation.GetModifiedVerticesIfMutableOrThrow(_handle);
-		src.CopyTo(destination);
-		return src.Length;
-	}
-
 	internal ModelInstance(ResourceHandle<ModelInstance> handle, IModelInstanceImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
@@ -150,6 +163,18 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnLeaseDispose) => BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose, Range.All);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnLeaseDispose, Range range) => Implementation.BorrowVerticesSpan(_handle, range, recalculateBoundingBoxOnLeaseDispose);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly() => Implementation.BorrowVerticesSpanReadOnly(_handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void TriggerManualBoundingBoxRecalculation() => Implementation.TriggerManualBoundingBoxRecalculation(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
@@ -167,10 +192,16 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
 	public void RotateBy(Rotation rotation) => Implementation.RotateBy(_handle, rotation);
 	public void RotateBy(Rotation rotation, Location pivotPoint) => Implementation.RotateBy(_handle, rotation, pivotPoint);
+	public void RotateBy(Quaternion rotationQuaternion) => Implementation.RotateBy(_handle, rotationQuaternion);
+	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => Implementation.RotateBy(_handle, rotationQuaternion, pivotPoint);
 	public void ScaleBy(float scalar) => Implementation.ScaleBy(_handle, scalar);
 	public void ScaleBy(Vect vect) => Implementation.ScaleBy(_handle, vect);
 	public void AdjustScaleBy(float scalar) => Implementation.AdjustScaleBy(_handle, scalar);
 	public void AdjustScaleBy(Vect vect) => Implementation.AdjustScaleBy(_handle, vect);
+	
+	public void SetNullMaterialBaseColor(ColorVect baseColor) => Implementation.SetNullMaterialBaseColor(_handle, baseColor);
+	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => Implementation.SetNullMaterialShadingStyle(_handle, style);
+	public void SetKeyedMaterialColor(ColorChannel key, ColorVect color) => Implementation.SetKeyedMaterialColor(_handle, key, color);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetMaterialEffectTransform(Transform2D newTransform) => Implementation.SetMaterialEffectTransform(_handle, newTransform);

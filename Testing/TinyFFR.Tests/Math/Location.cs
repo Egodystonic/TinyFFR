@@ -530,4 +530,30 @@ class LocationTest {
 			TestTolerance
 		);
 	}
+
+	[Test]
+	public void QuaternionRotationShouldMatchNonQuaternionRotation() {
+		var testRotations = new[] {
+			Rotation.None,
+			90f % Direction.Up,
+			-90f % Direction.Up,
+			37f % Direction.Left,
+			180f % Direction.Forward,
+			123f % new Direction(1f, 2f, -3f),
+			-45f % new Direction(-4f, 1f, 2f)
+		};
+		var loc = new Location(4f, -1f, 2f);
+		var pivot = new Location(3f, -2f, 7f);
+
+		foreach (var rot in testRotations) {
+			var quat = rot.ToQuaternion();
+			AssertToleranceEquals(loc.RotatedAroundOriginBy(rot), loc.RotatedAroundOriginBy(quat), TestTolerance);
+			AssertToleranceEquals(loc.RotatedBy(rot, pivot), loc.RotatedBy(quat, pivot), TestTolerance);
+			AssertToleranceEquals(
+				((IRotatable<Location>) loc).RotatedBy(rot),
+				((IRotatable<Location>) loc).RotatedBy(quat),
+				TestTolerance
+			);
+		}
+	}
 }

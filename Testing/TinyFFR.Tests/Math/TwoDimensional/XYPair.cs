@@ -720,4 +720,38 @@ class XYPairTest {
 		Assert.AreEqual(99, new XYPair<int>(10, 10).IndexClamped(9, 20));
 		Assert.AreEqual(99, new XYPair<int>(10, 10).IndexClamped(20, 9));
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertFromIndex() {
+		Assert.AreEqual(new XYPair<int>(0, 0), new XYPair<int>(10, 10).ReverseIndex(0));
+		Assert.AreEqual(new XYPair<int>(5, 0), new XYPair<int>(10, 10).ReverseIndex(5));
+		Assert.AreEqual(new XYPair<int>(0, 5), new XYPair<int>(10, 10).ReverseIndex(50));
+		Assert.AreEqual(new XYPair<int>(5, 5), new XYPair<int>(10, 10).ReverseIndex(55));
+		Assert.AreEqual(new XYPair<int>(9, 9), new XYPair<int>(10, 10).ReverseIndex(99));
+		Assert.AreEqual(new XYPair<int>(0, 11), new XYPair<int>(10, 10).ReverseIndex(110));
+		Assert.AreEqual(new XYPair<int>(9, 20), new XYPair<int>(10, 10).ReverseIndex(209));
+		Assert.AreEqual(new XYPair<int>(-1, -1), new XYPair<int>(10, 10).ReverseIndex(-11));
+		Assert.AreEqual(new XYPair<int>(-5, 0), new XYPair<int>(10, 10).ReverseIndex(-5));
+		Assert.AreEqual(new XYPair<int>(1, 2), new XYPair<int>(3, 5).ReverseIndex(7));
+		Assert.AreEqual(new XYPair<int>(1, 1), new XYPair<int>(4, 2).ReverseIndex(5));
+		Assert.AreEqual(new XYPair<int>(0, 0), new XYPair<int>(0, 10).ReverseIndex(0));
+
+		for (var x = 0; x < 10; ++x) {
+			for (var y = 0; y < 10; ++y) {
+				Assert.AreEqual(new XYPair<int>(x, y), new XYPair<int>(10, 10).ReverseIndex(new XYPair<int>(10, 10).Index(x, y)));
+			}
+		}
+
+		Assert.AreEqual(new XYPair<int>(0, 0), new XYPair<int>(10, 10).ReverseIndexClamped(0));
+		Assert.AreEqual(new XYPair<int>(5, 5), new XYPair<int>(10, 10).ReverseIndexClamped(55));
+		Assert.AreEqual(new XYPair<int>(9, 9), new XYPair<int>(10, 10).ReverseIndexClamped(99));
+		Assert.AreEqual(new XYPair<int>(0, 0), new XYPair<int>(10, 10).ReverseIndexClamped(-1));
+		Assert.AreEqual(new XYPair<int>(0, 0), new XYPair<int>(10, 10).ReverseIndexClamped(Int32.MinValue));
+		Assert.AreEqual(new XYPair<int>(9, 9), new XYPair<int>(10, 10).ReverseIndexClamped(100));
+		Assert.AreEqual(new XYPair<int>(9, 9), new XYPair<int>(10, 10).ReverseIndexClamped(209));
+		Assert.AreEqual(new XYPair<int>(9, 9), new XYPair<int>(10, 10).ReverseIndexClamped(Int32.MaxValue));
+		Assert.AreEqual(new XYPair<int>(2, 4), new XYPair<int>(3, 5).ReverseIndexClamped(14));
+		Assert.AreEqual(new XYPair<int>(2, 4), new XYPair<int>(3, 5).ReverseIndexClamped(15));
+		Assert.AreEqual(new XYPair<int>(0, 0), new XYPair<int>(0, 0).ReverseIndexClamped(0));
+	}
 }

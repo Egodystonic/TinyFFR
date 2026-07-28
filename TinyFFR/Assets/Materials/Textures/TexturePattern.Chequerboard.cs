@@ -10,8 +10,6 @@ using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternDefaultValues;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
-	
-
 	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
 		return Chequerboard(firstValue, secondValue, firstValue, secondValue, repetitionCount, cellResolution, transform);
 	}

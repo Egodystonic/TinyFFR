@@ -7,6 +7,8 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 interface IShaderPackageConstants {
+	bool SupportsShadows { get; }
+
 	bool HasEffectUvTransform { get; }
 	bool HasEffectColorMap { get; }
 	bool HasEffectEmissiveMap { get; }
@@ -122,6 +124,8 @@ static class LocalShaderPackageConstants {
 		public string GetShaderResourceName(bool supportsEffects, Flags flags, AlphaModeVariant alphaMode, OrmReflectanceVariant ormReflectance) {
 			return _resourceNameMap[(supportsEffects, flags, alphaMode, ormReflectance)];
 		}
+
+		public bool SupportsShadows { get; } = true;
 
 		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
 		public ReadOnlySpan<byte> ParamNormalMap => "normal_map"u8;
@@ -261,6 +265,8 @@ static class LocalShaderPackageConstants {
 			return _resourceNameMap[(supportsEffects, flags, alphaMode, refractionQuality, refractionType)];
 		}
 
+		public bool SupportsShadows { get; } = true;
+
 		public ReadOnlySpan<byte> ParamSurfaceThickness => "surface_thickness"u8;
 		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
 		public ReadOnlySpan<byte> ParamAbsorptionTransmissionMap => "at_map"u8;
@@ -294,8 +300,8 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => ParamEffectOrmMapBlendDistance;
 	}
 
-	public static SimpleMaterialShaderConstants SimpleMaterialShader { get; } = new();
-	public sealed class SimpleMaterialShaderConstants : IShaderPackageConstants {
+	public static LightingIgnoringMaterialShaderConstants LightingIgnoringMaterialShader { get; } = new();
+	public sealed class LightingIgnoringMaterialShaderConstants : IShaderPackageConstants {
 		public enum AlphaModeVariant {
 			AlphaOff,
 			AlphaOn
@@ -303,8 +309,8 @@ static class LocalShaderPackageConstants {
 
 		readonly ArrayPoolBackedMap<(bool SupportsEffects, AlphaModeVariant AlphaMode), string> _resourceNameMap;
 
-		public SimpleMaterialShaderConstants() {
-			const string ShaderNameStart = ResourceNamespace + "simple";
+		public LightingIgnoringMaterialShaderConstants() {
+			const string ShaderNameStart = ResourceNamespace + "lighting_ignoring";
 			const string ShaderNameStartWithEffects = ShaderNameStart + ShaderWithEffectsSuffix;
 			const string AlphaModeVariantStart = "_alphamode=";
 			const AlphaModeVariant FirstAlphaMode = AlphaModeVariant.AlphaOff;
@@ -346,6 +352,8 @@ static class LocalShaderPackageConstants {
 			return _resourceNameMap[(supportsEffects, alphaMode)];
 		}
 
+		public bool SupportsShadows { get; } = false;
+
 		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
 		public ReadOnlySpan<byte> ParamEffectUvTransform => "uv_transform"u8;
 		public ReadOnlySpan<byte> ParamEffectColorMapBlend => "color_map_blend"u8;
@@ -359,6 +367,176 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => ParamEffectUvTransform;
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => ParamEffectColorMapBlend;
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => ParamEffectColorMapBlendDistance;
+		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+	}
+	
+	public static ColorKeyedMaterialShaderConstants ColorKeyedMaterialShader { get; } = new();
+	public sealed class ColorKeyedMaterialShaderConstants : IShaderPackageConstants {
+		public enum AlphaModeVariant {
+			AlphaOff,
+			AlphaOn
+		}
+
+		readonly ArrayPoolBackedMap<AlphaModeVariant, string> _resourceNameMap;
+
+		public ColorKeyedMaterialShaderConstants() {
+			const string ShaderNameStart = ResourceNamespace + "keyed";
+			const string AlphaModeVariantStart = "_alphamode=";
+			const AlphaModeVariant FirstAlphaMode = AlphaModeVariant.AlphaOff;
+			const AlphaModeVariant LastAlphaMode = AlphaModeVariant.AlphaOn;
+
+			_resourceNameMap = new();
+
+			Span<char> stringBuildSpace = stackalloc char[1000];
+
+			for (var vAlphaMode = FirstAlphaMode; vAlphaMode <= LastAlphaMode; ++vAlphaMode) {
+				ShaderNameStart.CopyTo(stringBuildSpace);
+				var emptySpaceSpan = stringBuildSpace[ShaderNameStart.Length..];
+
+				Write(ref emptySpaceSpan, AlphaModeVariantStart);
+				Write(
+					ref emptySpaceSpan,
+					vAlphaMode switch {
+						AlphaModeVariant.AlphaOff => "alphaoff",
+						AlphaModeVariant.AlphaOn => "alphaon",
+						_ => throw new ArgumentOutOfRangeException()
+					}
+				);
+
+				Write(ref emptySpaceSpan, ShaderResourceExtension);
+
+				_resourceNameMap.Add(
+					vAlphaMode,
+					new String(stringBuildSpace[..^emptySpaceSpan.Length])
+				);
+			}
+		}
+
+		public string GetShaderResourceName(AlphaModeVariant alphaMode) {
+			return _resourceNameMap[alphaMode];
+		}
+
+		public bool SupportsShadows { get; } = false;
+
+		public ReadOnlySpan<byte> ParamKeyMap => "key_map"u8;
+		public ReadOnlySpan<byte> ParamXChannelColor => "x_channel_color"u8;
+		public ReadOnlySpan<byte> ParamYChannelColor => "y_channel_color"u8;
+		public ReadOnlySpan<byte> ParamZChannelColor => "z_channel_color"u8;
+		public ReadOnlySpan<byte> ParamWChannelColor => "w_channel_color"u8;
+
+		public bool HasEffectUvTransform { get; } = false;
+		public bool HasEffectColorMap { get; } = false;
+		public bool HasEffectEmissiveMap { get; } = false;
+		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
+		public bool HasEffectOrmMap { get; } = false;
+		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+	}
+
+	public static PrimitiveMaterialShaderConstants PrimitiveMaterialShader { get; } = new();
+	public sealed class PrimitiveMaterialShaderConstants : IShaderPackageConstants {
+		public enum ShadingModeVariant {
+			PlainOpaque,
+			Plain3DOpaque,
+			Plain,
+			Plain3D,
+			Wireframe
+		}
+
+		readonly ArrayPoolBackedMap<ShadingModeVariant, string> _resourceNameMap;
+		
+		public PrimitiveMaterialShaderConstants() {
+			const string ShaderNameStart = ResourceNamespace + "primitive";
+			const string ShadingModeVariantStart = "_shadingmode=";
+			const ShadingModeVariant FirstShadingMode = ShadingModeVariant.PlainOpaque;
+			const ShadingModeVariant LastShadingMode = ShadingModeVariant.Wireframe;
+			
+			_resourceNameMap = new();
+
+			Span<char> stringBuildSpace = stackalloc char[1000];
+
+			for (var vShadingMode = FirstShadingMode; vShadingMode <= LastShadingMode; ++vShadingMode) {
+				ShaderNameStart.CopyTo(stringBuildSpace);
+				var emptySpaceSpan = stringBuildSpace[ShaderNameStart.Length..];
+				
+				Write(ref emptySpaceSpan, ShadingModeVariantStart);
+				Write(
+					ref emptySpaceSpan,
+					vShadingMode switch {
+						ShadingModeVariant.PlainOpaque => "plainopaque",
+						ShadingModeVariant.Plain3DOpaque => "plain3dopaque",
+						ShadingModeVariant.Plain => "plain",
+						ShadingModeVariant.Plain3D => "plain3d",
+						ShadingModeVariant.Wireframe => "wireframe",
+						_ => throw new ArgumentOutOfRangeException()
+					}
+				);
+
+				Write(ref emptySpaceSpan, ShaderResourceExtension);
+
+				_resourceNameMap.Add(
+					vShadingMode,
+					new String(stringBuildSpace[..^emptySpaceSpan.Length])
+				);
+			}
+		}
+
+		public string GetShaderResourceName(ShadingModeVariant shadingMode) {
+			return _resourceNameMap[shadingMode];
+		}
+
+		public bool SupportsShadows { get; } = false;
+
+		public ReadOnlySpan<byte> ParamBaseColor => "base_color"u8;
+
+		public bool HasEffectUvTransform { get; } = false;
+		public bool HasEffectColorMap { get; } = false;
+		public bool HasEffectEmissiveMap { get; } = false;
+		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
+		public bool HasEffectOrmMap { get; } = false;
+		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+	}
+
+	public static TextMaterialShaderConstants TextMaterialShader { get; } = new();
+	public sealed class TextMaterialShaderConstants : IShaderPackageConstants {
+		public string ShaderResourceName { get; } = ResourceNamespace + "text" + ShaderResourceExtension;
+
+		public bool SupportsShadows { get; } = false;
+
+		public ReadOnlySpan<byte> ParamSdfMap => "sdf_map"u8;
+		public ReadOnlySpan<byte> ParamTextColor => "text_color"u8;
+		public ReadOnlySpan<byte> ParamOutlineColor => "outline_color"u8;
+		public ReadOnlySpan<byte> ParamBackgroundColor => "background_color"u8;
+		public ReadOnlySpan<byte> ParamOutlineThickness => "outline_thickness"u8;
+
+		public bool HasEffectUvTransform { get; } = false;
+		public bool HasEffectColorMap { get; } = false;
+		public bool HasEffectEmissiveMap { get; } = false;
+		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
+		public bool HasEffectOrmMap { get; } = false;
+		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");

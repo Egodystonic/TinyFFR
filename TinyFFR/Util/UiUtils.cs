@@ -36,6 +36,10 @@ public static class UiUtils {
 		);
 	}
 	
+	public static XYPair<float> TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D canvasOrigin, Orientation2D anchor) {
+		return TranslateAnchoredCanvasOffset((2, 2), canvasOrigin, anchor, (0, 0)).Cast<float>().ScaledBy(0.5f);
+	}
+	
 	public static XYPair<int> GetAnchoredCanvasAreaStartCoord(XYPair<int> canvasSize, DiagonalOrientation2D canvasOrigin, Orientation2D anchor, XYPair<int> anchorOffset, XYPair<int> elementArea) {
 		var anchorCoord = TranslateAnchoredCanvasOffset(canvasSize, canvasOrigin, anchor, anchorOffset);
 		var anchorH = anchor.GetHorizontalComponent();

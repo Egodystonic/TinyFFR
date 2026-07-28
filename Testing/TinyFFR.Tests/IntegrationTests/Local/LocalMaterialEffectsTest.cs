@@ -30,22 +30,22 @@ class LocalMaterialEffectsTest {
 		using var colorMap = factory.TextureBuilder.CreateColorMap();
 		using var atMap = factory.TextureBuilder.CreateAbsorptionTransmissionMap();
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
-		using var simpleMat = factory.MaterialBuilder.CreateSimpleMaterial(colorMap);
+		using var lightingIgnoringMaterial = factory.MaterialBuilder.CreateLightingIgnoringMaterial(colorMap);
 		using var standardMat = factory.MaterialBuilder.CreateStandardMaterial(colorMap);
 		using var transmissiveMat = factory.MaterialBuilder.CreateTransmissiveMaterial(colorMap, atMap);
-		using var simpleMatWithEffects = factory.MaterialBuilder.CreateSimpleMaterial(colorMap, enablePerInstanceEffects: true);
+		using var lightingIgnoringMatWithEffects = factory.MaterialBuilder.CreateLightingIgnoringMaterial(colorMap, enablePerInstanceEffects: true);
 		using var standardMatWithEffects = factory.MaterialBuilder.CreateStandardMaterial(colorMap, enablePerInstanceEffects: true);
 		using var transmissiveMatWithEffects = factory.MaterialBuilder.CreateTransmissiveMaterial(colorMap, atMap, enablePerInstanceEffects: true);
 
-		using var simpleObj = factory.ObjectBuilder.CreateModelInstance(cubeMesh, simpleMat);
+		using var lightingIgnoringObj = factory.ObjectBuilder.CreateModelInstance(cubeMesh, lightingIgnoringMaterial);
 		using var standardObj = factory.ObjectBuilder.CreateModelInstance(cubeMesh, standardMat);
 		using var transmissiveObj = factory.ObjectBuilder.CreateModelInstance(cubeMesh, transmissiveMat);
 
-		Assert.IsNull(simpleObj.MaterialEffects);
+		Assert.IsNull(lightingIgnoringObj.MaterialEffects);
 		Assert.IsNull(standardObj.MaterialEffects);
 		Assert.IsNull(transmissiveObj.MaterialEffects);
 
-		simpleObj.Material = simpleMatWithEffects;
+		lightingIgnoringObj.Material = lightingIgnoringMatWithEffects;
 		standardObj.Material = standardMatWithEffects;
 		transmissiveObj.Material = transmissiveMatWithEffects;
 
@@ -63,7 +63,7 @@ class LocalMaterialEffectsTest {
 			c.SetBlendTexture(MaterialEffectMapType.AbsorptionTransmission, colorMap);
 		}
 
-		TestEffectsController(simpleObj.MaterialEffects!.Value);
+		TestEffectsController(lightingIgnoringObj.MaterialEffects!.Value);
 		TestEffectsController(standardObj.MaterialEffects!.Value);
 		TestEffectsController(transmissiveObj.MaterialEffects!.Value);
 	}
@@ -101,12 +101,12 @@ class LocalMaterialEffectsTest {
 				interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
 				borderSize: new XYPair<int>(16, 16),
 				paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
-				interiorValue: ColorVect.White,
+				interiorValue: ColorVect.WhiteOpaque,
 				borderRightValue: new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(135f),
 				borderTopValue: new ColorVect(1f, 1f, 0f).WithHueAdjustedBy(135f),
 				borderLeftValue: new ColorVect(0f, 1f, 0f).WithHueAdjustedBy(135f),
 				borderBottomValue: new ColorVect(0f, 0f, 1f).WithHueAdjustedBy(135f),
-				paddingValue: ColorVect.Black,
+				paddingValue: ColorVect.BlackOpaque,
 				repetitions: (1, 1)
 			),
 			TexturePattern.PlainFill<Real>(0f)
@@ -116,12 +116,12 @@ class LocalMaterialEffectsTest {
 				interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
 				borderSize: new XYPair<int>(16, 16),
 				paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
-				interiorValue: ColorVect.White,
+				interiorValue: ColorVect.WhiteOpaque,
 				borderRightValue: new ColorVect(1f, 0f, 0f),
 				borderTopValue: new ColorVect(1f, 1f, 0f),
 				borderLeftValue: new ColorVect(0f, 1f, 0f),
 				borderBottomValue: new ColorVect(0f, 0f, 1f),
-				paddingValue: ColorVect.Black,
+				paddingValue: ColorVect.BlackOpaque,
 				repetitions: (1, 1)
 			),
 			TexturePattern.Rectangles<Real>(
@@ -139,13 +139,13 @@ class LocalMaterialEffectsTest {
 			1f, 1f, 1f, 1f
 		);
 		using var atMap = factory.TextureBuilder.CreateAbsorptionTransmissionMap(
-			ColorVect.Black, 1f
+			ColorVect.BlackOpaque, 1f
 		);
 		using var atMapBlend = factory.TextureBuilder.CreateAbsorptionTransmissionMap(
 			new ColorVect(0f, 1f, 1f), 0.5f
 		);
 
-		using var leftMat = factory.MaterialBuilder.CreateSimpleMaterial(
+		using var leftMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(
 			colorMap: colorMap,
 			enablePerInstanceEffects: true
 		);
@@ -157,7 +157,7 @@ class LocalMaterialEffectsTest {
 			enablePerInstanceEffects: true
 		);
 		using var rightMat = factory.MaterialBuilder.CreateTransmissiveMaterial(
-			colorMap: factory.TextureBuilder.CreateColorMap(TexturePattern.Chequerboard(ColorVect.White, new ColorVect(0.7f, 0.7f, 0.7f)), includeAlpha: false),
+			colorMap: factory.TextureBuilder.CreateColorMap(TexturePattern.Chequerboard(ColorVect.WhiteOpaque, new ColorVect(0.7f, 0.7f, 0.7f)), includeAlpha: false),
 			absorptionTransmissionMap: atMap,
 			emissiveMap: emissiveMap,
 			ormrMap: ormMap,

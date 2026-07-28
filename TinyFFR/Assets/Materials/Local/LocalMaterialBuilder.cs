@@ -54,8 +54,37 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		TextureBuilder = texBuilderRef;
 		_testMaterialTexturesRef = testMaterialTexturesRef;
 	}
-
 	
+	public Material AllocatePrimitiveMaterialInstance(PrimitiveMaterialShaderConstants.ShadingModeVariant shadingMode, ColorVect baseColor) {
+		ThrowIfThisIsDisposed();
+		
+		var shaderConstants = PrimitiveMaterialShader;
+
+		var shaderResourceName = shaderConstants.GetShaderResourceName(shadingMode);
+		var result = InstantiateMaterial(shaderResourceName, ReadOnlySpan<char>.Empty, shaderConstants);
+		SetPrimitiveMaterialBaseColor(result, baseColor);
+
+		return result;
+	}
+	public void SetPrimitiveMaterialBaseColor(Material material, ColorVect color) {
+		ThrowIfThisOrHandleIsDisposed(material.GetHandleWithoutDisposeCheck());
+		ApplyMaterialParam(material, color.AsVector4, PrimitiveMaterialShader.ParamBaseColor);
+	}
+
+	public Material AllocateTextMaterialInstance(Texture sdfAtlas, ColorVect textColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThickness, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+
+		var shaderConstants = TextMaterialShader;
+
+		var result = InstantiateMaterial(shaderConstants.ShaderResourceName, name, shaderConstants);
+		ApplyMaterialParam(result, sdfAtlas, shaderConstants.ParamSdfMap);
+		ApplyMaterialParam(result, textColor.AsVector4, shaderConstants.ParamTextColor);
+		ApplyMaterialParam(result, backgroundColor.AsVector4, shaderConstants.ParamBackgroundColor);
+		ApplyMaterialParam(result, outlineColor.AsVector4, shaderConstants.ParamOutlineColor);
+		ApplyMaterialParam(result, outlineThickness, shaderConstants.ParamOutlineThickness);
+
+		return result;
+	}
 
 	public Material CreateTestMaterial(bool ignoresLighting) {
 		ThrowIfThisIsDisposed();
@@ -63,7 +92,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var textureGroup = _testMaterialTexturesRef.Value;
 		
 		if (ignoresLighting) {
-			return CreateSimpleMaterial(new SimpleMaterialCreationConfig {
+			return CreateLightingIgnoringMaterial(new LightingIgnoringMaterialCreationConfig {
 				ColorMap = textureGroup.Textures[0],
 				Name = TestMaterialName
 			});
@@ -77,16 +106,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 	}
 
-	public Material CreateSimpleMaterial(in SimpleMaterialCreationConfig config) {
+	public Material CreateLightingIgnoringMaterial(in LightingIgnoringMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
-		var shaderConstants = SimpleMaterialShader;
+		var shaderConstants = LightingIgnoringMaterialShader;
 
-		var alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOff;
+		var alphaModeVariant = LightingIgnoringMaterialShaderConstants.AlphaModeVariant.AlphaOff;
 
 		if (config.ColorMap.TexelType == TexelType.Rgba32) {
-			alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOn;
+			alphaModeVariant = LightingIgnoringMaterialShaderConstants.AlphaModeVariant.AlphaOn;
 		}
 
 		var shaderResourceName = shaderConstants.GetShaderResourceName(config.EnablePerInstanceEffects, alphaModeVariant);
@@ -100,6 +129,28 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 		}
+
+		return result;
+	}
+
+	public Material CreateColorKeyedMaterial(in ColorKeyedMaterialCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		var shaderConstants = ColorKeyedMaterialShader;
+
+		var alphaModeVariant = config.BlendOutputAlphaWithScene
+			? ColorKeyedMaterialShaderConstants.AlphaModeVariant.AlphaOn
+			: ColorKeyedMaterialShaderConstants.AlphaModeVariant.AlphaOff;
+
+		var shaderResourceName = shaderConstants.GetShaderResourceName(alphaModeVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name, shaderConstants);
+
+		ApplyMaterialParam(result, config.KeyMap, shaderConstants.ParamKeyMap);
+		ApplyMaterialParam(result, new Vector4(1f, 0f, 0f, 0f), shaderConstants.ParamXChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 1f, 0f, 0f), shaderConstants.ParamYChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 0f, 1f, 0f), shaderConstants.ParamZChannelColor);
+		ApplyMaterialParam(result, new Vector4(0f, 0f, 0f, 1f), shaderConstants.ParamWChannelColor);
 
 		return result;
 	}
@@ -225,6 +276,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, resourceName, DefaultMaterialName);
 		_activeMaterials.Add(handle, new MaterialData(packageConstants, 0, null, null, null, null));
+		
 		return HandleToInstance(handle);
 	}
 
@@ -233,21 +285,26 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var (bufferPtr, sizeBytes) = EmbeddedResourceResolver.GetResource(resourceName);
 		LoadShaderPackage(
-				(byte*) bufferPtr,
-				sizeBytes,
-				out var newHandle
-			).ThrowIfFailure();
+			(byte*) bufferPtr,
+			sizeBytes,
+			out var newHandle
+		).ThrowIfFailure();
 		_loadedShaderPackages.Add(resourceName, newHandle);
 		return newHandle;
 	}
 
 	void ApplyMaterialParam(Material material, Texture? map, ReadOnlySpan<byte> param) {
 		if (!map.HasValue) return;
+		var renderingConfig = map.Value.RenderingConfig;
 		SetMaterialParameterTexture(
 			material.Handle,
 			in ParamRef(param),
 			ParamLen(param),
-			map.Value.Handle
+			map.Value.Handle,
+			!map.Value.ContainsMipMaps,
+			renderingConfig.DisableTexelBlending,
+			renderingConfig.DisableTextureRepeat,
+			renderingConfig.AnisotropyLevel
 		).ThrowIfFailure();
 		_globals.DependencyTracker.RegisterDependency(material, map.Value);
 	}
@@ -255,6 +312,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	void ApplyMaterialParam(Material material, float? val, ReadOnlySpan<byte> param) {
 		if (!val.HasValue) return;
 		SetMaterialParameterReal(
+			material.Handle,
+			in ParamRef(param),
+			ParamLen(param),
+			val.Value
+		).ThrowIfFailure();
+	}
+	
+	void ApplyMaterialParam(Material material, Vector4? val, ReadOnlySpan<byte> param) {
+		if (!val.HasValue) return;
+		SetMaterialParameterVect(
 			material.Handle,
 			in ParamRef(param),
 			ParamLen(param),
@@ -274,6 +341,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public bool GetSupportsPerInstanceEffects(ResourceHandle<Material> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].SupportedEffects != 0;
+	}
+	
+	public bool GetSupportsColorKeying(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMaterials[handle].PackageConstants == ColorKeyedMaterialShader;
+	}
+
+	public bool GetSupportsShadows(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMaterials[handle].PackageConstants.SupportsShadows;
 	}
 
 	public Material Duplicate(ResourceHandle<Material> handle) {
@@ -373,6 +450,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(HandleToInstance(handle), distance, param);
 	}
 
+	public void SetKeyedColor(ResourceHandle<Material> handle, ColorChannel key, ColorVect color) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_activeMaterials[handle].PackageConstants != ColorKeyedMaterialShader) return;
+		var param = key switch {
+			ColorChannel.R => ColorKeyedMaterialShader.ParamXChannelColor,
+			ColorChannel.G => ColorKeyedMaterialShader.ParamYChannelColor,
+			ColorChannel.B => ColorKeyedMaterialShader.ParamZChannelColor,
+			ColorChannel.A => ColorKeyedMaterialShader.ParamWChannelColor,
+			_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)
+		};
+		ApplyMaterialParam(HandleToInstance(handle), color.AsVector4, param);
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultMaterialName));
@@ -411,7 +501,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		UIntPtr materialHandle,
 		ref readonly byte utf8ParameterNameBuffer,
 		int parameterNameBufferLength,
-		UIntPtr textureHandle
+		UIntPtr textureHandle,
+		InteropBool disableMinMapFiltering, 
+		InteropBool disableBilinearFiltering, 
+		InteropBool disableTextureRepeat, 
+		float anisotropyLevel
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_real")]
@@ -420,6 +514,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ref readonly byte utf8ParameterNameBuffer,
 		int parameterNameBufferLength,
 		float val
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_vect")]
+	static extern InteropResult SetMaterialParameterVect(
+		UIntPtr materialHandle,
+		ref readonly byte utf8ParameterNameBuffer,
+		int parameterNameBufferLength,
+		Vector4 val
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_matrix")]

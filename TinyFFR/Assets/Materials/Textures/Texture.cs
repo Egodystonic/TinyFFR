@@ -26,9 +26,35 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 		get => Implementation.GetTexelType(_handle);
 	}
 
+	public bool AllowsDynamicWrites {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetAllowsDynamicWrites(_handle);
+	}
+	
+	public bool ContainsMipMaps {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetContainsMipMaps(_handle);
+	}
+	
+	public TextureRenderingConfig RenderingConfig {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetRenderingConfig(_handle);
+	}
+
 	internal Texture(ResourceHandle<Texture> handle, ITextureImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
+	}
+
+	// TODO make it clear this throws if AllowsDynamicWrites is false
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void OverwriteTexels<TTexel>(ReadOnlySpan<TTexel> newTexels) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		OverwriteTexels(newTexels, Dimensions, XYPair<int>.Zero);
+	}
+	// TODO make it clear this throws if AllowsDynamicWrites is false
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void OverwriteTexels<TTexel>(ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		Implementation.OverwriteTexels(_handle, newTexels, dimensions, offset);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

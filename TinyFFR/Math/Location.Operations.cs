@@ -63,12 +63,15 @@ partial struct Location :
 	static Location IRotatable<Location>.operator *(Rotation left, Location right) => right.RotatedAroundOriginBy(left);
 	Location IRotatable<Location>.RotatedBy(Rotation rot) => RotatedAroundOriginBy(rot);
 	public Location RotatedAroundOriginBy(Rotation rotation) => (AsVect() * rotation).AsLocation();
+	Location IRotatable<Location>.RotatedBy(Quaternion rotQuat) => RotatedAroundOriginBy(rotQuat);
+	public Location RotatedAroundOriginBy(Quaternion rotationQuaternion) => AsVect().RotatedBy(rotationQuaternion).AsLocation();
 
 	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	public Location RotatedBy(Rotation rotation, Location pivot) => pivot + VectFrom(pivot) * rotation;
+	public Location RotatedBy(Quaternion rotationQuaternion, Location pivot) => pivot + VectFrom(pivot).RotatedBy(rotationQuaternion);
 	#endregion
 
 	#region Transformation and Scaling

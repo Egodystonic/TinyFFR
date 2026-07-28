@@ -1,0 +1,68 @@
+﻿material {
+	name : %NAME%,
+#option ShadingMode
+#variant PlainOpaque
+	requires : [ tangents ],
+	blending : opaque,
+#variant Plain3DOpaque
+	requires : [ tangents ],
+	blending : opaque,
+	transparency : twoPassesTwoSides,
+#variant Plain
+	requires : [ tangents ],
+	blending : transparent,
+#variant Plain3D
+	requires : [ tangents ],
+	blending : transparent,
+	transparency : twoPassesTwoSides,
+#variant Wireframe
+	requires : [ tangents, color ],
+	blending : masked,
+	maskThreshold : 0.1,
+	culling : none,
+#endoption
+	parameters : [
+		{
+			type : float4,
+			name : base_color
+		}
+	],
+	shadingModel : unlit,
+	flipUV : false,
+}
+
+fragment {
+	void material(inout MaterialInputs material) {
+		prepareMaterial(material);
+
+#option ShadingMode
+#variant PlainOpaque
+		material.baseColor.rgb = materialParams.base_color.rgb;
+#variant Plain
+		material.baseColor = vec4(materialParams.base_color.rgb * materialParams.base_color.a, materialParams.base_color.a);
+#variant Plain3DOpaque
+        float dot = saturate(abs(dot(getWorldGeometricNormalVector(), getWorldViewVector())));
+		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * sq(dot)));
+#variant Plain3D
+        float dot = saturate(abs(dot(getWorldGeometricNormalVector(), getWorldViewVector())));
+		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * sq(dot))) * materialParams.base_color.a;
+		material.baseColor.a = materialParams.base_color.a;
+#variant Wireframe
+		vec3 barycentre = getColor().rgb;
+		float minComponent = min(min(barycentre.x, barycentre.y), barycentre.z);
+		float divisor = max(fwidth(minComponent), 1E-6);
+		float edgeDistancePx = minComponent / divisor;
+
+		const float lineWorldThickness = 0.5;
+		const float minScreenSpaceThickness = 0.1;
+		const float maxScreenSpaceThickness = 1.0;
+		float camDistance = max(distance(getWorldPosition(), getWorldCameraPosition()), 1E-4);
+		float lineHalfWidthPx = clamp(lineWorldThickness / camDistance, minScreenSpaceThickness, maxScreenSpaceThickness);
+
+		float coverage = 1.0 - smoothstep(lineHalfWidthPx - 0.5, lineHalfWidthPx + 0.5, edgeDistancePx);
+		material.baseColor.rgb = materialParams.base_color.rgb;
+		material.baseColor.a = coverage;
+#endoption
+
+	}
+}

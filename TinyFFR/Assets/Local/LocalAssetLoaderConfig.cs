@@ -21,93 +21,96 @@ public sealed record LocalAssetLoaderConfig {
 	public const int DefaultMaxAssetVertexIndexBufferSizeBytes = 1_000_000 * MeshVertex.ExpectedSerializedSize; // 1m vertex mesh
 	public const int DefaultMaxKtxFileBufferSizeBytes = 256 * 1024 * 1024; // 256 MB
 	public const int DefaultMaxEmbeddedAssetTextureFileSizeBytes = 8192 * 8192 * 4; // 8k image; 256MB
+	public const int DefaultMaxCachedTextMeshesPerFont = 512;
 	public static readonly TimeSpan DefaultMaxHdrProcessingTime = TimeSpan.FromMinutes(2d);
 
-	readonly int _maxAssetFilePathLengthChars = DefaultMaxAssetFilePathLengthChars;
 	public int MaxAssetFilePathLengthChars {
-		get => _maxAssetFilePathLengthChars;
+		get;
 		init {
 			if (value is <= 0 or > MaxMaxAssetFilePathLengthChars) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset file path length must be between 1 and {MaxMaxAssetFilePathLengthChars}.");
 			}
-			_maxAssetFilePathLengthChars = value;
+			field = value;
 		}
-	}
-	
-	readonly int _maxAnimationAndNodeNameLengthChars = DefaultMaxAnimationAndNodeNameLengthChars;
+	} = DefaultMaxAssetFilePathLengthChars;
+
 	public int MaxAnimationAndNodeNameLengthChars {
-		get => _maxAnimationAndNodeNameLengthChars;
+		get;
 		init {
 			if (value is <= 0 or > MaxMaxAnimationAndNodeNameLengthChars) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max animation/bone name length must be between 1 and {MaxMaxAnimationAndNodeNameLengthChars}.");
 			}
-			_maxAnimationAndNodeNameLengthChars = value;
+			field = value;
 		}
-	}
-	
-	readonly int _maxSkeletalAnimationChannelKeyframeCount = DefaultMaxSkeletalAnimationChannelKeyframeCount;
+	} = DefaultMaxAnimationAndNodeNameLengthChars;
+
 	public int MaxSkeletalAnimationChannelKeyframeCount {
-		get => _maxSkeletalAnimationChannelKeyframeCount;
+		get;
 		init {
 			if (value is <= 0 or > MaxMaxSkeletalAnimationChannelKeyframeCount) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max skeletal animation channel keyframe count must be between 1 and {MaxMaxSkeletalAnimationChannelKeyframeCount}.");
 			}
-			_maxSkeletalAnimationChannelKeyframeCount = value;
+			field = value;
 		}
-	}
-	
-	readonly int _maxSkeletalAnimationNodeCount = DefaultMaxSkeletalAnimationNodeCount;
+	} = DefaultMaxSkeletalAnimationChannelKeyframeCount;
+
 	public int MaxSkeletalAnimationNodeCount {
-		get => _maxSkeletalAnimationNodeCount;
+		get;
 		init {
 			if (value is <= 0 or > MaxMaxSkeletalAnimationNodeCount) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max skeletal animation node count must be between 1 and {MaxMaxSkeletalAnimationNodeCount}.");
 			}
-			_maxSkeletalAnimationNodeCount = value;
+			field = value;
 		}
-	}
+	} = DefaultMaxSkeletalAnimationNodeCount;
 
-	readonly int _maxAssetVertexIndexBufferSizeBytes = DefaultMaxAssetVertexIndexBufferSizeBytes;
 	public int MaxAssetVertexIndexBufferSizeBytes {
-		get => _maxAssetVertexIndexBufferSizeBytes;
+		get;
 		init {
 			if (value is <= 0 or > MaxMaxAssetVertexIndexBufferSizeBytes) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset vertex/index buffer size must be between 1 and {MaxMaxAssetVertexIndexBufferSizeBytes}.");
 			}
-			_maxAssetVertexIndexBufferSizeBytes = value;
+			field = value;
 		}
-	}
+	} = DefaultMaxAssetVertexIndexBufferSizeBytes;
 
-	readonly int _maxKtxFileBufferSizeBytes = DefaultMaxKtxFileBufferSizeBytes;
 	public int MaxKtxFileBufferSizeBytes {
-		get => _maxKtxFileBufferSizeBytes;
+		get;
 		init {
 			if (value is <= 0 or > MaxMaxKtxFileBufferSizeBytes) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max KTX file buffer size must be between 1 and {MaxMaxKtxFileBufferSizeBytes}.");
 			}
-			_maxKtxFileBufferSizeBytes = value;
+			field = value;
 		}
-	}
-	
-	readonly int _maxEmbeddedAssetTextureFileSizeBytes = DefaultMaxEmbeddedAssetTextureFileSizeBytes;
+	} = DefaultMaxKtxFileBufferSizeBytes;
+
 	public int MaxEmbeddedAssetTextureFileSizeBytes {
-		get => _maxEmbeddedAssetTextureFileSizeBytes;
+		get;
 		init {
 			if (value is <= 0 or > MaxMaxEmbeddedAssetTextureFileSizeBytes) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max embedded asset texture file size must be between 1 and {MaxMaxEmbeddedAssetTextureFileSizeBytes}.");
 			}
-			_maxEmbeddedAssetTextureFileSizeBytes = value;
+			field = value;
 		}
-	}
+	} = DefaultMaxEmbeddedAssetTextureFileSizeBytes;
 
-	readonly TimeSpan _maxHdrProcessingTime = DefaultMaxHdrProcessingTime;
+	public int MaxCachedTextMeshesPerFont {
+		get;
+		init {
+			if (value <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max cached text meshes per font must be non-negative.");
+			}
+			field = value;
+		}
+	} = DefaultMaxCachedTextMeshesPerFont;
+
 	public TimeSpan MaxHdrProcessingTime {
-		get => _maxHdrProcessingTime;
+		get;
 		init {
 			if (value < TimeSpan.Zero) {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max HDR processing time must be positive or zero.");
 			}
-			_maxHdrProcessingTime = value;
+			field = value;
 		}
-	}
+	} = DefaultMaxHdrProcessingTime;
 }

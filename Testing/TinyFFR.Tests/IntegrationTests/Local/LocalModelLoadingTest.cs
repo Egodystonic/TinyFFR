@@ -105,12 +105,15 @@ class LocalModelLoadingTest {
 		var curFileIndex = -1;
 		ResourceGroup? loadedResources = null; 
 		ModelInstanceGroup? modelInstances = null;
+		var nextPrimitiveColorIsOpaque = true;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				nextPrimitiveColorIsOpaque = true;
+				
 				if (modelInstances is {} i) {
 					scene.Remove(i);
 					i.Dispose();
@@ -124,7 +127,11 @@ class LocalModelLoadingTest {
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 
 				Console.WriteLine(_filesToLoad[curFileIndex]);
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadAll(
+					CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), 
+					new ModelCreationConfig() { MeshConfig = new() { GenerateWireframeData = true }}, 
+					new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }
+				);
 				Console.WriteLine("\tMeshes:");
 				foreach (var mesh in loadedResources.Value.Meshes) {
 					Console.WriteLine("\t\t" + mesh);
@@ -153,6 +160,25 @@ class LocalModelLoadingTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
 				modelInstances?.RotateBy((90f * deltaTime) % Direction.Forward);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.W)) {
+				if (modelInstances?.Instances is { } enumerable) {
+					foreach (var inst in enumerable) {
+						inst.SetMaterial(null);
+						inst.SetNullMaterialShadingStyle(NullMaterialShadingStyle.Wireframe);
+						inst.SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+					}
+				}
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
+				if (modelInstances?.Instances is { } enumerable) {
+					foreach (var inst in enumerable) {
+						inst.SetMaterial(null);
+						inst.SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain3D);
+						inst.SetNullMaterialBaseColor(nextPrimitiveColorIsOpaque ? ColorVect.RandomOpaque() : ColorVect.Random().WithPremultipliedAlpha());
+					}
+				}
+				nextPrimitiveColorIsOpaque = !nextPrimitiveColorIsOpaque;
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
 				lightBrightnessStage++;

@@ -3,6 +3,8 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 
@@ -14,7 +16,7 @@ public enum BuiltInSceneBackdrop {
 	Starfield
 }
 
-public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
+public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public const float DefaultLux = 10_000f;
 	public const float MaxBrightness = 1E15f;
 
@@ -60,14 +62,42 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Remove(ModelInstance modelInstance) => Implementation.Remove(_handle, modelInstance);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(ModelInstanceGroup modelInstance) => Implementation.Add(_handle, modelInstance);
+	public void Add(ModelInstanceGroup modelInstanceGroup) => Implementation.Add(_handle, modelInstanceGroup);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Remove(ModelInstanceGroup modelInstance) => Implementation.Remove(_handle, modelInstance);
+	public void Remove(ModelInstanceGroup modelInstanceGroup) => Implementation.Remove(_handle, modelInstanceGroup);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Add(_handle, light);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Remove(_handle, light);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(QuadInstance quad) => Add(quad.UnderlyingModelInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(QuadInstance quad) => Remove(quad.UnderlyingModelInstance);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(MutableGridInstance grid) => Add(grid.UnderlyingModelInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(MutableGridInstance grid) => Remove(grid.UnderlyingModelInstance);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(TextInstance text) => Add(text.UnderlyingModelInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(TextInstance text) => Remove(text.UnderlyingModelInstance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(CameraLockedQuadInstance quad) => Implementation.Add(_handle, quad);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(CameraLockedQuadInstance quad) => Implementation.Remove(_handle, quad);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(CameraLockedTextInstance text) => Implementation.Add(_handle, text);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RemoveAll(bool includeModelInstances = true, bool includeLights = true, bool includePrimitives = true) => Implementation.RemoveAll(_handle, includeModelInstances, includeLights, includePrimitives);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BuiltInSceneBackdrop backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
@@ -82,6 +112,13 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RemoveBackdrop() => Implementation.RemoveBackdrop(_handle);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScenePrimitive AddPrimitive() => Implementation.CreatePrimitive(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetPrimitivePaintbrush(nuint primitiveHandle, in PrimitivePaintbrush paintbrush) => Implementation.SetPrimitivePaintbrush(_handle, primitiveHandle, in paintbrush);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void DisposePrimitive(nuint primitiveHandle) => Implementation.DisposePrimitive(_handle, primitiveHandle);
+
 	public static float LuxToBrightness(float lux) {
 		if (!lux.IsNonNegativeAndFinite()) return 0f;
 		return Single.Min(MathF.Sqrt(lux / DefaultLux), MaxBrightness);
@@ -91,10 +128,6 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 		if (!brightness.IsNonNegativeAndFinite()) return 0f;
 		brightness = Single.Min(brightness, MaxBrightness);
 		return DefaultLux * brightness * brightness;
-	}
-
-	internal void SetLightShadowFidelity(Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, LightShadowFidelityData directionalLightFidelity) {
-		Implementation.SetLightShadowFidelity(_handle, qualityPreset, pointLightFidelity, spotLightFidelity, directionalLightFidelity);
 	}
 
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";

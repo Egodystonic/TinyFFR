@@ -282,4 +282,13 @@ public static class XYPairExtensions {
 	public static int IndexClamped(this XYPair<int> @this, XYPair<int> xy) => @this.Index(xy.Clamp(XYPair<int>.Zero, @this - XYPair<int>.One));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int IndexClamped(this XYPair<int> @this, int x, int y) => @this.IndexClamped(new(x, y));
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static XYPair<int> ReverseIndex(this XYPair<int> @this, int index) {
+		if (@this.X == 0) return XYPair<int>.Zero;
+		var (y, x) = Int32.DivRem(index, @this.X);
+		return new(x, y);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static XYPair<int> ReverseIndexClamped(this XYPair<int> @this, int index) => ReverseIndex(@this, Int32.Clamp(index, 0, Int32.Max(@this.Area - 1, 1)));
 }

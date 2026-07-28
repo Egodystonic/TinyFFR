@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Assets.Materials.TextureCombinationSourceTexture;
@@ -269,10 +270,10 @@ public interface IAssetLoader {
 		lock (_staticMutationLock) {
 			var fileMetadata = ReadTextureMetadata(filePath);
 			using var texelPoolMemory = _mapTextureProcessingPool.Borrow<TexelRgb24>(fileMetadata.Dimensions.Area);
-			ReadTexture(filePath, texelPoolMemory.Buffer);
-			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Buffer, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel);
+			ReadTexture(filePath, texelPoolMemory.Span);
+			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Span, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel);
 			return TextureBuilder.CreateTexture(
-				texelPoolMemory.Buffer, 
+				texelPoolMemory.Span, 
 				new TextureGenerationConfig { Dimensions = fileMetadata.Dimensions }, 
 				new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(filePath) }
 			);
@@ -292,11 +293,11 @@ public interface IAssetLoader {
 				strengthFilePath,
 				new TextureCombinationConfig(TextureA, R, TextureA, G, TextureB, R),
 				TextureProcessingConfig.None,
-				texelPoolMemory.Buffer
+				texelPoolMemory.Span
 			);
-			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Buffer, zeroDirection, encodedRange, encodedAnticlockwise, B);
+			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Span, zeroDirection, encodedRange, encodedAnticlockwise, B);
 			return TextureBuilder.CreateTexture(
-				texelPoolMemory.Buffer,
+				texelPoolMemory.Span,
 				new TextureGenerationConfig { Dimensions = combinedTexMetadata.Dimensions },
 				new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(name) }
 			);
@@ -416,6 +417,17 @@ public interface IAssetLoader {
 		);
 	}
 	BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
+	#endregion
+	
+	#region Load Font
+	Font LoadFont(BuiltInFont font = BuiltInFont.Default, ReadOnlySpan<char> name = default) {
+		return LoadFont(font, new FontCreationConfig { Name = name });
+	}
+	Font LoadFont(ReadOnlySpan<char> fontFilePath, ReadOnlySpan<char> name = default) {
+		return LoadFont(fontFilePath, new FontCreationConfig { Name = name });
+	}
+	Font LoadFont(BuiltInFont font, in FontCreationConfig config);
+	Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config);
 	#endregion
 
 	#region Load / Read Mesh

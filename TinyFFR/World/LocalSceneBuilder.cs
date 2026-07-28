@@ -4,6 +4,8 @@
 using System;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;
@@ -12,7 +14,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable {
+sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable {
 	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
 	const string DefaultSceneName = "Unnamed Scene";
 	const string BuiltInSceneDataResourcePrefix = "Assets.builtin_backdrop_";
@@ -20,25 +22,30 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	const string BuiltInBackdropNameSuffix = "'";
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
-	readonly VectorPool<ModelInstance> _modelInstanceVectorPool;
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
+	readonly ArrayPoolBackedVector<ModelInstance> _removeAllScratchVector = new();
+	readonly SetPool<ModelInstance> _modelInstanceSetPool;
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
-	readonly VectorPool<Light> _lightVectorPool;
+	readonly SetPool<Light> _lightSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<BuiltInSceneBackdrop, BackdropTexture> _loadedBuiltInBackdropTextures = new();
 	readonly LocalAssetLoader _assetLoader;
-	
+	readonly LocalObjectBuilder _objectBuilder;
 	bool _isDisposed = false;
 
-	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoader assetLoader) {
+	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoader assetLoader, LocalObjectBuilder objectBuilder) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
 		_assetLoader = assetLoader;
-		_modelInstanceVectorPool = new(zeroMemoryOnReturn: false);
-		_lightVectorPool = new(zeroMemoryOnReturn: false);
+		_objectBuilder = objectBuilder;
+		_modelInstanceSetPool = new(zeroMemoryOnReturn: true);
+		_camLockedAbridgedInstanceMapPool = new(zeroMemoryOnReturn: true);
+		_camLockedFullInstanceMapPool = new(zeroMemoryOnReturn: true);
+		_lightSetPool = new(zeroMemoryOnReturn: true);
+		_primitiveMapPool = new(zeroMemoryOnReturn: true);
 	}
 
 	public Scene CreateScene(in SceneCreationConfig config) {
@@ -48,8 +55,13 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		).ThrowIfFailure();
 
 		_activeSceneHandles.Add(handle);
-		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
-		_lightMap.Add(handle, _lightVectorPool.Rent());
+		_modelInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
+		_camLockedTrivialInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
+		_camLockedAbridgedInstanceMap.Add(handle, _camLockedAbridgedInstanceMapPool.Rent());
+		_camLockedFullInstanceMap.Add(handle, _camLockedFullInstanceMapPool.Rent());
+		_cameraLockedInstancesCanary.Add(handle, _modelInstanceSetPool.Rent());
+		_lightMap.Add(handle, _lightSetPool.Rent());
+		_primitiveMap.Add(handle, _primitiveMapPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
@@ -89,8 +101,9 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 
 	public void Remove(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var instanceVector = _modelInstanceMap[handle];
-		if (!instanceVector.Remove(modelInstance)) return;
+		if (!_modelInstanceMap[handle].Remove(modelInstance)) return;
+		
+		RemoveInstanceFromCameraLockedMaps(handle, modelInstance);
 
 		RemoveModelInstanceFromScene(
 			handle,
@@ -128,7 +141,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
 			var h = s.GetHandleWithoutDisposeCheck();
 			lsb.ThrowIfThisOrHandleIsDisposed(h);
-			return lsb._modelInstanceMap[h][index];
+			return lsb._modelInstanceMap[h].GetItemAtIndex(index);
 		}
 
 		return new IndirectEnumerable<Scene, ModelInstance>(
@@ -217,7 +230,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
 			var h = s.GetHandleWithoutDisposeCheck();
 			lsb.ThrowIfThisOrHandleIsDisposed(h);
-			return lsb._lightMap[h][index];
+			return lsb._lightMap[h].GetItemAtIndex(index);
 		}
 
 		return new IndirectEnumerable<Scene, Light>(
@@ -361,6 +374,64 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 	}
 	#endregion
 
+	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		if (includePrimitives) {
+			RemoveAllPrimitives(handle, true);
+			
+			if (includeModelInstances) {
+				var modelInstanceVector = _modelInstanceMap[handle];
+				foreach (var modelInstance in modelInstanceVector) {
+					RemoveModelInstanceFromScene(
+						handle,
+						modelInstance.Handle
+					).ThrowIfFailure();	
+					_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+				}
+				
+				modelInstanceVector.Clear();
+				_camLockedTrivialInstanceMap[handle].Clear();
+				_camLockedAbridgedInstanceMap[handle].Clear();
+				_camLockedFullInstanceMap[handle].Clear();
+				_cameraLockedInstancesCanary[handle].Clear();
+			}
+		}
+		else if (includeModelInstances) {
+			var modelInstanceVector = _modelInstanceMap[handle];
+			foreach (var modelInstance in modelInstanceVector) {
+				if (!IsPrimitiveInstance(handle, modelInstance)) _removeAllScratchVector.Add(modelInstance);
+			}
+			
+			foreach (var modelInstance in _removeAllScratchVector) Remove(handle, modelInstance);
+			_removeAllScratchVector.Clear();
+		}
+		
+		if (includeLights) {
+			var lightInstanceVector = _lightMap[handle];
+			foreach (var lightInstance in lightInstanceVector) {
+				RemoveLightFromScene(
+					handle,
+					lightInstance.Handle
+				).ThrowIfFailure();	
+				
+				switch (lightInstance.Type) {
+					case LightType.Point:
+						_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), (PointLight) lightInstance);
+						break;
+					case LightType.Spot:
+						_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), (SpotLight) lightInstance);
+						break;
+					case LightType.Directional:
+						_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), (DirectionalLight) lightInstance);
+						break;
+				}
+			}
+			
+			lightInstanceVector.Clear();
+		}
+	}
+
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_scene")]
 	static extern InteropResult AllocateScene(
@@ -470,8 +541,15 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		try {
 			while (_activeSceneHandles.Count > 0) Dispose(_activeSceneHandles[^1]);
 
+			DisposePrimitiveResources();
 			_modelInstanceMap.Dispose();
-			_modelInstanceVectorPool.Dispose();
+			_camLockedTrivialInstanceMap.Dispose();
+			_camLockedAbridgedInstanceMap.Dispose();
+			_camLockedFullInstanceMap.Dispose();
+			_cameraLockedInstancesCanary.Dispose();
+			_modelInstanceSetPool.Dispose();
+			_camLockedAbridgedInstanceMapPool.Dispose();
+			_camLockedFullInstanceMapPool.Dispose();
 			
 			foreach (var builtInBackdropTex in _loadedBuiltInBackdropTextures.Values) {
 				builtInBackdropTex.Dispose();
@@ -480,10 +558,13 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 			_loadedBuiltInBackdropTextures.Dispose();
 			_backdropMap.Dispose();
 			_lightMap.Dispose();
-			_lightVectorPool.Dispose();
+			_lightSetPool.Dispose();
+			_primitiveMap.Dispose();
+			_primitiveMapPool.Dispose();
 			_shadowQualityActivePresetMap.Dispose();
 
 			_activeSceneHandles.Dispose();
+			_removeAllScratchVector.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -494,20 +575,33 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 
 	public void Dispose(ResourceHandle<Scene> handle) {
 		if (IsDisposed(handle)) return;
-
+		
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-
-		RemoveBackdrop(handle);
+		
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
-		DisposeScene(handle).ThrowIfFailure();
 		
+		RemoveAllPrimitives(handle, false);
+		_primitiveMapPool.Return(_primitiveMap[handle]);
+		_primitiveMap.Remove(handle);
+		
+		RemoveBackdrop(handle);
 		_backdropMap.Remove(handle);
+		
+		DisposeScene(handle).ThrowIfFailure();
 
-		_modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
+		_modelInstanceSetPool.Return(_modelInstanceMap[handle]);
 		_modelInstanceMap.Remove(handle);
+		_modelInstanceSetPool.Return(_camLockedTrivialInstanceMap[handle]);
+		_camLockedTrivialInstanceMap.Remove(handle);
+		_camLockedAbridgedInstanceMapPool.Return(_camLockedAbridgedInstanceMap[handle]);
+		_camLockedAbridgedInstanceMap.Remove(handle);
+		_camLockedFullInstanceMapPool.Return(_camLockedFullInstanceMap[handle]);
+		_camLockedFullInstanceMap.Remove(handle);
+		_modelInstanceSetPool.Return(_cameraLockedInstancesCanary[handle]);
+		_cameraLockedInstancesCanary.Remove(handle);
 
-		_lightVectorPool.Return(_lightMap[handle]);
+		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
 		
 		_activeSceneHandles.Remove(handle);

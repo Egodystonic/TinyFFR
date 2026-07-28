@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -37,12 +38,13 @@ class LocalResourceNamingTest {
 		
 		// ReSharper disable AccessToDisposedClosure Factory will be disposed only after closure is no longer in use
 		using var factory = new LocalTinyFfrFactory();
-		using var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false);
+		using var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false);
 		using var mat = factory.MaterialBuilder.CreateStandardMaterial(tex);
 		
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: n));
+		TestNameStorageAndRetrieval(n => factory.AssetLoader.LoadFont(name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
-		TestNameStorageAndRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: n));
+		TestNameStorageAndRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
 		TestNameStorageAndRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
@@ -51,6 +53,7 @@ class LocalResourceNamingTest {
 			using var window = factory.WindowBuilder.CreateWindow(primaryDisplay);
 			using var camera = factory.CameraBuilder.CreateCamera();
 			TestNameStorageAndRetrieval(n => factory.RendererBuilder.CreateRenderer(scene, camera, window, name: n));
+			TestNameStorageAndRetrieval(n => factory.RendererBuilder.CreateCompositor(window, name: n));
 		}
 		TestNameStorageAndRetrieval(n => factory.ResourceAllocator.CreateResourceGroup(false, name: n));
 		TestNameStorageAndRetrieval(n => factory.CameraBuilder.CreateCamera(name: n));

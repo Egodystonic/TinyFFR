@@ -27,6 +27,11 @@ public class TinyFfrSceneView : Control {
 		null,
 		validate: newValue => newValue == null || BindableRendererImplProvider.IsBindableRenderer(newValue.Value)
 	);
+	public static readonly StyledProperty<RendererCompositor?> CompositorProperty = AvaloniaProperty.Register<TinyFfrSceneView, RendererCompositor?>(
+		nameof(Compositor),
+		null,
+		validate: newValue => newValue == null || BindableRendererCompositorImplProvider.IsBindableCompositor(newValue.Value)
+	);
 	public static readonly StyledProperty<IBrush> FallbackBrushProperty = AvaloniaProperty.Register<TinyFfrSceneView, IBrush>(
 		nameof(FallbackBrush),
 		new SolidColorBrush(new Color(255, 30, 22, 22))
@@ -40,6 +45,10 @@ public class TinyFfrSceneView : Control {
 	public Renderer? Renderer {
 		get => GetValue(RendererProperty);
 		set => SetValue(RendererProperty, value);
+	}
+	public RendererCompositor? Compositor {
+		get => GetValue(CompositorProperty);
+		set => SetValue(CompositorProperty, value);
 	}
 	public IBrush FallbackBrush {
 		get => GetValue(FallbackBrushProperty);
@@ -115,6 +124,12 @@ public class TinyFfrSceneView : Control {
 			}
 			IdempotentlyUpdateRendererStateAccordingToControlState();
 		}
+		else if (change.Property == CompositorProperty) {
+			if (change.NewValue == null && change.OldValue is RendererCompositor oldCompositor) {
+				BindableRendererCompositorImplProvider.StopHandlingFrames(oldCompositor);
+			}
+			IdempotentlyUpdateRendererStateAccordingToControlState();
+		}
 	}
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
@@ -125,19 +140,26 @@ public class TinyFfrSceneView : Control {
 			&& (targetSize.Y is >= MinTextureDimensionXY and <= MaxTextureDimensionXY);
 
 		var rendererLocal = Renderer;
-		var shouldDisableFrameCapture = rendererLocal == null || !IsVisible || this.GetVisualRoot() == null || !targetSizeIsPermitted;
+		var compositorLocal = Compositor;
+		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !IsVisible || this.GetVisualRoot() == null || !targetSizeIsPermitted;
 		if (shouldDisableFrameCapture) {
 			_bitmap?.Dispose();
 			_bitmap = null;
 			if (rendererLocal != null) {
 				BindableRendererImplProvider.StopHandlingFrames(rendererLocal.Value);
 			}
+			if (compositorLocal != null) {
+				BindableRendererCompositorImplProvider.StopHandlingFrames(compositorLocal.Value);
+			}
 			InvalidateVisual();
 			return;
 		}
-		
-#pragma warning disable CS8629 // Nullable value type may be null: Nope, it's checked above
-		BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
-#pragma warning restore CS8629 
+
+		if (rendererLocal != null && compositorLocal != null) {
+			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
+		}
+
+		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
+		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, WriteFrame);
 	}
 }

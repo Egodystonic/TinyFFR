@@ -15,8 +15,22 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	public static readonly Angle RedHueAngle = 0f;
 	public static readonly Angle GreenHueAngle = 120f;
 	public static readonly Angle BlueHueAngle = 240f;
-	public static readonly ColorVect White = new(1f, 1f, 1f, 1f);
-	public static readonly ColorVect Black = new(0f, 0f, 0f, 1f);
+	public static readonly ColorVect WhiteOpaque = new(1f, 1f, 1f, 1f);
+	public static readonly ColorVect BlackOpaque = new(0f, 0f, 0f, 1f);
+	public static readonly ColorVect RedOpaque = new(1f, 0f, 0f, 1f);
+	public static readonly ColorVect GreenOpaque = new(0f, 1f, 0f, 1f);
+	public static readonly ColorVect BlueOpaque = new(0f, 0f, 1f, 1f);
+	public static readonly ColorVect YellowOpaque = new(1f, 1f, 0f, 1f);
+	public static readonly ColorVect CyanOpaque = new(0f, 1f, 1f, 1f);
+	public static readonly ColorVect PinkOpaque = new(1f, 0f, 1f, 1f);
+	public static readonly ColorVect WhiteTransparent = new(1f, 1f, 1f, 0f);
+	public static readonly ColorVect BlackTransparent = new(0f, 0f, 0f, 0f);
+	public static readonly ColorVect RedTransparent = new(1f, 0f, 0f, 0f);
+	public static readonly ColorVect GreenTransparent = new(0f, 1f, 0f, 0f);
+	public static readonly ColorVect BlueTransparent = new(0f, 0f, 1f, 0f);
+	public static readonly ColorVect YellowTransparent = new(1f, 1f, 0f, 0f);
+	public static readonly ColorVect CyanTransparent = new(0f, 1f, 1f, 0f);
+	public static readonly ColorVect PinkTransparent = new(1f, 0f, 1f, 0f);
 
 	internal readonly Vector4 AsVector4;
 
@@ -91,7 +105,9 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ColorVect(float red, float green, float blue) : this(red, green, blue, 1f) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ColorVect(float red, float green, float blue, float alpha) : this(new Vector4(red, green, blue, alpha)) { }
+	public ColorVect(float red, float green, float blue, float alpha, bool multiplyAlpha = false) : this(new Vector4(red, green, blue, alpha)) {
+		if (multiplyAlpha) this = WithPremultipliedAlpha();
+	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal ColorVect(Vector4 v) { AsVector4 = v; }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

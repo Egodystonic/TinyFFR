@@ -36,8 +36,8 @@ class LocalShaderPackageConstantsTest {
 	public void Execute() {
 		var shaderSet = new HashSet<string>();
 
-		var simpleOptions = GetAllShaderOptions<
-			SimpleMaterialShaderConstants.AlphaModeVariant
+		var lightingIgnoringOptions = GetAllShaderOptions<
+			LightingIgnoringMaterialShaderConstants.AlphaModeVariant
 		>();
 
 		var standardOptions = GetAllShaderOptions<
@@ -53,8 +53,8 @@ class LocalShaderPackageConstantsTest {
 			TransmissiveMaterialShaderConstants.RefractionTypeVariant
 		>();
 
-		foreach (var option in simpleOptions) {
-			var shader = SimpleMaterialShader.GetShaderResourceName(option.EnableEffects, option.Variant1);
+		foreach (var option in lightingIgnoringOptions) {
+			var shader = LightingIgnoringMaterialShader.GetShaderResourceName(option.EnableEffects, option.Variant1);
 			Assert.IsFalse(shaderSet.Contains(shader));
 			shaderSet.Add(shader);
 		}

@@ -16,7 +16,7 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 
 	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
 
-	public RendererCreationConfig BaseConfig { get; init; }
+	public RendererCreationConfig BaseConfig { get; init; } = new();
 
 	public bool AutoUpdateCameraAspectRatio {
 		get => BaseConfig.AutoUpdateCameraAspectRatio;

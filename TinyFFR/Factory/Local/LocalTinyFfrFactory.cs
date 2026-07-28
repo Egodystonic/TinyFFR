@@ -5,7 +5,9 @@ using System;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -78,6 +80,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			[typeof(RenderOutputBuffer)] = RendererBuilder,
 			[typeof(RendererCompositor)] = RendererBuilder,
 			[typeof(BackdropTexture)] = AssetLoader,
+			[typeof(Font)] = AssetLoader,
 			[typeof(MeshAnimation)] = MeshBuilder,
 			[typeof(MeshNode)] = MeshBuilder,
 			[typeof(ResourceGroup)] = _resourceGroupProvider,
@@ -116,7 +119,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			_dependencyTracker,
 			_stringPool,
 			_heapPool,
-			resourceGroupProviderRef
+			resourceGroupProviderRef,
+			factoryConfig.EnhanceSecurity
 		);
 		_resourceGroupProvider = new(globals);
 		resourceGroupProviderRef.Resolve(_resourceGroupProvider);
@@ -127,8 +131,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig);
 		_cameraBuilder = new LocalCameraBuilder(globals);
 		_lightBuilder = new LocalLightBuilder(globals);
-		_objectBuilder = new LocalObjectBuilder(globals);
-		_sceneBuilder = new LocalSceneBuilder(globals, _assetLoader);
+		_objectBuilder = new LocalObjectBuilder(globals, (LocalMaterialBuilder) _assetLoader.MaterialBuilder);
+		_sceneBuilder = new LocalSceneBuilder(globals, _assetLoader, _objectBuilder);
 		_rendererBuilder = new LocalRendererBuilder(globals, rendererBuilderConfig);
 		_resourceAllocator = new LocalResourceAllocator(globals);
 		

@@ -42,6 +42,7 @@ partial struct Transform :
 	static Transform IMultiplyOperators<Transform, Rotation, Transform>.operator *(Transform left, Rotation right) => left * FromRotationOnly(right);
 	static Transform IRotatable<Transform>.operator *(Rotation left, Transform right) => right * FromRotationOnly(left);
 	Transform IRotatable<Transform>.RotatedBy(Rotation rot) => this * FromRotationOnly(rot);
+	Transform IRotatable<Transform>.RotatedBy(Quaternion rotQuat) => this * FromRotationOnly(rotQuat);
 
 	static Transform IAdditionOperators<Transform, Vect, Transform>.operator +(Transform left, Vect right) => left * FromTranslationOnly(right);
 	static Transform ISubtractionOperators<Transform, Vect, Transform>.operator -(Transform left, Vect right) => left * FromTranslationOnly(-right);

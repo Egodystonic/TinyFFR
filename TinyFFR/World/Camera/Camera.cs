@@ -139,6 +139,13 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 		set => ViewDirection = Direction.Forward * value;
 	}
 
+	// A camera's orientation is stored as a view direction rather than a quaternion, so unlike the model instance types
+	// this can only convert rather than hand back stored state. The setter and RotateBy stay conversion-free though.
+	Quaternion IOrientedSceneObject.RotationQuaternion {
+		get => Rotation.FromStartAndEndDirection(Direction.Forward, ViewDirection).ToQuaternion();
+		set => ViewDirection = Direction.Forward.RotatedBy(value);
+	}
+
 	internal Camera(ResourceHandle<Camera> handle, ICameraImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
@@ -196,6 +203,8 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	public void MoveBy(Vect translation) => Implementation.Translate(_handle, translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation) => Implementation.Rotate(_handle, rotation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Quaternion rotationQuaternion) => Implementation.Rotate(_handle, rotationQuaternion);
 
 	public void LookAt(Location target) => ViewDirection = Position.DirectionTo(target);
 	public void LookAt(Location target, Direction upDirection) => SetViewAndUpDirection(Position.DirectionTo(target), upDirection);

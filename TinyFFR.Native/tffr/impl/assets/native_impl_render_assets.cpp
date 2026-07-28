@@ -64,6 +64,24 @@ StartExportedFunc(allocate_vertex_buffer_skeletal, BufferIdentity bufferIdentity
 	EndExportedFunc
 }
 
+void native_impl_render_assets::allocate_vertex_buffer_primitive(BufferIdentity bufferIdentity, MeshVertexPrimitive* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
+	ThrowIfNull(vertices, "Vertices pointer was null.");
+	ThrowIfNegative(vertexCount, "Vertex count was negative.");
+	ThrowIfNull(outBuffer, "Out buffer pointer was null.");
+	*outBuffer = VertexBuffer::Builder()
+		.vertexCount(vertexCount)
+		.bufferCount(1)
+		.attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0, sizeof(MeshVertexPrimitive))
+		.attribute(VertexAttribute::COLOR, 0, VertexBuffer::AttributeType::FLOAT4, 12, sizeof(MeshVertexPrimitive))
+		.attribute(VertexAttribute::TANGENTS, 0, VertexBuffer::AttributeType::FLOAT4, 28, sizeof(MeshVertexPrimitive))
+		.build(*filament_engine);
+	(*outBuffer)->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertexPrimitive), &handle_filament_buffer_copy_callback, bufferIdentity });
+}
+StartExportedFunc(allocate_vertex_buffer_primitive, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertexPrimitive* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
+	native_impl_render_assets::allocate_vertex_buffer_primitive(bufferIdentity, vertices, vertexCount, outBuffer);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
 	ThrowIfNull(indices, "Indices pointer was null.");
 	ThrowIfNegative(indexCount, "Index count was negative.");
@@ -180,6 +198,50 @@ StartExportedFunc(load_texture_rgba_32, BufferIdentity bufferIdentity, void* dat
 	EndExportedFunc
 }
 
+void native_impl_render_assets::update_texture_rgb_24(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	ThrowIfNull(texture, "Texture was null.");
+	ThrowIfNull(dataPtr, "Data pointer was null.");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+
+	Texture::PixelBufferDescriptor imageBuffer {
+		dataPtr,
+		static_cast<size_t>(dataLen),
+		backend::PixelDataFormat::RGB,
+		backend::PixelDataType::UBYTE,
+		1, 0, 0, 0,
+		&handle_filament_buffer_copy_callback,
+		bufferIdentity
+	};
+
+	texture->setImage(*filament_engine, 0, xOffset, yOffset, width, height, std::move(imageBuffer));
+}
+StartExportedFunc(update_texture_rgb_24, TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	native_impl_render_assets::update_texture_rgb_24(texture, bufferIdentity, dataPtr, dataLen, xOffset, yOffset, width, height);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::update_texture_rgba_32(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	ThrowIfNull(texture, "Texture was null.");
+	ThrowIfNull(dataPtr, "Data pointer was null.");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+
+	Texture::PixelBufferDescriptor imageBuffer {
+		dataPtr,
+		static_cast<size_t>(dataLen),
+		backend::PixelDataFormat::RGBA,
+		backend::PixelDataType::UBYTE,
+		1, 0, 0, 0,
+		&handle_filament_buffer_copy_callback,
+		bufferIdentity
+	};
+
+	texture->setImage(*filament_engine, 0, xOffset, yOffset, width, height, std::move(imageBuffer));
+}
+StartExportedFunc(update_texture_rgba_32, TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	native_impl_render_assets::update_texture_rgba_32(texture, bufferIdentity, dataPtr, dataLen, xOffset, yOffset, width, height);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::dispose_texture(TextureHandle texture) {
 	ThrowIfNull(texture, "Texture was null.");
 	filament_engine->destroy(texture);
@@ -223,22 +285,34 @@ StartExportedFunc(duplicate_material, MaterialHandle targetMaterial, MaterialHan
 	EndExportedFunc
 }
 
-void native_impl_render_assets::set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture) {
+void native_impl_render_assets::set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture, interop_bool disableMinMapFiltering, interop_bool disableBilinearFiltering, interop_bool disableTextureRepeat, float_t anisotropyLevel) {
 	ThrowIfNull(material, "Material was null.");
 	ThrowIfNull(parameterName, "Parameter name was null.");
 	ThrowIfNegative(parameterNameLength, "Parameter name length was negative.");
 	ThrowIfNull(texture, "Texture was null.");
 
+	auto minFilter = backend::SamplerMinFilter::LINEAR_MIPMAP_LINEAR;
+	auto magFilter = backend::SamplerMagFilter::LINEAR;
+	auto wrapMode = disableTextureRepeat ? backend::SamplerWrapMode::CLAMP_TO_EDGE : backend::SamplerWrapMode::REPEAT;
+	
+	if (disableBilinearFiltering) {
+		magFilter = backend::SamplerMagFilter::NEAREST;
+		minFilter = disableMinMapFiltering ? backend::SamplerMinFilter::NEAREST : backend::SamplerMinFilter::NEAREST_MIPMAP_LINEAR;
+	}
+	else if (disableMinMapFiltering) {
+		minFilter = backend::SamplerMinFilter::LINEAR_MIPMAP_NEAREST;
+	}
+		
 	TextureSampler sampler {
-		backend::SamplerMinFilter::LINEAR_MIPMAP_LINEAR,
-		backend::SamplerMagFilter::LINEAR,
-		backend::SamplerWrapMode::REPEAT
+		minFilter,
+		magFilter,
+		wrapMode
 	};
-	sampler.setAnisotropy(4.0f);
+	sampler.setAnisotropy(anisotropyLevel);
 	material->setParameter(parameterName, static_cast<size_t>(parameterNameLength), texture, sampler);
 }
-StartExportedFunc(set_material_parameter_texture, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture) {
-	native_impl_render_assets::set_material_parameter_texture(material, parameterName, parameterNameLength, texture);
+StartExportedFunc(set_material_parameter_texture, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture, interop_bool disableMinMapFiltering, interop_bool disableBilinearFiltering, interop_bool disableTextureRepeat, float_t anisotropyLevel) {
+	native_impl_render_assets::set_material_parameter_texture(material, parameterName, parameterNameLength, texture, disableMinMapFiltering, disableBilinearFiltering, disableTextureRepeat, anisotropyLevel);
 	EndExportedFunc
 }
 void native_impl_render_assets::set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val) {
@@ -250,6 +324,17 @@ void native_impl_render_assets::set_material_parameter_real(MaterialHandle mater
 }
 StartExportedFunc(set_material_parameter_real, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val) {
 	native_impl_render_assets::set_material_parameter_real(material, parameterName, parameterNameLength, val);
+	EndExportedFunc
+}
+void native_impl_render_assets::set_material_parameter_vect(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float4 val) {
+	ThrowIfNull(material, "Material was null.");
+	ThrowIfNull(parameterName, "Parameter name was null.");
+	ThrowIfNegative(parameterNameLength, "Parameter name length was negative.");
+
+	material->setParameter(parameterName, static_cast<size_t>(parameterNameLength), val);
+}
+StartExportedFunc(set_material_parameter_vect, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float4 val) {
+	native_impl_render_assets::set_material_parameter_vect(material, parameterName, parameterNameLength, val);
 	EndExportedFunc
 }
 

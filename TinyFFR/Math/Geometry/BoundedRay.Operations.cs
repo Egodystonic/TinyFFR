@@ -109,6 +109,18 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		return new(newStartPoint, newVect);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay RotatedAroundStartBy(Quaternion rotationQuaternion) => new(_startPoint, _vect.RotatedBy(rotationQuaternion));
+	public BoundedRay RotatedAroundEndBy(Quaternion rotationQuaternion) {
+		var endPoint = _startPoint + _vect;
+		return new(endPoint + _vect.Reversed.RotatedBy(rotationQuaternion), endPoint);
+	}
+	public BoundedRay RotatedAroundMiddleBy(Quaternion rotationQuaternion) {
+		var newVect = _vect.RotatedBy(rotationQuaternion);
+		var newStartPoint = _startPoint + ((_vect * 0.5f) - (newVect * 0.5f));
+		return new(newStartPoint, newVect);
+	}
+
 	public BoundedRay RotatedAroundOriginBy(Rotation rot) {
 		return new BoundedRay(
 			StartPoint.AsVect().RotatedBy(rot).AsLocation(),
@@ -119,6 +131,18 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	public BoundedRay RotatedBy(Rotation rotation, float signedPivotDistance) => RotatedBy(rotation, UnboundedLocationAtDistance(signedPivotDistance));
 	public BoundedRay RotatedBy(Rotation rotation, Location pivot) {
 		return new(pivot + (pivot >> StartPoint) * rotation, pivot + (pivot >> EndPoint) * rotation);
+	}
+
+	public BoundedRay RotatedAroundOriginBy(Quaternion rotQuat) {
+		return new BoundedRay(
+			StartPoint.AsVect().RotatedBy(rotQuat).AsLocation(),
+			EndPoint.AsVect().RotatedBy(rotQuat).AsLocation()
+		);
+	}
+	BoundedRay IRotatable<BoundedRay>.RotatedBy(Quaternion rotQuat) => RotatedAroundStartBy(rotQuat); // We choose AroundStart as the "default" rotation because it keeps thing consistent with Ray
+	public BoundedRay RotatedBy(Quaternion rotationQuaternion, float signedPivotDistance) => RotatedBy(rotationQuaternion, UnboundedLocationAtDistance(signedPivotDistance));
+	public BoundedRay RotatedBy(Quaternion rotationQuaternion, Location pivot) {
+		return new(pivot + (pivot >> StartPoint).RotatedBy(rotationQuaternion), pivot + (pivot >> EndPoint).RotatedBy(rotationQuaternion));
 	}
 	#endregion
 

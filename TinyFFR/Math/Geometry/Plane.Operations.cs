@@ -45,6 +45,8 @@ partial struct Plane :
 	static Plane IRotatable<Plane>.operator *(Rotation left, Plane right) => right.RotatedAroundOriginBy(left);
 	Plane IRotatable<Plane>.RotatedBy(Rotation rot) => RotatedAroundOriginBy(rot);
 	public Plane RotatedAroundOriginBy(Rotation rot) => new(Normal * rot, PointClosestToOrigin.AsVect().RotatedBy(rot).AsLocation());
+	Plane IRotatable<Plane>.RotatedBy(Quaternion rotQuat) => RotatedAroundOriginBy(rotQuat);
+	public Plane RotatedAroundOriginBy(Quaternion rotQuat) => new(Normal.RotatedBy(rotQuat), PointClosestToOrigin.AsVect().RotatedBy(rotQuat).AsLocation());
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator *(Plane plane, (Location Pivot, Rotation Rotation) rotTuple) => plane.RotatedBy(rotTuple.Rotation, rotTuple.Pivot);
@@ -55,6 +57,7 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedBy(rotTuple.Rotation, rotTuple.Pivot);
 	public Plane RotatedBy(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
+	public Plane RotatedBy(Quaternion rotQuat, Location pivotPoint) => new(Normal.RotatedBy(rotQuat), PointClosestTo(pivotPoint).RotatedBy(rotQuat, pivotPoint));
 	#endregion
 
 	#region Angle Measurement
