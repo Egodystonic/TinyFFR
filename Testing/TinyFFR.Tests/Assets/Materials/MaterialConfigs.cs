@@ -86,6 +86,8 @@ class MaterialConfigsTest {
 		AssertPropertiesAccountedFor<LightingIgnoringMaterialCreationConfig>()
 			.Including(nameof(LightingIgnoringMaterialCreationConfig.ColorMap))
 			.Including(nameof(LightingIgnoringMaterialCreationConfig.Name))
+			.Including(nameof(LightingIgnoringMaterialCreationConfig.BaseConfig))
+			.Including(nameof(LightingIgnoringMaterialCreationConfig.EnablePerInstanceEffects))
 			.End();
 	}
 
@@ -129,6 +131,7 @@ class MaterialConfigsTest {
 			.Including(nameof(ColorKeyedMaterialCreationConfig.KeyMap))
 			.Including(nameof(ColorKeyedMaterialCreationConfig.BlendOutputAlphaWithScene))
 			.Including(nameof(ColorKeyedMaterialCreationConfig.Name))
+			.Including(nameof(ColorKeyedMaterialCreationConfig.BaseConfig))
 			.End();
 	}
 
@@ -213,6 +216,8 @@ class MaterialConfigsTest {
 			.Including(nameof(StandardMaterialCreationConfig.EmissiveMap))
 			.Including(nameof(StandardMaterialCreationConfig.ClearCoatMap))
 			.Including(nameof(StandardMaterialCreationConfig.AlphaMode))
+			.Including(nameof(StandardMaterialCreationConfig.BaseConfig))
+			.Including(nameof(StandardMaterialCreationConfig.EnablePerInstanceEffects))
 			.Including(nameof(StandardMaterialCreationConfig.Name))
 			.End();
 	}
@@ -306,6 +311,8 @@ class MaterialConfigsTest {
 			.Including(nameof(TransmissiveMaterialCreationConfig.RefractionThickness))
 			.Including(nameof(TransmissiveMaterialCreationConfig.Quality))
 			.Including(nameof(TransmissiveMaterialCreationConfig.AlphaMode))
+			.Including(nameof(TransmissiveMaterialCreationConfig.BaseConfig))
+			.Including(nameof(TransmissiveMaterialCreationConfig.EnablePerInstanceEffects))
 			.Including(nameof(TransmissiveMaterialCreationConfig.Name))
 			.End();
 	}
