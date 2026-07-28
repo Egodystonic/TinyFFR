@@ -3,6 +3,7 @@
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly record struct PrimitivePaintbrush(ColorVect PrimaryColor, ColorVect? SecondaryColor) {
-	public PrimitivePaintbrush(ColorVect primaryColor) : this(primaryColor, null) { }
+public readonly record struct PrimitivePaintbrush(ColorVect PrimaryColor, ColorVect? SecondaryColor, ColorVect? TertiaryColor) {
+	public PrimitivePaintbrush(ColorVect primaryColor) : this(primaryColor, null, null) { }
+	public PrimitivePaintbrush(ColorVect primaryColor, ColorVect secondaryColor) : this(primaryColor, secondaryColor, null) { }
 }

@@ -23,10 +23,10 @@ public interface IMaterialBuilder {
 	}
 	Material CreateLightingIgnoringMaterial(in LightingIgnoringMaterialCreationConfig config);
 
-	Material CreateColorKeyedMaterial(Texture keyMap, bool outputIncludesAlphaChannel = false, ReadOnlySpan<char> name = default) {
+	Material CreateColorKeyedMaterial(Texture keyMap, bool blendOutputAlphaWithScene = false, ReadOnlySpan<char> name = default) {
 		return CreateColorKeyedMaterial(new ColorKeyedMaterialCreationConfig {
 			KeyMap = keyMap,
-			OutputIncludesAlphaChannel = outputIncludesAlphaChannel,
+			BlendOutputAlphaWithScene = blendOutputAlphaWithScene,
 			Name = name
 		});
 	}

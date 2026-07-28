@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR;
 
 public enum Magnitude {
-	Default,
+	Medium,
 	VerySmall,
 	Small,
 	Large,

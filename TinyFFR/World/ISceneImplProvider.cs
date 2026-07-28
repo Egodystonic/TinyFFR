@@ -39,13 +39,15 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	ScenePrimitive CreatePrimitive(ResourceHandle<Scene> handle);
 	void SetPrimitivePaintbrush(ResourceHandle<Scene> handle, nuint primitiveHandle, in PrimitivePaintbrush paintbrush);
 	void DisposePrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle);
-	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Location point, float size, bool constantScreenSize);
-	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Location position, ReadOnlySpan<char> str, float size, bool constantScreenSize);
-	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, PositionedRotatedCuboid cuboid, bool wireframe);
-	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, PositionedSphere sphere, bool wireframe);
-	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, BoundedRay ray, float size, bool constantScreenSize);
-	void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Ray ray, float size, bool constantScreenSize);
-	// void SetPrimitiveGeometry(ResourceHandle<Scene> handle, nuint primitiveHandle, Line line, float size, bool constantScreenSize);
+	void SetPrimitiveGeometryPoint(ResourceHandle<Scene> handle, nuint primitiveHandle, Location point, float size, bool constantScreenSize);
+	void SetPrimitiveGeometryString(ResourceHandle<Scene> handle, nuint primitiveHandle, Location position, ReadOnlySpan<char> str, float size, bool constantScreenSize);
+	void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, PositionedRotatedCuboid cuboid, bool wireframe);
+	void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, PositionedSphere sphere, bool wireframe);
+	void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, BoundedRay ray, float size, bool includeEndpoints, bool constantScreenSize);
+	void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, Ray ray, float size, bool includeStartPoint, bool constantScreenSize);
+	void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, Line line, float size, bool constantScreenSize);
+	void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, Plane plane);
+	void SetPrimitiveGeometryGrid(ResourceHandle<Scene> handle, nuint primitiveHandle, Location gridCentre, Direction gridNormal, Direction gridX, float gridSize, float majorGridLineSpacing, float minorGridLineSpacing);
 	
 	IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle);
 	IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle);

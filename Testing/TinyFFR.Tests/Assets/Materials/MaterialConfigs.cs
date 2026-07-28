@@ -95,18 +95,18 @@ class MaterialConfigsTest {
 		keyTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
 		var testConfigA = new ColorKeyedMaterialCreationConfig {
 			Name = "Aa Aa",
-			OutputIncludesAlphaChannel = true,
+			BlendOutputAlphaWithScene = true,
 			KeyMap = new Texture(111, keyTexImplSub),
 		};
 		var testConfigB = new ColorKeyedMaterialCreationConfig {
 			Name = "BBBbbb",
-			OutputIncludesAlphaChannel = false,
+			BlendOutputAlphaWithScene = false,
 			KeyMap = new Texture(1111, keyTexImplSub),
 		};
 
 		void CompareConfigs(ColorKeyedMaterialCreationConfig expected, ColorKeyedMaterialCreationConfig actual) {
 			Assert.AreEqual(expected.KeyMap, actual.KeyMap);
-			Assert.AreEqual(expected.OutputIncludesAlphaChannel, actual.OutputIncludesAlphaChannel);
+			Assert.AreEqual(expected.BlendOutputAlphaWithScene, actual.BlendOutputAlphaWithScene);
 			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
 		}
 
@@ -127,7 +127,7 @@ class MaterialConfigsTest {
 
 		AssertPropertiesAccountedFor<ColorKeyedMaterialCreationConfig>()
 			.Including(nameof(ColorKeyedMaterialCreationConfig.KeyMap))
-			.Including(nameof(ColorKeyedMaterialCreationConfig.OutputIncludesAlphaChannel))
+			.Including(nameof(ColorKeyedMaterialCreationConfig.BlendOutputAlphaWithScene))
 			.Including(nameof(ColorKeyedMaterialCreationConfig.Name))
 			.End();
 	}

@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public readonly ref struct ColorKeyedMaterialCreationConfig : IConfigStruct<ColorKeyedMaterialCreationConfig> {
 	public required Texture KeyMap { get; init; }
-	public bool OutputIncludesAlphaChannel { get; init; } = false;
+	public bool BlendOutputAlphaWithScene { get; init; } = false;
 
 	public MaterialCreationConfig BaseConfig { get; private init; } = new();
 	public ReadOnlySpan<char> Name {
@@ -31,13 +31,13 @@ public readonly ref struct ColorKeyedMaterialCreationConfig : IConfigStruct<Colo
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ColorKeyedMaterialCreationConfig src) {
 		SerializationWriteAndAllocateResource(ref dest, src.KeyMap);
-		SerializationWriteBool(ref dest, src.OutputIncludesAlphaChannel);
+		SerializationWriteBool(ref dest, src.BlendOutputAlphaWithScene);
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
 	}
 	public static ColorKeyedMaterialCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new ColorKeyedMaterialCreationConfig {
 			KeyMap = SerializationReadResource<Texture>(ref src),
-			OutputIncludesAlphaChannel = SerializationReadBool(ref src),
+			BlendOutputAlphaWithScene = SerializationReadBool(ref src),
 			BaseConfig = SerializationReadSubConfig<MaterialCreationConfig>(ref src)
 		};
 	}

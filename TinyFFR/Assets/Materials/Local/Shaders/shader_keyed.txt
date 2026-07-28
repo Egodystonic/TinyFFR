@@ -30,7 +30,7 @@
 	postLightingBlending : opaque,
 #option AlphaMode
 #variant AlphaOff
-	blending : opaque
+	blending : masked
 #variant AlphaOn
 	blending : fade
 #endoption

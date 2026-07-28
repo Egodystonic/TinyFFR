@@ -139,7 +139,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var shaderConstants = ColorKeyedMaterialShader;
 
-		var alphaModeVariant = config.OutputIncludesAlphaChannel
+		var alphaModeVariant = config.BlendOutputAlphaWithScene
 			? ColorKeyedMaterialShaderConstants.AlphaModeVariant.AlphaOn
 			: ColorKeyedMaterialShaderConstants.AlphaModeVariant.AlphaOff;
 
