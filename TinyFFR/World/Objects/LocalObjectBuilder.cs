@@ -12,14 +12,14 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
-using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants.PrimitiveMaterialShaderConstants;
+using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants.DefaultMaterialShaderConstants;
 
 namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
-	readonly record struct PrivateMaterialData(Material Material, bool IsPrimitive, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
+	readonly record struct PrivateMaterialData(Material Material, bool IsDefault, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
 	readonly record struct TextInstanceData(FontPen Pen, FontString String, TextMeshLayout Layout);
 	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
@@ -47,7 +47,9 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		var meshBufferData = mesh.BufferData;
 		var aabb = mesh.BoundingBox;
 		
-		var materialActual = material ?? _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
+		var materialArg = material ?? _materialBuilder.DefaultMaterial;
+		var isDefault = materialArg == _materialBuilder.DefaultMaterial;
+		var materialActual = isDefault ? _materialBuilder.AllocateDefaultMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor) : materialArg;
 
 		AllocateModelInstance(
 			config.InitialTransform.ToMatrix(),
@@ -67,7 +69,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
-		if (material != null) _globals.DependencyTracker.RegisterDependency(result, materialActual);
+		if (!isDefault) _globals.DependencyTracker.RegisterDependency(result, materialActual);
 		else _privateMaterialInstances[handle] = new(materialActual, true, DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
 
 		if (meshBufferData.BoneCount > 0) mesh.ApplySkeletalBindPose(result);
@@ -228,13 +230,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 		DisposeMutationDataIfPresent(handle);
 
-		if (_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) && privateMaterialData is { IsPrimitive: true, CurrentShadingMode: ShadingModeVariant.Wireframe }) {
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) && privateMaterialData is { IsDefault: true, CurrentShadingMode: ShadingModeVariant.Wireframe }) {
 			if (newMesh.WireframeBufferData is { } newWireframeData) newMeshBufferData = newWireframeData;
 			else {
-				var replacementPrimitiveMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, privateMaterialData.BaseColor);
-				SetModelInstanceMaterial(handle, replacementPrimitiveMaterial.GetHandleWithoutDisposeCheck()).ThrowIfFailure();
+				var replacementDefaultMaterial = _materialBuilder.AllocateDefaultMaterialInstance(DefaultPrimitiveShadingMode, privateMaterialData.BaseColor);
+				SetModelInstanceMaterial(handle, replacementDefaultMaterial.GetHandleWithoutDisposeCheck()).ThrowIfFailure();
 				privateMaterialData.Material.Dispose();
-				_privateMaterialInstances[handle] = privateMaterialData with { CurrentShadingMode = DefaultPrimitiveShadingMode, Material = replacementPrimitiveMaterial };
+				_privateMaterialInstances[handle] = privateMaterialData with { CurrentShadingMode = DefaultPrimitiveShadingMode, Material = replacementDefaultMaterial };
 			}
 		}
 		
@@ -347,23 +349,26 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		).ThrowIfFailure();
 	}
 
-	public Material? GetMaterial(ResourceHandle<ModelInstance> handle) {
+	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var targets = _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, IMaterialImplProvider>(HandleToInstance(handle));
 		if (targets.Count > 0) return targets[0];
-		else return null;
+		else return _materialBuilder.DefaultMaterial;
 	}
-	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material? newMaterial) {
+	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var oldMat = GetMaterial(handle);
-		if (oldMat != null) {
-			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat.Value);
-		}
-		else if (newMaterial == null) return; // Return early if old mat is null and we're setting null again (no-op)
+		var oldIsDefault = oldMat == _materialBuilder.DefaultMaterial;
+		var newIsDefault = newMaterial == _materialBuilder.DefaultMaterial;
 
-		if (newMaterial == null) {
-			var primitiveMat = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
+		if (!oldIsDefault) {
+			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat);
+		}
+		else if (newIsDefault) return; // Return early if old mat is the default and we're setting the default again (no-op)
+
+		if (newIsDefault) {
+			var primitiveMat = _materialBuilder.AllocateDefaultMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
 			SetModelInstanceMaterial(
 				handle,
 				primitiveMat.Handle
@@ -375,11 +380,11 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		else {
 			SetModelInstanceMaterial(
 				handle,
-				newMaterial.Value.Handle
+				newMaterial.Handle
 			).ThrowIfFailure();
-			SetShadowOptionsAccordingToMaterial(handle, newMaterial.Value);
+			SetShadowOptionsAccordingToMaterial(handle, newMaterial);
 			DisposePrivateMaterialIfPresent(handle);
-			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial.Value);
+			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial);
 		}
 	}
 
@@ -397,12 +402,12 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_ => targetMode	
 		};
 	}
-	public void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor) {
+	public void SetDefaultMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
+		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsDefault) return;
 		var newShadingMode = DetermineCorrectShadingModeVariant(privateMaterialData.CurrentShadingMode, newBaseColor);
 		if (newShadingMode != privateMaterialData.CurrentShadingMode) {
-			var replacementMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(newShadingMode, newBaseColor);
+			var replacementMaterial = _materialBuilder.AllocateDefaultMaterialInstance(newShadingMode, newBaseColor);
 			SetModelInstanceMaterial(
 				handle,
 				replacementMaterial.GetHandleWithoutDisposeCheck()
@@ -411,13 +416,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode, BaseColor = newBaseColor };
 		}
 		else {
-			_materialBuilder.SetPrimitiveMaterialBaseColor(privateMaterialData.Material, newBaseColor);
+			_materialBuilder.SetDefaultMaterialBaseColor(privateMaterialData.Material, newBaseColor);
 			_privateMaterialInstances[handle] = privateMaterialData with { BaseColor = newBaseColor };
 		}
 	}
-	public void SetNullMaterialShadingStyle(ResourceHandle<ModelInstance> handle, NullMaterialShadingStyle newStyle) {
+	public void SetDefaultMaterialShadingStyle(ResourceHandle<ModelInstance> handle, DefaultMaterialShadingStyle newStyle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
+		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsDefault) return;
 		
 		var newShadingMode = DetermineCorrectShadingModeVariant((ShadingModeVariant) newStyle, privateMaterialData.BaseColor);
 		var oldShadingMode = privateMaterialData.CurrentShadingMode;
@@ -446,7 +451,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			).ThrowIfFailure();
 		}
 
-		var replacementMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(newShadingMode, privateMaterialData.BaseColor);
+		var replacementMaterial = _materialBuilder.AllocateDefaultMaterialInstance(newShadingMode, privateMaterialData.BaseColor);
 		SetModelInstanceMaterial(
 			handle,
 			replacementMaterial.GetHandleWithoutDisposeCheck()
@@ -475,25 +480,25 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 
 	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
-		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsPrimitive) {
-			return privateMatData.Material;
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData)) {
+			return privateMatData.IsDefault ? null : privateMatData.Material;
 		}
 
 		var curMat = GetMaterial(handle);
-		if (curMat?.SupportsPerInstanceEffects != true) return null;
+		if (!curMat.SupportsPerInstanceEffects) return null;
 
-		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat.Value);
+		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat);
 	}
 
 	Material? GetOrCreateColorKeyedMaterialCopy(ResourceHandle<ModelInstance> handle) {
-		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsPrimitive) {
-			return privateMatData.Material;
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData)) {
+			return privateMatData.IsDefault ? null : privateMatData.Material;
 		}
 
 		var curMat = GetMaterial(handle);
-		if (curMat?.SupportsColorKeying != true) return null;
+		if (!curMat.SupportsColorKeying) return null;
 
-		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat.Value);
+		return DuplicateAndTrackPrivateMaterialCopy(handle, curMat);
 	}
 
 	Material DuplicateAndTrackPrivateMaterialCopy(ResourceHandle<ModelInstance> handle, Material curMat) {

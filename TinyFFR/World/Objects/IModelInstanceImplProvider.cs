@@ -28,8 +28,8 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	Vect GetScaling(ResourceHandle<ModelInstance> handle);
 	void SetScaling(ResourceHandle<ModelInstance> handle, Vect newScaling);
 
-	Material? GetMaterial(ResourceHandle<ModelInstance> handle);
-	void SetMaterial(ResourceHandle<ModelInstance> handle, Material? newMaterial);
+	Material GetMaterial(ResourceHandle<ModelInstance> handle);
+	void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial);
 
 	Mesh GetMesh(ResourceHandle<ModelInstance> handle);
 	void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh);
@@ -48,8 +48,8 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
 	
-	void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor);
-	void SetNullMaterialShadingStyle(ResourceHandle<ModelInstance> handle, NullMaterialShadingStyle newStyle);
+	void SetDefaultMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor);
+	void SetDefaultMaterialShadingStyle(ResourceHandle<ModelInstance> handle, DefaultMaterialShadingStyle newStyle);
 	void SetKeyedMaterialColor(ResourceHandle<ModelInstance> handle, ColorChannel key, ColorVect color);
 
 	void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform);

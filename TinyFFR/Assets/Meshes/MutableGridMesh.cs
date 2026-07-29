@@ -151,14 +151,14 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 	
-	public Material? Material {
+	public Material Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Material;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingModelInstance.SetMaterial(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaterial(Material? material) => Material = material;
+	public void SetMaterial(Material material) => Material = material;
 
 	public MaterialEffectController? MaterialEffects {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -319,9 +319,9 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	public void AdjustScaleBy(Vect vect) => UnderlyingModelInstance.AdjustScaleBy(vect);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetNullMaterialBaseColor(ColorVect baseColor) => UnderlyingModelInstance.SetNullMaterialBaseColor(baseColor);
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => UnderlyingModelInstance.SetDefaultMaterialBaseColor(baseColor);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => UnderlyingModelInstance.SetNullMaterialShadingStyle(style);
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => UnderlyingModelInstance.SetDefaultMaterialShadingStyle(style);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() {

@@ -164,18 +164,18 @@ class LocalModelLoadingTest {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.W)) {
 				if (modelInstances?.Instances is { } enumerable) {
 					foreach (var inst in enumerable) {
-						inst.SetMaterial(null);
-						inst.SetNullMaterialShadingStyle(NullMaterialShadingStyle.Wireframe);
-						inst.SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+						inst.SetMaterial(factory.MaterialBuilder.DefaultMaterial);
+						inst.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Wireframe);
+						inst.SetDefaultMaterialBaseColor(ColorVect.RandomOpaque());
 					}
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
 				if (modelInstances?.Instances is { } enumerable) {
 					foreach (var inst in enumerable) {
-						inst.SetMaterial(null);
-						inst.SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain3D);
-						inst.SetNullMaterialBaseColor(nextPrimitiveColorIsOpaque ? ColorVect.RandomOpaque() : ColorVect.Random().WithPremultipliedAlpha());
+						inst.SetMaterial(factory.MaterialBuilder.DefaultMaterial);
+						inst.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain3D);
+						inst.SetDefaultMaterialBaseColor(nextPrimitiveColorIsOpaque ? ColorVect.RandomOpaque() : ColorVect.Random().WithPremultipliedAlpha());
 					}
 				}
 				nextPrimitiveColorIsOpaque = !nextPrimitiveColorIsOpaque;

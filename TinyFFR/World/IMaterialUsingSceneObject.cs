@@ -6,8 +6,8 @@ using Egodystonic.TinyFFR.Assets.Materials;
 namespace Egodystonic.TinyFFR.World;
 
 public interface IMaterialUsingSceneObject {
-	Material? Material { get; set; }
+	Material Material { get; set; }
 	MaterialEffectController? MaterialEffects { get; }
-	void SetNullMaterialBaseColor(ColorVect baseColor);
-	void SetNullMaterialShadingStyle(NullMaterialShadingStyle style);
+	void SetDefaultMaterialBaseColor(ColorVect baseColor);
+	void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style);
 }

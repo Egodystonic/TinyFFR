@@ -445,8 +445,8 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 	}
 
-	public static PrimitiveMaterialShaderConstants PrimitiveMaterialShader { get; } = new();
-	public sealed class PrimitiveMaterialShaderConstants : IShaderPackageConstants {
+	public static DefaultMaterialShaderConstants DefaultMaterialShader { get; } = new();
+	public sealed class DefaultMaterialShaderConstants : IShaderPackageConstants {
 		public enum ShadingModeVariant {
 			PlainOpaque,
 			Plain3DOpaque,
@@ -457,8 +457,8 @@ static class LocalShaderPackageConstants {
 
 		readonly ArrayPoolBackedMap<ShadingModeVariant, string> _resourceNameMap;
 		
-		public PrimitiveMaterialShaderConstants() {
-			const string ShaderNameStart = ResourceNamespace + "primitive";
+		public DefaultMaterialShaderConstants() {
+			const string ShaderNameStart = ResourceNamespace + "default";
 			const string ShadingModeVariantStart = "_shadingmode=";
 			const ShadingModeVariant FirstShadingMode = ShadingModeVariant.PlainOpaque;
 			const ShadingModeVariant LastShadingMode = ShadingModeVariant.Wireframe;

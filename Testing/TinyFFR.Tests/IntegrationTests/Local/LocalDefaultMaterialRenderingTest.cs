@@ -17,7 +17,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalNullMaterialRenderingTest {
+class LocalDefaultMaterialRenderingTest {
 	const int NumInstances = 1000;
 	const float MinDistanceForRandomObjects = 2f;
 	const float MaxDistanceForRandomObjects = 100f;
@@ -34,7 +34,7 @@ class LocalNullMaterialRenderingTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Primitive Rendering Test (Space / S / 0 / 1 / 2)");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Default Mat Rendering Test (Space / S / 0 / 1 / 2)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 3, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
@@ -47,12 +47,12 @@ class LocalNullMaterialRenderingTest {
 		
 		var instances = new ModelInstance[NumInstances];
 		instances[0] = factory.ObjectBuilder.CreateModelInstance(sphereMesh);
-		instances[0].SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+		instances[0].SetDefaultMaterialBaseColor(ColorVect.RandomOpaque());
 		scene.Add(instances[0]);
 		for (var i = 1; i < NumInstances; ++i) {
 			instances[i] = factory.ObjectBuilder.CreateModelInstance(sphereMesh, initialScaling: new(0.3f), initialPosition: Location.Origin + Direction.Random() * RandomUtils.NextSingle(MinDistanceForRandomObjects, MaxDistanceForRandomObjects));
-			if (RandomUtils.GlobalRng.Next(2) == 1) instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
-			else instances[i].SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+			if (RandomUtils.GlobalRng.Next(2) == 1) instances[i].SetDefaultMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+			else instances[i].SetDefaultMaterialBaseColor(ColorVect.RandomOpaque());
 			scene.Add(instances[i]);
 		}
 		
@@ -68,8 +68,8 @@ class LocalNullMaterialRenderingTest {
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 				for (var i = 0; i < NumInstances; ++i) {
-					if (RandomUtils.GlobalRng.Next(2) == 1) instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
-					else instances[i].SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+					if (RandomUtils.GlobalRng.Next(2) == 1) instances[i].SetDefaultMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+					else instances[i].SetDefaultMaterialBaseColor(ColorVect.RandomOpaque());
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S)) {
@@ -80,17 +80,17 @@ class LocalNullMaterialRenderingTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
 				for (var i = 0; i < NumInstances; ++i) {
-					instances[i].SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain);
+					instances[i].SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain);
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
 				for (var i = 0; i < NumInstances; ++i) {
-					instances[i].SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain3D);
+					instances[i].SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain3D);
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
 				for (var i = 0; i < NumInstances; ++i) {
-					instances[i].SetNullMaterialShadingStyle(NullMaterialShadingStyle.Wireframe);
+					instances[i].SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Wireframe);
 				}
 			}
 			

@@ -32,11 +32,11 @@ public readonly record struct MaterialEffectController {
 }
 
 #pragma warning disable CA1027 // This isn't a bitfield enum
-public enum NullMaterialShadingStyle {
+public enum DefaultMaterialShadingStyle {
 #pragma warning restore CA1027
-	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3DOpaque,
-	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.PlainOpaque,
-	Wireframe = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Wireframe
+	Plain3D = LocalShaderPackageConstants.DefaultMaterialShaderConstants.ShadingModeVariant.Plain3DOpaque,
+	Plain = LocalShaderPackageConstants.DefaultMaterialShaderConstants.ShadingModeVariant.PlainOpaque,
+	Wireframe = LocalShaderPackageConstants.DefaultMaterialShaderConstants.ShadingModeVariant.Wireframe
 }
 
 public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject {
@@ -101,18 +101,18 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
-	public Material? Material {
+	public Material Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetMaterial(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetMaterial(_handle, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaterial(Material? material) => Material = material;
+	public void SetMaterial(Material material) => Material = material;
 
 	public MaterialEffectController? MaterialEffects {
 		get {
-			if (Material?.SupportsPerInstanceEffects != true) return null;
+			if (!Material.SupportsPerInstanceEffects) return null;
 			return new MaterialEffectController(this);
 		}
 	}
@@ -199,8 +199,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void AdjustScaleBy(float scalar) => Implementation.AdjustScaleBy(_handle, scalar);
 	public void AdjustScaleBy(Vect vect) => Implementation.AdjustScaleBy(_handle, vect);
 	
-	public void SetNullMaterialBaseColor(ColorVect baseColor) => Implementation.SetNullMaterialBaseColor(_handle, baseColor);
-	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => Implementation.SetNullMaterialShadingStyle(_handle, style);
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => Implementation.SetDefaultMaterialBaseColor(_handle, baseColor);
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => Implementation.SetDefaultMaterialShadingStyle(_handle, style);
 	public void SetKeyedMaterialColor(ColorChannel key, ColorVect color) => Implementation.SetKeyedMaterialColor(_handle, key, color);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

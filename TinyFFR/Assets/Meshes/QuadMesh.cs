@@ -118,14 +118,14 @@ public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 	
-	public Material? Material {
+	public Material Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Material;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingModelInstance.SetMaterial(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaterial(Material? material) => Material = material;
+	public void SetMaterial(Material material) => Material = material;
 
 	public MaterialEffectController? MaterialEffects {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -163,9 +163,9 @@ public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, I
 	public void AdjustScaleBy(Vect vect) => UnderlyingModelInstance.AdjustScaleBy(vect);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetNullMaterialBaseColor(ColorVect baseColor) => UnderlyingModelInstance.SetNullMaterialBaseColor(baseColor);
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => UnderlyingModelInstance.SetDefaultMaterialBaseColor(baseColor);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => UnderlyingModelInstance.SetNullMaterialShadingStyle(style);
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => UnderlyingModelInstance.SetDefaultMaterialShadingStyle(style);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => UnderlyingModelInstance.Dispose();
@@ -220,14 +220,14 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<Came
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 	
-	public Material? Material {
+	public Material Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingQuadInstance.Material;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingQuadInstance.SetMaterial(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaterial(Material? material) => Material = material;
+	public void SetMaterial(Material material) => Material = material;
 
 	public MaterialEffectController? MaterialEffects {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -253,9 +253,9 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<Came
 	public void AdjustScaleBy(Vect vect) => UnderlyingQuadInstance.AdjustScaleBy(vect);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetNullMaterialBaseColor(ColorVect baseColor) => UnderlyingQuadInstance.SetNullMaterialBaseColor(baseColor);
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => UnderlyingQuadInstance.SetDefaultMaterialBaseColor(baseColor);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => UnderlyingQuadInstance.SetNullMaterialShadingStyle(style);
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => UnderlyingQuadInstance.SetDefaultMaterialShadingStyle(style);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => UnderlyingQuadInstance.Dispose();

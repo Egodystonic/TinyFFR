@@ -40,6 +40,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	internal const string TestMaterialName = "Test Material";
 	const string DefaultMaterialName = "Unnamed Material";
+	internal const string DefaultMaterialInstanceName = "Default Material";
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Material>, MaterialData> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -48,6 +49,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : field;
 
+	public Material DefaultMaterial => new(default, this);
+
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, ITextureBuilder texBuilderRef, Lazy<ResourceGroup> testMaterialTexturesRef) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
@@ -55,20 +58,20 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_testMaterialTexturesRef = testMaterialTexturesRef;
 	}
 	
-	public Material AllocatePrimitiveMaterialInstance(PrimitiveMaterialShaderConstants.ShadingModeVariant shadingMode, ColorVect baseColor) {
+	public Material AllocateDefaultMaterialInstance(DefaultMaterialShaderConstants.ShadingModeVariant shadingMode, ColorVect baseColor) {
 		ThrowIfThisIsDisposed();
 		
-		var shaderConstants = PrimitiveMaterialShader;
+		var shaderConstants = DefaultMaterialShader;
 
 		var shaderResourceName = shaderConstants.GetShaderResourceName(shadingMode);
 		var result = InstantiateMaterial(shaderResourceName, ReadOnlySpan<char>.Empty, shaderConstants);
-		SetPrimitiveMaterialBaseColor(result, baseColor);
+		SetDefaultMaterialBaseColor(result, baseColor);
 
 		return result;
 	}
-	public void SetPrimitiveMaterialBaseColor(Material material, ColorVect color) {
+	public void SetDefaultMaterialBaseColor(Material material, ColorVect color) {
 		ThrowIfThisOrHandleIsDisposed(material.GetHandleWithoutDisposeCheck());
-		ApplyMaterialParam(material, color.AsVector4, PrimitiveMaterialShader.ParamBaseColor);
+		ApplyMaterialParam(material, color.AsVector4, DefaultMaterialShader.ParamBaseColor);
 	}
 
 	public Material AllocateTextMaterialInstance(Texture sdfAtlas, ColorVect textColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThickness, ReadOnlySpan<char> name) {
@@ -339,16 +342,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	public bool GetSupportsPerInstanceEffects(ResourceHandle<Material> handle) {
+		if (handle.AsInteger == 0U) return false;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].SupportedEffects != 0;
 	}
-	
+
 	public bool GetSupportsColorKeying(ResourceHandle<Material> handle) {
+		if (handle.AsInteger == 0U) return false;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].PackageConstants == ColorKeyedMaterialShader;
 	}
 
 	public bool GetSupportsShadows(ResourceHandle<Material> handle) {
+		if (handle.AsInteger == 0U) return false;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].PackageConstants.SupportsShadows;
 	}
@@ -464,14 +470,20 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
+		if (handle.AsInteger == 0U) return DefaultMaterialInstanceName;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultMaterialName));
 	}
 	public int GetNameLength(ResourceHandle<Material> handle) {
+		if (handle.AsInteger == 0U) return DefaultMaterialInstanceName.Length;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultMaterialName).Length;
 	}
 	public void CopyName(ResourceHandle<Material> handle, Span<char> destinationBuffer) {
+		if (handle.AsInteger == 0U) {
+			DefaultMaterialInstanceName.AsSpan().CopyTo(destinationBuffer);
+			return;
+		}
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultMaterialName, destinationBuffer);
 	}
@@ -576,9 +588,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
 	#region Disposal
-	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || !_activeMaterials.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || (handle.AsInteger != 0U && !_activeMaterials.ContainsKey(handle));
 
-	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
+	public void Dispose(ResourceHandle<Material> handle) {
+		if (handle.AsInteger == 0U) return;
+		Dispose(handle, removeFromCollection: true);
+	}
 	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));

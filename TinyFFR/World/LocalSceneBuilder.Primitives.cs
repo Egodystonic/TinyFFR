@@ -162,21 +162,21 @@ sealed partial class LocalSceneBuilder {
 			mi.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 			mi.SetKeyedMaterialColor(ColorChannel.B, paintbrush.TertiaryColor ?? paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 			mi.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
-			mi.SetNullMaterialBaseColor(paintbrush.PrimaryColor);
+			mi.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
 		}
 		if (data.LinePoints?.StartPoint is { } lsp) {
 			lsp.SetKeyedMaterialColor(ColorChannel.R, paintbrush.TertiaryColor ?? paintbrush.PrimaryColor);
 			lsp.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 			lsp.SetKeyedMaterialColor(ColorChannel.B, paintbrush.TertiaryColor ?? paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 			lsp.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
-			lsp.SetNullMaterialBaseColor(paintbrush.PrimaryColor);
+			lsp.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
 		}
 		if (data.LinePoints?.EndPoint is { } lep) {
 			lep.SetKeyedMaterialColor(ColorChannel.R, paintbrush.TertiaryColor ?? paintbrush.PrimaryColor);
 			lep.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 			lep.SetKeyedMaterialColor(ColorChannel.B, paintbrush.TertiaryColor ?? paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 			lep.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
-			lep.SetNullMaterialBaseColor(paintbrush.PrimaryColor);
+			lep.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
 		}
 		if (data.TextInstance is { } t) {
 			var oldPen = t.Pen;
@@ -280,14 +280,14 @@ sealed partial class LocalSceneBuilder {
 		
 		var instance = ((IObjectBuilder) _objectBuilder).CreateModelInstance(
 			resources.Meshes[0],
-			null,
+			_assetLoader.MaterialBuilder.DefaultMaterial,
 			new ModelInstanceCreationConfig {
 				InitialTransform = new Transform(cuboid.Position.AsVect(), cuboid.Rotation, new Vect(cuboid.ToStandardCuboid().Width, cuboid.ToStandardCuboid().Height, cuboid.ToStandardCuboid().Depth)),
 				Name = "Primitive Cuboid"
 			}
 		);
-		instance.SetNullMaterialBaseColor(paintbrush.PrimaryColor);
-		instance.SetNullMaterialShadingStyle(wireframe ? NullMaterialShadingStyle.Wireframe : NullMaterialShadingStyle.Plain3D);
+		instance.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
+		instance.SetDefaultMaterialShadingStyle(wireframe ? DefaultMaterialShadingStyle.Wireframe : DefaultMaterialShadingStyle.Plain3D);
 
 		RegisterPrimitive(handle, primitiveHandle, in instance, in paintbrush);
 	}
@@ -316,14 +316,14 @@ sealed partial class LocalSceneBuilder {
 		
 		var instance = ((IObjectBuilder) _objectBuilder).CreateModelInstance(
 			wireframe ? resources.Meshes[1] : resources.Meshes[0],
-			null,
+			_assetLoader.MaterialBuilder.DefaultMaterial,
 			new ModelInstanceCreationConfig {
 				InitialTransform = new Transform(sphere.Position.AsVect(), Rotation.None, new Vect(sphere.ToStandardSphere().Radius)),
 				Name = "Primitive Sphere"
 			}
 		);
-		instance.SetNullMaterialBaseColor(paintbrush.PrimaryColor);
-		instance.SetNullMaterialShadingStyle(wireframe ? NullMaterialShadingStyle.Wireframe : NullMaterialShadingStyle.Plain3D);
+		instance.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
+		instance.SetDefaultMaterialShadingStyle(wireframe ? DefaultMaterialShadingStyle.Wireframe : DefaultMaterialShadingStyle.Plain3D);
 
 		RegisterPrimitive(handle, primitiveHandle, in instance, in paintbrush);
 	}
