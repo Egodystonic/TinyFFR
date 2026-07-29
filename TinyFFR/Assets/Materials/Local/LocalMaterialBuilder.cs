@@ -56,6 +56,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_globals = globals;
 		TextureBuilder = texBuilderRef;
 		_testMaterialTexturesRef = testMaterialTexturesRef;
+
+		_globals.StoreResourceNameOrDefaultIfEmpty(default(ResourceHandle<Material>).Ident, DefaultMaterialInstanceName, DefaultMaterialName);
+		_activeMaterials.Add(default, new MaterialData(DefaultMaterialShader, SupportedEffectsFlags.None, null, null, null, null));
 	}
 	
 	public Material AllocateDefaultMaterialInstance(DefaultMaterialShaderConstants.ShadingModeVariant shadingMode, ColorVect baseColor) {
@@ -342,19 +345,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	public bool GetSupportsPerInstanceEffects(ResourceHandle<Material> handle) {
-		if (handle.AsInteger == 0U) return false;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].SupportedEffects != 0;
 	}
 
 	public bool GetSupportsColorKeying(ResourceHandle<Material> handle) {
-		if (handle.AsInteger == 0U) return false;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].PackageConstants == ColorKeyedMaterialShader;
 	}
 
 	public bool GetSupportsShadows(ResourceHandle<Material> handle) {
-		if (handle.AsInteger == 0U) return false;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].PackageConstants.SupportsShadows;
 	}
@@ -470,20 +470,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
-		if (handle.AsInteger == 0U) return DefaultMaterialInstanceName;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultMaterialName));
 	}
 	public int GetNameLength(ResourceHandle<Material> handle) {
-		if (handle.AsInteger == 0U) return DefaultMaterialInstanceName.Length;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultMaterialName).Length;
 	}
 	public void CopyName(ResourceHandle<Material> handle, Span<char> destinationBuffer) {
-		if (handle.AsInteger == 0U) {
-			DefaultMaterialInstanceName.AsSpan().CopyTo(destinationBuffer);
-			return;
-		}
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultMaterialName, destinationBuffer);
 	}
@@ -588,13 +582,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
 	#region Disposal
-	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || (handle.AsInteger != 0U && !_activeMaterials.ContainsKey(handle));
+	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || !_activeMaterials.ContainsKey(handle);
 
-	public void Dispose(ResourceHandle<Material> handle) {
-		if (handle.AsInteger == 0U) return;
-		Dispose(handle, removeFromCollection: true);
-	}
+	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
 	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
+		if (handle.AsInteger == 0U) return; // Never dispose/evict the default-material sentinel (also skips it in the teardown loop)
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));

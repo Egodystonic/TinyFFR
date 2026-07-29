@@ -112,16 +112,17 @@ class LocalResourceDirectoryTest {
 		const string AppleName = "Apple";
 		const string BananaName = "Banana";
 		const string CarrotName = "Carrot";
+		var hasDefaultBuiltIn = typeof(T) == typeof(Material);
 		
 		Assert.IsTrue(_resourceTypes.Remove(typeof(T)), $"Resource type '{typeof(T).Name}' not found in resource type set (types = {String.Join(", ", _resourceTypes.Select(t => t.Name))})"); 
 
 		var apple = creationFunc(AppleName);
 		var banana = creationFunc(BananaName);
-		Assert.AreEqual(expectThreeAlways ? 3 : 2, _resourceDirectory.GetAllActiveInstances<T>().Count, String.Join(", ", _resourceDirectory.GetAllActiveInstances<T>().ToArray()));
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + (expectThreeAlways ? 3 : 2), _resourceDirectory.GetAllActiveInstances<T>().Count, String.Join(", ", _resourceDirectory.GetAllActiveInstances<T>().ToArray()));
 		Assert.Contains(apple, _resourceDirectory.GetAllActiveInstances<T>().ToArray());
 		Assert.Contains(banana, _resourceDirectory.GetAllActiveInstances<T>().ToArray());
 		
-		var dest = new T[3];
+		var dest = new T[(hasDefaultBuiltIn ? 1 : 0) + 3];
 
 		Assert.AreEqual(apple, _resourceDirectory.FindByName<T>(AppleName));
 		Assert.AreEqual(banana, _resourceDirectory.FindByName<T>(BananaName));
@@ -138,28 +139,28 @@ class LocalResourceDirectoryTest {
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, CarrotName));
 		
 		var carrot = creationFunc(CarrotName);
-		Assert.AreEqual(3, _resourceDirectory.GetAllActiveInstances<T>().Count);
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 3, _resourceDirectory.GetAllActiveInstances<T>().Count);
 		Assert.Contains(apple, _resourceDirectory.GetAllActiveInstances<T>().ToArray());
 		Assert.Contains(banana, _resourceDirectory.GetAllActiveInstances<T>().ToArray());
 		Assert.Contains(carrot, _resourceDirectory.GetAllActiveInstances<T>().ToArray());
 		Assert.AreEqual(carrot, _resourceDirectory.FindByName<T>(CarrotName));
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: false, StringComparison.OrdinalIgnoreCase));
-		Assert.AreEqual(3, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 3, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
 		Assert.IsTrue(dest.Contains(apple));
 		Assert.IsTrue(dest.Contains(banana));
 		Assert.IsTrue(dest.Contains(carrot));
 		Array.Clear(dest);
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: false, StringComparison.Ordinal));
-		Assert.AreEqual(2, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.Ordinal));
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 2, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.Ordinal));
 		Assert.IsFalse(dest.Contains(apple));
 		Assert.IsTrue(dest.Contains(banana));
 		Assert.IsTrue(dest.Contains(carrot));
-		Assert.AreEqual(default(T), dest[2]);
+		Assert.AreEqual(default(T), dest[(hasDefaultBuiltIn ? 1 : 0) + 2]);
 		Array.Clear(dest);
 		
 		if (apple is not IDisposable disposableApple || banana is not IDisposable disposableBanana || carrot is not IDisposable disposableCarrot) return;
 		disposableCarrot.Dispose();
-		Assert.AreEqual(2, _resourceDirectory.GetAllActiveInstances<T>().Count);
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 2, _resourceDirectory.GetAllActiveInstances<T>().Count);
 		Assert.Contains(apple, _resourceDirectory.GetAllActiveInstances<T>().ToArray());
 		Assert.Contains(banana, _resourceDirectory.GetAllActiveInstances<T>().ToArray());
 		Assert.AreEqual(1, _resourceDirectory.FindByName(dest, AppleName));
@@ -173,25 +174,25 @@ class LocalResourceDirectoryTest {
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, CarrotName));
 		
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: false, StringComparison.OrdinalIgnoreCase));
-		Assert.AreEqual(2, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 2, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
 		Assert.IsTrue(dest.Contains(apple));
 		Assert.IsTrue(dest.Contains(banana));
 		Assert.IsFalse(dest.Contains(carrot));
-		Assert.AreEqual(default(T), dest[2]);
+		Assert.AreEqual(default(T), dest[(hasDefaultBuiltIn ? 1 : 0) + 2]);
 		Array.Clear(dest);
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: false, StringComparison.Ordinal));
-		Assert.AreEqual(1, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.Ordinal));
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 1, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.Ordinal));
 		Assert.IsFalse(dest.Contains(apple));
 		Assert.IsTrue(dest.Contains(banana));
 		Assert.IsFalse(dest.Contains(carrot));
-		Assert.AreEqual(default(T), dest[1]);
-		Assert.AreEqual(default(T), dest[2]);
+		Assert.AreEqual(default(T), dest[(hasDefaultBuiltIn ? 1 : 0) + 1]);
+		Assert.AreEqual(default(T), dest[(hasDefaultBuiltIn ? 1 : 0) + 2]);
 		Array.Clear(dest);
 		
 		disposableBanana.Dispose();
 		disposableApple.Dispose();
-		Assert.AreEqual(0, _resourceDirectory.GetAllActiveInstances<T>().Count);
-		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 0, _resourceDirectory.GetAllActiveInstances<T>().Count);
+		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
 		Assert.AreEqual(null, _resourceDirectory.FindByName<T>(AppleName));
 		Assert.AreEqual(null, _resourceDirectory.FindByName<T>(BananaName));
 		Assert.AreEqual(null, _resourceDirectory.FindByName<T>(CarrotName));
