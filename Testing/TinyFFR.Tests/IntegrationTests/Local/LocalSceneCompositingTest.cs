@@ -186,9 +186,9 @@ class LocalSceneCompositingTest {
 			compositor.RenderAll();
 			
 			window.SetTitle(
-			    $"FPS: {loop.FramesPerSecondRecentAverage:N0} avg | " +
-			    $"[{loop.FramesPerSecondRecentMin:N0} - {loop.FramesPerSecondRecentMax:N0}] range | " +
-			    $"{loop.FramesPerSecondLatest:N0} current"
+			    $"FPS: {loop.FramesPerSecondRecentAverage:0000} avg | " +
+			    $"[{loop.FramesPerSecondRecentMin:0000} - {loop.FramesPerSecondRecentMax:0000}] range | " +
+			    $"{loop.FramesPerSecondLatest:0000} current"
 			);
 		}
 		

@@ -679,9 +679,22 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		newConfig.ThrowIfInvalid();
 		_loadedRenderers[handle] = _loadedRenderers[handle] with { Quality = newConfig };
-		SetViewShadowFidelityLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ShadowQuality).ThrowIfFailure();
-		SetViewScreenSpaceEffectsLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ScreenSpaceEffectsQuality).ThrowIfFailure();
+		SetViewQualityConfiguration(
+			_loadedRenderers[handle].Viewport.Handle,
+			(int) newConfig.ShadowQuality,
+			(int) newConfig.ScreenSpaceEffectsQuality,
+			(int) newConfig.AntiAliasingMode,
+			(int) newConfig.AmbientOcclusionQuality,
+			newConfig.PostProcessingEnabled,
+			newConfig.InternalResolutionScalar,
+			(int) newConfig.HdrColorPrecision,
+			newConfig.ShadowsEnabled,
+			(int) newConfig.BloomQuality,
+			newConfig.DitheringEnabled,
+			newConfig.ScreenSpaceEffectsQuality == Quality.VeryHigh
+		).ThrowIfFailure();
 	}
 
 	public void SetFrustumCullingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
@@ -1044,15 +1057,20 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		uint width,
 		uint height
 	);
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_shadow_fidelity_level")]
-	static extern InteropResult SetViewShadowFidelityLevel(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_quality_configuration")]
+	static extern InteropResult SetViewQualityConfiguration(
 		UIntPtr viewDescriptorHandle,
-		int level
-	);
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_screen_space_effects_level")]
-	static extern InteropResult SetViewScreenSpaceEffectsLevel(
-		UIntPtr viewDescriptorHandle,
-		int level
+		int shadowFidelityLevel,
+		int screenSpaceEffectsLevel,
+		int antiAliasingMode,
+		int ambientOcclusionQuality,
+		InteropBool postProcessingEnabled,
+		float internalResolutionScalar,
+		int hdrColorPrecision,
+		InteropBool shadowsEnabled,
+		int bloomQuality,
+		InteropBool dithering,
+		InteropBool guardBand
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_frustum_culling_enabled")]
 	static extern InteropResult SetViewFrustumCullingEnabled(

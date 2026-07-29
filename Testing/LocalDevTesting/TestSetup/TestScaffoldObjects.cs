@@ -247,7 +247,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		if (Factory == null || Window is not { } window || Scene is not { } scene || Camera is not { } camera) return null;
 		return Factory.RendererBuilder.CreateRenderer(scene, camera, window, new RendererCreationConfig {
 			Name = "Default Test Renderer",
-			Quality = new RenderQualityConfig(Quality.VeryHigh)
+			Quality = new RenderQualityConfig(BuiltInQualityConfiguration.High)
 		});
 	}
 	ApplicationLoop? CreateDefaultLoop() {
