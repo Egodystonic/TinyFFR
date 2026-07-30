@@ -71,9 +71,27 @@ public partial class TinyFfrSceneView : UserControl {
 		SetStyle(
 			ControlStyles.AllPaintingInWmPaint |
 			ControlStyles.UserPaint |
-			ControlStyles.OptimizedDoubleBuffer, 
+			ControlStyles.OptimizedDoubleBuffer,
 			true
 		);
+
+		// Focusable by default so that keyboard input can be routed to this control (e.g. when using the
+		// StartWinFormsUiLoop overload that supplies an ILatestInputRetriever)
+		SetStyle(ControlStyles.Selectable, true);
+		TabStop = true;
+	}
+
+	protected override void OnMouseDown(MouseEventArgs e) {
+		base.OnMouseDown(e);
+		if (CanFocus && !Focused) Focus();
+	}
+
+	// Without this the arrow and tab keys are consumed as focus navigation and never reported via KeyDown/KeyUp
+	protected override bool IsInputKey(Keys keyData) {
+		return (keyData & Keys.KeyCode) switch {
+			Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.Tab => true,
+			_ => base.IsInputKey(keyData)
+		};
 	}
 
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {

@@ -10,8 +10,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Egodystonic.TinyFFR.Avalonia;
+using Egodystonic.TinyFFR.Environment.Input;
 
 namespace TinyFFR.Tests.Integrations.Avalonia.ViewModels;
 
@@ -22,6 +24,11 @@ public partial class MainViewModel : ViewModelBase {
 	SpotLight _light;
 	Renderer _overlayRenderer;
 	bool _overlayEnabled;
+	InputElement? _inputSource;
+	FirstPersonCameraController? _cameraController;
+
+	// Set by the view; lets us demonstrate driving a camera controller with TinyFFR's input abstraction
+	public void SetInputSource(InputElement inputSource) => _inputSource = inputSource;
 
 	[ObservableProperty]
 	public partial RelayCommand ToggleRenderingButtonPressed { get; set; }
@@ -87,8 +94,11 @@ public partial class MainViewModel : ViewModelBase {
 		scene.Add(_instance);
 		scene.Add(_light);
 
+		_cameraController = camera.CreateController<FirstPersonCameraController>();
+
 		_disposables.Add(factory);
 		_disposables.Add(camera);
+		_disposables.Add(_cameraController);
 		_disposables.Add(mesh);
 		_disposables.Add(tex);
 		_disposables.Add(mat);
@@ -127,7 +137,12 @@ public partial class MainViewModel : ViewModelBase {
 			Renderer = renderer;
 		}
 
-		_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(Tick));
+		if (_inputSource is { } inputSource) {
+			_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(TickWithInput, inputSource));
+		}
+		else {
+			_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(Tick));
+		}
 
 		RenderCurrentSource();
 	}
@@ -135,6 +150,7 @@ public partial class MainViewModel : ViewModelBase {
 	void StopRendering() {
 		Renderer = null;
 		Compositor = null;
+		_cameraController = null;
 		foreach (var d in Enumerable.Reverse(_disposables!)) {
 			d.Dispose();
 		}
@@ -144,6 +160,15 @@ public partial class MainViewModel : ViewModelBase {
 	void RenderCurrentSource() {
 		if (Compositor is { } compositor) compositor.RenderAll();
 		else Renderer?.Render();
+	}
+
+	// Exactly the same camera-control code a standalone TinyFFR application would use in its ApplicationLoop
+	void TickWithInput(TimeSpan deltaTime, ILatestInputRetriever input) {
+		if (_cameraController is { } controller) {
+			controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime.AsDeltaTime());
+			controller.Progress(deltaTime.AsDeltaTime());
+		}
+		Tick(deltaTime);
 	}
 
 	void Tick(TimeSpan deltaTime) {

@@ -25,6 +25,7 @@
             <Button Command="{Binding ToggleOverlayButtonPressed}" Content="Toggle Overlay" />
         </StackPanel>
         <tffrAvalonia:TinyFfrSceneView
+            x:Name="SceneView"
             FallbackBrush="LightGray"
             InternalRenderResolution="300,150"
             Renderer="{Binding Renderer}"

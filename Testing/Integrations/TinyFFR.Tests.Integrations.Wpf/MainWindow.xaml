@@ -22,6 +22,7 @@
             <Button Command="{Binding ToggleOverlayButtonPressed}" Content="Toggle Overlay" />
         </StackPanel>
         <tffrWpf:TinyFfrSceneView
+            x:Name="SceneView"
             FallbackBrush="LightGray"
             InternalRenderResolution="300,150"
             Renderer="{Binding Renderer}"

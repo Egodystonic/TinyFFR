@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -57,6 +58,17 @@ public class TinyFfrSceneView : Control {
 	public Size? InternalRenderResolution {
 		get => GetValue(InternalRenderResolutionProperty);
 		set => SetValue(InternalRenderResolutionProperty, value);
+	}
+
+	// Focusable by default so that keyboard input can be routed to this control (e.g. when using the
+	// StartAvaloniaUiLoop overload that supplies an ILatestInputRetriever)
+	public TinyFfrSceneView() {
+		Focusable = true;
+	}
+
+	protected override void OnPointerPressed(PointerPressedEventArgs e) {
+		base.OnPointerPressed(e);
+		if (Focusable && !IsFocused) Focus();
 	}
 
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Egodystonic.TinyFFR;
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
@@ -11,6 +12,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace TinyFFR.Tests.Integrations.Wpf {
 	public partial class MainWindowViewModel : ObservableObject {
@@ -20,6 +22,11 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 		PointLight _light;
 		Renderer _overlayRenderer;
 		bool _overlayEnabled;
+		UIElement? _inputSource;
+		FirstPersonCameraController? _cameraController;
+
+		// Set by the view; lets us demonstrate driving a camera controller with TinyFFR's input abstraction
+		public void SetInputSource(UIElement inputSource) => _inputSource = inputSource;
 
 		[ObservableProperty]
 		public partial RelayCommand ToggleRenderingButtonPressed { get; set; }
@@ -77,8 +84,11 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 			scene.Add(_instance);
 			scene.Add(_light);
 
+			_cameraController = camera.CreateController<FirstPersonCameraController>();
+
 			_disposables.Add(factory);
 			_disposables.Add(camera);
+			_disposables.Add(_cameraController);
 			_disposables.Add(mesh);
 			_disposables.Add(tex);
 			_disposables.Add(mat);
@@ -117,7 +127,12 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 				Renderer = renderer;
 			}
 
-			_disposables.Add(factory.ApplicationLoopBuilder.StartWpfUiLoop(Tick));
+			if (_inputSource is { } inputSource) {
+				_disposables.Add(factory.ApplicationLoopBuilder.StartWpfUiLoop(TickWithInput, inputSource));
+			}
+			else {
+				_disposables.Add(factory.ApplicationLoopBuilder.StartWpfUiLoop(Tick));
+			}
 
 			RenderCurrentSource();
 		}
@@ -125,6 +140,7 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 		void StopRendering() {
 			Renderer = null;
 			Compositor = null;
+			_cameraController = null;
 			foreach (var d in Enumerable.Reverse(_disposables!)) {
 				d.Dispose();
 			}
@@ -134,6 +150,15 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 		void RenderCurrentSource() {
 			if (Compositor is { } compositor) compositor.RenderAll();
 			else Renderer?.Render();
+		}
+
+		// Exactly the same camera-control code a standalone TinyFFR application would use in its ApplicationLoop
+		void TickWithInput(TimeSpan deltaTime, ILatestInputRetriever input) {
+			if (_cameraController is { } controller) {
+				controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime.AsDeltaTime());
+				controller.Progress(deltaTime.AsDeltaTime());
+			}
+			Tick(deltaTime);
 		}
 
 		void Tick(TimeSpan deltaTime) {

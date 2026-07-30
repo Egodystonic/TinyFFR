@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -63,6 +64,17 @@ public class TinyFfrSceneView : Control {
 		set => SetValue(InternalRenderResolutionProperty, value);
 	}
 	Size BoundsSize => new(ActualWidth, ActualHeight);
+
+	// Focusable by default so that keyboard input can be routed to this control (e.g. when using the
+	// StartWpfUiLoop overload that supplies an ILatestInputRetriever)
+	public TinyFfrSceneView() {
+		Focusable = true;
+	}
+
+	protected override void OnMouseDown(MouseButtonEventArgs e) {
+		base.OnMouseDown(e);
+		if (Focusable && !IsKeyboardFocusWithin) Focus();
+	}
 
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
 		if (_bitmap == null || _bitmap.PixelWidth != dimensions.X || _bitmap.PixelHeight != dimensions.Y) {

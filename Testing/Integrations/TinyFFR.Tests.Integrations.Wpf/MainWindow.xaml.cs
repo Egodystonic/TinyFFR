@@ -16,6 +16,9 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 	public partial class MainWindow : Window {
 		public MainWindow() {
 			InitializeComponent();
+
+			// The scene view is the element whose input events feed TinyFFR's ILatestInputRetriever
+			DataContextChanged += (_, _) => (DataContext as MainWindowViewModel)?.SetInputSource(SceneView);
 		}
 	}
 }
