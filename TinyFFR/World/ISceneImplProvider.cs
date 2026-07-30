@@ -33,7 +33,10 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation);
 	void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color);
 	void RemoveBackdrop(ResourceHandle<Scene> handle);
-	
+
+	void AddFog(ResourceHandle<Scene> handle, ColorVect color, float density, float startDistance, float height, float heightFalloff, float maximumOpacity, bool colorFromIbl);
+	void RemoveFog(ResourceHandle<Scene> handle);
+
 	void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives);
 	
 	ScenePrimitive CreatePrimitive(ResourceHandle<Scene> handle);

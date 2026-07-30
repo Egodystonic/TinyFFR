@@ -1017,6 +1017,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				);
 				break;
 		}
+
+		localSceneImpl.SetUpFogForRender(sceneHandle, _loadedRenderers[handle].Viewport.Handle);
 	}
 
 	#region Native Methods

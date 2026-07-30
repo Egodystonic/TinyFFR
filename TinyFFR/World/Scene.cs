@@ -113,6 +113,12 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	public void RemoveBackdrop() => Implementation.RemoveBackdrop(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AddFog(ColorVect? color = null, float density = 0.1f, float startDistance = 0f, float height = 0f, float heightFalloff = 1f, float maximumOpacity = 1f, bool colorFromIbl = false)
+		=> Implementation.AddFog(_handle, color ?? FogDefaultColour, density, startDistance, height, heightFalloff, maximumOpacity, colorFromIbl);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RemoveFog() => Implementation.RemoveFog(_handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScenePrimitive AddPrimitive() => Implementation.CreatePrimitive(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetPrimitivePaintbrush(nuint primitiveHandle, in PrimitivePaintbrush paintbrush) => Implementation.SetPrimitivePaintbrush(_handle, primitiveHandle, in paintbrush);

@@ -16,6 +16,7 @@ namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable {
 	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
+	readonly record struct FogData(ColorVect Color, float Density, float StartDistance, float Height, float HeightFalloff, float MaximumOpacity, bool ColorFromIbl);
 	const string DefaultSceneName = "Unnamed Scene";
 	const string BuiltInSceneDataResourcePrefix = "Assets.builtin_backdrop_";
 	const string BuiltInBackdropNamePrefix = "Built-In Scene Backdrop Texture '";
@@ -29,6 +30,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
 	readonly SetPool<Light> _lightSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, FogData> _fogMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<BuiltInSceneBackdrop, BackdropTexture> _loadedBuiltInBackdropTextures = new();
 	readonly LocalAssetLoader _assetLoader;
@@ -374,6 +376,38 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	}
 	#endregion
 
+	#region Fog
+	public void AddFog(ResourceHandle<Scene> handle, ColorVect color, float density, float startDistance, float height, float heightFalloff, float maximumOpacity, bool colorFromIbl) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_fogMap[handle] = new FogData(color, density, startDistance, height, heightFalloff, maximumOpacity, colorFromIbl);
+	}
+	public void RemoveFog(ResourceHandle<Scene> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_fogMap.Remove(handle);
+	}
+	public void SetUpFogForRender(ResourceHandle<Scene> handle, UIntPtr viewDescriptorHandle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_fogMap.TryGetValue(handle, out var fog)) {
+			SetViewFog(
+				viewDescriptorHandle,
+				true,
+				fog.Color.Red,
+				fog.Color.Green,
+				fog.Color.Blue,
+				fog.Density,
+				fog.StartDistance,
+				fog.Height,
+				fog.HeightFalloff,
+				fog.MaximumOpacity,
+				fog.ColorFromIbl
+			).ThrowIfFailure();
+		}
+		else {
+			SetViewFog(viewDescriptorHandle, false, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, false).ThrowIfFailure();
+		}
+	}
+	#endregion
+
 	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
@@ -503,6 +537,21 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	static extern InteropResult DisposeScene(
 		UIntPtr sceneHandle
 	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_fog")]
+	static extern InteropResult SetViewFog(
+		UIntPtr viewDescriptorHandle,
+		InteropBool enabled,
+		float colorR,
+		float colorG,
+		float colorB,
+		float density,
+		float startDistance,
+		float height,
+		float heightFalloff,
+		float maximumOpacity,
+		InteropBool colorFromIbl
+	);
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -557,6 +606,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 			_loadedBuiltInBackdropTextures.Dispose();
 			_backdropMap.Dispose();
+			_fogMap.Dispose();
 			_lightMap.Dispose();
 			_lightSetPool.Dispose();
 			_primitiveMap.Dispose();
@@ -587,7 +637,8 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		
 		RemoveBackdrop(handle);
 		_backdropMap.Remove(handle);
-		
+		_fogMap.Remove(handle);
+
 		DisposeScene(handle).ThrowIfFailure();
 
 		_modelInstanceSetPool.Return(_modelInstanceMap[handle]);

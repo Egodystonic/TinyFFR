@@ -326,6 +326,61 @@ StartExportedFunc(set_view_frustum_culling_enabled, ViewDescriptorHandle viewDes
 	EndExportedFunc
 }
 
+void native_impl_render::set_view_fog(
+	ViewDescriptorHandle viewDescriptor,
+	interop_bool enabled,
+	float colorR,
+	float colorG,
+	float colorB,
+	float density,
+	float startDistance,
+	float height,
+	float heightFalloff,
+	float maximumOpacity,
+	interop_bool colorFromIbl
+) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	FogOptions fo;
+	fo.enabled = enabled;
+	fo.color = { colorR, colorG, colorB };
+	fo.density = density;
+	fo.distance = startDistance;
+	fo.height = height;
+	fo.heightFalloff = heightFalloff;
+	fo.maximumOpacity = maximumOpacity;
+	fo.fogColorFromIbl = colorFromIbl;
+	viewDescriptor->setFogOptions(fo);
+}
+StartExportedFunc(
+	set_view_fog,
+	ViewDescriptorHandle viewDescriptor,
+	interop_bool enabled,
+	float colorR,
+	float colorG,
+	float colorB,
+	float density,
+	float startDistance,
+	float height,
+	float heightFalloff,
+	float maximumOpacity,
+	interop_bool colorFromIbl
+) {
+	native_impl_render::set_view_fog(
+		viewDescriptor,
+		enabled,
+		colorR,
+		colorG,
+		colorB,
+		density,
+		startDistance,
+		height,
+		heightFalloff,
+		maximumOpacity,
+		colorFromIbl
+	);
+	EndExportedFunc
+}
+
 
 void native_impl_render::allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget) {
 	ThrowIfNull(outBuffer, "Buffer out pointer was null.");
