@@ -151,7 +151,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public const float DefaultPitchSensitivityControllerStick = 120f;
-	public void AdjustPitchViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	public void AdjustPitchViaControllerStick(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
@@ -164,7 +164,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public const float DefaultPitchSensitivityControllerTrigger = 120f;
-	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool rightTriggerPitchesUp = true) {
+	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool rightTriggerPitchesUp = true) {
 		ArgumentNullException.ThrowIfNull(input);
 		var pitchDownTriggerPosition = rightTriggerPitchesUp ? input.LeftTriggerPosition : input.RightTriggerPosition;
 		var pitchUpTriggerPosition = rightTriggerPitchesUp ? input.RightTriggerPosition : input.LeftTriggerPosition;
@@ -178,7 +178,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustPitch(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPitchSensitivityKeyOrButtonPress));
 	}
-	public void AdjustPitchViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+	public void AdjustPitchViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustPitch(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPitchSensitivityKeyOrButtonPress));
@@ -205,7 +205,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public const float DefaultYawSensitivityControllerStick = 120f;
-	public void AdjustYawViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+	public void AdjustYawViaControllerStick(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
@@ -218,7 +218,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public const float DefaultYawSensitivityControllerTrigger = 120f;
-	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsLeft = true) {
+	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsLeft = true) {
 		ArgumentNullException.ThrowIfNull(input);
 		var yawLeftTriggerPosition = leftTriggerYawsLeft ? input.LeftTriggerPosition : input.RightTriggerPosition;
 		var yawRightTriggerPosition = leftTriggerYawsLeft ? input.RightTriggerPosition : input.LeftTriggerPosition;
@@ -232,7 +232,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustYaw(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultYawSensitivityKeyOrButtonPress));
 	}
-	public void AdjustYawViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+	public void AdjustYawViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustYaw(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultYawSensitivityKeyOrButtonPress));
@@ -273,7 +273,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public const float DefaultPositionSensitivityControllerStick = 0.5f;
-	public void AdjustPositionViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxSpeed = null, bool useLeftStick = true) {
+	public void AdjustPositionViaControllerStick(ILatestGameControllerInputRetriever input, float deltaTime, float? maxSpeed = null, bool useLeftStick = true) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var angle = stickPosition.GetPolarAngle();
@@ -282,7 +282,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public const float DefaultPositionSensitivityControllerTrigger = 0.5f;
-	public void AdjustPositionViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxSpeed = null, bool leftTriggerMovesPositive = true, Orientation2D positiveOrientation = Orientation2D.Up) {
+	public void AdjustPositionViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxSpeed = null, bool leftTriggerMovesPositive = true, Orientation2D positiveOrientation = Orientation2D.Up) {
 		ArgumentNullException.ThrowIfNull(input);
 		var positiveTriggerPosition = leftTriggerMovesPositive ? input.LeftTriggerPosition : input.RightTriggerPosition;
 		var negativeTriggerPosition = leftTriggerMovesPositive ? input.RightTriggerPosition : input.LeftTriggerPosition;
@@ -296,7 +296,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustPosition(orientation, speed ?? DefaultPositionSensitivityKeyOrButtonPress, deltaTime);
 	}
-	public void AdjustPositionViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Orientation2D orientation, float? speed = null) {
+	public void AdjustPositionViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Orientation2D orientation, float? speed = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustPosition(orientation, speed ?? DefaultPositionSensitivityKeyOrButtonPress, deltaTime);
@@ -313,7 +313,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		AdjustPositionViaKeyPress(input, deltaTime, KeyboardOrMouseKey.ArrowDown, Orientation2D.Down, moveSpeed);
 	}
 
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxMoveSpeed = null) {
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxMoveSpeed = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		AdjustPitchViaControllerStick(input, deltaTime, maxPitchAdjustmentPerSec, invertStickControl: invertPitchControl);
 		AdjustYawViaControllerStick(input, deltaTime, maxYawAdjustmentPerSec, invertStickControl: invertYawControl);
@@ -322,5 +322,5 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 	
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
-	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
 }

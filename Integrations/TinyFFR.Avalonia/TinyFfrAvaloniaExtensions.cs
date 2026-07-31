@@ -6,6 +6,7 @@ using System.Numerics;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Egodystonic.TinyFFR.Avalonia.Input;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -31,7 +32,7 @@ public static class TinyFfrAvaloniaExtensions {
 		return StartAvaloniaUiLoop(@this, tickCallback, null, tickRateHz, priority, name);
 	}
 
-	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan, ILatestInputRetriever> tickCallback, InputElement inputSource, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = default, ReadOnlySpan<char> name = default) {
+	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, InputElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = default, ReadOnlySpan<char> name = default) {
 		ArgumentNullException.ThrowIfNull(tickCallback);
 		ArgumentNullException.ThrowIfNull(inputSource);
 
@@ -40,8 +41,10 @@ public static class TinyFfrAvaloniaExtensions {
 			return StartAvaloniaUiLoop(
 				@this,
 				deltaTime => {
+					// ReSharper disable AccessToDisposedClosure Closed-over var is only disposed if loop creation fails anyway
 					uiInputSource.Iterate();
 					tickCallback(deltaTime, uiInputSource.Retriever);
+					// ReSharper restore AccessToDisposedClosure
 				},
 				uiInputSource,
 				tickRateHz,

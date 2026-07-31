@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Threading;
+using Egodystonic.TinyFFR.Wpf.Input;
 
 namespace Egodystonic.TinyFFR.Wpf {
 	public static class TinyFfrWpfExtensions {
@@ -24,7 +25,7 @@ namespace Egodystonic.TinyFFR.Wpf {
 			return StartWpfUiLoop(@this, tickCallback, null, tickRateHz, priority, name);
 		}
 
-		public static IDisposable StartWpfUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan, ILatestInputRetriever> tickCallback, UIElement inputSource, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = DispatcherPriority.Normal, ReadOnlySpan<char> name = default) {
+		public static IDisposable StartWpfUiLoop(this ILocalApplicationLoopBuilder @this, UIElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = DispatcherPriority.Normal, ReadOnlySpan<char> name = default) {
 			ArgumentNullException.ThrowIfNull(tickCallback);
 			ArgumentNullException.ThrowIfNull(inputSource);
 
@@ -33,8 +34,10 @@ namespace Egodystonic.TinyFFR.Wpf {
 				return StartWpfUiLoop(
 					@this,
 					deltaTime => {
+						// ReSharper disable AccessToDisposedClosure Closed-over var is only disposed if loop creation fails anyway
 						uiInputSource.Iterate();
 						tickCallback(deltaTime, uiInputSource.Retriever);
+						// ReSharper restore AccessToDisposedClosure
 					},
 					uiInputSource,
 					tickRateHz,

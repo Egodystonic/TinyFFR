@@ -106,7 +106,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 				sceneView.Renderer = renderer;
 			}
 
-			_disposables.Add(factory.ApplicationLoopBuilder.StartWinFormsUiLoop(TickWithInput, sceneView));
+			_disposables.Add(factory.ApplicationLoopBuilder.StartWinFormsUiLoop(sceneView, TickWithInput));
 
 			RenderCurrentSource();
 		}

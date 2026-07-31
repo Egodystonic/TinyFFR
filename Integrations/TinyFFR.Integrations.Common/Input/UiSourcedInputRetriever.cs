@@ -1,14 +1,14 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-namespace Egodystonic.TinyFFR.Environment.Input.Ui;
+using System;
+using Egodystonic.TinyFFR.Environment.Input;
 
-// An ILatestInputRetriever populated from a host UI framework's own input events rather than from TinyFFR's native
-// event poll (which must not be run whilst a UI framework owns the message loop). Game controllers are not exposed
-// by any supported UI framework, hence the neutral state object and empty enumerable.
+namespace Egodystonic.TinyFFR.Input;
+
 sealed class UiSourcedInputRetriever : ILatestInputRetriever, IDisposable {
-	readonly UiSourcedKeyboardAndMouseRetriever _kbmState = new();
-	readonly NeutralGameControllerState _combinedControllerState = new();
+	readonly UiSourcedKeyboardAndMouseInputRetriever _kbmState = new();
+	readonly StubGameControllerInputRetriever _combinedControllerState = new();
 	bool _isDisposed = false;
 
 	public bool UserQuitRequested { get; private set; } = false;
@@ -19,20 +19,20 @@ sealed class UiSourcedInputRetriever : ILatestInputRetriever, IDisposable {
 			return _kbmState;
 		}
 	}
-	public IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputStateRetriever> GameControllers {
+	public IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputRetriever> GameControllers {
 		get {
 			ThrowIfThisIsDisposed();
-			return IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputStateRetriever>.Empty;
+			return IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputRetriever>.Empty;
 		}
 	}
-	public ILatestGameControllerInputStateRetriever GameControllersCombined {
+	public ILatestGameControllerInputRetriever GameControllersCombined {
 		get {
 			ThrowIfThisIsDisposed();
 			return _combinedControllerState;
 		}
 	}
 
-	internal UiSourcedKeyboardAndMouseRetriever KeyboardAndMouseState => _kbmState;
+	internal UiSourcedKeyboardAndMouseInputRetriever KeyboardAndMouseState => _kbmState;
 
 	internal void SetUserQuitRequested() => UserQuitRequested = true;
 

@@ -1,9 +1,12 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-namespace Egodystonic.TinyFFR.Environment.Input.Ui;
+using System;
+using Egodystonic.TinyFFR.Environment.Input;
 
-sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouseInputRetriever, IDisposable {
+namespace Egodystonic.TinyFFR.Input;
+
+sealed unsafe class UiSourcedKeyboardAndMouseInputRetriever : ILatestKeyboardAndMouseInputRetriever, IDisposable {
 	List<KeyboardOrMouseKeyEvent> _pendingKeyEvents = new();
 	List<KeyboardOrMouseKeyEvent> _currentKeyEvents = new();
 	List<MouseClickEvent> _pendingClickEvents = new();
@@ -11,10 +14,7 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 	readonly List<KeyboardOrMouseKey> _keyDownEvents = new();
 	readonly List<KeyboardOrMouseKey> _keyUpEvents = new();
 	readonly List<KeyboardOrMouseKey> _currentlyPressedKeys = new();
-	// Tracks what the host UI framework has told us is held down right now. Kept separate from _currentlyPressedKeys
-	// (which only advances on Iterate()) so that key-repeat can be filtered at the moment events are recorded without
-	// letting events the user hasn't been shown yet leak in to CurrentlyPressedKeys.
-	readonly HashSet<KeyboardOrMouseKey> _physicallyHeldKeys = new();
+	readonly HashSet<KeyboardOrMouseKey> _currentlyPressedKeysAccordingToFramework = new();
 	XYPair<int>? _cursorDeltaOrigin;
 	XYPair<int>? _pendingCursorPosition;
 	XYPair<int> _pendingCursorDelta;
@@ -41,8 +41,8 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 		this, _iterationVersion, &GetNewMouseClicksCount, &GetIterationVersion, &GetNewMouseClick
 	);
 
-	static UiSourcedKeyboardAndMouseRetriever CastWithDisposeCheck(ILatestKeyboardAndMouseInputRetriever input) {
-		var result = ((UiSourcedKeyboardAndMouseRetriever) input);
+	static UiSourcedKeyboardAndMouseInputRetriever CastWithDisposeCheck(ILatestKeyboardAndMouseInputRetriever input) {
+		var result = ((UiSourcedKeyboardAndMouseInputRetriever) input);
 		result.ThrowIfThisIsDisposed();
 		return result;
 	}
@@ -110,14 +110,14 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 	public void RecordKeyDown(KeyboardOrMouseKey key) {
 		ThrowIfThisIsDisposed();
 		if (key == KeyboardOrMouseKey.Unknown) return;
-		if (!_physicallyHeldKeys.Add(key)) return; // Filters OS key-repeat, matching the native event poll's behaviour
+		if (!_currentlyPressedKeysAccordingToFramework.Add(key)) return; // Filters OS key-repeat, matching the native event poll's behaviour
 		_pendingKeyEvents.Add(new(key, keyDown: true));
 	}
 
 	public void RecordKeyUp(KeyboardOrMouseKey key) {
 		ThrowIfThisIsDisposed();
 		if (key == KeyboardOrMouseKey.Unknown) return;
-		if (!_physicallyHeldKeys.Remove(key)) return; // Never report a release for something we never saw pressed
+		if (!_currentlyPressedKeysAccordingToFramework.Remove(key)) return; // Never report a release for something we never saw pressed
 		_pendingKeyEvents.Add(new(key, keyDown: false));
 	}
 
@@ -133,8 +133,6 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 		_pendingCursorPosition = elementRelativePosition;
 	}
 
-	// Positive values indicate scrolling down, matching MouseScrollWheelDelta. Fractional values are accumulated
-	// until they amount to a whole notch (some frameworks report sub-notch deltas for precision touchpads).
 	public void RecordScroll(double notchDelta) {
 		ThrowIfThisIsDisposed();
 		_pendingScrollNotches += notchDelta;
@@ -148,8 +146,6 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 		}
 	}
 
-	// Wheel notches are recorded as a down event immediately followed by an up event (as the native event poll does),
-	// which keeps them out of CurrentlyPressedKeys whilst still contributing to MouseScrollWheelDelta
 	void RecordWheelNotch(KeyboardOrMouseKey key) {
 		_pendingKeyEvents.Add(new(key, keyDown: true));
 		_pendingKeyEvents.Add(new(key, keyDown: false));
@@ -160,14 +156,12 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 
 	void ReleaseHeldKeys(bool releaseMouseKeys) {
 		ThrowIfThisIsDisposed();
-		foreach (var key in _physicallyHeldKeys.ToArray()) {
+		foreach (var key in _currentlyPressedKeysAccordingToFramework.ToArray()) {
 			if ((key.GetCategory() == KeyboardOrMouseKeyCategory.Mouse) != releaseMouseKeys) continue;
 			RecordKeyUp(key);
 		}
 	}
 
-	// Invoked when the cursor may have moved without us being told (e.g. it left the tracked element and came back
-	// somewhere else). Stops that discontinuity being reported as one enormous MouseCursorDelta.
 	public void ResetCursorDeltaOrigin() {
 		ThrowIfThisIsDisposed();
 		_cursorDeltaOrigin = null;
@@ -204,7 +198,7 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 
 		_iterationVersion++;
 	}
-	static int GetIterationVersion(ILatestKeyboardAndMouseInputRetriever input) => ((UiSourcedKeyboardAndMouseRetriever) input)._iterationVersion;
+	static int GetIterationVersion(ILatestKeyboardAndMouseInputRetriever input) => ((UiSourcedKeyboardAndMouseInputRetriever) input)._iterationVersion;
 
 	public override string ToString() => _isDisposed ? "TinyFFR UI Input State Provider [Keyboard/Mouse] [Disposed]" : "TinyFFR UI Input State Provider [Keyboard/Mouse]";
 
@@ -219,7 +213,7 @@ sealed unsafe class UiSourcedKeyboardAndMouseRetriever : ILatestKeyboardAndMouse
 			_keyDownEvents.Clear();
 			_keyUpEvents.Clear();
 			_currentlyPressedKeys.Clear();
-			_physicallyHeldKeys.Clear();
+			_currentlyPressedKeysAccordingToFramework.Clear();
 		}
 		finally {
 			_isDisposed = true;

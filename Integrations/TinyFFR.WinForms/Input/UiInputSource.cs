@@ -1,18 +1,15 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using Egodystonic.TinyFFR.Environment.Input;
-using Egodystonic.TinyFFR.Environment.Input.Ui;
 using System;
+using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Input;
 
-namespace Egodystonic.TinyFFR.WinForms {
-	// Translates one WinForms control's input events in to a UiSourcedInputRetriever, making TinyFFR's input abstraction
-	// available to code hosted inside a WinForms application. Keyboard events are only observed whilst the control has
-	// focus and mouse events only whilst it is hovered or has captured the mouse.
+namespace Egodystonic.TinyFFR.WinForms.Input {
 	sealed class UiInputSource : IDisposable {
 		readonly Control _control;
 		readonly UiSourcedInputRetriever _retriever = new();
-		readonly UiSourcedKeyboardAndMouseRetriever _kbm;
+		readonly UiSourcedKeyboardAndMouseInputRetriever _kbm;
 		Form? _subscribedForm;
 		bool _isDisposed = false;
 
@@ -39,14 +36,14 @@ namespace Egodystonic.TinyFFR.WinForms {
 
 		public void Iterate() => _retriever.Iterate();
 
-		void HandleKeyDown(object? sender, KeyEventArgs e) => _kbm.RecordKeyDown(KeyboardOrMouseKeyMap.Translate(e.KeyCode));
+		void HandleKeyDown(object? sender, KeyEventArgs e) => _kbm.RecordKeyDown(Input.KeyboardOrMouseKeyMap.Translate(e.KeyCode));
 
 		void HandleKeyUp(object? sender, KeyEventArgs e) {
-			if (KeyboardOrMouseKeyMap.TryGetSidedModifierPair(e.KeyCode, out var left, out var right)) {
+			if (Input.KeyboardOrMouseKeyMap.TryGetSidedModifierPair(e.KeyCode, out var left, out var right)) {
 				_kbm.RecordKeyUp(left);
 				_kbm.RecordKeyUp(right);
 			}
-			else _kbm.RecordKeyUp(KeyboardOrMouseKeyMap.Translate(e.KeyCode));
+			else _kbm.RecordKeyUp(Input.KeyboardOrMouseKeyMap.Translate(e.KeyCode));
 		}
 
 		void HandleLostFocus(object? sender, EventArgs e) => _kbm.ReleaseAllHeldKeyboardKeys();
@@ -55,19 +52,18 @@ namespace Egodystonic.TinyFFR.WinForms {
 			var position = ToXyPair(e.Location);
 			_kbm.RecordCursorPosition(position);
 
-			var mouseKey = KeyboardOrMouseKeyMap.Translate(e.Button);
+			var mouseKey = Input.KeyboardOrMouseKeyMap.Translate(e.Button);
 			if (mouseKey == MouseKey.Unknown) return;
 			_kbm.RecordKeyDown(mouseKey.ToKeyboardOrMouseKey());
 			_kbm.RecordClick(mouseKey, position, e.Clicks);
 
-			// Capturing whilst a button is held keeps cursor deltas flowing even when the mouse leaves the control
 			if (!_control.Capture) _control.Capture = true;
 		}
 
 		void HandleMouseUp(object? sender, MouseEventArgs e) {
 			_kbm.RecordCursorPosition(ToXyPair(e.Location));
 
-			var mouseKey = KeyboardOrMouseKeyMap.Translate(e.Button);
+			var mouseKey = Input.KeyboardOrMouseKeyMap.Translate(e.Button);
 			if (mouseKey != MouseKey.Unknown) _kbm.RecordKeyUp(mouseKey.ToKeyboardOrMouseKey());
 
 			if (Control.MouseButtons == MouseButtons.None && _control.Capture) _control.Capture = false;
@@ -77,10 +73,9 @@ namespace Egodystonic.TinyFFR.WinForms {
 
 		void HandleMouseWheel(object? sender, MouseEventArgs e) {
 			_kbm.RecordCursorPosition(ToXyPair(e.Location));
-			_kbm.RecordScroll(-e.Delta / (double) SystemInformation.MouseWheelScrollDelta); // WinForms reports a positive delta for scrolling up, TinyFFR treats down as positive
+			_kbm.RecordScroll(-e.Delta / (double) SystemInformation.MouseWheelScrollDelta);
 		}
 
-		// Whilst captured we keep receiving moves (with out-of-bounds positions), so the delta remains meaningful
 		void HandleMouseLeave(object? sender, EventArgs e) {
 			if (!_control.Capture) _kbm.ResetCursorDeltaOrigin();
 		}

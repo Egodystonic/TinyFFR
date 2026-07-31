@@ -15,7 +15,7 @@ public static class DefaultCameraInputHandler {
 		controller.AdjustAllViaDefaultControls(input, deltaTime);
 	}
 
-	public static void TickGamepad(ILatestGameControllerInputStateRetriever input, ICameraController controller, float deltaTime) {
+	public static void TickGamepad(ILatestGameControllerInputRetriever input, ICameraController controller, float deltaTime) {
 		controller.AdjustAllViaDefaultControls(input, deltaTime);
 	}
 	

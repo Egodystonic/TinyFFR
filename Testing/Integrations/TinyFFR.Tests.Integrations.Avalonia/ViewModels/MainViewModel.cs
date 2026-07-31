@@ -138,7 +138,7 @@ public partial class MainViewModel : ViewModelBase {
 		}
 
 		if (_inputSource is { } inputSource) {
-			_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(TickWithInput, inputSource));
+			_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput));
 		}
 		else {
 			_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(Tick));

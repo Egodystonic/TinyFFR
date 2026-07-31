@@ -1,22 +1,20 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Egodystonic.TinyFFR.Environment.Input;
-using Egodystonic.TinyFFR.Environment.Input.Ui;
+using Egodystonic.TinyFFR.Input;
 
-namespace Egodystonic.TinyFFR.Avalonia;
+namespace Egodystonic.TinyFFR.Avalonia.Input;
 
-// Translates one Avalonia element's input events in to a UiSourcedInputRetriever, making TinyFFR's input abstraction
-// available to code hosted inside an Avalonia application. Keyboard events are only observed whilst the element has
-// focus and pointer events only whilst it is hovered or has captured the pointer.
 sealed class UiInputSource : IDisposable {
 	readonly InputElement _element;
 	readonly UiSourcedInputRetriever _retriever = new();
-	readonly UiSourcedKeyboardAndMouseRetriever _kbm;
+	readonly UiSourcedKeyboardAndMouseInputRetriever _kbm;
 	Window? _subscribedWindow;
 	IPointer? _capturedPointer;
 	bool _isDisposed = false;
@@ -58,7 +56,6 @@ sealed class UiInputSource : IDisposable {
 		_kbm.RecordKeyDown(mouseKey.ToKeyboardOrMouseKey());
 		_kbm.RecordClick(mouseKey, position, e.ClickCount);
 
-		// Capturing whilst a button is held keeps cursor deltas flowing even when the pointer leaves the element
 		if (_capturedPointer == null) {
 			_capturedPointer = e.Pointer;
 			e.Pointer.Capture(_element);
@@ -79,10 +76,9 @@ sealed class UiInputSource : IDisposable {
 
 	void HandlePointerWheelChanged(object? sender, PointerWheelEventArgs e) {
 		_kbm.RecordCursorPosition(ToXyPair(e.GetPosition(_element)));
-		_kbm.RecordScroll(-e.Delta.Y); // Avalonia reports a positive Y for scrolling up, TinyFFR treats down as positive
+		_kbm.RecordScroll(-e.Delta.Y);
 	}
 
-	// Whilst captured we keep receiving moves (with out-of-bounds positions), so the delta remains meaningful
 	void HandlePointerExited(object? sender, PointerEventArgs e) {
 		if (_capturedPointer == null) _kbm.ResetCursorDeltaOrigin();
 	}

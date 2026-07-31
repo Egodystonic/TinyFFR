@@ -110,7 +110,7 @@ class LocalInputTest {
 	}
 
 	void AssertInputStatesAreEqual(ILatestInputRetriever expected, ILatestInputRetriever actual) {
-		void AssertControllerStates(ILatestGameControllerInputStateRetriever e, ILatestGameControllerInputStateRetriever a) {
+		void AssertControllerStates(ILatestGameControllerInputRetriever e, ILatestGameControllerInputRetriever a) {
 			Assert.IsTrue(e.GetNameAsNewStringObject().SequenceEqual(a.GetNameAsNewStringObject()));
 			Assert.IsTrue(e.CurrentlyPressedButtons.SequenceEqual(a.CurrentlyPressedButtons));
 			Assert.AreEqual(e.LeftStickPosition, a.LeftStickPosition);

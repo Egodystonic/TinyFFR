@@ -10,6 +10,6 @@ public interface ILatestInputRetriever {
 
 	ILatestKeyboardAndMouseInputRetriever KeyboardAndMouse { get; }
 
-	IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputStateRetriever> GameControllers { get; }
-	ILatestGameControllerInputStateRetriever GameControllersCombined { get; }
+	IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputRetriever> GameControllers { get; }
+	ILatestGameControllerInputRetriever GameControllersCombined { get; }
 }

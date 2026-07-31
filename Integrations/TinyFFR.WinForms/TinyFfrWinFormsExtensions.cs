@@ -3,6 +3,7 @@ using System.Numerics;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.WinForms.Input;
 using Timer = System.Windows.Forms.Timer;
 
 namespace Egodystonic.TinyFFR.WinForms {
@@ -24,7 +25,7 @@ namespace Egodystonic.TinyFFR.WinForms {
 			return StartWinFormsUiLoop(@this, tickCallback, null, tickRateHz, name);
 		}
 
-		public static IDisposable StartWinFormsUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan, ILatestInputRetriever> tickCallback, Control inputSource, int tickRateHz = DefaultUiLoopTickRateHz, ReadOnlySpan<char> name = default) {
+		public static IDisposable StartWinFormsUiLoop(this ILocalApplicationLoopBuilder @this, Control inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, ReadOnlySpan<char> name = default) {
 			ArgumentNullException.ThrowIfNull(tickCallback);
 			ArgumentNullException.ThrowIfNull(inputSource);
 
@@ -33,8 +34,10 @@ namespace Egodystonic.TinyFFR.WinForms {
 				return StartWinFormsUiLoop(
 					@this,
 					deltaTime => {
+						// ReSharper disable AccessToDisposedClosure Closed-over var is only disposed if loop creation fails anyway
 						uiInputSource.Iterate();
 						tickCallback(deltaTime, uiInputSource.Retriever);
+						// ReSharper restore AccessToDisposedClosure
 					},
 					uiInputSource,
 					tickRateHz,

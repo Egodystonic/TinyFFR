@@ -60,8 +60,6 @@ public class TinyFfrSceneView : Control {
 		set => SetValue(InternalRenderResolutionProperty, value);
 	}
 
-	// Focusable by default so that keyboard input can be routed to this control (e.g. when using the
-	// StartAvaloniaUiLoop overload that supplies an ILatestInputRetriever)
 	public TinyFfrSceneView() {
 		Focusable = true;
 	}

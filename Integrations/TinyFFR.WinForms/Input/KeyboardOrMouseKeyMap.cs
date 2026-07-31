@@ -1,10 +1,11 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using Egodystonic.TinyFFR.Environment.Input;
+using System;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Environment.Input;
 
-namespace Egodystonic.TinyFFR.WinForms {
+namespace Egodystonic.TinyFFR.WinForms.Input {
 	static partial class KeyboardOrMouseKeyMap {
 		const int VkLeftShift = 0xA0;
 		const int VkRightShift = 0xA1;
@@ -14,8 +15,6 @@ namespace Egodystonic.TinyFFR.WinForms {
 		const int VkRightAlt = 0xA5;
 		const short KeyDownStateMask = unchecked((short) 0x8000);
 
-		// Keys are translated to their unshifted value, matching the SDL keycode semantics of KeyboardOrMouseKey
-		// (e.g. Shift+1 is reported as NumberRow1, not ExclamationMark). Punctuation is mapped according to a US layout.
 		public static KeyboardOrMouseKey Translate(Keys key) {
 			if (key is >= Keys.A and <= Keys.Z) return CharKey((char) ('a' + (key - Keys.A)));
 			if (key is >= Keys.D0 and <= Keys.D9) return InputUtils.KeyFromNumericValue(key - Keys.D0) ?? KeyboardOrMouseKey.Unknown;
@@ -77,9 +76,6 @@ namespace Egodystonic.TinyFFR.WinForms {
 			};
 		}
 
-		// By the time a key release is reported the OS no longer considers either side of the modifier to be down, so we
-		// can't tell which one was released. Callers pass both candidates to the retriever instead, which discards the
-		// one it isn't currently holding.
 		public static bool TryGetSidedModifierPair(Keys key, out KeyboardOrMouseKey left, out KeyboardOrMouseKey right) {
 			switch (key) {
 				case Keys.ShiftKey:

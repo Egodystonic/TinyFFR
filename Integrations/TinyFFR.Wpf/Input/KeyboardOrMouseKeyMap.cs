@@ -1,13 +1,12 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using Egodystonic.TinyFFR.Environment.Input;
+using System;
 using System.Windows.Input;
+using Egodystonic.TinyFFR.Environment.Input;
 
-namespace Egodystonic.TinyFFR.Wpf {
+namespace Egodystonic.TinyFFR.Wpf.Input {
 	static class KeyboardOrMouseKeyMap {
-		// Keys are translated to their unshifted value, matching the SDL keycode semantics of KeyboardOrMouseKey
-		// (e.g. Shift+1 is reported as NumberRow1, not ExclamationMark). Punctuation is mapped according to a US layout.
 		public static KeyboardOrMouseKey Translate(Key key) {
 			if (key is >= Key.A and <= Key.Z) return CharKey((char) ('a' + (key - Key.A)));
 			if (key is >= Key.D0 and <= Key.D9) return InputUtils.KeyFromNumericValue(key - Key.D0) ?? KeyboardOrMouseKey.Unknown;

@@ -65,8 +65,6 @@ public class TinyFfrSceneView : Control {
 	}
 	Size BoundsSize => new(ActualWidth, ActualHeight);
 
-	// Focusable by default so that keyboard input can be routed to this control (e.g. when using the
-	// StartWpfUiLoop overload that supplies an ILatestInputRetriever)
 	public TinyFfrSceneView() {
 		Focusable = true;
 	}

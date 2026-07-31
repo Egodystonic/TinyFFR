@@ -1,15 +1,13 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System;
 using Avalonia.Input;
 using Egodystonic.TinyFFR.Environment.Input;
 
-namespace Egodystonic.TinyFFR.Avalonia;
+namespace Egodystonic.TinyFFR.Avalonia.Input;
 
 static class KeyboardOrMouseKeyMap {
-	// Keys are translated to their unshifted value, matching the SDL keycode semantics of KeyboardOrMouseKey
-	// (e.g. Shift+1 is reported as NumberRow1, not ExclamationMark). Punctuation is mapped according to a US
-	// layout; 'keySymbol' (where the host framework supplies one) is used as a fallback for other layouts.
 	public static KeyboardOrMouseKey Translate(Key key, string? keySymbol = null) {
 		var result = TranslateKey(key);
 		if (result != KeyboardOrMouseKey.Unknown) return result;

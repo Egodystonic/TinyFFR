@@ -4,13 +4,14 @@
 using NUnit.Framework;
 using System;
 using System.Linq;
+using Egodystonic.TinyFFR.Input;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Ui;
 
 [TestFixture]
 class UiSourcedInputRetrieverTest {
 	UiSourcedInputRetriever _retriever = null!;
-	UiSourcedKeyboardAndMouseRetriever _recorder = null!;
+	UiSourcedKeyboardAndMouseInputRetriever _recorder = null!;
 	ILatestKeyboardAndMouseInputRetriever Kbm => _retriever.KeyboardAndMouse;
 
 	[SetUp]

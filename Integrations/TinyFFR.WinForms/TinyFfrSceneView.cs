@@ -75,8 +75,6 @@ public partial class TinyFfrSceneView : UserControl {
 			true
 		);
 
-		// Focusable by default so that keyboard input can be routed to this control (e.g. when using the
-		// StartWinFormsUiLoop overload that supplies an ILatestInputRetriever)
 		SetStyle(ControlStyles.Selectable, true);
 		TabStop = true;
 	}
@@ -86,7 +84,6 @@ public partial class TinyFfrSceneView : UserControl {
 		if (CanFocus && !Focused) Focus();
 	}
 
-	// Without this the arrow and tab keys are consumed as focus navigation and never reported via KeyDown/KeyUp
 	protected override bool IsInputKey(Keys keyData) {
 		return (keyData & Keys.KeyCode) switch {
 			Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.Tab => true,

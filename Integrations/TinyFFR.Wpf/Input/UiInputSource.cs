@@ -1,21 +1,18 @@
 // Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using Egodystonic.TinyFFR.Environment.Input;
-using Egodystonic.TinyFFR.Environment.Input.Ui;
 using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Input;
 
-namespace Egodystonic.TinyFFR.Wpf {
-	// Translates one WPF element's input events in to a UiSourcedInputRetriever, making TinyFFR's input abstraction
-	// available to code hosted inside a WPF application. Keyboard events are only observed whilst the element has
-	// focus and mouse events only whilst it is hovered or has captured the mouse.
+namespace Egodystonic.TinyFFR.Wpf.Input {
 	sealed class UiInputSource : IDisposable {
 		readonly UIElement _element;
 		readonly UiSourcedInputRetriever _retriever = new();
-		readonly UiSourcedKeyboardAndMouseRetriever _kbm;
+		readonly UiSourcedKeyboardAndMouseInputRetriever _kbm;
 		Window? _subscribedWindow;
 		bool _isDisposed = false;
 
@@ -48,7 +45,6 @@ namespace Egodystonic.TinyFFR.Wpf {
 		}
 		void HandleKeyUp(object sender, KeyEventArgs e) => _kbm.RecordKeyUp(KeyboardOrMouseKeyMap.Translate(EffectiveKey(e)));
 
-		// WPF reports Alt-modified keypresses as Key.System with the 'real' key in SystemKey
 		static Key EffectiveKey(KeyEventArgs e) => e.Key == Key.System ? e.SystemKey : e.Key;
 
 		void HandleLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => _kbm.ReleaseAllHeldKeyboardKeys();
@@ -62,7 +58,6 @@ namespace Egodystonic.TinyFFR.Wpf {
 			_kbm.RecordKeyDown(mouseKey.ToKeyboardOrMouseKey());
 			_kbm.RecordClick(mouseKey, position, e.ClickCount);
 
-			// Capturing whilst a button is held keeps cursor deltas flowing even when the mouse leaves the element
 			if (!_element.IsMouseCaptured) _element.CaptureMouse();
 		}
 
@@ -79,10 +74,9 @@ namespace Egodystonic.TinyFFR.Wpf {
 
 		void HandleMouseWheel(object sender, MouseWheelEventArgs e) {
 			_kbm.RecordCursorPosition(ToXyPair(e.GetPosition(_element)));
-			_kbm.RecordScroll(-e.Delta / (double) Mouse.MouseWheelDeltaForOneLine); // WPF reports a positive delta for scrolling up, TinyFFR treats down as positive
+			_kbm.RecordScroll(-e.Delta / (double) Mouse.MouseWheelDeltaForOneLine);
 		}
 
-		// Whilst captured we keep receiving moves (with out-of-bounds positions), so the delta remains meaningful
 		void HandleMouseLeave(object sender, MouseEventArgs e) {
 			if (!_element.IsMouseCaptured) _kbm.ResetCursorDeltaOrigin();
 		}

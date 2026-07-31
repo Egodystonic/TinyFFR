@@ -128,7 +128,7 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 			}
 
 			if (_inputSource is { } inputSource) {
-				_disposables.Add(factory.ApplicationLoopBuilder.StartWpfUiLoop(TickWithInput, inputSource));
+				_disposables.Add(factory.ApplicationLoopBuilder.StartWpfUiLoop(inputSource, TickWithInput));
 			}
 			else {
 				_disposables.Add(factory.ApplicationLoopBuilder.StartWpfUiLoop(Tick));
