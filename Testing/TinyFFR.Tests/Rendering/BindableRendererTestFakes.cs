@@ -280,6 +280,8 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation) { }
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color) { }
 	public void RemoveBackdrop(ResourceHandle<Scene> handle) { }
+	public void AddFog(ResourceHandle<Scene> handle, in FogDescriptor fogDescriptor) { }
+	public void RemoveFog(ResourceHandle<Scene> handle) { }
 	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives) { }
 
 	public IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle) => throw new NotSupportedException();

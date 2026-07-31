@@ -139,7 +139,7 @@ class LocalCameraLockedObjectsTest {
 		autoCamController.Distance = 1.1f;
 		autoCamController.MinHeight = null;
 		autoCamController.Height = 0f;
-
+	
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {

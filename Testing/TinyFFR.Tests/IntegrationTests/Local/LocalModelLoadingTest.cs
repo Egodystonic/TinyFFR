@@ -97,7 +97,7 @@ class LocalModelLoadingTest {
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-		renderer.SetQuality(new(Quality.VeryHigh));
+		renderer.SetQuality(new(BuiltInQualityConfiguration.Ultra));
 
 		scene.Add(light);
 		scene.Add(sunlight);

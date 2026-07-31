@@ -679,9 +679,22 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		newConfig.ThrowIfInvalid();
 		_loadedRenderers[handle] = _loadedRenderers[handle] with { Quality = newConfig };
-		SetViewShadowFidelityLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ShadowQuality).ThrowIfFailure();
-		SetViewScreenSpaceEffectsLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ScreenSpaceEffectsQuality).ThrowIfFailure();
+		SetViewQualityConfiguration(
+			_loadedRenderers[handle].Viewport.Handle,
+			(int) newConfig.ShadowQuality,
+			(int) newConfig.ScreenSpaceEffectsQuality,
+			(int) newConfig.AntiAliasingMode,
+			(int) newConfig.AmbientOcclusionQuality,
+			newConfig.PostProcessingEnabled,
+			newConfig.InternalResolutionScalar,
+			(int) newConfig.HdrColorPrecision,
+			newConfig.ShadowsEnabled,
+			(int) newConfig.BloomQuality,
+			newConfig.DitheringEnabled,
+			newConfig.ScreenSpaceEffectsQuality == Quality.VeryHigh
+		).ThrowIfFailure();
 	}
 
 	public void SetFrustumCullingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
@@ -950,11 +963,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 	void SetUpSceneForRender(ResourceHandle<Renderer> handle) {
 		var scene = _loadedRenderers[handle].Scene;
+		var camera = _loadedRenderers[handle].Camera;
 		var quality = _loadedRenderers[handle].Quality.ShadowQuality;
 		var localSceneImpl = (LocalSceneBuilder) scene.Implementation;
 		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
-		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, _loadedRenderers[handle].Camera);
+		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, camera);
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
 		switch (quality) {
@@ -962,18 +976,27 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				localSceneImpl.SetLightShadowFidelity(
 					sceneHandle,
 					quality,
-					pointLightFidelity:			new(256, 1),
-					spotLightFidelity:			new(256, 1),
-					directionalLightFidelity:	new(1024, 1)
+					pointLightFidelity:			new(64, 1),
+					spotLightFidelity:			new(64, 1),
+					directionalLightFidelity:	new(256, 1)
 				);
 				break;
 			case Quality.Low:
 				localSceneImpl.SetLightShadowFidelity(
 					sceneHandle,
 					quality,
+					pointLightFidelity:			new(256, 1),
+					spotLightFidelity:			new(256, 1),
+					directionalLightFidelity:	new(1024, 2)
+				);
+				break;
+			default:
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
+					quality,
 					pointLightFidelity:			new(512, 1),
 					spotLightFidelity:			new(512, 1),
-					directionalLightFidelity:	new(2048, 2)
+					directionalLightFidelity:	new(2048, 3)
 				);
 				break;
 			case Quality.High:
@@ -994,16 +1017,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					directionalLightFidelity:	new(4096, 4)
 				);
 				break;
-			default:
-				localSceneImpl.SetLightShadowFidelity(
-					sceneHandle,
-					quality,
-					pointLightFidelity:			new(1024, 1),
-					spotLightFidelity:			new(1024, 1),
-					directionalLightFidelity:	new(2048, 3)
-				);
-				break;
 		}
+
+		localSceneImpl.SetUpFogForRender(sceneHandle, camera, _loadedRenderers[handle].Viewport.Handle);
 	}
 
 	#region Native Methods
@@ -1044,15 +1060,20 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		uint width,
 		uint height
 	);
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_shadow_fidelity_level")]
-	static extern InteropResult SetViewShadowFidelityLevel(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_quality_configuration")]
+	static extern InteropResult SetViewQualityConfiguration(
 		UIntPtr viewDescriptorHandle,
-		int level
-	);
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_screen_space_effects_level")]
-	static extern InteropResult SetViewScreenSpaceEffectsLevel(
-		UIntPtr viewDescriptorHandle,
-		int level
+		int shadowFidelityLevel,
+		int screenSpaceEffectsLevel,
+		int antiAliasingMode,
+		int ambientOcclusionQuality,
+		InteropBool postProcessingEnabled,
+		float internalResolutionScalar,
+		int hdrColorPrecision,
+		InteropBool shadowsEnabled,
+		int bloomQuality,
+		InteropBool dithering,
+		InteropBool guardBand
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_frustum_culling_enabled")]
 	static extern InteropResult SetViewFrustumCullingEnabled(

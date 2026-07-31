@@ -51,8 +51,8 @@ class LocalMaterialsTest {
 
 		public string GetWindowTitleString() {
 			var mapsStr = "";
-			if (ShaderQualityType == 0) mapsStr += " qual=v_high";
-			if (ShaderQualityType == 1) mapsStr += " qual=standard";
+			if (ShaderQualityType == 0) mapsStr += " qual=ultra";
+			if (ShaderQualityType == 1) mapsStr += " qual=high";
 			if (ShaderQualityType == 2) mapsStr += " qual=v_low";
 			if (ShaderType < 4) {
 				if (MapAlphaType == 1) mapsStr += " alpha(mask)";
@@ -289,9 +289,9 @@ class LocalMaterialsTest {
 				curUserOptions.ShaderQualityType++;
 				if (curUserOptions.ShaderQualityType > 2) curUserOptions.ShaderQualityType = 0;
 				renderer.SetQuality(curUserOptions.ShaderQualityType switch {
-					2 => new RenderQualityConfig(Quality.VeryLow),
-					1 => new RenderQualityConfig(Quality.Standard),
-					_ => new RenderQualityConfig(Quality.VeryHigh)
+					2 => new RenderQualityConfig(BuiltInQualityConfiguration.Lowest),
+					1 => new RenderQualityConfig(BuiltInQualityConfiguration.Medium),
+					_ => new RenderQualityConfig(BuiltInQualityConfiguration.Ultra)
 				});
 				recreationNecessary = true;
 			}

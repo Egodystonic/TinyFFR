@@ -9,6 +9,7 @@
 #include "filament/Viewport.h"
 #include "filament/Fence.h"
 #include "filament/RenderTarget.h"
+#include "filament/TransformManager.h"
 
 #include "sdl/SDL_syswm.h"
 
@@ -102,15 +103,8 @@ void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandl
 	if (optionalRenderTarget != nullptr) {
 		(*outViewDescriptor)->setRenderTarget(optionalRenderTarget);
 	}
-
-	native_impl_render::set_view_shadow_fidelity_level(*outViewDescriptor, 0);
-	native_impl_render::set_view_screen_space_effects_level(*outViewDescriptor, 0);
-	BloomOptions bo {
-		.enabled = true
-	};
-	(*outViewDescriptor)->setBloomOptions(bo);
 	(*outViewDescriptor)->setFrustumCullingEnabled(true);
-	
+	filament_engine->getTransformManager().create((*outViewDescriptor)->getFogEntity());
 }
 StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor) {
 	native_impl_render::allocate_view_descriptor(scene, camera, optionalRenderTarget, outViewDescriptor);
@@ -119,6 +113,9 @@ StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle came
 
 void native_impl_render::dispose_view_descriptor(ViewDescriptorHandle viewDescriptor) {
 	ThrowIfNull(viewDescriptor, "View was null.");
+	auto& tcm = filament_engine->getTransformManager();
+	auto fogEntity = viewDescriptor->getFogEntity();
+	if (tcm.hasComponent(fogEntity)) tcm.destroy(fogEntity);
 	ThrowIf(!filament_engine->destroy(viewDescriptor), "Could not destroy view descriptor.");
 }
 StartExportedFunc(dispose_view_descriptor, ViewDescriptorHandle viewDescriptor) {
@@ -164,59 +161,164 @@ StartExportedFunc(set_view_compositing_mode, ViewDescriptorHandle viewDescriptor
 	EndExportedFunc
 }
 
-void native_impl_render::set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level) {
-	ThrowIfNull(viewDescriptor, "View was null.");
-	// TODO PCSS doesn't seem very stable, it may be that we need to better configure the frustum/FOV
-	// switch (level) {
-	// 	case 1:
-	// 	case 2:
-	// 		// Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
-	// 		viewDescriptor->setShadowType(ShadowType::PCSS);
-	// 		break;
-	// 	default:
-	// 		viewDescriptor->setShadowType(ShadowType::VSM);
-	// 		break;
-	// }
-	viewDescriptor->setShadowType(ShadowType::VSM);
-}
-StartExportedFunc(set_view_shadow_fidelity_level, ViewDescriptorHandle viewDescriptor, int32_t level) {
-	native_impl_render::set_view_shadow_fidelity_level(viewDescriptor, level);
-	EndExportedFunc
+// Maps a TinyFFR Quality level (-2 VeryLow .. +2 VeryHigh) onto a Filament QualityLevel, with the given level treated as MEDIUM==Standard.
+static QualityLevel quality_level_from_tinyffr(int32_t level) {
+	switch (level) {
+		case -2: return QualityLevel::LOW;
+		case -1: return QualityLevel::LOW;
+		case 1:  return QualityLevel::HIGH;
+		case 2:  return QualityLevel::ULTRA;
+		default: return QualityLevel::MEDIUM;
+	}
 }
 
-void native_impl_render::set_view_screen_space_effects_level(ViewDescriptorHandle viewDescriptor, int32_t level) {
+void native_impl_render::set_view_quality_configuration(
+	ViewDescriptorHandle viewDescriptor,
+	int32_t shadowFidelityLevel,
+	int32_t screenSpaceEffectsLevel,
+	int32_t antiAliasingMode,
+	int32_t ambientOcclusionQuality,
+	interop_bool postProcessingEnabled,
+	float internalResolutionScalar,
+	int32_t hdrColorPrecision,
+	interop_bool shadowsEnabled,
+	int32_t bloomQuality,
+	interop_bool dithering,
+	interop_bool guardBand
+) {
 	ThrowIfNull(viewDescriptor, "View was null.");
-	switch (level) {
-		case 1:
+
+	// TODO PCSS doesn't seem very stable, it may be that we need to better configure the frustum/FOV before exposing shadow type selection.
+	viewDescriptor->setShadowingEnabled(shadowsEnabled);
+	viewDescriptor->setShadowType(ShadowType::VSM);
+
+	switch (screenSpaceEffectsLevel) {
 		case 2: {
-			ScreenSpaceReflectionsOptions ssro {
-				.enabled = true
-			};
+			ScreenSpaceReflectionsOptions ssro { .maxDistance = 6.0, .stride = 2.0, .enabled = true };
 			viewDescriptor->setScreenSpaceReflectionsOptions(ssro);
-			viewDescriptor->setScreenSpaceRefractionEnabled(true);
 			break;
 		}
-		case -1:
-		case -2:{
-			ScreenSpaceReflectionsOptions ssro {
-				.enabled = false
-			};
+		case 1: {
+			ScreenSpaceReflectionsOptions ssro { .maxDistance = 3.0, .stride = 8.0, .enabled = true };
 			viewDescriptor->setScreenSpaceReflectionsOptions(ssro);
-			viewDescriptor->setScreenSpaceRefractionEnabled(false);
 			break;
 		}
 		default: {
-			ScreenSpaceReflectionsOptions ssro {
-				.enabled = false
-			};
+			ScreenSpaceReflectionsOptions ssro { .enabled = false };
 			viewDescriptor->setScreenSpaceReflectionsOptions(ssro);
-			viewDescriptor->setScreenSpaceRefractionEnabled(true);
 			break;
 		}
 	}
+
+	{
+		TemporalAntiAliasingOptions taa;
+		switch (antiAliasingMode) {
+			case 0: // None
+				viewDescriptor->setAntiAliasing(AntiAliasing::NONE);
+				taa.enabled = false;
+				break;
+			case 2: // Taa
+				viewDescriptor->setAntiAliasing(AntiAliasing::NONE);
+				taa.enabled = true;
+				break;
+			default: // Fxaa
+				viewDescriptor->setAntiAliasing(AntiAliasing::FXAA);
+				taa.enabled = false;
+				break;
+		}
+		viewDescriptor->setTemporalAntiAliasingOptions(taa);
+	}
+
+	{
+		AmbientOcclusionOptions ao;
+		if (ambientOcclusionQuality <= -2) {
+			ao.enabled = false;
+		}
+		else {
+			ao.enabled = true;
+			ao.quality = quality_level_from_tinyffr(ambientOcclusionQuality);
+		}
+		viewDescriptor->setAmbientOcclusionOptions(ao);
+	}
+
+	{
+		BloomOptions bo;
+		bo.enabled = true;
+		switch (bloomQuality) {
+			case -2:
+			case -1:  bo.quality = QualityLevel::LOW; break;
+			case 1:  bo.quality = QualityLevel::HIGH; break;
+			case 2:  bo.quality = QualityLevel::ULTRA; break;
+			default: bo.quality = QualityLevel::MEDIUM; break;
+		}
+		viewDescriptor->setBloomOptions(bo);
+	}
+
+	{
+		RenderQuality rq;
+		switch (hdrColorPrecision) {
+			case -2: rq.hdrColorBuffer = QualityLevel::LOW; break;
+			case -1: rq.hdrColorBuffer = QualityLevel::MEDIUM; break;
+			case 2:  rq.hdrColorBuffer = QualityLevel::ULTRA; break;
+			default: rq.hdrColorBuffer = QualityLevel::HIGH; break;
+		}
+		viewDescriptor->setRenderQuality(rq);
+	}
+
+	{
+		DynamicResolutionOptions dr;
+		if (internalResolutionScalar >= 1.0f) {
+			dr.enabled = false;
+		}
+		else {
+			if (internalResolutionScalar < 0.1f) internalResolutionScalar = 0.1f;
+			dr.enabled = true;
+			dr.minScale = { internalResolutionScalar, internalResolutionScalar };
+			dr.maxScale = { internalResolutionScalar, internalResolutionScalar };
+			dr.quality = QualityLevel::HIGH;
+		}
+		viewDescriptor->setDynamicResolutionOptions(dr);
+	}
+
+	viewDescriptor->setDithering(dithering ? Dithering::TEMPORAL : Dithering::NONE);
+
+	{
+		GuardBandOptions gb;
+		gb.enabled = guardBand;
+		viewDescriptor->setGuardBandOptions(gb);
+	}
+
+	viewDescriptor->setPostProcessingEnabled(postProcessingEnabled);
 }
-StartExportedFunc(set_view_screen_space_effects_level, ViewDescriptorHandle viewDescriptor, int32_t level) {
-	native_impl_render::set_view_screen_space_effects_level(viewDescriptor, level);
+StartExportedFunc(
+	set_view_quality_configuration,
+	ViewDescriptorHandle viewDescriptor,
+	int32_t shadowFidelityLevel,
+	int32_t screenSpaceEffectsLevel,
+	int32_t antiAliasingMode,
+	int32_t ambientOcclusionQuality,
+	interop_bool postProcessingEnabled,
+	float internalResolutionScalar,
+	int32_t hdrColorPrecision,
+	interop_bool shadowsEnabled,
+	int32_t bloomQuality,
+	interop_bool dithering,
+	interop_bool guardBand
+) {
+	native_impl_render::set_view_quality_configuration(
+		viewDescriptor,
+		shadowFidelityLevel,
+		screenSpaceEffectsLevel,
+		antiAliasingMode,
+		ambientOcclusionQuality,
+		postProcessingEnabled,
+		internalResolutionScalar,
+		hdrColorPrecision,
+		shadowsEnabled,
+		bloomQuality,
+		dithering,
+		guardBand
+	);
 	EndExportedFunc
 }
 
@@ -226,6 +328,74 @@ void native_impl_render::set_view_frustum_culling_enabled(ViewDescriptorHandle v
 }
 StartExportedFunc(set_view_frustum_culling_enabled, ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
 	native_impl_render::set_view_frustum_culling_enabled(viewDescriptor, enabled);
+	EndExportedFunc
+}
+
+void native_impl_render::set_view_fog(
+	ViewDescriptorHandle viewDescriptor,
+	interop_bool enabled,
+	float colorR,
+	float colorG,
+	float colorB,
+	float density,
+	float startDistance,
+	float height,
+	float heightFalloff,
+	float maximumOpacity,
+	float inScatteringSize,
+	float inScatteringStart,
+	interop_bool colorFromIbl,
+	mat4f* fogTransformMatPtr
+) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	FogOptions fo;
+	fo.enabled = enabled;
+	fo.color = { colorR, colorG, colorB };
+	fo.density = density;
+	fo.distance = startDistance;
+	fo.height = height;
+	fo.heightFalloff = heightFalloff;
+	fo.maximumOpacity = maximumOpacity;
+	fo.fogColorFromIbl = colorFromIbl;
+	fo.inScatteringStart = inScatteringStart;
+	fo.inScatteringSize = inScatteringSize;
+	viewDescriptor->setFogOptions(fo);
+	auto& manager = filament_engine->getTransformManager();
+	manager.setTransform(manager.getInstance(viewDescriptor->getFogEntity()), *fogTransformMatPtr);
+}
+StartExportedFunc(
+	set_view_fog,
+	ViewDescriptorHandle viewDescriptor,
+	interop_bool enabled,
+	float colorR,
+	float colorG,
+	float colorB,
+	float density,
+	float startDistance,
+	float height,
+	float heightFalloff,
+	float maximumOpacity,
+	float inScatteringSize,
+	float inScatteringStart,
+	interop_bool colorFromIbl,
+	mat4f* fogTransformMatPtr
+) {
+	native_impl_render::set_view_fog(
+		viewDescriptor,
+		enabled,
+		colorR,
+		colorG,
+		colorB,
+		density,
+		startDistance,
+		height,
+		heightFalloff,
+		maximumOpacity,
+		inScatteringSize,
+		inScatteringStart,
+		colorFromIbl,
+		fogTransformMatPtr
+	);
 	EndExportedFunc
 }
 

@@ -28,9 +28,37 @@ public:
 	static void render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain, interop_bool invokeBeginFrame, interop_bool invokeEndFrame);
 	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity);
 
-	static void set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level);
-	static void set_view_screen_space_effects_level(ViewDescriptorHandle viewDescriptor, int32_t level);
+	static void set_view_quality_configuration(
+		ViewDescriptorHandle viewDescriptor,
+		int32_t shadowFidelityLevel,
+		int32_t screenSpaceEffectsLevel,
+		int32_t antiAliasingMode,
+		int32_t ambientOcclusionQuality,
+		interop_bool postProcessingEnabled,
+		float internalResolutionScalar,
+		int32_t hdrColorPrecision,
+		interop_bool shadowsEnabled,
+		int32_t bloomQuality,
+		interop_bool dithering,
+		interop_bool guardBand
+	);
 	static void set_view_frustum_culling_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);
+	static void set_view_fog(
+		ViewDescriptorHandle viewDescriptor,
+		interop_bool enabled,
+		float colorR,
+		float colorG,
+		float colorB,
+		float density,
+		float startDistance,
+		float height,
+		float heightFalloff,
+		float maximumOpacity,
+		float inScatteringSize,
+		float inScatteringStart,
+		interop_bool colorFromIbl,
+		mat4f* fogTransformMatPtr
+	);
 
 	static void allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget);
 	static void dispose_render_target_buffer(TextureHandle buffer);
