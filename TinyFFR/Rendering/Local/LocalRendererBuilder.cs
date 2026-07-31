@@ -963,11 +963,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 	void SetUpSceneForRender(ResourceHandle<Renderer> handle) {
 		var scene = _loadedRenderers[handle].Scene;
+		var camera = _loadedRenderers[handle].Camera;
 		var quality = _loadedRenderers[handle].Quality.ShadowQuality;
 		var localSceneImpl = (LocalSceneBuilder) scene.Implementation;
 		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
-		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, _loadedRenderers[handle].Camera);
+		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, camera);
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
 		switch (quality) {
@@ -975,18 +976,27 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				localSceneImpl.SetLightShadowFidelity(
 					sceneHandle,
 					quality,
-					pointLightFidelity:			new(256, 1),
-					spotLightFidelity:			new(256, 1),
-					directionalLightFidelity:	new(1024, 1)
+					pointLightFidelity:			new(64, 1),
+					spotLightFidelity:			new(64, 1),
+					directionalLightFidelity:	new(256, 1)
 				);
 				break;
 			case Quality.Low:
 				localSceneImpl.SetLightShadowFidelity(
 					sceneHandle,
 					quality,
+					pointLightFidelity:			new(256, 1),
+					spotLightFidelity:			new(256, 1),
+					directionalLightFidelity:	new(1024, 2)
+				);
+				break;
+			default:
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
+					quality,
 					pointLightFidelity:			new(512, 1),
 					spotLightFidelity:			new(512, 1),
-					directionalLightFidelity:	new(2048, 2)
+					directionalLightFidelity:	new(2048, 3)
 				);
 				break;
 			case Quality.High:
@@ -1007,16 +1017,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					directionalLightFidelity:	new(4096, 4)
 				);
 				break;
-			default:
-				localSceneImpl.SetLightShadowFidelity(
-					sceneHandle,
-					quality,
-					pointLightFidelity:			new(1024, 1),
-					spotLightFidelity:			new(1024, 1),
-					directionalLightFidelity:	new(2048, 3)
-				);
-				break;
 		}
+
+		localSceneImpl.SetUpFogForRender(sceneHandle, camera, _loadedRenderers[handle].Viewport.Handle);
 	}
 
 	#region Native Methods

@@ -26,6 +26,11 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetSupportsColorKeying(_handle);
 	}
+	
+	public bool IsDefault {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetIsDefault(_handle);
+	}
 
 	internal Material(ResourceHandle<Material> handle, IMaterialImplProvider impl) {
 		_handle = handle;

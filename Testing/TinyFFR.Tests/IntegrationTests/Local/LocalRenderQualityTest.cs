@@ -58,6 +58,7 @@ class LocalRenderQualityTest {
 		var bloomQuality = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).BloomQuality;
 		var dithering = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).DitheringEnabled;
 		
+		var fogEnabled = false;
 		var lastDefaultQualityLevel = BuiltInQualityConfiguration.Medium;
 		void UpdateAllAccordingToBuiltIn(BuiltInQualityConfiguration q) {
 			shadowQuality = new RenderQualityConfig(q).ShadowQuality;
@@ -77,8 +78,8 @@ class LocalRenderQualityTest {
 			return q switch {
 				BuiltInQualityConfiguration.Medium => BuiltInQualityConfiguration.High,
 				BuiltInQualityConfiguration.High => BuiltInQualityConfiguration.Ultra,
-				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.VeryLow,
-				BuiltInQualityConfiguration.VeryLow => BuiltInQualityConfiguration.Low,
+				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.Lowest,
+				BuiltInQualityConfiguration.Lowest => BuiltInQualityConfiguration.Low,
 				_ => BuiltInQualityConfiguration.Medium,
 			};
 		}
@@ -104,7 +105,7 @@ class LocalRenderQualityTest {
 			summary =
 				$"[1]AA:{antiAliasing} [2]AO:{ambientOcclusionQuality} [3]Post:{postProcessingEnabled} [4]ResScale:{internalResolutionScalar:0.00} " +
 				$"[5]HDR:{hdrColorPrecision} [6]Shadows:{shadowsEnabled} [7]Bloom:{bloomQuality} [8]Dither:{dithering} " +
-				$"[9]ShadowQ:{shadowQuality} [0]SSE:{screenSpaceEffectsQuality}";
+				$"[9]ShadowQ:{shadowQuality} [0]SSE:{screenSpaceEffectsQuality} [Q]All";
 		}
 
 		ApplyAndReport();
@@ -133,7 +134,13 @@ class LocalRenderQualityTest {
 
 			if (changed) ApplyAndReport();
 			
-			window.SetTitle(summary + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.F)) {
+				fogEnabled = !fogEnabled;
+				if (fogEnabled) scene.AddFog(new FogDescriptor(FogDensity.Thick) { StartDistance = 0.01f });
+				else scene.RemoveFog();
+			}
+
+			window.SetTitle(summary + $" [F]Fog:{fogEnabled}" + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
 
 			DefaultCameraInputHandler.TickKbm(kbm, cameraController, dt, window);
 			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, dt);

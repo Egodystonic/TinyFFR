@@ -289,7 +289,7 @@ class LocalMaterialsTest {
 				curUserOptions.ShaderQualityType++;
 				if (curUserOptions.ShaderQualityType > 2) curUserOptions.ShaderQualityType = 0;
 				renderer.SetQuality(curUserOptions.ShaderQualityType switch {
-					2 => new RenderQualityConfig(BuiltInQualityConfiguration.VeryLow),
+					2 => new RenderQualityConfig(BuiltInQualityConfiguration.Lowest),
 					1 => new RenderQualityConfig(BuiltInQualityConfiguration.Medium),
 					_ => new RenderQualityConfig(BuiltInQualityConfiguration.Ultra)
 				});

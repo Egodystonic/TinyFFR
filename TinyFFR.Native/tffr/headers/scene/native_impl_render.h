@@ -43,6 +43,22 @@ public:
 		interop_bool guardBand
 	);
 	static void set_view_frustum_culling_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);
+	static void set_view_fog(
+		ViewDescriptorHandle viewDescriptor,
+		interop_bool enabled,
+		float colorR,
+		float colorG,
+		float colorB,
+		float density,
+		float startDistance,
+		float height,
+		float heightFalloff,
+		float maximumOpacity,
+		float inScatteringSize,
+		float inScatteringStart,
+		interop_bool colorFromIbl,
+		mat4f* fogTransformMatPtr
+	);
 
 	static void allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget);
 	static void dispose_render_target_buffer(TextureHandle buffer);

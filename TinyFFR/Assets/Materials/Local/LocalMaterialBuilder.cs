@@ -49,7 +49,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : field;
 
-	public Material DefaultMaterial => new(default, this);
+	public Material DefaultMaterial => new(new ResourceHandle<Material>(0U), this);
 
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, ITextureBuilder texBuilderRef, Lazy<ResourceGroup> testMaterialTexturesRef) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -353,6 +353,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMaterials[handle].PackageConstants == ColorKeyedMaterialShader;
 	}
+	
+	public bool GetIsDefault(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return handle == DefaultMaterial.Handle;
+	}
 
 	public bool GetSupportsShadows(ResourceHandle<Material> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -586,7 +591,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
 	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
-		if (handle.AsInteger == 0U) return; // Never dispose/evict the default-material sentinel (also skips it in the teardown loop)
+		if (handle == DefaultMaterial.Handle) return; // Never dispose/evict the default-material
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
