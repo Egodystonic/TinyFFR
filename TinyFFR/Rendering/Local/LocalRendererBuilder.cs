@@ -976,18 +976,27 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				localSceneImpl.SetLightShadowFidelity(
 					sceneHandle,
 					quality,
-					pointLightFidelity:			new(256, 1),
-					spotLightFidelity:			new(256, 1),
-					directionalLightFidelity:	new(1024, 1)
+					pointLightFidelity:			new(64, 1),
+					spotLightFidelity:			new(64, 1),
+					directionalLightFidelity:	new(256, 1)
 				);
 				break;
 			case Quality.Low:
 				localSceneImpl.SetLightShadowFidelity(
 					sceneHandle,
 					quality,
+					pointLightFidelity:			new(256, 1),
+					spotLightFidelity:			new(256, 1),
+					directionalLightFidelity:	new(1024, 2)
+				);
+				break;
+			default:
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
+					quality,
 					pointLightFidelity:			new(512, 1),
 					spotLightFidelity:			new(512, 1),
-					directionalLightFidelity:	new(2048, 2)
+					directionalLightFidelity:	new(2048, 3)
 				);
 				break;
 			case Quality.High:
@@ -1006,15 +1015,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					pointLightFidelity:			new(2048, 4),
 					spotLightFidelity:			new(2048, 4),
 					directionalLightFidelity:	new(4096, 4)
-				);
-				break;
-			default:
-				localSceneImpl.SetLightShadowFidelity(
-					sceneHandle,
-					quality,
-					pointLightFidelity:			new(1024, 1),
-					spotLightFidelity:			new(1024, 1),
-					directionalLightFidelity:	new(2048, 3)
 				);
 				break;
 		}

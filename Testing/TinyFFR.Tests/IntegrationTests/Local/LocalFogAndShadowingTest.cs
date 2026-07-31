@@ -86,8 +86,8 @@ class LocalFogAndShadowingTest {
 		}
 
 		var rng = new Random(12345);
-		for (var i = 0; i <= 10; ++i) {
-			for (var j = 0; j <= 10; ++j) {
+		for (var i = 1; i < 10; ++i) {
+			for (var j = 1; j < 10; ++j) {
 				if (rng.NextSingle() >= 0.2f) continue;
 				var height = 0.5f + rng.NextSingle() * 3.5f;
 				var hover = rng.NextSingle() < 0.35f ? 0.2f + rng.NextSingle() * 0.8f : 0f;
@@ -100,6 +100,26 @@ class LocalFogAndShadowingTest {
 				scene.Add(column);
 				instances.Add(column);
 			}
+		}
+
+		// --- Perimeter wall (2m high brick, around the 10x10 floor) ---
+		const float wallHeight = 1f;
+		const float wallThickness = 0.3f;
+		const float wallLength = 10f;
+		var wallSpecs = new (Location Position, Vect Scaling)[] {
+			(new Location(0f, wallHeight / 2f, 5f), new Vect(wallLength, wallHeight, wallThickness)),
+			(new Location(0f, wallHeight / 2f, -5f), new Vect(wallLength, wallHeight, wallThickness)),
+			(new Location(5f, wallHeight / 2f, 0f), new Vect(wallThickness, wallHeight, wallLength)),
+			(new Location(-5f, wallHeight / 2f, 0f), new Vect(wallThickness, wallHeight, wallLength)),
+		};
+		foreach (var (position, scaling) in wallSpecs) {
+			var wall = factory.ObjectBuilder.CreateModelInstance(
+				columnMesh, brickMaterial,
+				initialPosition: position,
+				initialScaling: scaling
+			);
+			scene.Add(wall);
+			instances.Add(wall);
 		}
 
 		// --- Lights ---
@@ -126,7 +146,7 @@ class LocalFogAndShadowingTest {
 
 		// --- Quality (Ultra base, cyclable shadow quality) ---
 		var shadowQuality = new RenderQualityConfig(BuiltInQualityConfiguration.Ultra).ShadowQuality;
-		RenderQualityConfig BuildConfig() => new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) with { ShadowQuality = shadowQuality };
+		RenderQualityConfig BuildConfig() => new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) { ShadowQuality = shadowQuality };
 		static Quality CycleQuality(Quality q) => q >= Quality.VeryHigh ? Quality.VeryLow : (Quality) ((int) q + 1);
 		renderer.SetQuality(BuildConfig());
 
