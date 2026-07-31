@@ -15,7 +15,7 @@ public enum BuiltInQualityConfiguration {
 	High,
 	Ultra,
 	Low,
-	VeryLow
+	Lowest
 }
 
 public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityConfig> {
@@ -36,7 +36,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 	public RenderQualityConfig() : this(BuiltInQualityConfiguration.High) { }
 	public RenderQualityConfig(BuiltInQualityConfiguration builtInQuality) {
 		switch (builtInQuality) {
-			case BuiltInQualityConfiguration.VeryLow: {
+			case BuiltInQualityConfiguration.Lowest: {
 				ShadowQuality = Quality.VeryLow;
 				ScreenSpaceEffectsQuality = Quality.VeryLow;
 				AntiAliasingMode = AntiAliasingMode.None;

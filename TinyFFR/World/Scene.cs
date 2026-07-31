@@ -112,6 +112,13 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RemoveBackdrop() => Implementation.RemoveBackdrop(_handle);
 
+	public void AddFog(FogDensity density) => AddFog(new FogDescriptor(density));
+	public void AddFog(FogDensity density, ColorVect color) => AddFog(new FogDescriptor(density, color));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AddFog(in FogDescriptor fogDescriptor) => Implementation.AddFog(_handle, in fogDescriptor);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RemoveFog() => Implementation.RemoveFog(_handle);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScenePrimitive AddPrimitive() => Implementation.CreatePrimitive(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -58,6 +58,7 @@ class LocalRenderQualityTest {
 		var bloomQuality = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).BloomQuality;
 		var dithering = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).DitheringEnabled;
 		
+		var fogEnabled = false;
 		var lastDefaultQualityLevel = BuiltInQualityConfiguration.Medium;
 		void UpdateAllAccordingToBuiltIn(BuiltInQualityConfiguration q) {
 			shadowQuality = new RenderQualityConfig(q).ShadowQuality;
@@ -77,8 +78,8 @@ class LocalRenderQualityTest {
 			return q switch {
 				BuiltInQualityConfiguration.Medium => BuiltInQualityConfiguration.High,
 				BuiltInQualityConfiguration.High => BuiltInQualityConfiguration.Ultra,
-				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.VeryLow,
-				BuiltInQualityConfiguration.VeryLow => BuiltInQualityConfiguration.Low,
+				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.Lowest,
+				BuiltInQualityConfiguration.Lowest => BuiltInQualityConfiguration.Low,
 				_ => BuiltInQualityConfiguration.Medium,
 			};
 		}
@@ -133,7 +134,13 @@ class LocalRenderQualityTest {
 
 			if (changed) ApplyAndReport();
 			
-			window.SetTitle(summary + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.F)) {
+				fogEnabled = !fogEnabled;
+				if (fogEnabled) scene.AddFog(new FogDescriptor(FogDensity.Thick) { StartDistance = 0.01f });
+				else scene.RemoveFog();
+			}
+
+			window.SetTitle(summary + $" [F]Fog:{fogEnabled}" + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
 
 			DefaultCameraInputHandler.TickKbm(kbm, cameraController, dt, window);
 			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, dt);
