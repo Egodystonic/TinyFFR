@@ -105,7 +105,7 @@ class LocalRenderQualityTest {
 			summary =
 				$"[1]AA:{antiAliasing} [2]AO:{ambientOcclusionQuality} [3]Post:{postProcessingEnabled} [4]ResScale:{internalResolutionScalar:0.00} " +
 				$"[5]HDR:{hdrColorPrecision} [6]Shadows:{shadowsEnabled} [7]Bloom:{bloomQuality} [8]Dither:{dithering} " +
-				$"[9]ShadowQ:{shadowQuality} [0]SSE:{screenSpaceEffectsQuality}";
+				$"[9]ShadowQ:{shadowQuality} [0]SSE:{screenSpaceEffectsQuality} [Q]All";
 		}
 
 		ApplyAndReport();
