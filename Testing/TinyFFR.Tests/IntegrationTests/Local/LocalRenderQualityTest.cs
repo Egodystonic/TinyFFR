@@ -78,8 +78,8 @@ class LocalRenderQualityTest {
 			return q switch {
 				BuiltInQualityConfiguration.Medium => BuiltInQualityConfiguration.High,
 				BuiltInQualityConfiguration.High => BuiltInQualityConfiguration.Ultra,
-				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.VeryLow,
-				BuiltInQualityConfiguration.VeryLow => BuiltInQualityConfiguration.Low,
+				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.Lowest,
+				BuiltInQualityConfiguration.Lowest => BuiltInQualityConfiguration.Low,
 				_ => BuiltInQualityConfiguration.Medium,
 			};
 		}
@@ -136,7 +136,7 @@ class LocalRenderQualityTest {
 
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.F)) {
 				fogEnabled = !fogEnabled;
-				if (fogEnabled) scene.AddFog(density: 0.15f, colorFromIbl: true);
+				if (fogEnabled) scene.AddFog(new FogDescriptor(FogDensity.Thick) { StartDistance = 0.01f });
 				else scene.RemoveFog();
 			}
 

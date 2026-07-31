@@ -9,6 +9,7 @@
 #include "filament/Viewport.h"
 #include "filament/Fence.h"
 #include "filament/RenderTarget.h"
+#include "filament/TransformManager.h"
 
 #include "sdl/SDL_syswm.h"
 
@@ -103,6 +104,7 @@ void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandl
 		(*outViewDescriptor)->setRenderTarget(optionalRenderTarget);
 	}
 	(*outViewDescriptor)->setFrustumCullingEnabled(true);
+	filament_engine->getTransformManager().create((*outViewDescriptor)->getFogEntity());
 }
 StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor) {
 	native_impl_render::allocate_view_descriptor(scene, camera, optionalRenderTarget, outViewDescriptor);
@@ -111,6 +113,9 @@ StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle came
 
 void native_impl_render::dispose_view_descriptor(ViewDescriptorHandle viewDescriptor) {
 	ThrowIfNull(viewDescriptor, "View was null.");
+	auto& tcm = filament_engine->getTransformManager();
+	auto fogEntity = viewDescriptor->getFogEntity();
+	if (tcm.hasComponent(fogEntity)) tcm.destroy(fogEntity);
 	ThrowIf(!filament_engine->destroy(viewDescriptor), "Could not destroy view descriptor.");
 }
 StartExportedFunc(dispose_view_descriptor, ViewDescriptorHandle viewDescriptor) {
@@ -337,7 +342,10 @@ void native_impl_render::set_view_fog(
 	float height,
 	float heightFalloff,
 	float maximumOpacity,
-	interop_bool colorFromIbl
+	float inScatteringSize,
+	float inScatteringStart,
+	interop_bool colorFromIbl,
+	mat4f* fogTransformMatPtr
 ) {
 	ThrowIfNull(viewDescriptor, "View was null.");
 	FogOptions fo;
@@ -349,7 +357,11 @@ void native_impl_render::set_view_fog(
 	fo.heightFalloff = heightFalloff;
 	fo.maximumOpacity = maximumOpacity;
 	fo.fogColorFromIbl = colorFromIbl;
+	fo.inScatteringStart = inScatteringStart;
+	fo.inScatteringSize = inScatteringSize;
 	viewDescriptor->setFogOptions(fo);
+	auto& manager = filament_engine->getTransformManager();
+	manager.setTransform(manager.getInstance(viewDescriptor->getFogEntity()), *fogTransformMatPtr);
 }
 StartExportedFunc(
 	set_view_fog,
@@ -363,7 +375,10 @@ StartExportedFunc(
 	float height,
 	float heightFalloff,
 	float maximumOpacity,
-	interop_bool colorFromIbl
+	float inScatteringSize,
+	float inScatteringStart,
+	interop_bool colorFromIbl,
+	mat4f* fogTransformMatPtr
 ) {
 	native_impl_render::set_view_fog(
 		viewDescriptor,
@@ -376,7 +391,10 @@ StartExportedFunc(
 		height,
 		heightFalloff,
 		maximumOpacity,
-		colorFromIbl
+		inScatteringSize,
+		inScatteringStart,
+		colorFromIbl,
+		fogTransformMatPtr
 	);
 	EndExportedFunc
 }

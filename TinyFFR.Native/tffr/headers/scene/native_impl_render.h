@@ -54,7 +54,10 @@ public:
 		float height,
 		float heightFalloff,
 		float maximumOpacity,
-		interop_bool colorFromIbl
+		float inScatteringSize,
+		float inScatteringStart,
+		interop_bool colorFromIbl,
+		mat4f* fogTransformMatPtr
 	);
 
 	static void allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget);

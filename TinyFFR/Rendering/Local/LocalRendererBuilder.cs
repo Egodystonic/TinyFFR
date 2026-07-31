@@ -963,11 +963,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 	void SetUpSceneForRender(ResourceHandle<Renderer> handle) {
 		var scene = _loadedRenderers[handle].Scene;
+		var camera = _loadedRenderers[handle].Camera;
 		var quality = _loadedRenderers[handle].Quality.ShadowQuality;
 		var localSceneImpl = (LocalSceneBuilder) scene.Implementation;
 		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
-		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, _loadedRenderers[handle].Camera);
+		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, camera);
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
 		switch (quality) {
@@ -1018,7 +1019,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				break;
 		}
 
-		localSceneImpl.SetUpFogForRender(sceneHandle, _loadedRenderers[handle].Viewport.Handle);
+		localSceneImpl.SetUpFogForRender(sceneHandle, camera, _loadedRenderers[handle].Viewport.Handle);
 	}
 
 	#region Native Methods

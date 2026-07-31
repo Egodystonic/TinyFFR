@@ -16,7 +16,7 @@ namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable {
 	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
-	readonly record struct FogData(ColorVect Color, float Density, float StartDistance, float Height, float HeightFalloff, float MaximumOpacity, bool ColorFromIbl);
+	readonly record struct FogData(ColorVect Color, float Density, float StartDistance, float Height, float HeightFalloff, float MaximumOpacity, bool ColorFromIbl, float InScatteringSize, Quaternion SkywardDirectionRotation);
 	const string DefaultSceneName = "Unnamed Scene";
 	const string BuiltInSceneDataResourcePrefix = "Assets.builtin_backdrop_";
 	const string BuiltInBackdropNamePrefix = "Built-In Scene Backdrop Texture '";
@@ -377,15 +377,25 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	#endregion
 
 	#region Fog
-	public void AddFog(ResourceHandle<Scene> handle, ColorVect color, float density, float startDistance, float height, float heightFalloff, float maximumOpacity, bool colorFromIbl) {
+	public void AddFog(ResourceHandle<Scene> handle, in FogDescriptor fogDescriptor) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_fogMap[handle] = new FogData(color, density, startDistance, height, heightFalloff, maximumOpacity, colorFromIbl);
+		_fogMap[handle] = new FogData(
+			fogDescriptor.Color, 
+			MathF.Abs(0.2f * MathF.Pow(fogDescriptor.DensityMultiplier, 3f)), 
+			MathF.Abs(fogDescriptor.StartDistance), 
+			fogDescriptor.GroundLayerHeight, 
+			fogDescriptor.SkywardDensityFalloffMultiplier, 
+			MathF.Abs(fogDescriptor.Color.Alpha), 
+			!fogDescriptor.OccludesBackdrop,
+			10_000f * MathF.Pow(fogDescriptor.DirectionalLightScatteringStrengthMultiplier + 1f, -MathF.Log2(10f)),
+			(Direction.Up >> fogDescriptor.SkywardDirection).ToQuaternion()
+		);
 	}
 	public void RemoveFog(ResourceHandle<Scene> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_fogMap.Remove(handle);
 	}
-	public void SetUpFogForRender(ResourceHandle<Scene> handle, UIntPtr viewDescriptorHandle) {
+	public void SetUpFogForRender(ResourceHandle<Scene> handle, Camera camera, nuint viewDescriptorHandle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (_fogMap.TryGetValue(handle, out var fog)) {
 			SetViewFog(
@@ -399,11 +409,14 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 				fog.Height,
 				fog.HeightFalloff,
 				fog.MaximumOpacity,
-				fog.ColorFromIbl
+				fog.InScatteringSize,
+				camera.FarPlaneDistance * 0.9f,
+				fog.ColorFromIbl,
+				Transform.FromRotationOnly(fog.SkywardDirectionRotation).ToMatrix()
 			).ThrowIfFailure();
 		}
 		else {
-			SetViewFog(viewDescriptorHandle, false, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, false).ThrowIfFailure();
+			SetViewFog(viewDescriptorHandle, false, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, false, Matrix4x4.Identity).ThrowIfFailure();
 		}
 	}
 	#endregion
@@ -550,7 +563,10 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		float height,
 		float heightFalloff,
 		float maximumOpacity,
-		InteropBool colorFromIbl
+		float inScatteringSize,
+		float inScatteringStart,
+		InteropBool colorFromIbl,
+		in Matrix4x4 newWorldMatrix
 	);
 	#endregion
 
