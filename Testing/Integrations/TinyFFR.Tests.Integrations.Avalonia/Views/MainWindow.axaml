@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:TinyFFR.Tests.Integrations.Avalonia.Views"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="800"
         x:Class="TinyFFR.Tests.Integrations.Avalonia.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="TinyFFR.Tests.Integrations.Avalonia">
+        Width="1400" Height="800"
+        Title="TinyFFR Avalonia Integration - Model Viewer">
         <views:MainView />
 </Window>

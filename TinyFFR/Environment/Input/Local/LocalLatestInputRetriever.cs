@@ -17,7 +17,7 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 	static readonly UIntPtr CombinedGameControllerHandle = UIntPtr.Zero;
 	readonly LocalLatestKeyboardAndMouseInputRetriever _kbmState = new();
 	readonly UnmanagedBuffer<RawLocalGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
-	readonly ArrayPoolBackedVector<ILatestGameControllerInputStateRetriever> _detectedControllerStateVector = new();
+	readonly ArrayPoolBackedVector<ILatestGameControllerInputRetriever> _detectedControllerStateVector = new();
 	readonly ArrayPoolBackedMap<UIntPtr, LocalLatestGameControllerState> _detectedControllerStateMap = new();
 	readonly LocalLatestGameControllerState _combinedControllerState;
 	bool _isDisposed = false;
@@ -25,10 +25,10 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 
 	public bool UserQuitRequested { get; private set; } = false;
 	public ILatestKeyboardAndMouseInputRetriever KeyboardAndMouse => _kbmState;
-	public IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputStateRetriever> GameControllers => new(
+	public IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputRetriever> GameControllers => new(
 		this, _iterationVersion, &GetGameControllersCount, &GetIterationVersion, &GetGameController
 	);
-	public ILatestGameControllerInputStateRetriever GameControllersCombined => _combinedControllerState;
+	public ILatestGameControllerInputRetriever GameControllersCombined => _combinedControllerState;
 
 	public LocalLatestInputRetriever() {
 		_combinedControllerState = new(CombinedGameControllerHandle);
@@ -40,7 +40,7 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		castInput.ThrowIfThisIsDisposed();
 		return castInput._detectedControllerStateVector.Count;
 	}
-	static ILatestGameControllerInputStateRetriever GetGameController(ILatestInputRetriever input, int index) {
+	static ILatestGameControllerInputRetriever GetGameController(ILatestInputRetriever input, int index) {
 		var castInput = ((LocalLatestInputRetriever) input);
 		castInput.ThrowIfThisIsDisposed();
 		return castInput._detectedControllerStateVector[index];

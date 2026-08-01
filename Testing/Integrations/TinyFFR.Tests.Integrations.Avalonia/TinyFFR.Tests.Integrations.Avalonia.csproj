@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Integrations\TinyFFR.Avalonia\TinyFFR.Avalonia.csproj" />
     <ProjectReference Include="..\..\..\Integrations\TinyFFR.Integrations.Common\TinyFFR.Integrations.Common.csproj" />
+    <ProjectReference Include="..\..\TestCommon\TestCommon.csproj" />
   </ItemGroup>
   
   <ItemGroup>

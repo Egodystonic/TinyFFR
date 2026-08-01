@@ -4,30 +4,130 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:tffr="clr-namespace:Egodystonic.TinyFFR"
     xmlns:tffrAvalonia="clr-namespace:Egodystonic.TinyFFR.Avalonia;assembly=TinyFFR.Avalonia"
+    xmlns:viewer="clr-namespace:TinyFFR.Tests.Integrations.Avalonia.Viewer"
     xmlns:vm="clr-namespace:TinyFFR.Tests.Integrations.Avalonia.ViewModels"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
+    d:DesignHeight="800"
+    d:DesignWidth="1400"
     x:DataType="vm:MainViewModel"
     mc:Ignorable="d">
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <DockPanel LastChildFill="True">
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-            <Button Command="{Binding ToggleRenderingButtonPressed}" Content="Toggle Rendering" />
-            <Button Command="{Binding ChangeLightColourButtonPressed}" Content="Change Light Colour" />
-            <CheckBox Content="Toggle Animated Rendering" IsChecked="{Binding Animate}" />
-            <Button Command="{Binding RenderOnce}" Content="Render Manually" />
-            <CheckBox Content="Composite Mode" IsChecked="{Binding UseCompositor}" />
-            <Button Command="{Binding ToggleOverlayButtonPressed}" Content="Toggle Overlay" />
-        </StackPanel>
-        <tffrAvalonia:TinyFfrSceneView
-            FallbackBrush="LightGray"
-            InternalRenderResolution="300,150"
-            Renderer="{Binding Renderer}"
-            Compositor="{Binding Compositor}" />
-    </DockPanel>
+    <UserControl.Styles>
+        <Style Selector="TextBlock.category">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Margin" Value="0,12,0,2" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="1*,4,3*">
+        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="10" Spacing="4">
+
+                <TextBlock Classes="section" Margin="0,0,0,2" Text="Rendering" />
+                <Button Command="{Binding ToggleRenderingCommand}" Content="Start / stop rendering" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                <CheckBox Content="Animate (render every tick)" IsChecked="{Binding Animate}" />
+                <Button Command="{Binding RenderOnceCommand}" Content="Render once" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                <CheckBox Content="Composite mode" IsChecked="{Binding UseCompositor}" />
+                <CheckBox Content="Overlay enabled" IsChecked="{Binding OverlayEnabled}" IsEnabled="{Binding UseCompositor}" />
+                <TextBlock Text="Internal render resolution" />
+                <ComboBox
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding ResolutionOptions}"
+                    SelectedItem="{Binding SelectedResolution}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ResolutionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Classes="section" Text="Model" />
+                <ListBox
+                    ItemsSource="{Binding CatalogItems}"
+                    IsEnabled="{Binding !IsLoading}"
+                    SelectedItem="{Binding SelectedModel}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewer:ModelListEntry">
+                            <TextBlock Classes.category="{Binding IsHeader}" Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <TextBlock Classes="section" Text="Transform" />
+                <CheckBox Content="Spin X" IsChecked="{Binding SpinX}" />
+                <CheckBox Content="Spin Y" IsChecked="{Binding SpinY}" />
+                <CheckBox Content="Spin Z" IsChecked="{Binding SpinZ}" />
+
+                <TextBlock Classes="section" Text="Shading" />
+                <ComboBox
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding ShadingStyles}"
+                    SelectedItem="{Binding ShadingStyle}" />
+                <CheckBox Content="Opaque random colors" IsChecked="{Binding RandomColorOpaque}" />
+                <Button Command="{Binding RandomizeColorCommand}" Content="Randomize color" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+
+                <TextBlock Classes="section" Text="Lighting" />
+                <TextBlock Text="Camera light brightness" />
+                <Slider Maximum="1" Minimum="0" Value="{Binding CameraLightBrightness}" />
+                <CheckBox Content="Sunlight" IsChecked="{Binding SunEnabled}" />
+                <CheckBox Content="Sunlight casts shadows" IsChecked="{Binding SunCastsShadows}" IsEnabled="{Binding SunEnabled}" />
+                <TextBlock Text="Sunlight brightness" />
+                <Slider Maximum="3" Minimum="0" Value="{Binding SunBrightness}" IsEnabled="{Binding SunEnabled}" />
+                <Button Command="{Binding ShiftLightHueCommand}" Content="Shift light hue" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+
+                <TextBlock Classes="section" Text="Backdrop" />
+                <ComboBox
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding BackdropModes}"
+                    SelectedItem="{Binding BackdropMode}" />
+                <TextBlock Text="Backdrop intensity" />
+                <Slider Maximum="3" Minimum="0" Value="{Binding BackdropIntensity}" />
+
+                <TextBlock Classes="section" Text="Quality" />
+                <ComboBox
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding QualityPresets}"
+                    SelectedItem="{Binding Quality}" />
+
+                <Expander Header="Loaded resources" Margin="0,12,0,0">
+                    <SelectableTextBlock FontFamily="monospace" FontSize="11" Text="{Binding ResourceListing}" />
+                </Expander>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+        <Grid Grid.Column="2">
+            <tffrAvalonia:TinyFfrSceneView
+                x:Name="SceneView"
+                Compositor="{Binding Compositor}"
+                FallbackBrush="LightGray"
+                InternalRenderResolution="{Binding InternalRenderResolution}"
+                Renderer="{Binding Renderer}" />
+            <Border Background="#B0000000" IsHitTestVisible="False" IsVisible="{Binding IsLoading}">
+                <TextBlock
+                    FontSize="20"
+                    Foreground="White"
+                    HorizontalAlignment="Center"
+                    Text="Loading..."
+                    VerticalAlignment="Center" />
+            </Border>
+            <Border
+                Background="#A0000000"
+                HorizontalAlignment="Stretch"
+                IsHitTestVisible="False"
+                Padding="8,4"
+                VerticalAlignment="Bottom">
+                <TextBlock Foreground="White" Text="{Binding StatusText}" TextWrapping="Wrap" />
+            </Border>
+        </Grid>
+    </Grid>
 </UserControl>

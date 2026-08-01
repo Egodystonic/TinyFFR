@@ -25,7 +25,7 @@ The following properties can be adjusted for a `TinyFfrSceneView` (some via the 
 
 * The `FallbackBrush` property is optional and can be used to set the fill brush of the control when no renderer has been set and/or when no scene has been rendered.
 
-* The `InternalRenderResolution` property is also optional and can be used to set the internal resolution scenes will be rendered at before being scaled to the size of the control.(1) If left unset, scenes will always be rendered at the size of the control bounds.
+* The `InternalRenderResolution` property is also optional and can be used to set the internal resolution scenes will be rendered at before being scaled to the size of the control.(1) It is a literal count of pixels and is not multiplied by the display's scaling factor. If left unset, scenes are rendered at the size of the control bounds in physical pixels, which keeps the image sharp on displays using a scaling factor other than 100%.
 	{ .annotate }
 
 	1. The height and width of the render resolution of a scene view must both be between `1` and `32768`.
@@ -48,19 +48,15 @@ You should not set a disposed `Renderer` or a non-bindable `Renderer` to a `Tiny
 
 ## Input, Loop, and Threading
 
-The [input and application-loop management subsystem](input.md) is mostly disabled when using Winforms integration. 
+TinyFFR's [input abstraction](input.md) is available when using Winforms integration, but it is sourced from Winforms' own input events rather than from TinyFFR's usual (SDL-based) event polling.
 
-* Input should be handled via Winforms' built-in input layer instead.
 * All interaction with your UI and TinyFFR should be done in the UI Dispatcher context (e.g. on the UI thread).
+* To use TinyFFR's input abstraction, use the `StartWinFormsUiLoop()` overload that supplies an `ILatestInputRetriever` (see "Input" below). You may of course continue to use Winforms' built-in input layer instead (or as well).
 
-???+ warning "ApplicationLoop contraindicated"
-	When using TinyFFR standalone you must use the `ApplicationLoop` system in order to access user input events and set a framerate/tickrate. However, UI frameworks (such as Windows Forms) already have a separate built-in render loop and input handling rubric and it is **not** advisable to mix the two approaches. 
-	
-	Attempting to access input data via TinyFFR's `ApplicationLoop`/`ILatestInputRetriever` could cause your Winforms application to "miss" input events. Instead, use Winforms' built-in event system to manage input events. When integrating TinyFFR with Winforms it is advisable to *not* create any `ApplicationLoop` instances if possible.
+???+ warning "Do not enable TinyFFR's own input polling"
+	When using TinyFFR standalone, the `ApplicationLoop` polls the operating system for input events on each iteration. Doing that whilst Windows Forms owns the message loop would consume events that the UI framework needs, causing your application to "miss" input.
 
-	If you want to create a render/tick loop, see the "Automatic Animation" section below, which offers an alternative mechanism that doesn't directly create an `ApplicationLoop`.
-
-	If you still want to use `ApplicationLoop`s for niche scenarios, it is advisable to set the config value `IterationShouldRefreshGlobalInputStates` to `false` when creating them.
+	For this reason you should leave the config value `IterationShouldRefreshGlobalInputStates` set to `false` on any `ApplicationLoop` you create in a Winforms application (the `StartWinFormsUiLoop()` functions described below do this for you). Input is instead supplied by the UI framework, which is why the retriever must be told which element to observe.
 
 ### Automatic Animation
 
@@ -105,3 +101,48 @@ This function schedules your tick/render loop on the pre-existing Winforms UI di
 	* `name` is optional, this will set the name of the underlying `ApplicationLoop` resource used internally by TinyFFR.
 
 	This function returns an `IDisposable` that should be disposed when you wish to terminate the loop.
+
+### Input
+
+An overload of `StartWinFormsUiLoop()` accepts an `Action<TimeSpan, ILatestInputRetriever>` together with the element whose input should be tracked. This lets you reuse the same input-handling code you would write for a standalone TinyFFR application:
+
+```csharp
+void Tick(TimeSpan tickIterationTime, ILatestInputRetriever input) {
+	var deltaTime = tickIterationTime.AsDeltaTime();
+
+	// Identical to the equivalent code in a standalone application
+	_cameraController.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime);
+	_cameraController.Progress(deltaTime);
+
+	Renderer.Render();
+}
+
+// 'sceneView' here is your TinyFfrSceneView
+var loopTerminationDisposable = factory.ApplicationLoopBuilder.StartWinFormsUiLoop(Tick, sceneView);
+```
+
+<span class="def-icon">:material-code-block-parentheses:</span> `StartWinFormsUiLoop(tickCallback, inputSource, tickRateHz, name)`
+
+:   * `tickCallback` is the `Action<TimeSpan, ILatestInputRetriever>` that you wish to be invoked on the UI thread/context. The second argument supplies the input state accumulated since the previous 'tick'.
+
+	* `inputSource` is the [`Control`](https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.control) whose input events will be observed; usually your `TinyFfrSceneView`, but you may pass any element (e.g. the containing window) if you want a wider scope.
+
+	* `tickRateHz` behaves as described above.
+
+	* `name` behaves as described above.
+
+	This function returns an `IDisposable` that should be disposed when you wish to terminate the loop; doing so also unsubscribes from the `inputSource`'s events.
+
+#### Scope and semantics
+
+The retriever is scoped to `inputSource`, which is the closest analogue to a standalone application's window:
+
+* **Keyboard** events are observed only whilst `inputSource` has focus. `TinyFfrSceneView` is focusable and takes focus when clicked, so a user must click in to the scene view before keyboard input reaches TinyFFR. This is deliberate: it means typing in a `TextBox` elsewhere in your application does not also drive your scene.
+* **Mouse** buttons and the scroll wheel are observed whilst the pointer is over `inputSource`. Whilst a button is held, the pointer is captured, so `MouseCursorDelta` keeps accumulating even if the pointer leaves the element (which makes drag-to-look work as expected).
+* `MouseCursorPosition` is relative to `inputSource` (`(0, 0)` being its top-left corner) and expressed in that element's own coordinate space. You can pass it straight to `Renderer.CastRayFromRenderSurface()` or `Renderer.CastRayFromRenderSubAreaSurface()`: those methods convert it to the render buffer's pixel space for you, accounting both for the display's scaling factor and for any `InternalRenderResolution` you have set. Pass `disableDpiScalingAdjustment: true` if you are supplying a coordinate that is already in buffer space. For this to line up, `inputSource` must be the scene view itself.
+* Keys and buttons are released automatically when focus or pointer capture is lost, so holding a key and then switching away from your application will not leave that key "stuck" down.
+
+???+ info "Known limitations"
+	* **Game controllers are not supported** under UI framework integration: `GameControllers` is always empty and `GameControllersCombined` always reports a neutral state. No supported UI framework exposes game controller input, and polling for it via TinyFFR's usual mechanism would interfere with the UI framework's message loop.
+	* Punctuation keys are mapped according to a US keyboard layout.
+	* There is no equivalent of `Window.SetLockCursor()`; the cursor can not be hidden and re-centred each frame, so unbounded mouse-look is not available.

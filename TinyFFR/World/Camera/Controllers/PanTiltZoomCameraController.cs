@@ -241,7 +241,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 
 	public const float DefaultPanSensitivityControllerStick = 120f;
-	public void AdjustPanViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+	public void AdjustPanViaControllerStick(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
@@ -254,7 +254,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	
 	public const float DefaultPanSensitivityControllerTrigger = 120f;
-	public void AdjustPanViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPansAnticlockwise = true) {
+	public void AdjustPanViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPansAnticlockwise = true) {
 		ArgumentNullException.ThrowIfNull(input);
 		var anticlockwiseTriggerPosition = leftTriggerPansAnticlockwise ? input.LeftTriggerPosition : input.RightTriggerPosition;
 		var clockwiseTriggerPosition = leftTriggerPansAnticlockwise ? input.RightTriggerPosition : input.LeftTriggerPosition;
@@ -267,7 +267,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustPan(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress));
 	}
-	public void AdjustPanViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+	public void AdjustPanViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustPan(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress));
@@ -294,7 +294,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	
 	public const float DefaultTiltSensitivityControllerStick = 80f;
-	public void AdjustTiltViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	public void AdjustTiltViaControllerStick(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
@@ -307,7 +307,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	
 	public const float DefaultTiltSensitivityControllerTrigger = 120f;
-	public void AdjustTiltViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerTiltsUpward = true) {
+	public void AdjustTiltViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerTiltsUpward = true) {
 		ArgumentNullException.ThrowIfNull(input);
 		var upwardTiltTriggerPosition = leftTriggerTiltsUpward ? input.LeftTriggerPosition : input.RightTriggerPosition;
 		var downwardTiltTriggerPosition = leftTriggerTiltsUpward ? input.RightTriggerPosition : input.LeftTriggerPosition;
@@ -321,7 +321,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustTilt(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress));
 	}
-	public void AdjustTiltViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+	public void AdjustTiltViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustTilt(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress));
@@ -348,7 +348,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 		
 	public const float DefaultZoomSensitivityControllerStick = 0.33f;
-	public void AdjustZoomViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	public void AdjustZoomViaControllerStick(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
@@ -361,7 +361,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	
 	public const float DefaultZoomSensitivityControllerTrigger = 0.5f;
-	public void AdjustZoomViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool rightTriggerZoomsIn = true) {
+	public void AdjustZoomViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool rightTriggerZoomsIn = true) {
 		ArgumentNullException.ThrowIfNull(input);
 		var zoomInTriggerPosition = rightTriggerZoomsIn ? input.RightTriggerPosition : input.LeftTriggerPosition;
 		var zoomOutTriggerPosition = rightTriggerZoomsIn ? input.LeftTriggerPosition : input.RightTriggerPosition;
@@ -375,7 +375,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustZoom(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultZoomSensitivityKeyOrButtonPress));
 	}
-	public void AdjustZoomViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, float? adjustmentPerSec = null) {
+	public void AdjustZoomViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, float? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustZoom(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultZoomSensitivityKeyOrButtonPress));
@@ -388,7 +388,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		AdjustZoomViaMouseWheel(input, zoomAdjustmentPerWheelIncrement, invertMouseControl: invertZoomControl);
 	}
 	
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? maxPanAdjustmentPerSec = null, Angle? maxTiltAdjustmentPerSec = null, float? maxZoomAdjustmentPerSec = null) {
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputRetriever input, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? maxPanAdjustmentPerSec = null, Angle? maxTiltAdjustmentPerSec = null, float? maxZoomAdjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		AdjustPanViaControllerStick(input, deltaTime, maxPanAdjustmentPerSec, invertStickControl: invertPanControl);
 		AdjustTiltViaControllerStick(input, deltaTime, maxTiltAdjustmentPerSec, invertStickControl: invertTiltControl);
@@ -396,5 +396,5 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
-	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
 }

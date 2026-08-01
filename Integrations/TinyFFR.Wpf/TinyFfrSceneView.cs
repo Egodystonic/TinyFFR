@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -64,8 +65,25 @@ public class TinyFfrSceneView : Control {
 	}
 	Size BoundsSize => new(ActualWidth, ActualHeight);
 
+	public TinyFfrSceneView() {
+		Focusable = true;
+		RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.HighQuality);
+	}
+
+	protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi) {
+		base.OnDpiChanged(oldDpi, newDpi);
+		IdempotentlyUpdateRendererStateAccordingToControlState();
+	}
+
+	protected override void OnMouseDown(MouseButtonEventArgs e) {
+		base.OnMouseDown(e);
+		if (Focusable && !IsKeyboardFocusWithin) Focus();
+	}
+
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
 		if (_bitmap == null || _bitmap.PixelWidth != dimensions.X || _bitmap.PixelHeight != dimensions.Y) {
+			// This DPI must remain 96 regardless of the display's actual DPI: it is what makes the bitmap's device-independent
+			// Width/Height equal its PixelWidth/PixelHeight, which is what DrawImage uses to map the source into the destination rect
 			_bitmap = new WriteableBitmap(
 				dimensions.X,
 				dimensions.Y,
@@ -142,9 +160,13 @@ public class TinyFfrSceneView : Control {
 	}
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
-		var targetSize = (InternalRenderResolution ?? BoundsSize).AsXyPair().Cast<int>();
-		
-		var targetSizeIsPermitted = 
+		var dpi = VisualTreeHelper.GetDpi(this);
+		var cursorCoordinateSpaceSize = BoundsSize.AsXyPair().Cast<int>();
+		var targetSize = InternalRenderResolution is { } explicitResolution
+			? explicitResolution.AsXyPair().Cast<int>()
+			: BoundsSize.AsXyPair().ScaledBy(new XYPair<double>(dpi.DpiScaleX, dpi.DpiScaleY)).CastWithRoundingIfNecessary<double, int>();
+
+		var targetSizeIsPermitted =
 			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)
 			&& (targetSize.Y is >= MinTextureDimensionXY and <= MaxTextureDimensionXY);
 
@@ -167,7 +189,7 @@ public class TinyFfrSceneView : Control {
 			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
 		}
 
-		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
-		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, WriteFrame);
+		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
 	}
 }

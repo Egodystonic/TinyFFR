@@ -18,6 +18,8 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	readonly ArrayPoolBackedVector<AddedRendererData> _addedRenderers = new();
 	RenderOutputBuffer _sharedBuffer;
 	RendererCompositor _actualCompositor;
+	XYPair<int> _sharedBufferSizePixels;
+	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
 	Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? _currentFrameHandler;
 	bool _isDisposed = false;
 
@@ -42,8 +44,26 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		return c.Implementation as BindableRendererCompositorImplProvider ?? throw new InvalidOperationException($"Given {nameof(RendererCompositor)} ({c}) is not a bindable compositor.");
 	}
 
-	public static void StartOrContinueHandlingFrames(RendererCompositor c, XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
-		GetBindableImplementationOrThrow(c).RecreateSharedBufferAndCompositor(size, handler);
+	public static void StartOrContinueHandlingFrames(RendererCompositor c, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+		var impl = GetBindableImplementationOrThrow(c);
+		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
+
+		// Recreating the shared buffer tears down and rebuilds every added renderer, so don't do it just because the control told us the same size again
+		if (bufferSizePixels == impl._sharedBufferSizePixels) {
+			impl._sharedBuffer.StartReadingFrames(handler, presentFramesTopToBottom: true);
+			impl._currentFrameHandler = handler;
+			impl.PropagateCursorCoordinateSpaceSizeToAddedRenderers();
+			return;
+		}
+
+		impl.RecreateSharedBufferAndCompositor(bufferSizePixels, handler);
+	}
+
+	void PropagateCursorCoordinateSpaceSizeToAddedRenderers() {
+		for (var i = 0; i < _addedRenderers.Count; ++i) {
+			BindableRendererImplProvider.GetBindableImplementationOrThrow(_addedRenderers[i].BindableRenderer)
+				.SetCursorCoordinateSpaceSizeFromCompositor(_sharedBufferSizePixels, _cursorCoordinateSpaceSize);
+		}
 	}
 
 	public static void StopHandlingFrames(RendererCompositor c) {
@@ -62,6 +82,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	}
 
 	void CreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+		_sharedBufferSizePixels = size;
 		_sharedBuffer = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
 			Name = $"{_name} output buffer",
 			TextureDimensions = size
@@ -71,7 +92,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		_actualCompositor = _rendererBuilder.CreateCompositor(_sharedBuffer, _name);
 		for (var i = 0; i < _addedRenderers.Count; ++i) {
 			var entry = _addedRenderers[i];
-			var actualRenderer = BindableRendererImplProvider.GetBindableImplementationOrThrow(entry.BindableRenderer).RecreateActualRendererOnSharedBuffer(_sharedBuffer);
+			var actualRenderer = BindableRendererImplProvider.GetBindableImplementationOrThrow(entry.BindableRenderer).RecreateActualRendererOnSharedBuffer(_sharedBuffer, _sharedBufferSizePixels, _cursorCoordinateSpaceSize);
 			_actualCompositor.Add(actualRenderer, entry.CompositionType);
 			if (!entry.IsEnabled) _actualCompositor.SetEnabledState(actualRenderer, false);
 		}
@@ -93,7 +114,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 			}
 		}
 
-		var actualRenderer = bindableImpl.AttachToCompositor(this, _sharedBuffer);
+		var actualRenderer = bindableImpl.AttachToCompositor(this, _sharedBuffer, _sharedBufferSizePixels, _cursorCoordinateSpaceSize);
 		_actualCompositor.Add(actualRenderer, compositionType);
 		_addedRenderers.Add(new(renderer, compositionType, true));
 	}

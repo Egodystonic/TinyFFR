@@ -1,4 +1,5 @@
-using Egodystonic.TinyFFR;
+﻿using Egodystonic.TinyFFR;
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.WinForms;
@@ -12,6 +13,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 		PointLight _light;
 		Renderer _overlayRenderer;
 		bool _overlayEnabled;
+		FirstPersonCameraController? _cameraController;
 
 		public MainForm() {
 			InitializeComponent();
@@ -61,8 +63,11 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			scene.Add(_instance);
 			scene.Add(_light);
 
+			_cameraController = camera.CreateController<FirstPersonCameraController>();
+
 			_disposables.Add(factory);
 			_disposables.Add(camera);
+			_disposables.Add(_cameraController);
 			_disposables.Add(mesh);
 			_disposables.Add(tex);
 			_disposables.Add(mat);
@@ -101,7 +106,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 				sceneView.Renderer = renderer;
 			}
 
-			_disposables.Add(factory.ApplicationLoopBuilder.StartWinFormsUiLoop(Tick));
+			_disposables.Add(factory.ApplicationLoopBuilder.StartWinFormsUiLoop(sceneView, TickWithInput));
 
 			RenderCurrentSource();
 		}
@@ -109,6 +114,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 		void StopRendering() {
 			sceneView.Renderer = null;
 			sceneView.Compositor = null;
+			_cameraController = null;
 			foreach (var d in Enumerable.Reverse(_disposables!)) {
 				d.Dispose();
 			}
@@ -118,6 +124,15 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 		void RenderCurrentSource() {
 			if (sceneView.Compositor is { } compositor) compositor.RenderAll();
 			else sceneView.Renderer?.Render();
+		}
+
+		// Exactly the same camera-control code a standalone TinyFFR application would use in its ApplicationLoop
+		void TickWithInput(TimeSpan deltaTime, ILatestInputRetriever input) {
+			if (_cameraController is { } controller) {
+				controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime.AsDeltaTime());
+				controller.Progress(deltaTime.AsDeltaTime());
+			}
+			Tick(deltaTime);
 		}
 
 		void Tick(TimeSpan deltaTime) {
