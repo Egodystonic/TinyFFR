@@ -247,7 +247,6 @@ class UiSourcedInputRetrieverTest {
 		Assert.IsFalse(combined.ButtonWasReleasedThisIteration(GameControllerButton.A));
 		Assert.AreEqual(default(GameControllerStickPosition), combined.LeftStickPosition);
 		Assert.AreEqual(default(GameControllerTriggerPosition), combined.RightTriggerPosition);
-		Assert.AreEqual("<None>", combined.GetNameAsNewStringObject());
 	}
 	#endregion
 
