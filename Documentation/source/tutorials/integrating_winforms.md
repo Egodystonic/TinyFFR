@@ -25,7 +25,7 @@ The following properties can be adjusted for a `TinyFfrSceneView` (some via the 
 
 * The `FallbackBrush` property is optional and can be used to set the fill brush of the control when no renderer has been set and/or when no scene has been rendered.
 
-* The `InternalRenderResolution` property is also optional and can be used to set the internal resolution scenes will be rendered at before being scaled to the size of the control.(1) If left unset, scenes will always be rendered at the size of the control bounds.
+* The `InternalRenderResolution` property is also optional and can be used to set the internal resolution scenes will be rendered at before being scaled to the size of the control.(1) It is a literal count of pixels and is not multiplied by the display's scaling factor. If left unset, scenes are rendered at the size of the control bounds in physical pixels, which keeps the image sharp on displays using a scaling factor other than 100%.
 	{ .annotate }
 
 	1. The height and width of the render resolution of a scene view must both be between `1` and `32768`.
@@ -139,7 +139,7 @@ The retriever is scoped to `inputSource`, which is the closest analogue to a sta
 
 * **Keyboard** events are observed only whilst `inputSource` has focus. `TinyFfrSceneView` is focusable and takes focus when clicked, so a user must click in to the scene view before keyboard input reaches TinyFFR. This is deliberate: it means typing in a `TextBox` elsewhere in your application does not also drive your scene.
 * **Mouse** buttons and the scroll wheel are observed whilst the pointer is over `inputSource`. Whilst a button is held, the pointer is captured, so `MouseCursorDelta` keeps accumulating even if the pointer leaves the element (which makes drag-to-look work as expected).
-* `MouseCursorPosition` is relative to `inputSource` (`(0, 0)` being its top-left corner) and expressed in that element's own coordinate space. If you have set `InternalRenderResolution` to something other than the control's size, you will need to scale the position yourself before using it to pick against the rendered image.
+* `MouseCursorPosition` is relative to `inputSource` (`(0, 0)` being its top-left corner) and expressed in that element's own coordinate space. You can pass it straight to `Renderer.CastRayFromRenderSurface()` or `Renderer.CastRayFromRenderSubAreaSurface()`: those methods convert it to the render buffer's pixel space for you, accounting both for the display's scaling factor and for any `InternalRenderResolution` you have set. Pass `disableDpiScalingAdjustment: true` if you are supplying a coordinate that is already in buffer space. For this to line up, `inputSource` must be the scene view itself.
 * Keys and buttons are released automatically when focus or pointer capture is lost, so holding a key and then switching away from your application will not leave that key "stuck" down.
 
 ???+ info "Known limitations"

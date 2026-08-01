@@ -23,6 +23,8 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	byte[] _serializedConfig;
 	Renderer _actualRenderer;
 	RenderOutputBuffer _actualRendererTarget;
+	XYPair<int> _bufferSizePixels;
+	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
 	bool? _frustumCullingEnabled;
 	ViewportOverrideKind _viewportOverrideKind = ViewportOverrideKind.None;
 	Orientation2D _viewportAnchor;
@@ -36,6 +38,13 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 
 	public Renderer BindableRendererInstance => new(_handle, this);
 	internal Renderer ActualRenderer => _actualRenderer;
+
+	XYPair<float> CursorCoordinateScaling {
+		get {
+			if (_cursorCoordinateSpaceSize.X <= 0 || _cursorCoordinateSpaceSize.Y <= 0) return new XYPair<float>(1f, 1f);
+			return _bufferSizePixels.Cast<float>() / _cursorCoordinateSpaceSize.Cast<float>();
+		}
+	}
 
 	public BindableRendererImplProvider(IRendererBuilder rendererBuilder, IResourceAllocator allocator, Scene scene, Camera camera, in BindableRendererCreationConfig config) {
 		ArgumentNullException.ThrowIfNull(rendererBuilder);
@@ -67,10 +76,18 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		return r.Implementation as BindableRendererImplProvider ?? throw new InvalidOperationException($"Given {nameof(Renderer)} ({r}) is not a bindable renderer.");
 	}
 
-	public static void StartOrContinueHandlingFrames(Renderer r, XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+	public static void StartOrContinueHandlingFrames(Renderer r, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
 		var impl = GetBindableImplementationOrThrow(r);
 		impl.ThrowIfAttachedToCompositor();
-		impl.RecreateTargetBuffer(size, handler);
+		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
+
+		if (bufferSizePixels == impl._bufferSizePixels) {
+			impl._actualRendererTarget.StartReadingFrames(handler, presentFramesTopToBottom: true);
+			impl._currentFrameHandler = handler;
+			return;
+		}
+
+		impl.RecreateTargetBuffer(bufferSizePixels, handler);
 	}
 
 	public static void StopHandlingFrames(Renderer r) {
@@ -87,6 +104,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	}
 
 	void CreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+		_bufferSizePixels = size;
 		_actualRendererTarget = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
 			Name = $"{_name} output buffer",
 			TextureDimensions = size
@@ -117,7 +135,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		if (_autoUpdateCameraAspectRatio && target.TextureDimensions.Ratio is { } ratio) camera.SetAspectRatio(ratio);
 	}
 
-	internal Renderer AttachToCompositor(BindableRendererCompositorImplProvider compositor, RenderOutputBuffer sharedBuffer) {
+	internal Renderer AttachToCompositor(BindableRendererCompositorImplProvider compositor, RenderOutputBuffer sharedBuffer, XYPair<int> sharedBufferSizePixels, XYPair<int> cursorCoordinateSpaceSize) {
 		if (_isDisposed) throw new ObjectDisposedException(nameof(Renderer));
 		if (_attachedCompositor != null) {
 			throw new InvalidOperationException($"{BindableRendererInstance} has already been added to a bindable {nameof(RendererCompositor)}.");
@@ -129,20 +147,30 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRenderer.Dispose();
 		_actualRendererTarget.Dispose();
 		_attachedCompositor = compositor;
+		_bufferSizePixels = sharedBufferSizePixels;
+		_cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 		CreateActualRenderer(sharedBuffer);
 		return _actualRenderer;
 	}
 
 	internal void DisposeActualRendererForCompositorRecreation() => _actualRenderer.Dispose();
 
-	internal Renderer RecreateActualRendererOnSharedBuffer(RenderOutputBuffer sharedBuffer) {
+	internal Renderer RecreateActualRendererOnSharedBuffer(RenderOutputBuffer sharedBuffer, XYPair<int> sharedBufferSizePixels, XYPair<int> cursorCoordinateSpaceSize) {
+		_bufferSizePixels = sharedBufferSizePixels;
+		_cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 		CreateActualRenderer(sharedBuffer);
 		return _actualRenderer;
+	}
+
+	internal void SetCursorCoordinateSpaceSizeFromCompositor(XYPair<int> sharedBufferSizePixels, XYPair<int> cursorCoordinateSpaceSize) {
+		_bufferSizePixels = sharedBufferSizePixels;
+		_cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 	}
 
 	internal void DetachFromCompositor() {
 		_actualRenderer.Dispose();
 		_attachedCompositor = null;
+		_cursorCoordinateSpaceSize = XYPair<int>.Zero;
 		CreateTargetBuffer(BindableRendererCreationConfig.ConvertFromAllocatedHeapStorage(_serializedConfig).DefaultBufferSize, null);
 	}
 
@@ -265,11 +293,17 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 
 	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
+		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
+		// The inner renderer targets a buffer, whose viewport dimensions are its texture dimensions by definition, so it can not
+		// make this adjustment itself; we pass 'true' downstream for disableDpiScalingAdjustment regardless to indicate the coordinate has already been converted.
+		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom, true);
 	}
 	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		return _actualRenderer.CastRayFromRenderSubAreaSurface(pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
+		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
+		// The inner renderer targets a buffer, whose viewport dimensions are its texture dimensions by definition, so it can not
+		// make this adjustment itself; we pass 'true' downstream for disableDpiScalingAdjustment regardless to indicate the coordinate has already been converted.
+		return _actualRenderer.CastRayFromRenderSubAreaSurface(pixelCoord, yZeroOriginAtBottom, true);
 	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) {

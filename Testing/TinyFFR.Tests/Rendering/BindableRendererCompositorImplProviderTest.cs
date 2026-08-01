@@ -89,7 +89,7 @@ class BindableRendererCompositorImplProviderTest {
 	public void ShouldRejectRendererCurrentlySupplyingFramesDirectly() {
 		var compositor = _builder.CreateBindableCompositor();
 		var renderer = CreateBindableRenderer();
-		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler);
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), (100, 50), NoopFrameHandler);
 
 		Assert.Throws<InvalidOperationException>(() => compositor.Add(renderer, RenderCompositionType.Standard));
 
@@ -155,7 +155,7 @@ class BindableRendererCompositorImplProviderTest {
 		Assert.AreEqual((innerRendererB.RendererInstance, false), innerCompositor.SetEnabledStateCalls[0]);
 		Assert.Throws<ArgumentException>(() => compositor.SetEnabledState(unaddedRenderer, false));
 
-		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (100, 50), NoopFrameHandler);
+		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (100, 50), (100, 50), NoopFrameHandler);
 
 		var recreatedInnerCompositor = LatestInnerCompositor;
 		Assert.AreNotEqual(innerCompositor, recreatedInnerCompositor);
@@ -190,7 +190,7 @@ class BindableRendererCompositorImplProviderTest {
 		compositor.SetEnabledState(rendererB, false);
 		_cameraImpl.AspectRatioCalls.Clear();
 
-		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (400, 100), NoopFrameHandler);
+		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (400, 100), (400, 100), NoopFrameHandler);
 
 		Assert.AreEqual(true, originalInnerCompositor.Disposed);
 		Assert.AreEqual(true, originalSharedBuffer.Disposed);
@@ -226,7 +226,7 @@ class BindableRendererCompositorImplProviderTest {
 		compositor.Add(renderer, RenderCompositionType.Standard);
 		var innerRenderer = LatestInnerRenderer;
 
-		Assert.Throws<InvalidOperationException>(() => BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), NoopFrameHandler));
+		Assert.Throws<InvalidOperationException>(() => BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), (100, 50), NoopFrameHandler));
 		Assert.Throws<InvalidOperationException>(() => BindableRendererImplProvider.StopHandlingFrames(renderer));
 		Assert.Throws<InvalidOperationException>(renderer.Dispose);
 
@@ -275,5 +275,30 @@ class BindableRendererCompositorImplProviderTest {
 		Assert.AreEqual(true, renderer.IsDisposed);
 		Assert.AreEqual(true, _allocator.CreatedGroups[0].Disposed);
 		Assert.AreEqual(rendererBufferCountBeforeDisposal, _builder.CreatedBuffers.Count);
+	}
+
+	[Test]
+	public void ShouldPropagateRayCastScalingToRenderersAddedAfterFrameHandlingStarts() {
+		var compositor = _builder.CreateBindableCompositor();
+		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (1600, 900), (800, 450), NoopFrameHandler);
+		var renderer = CreateBindableRenderer();
+		compositor.Add(renderer, RenderCompositionType.Standard);
+
+		_ = renderer.CastRayFromRenderSurface((100, 50));
+
+		Assert.AreEqual(new XYPair<int>(200, 100), LatestInnerRenderer.RenderSurfaceRayCalls[0].PixelCoord);
+	}
+
+	[Test]
+	public void ShouldRetainRayCastScalingAcrossSharedBufferRecreation() {
+		var compositor = _builder.CreateBindableCompositor();
+		var renderer = CreateBindableRenderer();
+		compositor.Add(renderer, RenderCompositionType.Standard);
+		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (1600, 900), (800, 450), NoopFrameHandler);
+
+		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (600, 300), (300, 150), NoopFrameHandler);
+		_ = renderer.CastRayFromRenderSurface((100, 50));
+
+		Assert.AreEqual(new XYPair<int>(200, 100), LatestInnerRenderer.RenderSurfaceRayCalls[0].PixelCoord);
 	}
 }

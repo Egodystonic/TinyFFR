@@ -30,6 +30,8 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public readonly List<bool> FrustumCullingCalls = new();
 	public readonly List<(Orientation2D Anchor, XYPair<float> Offset, XYPair<float> Dimensions)> SubAreaFractionCalls = new();
 	public readonly List<(Orientation2D Anchor, XYPair<int> Offset, XYPair<int> Dimensions)> SubAreaPixelCalls = new();
+	public readonly List<(XYPair<int> PixelCoord, bool YZeroOriginAtBottom, bool DisableDpiScalingAdjustment)> RenderSurfaceRayCalls = new();
+	public readonly List<(XYPair<int> PixelCoord, bool YZeroOriginAtBottom, bool DisableDpiScalingAdjustment)> ViewportSurfaceRayCalls = new();
 
 	public FakeRendererImplProvider(ResourceHandle<Renderer> handle, Scene scene, Camera camera, RenderOutputBuffer targetBuffer, in RendererCreationConfig config) {
 		Handle = handle;
@@ -66,8 +68,14 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
 	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) => default;
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) => default;
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+		RenderSurfaceRayCalls.Add((pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment));
+		return default;
+	}
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+		ViewportSurfaceRayCalls.Add((pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment));
+		return default;
+	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) => Scene;
 	public Camera GetCamera(ResourceHandle<Renderer> handle) => Camera;

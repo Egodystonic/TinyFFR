@@ -2,6 +2,7 @@
 using Egodystonic.TinyFFR.Rendering;
 using System;
 using System.ComponentModel;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using static Egodystonic.TinyFFR.Rendering.RenderOutputBufferCreationConfig;
 
@@ -134,11 +135,18 @@ public partial class TinyFfrSceneView : UserControl {
 		base.OnPaint(e);
 
 		if (_bitmap == null) {
-			e.Graphics.FillRectangle(FallbackBrush, e.ClipRectangle);
+			e.Graphics.FillRectangle(FallbackBrush, ClientRectangle);
 			return;
 		}
 
-		e.Graphics.DrawImage(_bitmap, e.ClipRectangle);
+		if (_bitmap.Width == ClientSize.Width && _bitmap.Height == ClientSize.Height) {
+			e.Graphics.DrawImageUnscaled(_bitmap, 0, 0);
+			return;
+		}
+
+		e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+		e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
+		e.Graphics.DrawImage(_bitmap, new Rectangle(Point.Empty, ClientSize));
 	}
 
 	protected override void OnParentChanged(EventArgs e) {
@@ -156,7 +164,13 @@ public partial class TinyFfrSceneView : UserControl {
 		IdempotentlyUpdateRendererStateAccordingToControlState();
 	}
 
+	protected override void OnDpiChangedAfterParent(EventArgs e) {
+		base.OnDpiChangedAfterParent(e);
+		IdempotentlyUpdateRendererStateAccordingToControlState();
+	}
+
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
+		var cursorCoordinateSpaceSize = ClientSize.AsXyPair().Cast<int>();
 		var targetSize = (InternalRenderResolution ?? ClientSize).AsXyPair().Cast<int>();
 
 		var targetSizeIsPermitted =
@@ -182,8 +196,8 @@ public partial class TinyFfrSceneView : UserControl {
 			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
 		}
 
-		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
-		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, WriteFrame);
+		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
 	}
 }
 

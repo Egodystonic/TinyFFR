@@ -22,6 +22,7 @@ namespace Egodystonic.TinyFFR.Avalonia;
 
 public class TinyFfrSceneView : Control {
 	WriteableBitmap? _bitmap;
+	TopLevel? _scalingChangeSubscriptionTarget;
 
 	public static readonly StyledProperty<Renderer?> RendererProperty = AvaloniaProperty.Register<TinyFfrSceneView, Renderer?>(
 		nameof(Renderer), 
@@ -72,6 +73,8 @@ public class TinyFfrSceneView : Control {
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
 		if (_bitmap == null || _bitmap.PixelSize.Width != dimensions.X || _bitmap.PixelSize.Height != dimensions.Y) {
 			_bitmap?.Dispose();
+			// This DPI must remain 96 regardless of the display's actual DPI: Bitmap.Size is PixelSize / (Dpi / 96), and
+			// DrawImage derives its source rectangle from Bitmap.Size, so any other value would sample only part of the buffer
 			_bitmap = new WriteableBitmap(
 				new PixelSize(dimensions.X, dimensions.Y),
 				new Vector(96d, 96d),
@@ -115,13 +118,22 @@ public class TinyFfrSceneView : Control {
 
 	protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) {
 		base.OnAttachedToVisualTree(e);
+		// A scaling change usually leaves the device-independent Bounds untouched, so watching BoundsProperty alone is not enough
+		_scalingChangeSubscriptionTarget = TopLevel.GetTopLevel(this);
+		if (_scalingChangeSubscriptionTarget != null) _scalingChangeSubscriptionTarget.ScalingChanged += HandleScalingChanged;
 		IdempotentlyUpdateRendererStateAccordingToControlState();
 	}
 
 	protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
+		if (_scalingChangeSubscriptionTarget != null) {
+			_scalingChangeSubscriptionTarget.ScalingChanged -= HandleScalingChanged;
+			_scalingChangeSubscriptionTarget = null;
+		}
 		base.OnDetachedFromVisualTree(e);
 		IdempotentlyUpdateRendererStateAccordingToControlState();
 	}
+
+	void HandleScalingChanged(object? sender, EventArgs e) => IdempotentlyUpdateRendererStateAccordingToControlState();
 
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
 		base.OnPropertyChanged(change);
@@ -143,15 +155,20 @@ public class TinyFfrSceneView : Control {
 	}
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
-		var targetSize = (InternalRenderResolution ?? Bounds.Size).AsXyPair().Cast<int>();
-		
-		var targetSizeIsPermitted = 
+		var visualRoot = this.GetVisualRoot();
+
+		var cursorCoordinateSpaceSize = Bounds.Size.AsXyPair().Cast<int>();
+		var targetSize = InternalRenderResolution is { } explicitResolution
+			? explicitResolution.AsXyPair().Cast<int>()
+			: Bounds.Size.AsXyPair().ScaledBy(new XYPair<double>(visualRoot?.RenderScaling ?? 1d)).CastWithRoundingIfNecessary<double, int>();
+
+		var targetSizeIsPermitted =
 			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)
 			&& (targetSize.Y is >= MinTextureDimensionXY and <= MaxTextureDimensionXY);
 
 		var rendererLocal = Renderer;
 		var compositorLocal = Compositor;
-		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !IsVisible || this.GetVisualRoot() == null || !targetSizeIsPermitted;
+		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !IsVisible || visualRoot == null || !targetSizeIsPermitted;
 		if (shouldDisableFrameCapture) {
 			_bitmap?.Dispose();
 			_bitmap = null;
@@ -169,7 +186,7 @@ public class TinyFfrSceneView : Control {
 			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
 		}
 
-		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
-		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, WriteFrame);
+		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
 	}
 }
