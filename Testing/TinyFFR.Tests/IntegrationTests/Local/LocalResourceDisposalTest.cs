@@ -290,8 +290,8 @@ class LocalResourceDisposalTest {
 			v => _ = v.GetNameAsNewStringObject(),
 			v => _ = v.GetNameLength(),
 			v => v.CopyName(_nameDestinationBuffer),
-			v => v.ReadNextFrame((XYPair<int> _, ReadOnlySpan<TexelRgba32> _) => { }),
-			v => v.StartReadingFrames((XYPair<int> _, ReadOnlySpan<TexelRgba32> _) => { }),
+			v => v.ReadNextFrame((_, _) => { }),
+			v => v.StartReadingFrames((_, _) => { }),
 			v => v.StopReadingFrames(true),
 			v => _ = v.TextureDimensions
 		};

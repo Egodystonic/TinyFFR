@@ -140,30 +140,21 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	readonly record struct RendererCompositorData(RenderTargetUnion RenderTarget, ArrayPoolBackedVector<CompositedRenderer> AddedRenderers, int NumRenderersCurrentlyEnabled, int FirstEnabledRendererIndex, int LastEnabledRendererIndex);
 	readonly unsafe struct OutputBufferCallbackData {
 		public bool InvertRows { get; }
-		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> OutputChangeHandler { get; }
-		public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? OutputChangeHandlerManaged { get; }
-		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> OutputChangeHandlerRgba { get; }
-		public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? OutputChangeHandlerManagedRgba { get; }
+		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> OutputChangeHandler { get; }
+		public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? OutputChangeHandlerManaged { get; }
 
-		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null || OutputChangeHandlerRgba != null || OutputChangeHandlerManagedRgba != null;
+		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
 
-		// Readback always arrives as RGBA; when only an RGB handler is set the data is narrowed before invocation.
-		public bool RequiresRgbNarrowing => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
-
-		public static OutputBufferCallbackData None => new(false, null, null, null, null);
+		public static OutputBufferCallbackData None => new(false, null, null);
 
 		public OutputBufferCallbackData(
 			bool invertRows,
-			delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> outputChangeHandler,
-			Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? outputChangeHandlerManaged,
-			delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> outputChangeHandlerRgba,
-			Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? outputChangeHandlerManagedRgba
+			delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> outputChangeHandler,
+			Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? outputChangeHandlerManaged
 		) {
 			InvertRows = invertRows;
 			OutputChangeHandler = outputChangeHandler;
 			OutputChangeHandlerManaged = outputChangeHandlerManaged;
-			OutputChangeHandlerRgba = outputChangeHandlerRgba;
-			OutputChangeHandlerManagedRgba = outputChangeHandlerManagedRgba;
 		}
 	}
 	readonly record struct OutputBufferData(ResourceHandle<RenderOutputBuffer> Handle, XYPair<int> TextureDimensions, UIntPtr TextureHandle, UIntPtr RenderTargetHandle, OutputBufferCallbackData RenderCompletionHandlers, bool HandleOnlyNextChange);
@@ -206,8 +197,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public void Dispose(ResourceHandle<RenderOutputBuffer> handle) => _owner.Dispose(handle);
 		public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) => _owner.CreateDynamicTexture(handle);
 		public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetTextureDimensions(handle);
-		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
-		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) => _owner.ClearOutputChangeHandlers(handle, cancelQueuedFrames);
@@ -692,24 +681,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			}
 		}
 
-		if (tuple.Callbacks.OutputChangeHandlerRgba != null) {
-			tuple.Callbacks.OutputChangeHandlerRgba(dimensions, texelData);
-			return;
-		}
-		if (tuple.Callbacks.OutputChangeHandlerManagedRgba != null) {
-			tuple.Callbacks.OutputChangeHandlerManagedRgba(dimensions, texelData);
-			return;
-		}
-		if (!tuple.Callbacks.RequiresRgbNarrowing) return;
-
-		using var narrowedTexels = tuple.Builder._globals.HeapPool.Borrow<TexelRgb24>(dimensions.Area);
-		var narrowedSpan = narrowedTexels.Span[..dimensions.Area];
-		for (var i = 0; i < narrowedSpan.Length; ++i) {
-			narrowedSpan[i] = new TexelRgb24(texelData[i].R, texelData[i].G, texelData[i].B);
-		}
-
-		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, narrowedSpan);
-		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, narrowedSpan);
+		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, texelData);
+		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, texelData);
 	}
 
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
@@ -777,33 +750,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedBuffers[handle].TextureDimensions;
 	}
-	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
-		ArgumentNullException.ThrowIfNull(handler);
-		ThrowIfThisOrHandleIsDisposed(handle);
-		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, handler, null, null),
-			HandleOnlyNextChange = handleOnlyNextChange
-		};
-	}
-	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, handler, null, null, null),
-			HandleOnlyNextChange = handleOnlyNextChange
-		};
-	}
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, null, null, handler),
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, handler),
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, null, handler, null),
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, handler, null),
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
@@ -858,7 +816,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			buffer.Dispose();
 		}
 	}
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 
@@ -873,7 +831,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			buffer.Dispose();
 		}
 	}
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
@@ -900,10 +858,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		});
 		return (buffer, renderer);
 	}
-	static void SaveScreenshotToBitmap(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
+	static void SaveScreenshotToBitmap(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
 		try {
 			if (_nextScreenshotCaptureFilePath == null) throw new InvalidOperationException("Out-of-order operation detected.");
-			if (_nextScreenshotCaptureConfig == null) ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels);
+			if (_nextScreenshotCaptureConfig == null) ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels, new(IncludeAlphaChannel: false, FlipVertical: false, FlipHorizontal: false));
 			else ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels, _nextScreenshotCaptureConfig.Value);
 		}
 		catch (Exception e) {

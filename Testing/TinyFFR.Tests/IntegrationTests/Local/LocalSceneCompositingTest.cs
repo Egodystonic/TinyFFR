@@ -103,7 +103,7 @@ class LocalSceneCompositingTest {
 			var curDumpTime = (int) loop.TotalIteratedTime.TotalSeconds;
 			if (curDumpTime != lastScreenDumpTime) {
 				lastScreenDumpTime = curDumpTime;
-				rtt.ReadNextFrame((XYPair<int> dim, ReadOnlySpan<TexelRgba32> pixels) => ImageUtils.SaveBitmap(Path.Combine(outputDir, curDumpTime + "_secs.bmp"), dim, pixels));
+				rtt.ReadNextFrame((dim, pixels) => ImageUtils.SaveBitmap(Path.Combine(outputDir, curDumpTime + "_secs.bmp"), dim, pixels));
 				compositor.RenderAllAndWaitForGpu();
 			}
 		}
