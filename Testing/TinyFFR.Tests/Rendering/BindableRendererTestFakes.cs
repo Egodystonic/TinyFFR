@@ -88,7 +88,8 @@ sealed class FakeRenderOutputBufferImplProvider : IRenderOutputBufferImplProvide
 	public string Name { get; }
 	public XYPair<int> TextureDimensions { get; }
 	public bool Disposed { get; private set; }
-	public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? CurrentHandler { get; private set; }
+	public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? CurrentHandler { get; private set; }
+	public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? CurrentRgbHandler { get; private set; }
 	public bool? LastHandlerLowestAddressesRepresentFrameTop { get; private set; }
 	public int ClearHandlersCallCount { get; private set; }
 
@@ -111,12 +112,18 @@ sealed class FakeRenderOutputBufferImplProvider : IRenderOutputBufferImplProvide
 	public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => TextureDimensions;
 
 	public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
-		CurrentHandler = handler;
+		CurrentRgbHandler = handler;
 		LastHandlerLowestAddressesRepresentFrameTop = lowestAddressesRepresentFrameTop;
 	}
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => throw new NotSupportedException();
+	public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
+		CurrentHandler = handler;
+		LastHandlerLowestAddressesRepresentFrameTop = lowestAddressesRepresentFrameTop;
+	}
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => throw new NotSupportedException();
 	public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) {
 		CurrentHandler = null;
+		CurrentRgbHandler = null;
 		ClearHandlersCallCount++;
 	}
 }

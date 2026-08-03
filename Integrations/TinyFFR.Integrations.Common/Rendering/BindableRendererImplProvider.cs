@@ -32,7 +32,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	XYPair<float> _viewportFractionalDimensions;
 	XYPair<int> _viewportPixelOffset;
 	XYPair<int> _viewportPixelDimensions;
-	Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? _currentFrameHandler;
+	Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? _currentFrameHandler;
 	BindableRendererCompositorImplProvider? _attachedCompositor;
 	bool _isDisposed = false;
 
@@ -76,7 +76,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		return r.Implementation as BindableRendererImplProvider ?? throw new InvalidOperationException($"Given {nameof(Renderer)} ({r}) is not a bindable renderer.");
 	}
 
-	public static void StartOrContinueHandlingFrames(Renderer r, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+	public static void StartOrContinueHandlingFrames(Renderer r, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler) {
 		var impl = GetBindableImplementationOrThrow(r);
 		impl.ThrowIfAttachedToCompositor();
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
@@ -97,13 +97,13 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		impl._currentFrameHandler = null;
 	}
 
-	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
 		_actualRenderer.Dispose();
 		_actualRendererTarget.Dispose();
 		CreateTargetBuffer(size, handler);
 	}
 
-	void CreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+	void CreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
 		_bufferSizePixels = size;
 		_actualRendererTarget = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
 			Name = $"{_name} output buffer",

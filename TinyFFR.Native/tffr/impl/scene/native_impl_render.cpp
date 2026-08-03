@@ -513,7 +513,7 @@ StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle vi
 	EndExportedFunc
 }
 
-void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
 	ThrowIfNull(renderer, "Renderer was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(renderTarget, "Render target pointer was null.");
@@ -523,6 +523,9 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 	renderer->renderStandaloneView(viewDescriptor);
 	if (optionalReadbackBuffer == nullptr) return;
 
+	// RGBA (not RGB) is deliberate despite the extra byte per texel: DataReshaper only takes its memcpy fast path
+	// (copyImage) when the destination format is RGBA and no swizzle is needed. Asking for RGB instead drops us into
+	// reshapeImage's per-byte triple-nested loop, which costs far more than the extra 25% of bytes copied.
 	renderer->readPixels(
 		renderTarget,
 		0,
@@ -532,16 +535,18 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 		backend::PixelBufferDescriptor {
 			optionalReadbackBuffer,
 			static_cast<size_t>(readbackBufferLenBytes),
-			backend::PixelDataFormat::RGB,
+			backend::PixelDataFormat::RGBA,
 			backend::PixelDataType::UBYTE,
 			&handle_filament_buffer_ready_callback,
 			bufferIdentity
 		}
 	);
-	filament_engine->flushAndWait();
+	// Callers streaming frames continuously don't wait, so the readback overlaps the next frame's GPU work. One-shot
+	// readers (screenshot capture) must wait, because they dispose the target buffer as soon as this call returns.
+	if (waitForReadbackCompletion) filament_engine->flushAndWait();
 }
-StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
-	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
+StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
+	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity, waitForReadbackCompletion);
 	EndExportedFunc
 }
 

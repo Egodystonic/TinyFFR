@@ -142,13 +142,28 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public bool InvertRows { get; }
 		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> OutputChangeHandler { get; }
 		public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? OutputChangeHandlerManaged { get; }
-		
-		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
+		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> OutputChangeHandlerRgba { get; }
+		public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? OutputChangeHandlerManagedRgba { get; }
 
-		public OutputBufferCallbackData(bool invertRows, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> outputChangeHandler, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? outputChangeHandlerManaged) {
+		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null || OutputChangeHandlerRgba != null || OutputChangeHandlerManagedRgba != null;
+
+		// Readback always arrives as RGBA; when only an RGB handler is set the data is narrowed before invocation.
+		public bool RequiresRgbNarrowing => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
+
+		public static OutputBufferCallbackData None => new(false, null, null, null, null);
+
+		public OutputBufferCallbackData(
+			bool invertRows,
+			delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> outputChangeHandler,
+			Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? outputChangeHandlerManaged,
+			delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> outputChangeHandlerRgba,
+			Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? outputChangeHandlerManagedRgba
+		) {
 			InvertRows = invertRows;
 			OutputChangeHandler = outputChangeHandler;
 			OutputChangeHandlerManaged = outputChangeHandlerManaged;
+			OutputChangeHandlerRgba = outputChangeHandlerRgba;
+			OutputChangeHandlerManagedRgba = outputChangeHandlerManagedRgba;
 		}
 	}
 	readonly record struct OutputBufferData(ResourceHandle<RenderOutputBuffer> Handle, XYPair<int> TextureDimensions, UIntPtr TextureHandle, UIntPtr RenderTargetHandle, OutputBufferCallbackData RenderCompletionHandlers, bool HandleOnlyNextChange);
@@ -193,6 +208,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetTextureDimensions(handle);
 		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
+		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
+		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) => _owner.ClearOutputChangeHandlers(handle, cancelQueuedFrames);
 		public override string ToString() => _owner.ToString();
 	}
@@ -351,7 +368,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<RenderOutputBuffer>(_previousHandleId);
-		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, new(false, null, null), false);
+		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, OutputBufferCallbackData.None, false);
 		_loadedBuffers.Add(handle, bufferData);
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRenderOutputBufferName);
@@ -593,11 +610,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					0U,
 					0U,
 					0U,
-					0U
+					0U,
+					false
 				).ThrowIfFailure();
 			}
 			else {
-				var requiredSize = bufferData.TextureDimensions.Area * TexelRgb24.TexelSizeBytes;
+				var requiredSize = bufferData.TextureDimensions.Area * TexelRgba32.TexelSizeBytes;
 				var buffer = _globals.CreateGpuHoldingBuffer(requiredSize, &HandleRenderTargetReadback);
 				_pendingRenderTargetReadbacks.Add(
 					buffer.BufferIdentity,
@@ -605,7 +623,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				);
 				if (bufferData.HandleOnlyNextChange) {
 					_loadedBuffers[bufferData.Handle] = _loadedBuffers[bufferData.Handle] with {
-						RenderCompletionHandlers = new(),
+						RenderCompletionHandlers = OutputBufferCallbackData.None,
 						HandleOnlyNextChange = false
 					};
 				}
@@ -618,7 +636,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					(uint) buffer.DataLengthBytes,
 					(uint) bufferData.TextureDimensions.X,
 					(uint) bufferData.TextureDimensions.Y,
-					buffer.BufferIdentity
+					buffer.BufferIdentity,
+					// One-shot readers (e.g. screenshot capture) dispose their buffer as soon as the render call returns,
+					// so their readback must complete synchronously. Continuous readers let it overlap the next frame.
+					bufferData.HandleOnlyNextChange
 				).ThrowIfFailure();
 			}
 		}
@@ -644,17 +665,17 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		if (tuple.Builder.IsDisposed(tuple.BufferHandle)) return; // Can happen if user has disposed target output buffer
 
 		var dimensions = tuple.Builder._loadedBuffers[tuple.BufferHandle].TextureDimensions;
-		var requiredLength = dimensions.Area * TexelRgb24.TexelSizeBytes;
+		var requiredLength = dimensions.Area * TexelRgba32.TexelSizeBytes;
 		if (data.Length < requiredLength) {
 			throw new InvalidOperationException($"Received render target readback for output buffer with dimensions {dimensions} " +
 												$"(requiring buffer size {requiredLength}), " +
 												$"but buffer size was {data.Length}.");
 		}
 
-		var texelData = MemoryMarshal.Cast<byte, TexelRgb24>(data[..requiredLength]);
+		var texelData = MemoryMarshal.Cast<byte, TexelRgba32>(data[..requiredLength]);
 
 		if (tuple.Callbacks.InvertRows) { // Inverted because we actually get the data in screen/window order, so by default we want to flip the data to make it match texture convention
-			Span<TexelRgb24> stackSwapSpace = stackalloc TexelRgb24[dimensions.X];
+			Span<TexelRgba32> stackSwapSpace = stackalloc TexelRgba32[dimensions.X];
 			for (var rowIndex = 0; rowIndex < dimensions.Y / 2; ++rowIndex) {
 				var lowerRow = texelData[
 					(rowIndex * dimensions.X)
@@ -673,8 +694,24 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			}
 		}
 
-		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, texelData);
-		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, texelData);
+		if (tuple.Callbacks.OutputChangeHandlerRgba != null) {
+			tuple.Callbacks.OutputChangeHandlerRgba(dimensions, texelData);
+			return;
+		}
+		if (tuple.Callbacks.OutputChangeHandlerManagedRgba != null) {
+			tuple.Callbacks.OutputChangeHandlerManagedRgba(dimensions, texelData);
+			return;
+		}
+		if (!tuple.Callbacks.RequiresRgbNarrowing) return;
+
+		using var narrowedTexels = tuple.Builder._globals.HeapPool.Borrow<TexelRgb24>(dimensions.Area);
+		var narrowedSpan = narrowedTexels.Span[..dimensions.Area];
+		for (var i = 0; i < narrowedSpan.Length; ++i) {
+			narrowedSpan[i] = new TexelRgb24(texelData[i].R, texelData[i].G, texelData[i].B);
+		}
+
+		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, narrowedSpan);
+		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, narrowedSpan);
 	}
 
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
@@ -746,20 +783,35 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, handler),
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, handler, null, null),
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, handler, null),
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, handler, null, null, null),
+			HandleOnlyNextChange = handleOnlyNextChange
+		};
+	}
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
+		ArgumentNullException.ThrowIfNull(handler);
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedBuffers[handle] = _loadedBuffers[handle] with {
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, null, null, handler),
+			HandleOnlyNextChange = handleOnlyNextChange
+		};
+	}
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedBuffers[handle] = _loadedBuffers[handle] with {
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, null, handler, null),
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
 	public unsafe void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_loadedBuffers[handle] = _loadedBuffers[handle] with { RenderCompletionHandlers = new(false, null, null) };
+		_loadedBuffers[handle] = _loadedBuffers[handle] with { RenderCompletionHandlers = OutputBufferCallbackData.None };
 		if (!cancelQueuedFrames) return;
 
 		using var currentlyQueuedFrameIdentities = _globals.HeapPool.Borrow<nuint>(_pendingRenderTargetReadbacks.Count);
@@ -1121,7 +1173,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		uint readbackBufferLengthBytes,
 		uint readbackBufferWidth,
 		uint readbackBufferHeight,
-		nuint readbackBufferIdentity
+		nuint readbackBufferIdentity,
+		InteropBool waitForReadbackCompletion
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_render_target")]

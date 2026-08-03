@@ -12,5 +12,7 @@ public unsafe interface IRenderOutputBufferImplProvider : IDisposableResourceImp
 	XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle);
 	void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange);
 	void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange);
+	void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange);
+	void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange);
 	void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames);
 }
