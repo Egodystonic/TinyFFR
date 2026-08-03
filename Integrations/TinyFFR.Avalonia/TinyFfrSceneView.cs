@@ -9,9 +9,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Avalonia.Rendering;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Rendering;
@@ -70,7 +68,7 @@ public class TinyFfrSceneView : Control {
 		if (Focusable && !IsFocused) Focus();
 	}
 
-	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
+	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
 		if (_bitmap == null || _bitmap.PixelSize.Width != dimensions.X || _bitmap.PixelSize.Height != dimensions.Y) {
 			_bitmap?.Dispose();
 			// This DPI must remain 96 regardless of the display's actual DPI: Bitmap.Size is PixelSize / (Dpi / 96), and
@@ -78,25 +76,25 @@ public class TinyFfrSceneView : Control {
 			_bitmap = new WriteableBitmap(
 				new PixelSize(dimensions.X, dimensions.Y),
 				new Vector(96d, 96d),
-				PixelFormats.Rgb24,
+				PixelFormats.Rgba8888,
 				AlphaFormat.Opaque
 			);
 		}
 
 		using (var lockedBuffer = _bitmap.Lock()) {
-			if (lockedBuffer.Format != PixelFormats.Rgb24
+			if (lockedBuffer.Format != PixelFormats.Rgba8888
 				|| lockedBuffer.Size.Width != dimensions.X
 				|| lockedBuffer.Size.Height != dimensions.Y
-				|| lockedBuffer.RowBytes < dimensions.X * sizeof(TexelRgb24)) {
+				|| lockedBuffer.RowBytes < dimensions.X * sizeof(TexelRgba32)) {
 				throw new InvalidOperationException("Write to locked buffer failed safety check.");
 			}
-			if (lockedBuffer.RowBytes == dimensions.X * TexelRgb24.TexelSizeBytes) {
-				var destSpan = new Span<TexelRgb24>((void*) lockedBuffer.Address, texels.Length);
+			if (lockedBuffer.RowBytes == dimensions.X * TexelRgba32.TexelSizeBytes) {
+				var destSpan = new Span<TexelRgba32>((void*) lockedBuffer.Address, texels.Length);
 				texels.CopyTo(destSpan);
 			}
 			else {
 				for (var r = 0; r < dimensions.Y; ++r) {
-					var destSpan = new Span<TexelRgb24>(((byte*) lockedBuffer.Address) + (r * lockedBuffer.RowBytes), dimensions.X);
+					var destSpan = new Span<TexelRgba32>(((byte*) lockedBuffer.Address) + (r * lockedBuffer.RowBytes), dimensions.X);
 					texels[(r * dimensions.X)..((r + 1) * dimensions.X)].CopyTo(destSpan);
 				}
 			}
@@ -155,12 +153,12 @@ public class TinyFfrSceneView : Control {
 	}
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
-		var visualRoot = this.GetVisualRoot();
+		var topLevel = TopLevel.GetTopLevel(this);
 
 		var cursorCoordinateSpaceSize = Bounds.Size.AsXyPair().Cast<int>();
 		var targetSize = InternalRenderResolution is { } explicitResolution
 			? explicitResolution.AsXyPair().Cast<int>()
-			: Bounds.Size.AsXyPair().ScaledBy(new XYPair<double>(visualRoot?.RenderScaling ?? 1d)).CastWithRoundingIfNecessary<double, int>();
+			: Bounds.Size.AsXyPair().ScaledBy(new XYPair<double>(topLevel?.RenderScaling ?? 1d)).CastWithRoundingIfNecessary<double, int>();
 
 		var targetSizeIsPermitted =
 			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)
@@ -168,7 +166,7 @@ public class TinyFfrSceneView : Control {
 
 		var rendererLocal = Renderer;
 		var compositorLocal = Compositor;
-		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !IsVisible || visualRoot == null || !targetSizeIsPermitted;
+		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !IsVisible || topLevel == null || !targetSizeIsPermitted;
 		if (shouldDisableFrameCapture) {
 			_bitmap?.Dispose();
 			_bitmap = null;

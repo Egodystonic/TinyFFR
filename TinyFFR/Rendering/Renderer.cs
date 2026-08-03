@@ -77,10 +77,10 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	public void CaptureScreenshot(ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig = null, XYPair<int>? captureResolution = null) => Implementation.CaptureScreenshot(_handle, bitmapFilePath, saveConfig, captureResolution);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void CaptureScreenshot(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
+	public void CaptureScreenshot(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
+	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord) => CastRayFromRenderSurface(pixelCoord, false, false);

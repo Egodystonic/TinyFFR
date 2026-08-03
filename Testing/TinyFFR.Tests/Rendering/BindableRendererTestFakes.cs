@@ -65,8 +65,8 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	}
 
 	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, XYPair<int>? captureResolution) => throw new NotSupportedException();
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
 
 	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		RenderSurfaceRayCalls.Add((pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment));
@@ -88,7 +88,7 @@ sealed class FakeRenderOutputBufferImplProvider : IRenderOutputBufferImplProvide
 	public string Name { get; }
 	public XYPair<int> TextureDimensions { get; }
 	public bool Disposed { get; private set; }
-	public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? CurrentHandler { get; private set; }
+	public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? CurrentHandler { get; private set; }
 	public bool? LastHandlerLowestAddressesRepresentFrameTop { get; private set; }
 	public int ClearHandlersCallCount { get; private set; }
 
@@ -110,11 +110,11 @@ sealed class FakeRenderOutputBufferImplProvider : IRenderOutputBufferImplProvide
 	public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) => throw new NotSupportedException();
 	public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => TextureDimensions;
 
-	public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
+	public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		CurrentHandler = handler;
 		LastHandlerLowestAddressesRepresentFrameTop = lowestAddressesRepresentFrameTop;
 	}
-	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => throw new NotSupportedException();
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => throw new NotSupportedException();
 	public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) {
 		CurrentHandler = null;
 		ClearHandlersCallCount++;

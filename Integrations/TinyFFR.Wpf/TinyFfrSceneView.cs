@@ -80,7 +80,7 @@ public class TinyFfrSceneView : Control {
 		if (Focusable && !IsKeyboardFocusWithin) Focus();
 	}
 
-	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
+	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
 		if (_bitmap == null || _bitmap.PixelWidth != dimensions.X || _bitmap.PixelHeight != dimensions.Y) {
 			// This DPI must remain 96 regardless of the display's actual DPI: it is what makes the bitmap's device-independent
 			// Width/Height equal its PixelWidth/PixelHeight, which is what DrawImage uses to map the source into the destination rect
@@ -89,7 +89,7 @@ public class TinyFfrSceneView : Control {
 				dimensions.Y,
 				96d,
 				96d,
-				PixelFormats.Rgb24,
+				PixelFormats.Bgra32,
 				null
 			);
 		}
@@ -97,20 +97,20 @@ public class TinyFfrSceneView : Control {
 		try {
 			_bitmap.Lock();
 
-			if (_bitmap.Format != PixelFormats.Rgb24
+			if (_bitmap.Format != PixelFormats.Bgra32
 				|| _bitmap.PixelWidth != dimensions.X
 				|| _bitmap.PixelHeight != dimensions.Y
-				|| _bitmap.BackBufferStride < dimensions.X * sizeof(TexelRgb24)) {
+				|| _bitmap.BackBufferStride < dimensions.X * sizeof(TexelRgba32)) {
 				throw new InvalidOperationException("Write to locked buffer failed safety check.");
 			}
-			if (_bitmap.BackBufferStride == dimensions.X * TexelRgb24.TexelSizeBytes) {
-				var destSpan = new Span<TexelRgb24>((void*) _bitmap.BackBuffer, texels.Length);
-				texels.CopyTo(destSpan);
+			if (_bitmap.BackBufferStride == dimensions.X * TexelRgba32.TexelSizeBytes) {
+				var destSpan = new Span<byte>((void*) _bitmap.BackBuffer, texels.Length * TexelRgba32.TexelSizeBytes);
+				IntegrationUtils.BlitRgbaToBgra(texels, destSpan);
 			}
 			else {
 				for (var r = 0; r < dimensions.Y; ++r) {
-					var destSpan = new Span<TexelRgb24>(((byte*) _bitmap.BackBuffer) + (r * _bitmap.BackBufferStride), dimensions.X);
-					texels[(r * dimensions.X)..((r + 1) * dimensions.X)].CopyTo(destSpan);
+					var destSpan = new Span<byte>(((byte*) _bitmap.BackBuffer) + (r * _bitmap.BackBufferStride), dimensions.X * TexelRgba32.TexelSizeBytes);
+					IntegrationUtils.BlitRgbaToBgra(texels[(r * dimensions.X)..((r + 1) * dimensions.X)], destSpan);
 				}
 			}
 			_bitmap.AddDirtyRect(new Int32Rect(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight));

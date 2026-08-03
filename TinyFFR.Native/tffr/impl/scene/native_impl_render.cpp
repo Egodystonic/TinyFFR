@@ -513,7 +513,7 @@ StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle vi
 	EndExportedFunc
 }
 
-void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
 	ThrowIfNull(renderer, "Renderer was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(renderTarget, "Render target pointer was null.");
@@ -532,16 +532,17 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 		backend::PixelBufferDescriptor {
 			optionalReadbackBuffer,
 			static_cast<size_t>(readbackBufferLenBytes),
-			backend::PixelDataFormat::RGB,
+			backend::PixelDataFormat::RGBA, // RGBA preferred to hit fast buffer blit path in filament
 			backend::PixelDataType::UBYTE,
 			&handle_filament_buffer_ready_callback,
 			bufferIdentity
 		}
 	);
-	filament_engine->flushAndWait();
+
+	if (waitForReadbackCompletion) filament_engine->flushAndWait();
 }
-StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
-	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
+StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
+	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity, waitForReadbackCompletion);
 	EndExportedFunc
 }
 

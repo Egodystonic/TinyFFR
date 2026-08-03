@@ -31,7 +31,7 @@ class BindableRendererCompositorImplProviderTest {
 		_camera.Dispose();
 	}
 
-	static void NoopFrameHandler(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) { }
+	static void NoopFrameHandler(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) { }
 
 	Renderer CreateBindableRenderer(in BindableRendererCreationConfig config) => _builder.CreateBindableRenderer(_scene, _camera, _allocator, in config);
 	Renderer CreateBindableRenderer() => CreateBindableRenderer(new BindableRendererCreationConfig());
