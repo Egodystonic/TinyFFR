@@ -18,7 +18,8 @@
 
   <!-- External dependency versions -->
   <PropertyGroup>
-    <AvaloniaVersion>11.*</AvaloniaVersion>
+    <AvaloniaVersion>12.*</AvaloniaVersion>
+    <AvaloniaDependencyVersion>[12.0.0,13.0.0)</AvaloniaDependencyVersion>
     <CommunityToolkitVersion>8.*</CommunityToolkitVersion>
   </PropertyGroup>
 

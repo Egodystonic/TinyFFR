@@ -9,9 +9,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Avalonia.Rendering;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Rendering;
@@ -155,12 +153,12 @@ public class TinyFfrSceneView : Control {
 	}
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
-		var visualRoot = this.GetVisualRoot();
+		var topLevel = TopLevel.GetTopLevel(this);
 
 		var cursorCoordinateSpaceSize = Bounds.Size.AsXyPair().Cast<int>();
 		var targetSize = InternalRenderResolution is { } explicitResolution
 			? explicitResolution.AsXyPair().Cast<int>()
-			: Bounds.Size.AsXyPair().ScaledBy(new XYPair<double>(visualRoot?.RenderScaling ?? 1d)).CastWithRoundingIfNecessary<double, int>();
+			: Bounds.Size.AsXyPair().ScaledBy(new XYPair<double>(topLevel?.RenderScaling ?? 1d)).CastWithRoundingIfNecessary<double, int>();
 
 		var targetSizeIsPermitted =
 			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)
@@ -168,7 +166,7 @@ public class TinyFfrSceneView : Control {
 
 		var rendererLocal = Renderer;
 		var compositorLocal = Compositor;
-		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !IsVisible || visualRoot == null || !targetSizeIsPermitted;
+		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !IsVisible || topLevel == null || !targetSizeIsPermitted;
 		if (shouldDisableFrameCapture) {
 			_bitmap?.Dispose();
 			_bitmap = null;
