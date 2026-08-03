@@ -178,11 +178,15 @@ void native_impl_render::set_view_quality_configuration(
 	int32_t screenSpaceEffectsLevel,
 	int32_t antiAliasingMode,
 	int32_t ambientOcclusionQuality,
+	float_t ambientOcclusionStrength,
 	interop_bool postProcessingEnabled,
-	float internalResolutionScalar,
+	float_t internalResolutionScalar,
 	int32_t hdrColorPrecision,
 	interop_bool shadowsEnabled,
 	int32_t bloomQuality,
+	float_t bloomStrength,
+	int32_t depthOfFieldQuality,
+	float_t depthOfFieldStrength,
 	interop_bool dithering,
 	interop_bool guardBand
 ) {
@@ -231,27 +235,53 @@ void native_impl_render::set_view_quality_configuration(
 
 	{
 		AmbientOcclusionOptions ao;
-		if (ambientOcclusionQuality <= -2) {
-			ao.enabled = false;
-		}
-		else {
-			ao.enabled = true;
-			ao.quality = quality_level_from_tinyffr(ambientOcclusionQuality);
-		}
+		ao.enabled = ambientOcclusionStrength > 0.0f;
+		ao.quality = quality_level_from_tinyffr(ambientOcclusionQuality);
+		ao.intensity *= ambientOcclusionStrength;
 		viewDescriptor->setAmbientOcclusionOptions(ao);
 	}
 
 	{
 		BloomOptions bo;
-		bo.enabled = true;
-		switch (bloomQuality) {
-			case -2:
-			case -1:  bo.quality = QualityLevel::LOW; break;
-			case 1:  bo.quality = QualityLevel::HIGH; break;
-			case 2:  bo.quality = QualityLevel::ULTRA; break;
-			default: bo.quality = QualityLevel::MEDIUM; break;
-		}
+		bo.enabled = bloomStrength > 0.0f;
+		bo.quality = quality_level_from_tinyffr(bloomQuality);
+		bo.strength *= bloomStrength; 
 		viewDescriptor->setBloomOptions(bo);
+	}
+	
+	{
+		DepthOfFieldOptions dof;
+		dof.enabled = depthOfFieldStrength > 0.0f;
+		switch (depthOfFieldQuality) {
+			case -2:
+				dof.foregroundRingCount = 3;
+				dof.backgroundRingCount = 3;
+				dof.fastGatherRingCount = 2; 
+				break;
+			case -1: 
+				dof.foregroundRingCount = 4;
+				dof.backgroundRingCount = 4;
+				dof.fastGatherRingCount = 3;
+				break;
+			case 1:  
+				dof.foregroundRingCount = 17;
+				dof.backgroundRingCount = 17;
+				dof.fastGatherRingCount = 8;
+				break;
+			case 2:  
+				dof.foregroundRingCount = 17;
+				dof.backgroundRingCount = 17;
+				dof.fastGatherRingCount = 8;
+				dof.nativeResolution = true;
+				break;
+			default: 
+				dof.foregroundRingCount = 5;
+				dof.backgroundRingCount = 5;
+				dof.fastGatherRingCount = 5;
+				break;
+		}
+		dof.cocScale *= depthOfFieldStrength;
+		viewDescriptor->setDepthOfFieldOptions(dof);
 	}
 
 	{
@@ -297,11 +327,15 @@ StartExportedFunc(
 	int32_t screenSpaceEffectsLevel,
 	int32_t antiAliasingMode,
 	int32_t ambientOcclusionQuality,
+	float_t ambientOcclusionStrength,
 	interop_bool postProcessingEnabled,
-	float internalResolutionScalar,
+	float_t internalResolutionScalar,
 	int32_t hdrColorPrecision,
 	interop_bool shadowsEnabled,
 	int32_t bloomQuality,
+	float_t bloomStrength,
+	int32_t depthOfFieldQuality,
+	float_t depthOfFieldStrength,
 	interop_bool dithering,
 	interop_bool guardBand
 ) {
@@ -311,11 +345,15 @@ StartExportedFunc(
 		screenSpaceEffectsLevel,
 		antiAliasingMode,
 		ambientOcclusionQuality,
+		ambientOcclusionStrength,
 		postProcessingEnabled,
 		internalResolutionScalar,
 		hdrColorPrecision,
 		shadowsEnabled,
 		bloomQuality,
+		bloomStrength,
+		depthOfFieldQuality,
+		depthOfFieldStrength,
 		dithering,
 		guardBand
 	);
@@ -331,19 +369,30 @@ StartExportedFunc(set_view_frustum_culling_enabled, ViewDescriptorHandle viewDes
 	EndExportedFunc
 }
 
+void native_impl_render::set_view_depth_of_field_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	auto dof = viewDescriptor->getDepthOfFieldOptions();
+	dof.enabled = enabled && dof.cocScale > 0.0f;
+	viewDescriptor->setDepthOfFieldOptions(dof);
+}
+StartExportedFunc(set_view_depth_of_field_enabled, ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
+	native_impl_render::set_view_depth_of_field_enabled(viewDescriptor, enabled);
+	EndExportedFunc
+}
+
 void native_impl_render::set_view_fog(
 	ViewDescriptorHandle viewDescriptor,
 	interop_bool enabled,
-	float colorR,
-	float colorG,
-	float colorB,
-	float density,
-	float startDistance,
-	float height,
-	float heightFalloff,
-	float maximumOpacity,
-	float inScatteringSize,
-	float inScatteringStart,
+	float_t colorR,
+	float_t colorG,
+	float_t colorB,
+	float_t density,
+	float_t startDistance,
+	float_t height,
+	float_t heightFalloff,
+	float_t maximumOpacity,
+	float_t inScatteringSize,
+	float_t inScatteringStart,
 	interop_bool colorFromIbl,
 	mat4f* fogTransformMatPtr
 ) {
@@ -367,16 +416,16 @@ StartExportedFunc(
 	set_view_fog,
 	ViewDescriptorHandle viewDescriptor,
 	interop_bool enabled,
-	float colorR,
-	float colorG,
-	float colorB,
-	float density,
-	float startDistance,
-	float height,
-	float heightFalloff,
-	float maximumOpacity,
-	float inScatteringSize,
-	float inScatteringStart,
+	float_t colorR,
+	float_t colorG,
+	float_t colorB,
+	float_t density,
+	float_t startDistance,
+	float_t height,
+	float_t heightFalloff,
+	float_t maximumOpacity,
+	float_t inScatteringSize,
+	float_t inScatteringStart,
 	interop_bool colorFromIbl,
 	mat4f* fogTransformMatPtr
 ) {

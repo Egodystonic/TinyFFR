@@ -687,11 +687,15 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			(int) newConfig.ScreenSpaceEffectsQuality,
 			(int) newConfig.AntiAliasingMode,
 			(int) newConfig.AmbientOcclusionQuality,
+			newConfig.AmbientOcclusionStrength,
 			newConfig.PostProcessingEnabled,
 			newConfig.InternalResolutionScalar,
 			(int) newConfig.HdrColorPrecision,
 			newConfig.ShadowsEnabled,
 			(int) newConfig.BloomQuality,
+			newConfig.BloomStrength,
+			(int) newConfig.DepthOfFieldQuality,
+			newConfig.DepthOfFieldStrength,
 			newConfig.DitheringEnabled,
 			newConfig.ScreenSpaceEffectsQuality == Quality.VeryHigh
 		).ThrowIfFailure();
@@ -962,13 +966,16 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	}
 
 	void SetUpSceneForRender(ResourceHandle<Renderer> handle) {
-		var scene = _loadedRenderers[handle].Scene;
-		var camera = _loadedRenderers[handle].Camera;
-		var quality = _loadedRenderers[handle].Quality.ShadowQuality;
+		var rendererData = _loadedRenderers[handle];
+		var scene = rendererData.Scene;
+		var camera = rendererData.Camera;
+		var quality = rendererData.Quality.ShadowQuality;
+		var viewport = rendererData.Viewport;
 		var localSceneImpl = (LocalSceneBuilder) scene.Implementation;
 		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
 		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, camera);
+		SetViewDepthOfFieldEnabled(viewport.Handle, camera.FocusDistance != null).ThrowIfFailure(); 
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
 		switch (quality) {
@@ -1067,16 +1074,25 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		int screenSpaceEffectsLevel,
 		int antiAliasingMode,
 		int ambientOcclusionQuality,
+		float ambientOcclusionStrength,
 		InteropBool postProcessingEnabled,
 		float internalResolutionScalar,
 		int hdrColorPrecision,
 		InteropBool shadowsEnabled,
 		int bloomQuality,
+		float bloomStrength,
+		int depthOfFieldQuality,
+		float depthOfFieldStrength,
 		InteropBool dithering,
 		InteropBool guardBand
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_frustum_culling_enabled")]
 	static extern InteropResult SetViewFrustumCullingEnabled(
+		UIntPtr viewDescriptorHandle,
+		InteropBool enabled
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_depth_of_field_enabled")]
+	static extern InteropResult SetViewDepthOfFieldEnabled(
 		UIntPtr viewDescriptorHandle,
 		InteropBool enabled
 	);

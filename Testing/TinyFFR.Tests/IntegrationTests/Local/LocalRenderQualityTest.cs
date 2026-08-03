@@ -56,9 +56,11 @@ class LocalRenderQualityTest {
 		var hdrColorPrecision = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).HdrColorPrecision;
 		var shadowsEnabled = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).ShadowsEnabled;
 		var bloomQuality = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).BloomQuality;
+		var dofQuality = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).DepthOfFieldQuality;
 		var dithering = new RenderQualityConfig(BuiltInQualityConfiguration.Medium).DitheringEnabled;
 		
 		var fogEnabled = false;
+		var dofEnabled = false;
 		var lastDefaultQualityLevel = BuiltInQualityConfiguration.Medium;
 		void UpdateAllAccordingToBuiltIn(BuiltInQualityConfiguration q) {
 			shadowQuality = new RenderQualityConfig(q).ShadowQuality;
@@ -70,6 +72,7 @@ class LocalRenderQualityTest {
 			hdrColorPrecision = new RenderQualityConfig(q).HdrColorPrecision;
 			shadowsEnabled = new RenderQualityConfig(q).ShadowsEnabled;
 			bloomQuality = new RenderQualityConfig(q).BloomQuality;
+			dofQuality = new RenderQualityConfig(q).DepthOfFieldQuality;
 			dithering = new RenderQualityConfig(q).DitheringEnabled;
 		}
 
@@ -96,6 +99,7 @@ class LocalRenderQualityTest {
 			HdrColorPrecision = hdrColorPrecision,
 			ShadowsEnabled = shadowsEnabled,
 			BloomQuality = bloomQuality,
+			DepthOfFieldQuality = dofQuality,
 			DitheringEnabled = dithering
 		};
 
@@ -103,9 +107,9 @@ class LocalRenderQualityTest {
 		void ApplyAndReport() {
 			renderer.SetQuality(BuildConfig());
 			summary =
-				$"[1]AA:{antiAliasing} [2]AO:{ambientOcclusionQuality} [3]Post:{postProcessingEnabled} [4]ResScale:{internalResolutionScalar:0.00} " +
-				$"[5]HDR:{hdrColorPrecision} [6]Shadows:{shadowsEnabled} [7]Bloom:{bloomQuality} [8]Dither:{dithering} " +
-				$"[9]ShadowQ:{shadowQuality} [0]SSE:{screenSpaceEffectsQuality} [Q]All";
+				$"[1]AA:{antiAliasing} [2]AO:{ambientOcclusionQuality} [3]PP:{postProcessingEnabled} [4]Scale:{internalResolutionScalar:0.00} " +
+				$"[5]HDR:{hdrColorPrecision} [6]Shad:{shadowsEnabled} [7]Bloom:{bloomQuality} [8]Dthr:{dithering} " +
+				$"[9]ShadQ:{shadowQuality} [0]SSE:{screenSpaceEffectsQuality} [-]DoF:{dofQuality} [Q]All";
 		}
 
 		ApplyAndReport();
@@ -126,6 +130,7 @@ class LocalRenderQualityTest {
 			else if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow8)) dithering = !dithering;
 			else if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow9)) shadowQuality = CycleQuality(shadowQuality);
 			else if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) screenSpaceEffectsQuality = CycleQuality(screenSpaceEffectsQuality);
+			else if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Minus)) dofQuality = CycleQuality(dofQuality);
 			else if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Q)) {
 				lastDefaultQualityLevel = CycleBuiltInQuality(lastDefaultQualityLevel);
 				UpdateAllAccordingToBuiltIn(lastDefaultQualityLevel);
@@ -136,11 +141,15 @@ class LocalRenderQualityTest {
 			
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.F)) {
 				fogEnabled = !fogEnabled;
-				if (fogEnabled) scene.AddFog(new FogDescriptor(FogDensity.Thick) { StartDistance = 0.01f });
+				if (fogEnabled) scene.AddFog(new FogDescriptor(FogDensity.VeryThick) { StartDistance = 0.05f });
 				else scene.RemoveFog();
 			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.D)) {
+				dofEnabled = !dofEnabled;
+				camera.FocusDistance = dofEnabled ? 0.1f : null;
+			}
 
-			window.SetTitle(summary + $" [F]Fog:{fogEnabled}" + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
+			window.SetTitle(summary + $" [D]DoF:{dofEnabled} [F]Fog:{fogEnabled}" + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
 
 			DefaultCameraInputHandler.TickKbm(kbm, cameraController, dt, window);
 			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, dt);

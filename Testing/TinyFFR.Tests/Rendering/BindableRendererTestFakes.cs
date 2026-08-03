@@ -328,6 +328,9 @@ sealed class FakeCameraImplProvider : ICameraImplProvider {
 	public void SetExposure(ResourceHandle<Camera> handle, float newExposure) { }
 	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity) { }
 
+	public float? GetFocusDistance(ResourceHandle<Camera> handle) => default;
+	public void SetFocusDistance(ResourceHandle<Camera> handle, float? newFocusDistance) { }
+
 	public float GetNearPlaneDistance(ResourceHandle<Camera> handle) => default;
 	public void SetNearPlaneDistance(ResourceHandle<Camera> handle, float newDistance) { }
 	public float GetFarPlaneDistance(ResourceHandle<Camera> handle) => default;

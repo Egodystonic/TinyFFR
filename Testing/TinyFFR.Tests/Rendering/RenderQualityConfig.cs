@@ -20,11 +20,15 @@ class RenderQualityConfigTest {
 			ScreenSpaceEffectsQuality = Quality.Standard,
 			AntiAliasingMode = AntiAliasingMode.Taa,
 			AmbientOcclusionQuality = Quality.High,
+			AmbientOcclusionStrength = 0.5f,
 			PostProcessingEnabled = false,
 			InternalResolutionScalar = 0.5f,
 			HdrColorPrecision = Quality.VeryHigh,
 			ShadowsEnabled = false,
 			BloomQuality = Quality.Low,
+			BloomStrength = 1.5f,
+			DepthOfFieldQuality = Quality.Low,
+			DepthOfFieldStrength = 1.5f,
 			DitheringEnabled = false
 		};
 		var testConfigB = new RenderQualityConfig {
@@ -32,11 +36,15 @@ class RenderQualityConfigTest {
 			ScreenSpaceEffectsQuality = Quality.High,
 			AntiAliasingMode = AntiAliasingMode.None,
 			AmbientOcclusionQuality = Quality.VeryLow,
+			AmbientOcclusionStrength = 1.1f,
 			PostProcessingEnabled = true,
 			InternalResolutionScalar = 0.75f,
 			HdrColorPrecision = Quality.Low,
 			ShadowsEnabled = true,
 			BloomQuality = Quality.VeryHigh,
+			BloomStrength = 0.3f,
+			DepthOfFieldQuality = Quality.VeryHigh,
+			DepthOfFieldStrength = 0.3f,
 			DitheringEnabled = true
 		};
 
@@ -45,11 +53,15 @@ class RenderQualityConfigTest {
 			Assert.AreEqual(expected.ScreenSpaceEffectsQuality, actual.ScreenSpaceEffectsQuality);
 			Assert.AreEqual(expected.AntiAliasingMode, actual.AntiAliasingMode);
 			Assert.AreEqual(expected.AmbientOcclusionQuality, actual.AmbientOcclusionQuality);
+			Assert.AreEqual(expected.AmbientOcclusionStrength, actual.AmbientOcclusionStrength);
 			Assert.AreEqual(expected.PostProcessingEnabled, actual.PostProcessingEnabled);
 			Assert.AreEqual(expected.InternalResolutionScalar, actual.InternalResolutionScalar);
 			Assert.AreEqual(expected.HdrColorPrecision, actual.HdrColorPrecision);
 			Assert.AreEqual(expected.ShadowsEnabled, actual.ShadowsEnabled);
 			Assert.AreEqual(expected.BloomQuality, actual.BloomQuality);
+			Assert.AreEqual(expected.BloomStrength, actual.BloomStrength);
+			Assert.AreEqual(expected.DepthOfFieldQuality, actual.DepthOfFieldQuality);
+			Assert.AreEqual(expected.DepthOfFieldStrength, actual.DepthOfFieldStrength);
 			Assert.AreEqual(expected.DitheringEnabled, actual.DitheringEnabled);
 		}
 
@@ -61,11 +73,15 @@ class RenderQualityConfigTest {
 			.Int((int) Quality.Standard)
 			.Int((int) AntiAliasingMode.Taa)
 			.Int((int) Quality.High)
+			.Float(0.5f)
 			.Bool(false)
 			.Float(0.5f)
 			.Int((int) Quality.VeryHigh)
 			.Bool(false)
 			.Int((int) Quality.Low)
+			.Float(1.5f)
+			.Int((int) Quality.Low)
+			.Float(1.5f)
 			.Bool(false)
 			.For(testConfigA);
 
@@ -74,11 +90,15 @@ class RenderQualityConfigTest {
 			.Int((int) Quality.High)
 			.Int((int) AntiAliasingMode.None)
 			.Int((int) Quality.VeryLow)
+			.Float(1.1f)
 			.Bool(true)
 			.Float(0.75f)
 			.Int((int) Quality.Low)
 			.Bool(true)
 			.Int((int) Quality.VeryHigh)
+			.Float(0.3f)
+			.Int((int) Quality.VeryHigh)
+			.Float(0.3f)
 			.Bool(true)
 			.For(testConfigB);
 
@@ -87,11 +107,15 @@ class RenderQualityConfigTest {
 			.Including(nameof(RenderQualityConfig.ScreenSpaceEffectsQuality))
 			.Including(nameof(RenderQualityConfig.AntiAliasingMode))
 			.Including(nameof(RenderQualityConfig.AmbientOcclusionQuality))
+			.Including(nameof(RenderQualityConfig.AmbientOcclusionStrength))
 			.Including(nameof(RenderQualityConfig.PostProcessingEnabled))
 			.Including(nameof(RenderQualityConfig.InternalResolutionScalar))
 			.Including(nameof(RenderQualityConfig.HdrColorPrecision))
 			.Including(nameof(RenderQualityConfig.ShadowsEnabled))
 			.Including(nameof(RenderQualityConfig.BloomQuality))
+			.Including(nameof(RenderQualityConfig.BloomStrength))
+			.Including(nameof(RenderQualityConfig.DepthOfFieldQuality))
+			.Including(nameof(RenderQualityConfig.DepthOfFieldStrength))
 			.Including(nameof(RenderQualityConfig.DitheringEnabled))
 			.End();
 	}

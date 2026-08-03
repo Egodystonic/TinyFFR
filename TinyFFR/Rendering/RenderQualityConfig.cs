@@ -26,11 +26,15 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 	public Quality ScreenSpaceEffectsQuality { get; init; } = Quality.Standard;
 	public AntiAliasingMode AntiAliasingMode { get; init; } = AntiAliasingMode.Fxaa;
 	public Quality AmbientOcclusionQuality { get; init; } = Quality.Standard;
+	public float AmbientOcclusionStrength { get; init; } = 1f;
 	public bool PostProcessingEnabled { get; init; } = true;
 	public float InternalResolutionScalar { get; init; } = 1f;
 	public Quality HdrColorPrecision { get; init; } = Quality.Standard;
 	public bool ShadowsEnabled { get; init; } = true;
 	public Quality BloomQuality { get; init; } = Quality.Standard;
+	public float BloomStrength { get; init; } = 1f;
+	public Quality DepthOfFieldQuality { get; init; } = Quality.Standard;
+	public float DepthOfFieldStrength { get; init; } = 1f;
 	public bool DitheringEnabled { get; init; } = true;
 
 	public RenderQualityConfig() : this(BuiltInQualityConfiguration.High) { }
@@ -44,6 +48,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 				InternalResolutionScalar = 0.666666f;
 				HdrColorPrecision = Quality.VeryLow;
 				BloomQuality = Quality.VeryLow;
+				DepthOfFieldQuality = Quality.VeryLow;
 				DitheringEnabled = false;
 				break;
 			}
@@ -55,6 +60,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 				InternalResolutionScalar = 0.75f;
 				HdrColorPrecision = Quality.Low;
 				BloomQuality = Quality.Low;
+				DepthOfFieldQuality = Quality.Low;
 				DitheringEnabled = false;
 				break;
 			}
@@ -66,6 +72,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 				InternalResolutionScalar = 1f;
 				HdrColorPrecision = Quality.Standard;
 				BloomQuality = Quality.Standard;
+				DepthOfFieldQuality = Quality.Standard;
 				DitheringEnabled = true;
 				break;
 			}
@@ -77,6 +84,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 				InternalResolutionScalar = 1f;
 				HdrColorPrecision = Quality.High;
 				BloomQuality = Quality.High;
+				DepthOfFieldQuality = Quality.High;
 				DitheringEnabled = true;
 				break;
 			}
@@ -88,6 +96,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 				InternalResolutionScalar = 1f;
 				HdrColorPrecision = Quality.VeryHigh;
 				BloomQuality = Quality.VeryHigh;
+				DepthOfFieldQuality = Quality.VeryHigh;
 				DitheringEnabled = true;
 				break;
 			}
@@ -110,11 +119,15 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 			 + SerializationSizeOfInt()  // ScreenSpaceEffectsQuality
 			 + SerializationSizeOfInt()  // AntiAliasingMode
 			 + SerializationSizeOfInt()  // AmbientOcclusionQuality
+			 + SerializationSizeOfFloat()  // AmbientOcclusionStrength
 			 + SerializationSizeOfBool()  // PostProcessingEnabled
 			 + SerializationSizeOfFloat() // InternalResolutionScalar
 			 + SerializationSizeOfInt()   // HdrColorPrecision
 			 + SerializationSizeOfBool() // ShadowsEnabled
 			 + SerializationSizeOfInt()  // BloomQuality
+			 + SerializationSizeOfFloat()  // BloomStrength
+			 + SerializationSizeOfInt()  // DepthOfFieldQuality
+			 + SerializationSizeOfFloat()  // DepthOfFieldStrength
 			 + SerializationSizeOfBool(); // DitheringEnabled
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RenderQualityConfig src) {
@@ -122,11 +135,15 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 		SerializationWriteInt(ref dest, (int) src.ScreenSpaceEffectsQuality);
 		SerializationWriteInt(ref dest, (int) src.AntiAliasingMode);
 		SerializationWriteInt(ref dest, (int) src.AmbientOcclusionQuality);
+		SerializationWriteFloat(ref dest, src.AmbientOcclusionStrength);
 		SerializationWriteBool(ref dest, src.PostProcessingEnabled);
 		SerializationWriteFloat(ref dest, src.InternalResolutionScalar);
 		SerializationWriteInt(ref dest, (int) src.HdrColorPrecision);
 		SerializationWriteBool(ref dest, src.ShadowsEnabled);
 		SerializationWriteInt(ref dest, (int) src.BloomQuality);
+		SerializationWriteFloat(ref dest, src.BloomStrength);
+		SerializationWriteInt(ref dest, (int) src.DepthOfFieldQuality);
+		SerializationWriteFloat(ref dest, src.DepthOfFieldStrength);
 		SerializationWriteBool(ref dest, src.DitheringEnabled);
 	}
 	public static RenderQualityConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -135,11 +152,15 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 			ScreenSpaceEffectsQuality = (Quality) SerializationReadInt(ref src),
 			AntiAliasingMode = (AntiAliasingMode) SerializationReadInt(ref src),
 			AmbientOcclusionQuality = (Quality) SerializationReadInt(ref src),
+			AmbientOcclusionStrength = SerializationReadFloat(ref src),
 			PostProcessingEnabled = SerializationReadBool(ref src),
 			InternalResolutionScalar = SerializationReadFloat(ref src),
 			HdrColorPrecision = (Quality) SerializationReadInt(ref src),
 			ShadowsEnabled = SerializationReadBool(ref src),
 			BloomQuality = (Quality) SerializationReadInt(ref src),
+			BloomStrength = SerializationReadFloat(ref src),
+			DepthOfFieldQuality = (Quality) SerializationReadInt(ref src),
+			DepthOfFieldStrength = SerializationReadFloat(ref src),
 			DitheringEnabled = SerializationReadBool(ref src),
 		};
 	}

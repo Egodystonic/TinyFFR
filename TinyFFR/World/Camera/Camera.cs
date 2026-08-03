@@ -125,6 +125,15 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetExposure(float aperture, float shutterSpeed, float sensitivity) => Implementation.SetExposure(_handle, aperture, shutterSpeed, sensitivity);
 	
+	public float? FocusDistance {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFocusDistance(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetFocusDistance(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetFocusDistance(float? focusDistance) => FocusDistance = focusDistance;
+	
 	public CameraProjectionType ProjectionType {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetProjectionType(_handle);

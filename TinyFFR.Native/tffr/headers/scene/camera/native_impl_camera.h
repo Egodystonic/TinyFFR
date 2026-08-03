@@ -18,5 +18,7 @@ public:
 	static void set_camera_view_matrix(CameraHandle camera, mat4f* newMatrixPtr);
 	static void get_camera_view_matrix(CameraHandle camera, mat4f* outMatrix);
 	static void set_camera_exposure(CameraHandle camera, float_t aperture, float_t shutterSpeed, float_t sensitivity);
+	static void set_camera_focus_distance(CameraHandle camera, float_t focusDistance);
+	static void get_camera_focus_distance(CameraHandle camera, float_t* outFocusDistance);
 	static void dispose_camera(CameraHandle camera);
 };

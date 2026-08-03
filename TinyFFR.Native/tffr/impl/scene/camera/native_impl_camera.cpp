@@ -99,6 +99,24 @@ StartExportedFunc(set_camera_exposure, CameraHandle camera, float_t aperture, fl
 	EndExportedFunc
 }
 
+void native_impl_camera::set_camera_focus_distance(CameraHandle camera, float_t focusDistance) {
+	ThrowIfNull(camera, "Camera was null.");
+	camera->setFocusDistance(focusDistance);
+}
+StartExportedFunc(set_camera_focus_distance, CameraHandle camera, float_t focusDistance) {
+	native_impl_camera::set_camera_focus_distance(camera, focusDistance);
+	EndExportedFunc
+}
+
+void native_impl_camera::get_camera_focus_distance(CameraHandle camera, float_t* outFocusDistance) {
+	ThrowIfNull(camera, "Camera was null.");
+	ThrowIfNull(outFocusDistance, "Distance out pointer was null.");
+	*outFocusDistance = camera->getFocusDistance();
+}
+StartExportedFunc(get_camera_focus_distance, CameraHandle camera, float_t* outFocusDistance) {
+	native_impl_camera::get_camera_focus_distance(camera, outFocusDistance);
+	EndExportedFunc
+}
 
 void native_impl_camera::dispose_camera(CameraHandle camera) {
 	ThrowIfNull(camera, "Camera was null.");

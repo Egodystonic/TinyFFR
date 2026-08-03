@@ -20,6 +20,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 		float NearPlaneDistance,
 		float FarPlaneDistance,
 		float Exposure,
+		float? FocusDistance,
 		CameraProjectionType ProjectionType
 	);
 
@@ -49,6 +50,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 			config.NearPlaneDistance,
 			config.FarPlaneDistance,
 			Camera.ExposureDefault,
+			null,
 			config.ProjectionType
 		);
 
@@ -217,6 +219,20 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 			shutterSpeed, 
 			sensitivity
 		).ThrowIfFailure();
+	}
+
+	public float? GetFocusDistance(ResourceHandle<Camera> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeCameras[handle].FocusDistance;
+	}
+	
+	public void SetFocusDistance(ResourceHandle<Camera> handle, float? newFocusDistance) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetCameraFocusDistance(
+			handle,
+			newFocusDistance ?? _activeCameras[handle].FarPlaneDistance * 0.8f
+		).ThrowIfFailure();
+		_activeCameras[handle] = _activeCameras[handle] with { FocusDistance = newFocusDistance };
 	}
 
 	public CameraProjectionType GetProjectionType(ResourceHandle<Camera> handle) {
@@ -399,6 +415,18 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	static extern InteropResult GetCameraViewMatrix(
 		UIntPtr cameraHandle,
 		out Matrix4x4 outMatrix
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_camera_focus_distance")]
+	static extern InteropResult SetCameraFocusDistance(
+		UIntPtr cameraHandle,
+		float focusDistance
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_camera_focus_distance")]
+	static extern InteropResult GetCameraFocusDistance(
+		UIntPtr cameraHandle,
+		out float outFocusDistance
 	);
 	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_camera_exposure")]

@@ -27,6 +27,9 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	public float GetExposure(ResourceHandle<Camera> handle);
 	public void SetExposure(ResourceHandle<Camera> handle, float newExposure);
 	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity);
+	
+	public float? GetFocusDistance(ResourceHandle<Camera> handle);
+	public void SetFocusDistance(ResourceHandle<Camera> handle, float? newFocusDistance);
 
 	public float GetNearPlaneDistance(ResourceHandle<Camera> handle);
 	public void SetNearPlaneDistance(ResourceHandle<Camera> handle, float newDistance);

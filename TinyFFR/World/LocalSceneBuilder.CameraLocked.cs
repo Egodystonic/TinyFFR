@@ -32,7 +32,7 @@ sealed partial class LocalSceneBuilder {
 	readonly record struct AbridgedCameraLockedInstanceData(CameraLockedScalingMode ScalingMode, ModelInstance ModelInstance);
 
 	// Ledger of all camera-locked instances so we can skip the per-bucket lookups in Remove when an instance was never camera-locked.
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _cameraLockedInstancesCanary = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _cameraLockedInstancesLedger = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _camLockedTrivialInstanceMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, AbridgedCameraLockedInstanceData>> _camLockedAbridgedInstanceMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, FullCameraLockedInstanceData>> _camLockedFullInstanceMap = new();
@@ -72,7 +72,7 @@ sealed partial class LocalSceneBuilder {
 			added = _camLockedFullInstanceMap[handle].TryAdd(modelInstance.Handle, data);
 		}
 		if (added) {
-			_cameraLockedInstancesCanary[handle].Add(modelInstance);
+			_cameraLockedInstancesLedger[handle].Add(modelInstance);
 			Add(handle, modelInstance);
 		}
 	}
@@ -84,7 +84,7 @@ sealed partial class LocalSceneBuilder {
 		Remove(handle, text.UnderlyingTextInstance.UnderlyingModelInstance);
 	}
 	void RemoveInstanceFromCameraLockedMaps(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
-		if (!_cameraLockedInstancesCanary[handle].Remove(modelInstance)) return;
+		if (!_cameraLockedInstancesLedger[handle].Remove(modelInstance)) return;
 
 		var miHandle = modelInstance.Handle;
 		_camLockedTrivialInstanceMap[handle].Remove(modelInstance);

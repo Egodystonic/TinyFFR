@@ -61,7 +61,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_camLockedTrivialInstanceMap.Add(handle, _modelInstanceSetPool.Rent());
 		_camLockedAbridgedInstanceMap.Add(handle, _camLockedAbridgedInstanceMapPool.Rent());
 		_camLockedFullInstanceMap.Add(handle, _camLockedFullInstanceMapPool.Rent());
-		_cameraLockedInstancesCanary.Add(handle, _modelInstanceSetPool.Rent());
+		_cameraLockedInstancesLedger.Add(handle, _modelInstanceSetPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
 		_primitiveMap.Add(handle, _primitiveMapPool.Rent());
 
@@ -441,7 +441,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 				_camLockedTrivialInstanceMap[handle].Clear();
 				_camLockedAbridgedInstanceMap[handle].Clear();
 				_camLockedFullInstanceMap[handle].Clear();
-				_cameraLockedInstancesCanary[handle].Clear();
+				_cameraLockedInstancesLedger[handle].Clear();
 			}
 		}
 		else if (includeModelInstances) {
@@ -611,7 +611,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			_camLockedTrivialInstanceMap.Dispose();
 			_camLockedAbridgedInstanceMap.Dispose();
 			_camLockedFullInstanceMap.Dispose();
-			_cameraLockedInstancesCanary.Dispose();
+			_cameraLockedInstancesLedger.Dispose();
 			_modelInstanceSetPool.Dispose();
 			_camLockedAbridgedInstanceMapPool.Dispose();
 			_camLockedFullInstanceMapPool.Dispose();
@@ -665,8 +665,8 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_camLockedAbridgedInstanceMap.Remove(handle);
 		_camLockedFullInstanceMapPool.Return(_camLockedFullInstanceMap[handle]);
 		_camLockedFullInstanceMap.Remove(handle);
-		_modelInstanceSetPool.Return(_cameraLockedInstancesCanary[handle]);
-		_cameraLockedInstancesCanary.Remove(handle);
+		_modelInstanceSetPool.Return(_cameraLockedInstancesLedger[handle]);
+		_cameraLockedInstancesLedger.Remove(handle);
 
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);

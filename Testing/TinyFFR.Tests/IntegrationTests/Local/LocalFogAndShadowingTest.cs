@@ -145,8 +145,14 @@ class LocalFogAndShadowingTest {
 		}
 
 		// --- Quality (Ultra base, cyclable shadow quality) ---
+		var dofStrength = 1f;
+		var bloomStrength = 1f;
 		var shadowQuality = new RenderQualityConfig(BuiltInQualityConfiguration.Ultra).ShadowQuality;
-		RenderQualityConfig BuildConfig() => new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) { ShadowQuality = shadowQuality };
+		RenderQualityConfig BuildConfig() => new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) {
+			ShadowQuality = shadowQuality,
+			DepthOfFieldStrength = dofStrength,
+			BloomStrength = bloomStrength
+		};
 		static Quality CycleQuality(Quality q) => q >= Quality.VeryHigh ? Quality.VeryLow : (Quality) ((int) q + 1);
 		renderer.SetQuality(BuildConfig());
 
@@ -179,7 +185,38 @@ class LocalFogAndShadowingTest {
 					shadowQuality = CycleQuality(shadowQuality);
 					renderer.SetQuality(BuildConfig());
 				}
+				
+				if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.D)) {
+					dofStrength = dofStrength switch {
+						1f => 0.75f,
+						0.75f => 0.5f,
+						0.5f => 0.25f,
+						0.25f => 0f,
+						0f => 2f,
+						2f => 4f,
+						4f => 10f,
+						_ => 1f,
+					};
+					renderer.SetQuality(BuildConfig());
+				}
+				if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.C)) {
+					camera.FocusDistance = camera.FocusDistance.HasValue ? null : 0.3f;
+				}
+				if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.B)) {
+					bloomStrength = bloomStrength switch {
+						1f => 0.75f,
+						0.75f => 0.5f,
+						0.5f => 0.25f,
+						0.25f => 0f,
+						0f => 2f,
+						2f => 4f,
+						4f => 10f,
+						_ => 1f,
+					};
+					renderer.SetQuality(BuildConfig());
+				}
 
+				
 				if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
 					ClearDroppedLights();
 					cameraLightMode = (CameraLightMode) (((int) cameraLightMode + 1) % 3);
@@ -207,6 +244,7 @@ class LocalFogAndShadowingTest {
 
 				window.SetTitle(
 					$"[1]Sun:{sunEnabled} [2]Elev:{sunElevations[sunElevationIndex]:0}° [L]Light:{cameraLightMode} [G]ShadowQ:{shadowQuality} " +
+					$"[C/D]DoF%:{(camera.FocusDistance.HasValue ? PercentageUtils.ConvertFractionToPercentageString(dofStrength) : "Off")} [B]Bloom%:{PercentageUtils.ConvertFractionToPercentageString(bloomStrength)} " +
 					$"[F]Fog:{(fogIndex < 0 ? "Off" : FogCycle[fogIndex].ToString())} | " +
 					$"{loop.FramesPerSecondRecentAverage:0000} FPS"
 				);
