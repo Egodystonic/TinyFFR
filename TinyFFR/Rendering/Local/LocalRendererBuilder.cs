@@ -637,8 +637,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					(uint) bufferData.TextureDimensions.X,
 					(uint) bufferData.TextureDimensions.Y,
 					buffer.BufferIdentity,
-					// One-shot readers (e.g. screenshot capture) dispose their buffer as soon as the render call returns,
-					// so their readback must complete synchronously. Continuous readers let it overlap the next frame.
 					bufferData.HandleOnlyNextChange
 				).ThrowIfFailure();
 			}

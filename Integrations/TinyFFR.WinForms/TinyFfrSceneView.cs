@@ -115,12 +115,12 @@ public partial class TinyFfrSceneView : UserControl {
 			}
 			if (data.Stride == dimensions.X * TexelRgba32.TexelSizeBytes) {
 				var destSpan = new Span<byte>((void*) data.Scan0, texels.Length * TexelRgba32.TexelSizeBytes);
-				TexelBlitting.CopyRgbaAsBgra(texels, destSpan);
+				IntegrationUtils.BlitRgbaToBgra(texels, destSpan);
 			}
 			else {
 				for (var r = 0; r < dimensions.Y; ++r) {
 					var destSpan = new Span<byte>(((byte*) data.Scan0) + (r * data.Stride), dimensions.X * TexelRgba32.TexelSizeBytes);
-					TexelBlitting.CopyRgbaAsBgra(texels[(r * dimensions.X)..((r + 1) * dimensions.X)], destSpan);
+					IntegrationUtils.BlitRgbaToBgra(texels[(r * dimensions.X)..((r + 1) * dimensions.X)], destSpan);
 				}
 			}
 		}

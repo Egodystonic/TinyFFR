@@ -43,7 +43,6 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void StartReadingFrames(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool presentFramesTopToBottom = false) => Implementation.SetOutputChangeHandler(_handle, handler, presentFramesTopToBottom, handleOnlyNextChange: false);
 
-	// Frames are read back from the GPU as RGBA; these overloads avoid the narrowing conversion the RGB ones require.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void StartReadingFrames(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool presentFramesTopToBottom = false) => Implementation.SetOutputChangeHandler(_handle, handler, presentFramesTopToBottom, handleOnlyNextChange: false);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
