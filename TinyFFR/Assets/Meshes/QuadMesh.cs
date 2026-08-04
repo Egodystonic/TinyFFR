@@ -12,7 +12,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatable<QuadMesh> {
 	public Mesh UnderlyingMesh { get; } 
 
-	public QuadMesh(Mesh underlyingMesh) {
+	internal QuadMesh(Mesh underlyingMesh) {
 		UnderlyingMesh = underlyingMesh;
 	}
 

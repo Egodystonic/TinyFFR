@@ -1,4 +1,4 @@
-// Created on 2026-07-14 by Ben Bowen
+﻿// Created on 2026-07-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -173,6 +173,10 @@ sealed class FakeRendererBuilder : IRendererBuilder {
 		return impl.RendererInstance;
 	}
 
+	public Renderer CreateRenderer<TRenderTarget>(CanvasScene scene, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
+		throw new NotSupportedException();
+	}
+
 	public RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
 		var impl = new FakeRenderOutputBufferImplProvider(++_previousHandleId, in config);
 		CreatedBuffers.Add(impl);
@@ -294,6 +298,21 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 
 	public IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle) => throw new NotSupportedException();
 	public IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle) => throw new NotSupportedException();
+
+	public DiagonalOrientation2D GetCanvasOrigin(ResourceHandle<Scene> handle) => throw new NotSupportedException();
+	public int GetCanvasLayerRange(ResourceHandle<Scene> handle) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasSizePixels(ResourceHandle<Scene> handle) => throw new NotSupportedException();
+	public void AddCanvasItem(ResourceHandle<Scene> handle, QuadInstance quad, in CanvasDock dock) => throw new NotSupportedException();
+	public void AddCanvasItem(ResourceHandle<Scene> handle, TextInstance text, in CanvasDock dock) => throw new NotSupportedException();
+	public void SetCanvasItemDock(ResourceHandle<Scene> handle, ModelInstance modelInstance, in CanvasDock dock) => throw new NotSupportedException();
+	public CanvasDock GetCanvasItemDock(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public bool ContainsCanvasItem(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public Location GetCanvasLocation(ResourceHandle<Scene> handle, Orientation2D anchor, XYPair<int> anchorOffset, int layer) => throw new NotSupportedException();
+	public Location GetCanvasLocation(ResourceHandle<Scene> handle, XYPair<int> pixelCoord, int layer) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasPixelCoord(ResourceHandle<Scene> handle, Location worldLocation) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasPixelCoordFromCursor(ResourceHandle<Scene> handle, XYPair<int> windowRelativeCursorPosition) => throw new NotSupportedException();
+	public bool CanvasContains(ResourceHandle<Scene> handle, XYPair<int> pixelCoord) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasSize(ResourceHandle<Scene> handle, XYPair<float> fractionalSize) => throw new NotSupportedException();
 }
 
 sealed class FakeCameraImplProvider : ICameraImplProvider {

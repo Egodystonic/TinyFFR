@@ -22,4 +22,12 @@ public interface ISceneBuilder {
 		return CreateScene(new SceneCreationConfig { InitialBackdropTexture = backdrop, Name = name});
 	}
 	Scene CreateScene(in SceneCreationConfig config);
+
+	CanvasScene CreateCanvasScene(ReadOnlySpan<char> name = default) {
+		return CreateCanvasScene(new CanvasSceneCreationConfig { Name = name });
+	}
+	CanvasScene CreateCanvasScene(DiagonalOrientation2D origin, ReadOnlySpan<char> name = default) {
+		return CreateCanvasScene(new CanvasSceneCreationConfig { Origin = origin, Name = name });
+	}
+	CanvasScene CreateCanvasScene(in CanvasSceneCreationConfig config);
 }

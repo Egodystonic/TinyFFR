@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## General Code Guidelines
 
-* Do not add comments to code unless doing something unusual or non-conventional.
+* Do not add comments to code ever.
 * Avoid code that create GC pressure in the main library code (TinyFFR). Generating garbage is absolutely fine in the test projects.
 * Don't try to run any tests marked as [Explicit]. These tests often spin up windows on the desktop and expect user interaction for verification.
 
@@ -45,7 +45,7 @@ Integration tests are marked `[Explicit]` and require manual invocation. Do not 
 ### Core Library (`TinyFFR/`)
 - **Factory/**: `LocalTinyFfrFactory` is the singleton entry point. Only one instance can exist at a time. Provides builders for all resource types (Camera, Light, Object, Scene, Renderer, Mesh, Material).
 - **Math/**: Immutable readonly structs for 3D math (Location, Direction, Vect, Angle, Rotation, Transform). Custom operator overloading: `%` for rotations, `^` for angle magnitude, `>>` for location transitions.
-- **Assets/**: Asset loading via Assimp (models) and stb_image (textures). Materials use PBR configs (Simple, Standard, Transmissive).
+- **Assets/**: Asset loading via Assimp (models), stb_image (textures) and stb_truetype (fonts, rendered to SDF atlases). Materials use PBR configs (LightingIgnoring, ColorKeyed, Standard, Transmissive).
 - **Rendering/**: Filament-backed renderer. `LocalRendererBuilder` creates renderers. `RenderOutputBuffer` for off-screen rendering.
 - **World/**: Scene graph with ModelInstance, ModelInstanceGroup, lights (Point/Directional/Spot), cameras.
 - **Environment/**: SDL2-based window management, input handling (keyboard/mouse/gamepad), application loop.

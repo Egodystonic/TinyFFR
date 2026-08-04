@@ -24,6 +24,7 @@ static unsafe class LocalInputManager {
 			&ResizeCurrentPollInstanceKbmEventBuffer,
 			&ResizeCurrentPollInstanceControllerEventBuffer,
 			&ResizeCurrentPollInstanceClickEventBuffer,
+			&ResizeCurrentPollInstanceTextInputBuffer,
 			&HandlePotentialNewController
 		).ThrowIfFailure();
 
@@ -34,16 +35,20 @@ static unsafe class LocalInputManager {
 			out var controllerEventBufferPtr,
 			out var controllerEventBufferLen,
 			out var clickEventBufferPtr,
-			out var clickEventBufferLen
+			out var clickEventBufferLen,
+			out var textInputBufferPtr,
+			out var textInputBufferLen
 		);
 
 		SetEventPollBufferPointers(
-			kbmEventBufferPtr, 
-			kbmEventBufferLen, 
-			controllerEventBufferPtr, 
-			controllerEventBufferLen, 
-			clickEventBufferPtr, 
-			clickEventBufferLen
+			kbmEventBufferPtr,
+			kbmEventBufferLen,
+			controllerEventBufferPtr,
+			controllerEventBufferLen,
+			clickEventBufferPtr,
+			clickEventBufferLen,
+			textInputBufferPtr,
+			textInputBufferLen
 		);
 
 		_liveInstance.Initialize();
@@ -66,6 +71,7 @@ static unsafe class LocalInputManager {
 		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
 		delegate* unmanaged<RawLocalGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
 		delegate* unmanaged<MouseClickEvent*> doubleClickEventBufferDelegate,
+		delegate* unmanaged<byte*> doubleTextInputBufferDelegate,
 		delegate* unmanaged<UIntPtr, byte*, int, void> handleNewControllerDelegate
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_event_poll_buffer_pointers")]
@@ -75,7 +81,9 @@ static unsafe class LocalInputManager {
 		RawLocalGameControllerButtonEvent* controllerEventBufferPtr,
 		int controllerEventBufferLen,
 		MouseClickEvent* clickEventBufferPtr,
-		int clickEventBufferLen
+		int clickEventBufferLen,
+		byte* textInputBufferPtr,
+		int textInputBufferLen
 	);
 	[UnmanagedCallersOnly]
 	static KeyboardOrMouseKeyEvent* ResizeCurrentPollInstanceKbmEventBuffer() {
@@ -91,6 +99,11 @@ static unsafe class LocalInputManager {
 	static MouseClickEvent* ResizeCurrentPollInstanceClickEventBuffer() {
 		ThrowIfNoLiveInstance();
 		return _liveInstance.DoubleClickEventBufferSize();
+	}
+	[UnmanagedCallersOnly]
+	static byte* ResizeCurrentPollInstanceTextInputBuffer() {
+		ThrowIfNoLiveInstance();
+		return _liveInstance.DoubleTextInputBufferSize();
 	}
 	[UnmanagedCallersOnly]
 	static InteropBool FilterAndTranslateKeycode(int* keycode) {

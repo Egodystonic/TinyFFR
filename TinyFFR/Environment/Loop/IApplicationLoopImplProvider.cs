@@ -8,6 +8,8 @@ namespace Egodystonic.TinyFFR.Environment;
 
 public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<ApplicationLoop> {
 	ILatestInputRetriever GetInputStateProvider(ResourceHandle<ApplicationLoop> handle);
+	bool GetEnableInputTextTranscription(ResourceHandle<ApplicationLoop> handle);
+	void SetEnableInputTextTranscription(ResourceHandle<ApplicationLoop> handle, bool enable);
 	TimeSpan GetTargetIterationInterval(ResourceHandle<ApplicationLoop> handle);
 	float GetFramesPerSecondRecentAverage(ResourceHandle<ApplicationLoop> handle);
 	float GetFramesPerSecondLatest(ResourceHandle<ApplicationLoop> handle);

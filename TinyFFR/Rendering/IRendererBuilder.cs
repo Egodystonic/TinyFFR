@@ -17,6 +17,13 @@ public interface IRendererBuilder {
 	}
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget>;
 
+	public Renderer CreateRenderer(CanvasScene scene, Window window, ReadOnlySpan<char> name = default) => CreateRenderer<Window>(scene, window, name);
+	public Renderer CreateRenderer(CanvasScene scene, RenderOutputBuffer buffer, ReadOnlySpan<char> name = default) => CreateRenderer<RenderOutputBuffer>(scene, buffer, name);
+	public Renderer CreateRenderer<TRenderTarget>(CanvasScene scene, TRenderTarget renderTarget, ReadOnlySpan<char> name = default) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
+		return CreateRenderer(scene, renderTarget, new RendererCreationConfig { Quality = RendererCreationConfig.DefaultCanvasQuality, Name = name });
+	}
+	public Renderer CreateRenderer<TRenderTarget>(CanvasScene scene, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget>;
+
 	public RenderOutputBuffer CreateRenderOutputBuffer(XYPair<int>? textureDimensions = null, ReadOnlySpan<char> name = default) {
 		return CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
 			TextureDimensions = textureDimensions ?? RenderOutputBufferCreationConfig.DefaultTextureDimensions,

@@ -1,4 +1,4 @@
-// Created on 2026-07-30 by Ben Bowen
+﻿// Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -30,6 +30,7 @@ namespace Egodystonic.TinyFFR.WinForms.Input {
 			_control.MouseCaptureChanged += HandleMouseCaptureChanged;
 			_control.LostFocus += HandleLostFocus;
 			_control.ParentChanged += HandleParentChanged;
+			_control.KeyPress += HandleKeyPress;
 
 			TrySubscribeToHostForm();
 		}
@@ -47,6 +48,7 @@ namespace Egodystonic.TinyFFR.WinForms.Input {
 		}
 
 		void HandleLostFocus(object? sender, EventArgs e) => _kbm.ReleaseAllHeldKeyboardKeys();
+		void HandleKeyPress(object? sender, KeyPressEventArgs e) => _kbm.RecordTextInput(stackalloc char[] { e.KeyChar });
 
 		void HandleMouseDown(object? sender, MouseEventArgs e) {
 			var position = ToXyPair(e.Location);
@@ -112,6 +114,7 @@ namespace Egodystonic.TinyFFR.WinForms.Input {
 				_control.MouseCaptureChanged -= HandleMouseCaptureChanged;
 				_control.LostFocus -= HandleLostFocus;
 				_control.ParentChanged -= HandleParentChanged;
+				_control.KeyPress -= HandleKeyPress;
 				if (_subscribedForm != null) {
 					_subscribedForm.FormClosing -= HandleFormClosing;
 					_subscribedForm = null;

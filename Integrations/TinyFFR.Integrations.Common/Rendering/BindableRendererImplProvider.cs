@@ -1,4 +1,4 @@
-// Created on 2025-08-21 by Ben Bowen
+﻿// Created on 2025-08-21 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
 using Egodystonic.TinyFFR.Assets.Materials;

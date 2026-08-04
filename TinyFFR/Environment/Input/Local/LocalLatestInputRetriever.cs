@@ -50,13 +50,14 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		DetectControllers();
 	}
 
-	public void IterateSystemWideInput() {
+	public void IterateSystemWideInput(bool transcribeTextInput) {
 		ThrowIfThisIsDisposed();
 
 		IterateEvents(
 			out var numKbmEvents,
 			out var numControllerEvents,
 			out var numClickEvents,
+			out var numTextInputBytes,
 			out var mousePosX,
 			out var mousePosY,
 			out var mouseDeltaX,
@@ -66,6 +67,7 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 
 		UpdateControllerStates(numControllerEvents);
 		_kbmState.UpdateCurrentlyPressedKeys(numKbmEvents, numClickEvents);
+		_kbmState.UpdateTextInput(numTextInputBytes);
 		_kbmState.MouseCursorPosition = (mousePosX == Int32.MinValue ? _kbmState.MouseCursorPosition.X : mousePosX, mousePosY == Int32.MinValue ? _kbmState.MouseCursorPosition.Y : mousePosY);
 		_kbmState.MouseCursorDelta = (mouseDeltaX, mouseDeltaY);
 		UserQuitRequested = quitRequested;
@@ -76,13 +78,15 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		foreach (var controller in _detectedControllerStateMap.Values) controller.Iterate();
 	}
 
-	internal void GetEventBufferPointers(out KeyboardOrMouseKeyEvent* kbmEventBufferPtr, out int kbmEventBufferLen, out RawLocalGameControllerButtonEvent* controllerEventBufferPtr, out int controllerEventBufferLen, out MouseClickEvent* clickEventBufferPtr, out int clickEventBufferLen) {
+	internal void GetEventBufferPointers(out KeyboardOrMouseKeyEvent* kbmEventBufferPtr, out int kbmEventBufferLen, out RawLocalGameControllerButtonEvent* controllerEventBufferPtr, out int controllerEventBufferLen, out MouseClickEvent* clickEventBufferPtr, out int clickEventBufferLen, out byte* textInputBufferPtr, out int textInputBufferLen) {
 		kbmEventBufferPtr = _kbmState.EventBuffer.BufferPointer;
 		kbmEventBufferLen = _kbmState.EventBuffer.Length;
 		controllerEventBufferPtr = _controllerEventBuffer.BufferPointer;
 		controllerEventBufferLen = _controllerEventBuffer.Length;
 		clickEventBufferPtr = _kbmState.ClickBuffer.BufferPointer;
 		clickEventBufferLen = _kbmState.ClickBuffer.Length;
+		textInputBufferPtr = _kbmState.TextInputBuffer.AsPointer;
+		textInputBufferLen = _kbmState.TextInputBuffer.Length;
 	}
 
 	internal void HandlePotentialNewController(UIntPtr handle, byte* utf8NamePtr, int utf8NameLen) {
@@ -113,6 +117,8 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		return _kbmState.ClickBuffer.BufferPointer;
 	}
 
+	internal byte* DoubleTextInputBufferSize() => _kbmState.DoubleTextInputBufferSize();
+
 	void UpdateControllerStates(int numNewEvents) {
 		_combinedControllerState.ClearForNextIteration();
 		foreach (var kvp in _detectedControllerStateMap) {
@@ -140,12 +146,16 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		out int numKbmEventsWritten,
 		out int numControllerEventsWritten,
 		out int numClickEventsWritten,
+		out int numTextInputBytesWritten,
 		out int mousePosX,
 		out int mousePosY,
 		out int mouseDeltaX,
 		out int mouseDeltaY,
 		out InteropBool quitRequested
 	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_text_input_enabled")]
+	static extern InteropResult SetTextInputEnabled(InteropBool enabled);
 	#endregion
 
 	#region Disposal

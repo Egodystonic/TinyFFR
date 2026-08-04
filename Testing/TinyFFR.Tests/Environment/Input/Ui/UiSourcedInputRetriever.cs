@@ -271,4 +271,61 @@ class UiSourcedInputRetrieverTest {
 		_retriever.Dispose(); // Disposal must be idempotent
 	}
 	#endregion
+
+	#region Text Input
+	[Test]
+	public void ShouldNotRecordTextInputUntilEnabled() {
+		_recorder.RecordTextInput("hello");
+		_recorder.Iterate();
+		Assert.AreEqual(0, Kbm.TranscribedText.Length);
+
+		Kbm.TextInputEnabled = true;
+		_recorder.RecordTextInput("hello");
+		_recorder.Iterate();
+		Assert.AreEqual("hello", Kbm.TranscribedText.ToString());
+	}
+
+	[Test]
+	public void ShouldOnlyReportTextInputForTheIterationItWasRecordedIn() {
+		Kbm.TextInputEnabled = true;
+
+		_recorder.RecordTextInput("ab");
+		Assert.AreEqual(0, Kbm.TranscribedText.Length); // Not yet iterated
+
+		_recorder.Iterate();
+		Assert.AreEqual("ab", Kbm.TranscribedText.ToString());
+
+		_recorder.Iterate();
+		Assert.AreEqual(0, Kbm.TranscribedText.Length);
+	}
+
+	[Test]
+	public void ShouldAccumulateMultipleTextInputRecordingsWithinAnIteration() {
+		Kbm.TextInputEnabled = true;
+
+		_recorder.RecordTextInput("a");
+		_recorder.RecordTextInput("b");
+		_recorder.RecordTextInput("cd");
+		_recorder.Iterate();
+		Assert.AreEqual("abcd", Kbm.TranscribedText.ToString());
+	}
+
+	[Test]
+	public void ShouldSupportNonAsciiTextInput() {
+		Kbm.TextInputEnabled = true;
+
+		_recorder.RecordTextInput("é€");
+		_recorder.Iterate();
+		Assert.AreEqual("é€", Kbm.TranscribedText.ToString());
+	}
+
+	[Test]
+	public void ShouldDiscardPendingTextInputWhenDisabled() {
+		Kbm.TextInputEnabled = true;
+		_recorder.RecordTextInput("abc");
+		Kbm.TextInputEnabled = false;
+		_recorder.Iterate();
+		Assert.AreEqual(0, Kbm.TranscribedText.Length);
+	}
+	#endregion
 }

@@ -23,6 +23,13 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetInputStateProvider(_handle);
 	}
+	
+	public bool EnableInputTextTranscription {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetEnableInputTextTranscription(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetEnableInputTextTranscription(_handle, value);
+	}
 
 	public TimeSpan TargetIterationInterval {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

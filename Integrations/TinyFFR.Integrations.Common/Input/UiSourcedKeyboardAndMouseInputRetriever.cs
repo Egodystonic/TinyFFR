@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
+using System.Runtime.InteropServices;
 using Egodystonic.TinyFFR.Environment.Input;
 
 namespace Egodystonic.TinyFFR.Input;
@@ -15,6 +16,8 @@ sealed unsafe class UiSourcedKeyboardAndMouseInputRetriever : ILatestKeyboardAnd
 	readonly List<KeyboardOrMouseKey> _keyUpEvents = new();
 	readonly List<KeyboardOrMouseKey> _currentlyPressedKeys = new();
 	readonly HashSet<KeyboardOrMouseKey> _currentlyPressedKeysAccordingToFramework = new();
+	readonly List<char> _pendingTextInput = new();
+	readonly List<char> _currentTextInput = new();
 	XYPair<int>? _cursorDeltaOrigin;
 	XYPair<int>? _pendingCursorPosition;
 	XYPair<int> _pendingCursorDelta;
@@ -24,6 +27,13 @@ sealed unsafe class UiSourcedKeyboardAndMouseInputRetriever : ILatestKeyboardAnd
 
 	public XYPair<int> MouseCursorPosition { get; private set; }
 	public XYPair<int> MouseCursorDelta { get; private set; }
+
+	public ReadOnlySpan<char> TranscribedText {
+		get {
+			ThrowIfThisIsDisposed();
+			return CollectionsMarshal.AsSpan(_currentTextInput);
+		}
+	}
 
 	public IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKeyEvent> NewKeyEvents => new(
 		this, _iterationVersion, &GetNewKeyEventsCount, &GetIterationVersion, &GetNewKeyEvent
@@ -166,6 +176,11 @@ sealed unsafe class UiSourcedKeyboardAndMouseInputRetriever : ILatestKeyboardAnd
 		ThrowIfThisIsDisposed();
 		_cursorDeltaOrigin = null;
 	}
+
+	public void RecordTextInput(ReadOnlySpan<char> text) {
+		ThrowIfThisIsDisposed();
+		foreach (var c in text) _pendingTextInput.Add(c);
+	}
 	#endregion
 
 	public void Iterate() {
@@ -175,6 +190,9 @@ sealed unsafe class UiSourcedKeyboardAndMouseInputRetriever : ILatestKeyboardAnd
 		_pendingKeyEvents.Clear();
 		(_currentClickEvents, _pendingClickEvents) = (_pendingClickEvents, _currentClickEvents);
 		_pendingClickEvents.Clear();
+		_currentTextInput.Clear();
+		_currentTextInput.AddRange(_pendingTextInput);
+		_pendingTextInput.Clear();
 
 		_keyDownEvents.Clear();
 		_keyUpEvents.Clear();

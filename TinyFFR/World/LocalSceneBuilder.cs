@@ -34,18 +34,21 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<BuiltInSceneBackdrop, BackdropTexture> _loadedBuiltInBackdropTextures = new();
 	readonly LocalAssetLoader _assetLoader;
+	readonly LocalCameraBuilder _cameraBuilder;
 	readonly LocalObjectBuilder _objectBuilder;
 	bool _isDisposed = false;
 
-	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoader assetLoader, LocalObjectBuilder objectBuilder) {
+	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoader assetLoader, LocalCameraBuilder cameraBuilder, LocalObjectBuilder objectBuilder) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
 		_assetLoader = assetLoader;
+		_cameraBuilder = cameraBuilder;
 		_objectBuilder = objectBuilder;
 		_modelInstanceSetPool = new(zeroMemoryOnReturn: true);
 		_camLockedAbridgedInstanceMapPool = new(zeroMemoryOnReturn: true);
 		_camLockedFullInstanceMapPool = new(zeroMemoryOnReturn: true);
+		_canvasItemMapPool = new(zeroMemoryOnReturn: true);
 		_lightSetPool = new(zeroMemoryOnReturn: true);
 		_primitiveMapPool = new(zeroMemoryOnReturn: true);
 	}
@@ -62,6 +65,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_camLockedAbridgedInstanceMap.Add(handle, _camLockedAbridgedInstanceMapPool.Rent());
 		_camLockedFullInstanceMap.Add(handle, _camLockedFullInstanceMapPool.Rent());
 		_cameraLockedInstancesLedger.Add(handle, _modelInstanceSetPool.Rent());
+		_canvasItemMap.Add(handle, _canvasItemMapPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
 		_primitiveMap.Add(handle, _primitiveMapPool.Rent());
 
@@ -106,6 +110,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		if (!_modelInstanceMap[handle].Remove(modelInstance)) return;
 		
 		RemoveInstanceFromCameraLockedMaps(handle, modelInstance);
+		RemoveInstanceFromCanvasMaps(handle, modelInstance);
 
 		RemoveModelInstanceFromScene(
 			handle,
@@ -442,6 +447,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 				_camLockedAbridgedInstanceMap[handle].Clear();
 				_camLockedFullInstanceMap[handle].Clear();
 				_cameraLockedInstancesLedger[handle].Clear();
+				_canvasItemMap[handle].Clear();
 			}
 		}
 		else if (includeModelInstances) {
@@ -612,9 +618,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			_camLockedAbridgedInstanceMap.Dispose();
 			_camLockedFullInstanceMap.Dispose();
 			_cameraLockedInstancesLedger.Dispose();
+			_canvasItemMap.Dispose();
+			_canvasSceneDataMap.Dispose();
 			_modelInstanceSetPool.Dispose();
 			_camLockedAbridgedInstanceMapPool.Dispose();
 			_camLockedFullInstanceMapPool.Dispose();
+			_canvasItemMapPool.Dispose();
 			
 			foreach (var builtInBackdropTex in _loadedBuiltInBackdropTextures.Values) {
 				builtInBackdropTex.Dispose();
@@ -647,6 +656,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		
+		DisposeAllCanvasData(handle);
 		RemoveAllPrimitives(handle, false);
 		_primitiveMapPool.Return(_primitiveMap[handle]);
 		_primitiveMap.Remove(handle);
@@ -667,6 +677,9 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_camLockedFullInstanceMap.Remove(handle);
 		_modelInstanceSetPool.Return(_cameraLockedInstancesLedger[handle]);
 		_cameraLockedInstancesLedger.Remove(handle);
+		_canvasItemMapPool.Return(_canvasItemMap[handle]);
+		_canvasItemMap.Remove(handle);
+		_canvasSceneDataMap.Remove(handle);
 
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
