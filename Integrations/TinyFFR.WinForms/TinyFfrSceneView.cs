@@ -92,35 +92,35 @@ public partial class TinyFfrSceneView : UserControl {
 		};
 	}
 
-	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
+	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
 		if (_bitmap == null || _bitmap.Width != dimensions.X || _bitmap.Height != dimensions.Y) {
 			_bitmap = new Bitmap(
 				dimensions.X,
 				dimensions.Y,
-				PixelFormat.Format24bppRgb
+				PixelFormat.Format32bppRgb
 			);
 		}
 
 		var data = _bitmap.LockBits(
 			new Rectangle(0, 0, _bitmap.Width, _bitmap.Height),
 			ImageLockMode.WriteOnly,
-			PixelFormat.Format24bppRgb
+			PixelFormat.Format32bppRgb
 		);
 		try {
-			if (data.PixelFormat != PixelFormat.Format24bppRgb
+			if (data.PixelFormat != PixelFormat.Format32bppRgb
 				|| data.Width != dimensions.X
 				|| data.Height != dimensions.Y
-				|| data.Stride < dimensions.X * sizeof(TexelRgb24)) {
+				|| data.Stride < dimensions.X * sizeof(TexelRgba32)) {
 				throw new InvalidOperationException("Write to locked buffer failed safety check.");
 			}
-			if (data.Stride == dimensions.X * TexelRgb24.TexelSizeBytes) {
-				var destSpan = new Span<TexelRgb24>((void*) data.Scan0, texels.Length);
-				texels.CopyTo(destSpan);
+			if (data.Stride == dimensions.X * TexelRgba32.TexelSizeBytes) {
+				var destSpan = new Span<byte>((void*) data.Scan0, texels.Length * TexelRgba32.TexelSizeBytes);
+				IntegrationUtils.BlitRgbaToBgra(texels, destSpan);
 			}
 			else {
 				for (var r = 0; r < dimensions.Y; ++r) {
-					var destSpan = new Span<TexelRgb24>(((byte*) data.Scan0) + (r * data.Stride), dimensions.X);
-					texels[(r * dimensions.X)..((r + 1) * dimensions.X)].CopyTo(destSpan);
+					var destSpan = new Span<byte>(((byte*) data.Scan0) + (r * data.Stride), dimensions.X * TexelRgba32.TexelSizeBytes);
+					IntegrationUtils.BlitRgbaToBgra(texels[(r * dimensions.X)..((r + 1) * dimensions.X)], destSpan);
 				}
 			}
 		}

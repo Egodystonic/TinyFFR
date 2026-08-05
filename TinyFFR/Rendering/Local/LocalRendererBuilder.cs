@@ -142,12 +142,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public static OutputBufferCallbackData None => new(false, null, null);
 
 		public bool InvertRows { get; }
-		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> OutputChangeHandler { get; }
-		public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? OutputChangeHandlerManaged { get; }
-		
+		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> OutputChangeHandler { get; }
+		public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? OutputChangeHandlerManaged { get; }
+
 		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
 
-		public OutputBufferCallbackData(bool invertRows, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> outputChangeHandler, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? outputChangeHandlerManaged) {
+		public static OutputBufferCallbackData None => new(false, null, null);
+
+		public OutputBufferCallbackData(
+			bool invertRows,
+			delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> outputChangeHandler,
+			Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? outputChangeHandlerManaged
+		) {
 			InvertRows = invertRows;
 			OutputChangeHandler = outputChangeHandler;
 			OutputChangeHandlerManaged = outputChangeHandlerManaged;
@@ -193,8 +199,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public void Dispose(ResourceHandle<RenderOutputBuffer> handle) => _owner.Dispose(handle);
 		public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) => _owner.CreateDynamicTexture(handle);
 		public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetTextureDimensions(handle);
-		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
-		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
+		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
+		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) => _owner.ClearOutputChangeHandlers(handle, cancelQueuedFrames);
 		public override string ToString() => _owner.ToString();
 	}
@@ -618,11 +624,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					0U,
 					0U,
 					0U,
-					0U
+					0U,
+					false
 				).ThrowIfFailure();
 			}
 			else {
-				var requiredSize = bufferData.TextureDimensions.Area * TexelRgb24.TexelSizeBytes;
+				var requiredSize = bufferData.TextureDimensions.Area * TexelRgba32.TexelSizeBytes;
 				var buffer = _globals.CreateGpuHoldingBuffer(requiredSize, &HandleRenderTargetReadback);
 				_pendingRenderTargetReadbacks.Add(
 					buffer.BufferIdentity,
@@ -643,7 +650,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					(uint) buffer.DataLengthBytes,
 					(uint) bufferData.TextureDimensions.X,
 					(uint) bufferData.TextureDimensions.Y,
-					buffer.BufferIdentity
+					buffer.BufferIdentity,
+					bufferData.HandleOnlyNextChange
 				).ThrowIfFailure();
 			}
 		}
@@ -669,17 +677,17 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		if (tuple.Builder.IsDisposed(tuple.BufferHandle)) return; // Can happen if user has disposed target output buffer
 
 		var dimensions = tuple.Builder._loadedBuffers[tuple.BufferHandle].TextureDimensions;
-		var requiredLength = dimensions.Area * TexelRgb24.TexelSizeBytes;
+		var requiredLength = dimensions.Area * TexelRgba32.TexelSizeBytes;
 		if (data.Length < requiredLength) {
 			throw new InvalidOperationException($"Received render target readback for output buffer with dimensions {dimensions} " +
 												$"(requiring buffer size {requiredLength}), " +
 												$"but buffer size was {data.Length}.");
 		}
 
-		var texelData = MemoryMarshal.Cast<byte, TexelRgb24>(data[..requiredLength]);
+		var texelData = MemoryMarshal.Cast<byte, TexelRgba32>(data[..requiredLength]);
 
 		if (tuple.Callbacks.InvertRows) { // Inverted because we actually get the data in screen/window order, so by default we want to flip the data to make it match texture convention
-			Span<TexelRgb24> stackSwapSpace = stackalloc TexelRgb24[dimensions.X];
+			Span<TexelRgba32> stackSwapSpace = stackalloc TexelRgba32[dimensions.X];
 			for (var rowIndex = 0; rowIndex < dimensions.Y / 2; ++rowIndex) {
 				var lowerRow = texelData[
 					(rowIndex * dimensions.X)
@@ -767,7 +775,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedBuffers[handle].TextureDimensions;
 	}
-	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
@@ -775,7 +783,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
-	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
 			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, handler, null),
@@ -784,7 +792,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	}
 	public unsafe void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_loadedBuffers[handle] = _loadedBuffers[handle] with { RenderCompletionHandlers = new(false, null, null) };
+		_loadedBuffers[handle] = _loadedBuffers[handle] with { RenderCompletionHandlers = OutputBufferCallbackData.None };
 		if (!cancelQueuedFrames) return;
 
 		using var currentlyQueuedFrameIdentities = _globals.HeapPool.Borrow<nuint>(_pendingRenderTargetReadbacks.Count);
@@ -833,7 +841,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			buffer.Dispose();
 		}
 	}
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 
@@ -848,7 +856,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			buffer.Dispose();
 		}
 	}
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
@@ -875,10 +883,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		});
 		return (buffer, renderer);
 	}
-	static void SaveScreenshotToBitmap(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
+	static void SaveScreenshotToBitmap(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
 		try {
 			if (_nextScreenshotCaptureFilePath == null) throw new InvalidOperationException("Out-of-order operation detected.");
-			if (_nextScreenshotCaptureConfig == null) ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels);
+			if (_nextScreenshotCaptureConfig == null) ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels, new(IncludeAlphaChannel: false, FlipVertical: false, FlipHorizontal: false));
 			else ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels, _nextScreenshotCaptureConfig.Value);
 		}
 		catch (Exception e) {
@@ -1148,7 +1156,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		uint readbackBufferLengthBytes,
 		uint readbackBufferWidth,
 		uint readbackBufferHeight,
-		nuint readbackBufferIdentity
+		nuint readbackBufferIdentity,
+		InteropBool waitForReadbackCompletion
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_render_target")]

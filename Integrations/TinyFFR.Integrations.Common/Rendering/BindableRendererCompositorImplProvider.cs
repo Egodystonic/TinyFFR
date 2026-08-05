@@ -20,7 +20,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	RendererCompositor _actualCompositor;
 	XYPair<int> _sharedBufferSizePixels;
 	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
-	Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? _currentFrameHandler;
+	Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? _currentFrameHandler;
 	bool _isDisposed = false;
 
 	public RendererCompositor BindableCompositorInstance => new(_handle, this);
@@ -44,7 +44,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		return c.Implementation as BindableRendererCompositorImplProvider ?? throw new InvalidOperationException($"Given {nameof(RendererCompositor)} ({c}) is not a bindable compositor.");
 	}
 
-	public static void StartOrContinueHandlingFrames(RendererCompositor c, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+	public static void StartOrContinueHandlingFrames(RendererCompositor c, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler) {
 		var impl = GetBindableImplementationOrThrow(c);
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
@@ -72,7 +72,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		impl._currentFrameHandler = null;
 	}
 
-	void RecreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+	void RecreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
 		_actualCompositor.Dispose();
 		for (var i = 0; i < _addedRenderers.Count; ++i) {
 			BindableRendererImplProvider.GetBindableImplementationOrThrow(_addedRenderers[i].BindableRenderer).DisposeActualRendererForCompositorRecreation();
@@ -81,7 +81,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		CreateSharedBufferAndCompositor(size, handler);
 	}
 
-	void CreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+	void CreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
 		_sharedBufferSizePixels = size;
 		_sharedBuffer = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
 			Name = $"{_name} output buffer",

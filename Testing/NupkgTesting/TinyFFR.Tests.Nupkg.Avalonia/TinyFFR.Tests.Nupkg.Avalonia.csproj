@@ -20,8 +20,5 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="$(CommunityToolkitVersion)" />
 
 	  <PackageReference Include="Egodystonic.TinyFFR.Avalonia" Version="$(TffrNugetTestingReferenceVersion)" />
-
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
   </ItemGroup>
 </Project>

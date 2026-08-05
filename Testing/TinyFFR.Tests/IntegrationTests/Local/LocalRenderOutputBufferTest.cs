@@ -114,8 +114,8 @@ class LocalRenderOutputBufferTest {
 			windowRenderer.Render();
 		}
 
-		static void WriteRbbFnPtr(XYPair<int> dim, ReadOnlySpan<TexelRgb24> tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "rbb_fnptr.bmp"), dim, tex);
-		static void WriteWindowFnPtr(XYPair<int> dim, ReadOnlySpan<TexelRgb24> tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "window_fnptr.bmp"), dim, tex);
+		static void WriteRbbFnPtr(XYPair<int> dim, ReadOnlySpan<TexelRgba32> tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "rbb_fnptr.bmp"), dim, tex);
+		static void WriteWindowFnPtr(XYPair<int> dim, ReadOnlySpan<TexelRgba32> tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "window_fnptr.bmp"), dim, tex);
 
 		renderBufferRenderer.CaptureScreenshot(Path.Combine(_screenshotsDir, "rbb_direct.bmp"));
 		renderBufferRenderer.CaptureScreenshot((dim, tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "rbb_delegate.bmp"), dim, tex));
@@ -153,7 +153,7 @@ class LocalRenderOutputBufferTest {
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position);
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 
-		var texelDumps = SceneColors.ToDictionary(tuple => tuple.Name, _ => new List<TexelRgb24[]>());
+		var texelDumps = SceneColors.ToDictionary(tuple => tuple.Name, _ => new List<TexelRgba32[]>());
 		for (var frameBufferCount = 0; frameBufferCount <= RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount; ++frameBufferCount) {
 			var scenes = SceneColors.ToDictionary(tuple => tuple.Name, tuple => {
 				var result = factory.SceneBuilder.CreateScene(backdropColor: tuple.Color);
@@ -195,7 +195,7 @@ class LocalRenderOutputBufferTest {
 		foreach (var kvp in texelDumps) {
 			var list = kvp.Value;
 			foreach (var file in Directory.GetFiles(_bitmapsDir).Where(f => Path.GetFileName(f).StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))) {
-				var dump = new TexelRgb24[list[0].Length];
+				var dump = new TexelRgba32[list[0].Length];
 				factory.AssetLoader.ReadTexture(file, dump.AsSpan());
 				list.Add(dump);
 			}
@@ -230,7 +230,7 @@ class LocalRenderOutputBufferTest {
 		}
 	}
 
-	void RenderSceneToBitmapAndStoreTexels(IRendererBuilder builder, ApplicationLoop loop, Scene scene, Camera camera, List<TexelRgb24[]> renderDumpList, string bitmapFilePath, int frameBufferCount, bool waitExplicitly) {
+	void RenderSceneToBitmapAndStoreTexels(IRendererBuilder builder, ApplicationLoop loop, Scene scene, Camera camera, List<TexelRgba32[]> renderDumpList, string bitmapFilePath, int frameBufferCount, bool waitExplicitly) {
 		Console.WriteLine("..." + Path.GetFileNameWithoutExtension(bitmapFilePath));
 
 		using var buffer = builder.CreateRenderOutputBuffer(textureDimensions: RenderDimensions);
