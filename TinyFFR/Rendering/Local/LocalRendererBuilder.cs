@@ -17,7 +17,6 @@ namespace Egodystonic.TinyFFR.Rendering.Local;
 
 sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IResourceDirectory<RendererCompositor>, IDisposable {
 	enum RenderOrdering { Standalone, First, Middle, Last }
-	enum CameraViewportAdaptationMode { None, AspectRatio, AspectRatioAndPixelHeight }
 
 	[StructLayout(LayoutKind.Explicit)]
 	readonly struct RenderTargetUnion : IRenderTarget, IEquatable<RenderTargetUnion> {
@@ -136,10 +135,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions);
-	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, CameraViewportAdaptationMode CameraAdaptationMode, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode);
+	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode);
 	readonly record struct CompositedRenderer(Renderer Renderer, RenderCompositionType CompositionType, bool IsEnabled);
 	readonly record struct RendererCompositorData(RenderTargetUnion RenderTarget, ArrayPoolBackedVector<CompositedRenderer> AddedRenderers, int NumRenderersCurrentlyEnabled, int FirstEnabledRendererIndex, int LastEnabledRendererIndex);
 	readonly unsafe struct OutputBufferCallbackData {
+		public static OutputBufferCallbackData None => new(false, null, null);
+
 		public bool InvertRows { get; }
 		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> OutputChangeHandler { get; }
 		public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? OutputChangeHandlerManaged { get; }
@@ -321,7 +322,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(scene, camera, rtu, viewportData, config.AutoUpdateCameraAspectRatio ? CameraViewportAdaptationMode.AspectRatio : CameraViewportAdaptationMode.None, config.GpuSynchronizationFrameBufferCount >= 0, config.Quality, null));
+		_loadedRenderers.Add(handle, new(scene, camera, rtu, viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0, config.Quality, null));
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRendererName);
 
@@ -343,25 +344,16 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
-		
-
-		Renderer renderer;
-		try {
-			renderer = CreateRenderer(scene.UnderlyingScene, camera, renderTarget, in config);
-		}
-		catch {
-			camera.Dispose();
-			throw;
-		}
+		var result = CreateRenderer(scene.UnderlyingScene, scene.Camera, renderTarget, in config);
 
 		var handle = renderer.GetHandleWithoutDisposeCheck();
 		var rendererData = _loadedRenderers[handle] with { CameraAdaptationMode = CameraViewportAdaptationMode.AspectRatioAndPixelHeight };
 		_loadedRenderers[handle] = rendererData;
 		_internallyCreatedCameras.Add(handle, camera);
 
-		var bounds = GetRenderSubAreaBounds(handle);
+		var bounds = rendererData.Viewport.DesiredDimensions.ExtractViewportPixelBounds(rendererData.RenderTarget.ViewportDimensions);
 		ApplyCameraViewportAdaptation(in rendererData, bounds.Size);
-		((LocalSceneBuilder) scene.UnderlyingScene.Implementation).SetUp2DItemsForRender(
+		((LocalSceneBuilder) scene.UnderlyingScene.Implementation).PrepareCanvasObjectsForRender(
 			scene.UnderlyingScene.GetHandleWithoutDisposeCheck(),
 			bounds.Size,
 			bounds.BottomLeft,
@@ -369,21 +361,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		);
 
 		return renderer;
-	}
-
-	static void ApplyCameraViewportAdaptation(in RendererData rendererData, XYPair<int> viewportSize) {
-		if (rendererData.CameraAdaptationMode == CameraViewportAdaptationMode.None) return;
-
-		rendererData.Camera.SetAspectRatio(viewportSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
-		if (rendererData.CameraAdaptationMode == CameraViewportAdaptationMode.AspectRatioAndPixelHeight) {
-			rendererData.Camera.SetOrthographicHeight(viewportSize.Y);
-		}
-	}
-
-	(XYPair<int> BottomLeft, XYPair<int> Size) GetRenderSubAreaBounds(ResourceHandle<Renderer> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var rendererData = _loadedRenderers[handle];
-		return rendererData.Viewport.DesiredDimensions.ExtractViewportPixelBounds(rendererData.RenderTarget.ViewportDimensions);
 	}
 
 	public unsafe RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
@@ -399,7 +376,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<RenderOutputBuffer>(_previousHandleId);
-		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, new(false, null, null), false);
+		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, OutputBufferCallbackData.None, false);
 		_loadedBuffers.Add(handle, bufferData);
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRenderOutputBufferName);
@@ -578,7 +555,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				(uint) viewportBounds.Size.Y
 			).ThrowIfFailure();
 			_loadedRenderers[handle] = rendererData;
-			ApplyCameraViewportAdaptation(in rendererData, viewportBounds.Size);
+			if (rendererData.AutoUpdateCameraAspectRatio) {
+				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
+			}
 
 			shouldRenewSwapChainIfIsWindowAndAlreadyExists = true;
 		}
@@ -651,7 +630,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				);
 				if (bufferData.HandleOnlyNextChange) {
 					_loadedBuffers[bufferData.Handle] = _loadedBuffers[bufferData.Handle] with {
-						RenderCompletionHandlers = new(),
+						RenderCompletionHandlers = OutputBufferCallbackData.None,
 						HandleOnlyNextChange = false
 					};
 				}
@@ -1021,8 +1000,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
 		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, camera);
-		var canvasBounds = GetRenderSubAreaBounds(handle);
-		localSceneImpl.SetUp2DItemsForRender(sceneHandle, canvasBounds.Size, canvasBounds.BottomLeft, rendererData.RenderTarget.ViewportDimensions);
+		var canvasBounds = viewport.DesiredDimensions.ExtractViewportPixelBounds(rendererData.RenderTarget.ViewportDimensions);
+		localSceneImpl.PrepareCanvasObjectsForRender(sceneHandle, canvasBounds.Size, canvasBounds.BottomLeft, rendererData.RenderTarget.ViewportDimensions);
 		SetViewDepthOfFieldEnabled(viewport.Handle, camera.FocusDistance != null).ThrowIfFailure(); 
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
@@ -1318,12 +1297,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		_loadedRenderers.Remove(handle);
 		ReleaseRenderTargetUnionIfUnused(data.RenderTarget);
-
-		if (_internallyCreatedCameras.Remove(handle, out var internalCamera)) internalCamera.Dispose();
 	}
 
-	// Tears down the shared native Renderer/SwapChain only once nothing (renderer or compositor) still targets the union.
-	// Called from both Renderer and RendererCompositor disposal because either may be the last holder of the target.
 	void ReleaseRenderTargetUnionIfUnused(RenderTargetUnion rtu) {
 		if (RenderTargetUnionIsInUse(rtu)) return;
 
@@ -1393,7 +1368,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 			_loadedCompositors.Dispose();
 			_loadedRenderers.Dispose();
-			_internallyCreatedCameras.Dispose();
 			lock (_loadedTargetDataMutationLock) {
 				_loadedTargets.Dispose();
 			}

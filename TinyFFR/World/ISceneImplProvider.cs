@@ -55,17 +55,5 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle);
 	IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle);
 
-	DiagonalOrientation2D GetCanvasOrigin(ResourceHandle<Scene> handle);
-	XYPair<int> GetCanvasSizePixels(ResourceHandle<Scene> handle);
-	void AddCanvasItem(ResourceHandle<Scene> handle, QuadInstance quad, in CanvasDock dock);
-	void AddCanvasItem(ResourceHandle<Scene> handle, TextInstance text, in CanvasDock dock);
-	void SetCanvasItemDock(ResourceHandle<Scene> handle, ModelInstance modelInstance, in CanvasDock dock);
-	CanvasDock GetCanvasItemDock(ResourceHandle<Scene> handle, ModelInstance modelInstance);
-	bool ContainsCanvasItem(ResourceHandle<Scene> handle, ModelInstance modelInstance);
-	Location GetCanvasLocation(ResourceHandle<Scene> handle, Orientation2D anchor, XYPair<int> anchorOffset, int layer);
-	Location GetCanvasLocation(ResourceHandle<Scene> handle, XYPair<int> pixelCoord, int layer);
-	XYPair<int> GetCanvasPixelCoord(ResourceHandle<Scene> handle, Location worldLocation);
-	XYPair<int> GetCanvasPixelCoordFromCursor(ResourceHandle<Scene> handle, XYPair<int> windowRelativeCursorPosition);
-	bool CanvasContains(ResourceHandle<Scene> handle, XYPair<int> pixelCoord);
-	XYPair<float> GetCanvasSize(ResourceHandle<Scene> handle, XYPair<float> fractionalSize);
+	Camera GetCanvasCamera(ResourceHandle<Scene> handle);
 }

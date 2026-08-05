@@ -36,3 +36,37 @@ public interface ITransformedSceneObject : IPositionedSceneObject, IOrientedScen
 	void RotateBy(Rotation rotation, Location pivotPoint);
 	void RotateBy(Quaternion rotationQuaternion, Location pivotPoint);
 }
+
+
+
+
+
+
+public interface IMovable2DSceneObject {
+	void MoveBy(XYPair<float> translation);
+}
+public interface IPositioned2DSceneObject : IMovable2DSceneObject {
+	XYPair<float> Position { get; set; }
+}
+
+public interface IReorientable2DSceneObject {
+	void RotateBy(Angle rotation);
+}
+public interface IOriented2DSceneObject : IReorientable2DSceneObject {
+	Angle Rotation { get; set; }
+}
+
+public interface IRescalable2DSceneObject {
+	void ScaleBy(float scalar);
+	void ScaleBy(XYPair<float> vect);
+	void AdjustScaleBy(float scalar);
+	void AdjustScaleBy(XYPair<float> vect);
+}
+public interface IScaled2DSceneObject : IRescalable2DSceneObject {
+	XYPair<float> Scaling { get; set; }
+}
+
+public interface ITransformed2DSceneObject : IPositioned2DSceneObject, IOriented2DSceneObject, IScaled2DSceneObject {
+	Transform2D Transform { get; set; }
+	void RotateBy(Angle rotation, XYPair<float> pivotPoint);
+}

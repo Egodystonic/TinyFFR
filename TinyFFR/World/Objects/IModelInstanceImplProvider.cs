@@ -56,8 +56,8 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture);
 	void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance);
 	
-	void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextMeshLayout layout);
-	void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextMeshLayout layout);
+	void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextLayout layout);
+	void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextLayout layout);
 	void UpdateTextInstancePen(ResourceHandle<ModelInstance> handle, FontPen pen);
 	void UpdateTextInstanceString(ResourceHandle<ModelInstance> handle, FontString @string);
 	FontPen GetTextInstancePen(ResourceHandle<ModelInstance> handle);

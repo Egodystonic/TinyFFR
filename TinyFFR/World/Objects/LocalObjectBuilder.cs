@@ -20,7 +20,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 	readonly record struct PrivateMaterialData(Material Material, bool IsDefault, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
-	readonly record struct TextInstanceData(FontPen Pen, FontString String, TextMeshLayout Layout);
+	readonly record struct TextInstanceData(FontPen Pen, FontString String, TextLayout Layout);
 	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3DOpaque;
@@ -519,7 +519,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		return result;
 	}
 
-	public void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextMeshLayout layout) {
+	public void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextLayout layout) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_activeInstanceTextInstanceData[handle] = new(pen, @string, layout);
 	}
@@ -527,7 +527,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { Pen = pen };
 	}
-	public void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextMeshLayout layout) {
+	public void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextLayout layout) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { Layout = layout };
 	}

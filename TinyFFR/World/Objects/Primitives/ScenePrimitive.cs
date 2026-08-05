@@ -94,6 +94,8 @@ public readonly record struct ScenePrimitive : IDisposable {
 			minorGridLineSpacing ?? size * (1f / DefaultGridMinorLines)
 		);
 	}
+
+	public override string ToString() => "Scene Primitive";
 }
 
 partial struct Scene {

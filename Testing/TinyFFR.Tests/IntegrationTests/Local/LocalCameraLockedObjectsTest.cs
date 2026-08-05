@@ -44,7 +44,7 @@ class LocalCameraLockedObjectsTest {
 			pen, 
 			@string,
 			lockedUprightDirection: Direction.Up,
-			layout: new TextMeshLayout(0.1f, curLockedTextAnchor)
+			layout: new TextLayout(0.1f, curLockedTextAnchor)
 		);
 		
 		using var quad = factory.MeshBuilder.CreateQuadMesh(twoSided: false);
@@ -164,7 +164,7 @@ class LocalCameraLockedObjectsTest {
 					pen, 
 					@string,
 					lockedUprightDirection: Direction.Up,
-					layout: new TextMeshLayout(0.1f, curLockedTextAnchor)
+					layout: new TextLayout(0.1f, curLockedTextAnchor)
 				);
 				userControlledScene.Add(lockedText);
 				automaticScene.Add(lockedText);
