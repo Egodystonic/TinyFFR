@@ -13,11 +13,44 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 	
 	public Orientation2D CanvasAnchor { get; set; }
 	public Orientation2D? ObjectAnchor { get; set; }
+	
+	public int Layer { get; set; }
+	
 	public XYPair<int> PositionPixels { get; set; }
 	public XYPair<float> PositionFraction { get; set; }
+	XYPair<float> IPositioned2DSceneObject.Position {
+		get => PositionFraction;
+		set => PositionFraction = value;
+	}
+
 	public XYPair<int> SizePixels { get; set; }
 	public XYPair<float> SizeFraction { get; set; }
-	public int Layer { get; set; }
+	XYPair<float> IScaled2DSceneObject.Scaling {
+		get => SizeFraction;
+		set => SizeFraction = value;
+	}
+
+	void MoveByPixels(XYPair<int> translation);
+	void MoveByFraction(XYPair<float> translation);
+	void IMovable2DSceneObject.MoveBy(XYPair<float> translation) => MoveByFraction(translation);
+
+	Transform2D ITransformed2DSceneObject.Transform {
+		get => new(PositionFraction, Rotation, SizeFraction);
+		set {
+			SizeFraction = value.Scaling;
+			Rotation = value.Rotation;
+			PositionFraction = value.Translation;
+		}
+	}
+	
+	void AdjustScaleByPixels(int scalar);
+	void AdjustScaleByPixels(XYPair<int> vect);
+	void AdjustScaleByFraction(float scalar);
+	void AdjustScaleByFraction(XYPair<float> vect);
+	void IRescalable2DSceneObject.AdjustScaleBy(float scalar) => AdjustScaleByFraction(scalar);
+	void IRescalable2DSceneObject.AdjustScaleBy(XYPair<float> vect) => AdjustScaleByFraction(vect);
+	
+	void RotateBy(Angle rotation, XYPair<int> pivotPointPixels);
 }
 
 public readonly record struct CanvasTexture : ICanvasObject {
@@ -29,6 +62,39 @@ public readonly record struct CanvasTexture : ICanvasObject {
 		set => 
 	}
 
+	public Orientation2D CanvasAnchor {
+		get => 
+		set =>
+	}
+	public Orientation2D? ObjectAnchor {
+		get =>  
+		set => 
+	}
+	public Angle Rotation {
+		get => 
+		set =>
+	}
+	public int Layer {
+		get => 
+		set =>
+	}
+	public XYPair<int> PositionPixels {
+		get => 
+		set =>
+	}
+	public XYPair<float> PositionFraction {
+		get => 
+		set =>
+	}
+	public XYPair<int> SizePixels {
+		get => 
+		set =>
+	}
+	public XYPair<float> SizeFraction {
+		get => 
+		set =>
+	}
+
 	internal CanvasTexture(CanvasScene canvas, QuadInstance underlyingQuadInstance) {
 		Canvas = canvas;
 		UnderlyingQuadInstance = underlyingQuadInstance;
@@ -38,7 +104,19 @@ public readonly record struct CanvasTexture : ICanvasObject {
 	public void SetTextureOffsetFraction(XYPair<float> offset) { }
 	public void SetTextureExtentPixels(XYPair<int> extent) { }
 	public void SetTextureExtentFraction(XYPair<float> extent) { }
-	
+
+	public void ScaleBy(float scalar) { }
+	public void ScaleBy(XYPair<float> vect) { }
+	public void AdjustScaleByPixels(int scalar) { }
+	public void AdjustScaleByPixels(XYPair<int> vect) { }
+	public void AdjustScaleByFraction(float scalar) { }
+	public void AdjustScaleByFraction(XYPair<float> vect) { }
+	public void RotateBy(Angle rotation) { }
+	public void RotateBy(Angle rotation, XYPair<float> pivotPoint) { }
+	public void RotateBy(Angle rotation, XYPair<int> pivotPointPixels) { }
+	public void MoveByPixels(XYPair<int> translation) { }
+	public void MoveByFraction(XYPair<float> translation) { }
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingQuadInstance.GetNameAsNewStringObject();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
