@@ -710,7 +710,7 @@ sealed partial class LocalSceneBuilder {
 		_primitiveMap[handle].Clear();
 	}
 	
-	void DisposePrimitiveResources() {
+	void DisposeAllPrimitiveResources() {
 		_primitivePointResources?.Dispose();
 		_primitiveStringResources?.Dispose();
 		_primitiveCuboidResources?.Dispose();
@@ -719,5 +719,7 @@ sealed partial class LocalSceneBuilder {
 		_primitivePlaneResources?.Dispose();
 		_primitiveSharedQuadMesh?.Dispose();
 		_primitiveSharedMutableLineStripMesh?.Dispose();
+		_primitiveMap.Dispose();
+		_primitiveMapPool.Dispose();
 	}
 }

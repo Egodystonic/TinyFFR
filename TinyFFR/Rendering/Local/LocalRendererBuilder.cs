@@ -147,8 +147,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
 
-		public static OutputBufferCallbackData None => new(false, null, null);
-
 		public OutputBufferCallbackData(
 			bool invertRows,
 			delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> outputChangeHandler,
@@ -347,29 +345,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	}
 
 	public Renderer CreateRenderer<TRenderTarget>(CanvasScene scene, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
-		ThrowIfThisIsDisposed();
-		config.ThrowIfInvalid();
-
-		var result = CreateRenderer(scene.UnderlyingScene, scene.Camera, renderTarget, in config);
-
-		var handle = renderer.GetHandleWithoutDisposeCheck();
-		var rendererData = _loadedRenderers[handle] with { CameraAdaptationMode = CameraViewportAdaptationMode.AspectRatioAndPixelHeight };
-		_loadedRenderers[handle] = rendererData;
-		_internallyCreatedCameras.Add(handle, camera);
-
-		var bounds = rendererData.Viewport.DesiredDimensions.ExtractViewportPixelBounds(rendererData.RenderTarget.ViewportDimensions);
-		ApplyCameraViewportAdaptation(in rendererData, bounds.Size);
-		((LocalSceneBuilder) scene.UnderlyingScene.Implementation).PrepareCanvasObjectsForRender(
-			scene.UnderlyingScene.GetHandleWithoutDisposeCheck(),
-			bounds.Size,
-			bounds.BottomLeft,
-			rendererData.RenderTarget.ViewportDimensions
-		);
-
-		return renderer;
+		return CreateRenderer(scene.UnderlyingScene, scene.Camera, renderTarget, in config);
 	}
 
-	public unsafe RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
+	public RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 

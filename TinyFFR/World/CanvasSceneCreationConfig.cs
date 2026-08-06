@@ -8,10 +8,8 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.World;
 
 public readonly ref struct CanvasSceneCreationConfig : IConfigStruct<CanvasSceneCreationConfig> {
-	public const DiagonalOrientation2D DefaultOrigin = DiagonalOrientation2D.DownLeft;
-
 	public ReadOnlySpan<char> Name { get; init; }
-	public ColorVect? InitialBackdropColor { get; init; } = null;
+	public SceneCreationConfig BaseConfig { // TODO }
 
 	public CanvasSceneCreationConfig() { }
 
