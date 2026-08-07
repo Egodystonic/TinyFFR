@@ -21,7 +21,20 @@ sealed unsafe class ObjectPool<T> : IDisposable {
 
 	public void Return(T item) => _pool.Add(item);
 
-	public void Dispose() => _pool.Dispose();
+	public void ReleasePooledObjects(bool invokeDisposeOnEachItemBeforeRelease) {
+		if (invokeDisposeOnEachItemBeforeRelease) {
+			foreach (var item in _pool) {
+				(item as IDisposable)?.Dispose();
+			}
+		}
+		_pool.Clear();
+	}
+
+	void IDisposable.Dispose() => Dispose(false);
+	public void Dispose(bool invokeDisposeOnEachItemBeforeRelease) {
+		ReleasePooledObjects(invokeDisposeOnEachItemBeforeRelease);
+		_pool.Dispose();
+	}
 }
 
 sealed unsafe class ObjectPool<T, TArg> : IDisposable {
@@ -81,7 +94,7 @@ sealed unsafe class VectorPool<T> : IDisposable {
 		_objectPool.Return(item);
 	}
 
-	public void Dispose() => _objectPool.Dispose();
+	public void Dispose() => _objectPool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
 }
 
 sealed unsafe class MapPool<TKey, TValue> : IDisposable {
@@ -105,7 +118,28 @@ sealed unsafe class MapPool<TKey, TValue> : IDisposable {
 		_objectPool.Return(item);
 	}
 
-	public void Dispose() => _objectPool.Dispose();
+	public void Dispose() => _objectPool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
+}
+
+sealed unsafe class StringKeyMapPool<TValue> : IDisposable {
+	readonly ObjectPool<ArrayPoolBackedStringKeyMap<TValue>> _objectPool;
+
+	public StringKeyMapPool(int initialPoolCount = ArrayPoolBackedVector<StringKeyMapPool<TValue>>.DefaultInitialCapacity) : this(&CreateNewMap, initialPoolCount) { }
+
+	public StringKeyMapPool(delegate*<ArrayPoolBackedStringKeyMap<TValue>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<StringKeyMapPool<TValue>>.DefaultInitialCapacity) {
+		_objectPool = new(newItemCreationFunc, initialPoolCount);
+	}
+
+	static ArrayPoolBackedStringKeyMap<TValue> CreateNewMap() => new();
+
+	public ArrayPoolBackedStringKeyMap<TValue> Rent() => _objectPool.Rent();
+
+	public void Return(ArrayPoolBackedStringKeyMap<TValue> item) {
+		item.Clear();
+		_objectPool.Return(item);
+	}
+
+	public void Dispose() => _objectPool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
 }
 
 sealed unsafe class SetPool<T> : IDisposable {
@@ -129,5 +163,5 @@ sealed unsafe class SetPool<T> : IDisposable {
 		_objectPool.Return(item);
 	}
 
-	public void Dispose() => _objectPool.Dispose();
+	public void Dispose() => _objectPool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
 }

@@ -29,7 +29,7 @@ class Local2dCanvasTest {
 
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local 2D Canvas Test (key: T to toggle text input)");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local 2D Canvas Test (key: T to toggle text input, V to toggle visibility)");
 
 		using var worldScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var worldCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
@@ -44,37 +44,42 @@ class Local2dCanvasTest {
 		using var canvasScene = factory.SceneBuilder.CreateCanvasScene();
 		using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvasScene, window);
 
-		using var quadMesh = factory.MeshBuilder.CreateQuadMesh();
-		using var canvasMat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial(ignoresLighting: true);
+		using var whiteTex = factory.TextureBuilder.CreateColorMap(ColorVect.WhiteOpaque, includeAlpha: false);
+		using var redTex = factory.TextureBuilder.CreateColorMap(ColorVect.RedOpaque, includeAlpha: false);
+		using var greenTex = factory.TextureBuilder.CreateColorMap(ColorVect.GreenOpaque, includeAlpha: false);
+		using var blueTex = factory.TextureBuilder.CreateColorMap(ColorVect.BlueOpaque, includeAlpha: false);
 
 		var cornerAnchors = new[] { Orientation2D.UpLeft, Orientation2D.UpRight, Orientation2D.DownLeft, Orientation2D.DownRight };
-		var cornerQuads = new QuadInstance[cornerAnchors.Length];
-		for (var i = 0; i < cornerAnchors.Length; ++i) {
-			cornerQuads[i] = factory.ObjectBuilder.CreateQuadInstance(quadMesh, canvasMat);
-			canvasScene.Add(cornerQuads[i], cornerAnchors[i], (CornerInset, CornerInset), cornerQuadSize);
+		foreach (var anchor in cornerAnchors) {
+			var corner = canvasScene.Add(whiteTex);
+			corner.CanvasAnchor = anchor;
+			corner.PositionPixels = (CornerInset, CornerInset);
+			corner.SizePixels = cornerQuadSize;
 		}
 
-		using var lowLayerQuad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, canvasMat);
-		using var highLayerQuad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, canvasMat);
-		lowLayerQuad.SetDefaultMaterialBaseColor(ColorVect.RedOpaque);
-		highLayerQuad.SetDefaultMaterialBaseColor(ColorVect.GreenOpaque);
-		canvasScene.Add(lowLayerQuad, Orientation2D.None, XYPair<int>.Zero, centreQuadSize, layer: 1);
-		canvasScene.Add(highLayerQuad, Orientation2D.None, new XYPair<int>(60, 60), centreQuadSize, layer: 2);
+		var lowLayerQuad = canvasScene.Add(redTex);
+		lowLayerQuad.CanvasAnchor = Orientation2D.None;
+		lowLayerQuad.SizePixels = centreQuadSize;
+		lowLayerQuad.Layer = 1;
 
-		using var halfWidthBar = factory.ObjectBuilder.CreateQuadInstance(quadMesh, canvasMat);
-		halfWidthBar.SetDefaultMaterialBaseColor(ColorVect.BlueOpaque);
-		canvasScene.Add(halfWidthBar, new CanvasDock {
-			CanvasAnchor = Orientation2D.Down,
-			PixelOffset = (0, CornerInset),
-			FractionalSize = (0.5f, 0f),
-			PixelSize = (0, 32)
-		});
+		var highLayerQuad = canvasScene.Add(greenTex);
+		highLayerQuad.CanvasAnchor = Orientation2D.None;
+		highLayerQuad.PositionPixels = (60, 60);
+		highLayerQuad.SizePixels = centreQuadSize;
+		highLayerQuad.Layer = 2;
+
+		var halfWidthBar = canvasScene.Add(blueTex);
+		halfWidthBar.CanvasAnchor = Orientation2D.Down;
+		halfWidthBar.PositionPixels = (0, CornerInset);
+		halfWidthBar.SizeFraction = (0.5f, 0f);
+		halfWidthBar.SizePixels = (0, 32);
 
 		using var font = factory.AssetLoader.LoadFont();
-		var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
 		using var titleString = font.CreateString("2D Canvas -- pixel space");
-		using var titleInstance = factory.ObjectBuilder.CreateTextInstance(pen, titleString);
-		canvasScene.Add(titleInstance, Orientation2D.Up, (0, CornerInset), TextPixelHeight);
+		var title = canvasScene.Add(titleString, font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline));
+		title.CanvasAnchor = Orientation2D.Up;
+		title.PositionPixels = (0, CornerInset);
+		title.SizePixels = (0, TextPixelHeight);
 
 		using var compositor = factory.RendererBuilder.CreateCompositor(window);
 		compositor.Add(worldRenderer, RenderCompositionType.Standard);
@@ -86,18 +91,16 @@ class Local2dCanvasTest {
 			var kbm = loop.Input.KeyboardAndMouse;
 
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.T)) loop.EnableInputTextTranscription = !loop.EnableInputTextTranscription;
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.V)) highLayerQuad.IsVisible = !highLayerQuad.IsVisible;
 
 			cuboidInstance.RotateBy(new Rotation(30f * dt, Direction.Up));
+			lowLayerQuad.RotateBy(20f * dt);
 
-			var cursorCanvasCoord = canvasScene.GetPixelCoordFromCursor(kbm.MouseCursorPosition);
 			window.SetTitle(
-				$"Canvas {canvasScene.SizePixels} | cursor {cursorCanvasCoord} (contained: {canvasScene.Contains(cursorCanvasCoord)}) " +
-				$"| text input {(loop.EnableInputTextTranscription ? "ON" : "off")} | typed: '{kbm.TranscribedText.ToString()}'"
+				$"text input {(loop.EnableInputTextTranscription ? "ON" : "off")} | typed: '{kbm.TranscribedText.ToString()}'"
 			);
 
 			compositor.RenderAll();
 		}
-
-		foreach (var quad in cornerQuads) quad.Dispose();
 	}
 }

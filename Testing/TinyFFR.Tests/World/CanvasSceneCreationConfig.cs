@@ -16,34 +16,53 @@ class CanvasSceneCreationConfigTest {
 	public void TearDownTest() { }
 
 	[Test]
-	public void ShouldDefaultToScreenConventionOriginAndNoBackdrop() {
+	public void ShouldDefaultToNoBackdrop() {
 		var config = new CanvasSceneCreationConfig();
 
-		Assert.AreEqual(null, config.InitialBackdropColor);
+		Assert.AreEqual(null, config.InitialBackgroundColor);
+		Assert.AreEqual(null, config.BaseConfig.InitialBackdropColor);
 	}
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromHeapStorageFormat() {
 		var testConfigA = new CanvasSceneCreationConfig {
 			Name = "Aa Aa",
-			InitialBackdropColor = ColorVect.RedOpaque
+			InitialBackgroundColor = ColorVect.RedOpaque
 		};
 		var testConfigB = new CanvasSceneCreationConfig {
 			Name = "BBBbbb",
-			InitialBackdropColor = null
+			InitialBackgroundColor = null
 		};
 
 		static void ComparisonFunc(CanvasSceneCreationConfig expected, CanvasSceneCreationConfig actual) {
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
-			Assert.AreEqual(expected.InitialBackdropColor, actual.InitialBackdropColor);
+			Assert.AreEqual(expected.InitialBackgroundColor, actual.InitialBackgroundColor);
+			Assert.AreEqual(expected.BaseConfig.Name.ToString(), actual.BaseConfig.Name.ToString());
+			Assert.AreEqual(expected.BaseConfig.InitialBackdropColor, actual.BaseConfig.InitialBackdropColor);
+			Assert.AreEqual(expected.BaseConfig.InitialBackdrop, actual.BaseConfig.InitialBackdrop);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
+		AssertHeapSerializationWithObjects<CanvasSceneCreationConfig>()
+			.SubConfig(new SceneCreationConfig {
+				Name = "Aa Aa",
+				InitialBackdropColor = ColorVect.RedOpaque
+			})
+			.For(testConfigA);
+
+		AssertHeapSerializationWithObjects<CanvasSceneCreationConfig>()
+			.SubConfig(new SceneCreationConfig {
+				Name = "BBBbbb",
+				InitialBackdropColor = null
+			})
+			.For(testConfigB);
+
 		AssertPropertiesAccountedFor<CanvasSceneCreationConfig>()
+			.Including(nameof(CanvasSceneCreationConfig.BaseConfig))
 			.Including(nameof(CanvasSceneCreationConfig.Name))
-			.Including(nameof(CanvasSceneCreationConfig.InitialBackdropColor))
+			.Including(nameof(CanvasSceneCreationConfig.InitialBackgroundColor))
 			.End();
 	}
 }

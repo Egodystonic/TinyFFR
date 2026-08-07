@@ -10,6 +10,7 @@ public interface IMaterialImplProvider : IDisposableResourceImplProvider<Materia
 	bool GetSupportsColorKeying(ResourceHandle<Material> handle);
 	bool GetIsDefault(ResourceHandle<Material> handle);
 	Material Duplicate(ResourceHandle<Material> handle);
+	Texture? TryGetAssociatedTexture(ResourceHandle<Material> handle, ReadOnlySpan<char> parameterName);
 	void SetEffectTransform(ResourceHandle<Material> handle, Transform2D newTransform);
 	void SetEffectBlendTexture(ResourceHandle<Material> handle, MaterialEffectMapType mapType, Texture mapTexture);
 	void SetEffectBlendDistance(ResourceHandle<Material> handle, MaterialEffectMapType mapType, float distance);

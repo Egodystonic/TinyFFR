@@ -8,38 +8,39 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.World;
 
 public readonly ref struct CanvasSceneCreationConfig : IConfigStruct<CanvasSceneCreationConfig> {
-	public ReadOnlySpan<char> Name { get; init; }
-	public SceneCreationConfig BaseConfig { // TODO }
+	public SceneCreationConfig BaseConfig { get; private init; } = new() { InitialBackdropColor = null };
+
+	public ReadOnlySpan<char> Name {
+		get => BaseConfig.Name;
+		init => BaseConfig = BaseConfig with { Name = value };
+	}
+
+	public ColorVect? InitialBackgroundColor {
+		get => BaseConfig.InitialBackdropColor;
+		init => BaseConfig = BaseConfig with { InitialBackdropColor = value };
+	}
 
 	public CanvasSceneCreationConfig() { }
+	public CanvasSceneCreationConfig(SceneCreationConfig baseConfig) => BaseConfig = baseConfig;
 
 	internal void ThrowIfInvalid() {
-		if (!Enum.IsDefined(Origin)) throw new ArgumentOutOfRangeException(nameof(Origin), Origin, $"Must be a defined {nameof(DiagonalOrientation2D)} value.");
+		BaseConfig.ThrowIfInvalid();
 	}
 
-	internal SceneCreationConfig ToSceneCreationConfig() => new() {
-		Name = Name,
-		InitialBackdropColor = InitialBackdropColor
-	};
+	internal SceneCreationConfig ToSceneCreationConfig() => BaseConfig;
 
 	public static int GetHeapStorageFormattedLength(in CanvasSceneCreationConfig src) {
-		return	SerializationSizeOfString(src.Name)
-			+	SerializationSizeOfNullable<ColorVect>()
-			+	SerializationSizeOfInt();
+		return SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in CanvasSceneCreationConfig src) {
-		SerializationWriteString(ref dest, src.Name);
-		SerializationWriteNullable(ref dest, src.InitialBackdropColor);
-		SerializationWriteInt(ref dest, (int) src.Origin);
+		SerializationWriteSubConfig(ref dest, src.BaseConfig);
 	}
 	public static CanvasSceneCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new CanvasSceneCreationConfig {
-			Name = SerializationReadString(ref src),
-			InitialBackdropColor = SerializationReadNullable<ColorVect>(ref src),
-			Origin = (DiagonalOrientation2D) SerializationReadInt(ref src)
+			BaseConfig = SerializationReadSubConfig<SceneCreationConfig>(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		/* no-op */
+		SceneCreationConfig.DisposeAllocatedHeapStorage(src[sizeof(int)..]);
 	}
 }

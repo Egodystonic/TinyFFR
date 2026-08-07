@@ -22,6 +22,24 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 	public static readonly TransmissiveMaterialAlphaMode DefaultAlphaMode = TransmissiveMaterialAlphaMode.FullBlending;
 	public static readonly TransmissiveMaterialQuality DefaultQuality = TransmissiveMaterialQuality.FullReflectionsAndRefraction;
 
+	static char[]? _colorMapParameterString = null;
+	public static ReadOnlySpan<char> ColorMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _colorMapParameterString, LocalShaderPackageConstants.TransmissiveMaterialShader.ParamColorMap);
+
+	static char[]? _absorptionTransmissionMapParameterString = null;
+	public static ReadOnlySpan<char> AbsorptionTransmissionMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _absorptionTransmissionMapParameterString, LocalShaderPackageConstants.TransmissiveMaterialShader.ParamAbsorptionTransmissionMap);
+
+	static char[]? _normalMapParameterString = null;
+	public static ReadOnlySpan<char> NormalMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _normalMapParameterString, LocalShaderPackageConstants.TransmissiveMaterialShader.ParamNormalMap);
+
+	static char[]? _occlusionRoughnessMetallicReflectanceMapParameterString = null;
+	public static ReadOnlySpan<char> OcclusionRoughnessMetallicReflectanceMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _occlusionRoughnessMetallicReflectanceMapParameterString, LocalShaderPackageConstants.TransmissiveMaterialShader.ParamOrmMap);
+
+	static char[]? _anisotropyMapParameterString = null;
+	public static ReadOnlySpan<char> AnisotropyMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _anisotropyMapParameterString, LocalShaderPackageConstants.TransmissiveMaterialShader.ParamAnisotropyMap);
+
+	static char[]? _emissiveMapParameterString = null;
+	public static ReadOnlySpan<char> EmissiveMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _emissiveMapParameterString, LocalShaderPackageConstants.TransmissiveMaterialShader.ParamEmissiveMap);
+
 	public required Texture ColorMap { get; init; }
 	public required Texture AbsorptionTransmissionMap { get; init; }
 	public Texture? NormalMap { get; init; }

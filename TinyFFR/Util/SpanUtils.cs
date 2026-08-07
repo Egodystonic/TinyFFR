@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Text;
 
 namespace Egodystonic.TinyFFR;
 
 public static class SpanUtils {
+	public static int GetUtf16Length(ReadOnlySpan<byte> utf8Src) => Encoding.UTF8.GetCharCount(utf8Src);
+	public static ReadOnlySpan<char> ConvertUtf8ToUtf16(Span<char> dest, ReadOnlySpan<byte> utf8Src) => dest[..Encoding.UTF8.GetChars(utf8Src, dest)];
+
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b) => a.Length + b.Length;
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c) => a.Length + b.Length + c.Length;
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c, ReadOnlySpan<T> d) => a.Length + b.Length + c.Length + d.Length;

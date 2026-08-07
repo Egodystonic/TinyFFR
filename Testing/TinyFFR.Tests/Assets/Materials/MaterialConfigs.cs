@@ -21,6 +21,38 @@ class MaterialConfigsTest {
 	}
 
 	[Test]
+	public void ShouldExposeCorrectShaderParameterStrings() {
+		Assert.AreEqual("color_map", LightingIgnoringMaterialCreationConfig.ColorMapParameterString.ToString());
+
+		Assert.AreEqual("key_map", ColorKeyedMaterialCreationConfig.KeyMapParameterString.ToString());
+
+		Assert.AreEqual("color_map", StandardMaterialCreationConfig.ColorMapParameterString.ToString());
+		Assert.AreEqual("normal_map", StandardMaterialCreationConfig.NormalMapParameterString.ToString());
+		Assert.AreEqual("orm_map", StandardMaterialCreationConfig.OcclusionRoughnessMetallicReflectanceMapParameterString.ToString());
+		Assert.AreEqual("orm_map", StandardMaterialCreationConfig.OcclusionRoughnessMetallicMapParameterString.ToString());
+		Assert.AreEqual("anisotropy_map", StandardMaterialCreationConfig.AnisotropyMapParameterString.ToString());
+		Assert.AreEqual("emissive_map", StandardMaterialCreationConfig.EmissiveMapParameterString.ToString());
+		Assert.AreEqual("clearcoat_map", StandardMaterialCreationConfig.ClearCoatMapParameterString.ToString());
+
+		Assert.AreEqual("color_map", TransmissiveMaterialCreationConfig.ColorMapParameterString.ToString());
+		Assert.AreEqual("at_map", TransmissiveMaterialCreationConfig.AbsorptionTransmissionMapParameterString.ToString());
+		Assert.AreEqual("normal_map", TransmissiveMaterialCreationConfig.NormalMapParameterString.ToString());
+		Assert.AreEqual("orm_map", TransmissiveMaterialCreationConfig.OcclusionRoughnessMetallicReflectanceMapParameterString.ToString());
+		Assert.AreEqual("anisotropy_map", TransmissiveMaterialCreationConfig.AnisotropyMapParameterString.ToString());
+		Assert.AreEqual("emissive_map", TransmissiveMaterialCreationConfig.EmissiveMapParameterString.ToString());
+	}
+
+	[Test]
+	public void ShouldReturnCachedShaderParameterStringsOnRepeatedAccess() {
+		Assert.AreEqual("color_map", StandardMaterialCreationConfig.ColorMapParameterString.ToString());
+		Assert.AreEqual("color_map", StandardMaterialCreationConfig.ColorMapParameterString.ToString());
+		Assert.IsTrue(
+			StandardMaterialCreationConfig.ColorMapParameterString
+				.Overlaps(StandardMaterialCreationConfig.ColorMapParameterString)
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertMaterialCreationConfigToAndFromHeapStorageFormat() {
 		var testConfigA = new MaterialCreationConfig {
 			Name = "Aa Aa",

@@ -43,6 +43,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	internal const string DefaultMaterialInstanceName = "Default Material";
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Material>, MaterialData> _activeMaterials = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Material>, ArrayPoolBackedStringKeyMap<Texture>> _activeMaterialMappedTextures = new();
+	readonly StringKeyMapPool<Texture> _activeMaterialMappedTexturesPool = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<ResourceGroup> _testMaterialTexturesRef;
 	bool _isDisposed = false;
@@ -299,9 +301,26 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return newHandle;
 	}
 
+	ArrayPoolBackedStringKeyMap<Texture> GetOrCreateAssociatedTextureMap(ResourceHandle<Material> handle) {
+		if (_activeMaterialMappedTextures.TryGetValue(handle, out var result)) return result;
+		result = _activeMaterialMappedTexturesPool.Rent();
+		_activeMaterialMappedTextures.Add(handle, result);
+		return result;
+	}
+
+	public Texture? TryGetAssociatedTexture(ResourceHandle<Material> handle, ReadOnlySpan<char> parameterName) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMaterialMappedTextures.TryGetValue(handle, out var textureMap)) return null;
+		return textureMap.TryGetValue(parameterName, out var result) ? result : null;
+	}
+
 	void ApplyMaterialParam(Material material, Texture? map, ReadOnlySpan<byte> param) {
 		if (!map.HasValue) return;
 		var renderingConfig = map.Value.RenderingConfig;
+
+		Span<char> paramChars = stackalloc char[SpanUtils.GetUtf16Length(param)];
+		GetOrCreateAssociatedTextureMap(material.Handle)[SpanUtils.ConvertUtf8ToUtf16(paramChars, param)] = map.Value;
+
 		SetMaterialParameterTexture(
 			material.Handle,
 			in ParamRef(param),
@@ -373,6 +392,13 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Material>(newMaterialHandle).Ident, _globals.GetResourceName(handle.Ident, DefaultMaterialName), DefaultMaterialName);
 		_activeMaterials.Add(newMaterialHandle, _activeMaterials[handle]);
+
+		if (_activeMaterialMappedTextures.TryGetValue(handle, out var sourceTextureMap)) {
+			var destTextureMap = _activeMaterialMappedTexturesPool.Rent();
+			foreach (var kvp in sourceTextureMap) destTextureMap.Add(kvp.Key.AsSpan, kvp.Value);
+			_activeMaterialMappedTextures.Add(newMaterialHandle, destTextureMap);
+		}
+
 		return HandleToInstance(newMaterialHandle);
 	}
 
@@ -597,6 +623,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeMaterial);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
+		if (_activeMaterialMappedTextures.TryGetValue(handle, out var textureMap)) {
+			_activeMaterialMappedTexturesPool.Return(textureMap);
+			_activeMaterialMappedTextures.Remove(handle);
+		}
 		if (removeFromCollection) _activeMaterials.Remove(handle);
 	}
 
@@ -606,7 +636,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			foreach (var kvp in _activeMaterials) Dispose(kvp.Key, removeFromCollection: false);
 			foreach (var packageHandle in _loadedShaderPackages.Values) DisposeShaderPackage(packageHandle).ThrowIfFailure();
 
+			foreach (var textureMap in _activeMaterialMappedTextures.Values) textureMap.Dispose();
+
 			_activeMaterials.Dispose();
+			_activeMaterialMappedTextures.Dispose();
+			_activeMaterialMappedTexturesPool.Dispose();
 			_loadedShaderPackages.Dispose();
 		}
 		finally {

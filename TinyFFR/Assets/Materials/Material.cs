@@ -38,6 +38,9 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Texture? TryGetAssociatedTexture(ReadOnlySpan<char> parameterName) => Implementation.TryGetAssociatedTexture(_handle, parameterName);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameLength() => Implementation.GetNameLength(_handle);

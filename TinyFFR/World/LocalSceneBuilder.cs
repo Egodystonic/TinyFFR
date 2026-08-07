@@ -450,7 +450,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 				_camLockedAbridgedInstanceMap[handle].Clear();
 				_camLockedFullInstanceMap[handle].Clear();
 				_cameraLockedInstancesLedger[handle].Clear();
-				_canvasItemMap[handle].Clear();
+				DisposeAllCanvasItems(handle);
 			}
 		}
 		else if (includeModelInstances) {
@@ -458,9 +458,10 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			foreach (var modelInstance in modelInstanceVector) {
 				if (!IsPrimitiveInstance(handle, modelInstance)) _removeAllScratchVector.Add(modelInstance);
 			}
-			
+
 			foreach (var modelInstance in _removeAllScratchVector) Remove(handle, modelInstance);
 			_removeAllScratchVector.Clear();
+			DisposeAllCanvasItems(handle);
 		}
 		
 		if (includeLights) {

@@ -35,12 +35,19 @@ public readonly struct CanvasScene : IDisposable, IStringSpanNameEnabled, IEquat
 	internal CanvasScene(Scene underlyingScene) {
 		UnderlyingScene = underlyingScene;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public CanvasTexture Add(Texture t) => Implementation.AddCanvasObject(SceneHandle, t);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public CanvasTexture Add(Material m) => Implementation.AddCanvasObject(SceneHandle, m);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public CanvasText Add(FontString s) => Add(s, s.Font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public CanvasText Add(FontString s, FontPen pen) => Implementation.AddCanvasObject(SceneHandle, s, pen);
 	
-	public CanvasTexture Add(Texture t) {
-		return UnderlyingScene.Implementation.AddCanvasObject(UnderlyingScene.GetHandleWithoutDisposeCheck(), t);
-	}
-	public CanvasText Add(FontString s) {
-		return UnderlyingScene.Implementation.AddCanvasObject(UnderlyingScene.GetHandleWithoutDisposeCheck(), s);
+	public void SetBackgroundColor(ColorVect? color) {
+		if (color is { } c) UnderlyingScene.SetBackdropWithoutIndirectLighting(c);
+		else UnderlyingScene.RemoveBackdrop();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
