@@ -66,6 +66,8 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetQuality(BuiltInQualityConfiguration qualityPreset) => SetQuality(new RenderQualityConfig(qualityPreset));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetQuality(RenderQualityConfig newQualityConfig) => Implementation.SetQualityConfig(_handle, newQualityConfig);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

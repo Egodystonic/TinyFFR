@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -182,8 +183,19 @@ public interface IObjectBuilder {
 		});
 	}
 	TextInstance CreateTextInstance(FontPen pen, FontString @string, TextLayout layout, in ModelInstanceCreationConfig config) {
-		var underlyingInstance = CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config);
-		return new TextInstance(underlyingInstance, pen, @string, layout);
+		if (config.Name.IsEmpty) {
+			const string InstanceNamePrefix = "Instance of ";
+			const int MaxAutoNameLength = 5_000;
+			var concatenatedLength = @string.GetStringMesh().GetNameLength() + InstanceNamePrefix.Length;
+			if (concatenatedLength <= MaxAutoNameLength) {
+				Span<char> autoName = stackalloc char[concatenatedLength];
+				InstanceNamePrefix.CopyTo(autoName);
+				@string.GetStringMesh().CopyName(autoName[InstanceNamePrefix.Length..]);
+				return new TextInstance(CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), config with { Name = autoName }), pen, @string, layout);
+			}
+		}
+		
+		return new TextInstance(CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config), pen, @string, layout);
 	}
 
 	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {

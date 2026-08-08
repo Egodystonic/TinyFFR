@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 public static class IntegrationRenderingExtensions {
 	public static Renderer CreateBindableRenderer(this IRendererBuilder @this, Scene scene, Camera camera, IResourceAllocator allocator, ReadOnlySpan<char> name = default) {
-		return @this.CreateBindableRenderer(scene, camera, allocator, new BindableRendererCreationConfig { Name = name });
+		return @this.CreateBindableRenderer(scene, camera, allocator, new BindableRendererCreationConfig { Name = name, Quality = RenderQualityConfig.Default });
 	}
 	public static Renderer CreateBindableRenderer(this IRendererBuilder @this, Scene scene, Camera camera, IResourceAllocator allocator, in BindableRendererCreationConfig config) {
 		var impl = new BindableRendererImplProvider(@this, allocator, scene, camera, in config);

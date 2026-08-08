@@ -29,15 +29,23 @@ sealed partial class LocalSceneBuilder {
 		public int Layer { get; init; } = CanvasScene.ZPriorityDefault;
 		public XYPair<int> PixelOffset { get; init; } = XYPair<int>.Zero;
 		public XYPair<float> FractionalOffset { get; init; } = XYPair<float>.Zero;
-		public XYPair<int> PixelSize { get; init; } = XYPair<int>.Zero;
-		public XYPair<float> FractionalSize { get; init; } = XYPair<float>.Zero;
+		public int? WidthPixels { get; init; } = null;
+		public int? HeightPixels { get; init; } = null;
+		public float? WidthFraction { get; init; } = null;
+		public float? HeightFraction { get; init; } = null;
 
 		public CanvasDock() { }
 
 		public Orientation2D EffectiveObjectAnchor => ObjectAnchor ?? CanvasAnchor;
 
 		public XYPair<int> ResolveOffset(XYPair<int> canvasSizePixels) => PixelOffset + canvasSizePixels.ScaledByReal(FractionalOffset);
-		public XYPair<float> ResolveSize(XYPair<int> canvasSizePixels) => PixelSize.Cast<float>() + canvasSizePixels.Cast<float>().ScaledBy(FractionalSize);
+		public float? ResolveWidth(XYPair<int> canvasSizePixels) => ResolveSizeAxis(WidthPixels, WidthFraction, canvasSizePixels.X);
+		public float? ResolveHeight(XYPair<int> canvasSizePixels) => ResolveSizeAxis(HeightPixels, HeightFraction, canvasSizePixels.Y);
+
+		static float? ResolveSizeAxis(int? pixels, float? fraction, int canvasSizePixels) {
+			if (pixels == null && fraction == null) return null;
+			return (pixels ?? 0) + canvasSizePixels * (fraction ?? 0f);
+		}
 	}
 
 	readonly record struct CanvasTextureData {
@@ -54,6 +62,7 @@ sealed partial class LocalSceneBuilder {
 
 	readonly record struct CanvasTextData {
 		public bool DisableAutoHeightScaling { get; init; } = false;
+		public FontString? OwnedString { get; init; } = null;
 
 		public CanvasTextData() { }
 	}
@@ -136,12 +145,22 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) {
+		return AddCanvasObject(handle, str, pen, null);
+	}
+
+	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontString = pen.Font.CreateString(str, multiLineJustification);
+		return AddCanvasObject(handle, fontString, pen, fontString);
+	}
+
+	CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen, FontString? ownedString) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
 		var text = ((IObjectBuilder) _objectBuilder).CreateTextInstance(pen, str);
 
-		_canvasTextDataMap[handle][text.UnderlyingModelInstance.Handle] = new CanvasTextData();
+		_canvasTextDataMap[handle][text.UnderlyingModelInstance.Handle] = new CanvasTextData { OwnedString = ownedString };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), text), sceneData.ViewportSize);
 
 		return new CanvasText(new CanvasScene(HandleToInstance(handle)), text);
@@ -191,13 +210,20 @@ sealed partial class LocalSceneBuilder {
 
 		var dock = itemData.Dock;
 		var position = CalculateCanvasLocation(viewportSize, dock.CanvasAnchor, dock.ResolveOffset(viewportSize), dock.Layer);
-		var size = dock.ResolveSize(viewportSize);
+		var width = dock.ResolveWidth(viewportSize);
+		var height = dock.ResolveHeight(viewportSize);
 		var uprightDirection = dock.Rotation == Angle.Zero
 			? CanvasElementPositiveYDirection
 			: CanvasElementPositiveYDirection.RotatedBy(new Rotation(dock.Rotation, CanvasElementFacingDirection));
 
 		if (itemData.Quad is { } quad) {
-			quad.SetTransform(position, size, CanvasElementFacingDirection, uprightDirection, dock.EffectiveObjectAnchor);
+			quad.SetTransform(
+				position,
+				ResolveCanvasQuadSize(width, height, GetCanvasTextureData(handle, quad).TextureDimensions),
+				CanvasElementFacingDirection,
+				uprightDirection,
+				dock.EffectiveObjectAnchor
+			);
 		}
 		else {
 			var text = itemData.Text!.Value;
@@ -205,16 +231,28 @@ sealed partial class LocalSceneBuilder {
 				position,
 				CanvasElementFacingDirection,
 				uprightDirection,
-				CreateCanvasTextLayout(in dock, size, GetCanvasTextData(handle, text).DisableAutoHeightScaling)
+				CreateCanvasTextLayout(in dock, width, height, GetCanvasTextData(handle, text).DisableAutoHeightScaling)
 			);
 		}
 	}
 
-	static TextLayout CreateCanvasTextLayout(in CanvasDock dock, XYPair<float> size, bool disableAutoHeightScaling) {
+	static XYPair<float> ResolveCanvasQuadSize(float? width, float? height, XYPair<int> textureDimensions) {
+		var textureWidth = (float) textureDimensions.X;
+		var textureHeight = (float) textureDimensions.Y;
+
+		return (width, height) switch {
+			(not null, not null) => new XYPair<float>(width.Value, height.Value),
+			(not null, null) => new XYPair<float>(width.Value, textureWidth > 0f ? Single.Abs(width.Value) * (textureHeight / textureWidth) : 0f),
+			(null, not null) => new XYPair<float>(textureHeight > 0f ? Single.Abs(height.Value) * (textureWidth / textureHeight) : 0f, height.Value),
+			_ => new XYPair<float>(textureWidth, textureHeight)
+		};
+	}
+
+	static TextLayout CreateCanvasTextLayout(in CanvasDock dock, float? width, float? height, bool disableAutoHeightScaling) {
 		return new TextLayout(
-			size.Y > 0f ? size.Y : null,
+			height,
 			dock.EffectiveObjectAnchor,
-			size.X > 0f ? size.X : null,
+			width,
 			disableAutoHeightScaling
 		);
 	}
@@ -349,18 +387,45 @@ sealed partial class LocalSceneBuilder {
 		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { FractionalOffset = newValue });
 	}
 
-	public XYPair<int> GetCanvasObjectSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
-		return GetCanvasDock(handle, modelInstance).PixelSize;
+	public int? GetCanvasObjectWidthPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		return GetCanvasDock(handle, modelInstance).WidthPixels;
 	}
-	public void SetCanvasObjectSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> newValue) {
-		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { PixelSize = newValue });
+	public void SetCanvasObjectWidthPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, int? newValue) {
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { WidthPixels = newValue });
 	}
 
-	public XYPair<float> GetCanvasObjectSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
-		return GetCanvasDock(handle, modelInstance).FractionalSize;
+	public int? GetCanvasObjectHeightPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		return GetCanvasDock(handle, modelInstance).HeightPixels;
 	}
-	public void SetCanvasObjectSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue) {
-		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { FractionalSize = newValue });
+	public void SetCanvasObjectHeightPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, int? newValue) {
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { HeightPixels = newValue });
+	}
+
+	public float? GetCanvasObjectWidthFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		return GetCanvasDock(handle, modelInstance).WidthFraction;
+	}
+	public void SetCanvasObjectWidthFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, float? newValue) {
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { WidthFraction = newValue });
+	}
+
+	public float? GetCanvasObjectHeightFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		return GetCanvasDock(handle, modelInstance).HeightFraction;
+	}
+	public void SetCanvasObjectHeightFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, float? newValue) {
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { HeightFraction = newValue });
+	}
+
+	public void SetCanvasObjectPlacement(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<int> positionPixels, XYPair<float> positionFraction, int? widthPixels, int? heightPixels, float? widthFraction, float? heightFraction) {
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with {
+			CanvasAnchor = canvasAnchor,
+			ObjectAnchor = objectAnchor,
+			PixelOffset = positionPixels,
+			FractionalOffset = positionFraction,
+			WidthPixels = widthPixels,
+			HeightPixels = heightPixels,
+			WidthFraction = widthFraction,
+			HeightFraction = heightFraction
+		});
 	}
 
 	public void MoveCanvasObjectByPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> translation) {
@@ -378,18 +443,30 @@ sealed partial class LocalSceneBuilder {
 	public void ScaleCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> vect) {
 		var dock = GetCanvasDock(handle, modelInstance);
 		SetCanvasDock(handle, modelInstance, dock with {
-			PixelSize = dock.PixelSize.ScaledByReal(vect),
-			FractionalSize = dock.FractionalSize.ScaledBy(vect)
+			WidthPixels = ScaleCanvasSizeAxisPixels(dock.WidthPixels, vect.X),
+			HeightPixels = ScaleCanvasSizeAxisPixels(dock.HeightPixels, vect.Y),
+			WidthFraction = dock.WidthFraction * vect.X,
+			HeightFraction = dock.HeightFraction * vect.Y
 		});
+	}
+
+	static int? ScaleCanvasSizeAxisPixels(int? pixels, float scalar) {
+		return pixels is { } p ? (int) Single.Round(p * scalar, MidpointRounding.ToEven) : null;
 	}
 
 	public void AdjustCanvasObjectScaleByPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> vect) {
 		var dock = GetCanvasDock(handle, modelInstance);
-		SetCanvasDock(handle, modelInstance, dock with { PixelSize = dock.PixelSize + vect });
+		SetCanvasDock(handle, modelInstance, dock with {
+			WidthPixels = dock.WidthPixels + vect.X,
+			HeightPixels = dock.HeightPixels + vect.Y
+		});
 	}
 	public void AdjustCanvasObjectScaleByFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> vect) {
 		var dock = GetCanvasDock(handle, modelInstance);
-		SetCanvasDock(handle, modelInstance, dock with { FractionalSize = dock.FractionalSize + vect });
+		SetCanvasDock(handle, modelInstance, dock with {
+			WidthFraction = dock.WidthFraction + vect.X,
+			HeightFraction = dock.HeightFraction + vect.Y
+		});
 	}
 
 	public void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation) {
@@ -463,37 +540,50 @@ sealed partial class LocalSceneBuilder {
 		var data = GetCanvasTextureData(handle, quad);
 		var instanceHandle = quad.UnderlyingModelInstance.Handle;
 
-		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(data.UvOffset, Angle.Zero, data.UvExtent));
+		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(data.UvOffset, Angle.Zero, data.UvExtent.Reciprocal ?? XYPair<float>.Zero));
 		if (data.BlendTexture is { } blendTexture) {
 			_objectBuilder.SetMaterialEffectBlendTexture(instanceHandle, MaterialEffectMapType.Color, blendTexture);
 		}
 		_objectBuilder.SetMaterialEffectBlendDistance(instanceHandle, MaterialEffectMapType.Color, data.BlendDistance);
 	}
 
-	public FontString GetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return text.String;
-	}
 	public void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, FontString newValue) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		var data = GetCanvasTextData(handle, text);
 		text.String = newValue;
+		SetCanvasTextData(handle, text, data with { OwnedString = null });
+		if (data.OwnedString is { } previousString) previousString.Dispose();
+		ReapplyCanvasItemTransform(handle, text.UnderlyingModelInstance);
+	}
+	public void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, ReadOnlySpan<char> str, TextJustification multiLineJustification) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var data = GetCanvasTextData(handle, text);
+		var newValue = text.Font.CreateString(str, multiLineJustification);
+		text.String = newValue;
+		SetCanvasTextData(handle, text, data with { OwnedString = newValue });
+		if (data.OwnedString is { } previousString) previousString.Dispose();
 		ReapplyCanvasItemTransform(handle, text.UnderlyingModelInstance);
 	}
 
 	public TextLayout GetCanvasTextLayout(ResourceHandle<Scene> handle, TextInstance text) {
 		var dock = GetCanvasDock(handle, text.UnderlyingModelInstance);
+		var viewportSize = GetCanvasSceneData(handle).ViewportSize;
 		return CreateCanvasTextLayout(
 			in dock,
-			dock.ResolveSize(GetCanvasSceneData(handle).ViewportSize),
+			dock.ResolveWidth(viewportSize),
+			dock.ResolveHeight(viewportSize),
 			GetCanvasTextData(handle, text).DisableAutoHeightScaling
 		);
 	}
 	public void SetCanvasTextLayout(ResourceHandle<Scene> handle, TextInstance text, TextLayout newValue) {
 		SetCanvasTextData(handle, text, GetCanvasTextData(handle, text) with { DisableAutoHeightScaling = newValue.DisableAutomaticLineCountBasedHeightScaling });
-		SetCanvasDock(handle, text.UnderlyingModelInstance, GetCanvasDock(handle, text.UnderlyingModelInstance) with {
-			ObjectAnchor = newValue.PositionAnchor,
-			PixelSize = new XYPair<int>((int) (newValue.Width ?? 0f), (int) (newValue.Height ?? 0f)),
-			FractionalSize = XYPair<float>.Zero
+		var dock = GetCanvasDock(handle, text.UnderlyingModelInstance);
+		SetCanvasDock(handle, text.UnderlyingModelInstance, dock with {
+			ObjectAnchor = newValue.PositionAnchor == Orientation2D.None ? dock.ObjectAnchor : newValue.PositionAnchor,
+			WidthPixels = newValue.Width is { } w ? (int) w : null,
+			HeightPixels = newValue.Height is { } h ? (int) h : null,
+			WidthFraction = null,
+			HeightFraction = null
 		});
 	}
 
@@ -518,7 +608,11 @@ sealed partial class LocalSceneBuilder {
 			ownedMaterial = textureData.OwnedMaterial;
 			textureDataMap.Remove(instanceHandle);
 		}
-		if (_canvasTextDataMap.TryGetValue(handle, out var textDataMap)) textDataMap.Remove(instanceHandle);
+		FontString? ownedString = null;
+		if (_canvasTextDataMap.TryGetValue(handle, out var textDataMap)) {
+			if (textDataMap.TryGetValue(instanceHandle, out var textData)) ownedString = textData.OwnedString;
+			textDataMap.Remove(instanceHandle);
+		}
 
 		if (detachFromScene) {
 			if (_canvasItemMap.TryGetValue(handle, out var canvasItemMap)) canvasItemMap.Remove(instanceHandle);
@@ -528,6 +622,7 @@ sealed partial class LocalSceneBuilder {
 
 		modelInstance.Dispose();
 		ownedMaterial?.Dispose();
+		ownedString?.Dispose();
 	}
 
 	void DisposeAllCanvasItems(ResourceHandle<Scene> handle) {

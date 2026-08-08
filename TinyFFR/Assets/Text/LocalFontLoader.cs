@@ -49,7 +49,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	nuint _prevHandleId = 0U;
 	bool _isDisposed = false;
 	
-	static ArrayPoolBackedLruCache<int, RenderedTextData> CreateNewTextCache(LocalFontLoader @this) => new(Int32.Min(@this._config.MaxCachedTextMeshesPerFont, 1), &TextCacheEvictionHandler, @this);
+	static ArrayPoolBackedLruCache<int, RenderedTextData> CreateNewTextCache(LocalFontLoader @this) => new(Int32.Max(@this._config.MaxCachedTextMeshesPerFont, 1), &TextCacheEvictionHandler, @this);
 	static void TextCacheEvictionHandler(object? localFontLoader, int textHash, RenderedTextData data) {
 		var @this = (LocalFontLoader) localFontLoader!;
 		@this._globals.StringPool.Return(data.Text);
@@ -74,16 +74,22 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		switch (font) {
 			case BuiltInFont.Serif: {
 				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_serif.zip");	
-				return LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
+				return config.Name.IsEmpty
+					? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In Font 'Serif'" })
+					: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
 			}
 			case BuiltInFont.Monospace: {
 				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_mono.zip");	
-				return LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
+				return config.Name.IsEmpty
+					? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In Font 'Monospace'" })
+					: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
 			}
 			case BuiltInFont.SansSerif:
 			default: {
 				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_sans.zip");	
-				return LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
+				return config.Name.IsEmpty
+					? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In Font 'Sans-Serif'" })
+					: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
 			}
 		}
 	}
@@ -342,7 +348,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	}
 
 	public FontString CreateString(ResourceHandle<Font> handle, ReadOnlySpan<char> text, TextJustification multiLineJustification) {
-		const string NameJoiningString = " text \"";
+		const string NameJoiningString = " string \"";
 		const string NameEndingString = "\"";
 
 		ThrowIfThisOrHandleIsDisposed(handle);

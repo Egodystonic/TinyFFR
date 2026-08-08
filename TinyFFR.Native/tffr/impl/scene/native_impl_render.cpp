@@ -172,6 +172,45 @@ static QualityLevel quality_level_from_tinyffr(int32_t level) {
 	}
 }
 
+static TemporalAntiAliasingOptions taa_options_from_tinyffr(int32_t antiAliasingMode) {
+	TemporalAntiAliasingOptions taa;
+
+	taa.enabled = antiAliasingMode >= 2 && antiAliasingMode <= 5;
+	if (!taa.enabled) return taa;
+
+	taa.useYCoCg = true;
+
+	switch (antiAliasingMode) {
+		case 3: {
+			taa.feedback = 0.25f;
+			taa.lodBias = -0.5f;
+			taa.boxType = TemporalAntiAliasingOptions::BoxType::AABB_VARIANCE;
+			taa.varianceGamma = 0.85f;
+			taa.jitterPattern = TemporalAntiAliasingOptions::JitterPattern::RGSS_X4;
+			break;
+		}
+		case 4: {
+			taa.feedback = 0.08f;
+			taa.filterWidth = 1.2f;
+			taa.preventFlickering = true;
+			taa.jitterPattern = TemporalAntiAliasingOptions::JitterPattern::HALTON_23_X32;
+			break;
+		}
+		case 5: {
+			taa.feedback = 0.18f;
+			taa.sharpness = 0.6f;
+			taa.filterInput = false;
+			taa.boxType = TemporalAntiAliasingOptions::BoxType::AABB_VARIANCE;
+			taa.varianceGamma = 0.9f;
+			taa.jitterPattern = TemporalAntiAliasingOptions::JitterPattern::HALTON_23_X8;
+			break;
+		}
+		default: break;
+	}
+
+	return taa;
+}
+
 void native_impl_render::set_view_quality_configuration(
 	ViewDescriptorHandle viewDescriptor,
 	int32_t shadowFidelityLevel,
@@ -215,22 +254,8 @@ void native_impl_render::set_view_quality_configuration(
 	}
 
 	{
-		TemporalAntiAliasingOptions taa;
-		switch (antiAliasingMode) {
-			case 0: // None
-				viewDescriptor->setAntiAliasing(AntiAliasing::NONE);
-				taa.enabled = false;
-				break;
-			case 2: // Taa
-				viewDescriptor->setAntiAliasing(AntiAliasing::NONE);
-				taa.enabled = true;
-				break;
-			default: // Fxaa
-				viewDescriptor->setAntiAliasing(AntiAliasing::FXAA);
-				taa.enabled = false;
-				break;
-		}
-		viewDescriptor->setTemporalAntiAliasingOptions(taa);
+		viewDescriptor->setAntiAliasing(antiAliasingMode == 1 ? AntiAliasing::FXAA : AntiAliasing::NONE);
+		viewDescriptor->setTemporalAntiAliasingOptions(taa_options_from_tinyffr(antiAliasingMode));
 	}
 
 	{

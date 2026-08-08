@@ -25,11 +25,16 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 		set => PositionFraction = value;
 	}
 
-	public XYPair<int> SizePixels { get; set; }
-	public XYPair<float> SizeFraction { get; set; }
+	public int? WidthPixels { get; set; }
+	public int? HeightPixels { get; set; }
+	public float? WidthFraction { get; set; }
+	public float? HeightFraction { get; set; }
 	XYPair<float> IScaled2DSceneObject.Scaling {
-		get => SizeFraction;
-		set => SizeFraction = value;
+		get => new(WidthFraction ?? 0f, HeightFraction ?? 0f);
+		set {
+			WidthFraction = value.X;
+			HeightFraction = value.Y;
+		}
 	}
 
 	void MoveByPixels(XYPair<int> translation);
@@ -37,9 +42,10 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 	void IMovable2DSceneObject.MoveBy(XYPair<float> translation) => MoveByFraction(translation);
 
 	Transform2D ITransformed2DSceneObject.Transform {
-		get => new(PositionFraction, Rotation, SizeFraction);
+		get => new(PositionFraction, Rotation, new XYPair<float>(WidthFraction ?? 0f, HeightFraction ?? 0f));
 		set {
-			SizeFraction = value.Scaling;
+			WidthFraction = value.Scaling.X;
+			HeightFraction = value.Scaling.Y;
 			Rotation = value.Rotation;
 			PositionFraction = value.Translation;
 		}
@@ -129,51 +135,89 @@ public readonly record struct CanvasTexture : ICanvasObject {
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetPositionFraction(XYPair<float> positionFraction) => PositionFraction = positionFraction;
-	public XYPair<int> SizePixels {
+	public int? WidthPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCanvasObjectSizePixels(SceneHandle, Instance);
+		get => Implementation.GetCanvasObjectWidthPixels(SceneHandle, Instance);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetCanvasObjectSizePixels(SceneHandle, Instance, value);
+		set => Implementation.SetCanvasObjectWidthPixels(SceneHandle, Instance, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetSizePixels(XYPair<int> sizePixels) => SizePixels = sizePixels;
-	public XYPair<float> SizeFraction {
+	public void SetWidthPixels(int? widthPixels) => WidthPixels = widthPixels;
+	public int? HeightPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCanvasObjectSizeFraction(SceneHandle, Instance);
+		get => Implementation.GetCanvasObjectHeightPixels(SceneHandle, Instance);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetCanvasObjectSizeFraction(SceneHandle, Instance, value);
+		set => Implementation.SetCanvasObjectHeightPixels(SceneHandle, Instance, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetSizeFraction(XYPair<float> sizeFraction) => SizeFraction = sizeFraction;
+	public void SetHeightPixels(int? heightPixels) => HeightPixels = heightPixels;
+	public float? WidthFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectWidthFraction(SceneHandle, Instance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectWidthFraction(SceneHandle, Instance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetWidthFraction(float? widthFraction) => WidthFraction = widthFraction;
+	public float? HeightFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectHeightFraction(SceneHandle, Instance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectHeightFraction(SceneHandle, Instance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetHeightFraction(float? heightFraction) => HeightFraction = heightFraction;
 
 	internal CanvasTexture(CanvasScene canvas, QuadInstance underlyingQuadInstance) {
 		Canvas = canvas;
 		UnderlyingQuadInstance = underlyingQuadInstance;
 	}
 	
-	public void SetPlacementPixels(Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<int> position, XYPair<int> size) {
-		CanvasAnchor = canvasAnchor;
-		ObjectAnchor = objectAnchor;
-		PositionPixels = position;
-		SizePixels = size;
+	public void SetPlacementPixels(Orientation2D canvasAnchor, XYPair<int> position, XYPair<int> size, Orientation2D? objectAnchor = null) {
+		Implementation.SetCanvasObjectPlacement(SceneHandle, Instance, canvasAnchor, objectAnchor, position, XYPair<float>.Zero, size.X, size.Y, null, null);
 	}
-	public void SetPlacementFraction(Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<float> position, XYPair<float> size) {
-		CanvasAnchor = canvasAnchor;
-		ObjectAnchor = objectAnchor;
-		PositionFraction = position;
-		SizeFraction = size;
+	public void SetPlacementFraction(Orientation2D canvasAnchor, XYPair<float> position, XYPair<float> size, Orientation2D? objectAnchor = null) {
+		Implementation.SetCanvasObjectPlacement(SceneHandle, Instance, canvasAnchor, objectAnchor, XYPair<int>.Zero, position, null, null, size.X, size.Y);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTexture(Texture t) => Implementation.SetCanvasObjectTexture(SceneHandle, UnderlyingQuadInstance, t);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTextureOffsetPixels(XYPair<int> offset) => Implementation.SetCanvasObjectTextureOffsetPixels(SceneHandle, UnderlyingQuadInstance, offset);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTextureOffsetFraction(XYPair<float> offset) => Implementation.SetCanvasObjectTextureOffset(SceneHandle, UnderlyingQuadInstance, offset);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTextureExtentPixels(XYPair<int> extent) => Implementation.SetCanvasObjectTextureExtentPixels(SceneHandle, UnderlyingQuadInstance, extent);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTextureExtentFraction(XYPair<float> extent) => Implementation.SetCanvasObjectTextureExtent(SceneHandle, UnderlyingQuadInstance, extent);
+	public XYPair<int> TextureDimensions {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectTextureDimensions(SceneHandle, UnderlyingQuadInstance);
+	}
+	public XYPair<int> TextureOffsetPixels {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => TextureDimensions.ScaledByReal(TextureOffsetFraction);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectTextureOffsetPixels(SceneHandle, UnderlyingQuadInstance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTextureOffsetPixels(XYPair<int> offset) => TextureOffsetPixels = offset;
+	public XYPair<float> TextureOffsetFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectTextureOffset(SceneHandle, UnderlyingQuadInstance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectTextureOffset(SceneHandle, UnderlyingQuadInstance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTextureOffsetFraction(XYPair<float> offset) => TextureOffsetFraction = offset;
+	public XYPair<int> TextureExtentPixels {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => TextureDimensions.ScaledByReal(TextureExtentFraction);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectTextureExtentPixels(SceneHandle, UnderlyingQuadInstance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTextureExtentPixels(XYPair<int> extent) => TextureExtentPixels = extent;
+	public XYPair<float> TextureExtentFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectTextureExtent(SceneHandle, UnderlyingQuadInstance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectTextureExtent(SceneHandle, UnderlyingQuadInstance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTextureExtentFraction(XYPair<float> extent) => TextureExtentFraction = extent;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBlendTexture(Texture blendTex) => Implementation.SetCanvasBlendTexture(SceneHandle, UnderlyingQuadInstance, blendTex);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -232,14 +276,10 @@ public readonly record struct CanvasText : ICanvasObject {
 		get => UnderlyingTextInstance.UnderlyingModelInstance;
 	}
 
-	public FontString String {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCanvasTextString(SceneHandle, UnderlyingTextInstance);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetCanvasTextString(SceneHandle, UnderlyingTextInstance, value);
-	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetString(FontString @string) => String = @string;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetText(FontString @string) => Implementation.SetCanvasTextString(SceneHandle, UnderlyingTextInstance, @string);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetText(ReadOnlySpan<char> str, TextJustification multiLineJustification = TextJustification.Center) => Implementation.SetCanvasTextString(SceneHandle, UnderlyingTextInstance, str, multiLineJustification);
 
 	public FontPen Pen {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -325,39 +365,49 @@ public readonly record struct CanvasText : ICanvasObject {
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetPositionFraction(XYPair<float> positionFraction) => PositionFraction = positionFraction;
-	public XYPair<int> SizePixels {
+	public int? WidthPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCanvasObjectSizePixels(SceneHandle, Instance);
+		get => Implementation.GetCanvasObjectWidthPixels(SceneHandle, Instance);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetCanvasObjectSizePixels(SceneHandle, Instance, value);
+		set => Implementation.SetCanvasObjectWidthPixels(SceneHandle, Instance, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetSizePixels(XYPair<int> sizePixels) => SizePixels = sizePixels;
-	public XYPair<float> SizeFraction {
+	public void SetWidthPixels(int? widthPixels) => WidthPixels = widthPixels;
+	public int? HeightPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCanvasObjectSizeFraction(SceneHandle, Instance);
+		get => Implementation.GetCanvasObjectHeightPixels(SceneHandle, Instance);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetCanvasObjectSizeFraction(SceneHandle, Instance, value);
+		set => Implementation.SetCanvasObjectHeightPixels(SceneHandle, Instance, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetSizeFraction(XYPair<float> sizeFraction) => SizeFraction = sizeFraction;
+	public void SetHeightPixels(int? heightPixels) => HeightPixels = heightPixels;
+	public float? WidthFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectWidthFraction(SceneHandle, Instance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectWidthFraction(SceneHandle, Instance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetWidthFraction(float? widthFraction) => WidthFraction = widthFraction;
+	public float? HeightFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectHeightFraction(SceneHandle, Instance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectHeightFraction(SceneHandle, Instance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetHeightFraction(float? heightFraction) => HeightFraction = heightFraction;
 
 	internal CanvasText(CanvasScene canvas, TextInstance underlyingTextInstance) {
 		Canvas = canvas;
 		UnderlyingTextInstance = underlyingTextInstance;
 	}
 	
-	public void SetPlacementPixels(Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<int> position, XYPair<int> size) {
-		CanvasAnchor = canvasAnchor;
-		ObjectAnchor = objectAnchor;
-		PositionPixels = position;
-		SizePixels = size;
+	public void SetPlacementPixels(Orientation2D canvasAnchor, XYPair<int> position, int fontHeight, Orientation2D? objectAnchor = null) {
+		Implementation.SetCanvasObjectPlacement(SceneHandle, Instance, canvasAnchor, objectAnchor, position, XYPair<float>.Zero, null, fontHeight, null, null);
 	}
-	public void SetPlacementFraction(Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<float> position, XYPair<float> size) {
-		CanvasAnchor = canvasAnchor;
-		ObjectAnchor = objectAnchor;
-		PositionFraction = position;
-		SizeFraction = size;
+	public void SetPlacementFraction(Orientation2D canvasAnchor, XYPair<float> position, float fontHeight, Orientation2D? objectAnchor = null) {
+		Implementation.SetCanvasObjectPlacement(SceneHandle, Instance, canvasAnchor, objectAnchor, XYPair<int>.Zero, position, null, null, null, fontHeight);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

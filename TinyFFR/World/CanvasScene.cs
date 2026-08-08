@@ -41,9 +41,9 @@ public readonly struct CanvasScene : IDisposable, IStringSpanNameEnabled, IEquat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public CanvasTexture Add(Material m) => Implementation.AddCanvasObject(SceneHandle, m);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public CanvasText Add(FontString s) => Add(s, s.Font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public CanvasText Add(FontString s, FontPen pen) => Implementation.AddCanvasObject(SceneHandle, s, pen);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public CanvasText Add(ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification = TextJustification.Center) => Implementation.AddCanvasObject(SceneHandle, str, pen, multiLineJustification);
 	
 	public void SetBackgroundColor(ColorVect? color) {
 		if (color is { } c) UnderlyingScene.SetBackdropWithoutIndirectLighting(c);

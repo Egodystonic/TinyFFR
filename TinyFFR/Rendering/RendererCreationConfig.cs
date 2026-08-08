@@ -13,13 +13,6 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	public const int DefaultGpuSynchronizationFrameBufferCount = 3;
 	public const int MinGpuSynchronizationFrameBufferCount = -1;
 	public const int MaxGpuSynchronizationFrameBufferCount = LocalFrameSynchronizationManager.MaxBufferSize;
-	public static readonly RenderQualityConfig DefaultQuality = new();
-	public static readonly RenderQualityConfig DefaultCanvasQuality = new() {
-		PostProcessingEnabled = false,
-		ShadowsEnabled = false,
-		AntiAliasingMode = AntiAliasingMode.None,
-		DitheringEnabled = false
-	};
 
 	public bool AutoUpdateCameraAspectRatio { get; init; } = DefaultAutoUpdateCameraAspectRatio;
 
@@ -39,7 +32,7 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 		}
 	} = DefaultGpuSynchronizationFrameBufferCount;
 
-	public RenderQualityConfig Quality { get; init; } = DefaultQuality;
+	public required RenderQualityConfig Quality { get; init; }
 
 	public ReadOnlySpan<char> Name { get; init; }
 

@@ -58,6 +58,7 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture);
 	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material);
 	CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen);
+	CanvasText AddCanvasObject(ResourceHandle<Scene> handle, ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification);
 	Camera GetCanvasCamera(ResourceHandle<Scene> handle);
 	Orientation2D GetCanvasObjectCanvasAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance);
 	void SetCanvasObjectCanvasAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D newValue);
@@ -73,10 +74,15 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void SetCanvasObjectPositionPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> newValue);
 	XYPair<float> GetCanvasObjectPositionFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance);
 	void SetCanvasObjectPositionFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue);
-	XYPair<int> GetCanvasObjectSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance);
-	void SetCanvasObjectSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> newValue);
-	XYPair<float> GetCanvasObjectSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance);
-	void SetCanvasObjectSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue);
+	int? GetCanvasObjectWidthPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	void SetCanvasObjectWidthPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, int? newValue);
+	int? GetCanvasObjectHeightPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	void SetCanvasObjectHeightPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, int? newValue);
+	float? GetCanvasObjectWidthFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	void SetCanvasObjectWidthFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, float? newValue);
+	float? GetCanvasObjectHeightFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	void SetCanvasObjectHeightFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, float? newValue);
+	void SetCanvasObjectPlacement(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<int> positionPixels, XYPair<float> positionFraction, int? widthPixels, int? heightPixels, float? widthFraction, float? heightFraction);
 	void MoveCanvasObjectByPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> translation);
 	void MoveCanvasObjectByFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> translation);
 	void ScaleCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, float scalar);
@@ -87,6 +93,7 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation, XYPair<int> pivotPointPixels);
 	void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation, XYPair<float> pivotPointFraction);
 	void SetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture newValue);
+	XYPair<int> GetCanvasObjectTextureDimensions(ResourceHandle<Scene> handle, QuadInstance quad);
 	XYPair<float> GetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad);
 	void SetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue);
 	void SetCanvasObjectTextureOffsetPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue);
@@ -95,8 +102,8 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void SetCanvasObjectTextureExtentPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue);
 	void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture);
 	void SetCanvasBlendTextureDistance(ResourceHandle<Scene> handle, QuadInstance quad, float distance);
-	FontString GetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text);
 	void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, FontString newValue);
+	void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, ReadOnlySpan<char> str, TextJustification multiLineJustification);
 	TextLayout GetCanvasTextLayout(ResourceHandle<Scene> handle, TextInstance text);
 	void SetCanvasTextLayout(ResourceHandle<Scene> handle, TextInstance text, TextLayout newValue);
 	bool GetCanvasTextAutomaticLineCountScalingDisabled(ResourceHandle<Scene> handle, TextInstance text);

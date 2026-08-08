@@ -18,7 +18,7 @@ class RenderQualityConfigTest {
 		var testConfigA = new RenderQualityConfig {
 			ShadowQuality = Quality.VeryLow,
 			ScreenSpaceEffectsQuality = Quality.Standard,
-			AntiAliasingMode = AntiAliasingMode.Taa,
+			AntiAliasingMode = AntiAliasingMode.TaaBalanced,
 			AmbientOcclusionQuality = Quality.High,
 			AmbientOcclusionStrength = 0.5f,
 			PostProcessingEnabled = false,
@@ -47,6 +47,22 @@ class RenderQualityConfigTest {
 			DepthOfFieldStrength = 0.3f,
 			DitheringEnabled = true
 		};
+		var testConfigC = new RenderQualityConfig {
+			ShadowQuality = Quality.Low,
+			ScreenSpaceEffectsQuality = Quality.VeryLow,
+			AntiAliasingMode = AntiAliasingMode.TaaReducedGhosting,
+			AmbientOcclusionQuality = Quality.Standard,
+			AmbientOcclusionStrength = 0.9f,
+			PostProcessingEnabled = true,
+			InternalResolutionScalar = 1f,
+			HdrColorPrecision = Quality.Standard,
+			ShadowsEnabled = true,
+			BloomQuality = Quality.Standard,
+			BloomStrength = 1f,
+			DepthOfFieldQuality = Quality.Standard,
+			DepthOfFieldStrength = 1f,
+			DitheringEnabled = false
+		};
 
 		static void ComparisonFunc(RenderQualityConfig expected, RenderQualityConfig actual) {
 			Assert.AreEqual(expected.ShadowQuality, actual.ShadowQuality);
@@ -67,11 +83,12 @@ class RenderQualityConfigTest {
 
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
+		AssertRoundTripHeapStorage(testConfigC, ComparisonFunc);
 
 		AssertHeapSerializationWithObjects<RenderQualityConfig>()
 			.Int((int) Quality.VeryLow)
 			.Int((int) Quality.Standard)
-			.Int((int) AntiAliasingMode.Taa)
+			.Int((int) AntiAliasingMode.TaaBalanced)
 			.Int((int) Quality.High)
 			.Float(0.5f)
 			.Bool(false)
@@ -101,6 +118,23 @@ class RenderQualityConfigTest {
 			.Float(0.3f)
 			.Bool(true)
 			.For(testConfigB);
+
+		AssertHeapSerializationWithObjects<RenderQualityConfig>()
+			.Int((int) Quality.Low)
+			.Int((int) Quality.VeryLow)
+			.Int((int) AntiAliasingMode.TaaReducedGhosting)
+			.Int((int) Quality.Standard)
+			.Float(0.9f)
+			.Bool(true)
+			.Float(1f)
+			.Int((int) Quality.Standard)
+			.Bool(true)
+			.Int((int) Quality.Standard)
+			.Float(1f)
+			.Int((int) Quality.Standard)
+			.Float(1f)
+			.Bool(false)
+			.For(testConfigC);
 
 		AssertPropertiesAccountedFor<RenderQualityConfig>()
 			.Including(nameof(RenderQualityConfig.ShadowQuality))

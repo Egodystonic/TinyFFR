@@ -21,6 +21,7 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 	readonly ArrayPoolBackedMap<UIntPtr, LocalLatestGameControllerState> _detectedControllerStateMap = new();
 	readonly LocalLatestGameControllerState _combinedControllerState;
 	bool _isDisposed = false;
+	bool _textInputEnabled = false;
 	int _iterationVersion = 0;
 
 	public bool UserQuitRequested { get; private set; } = false;
@@ -52,6 +53,11 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 
 	public void IterateSystemWideInput(bool transcribeTextInput) {
 		ThrowIfThisIsDisposed();
+
+		if (transcribeTextInput != _textInputEnabled) {
+			SetTextInputEnabled(transcribeTextInput).ThrowIfFailure();
+			_textInputEnabled = transcribeTextInput;
+		}
 
 		IterateEvents(
 			out var numKbmEvents,

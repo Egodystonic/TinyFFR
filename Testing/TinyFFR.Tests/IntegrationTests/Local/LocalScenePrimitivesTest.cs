@@ -82,6 +82,7 @@ class LocalScenePrimitivesTest {
 		Track(scene.AddPrimitiveString(new Location(0f, 3f, 0f), "Scene Primitives", new PrimitivePaintbrush(ColorVect.WhiteOpaque, ColorVect.BlackOpaque), Magnitude.VeryLarge));
 
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+		renderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.DebugAndDiagnostic));
 		using var camController = camera.CreateController<InspectorCameraController>();
 		camController.AllowUpsideDownFlip = true;
 		camController.MaxDistance = 20f;

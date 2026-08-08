@@ -33,7 +33,7 @@ class BindableRendererImplProviderTest {
 	static void NoopFrameHandler(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) { }
 
 	Renderer CreateRenderer(in BindableRendererCreationConfig config) => _builder.CreateBindableRenderer(_scene, _camera, _allocator, in config);
-	Renderer CreateRenderer() => CreateRenderer(new BindableRendererCreationConfig());
+	Renderer CreateRenderer() => CreateRenderer(new BindableRendererCreationConfig { Quality = RenderQualityConfig.Default });
 
 	[Test]
 	public void ShouldPersistFrustumCullingSettingAcrossBufferRecreation() {
@@ -84,7 +84,7 @@ class BindableRendererImplProviderTest {
 		Assert.AreEqual(generatedName, _builder.CreatedRenderers[0].Name);
 		Assert.AreEqual($"{generatedName} output buffer", _builder.CreatedBuffers[0].Name);
 
-		_ = CreateRenderer(new BindableRendererCreationConfig { Name = "Test Renderer" });
+		_ = CreateRenderer(new BindableRendererCreationConfig { Name = "Test Renderer", Quality = RenderQualityConfig.Default });
 		Assert.AreEqual("Test Renderer", _builder.CreatedRenderers[1].Name);
 		Assert.AreEqual("Test Renderer output buffer", _builder.CreatedBuffers[1].Name);
 	}
@@ -120,11 +120,11 @@ class BindableRendererImplProviderTest {
 
 	[Test]
 	public void ShouldUpdateCameraAspectRatioWhenConfigured() {
-		_ = CreateRenderer(new BindableRendererCreationConfig { DefaultBufferSize = (200, 100) });
+		_ = CreateRenderer(new BindableRendererCreationConfig { DefaultBufferSize = (200, 100), Quality = RenderQualityConfig.Default });
 		Assert.AreEqual(new[] { 2f }, _cameraImpl.AspectRatioCalls);
 
 		_cameraImpl.AspectRatioCalls.Clear();
-		var renderer = CreateRenderer(new BindableRendererCreationConfig { AutoUpdateCameraAspectRatio = false });
+		var renderer = CreateRenderer(new BindableRendererCreationConfig { AutoUpdateCameraAspectRatio = false, Quality = RenderQualityConfig.Default });
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), (100, 50), NoopFrameHandler);
 		Assert.AreEqual(0, _cameraImpl.AspectRatioCalls.Count);
 	}
