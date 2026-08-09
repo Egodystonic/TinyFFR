@@ -45,6 +45,19 @@ public readonly struct CanvasScene : IDisposable, IStringSpanNameEnabled, IEquat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public CanvasText Add(ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification = TextJustification.Center) => Implementation.AddCanvasObject(SceneHandle, str, pen, multiLineJustification);
 	
+	public XYPair<int> SizePixels {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasSizePixels(SceneHandle);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<int> ConvertRenderTargetCoordToLocal(XYPair<int> renderTargetCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.GetCanvasPrecisePixelCoord(SceneHandle, renderTargetCoord, coordOrigin, disableDpiScalingAdjustment);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<int> ConvertFractionToPixels(XYPair<float> fraction) => Implementation.ConvertCanvasFractionToPixels(SceneHandle, fraction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float> ConvertPixelsToFraction(XYPair<int> pixels) => Implementation.ConvertCanvasPixelsToFraction(SceneHandle, pixels);
+
 	public void SetBackgroundColor(ColorVect? color) {
 		if (color is { } c) UnderlyingScene.SetBackdropWithoutIndirectLighting(c);
 		else UnderlyingScene.RemoveBackdrop();

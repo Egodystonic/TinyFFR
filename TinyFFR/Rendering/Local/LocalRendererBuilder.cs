@@ -880,16 +880,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		}
 	}
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
 		var viewport = rendererData.Viewport;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
-		
+
 		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
 			pixelCoord = pixelCoord.ScaledByReal(curTargetSize.Cast<float>() / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
 		}
+
+		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(curTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
 
 		XYPair<int> viewportTopLeft;
 		if (viewport.LastCheckedRenderTargetSize == curTargetSize) {
@@ -902,12 +904,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		
 		var viewportRelativeCoord = new XYPair<int>(
 			pixelCoord.X - viewportTopLeft.X,
-			yZeroOriginAtBottom ? viewportTopLeft.Y - pixelCoord.Y : pixelCoord.Y - (curTargetSize.Y - viewportTopLeft.Y)
+			pixelCoord.Y - (curTargetSize.Y - viewportTopLeft.Y)
 		);
 
-		return CastRayFromViewportSurface(handle, viewportRelativeCoord, false, true);
+		return CastRayFromViewportSurface(handle, viewportRelativeCoord, DiagonalOrientation2D.UpLeft, true);
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
@@ -921,13 +923,15 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
 			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize.Cast<float>());
 		}
-		
+
+		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
+
 		var normalizedCoord = new XYPair<float>(
 			((Real) pixelCoord.X).RemapRange(new Pair<Real, Real>(0f, viewportSize.X), new Pair<Real, Real>(-1f, 1f)),
 			((Real) pixelCoord.Y).RemapRange(new Pair<Real, Real>(0f, viewportSize.Y), new Pair<Real, Real>(-1f, 1f))
 		);
-		if (!yZeroOriginAtBottom) normalizedCoord = normalizedCoord with { Y = -normalizedCoord.Y };
-		
+		normalizedCoord = normalizedCoord with { Y = -normalizedCoord.Y };
+
 		return rendererData.Camera.CastRayFromNearPlane(normalizedCoord);
 	}
 
@@ -988,7 +992,13 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, camera);
 		var canvasBounds = viewport.DesiredDimensions.ExtractViewportPixelBounds(rendererData.RenderTarget.ViewportDimensions);
-		localSceneImpl.PrepareCanvasObjectsForRender(sceneHandle, canvasBounds.Size, canvasBounds.BottomLeft, rendererData.RenderTarget.ViewportDimensions);
+		localSceneImpl.PrepareCanvasObjectsForRender(
+			sceneHandle,
+			canvasBounds.Size,
+			canvasBounds.BottomLeft,
+			rendererData.RenderTarget.ViewportDimensions,
+			rendererData.RenderTarget.IsWindow ? rendererData.RenderTarget.AsWindow.Size : rendererData.RenderTarget.ViewportDimensions
+		);
 		SetViewDepthOfFieldEnabled(viewport.Handle, camera.FocusDistance != null).ThrowIfFailure(); 
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day

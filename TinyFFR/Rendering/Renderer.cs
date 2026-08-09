@@ -85,14 +85,10 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord) => CastRayFromRenderSurface(pixelCoord, false, false);
+	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CastRayFromRenderSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) => Implementation.CastRayFromRenderSurface(_handle, pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CastRayFromRenderSubAreaSurface(XYPair<int> pixelCoord) => CastRayFromRenderSubAreaSurface(pixelCoord, false, false);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CastRayFromRenderSubAreaSurface(XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) => Implementation.CastRayFromViewportSurface(_handle, pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
+	public Ray CastRayFromRenderSubAreaSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CastRayFromViewportSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetRenderSubAreaPixels(Orientation2D anchor, XYPair<int> pixelOffset, XYPair<int> pixelDimensions) => Implementation.SetTargetViewportDimensionsByPixel(_handle, anchor, pixelOffset, pixelDimensions);

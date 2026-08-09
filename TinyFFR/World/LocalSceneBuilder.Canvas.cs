@@ -41,7 +41,7 @@ sealed partial class LocalSceneBuilder {
 
 		public Orientation2D EffectiveObjectAnchor => ObjectAnchor ?? CanvasAnchor;
 
-		public XYPair<int> ResolveOffset(XYPair<int> canvasSizePixels) => PixelOffset + canvasSizePixels.ScaledByReal(FractionalOffset);
+		public XYPair<int> ResolveOffset(XYPair<int> canvasSizePixels) => PixelOffset + ConvertCanvasFractionToPixels(canvasSizePixels, FractionalOffset);
 		public float? ResolveWidth(XYPair<int> canvasSizePixels) => ResolveSizeAxis(WidthPixels, WidthFraction, canvasSizePixels.X);
 		public float? ResolveHeight(XYPair<int> canvasSizePixels) => ResolveSizeAxis(HeightPixels, HeightFraction, canvasSizePixels.Y);
 
@@ -82,7 +82,8 @@ sealed partial class LocalSceneBuilder {
 		Camera Camera,
 		XYPair<int> ViewportSize,
 		XYPair<int> ViewportBottomLeftOffset,
-		XYPair<int> RenderTargetSize
+		XYPair<int> RenderTargetSize,
+		XYPair<int> RenderTargetCursorSpaceSize
 	);
 
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasItemData>> _canvasItemMap = new();
@@ -113,6 +114,7 @@ sealed partial class LocalSceneBuilder {
 		var scene = CreateScene(config.ToSceneCreationConfig());
 		_canvasSceneDataMap[scene.GetHandleWithoutDisposeCheck()] = new CanvasSceneData(
 			camera,
+			XYPair<int>.Zero,
 			XYPair<int>.Zero,
 			XYPair<int>.Zero,
 			XYPair<int>.Zero
@@ -193,12 +195,12 @@ sealed partial class LocalSceneBuilder {
 		return GetCanvasSceneData(handle).Camera;
 	}
 
-	public void PrepareCanvasObjectsForRender(ResourceHandle<Scene> handle, XYPair<int> viewportSize, XYPair<int> subAreaBottomLeft, XYPair<int> targetSize) {
+	public void PrepareCanvasObjectsForRender(ResourceHandle<Scene> handle, XYPair<int> viewportSize, XYPair<int> subAreaBottomLeft, XYPair<int> targetSize, XYPair<int> targetCursorSpaceSize) {
 		if (!_canvasSceneDataMap.TryGetValue(handle, out var sceneData)) return;
 
 		var viewportAlterationDetected = sceneData.ViewportSize != viewportSize;
 
-		sceneData = sceneData with { ViewportSize = viewportSize, ViewportBottomLeftOffset = subAreaBottomLeft, RenderTargetSize = targetSize };
+		sceneData = sceneData with { ViewportSize = viewportSize, ViewportBottomLeftOffset = subAreaBottomLeft, RenderTargetSize = targetSize, RenderTargetCursorSpaceSize = targetCursorSpaceSize };
 		_canvasSceneDataMap[handle] = sceneData;
 
 		if (viewportAlterationDetected) {
@@ -284,37 +286,46 @@ sealed partial class LocalSceneBuilder {
 		return stringSize.ScaledBy(text.Font.GetTextInstanceScaling(stringSize, layout));
 	}
 
-	(XYPair<float> Centre, XYPair<float> Size) ResolveCanvasItemRect(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> viewportSize) {
+	(XYPair<float> Centre, XYPair<float> Size, Angle Rotation) ResolveCanvasItemRect(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> viewportSize) {
 		var dock = itemData.Dock;
 		var containerRect = ResolveCanvasItemContainerRect(handle, in dock, viewportSize);
 		var containerSize = containerRect.Size.Cast<int>();
-		var size = ResolveCanvasItemSignedSize(handle, in itemData, containerSize).Absolute;
+		var signedSize = ResolveCanvasItemSignedSize(handle, in itemData, containerSize);
 		var anchorCoord = containerRect.Centre + CalculateCanvasCenterRelativeCoord(containerSize, dock.CanvasAnchor, dock.ResolveOffset(containerSize));
-		return (anchorCoord + CalculateAnchorToCentreOffset(size, dock.EffectiveObjectAnchor), size);
+		var centreOffset = ResolveCanvasItemCentreOffset(handle, in itemData, containerSize, signedSize);
+		return (anchorCoord + centreOffset, signedSize.Absolute, dock.Rotation);
 	}
 
 	(XYPair<float> Centre, XYPair<float> Size) ResolveCanvasItemContainerRect(ResourceHandle<Scene> handle, in CanvasDock dock, XYPair<int> viewportSize) {
 		if (dock.DockParent is { } parentHandle
 			&& _canvasItemMap.TryGetValue(handle, out var itemMap)
 			&& itemMap.TryGetValue(parentHandle, out var parentData)) {
-			return ResolveCanvasItemRect(handle, in parentData, viewportSize);
+			var parentRect = ResolveCanvasItemRect(handle, in parentData, viewportSize);
+			return (parentRect.Centre, parentRect.Size);
 		}
 		return (XYPair<float>.Zero, viewportSize.Cast<float>());
 	}
 
-	static XYPair<float> CalculateAnchorToCentreOffset(XYPair<float> size, Orientation2D anchor) {
-		return new XYPair<float>(
-			anchor.GetHorizontalComponent() switch {
-				HorizontalOrientation2D.Left => size.X * 0.5f,
-				HorizontalOrientation2D.Right => size.X * -0.5f,
-				_ => 0f
-			},
-			anchor.GetVerticalComponent() switch {
-				VerticalOrientation2D.Up => size.Y * -0.5f,
-				VerticalOrientation2D.Down => size.Y * 0.5f,
-				_ => 0f
-			}
-		);
+	XYPair<float> ResolveCanvasItemCentreOffset(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> containerSize, XYPair<float> signedSize) {
+		var dock = itemData.Dock;
+		var anchor = dock.EffectiveObjectAnchor;
+
+		Vect unrotatedOffset;
+		if (itemData.Quad != null) {
+			unrotatedOffset = QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(signedSize, anchor);
+		}
+		else {
+			var text = itemData.Text!.Value;
+			var layout = CreateCanvasTextLayout(in dock, dock.ResolveWidth(containerSize), dock.ResolveHeight(containerSize), GetCanvasTextData(handle, text).DisableAutoHeightScaling);
+			var stringSize = text.String.Size;
+			var scaling = text.Font.GetTextInstanceScaling(stringSize, layout);
+			var centreAnchorOffset = (text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.UpLeft)
+				+ text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.DownRight)) * 0.5f;
+			unrotatedOffset = text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, anchor) - centreAnchorOffset;
+		}
+
+		if (dock.Rotation != Angle.Zero) unrotatedOffset *= new Rotation(dock.Rotation, CanvasElementFacingDirection);
+		return CanvasDimensionConverter.ConvertVect(unrotatedOffset);
 	}
 
 	static XYPair<float> ResolveCanvasQuadSize(float? width, float? height, XYPair<int> textureDimensions) {
@@ -343,14 +354,57 @@ sealed partial class LocalSceneBuilder {
 		SetCanvasItemTransformAndDescendants(handle, in itemData, GetCanvasSceneData(handle).ViewportSize);
 	}
 
-	public XYPair<int> GetCanvasPrecisePixelCoord(ResourceHandle<Scene> handle, XYPair<int> renderTargetCoord) {
+	public XYPair<int> GetCanvasPrecisePixelCoord(ResourceHandle<Scene> handle, XYPair<int> renderTargetCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
-		return new XYPair<int>(
-			renderTargetCoord.X - sceneData.ViewportBottomLeftOffset.X,
-			renderTargetCoord.Y - (sceneData.RenderTargetSize.Y - (sceneData.ViewportBottomLeftOffset.Y + sceneData.ViewportSize.Y))
+		var cursorSpaceSize = sceneData.RenderTargetCursorSpaceSize;
+		if (!disableDpiScalingAdjustment && cursorSpaceSize.X > 0 && cursorSpaceSize.Y > 0 && cursorSpaceSize != sceneData.RenderTargetSize) {
+			renderTargetCoord = renderTargetCoord.ScaledByReal(sceneData.RenderTargetSize.Cast<float>() / cursorSpaceSize.Cast<float>());
+		}
+
+		var topLeftCoord = UiUtils.TranslateAnchoredCanvasOffset(sceneData.RenderTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), renderTargetCoord);
+
+		var topLeftResult = new XYPair<int>(
+			topLeftCoord.X - sceneData.ViewportBottomLeftOffset.X,
+			topLeftCoord.Y - (sceneData.RenderTargetSize.Y - (sceneData.ViewportBottomLeftOffset.Y + sceneData.ViewportSize.Y))
 		);
+
+		return UiUtils.TranslateAnchoredCanvasOffset(sceneData.ViewportSize, coordOrigin, Orientation2D.UpLeft, topLeftResult);
+	}
+
+	public XYPair<int> GetCanvasSizePixels(ResourceHandle<Scene> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return GetCanvasSceneData(handle).ViewportSize;
+	}
+
+	public XYPair<int> ConvertCanvasFractionToPixels(ResourceHandle<Scene> handle, XYPair<float> fraction) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return ConvertCanvasFractionToPixels(GetCanvasSceneData(handle).ViewportSize, fraction);
+	}
+	public XYPair<float> ConvertCanvasPixelsToFraction(ResourceHandle<Scene> handle, XYPair<int> pixels) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return ConvertCanvasPixelsToFraction(GetCanvasSceneData(handle).ViewportSize, pixels);
+	}
+
+	static XYPair<int> ConvertCanvasFractionToPixels(XYPair<int> canvasSizePixels, XYPair<float> fraction) => canvasSizePixels.ScaledByReal(fraction);
+	static XYPair<float> ConvertCanvasPixelsToFraction(XYPair<int> canvasSizePixels, XYPair<int> pixels) {
+		return new XYPair<float>(
+			canvasSizePixels.X != 0 ? pixels.X / (float) canvasSizePixels.X : 0f,
+			canvasSizePixels.Y != 0 ? pixels.Y / (float) canvasSizePixels.Y : 0f
+		);
+	}
+
+	public bool CanvasObjectContainsPixelCoord(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> coord, DiagonalOrientation2D coordOrigin) {
+		var itemData = GetCanvasItemData(handle, modelInstance);
+		var viewportSize = GetCanvasSceneData(handle).ViewportSize;
+		if (viewportSize.X <= 0 || viewportSize.Y <= 0) return false;
+
+		var rect = ResolveCanvasItemRect(handle, in itemData, viewportSize);
+		var delta = CalculateCanvasCenterRelativeCoord(viewportSize, coordOrigin.AsGeneralOrientation(), coord) - rect.Centre;
+		if (rect.Rotation != Angle.Zero) delta = delta.RotatedAroundOriginBy(-rect.Rotation);
+
+		return Single.Abs(delta.X) <= rect.Size.X * 0.5f && Single.Abs(delta.Y) <= rect.Size.Y * 0.5f;
 	}
 
 	public static Location CalculateCanvasLocation(XYPair<int> canvasSizePixels, Orientation2D anchor, XYPair<int> anchorOffset, int layer) {

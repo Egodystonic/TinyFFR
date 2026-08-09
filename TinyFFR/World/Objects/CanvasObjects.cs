@@ -19,6 +19,9 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 
 	void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject;
 
+	bool Contains(XYPair<int> canvasLocalPixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft);
+	bool Contains(XYPair<float> canvasLocalFractionCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft);
+
 	public Orientation2D CanvasAnchor { get; set; }
 	public Orientation2D? ObjectAnchor { get; set; }
 
@@ -101,6 +104,15 @@ public readonly record struct CanvasTexture : ICanvasObject {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
 		Implementation.SetCanvasObjectDockParent(SceneHandle, Instance, parent?.UnderlyingModelInstance);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Contains(XYPair<int> canvasLocalPixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
+		return Implementation.CanvasObjectContainsPixelCoord(SceneHandle, Instance, canvasLocalPixelCoord, coordOrigin);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Contains(XYPair<float> canvasLocalFractionCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
+		return Contains(Implementation.ConvertCanvasFractionToPixels(SceneHandle, canvasLocalFractionCoord), coordOrigin);
 	}
 
 	public Orientation2D CanvasAnchor {
@@ -333,6 +345,15 @@ public readonly record struct CanvasText : ICanvasObject {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
 		Implementation.SetCanvasObjectDockParent(SceneHandle, Instance, parent?.UnderlyingModelInstance);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Contains(XYPair<int> canvasLocalPixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
+		return Implementation.CanvasObjectContainsPixelCoord(SceneHandle, Instance, canvasLocalPixelCoord, coordOrigin);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Contains(XYPair<float> canvasLocalFractionCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
+		return Contains(Implementation.ConvertCanvasFractionToPixels(SceneHandle, canvasLocalFractionCoord), coordOrigin);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

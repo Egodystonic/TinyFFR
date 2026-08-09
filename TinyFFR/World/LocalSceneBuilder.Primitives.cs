@@ -15,7 +15,7 @@ sealed partial class LocalSceneBuilder {
 	enum PrimitiveLineExtent { Bounded, Ray, Line }
 	readonly record struct PrimitiveLineBodyData(PrimitiveLineExtent Extent, Location Anchor, Direction Direction, float BoundedLength, float Width, bool ConstantScreenSize);
 	readonly record struct PrimitiveLineData(ModelInstance? StartPoint, ModelInstance? EndPoint, PrimitiveLineBodyData Line);
-	readonly record struct PrimitiveData(ModelInstance? ModelInstance, TextInstance? TextInstance, PrimitiveLineData? LinePoints, Plane? Plane, PrimitivePaintbrush Paintbrush) {
+	readonly record struct PrimitiveData(ModelInstance? ModelInstance, TextInstance? TextInstance, PrimitiveLineData? LinePoints, Plane? Plane, PrimitivePaintbrush? Paintbrush) {
 		public ResourceGroup? OwnedResources { get; init; }
 	}
 	
@@ -38,15 +38,15 @@ sealed partial class LocalSceneBuilder {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
 		var primitiveHandle = ++_prevPrimitiveHandleId;
-		_primitiveMap[handle].Add(primitiveHandle, new(null, null, null, null, new()));
+		_primitiveMap[handle].Add(primitiveHandle, new(null, null, null, null, null));
 		return new ScenePrimitive(HandleToInstance(handle), primitiveHandle);
 	}
 	
-	PrimitivePaintbrush DisposeExistingPrimitiveAndGetPaintbrush(ResourceHandle<Scene> handle, nuint primitiveHandle) {
+	PrimitivePaintbrush DisposeExistingPrimitiveAndGetPaintbrush(ResourceHandle<Scene> handle, nuint primitiveHandle, in PrimitivePaintbrush fallbackBrush) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!_primitiveMap[handle].Remove(primitiveHandle, out var data)) return new();
+		if (!_primitiveMap[handle].Remove(primitiveHandle, out var data)) return fallbackBrush;
 		DisposeData(handle, in data, true);
-		return data.Paintbrush;
+		return data.Paintbrush ?? fallbackBrush;
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in CameraLockedQuadInstance quad, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(quad.UnderlyingQuadInstance.UnderlyingModelInstance, null, null, null, paintbrush);
@@ -215,7 +215,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetPrimitiveGeometryPoint(ResourceHandle<Scene> handle, nuint primitiveHandle, Location point, float size, bool constantScreenSize) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush2d);
 		
 		var resources = GetSharedPointResources();
 		
@@ -236,7 +236,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetPrimitiveGeometryString(ResourceHandle<Scene> handle, nuint primitiveHandle, Location position, ReadOnlySpan<char> str, float size, bool constantScreenSize) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush2d);
 		
 		if (_primitiveStringResources is not { } resources) {
 			var font = _assetLoader.LoadFont(BuiltInFont.Default, new FontCreationConfig { Name = "Primitive Font" });
@@ -263,7 +263,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, PositionedRotatedCuboid cuboid, bool wireframe) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitiveCuboidResources is not { } resources) {
 			var mesh = _assetLoader.MeshBuilder.CreateMesh(
@@ -292,7 +292,7 @@ sealed partial class LocalSceneBuilder {
 		RegisterPrimitive(handle, primitiveHandle, in instance, in paintbrush);
 	}
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, PositionedSphere sphere, bool wireframe) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitiveSphereResources is not { } resources) {
 			var solidMesh = _assetLoader.MeshBuilder.CreateMesh(
@@ -328,7 +328,7 @@ sealed partial class LocalSceneBuilder {
 		RegisterPrimitive(handle, primitiveHandle, in instance, in paintbrush);
 	}
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, Plane plane) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitivePlaneResources is not { } resources) {
 			var mesh = _assetLoader.MeshBuilder.CreateQuadMesh(
@@ -374,7 +374,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetPrimitiveGeometryGrid(ResourceHandle<Scene> handle, nuint primitiveHandle, Location gridCentre, Direction gridNormal, Direction gridX, float gridSize, float majorGridLineSpacing, float minorGridLineSpacing) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrushGrid);
 
 		const int GridResolution = 2048;
 		var tex = _assetLoader.TextureBuilder.CreateColorMap(
@@ -458,7 +458,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, BoundedRay ray, float size, bool includeEndpoints, bool constantScreenSize) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush2d);
 		
 		var resources = GetSharedLineResources();
 		
@@ -509,7 +509,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, Ray ray, float size, bool includeStartPoint, bool constantScreenSize) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush2d);
 		
 		var resources = GetSharedLineResources();
 		
@@ -547,7 +547,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, nuint primitiveHandle, Line line, float size, bool constantScreenSize) {
-		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush2d);
 
 		var resources = GetSharedLineResources();
 
@@ -671,7 +671,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void DisposePrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle) {
-		_ = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle);
+		_ = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush2d);
 	}
 	
 	bool IsPrimitiveInstance(ResourceHandle<Scene> handle, ModelInstance i) {

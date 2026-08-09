@@ -27,13 +27,9 @@ class LocalCanvasTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Canvas Test");
 
 		using var scene = factory.SceneBuilder.CreateScene();
-		using var camera = factory.CameraBuilder.CreateCamera();
-		using var cameraController = camera.CreateController<OrbitalCameraController>();
-		cameraController.MaxDistance = null;
-		cameraController.Distance = 2f;
-		cameraController.Target = Location.Origin;
+		using var camera = factory.CameraBuilder.CreateCamera(initialPosition: (0f, 0f, -2.25f));
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-		using var primitive = scene.AddPrimitiveShape(new PositionedRotatedCuboid(0.5f, 0.5f, 0.5f, Location.Origin, 45f % Direction.Right + 45f % Direction.Down));
+		using var primitive = scene.AddPrimitive();
 
 		using var canvas = factory.SceneBuilder.CreateCanvasScene();
 		using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvas, window);
@@ -239,6 +235,30 @@ class LocalCanvasTest {
 			else dockedChild.SetDockParent<CanvasTexture>(null);
 		}
 
+		var cursorOverTexture = false;
+		var cursorOverChild = false;
+		var hitTestOrigin = DiagonalOrientation2D.UpLeft;
+		string BuildHitTestText() {
+			return "[G] Cursor Origin " + hitTestOrigin + " | Over Texture " + (cursorOverTexture ? "YES" : "no") + " | Over Child " + (cursorOverChild ? "YES" : "no");
+		}
+		using var hitTestText = canvas.Add(BuildHitTestText(), fontPen);
+		hitTestText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.49f),
+			0.02f
+		);
+
+		var latestLocalCursor = XYPair<int>.Zero;
+		string BuildCursorSpaceText() {
+			return "Canvas " + canvas.SizePixels + " | Window " + window.Size + " | Cursor Local " + latestLocalCursor + " | Tex Actual " + canvasTex.ActualSizePixels;
+		}
+		using var cursorSpaceText = canvas.Add(BuildCursorSpaceText(), fontPen);
+		cursorSpaceText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.53f),
+			0.02f
+		);
+
 		string BuildOpacityText() {
 			return "[V] Opacity " + PercentageUtils.ConvertFractionToPercentageString(canvasTex.Opacity);
 		}
@@ -279,7 +299,7 @@ class LocalCanvasTest {
 			
 			if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowLeft)) {
 				if (arrowsAdjustPixelPos) {
-					canvasTex.MoveByPixels(new XYPair<int>(-100, 0).ScaledByReal(dt));
+					canvasTex.MoveByPixels(new XYPair<int>(-1000, 0).ScaledByReal(dt));
 				}
 				else {
 					canvasTex.MoveByFraction(new XYPair<float>(-0.1f, 0f).ScaledByReal(dt));
@@ -288,7 +308,7 @@ class LocalCanvasTest {
 			}
 			if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowRight)) {
 				if (arrowsAdjustPixelPos) {
-					canvasTex.MoveByPixels(new XYPair<int>(100, 0).ScaledByReal(dt));
+					canvasTex.MoveByPixels(new XYPair<int>(1000, 0).ScaledByReal(dt));
 				}
 				else {
 					canvasTex.MoveByFraction(new XYPair<float>(0.1f, 0f).ScaledByReal(dt));
@@ -297,7 +317,7 @@ class LocalCanvasTest {
 			}
 			if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowDown)) {
 				if (arrowsAdjustPixelPos) {
-					canvasTex.MoveByPixels(new XYPair<int>(0, -100).ScaledByReal(dt));
+					canvasTex.MoveByPixels(new XYPair<int>(0, -1000).ScaledByReal(dt));
 				}
 				else {
 					canvasTex.MoveByFraction(new XYPair<float>(0f, -0.1f).ScaledByReal(dt));
@@ -306,7 +326,7 @@ class LocalCanvasTest {
 			}
 			if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowUp)) {
 				if (arrowsAdjustPixelPos) {
-					canvasTex.MoveByPixels(new XYPair<int>(0, 100).ScaledByReal(dt));
+					canvasTex.MoveByPixels(new XYPair<int>(0, 1000).ScaledByReal(dt));
 				}
 				else {
 					canvasTex.MoveByFraction(new XYPair<float>(0f, 0.1f).ScaledByReal(dt));
@@ -373,6 +393,22 @@ class LocalCanvasTest {
 				fillFractionText.SetText(BuildFillFractionText());
 				actualSizeText.SetText(BuildActualSizeText());
 			}
+			var cursorPos = kbm.MouseCursorPosition;
+			if (hitTestOrigin == DiagonalOrientation2D.DownLeft) cursorPos = cursorPos with { Y = window.Size.Y - cursorPos.Y };
+			var localCursor = canvas.ConvertRenderTargetCoordToLocal(cursorPos, hitTestOrigin);
+			var overTexture = canvasTex.Contains(localCursor, hitTestOrigin);
+			var overChild = dockedChild.Contains(localCursor, hitTestOrigin);
+			latestLocalCursor = localCursor;
+			cursorSpaceText.SetText(BuildCursorSpaceText());
+			if (overTexture != cursorOverTexture || overChild != cursorOverChild) {
+				cursorOverTexture = overTexture;
+				cursorOverChild = overChild;
+				hitTestText.SetText(BuildHitTestText());
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.G)) {
+				hitTestOrigin = hitTestOrigin == DiagonalOrientation2D.UpLeft ? DiagonalOrientation2D.DownLeft : DiagonalOrientation2D.UpLeft;
+				hitTestText.SetText(BuildHitTestText());
+			}
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.D)) {
 				childIsDocked = !childIsDocked;
 				ApplyDockParent();
@@ -384,8 +420,9 @@ class LocalCanvasTest {
 				opacityText.SetText(BuildOpacityText());
 			}
 
-			cameraController.Angle += dt * 30f;
-			cameraController.Progress(dt);
+			primitive.SetGeometryShape(new PositionedRotatedCuboid(0.5f, 0.5f, 0.5f, (-1.3f, 0.5f, 0f), 45f % Direction.Right + (30f * loop.TotalIteratedTime.AsDeltaTime()) % Direction.Down));
+			
+			window.SetTitle("Canvas Test | " + loop.FramesPerSecondRecentAverage.ToString("N0") + " FPS avg");
 			
 			compositor.RenderAll();
 		}

@@ -169,7 +169,7 @@ class BindableRendererImplProviderTest {
 		var renderer = CreateRenderer();
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (1600, 900), (800, 450), NoopFrameHandler);
 
-		_ = renderer.CastRayFromRenderSurface((100, 50), false, true);
+		_ = renderer.CastRayFromRenderSurface((100, 50), DiagonalOrientation2D.UpLeft, true);
 
 		Assert.AreEqual(new XYPair<int>(100, 50), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}

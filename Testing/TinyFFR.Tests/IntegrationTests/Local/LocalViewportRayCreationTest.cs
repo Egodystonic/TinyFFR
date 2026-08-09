@@ -81,8 +81,8 @@ class LocalViewportRayCreationTest {
 				foreach (var click in loop.Input.KeyboardAndMouse.NewMouseClicks) {
 					if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.LeftShift)) {
 						var ray = click.Key == MouseKey.MouseLeft 
-							? renderer.CastRayFromRenderSurface(click.Location with { Y = window.Size.Y - click.Location.Y }, yZeroOriginAtBottom: true, disableDpiScalingAdjustment: false) 
-							: renderer.CastRayFromRenderSubAreaSurface(new XYPair<int>(click.Location.X - subAreaOffset.X, (window.Size.Y / 2) - (click.Location.Y - subAreaOffset.Y)), yZeroOriginAtBottom: true, disableDpiScalingAdjustment: false);
+							? renderer.CastRayFromRenderSurface(click.Location with { Y = window.Size.Y - click.Location.Y }, coordOrigin: DiagonalOrientation2D.DownLeft, disableDpiScalingAdjustment: false) 
+							: renderer.CastRayFromRenderSubAreaSurface(new XYPair<int>(click.Location.X - subAreaOffset.X, (window.Size.Y / 2) - (click.Location.Y - subAreaOffset.Y)), coordOrigin: DiagonalOrientation2D.DownLeft, disableDpiScalingAdjustment: false);
 						spheres[kvp.Key].SetPosition(ray.UnboundedLocationAtDistance(1f));
 					}
 					else {
