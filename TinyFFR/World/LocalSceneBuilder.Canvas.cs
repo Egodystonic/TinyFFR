@@ -27,7 +27,7 @@ sealed partial class LocalSceneBuilder {
 		public Orientation2D CanvasAnchor { get; init; } = Orientation2D.None;
 		public Orientation2D? ObjectAnchor { get; init; } = null;
 		public Angle Rotation { get; init; } = Angle.Zero;
-		public int Layer { get; init; } = CanvasScene.ZPriorityDefault;
+		public int Layer { get; init; } = CanvasScene.LayerDefault;
 		public XYPair<int> PixelOffset { get; init; } = XYPair<int>.Zero;
 		public XYPair<float> FractionalOffset { get; init; } = XYPair<float>.Zero;
 		public XYPair<float> FillFraction { get; init; } = XYPair<float>.One;
@@ -103,11 +103,11 @@ sealed partial class LocalSceneBuilder {
 		const float CameraFarPlaneMargin = 10f;
 		var camera = _cameraBuilder.CreateCamera(new CameraCreationConfig {
 			ProjectionType = CameraProjectionType.Orthographic,
-			Position = CanvasDimensionConverter.ConvertLocation(XYPair<float>.Zero, CanvasScene.ZPriorityMax + CameraPositionMargin),
+			Position = CanvasDimensionConverter.ConvertLocation(XYPair<float>.Zero, CanvasScene.LayerMax + CameraPositionMargin),
 			ViewDirection = -CanvasElementFacingDirection,
 			UpDirection = CanvasElementPositiveYDirection,
 			NearPlaneDistance = 1f - CameraNearPlaneMargin,
-			FarPlaneDistance = CanvasScene.ZPriorityRange + CameraFarPlaneMargin,
+			FarPlaneDistance = CanvasScene.LayerRange + CameraFarPlaneMargin,
 			Name = config.Name
 		});
 
@@ -119,6 +119,8 @@ sealed partial class LocalSceneBuilder {
 			XYPair<int>.Zero,
 			XYPair<int>.Zero
 		);
+		
+		_globals.DependencyTracker.RegisterDependency(scene, camera);
 		return new CanvasScene(scene);
 	}
 
@@ -534,7 +536,7 @@ sealed partial class LocalSceneBuilder {
 		return GetCanvasDock(handle, modelInstance).Layer;
 	}
 	public void SetCanvasObjectLayer(ResourceHandle<Scene> handle, ModelInstance modelInstance, int newValue) {
-		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { Layer = newValue });
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { Layer = Int32.Clamp(newValue, CanvasScene.LayerMin, CanvasScene.LayerMax) });
 	}
 	
 	public bool GetCanvasObjectVisibility(ResourceHandle<Scene> handle, ModelInstance modelInstance) {

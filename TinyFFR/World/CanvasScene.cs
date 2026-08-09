@@ -11,10 +11,10 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 public readonly struct CanvasScene : IDisposable, IStringSpanNameEnabled, IEquatable<CanvasScene> {
-	public const int ZPriorityMax = 100;
-	public const int ZPriorityMin = -100;
-	public const int ZPriorityDefault = 0;
-	internal const int ZPriorityRange = ZPriorityMax - ZPriorityMin;
+	public const int LayerMax = 100;
+	public const int LayerMin = -100;
+	public const int LayerDefault = 0;
+	internal const int LayerRange = LayerMax - LayerMin;
 	
 	public Scene UnderlyingScene { get; }
 	

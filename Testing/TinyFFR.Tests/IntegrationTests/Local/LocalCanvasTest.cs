@@ -7,6 +7,7 @@ using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
@@ -50,7 +51,7 @@ class LocalCanvasTest {
 			(null, null, "Px <null>")
 		};
 		canvasTex.SetBlendTexture(blendTex);
-		var layerStates = new[] { -1, 0, 1 };
+		var layerStates = new[] { -1, 0, 1, -100, 100, -1000, 1000 };
 		var blendDistanceStates = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
 		var fillStates = new[] { 1f, 0.75f, 0.5f, 0.25f, 0f };
 		var opacityStates = new[] { 1f, 0.75f, 0.5f, 0.25f, 0f };
@@ -272,6 +273,8 @@ class LocalCanvasTest {
 		using var compositor = factory.RendererBuilder.CreateCompositor(window);
 		compositor.Add(renderer, RenderCompositionType.Standard);
 		compositor.Add(canvasRenderer, RenderCompositionType.RetainPreviousScenes);
+		
+		Assert.Throws<ResourceDependencyException>(() => canvas.Camera.Dispose());
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
