@@ -29,6 +29,7 @@ sealed partial class LocalSceneBuilder {
 		public int Layer { get; init; } = CanvasScene.ZPriorityDefault;
 		public XYPair<int> PixelOffset { get; init; } = XYPair<int>.Zero;
 		public XYPair<float> FractionalOffset { get; init; } = XYPair<float>.Zero;
+		public XYPair<float> FillFraction { get; init; } = XYPair<float>.One;
 		public int? WidthPixels { get; init; } = null;
 		public int? HeightPixels { get; init; } = null;
 		public float? WidthFraction { get; init; } = null;
@@ -219,11 +220,12 @@ sealed partial class LocalSceneBuilder {
 		if (itemData.Quad is { } quad) {
 			quad.SetTransform(
 				position,
-				ResolveCanvasQuadSize(width, height, GetCanvasTextureData(handle, quad).TextureDimensions),
+				ResolveCanvasQuadSize(width, height, GetCanvasTextureData(handle, quad).TextureDimensions).ScaledBy(dock.FillFraction),
 				CanvasElementFacingDirection,
 				uprightDirection,
 				dock.EffectiveObjectAnchor
 			);
+			ApplyCanvasMaterialEffects(handle, quad);
 		}
 		else {
 			var text = itemData.Text!.Value;
@@ -415,6 +417,15 @@ sealed partial class LocalSceneBuilder {
 		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { HeightFraction = newValue });
 	}
 
+	public XYPair<float> GetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		return GetCanvasDock(handle, modelInstance).FillFraction;
+	}
+	public void SetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue) {
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with {
+			FillFraction = new XYPair<float>(Single.Clamp(newValue.X, 0f, 1f), Single.Clamp(newValue.Y, 0f, 1f))
+		});
+	}
+
 	public void SetCanvasObjectPlacement(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<int> positionPixels, XYPair<float> positionFraction, int? widthPixels, int? heightPixels, float? widthFraction, float? heightFraction) {
 		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with {
 			CanvasAnchor = canvasAnchor,
@@ -536,11 +547,30 @@ sealed partial class LocalSceneBuilder {
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
+	static XYPair<float> CalculateCanvasAnchorUvFactor(Orientation2D anchor) {
+		return new XYPair<float>(
+			anchor.GetHorizontalComponent() switch {
+				HorizontalOrientation2D.Left => 0f,
+				HorizontalOrientation2D.Right => 1f,
+				_ => 0.5f
+			},
+			anchor.GetVerticalComponent() switch {
+				VerticalOrientation2D.Up => 0f,
+				VerticalOrientation2D.Down => 1f,
+				_ => 0.5f
+			}
+		);
+	}
+
 	void ApplyCanvasMaterialEffects(ResourceHandle<Scene> handle, QuadInstance quad) {
 		var data = GetCanvasTextureData(handle, quad);
+		var dock = GetCanvasDock(handle, quad.UnderlyingModelInstance);
 		var instanceHandle = quad.UnderlyingModelInstance.Handle;
 
-		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(data.UvOffset, Angle.Zero, data.UvExtent.Reciprocal ?? XYPair<float>.Zero));
+		var effectiveExtent = data.UvExtent.ScaledBy(dock.FillFraction);
+		var effectiveOffset = data.UvOffset + CalculateCanvasAnchorUvFactor(dock.EffectiveObjectAnchor).ScaledBy(XYPair<float>.One - effectiveExtent);
+
+		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(effectiveOffset, Angle.Zero, effectiveExtent.Reciprocal ?? XYPair<float>.Zero));
 		if (data.BlendTexture is { } blendTexture) {
 			_objectBuilder.SetMaterialEffectBlendTexture(instanceHandle, MaterialEffectMapType.Color, blendTexture);
 		}

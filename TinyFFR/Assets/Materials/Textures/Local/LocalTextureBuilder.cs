@@ -120,6 +120,28 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		texels.CopyTo(buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
+
+	internal Texture CreateTextureWithAddedOpaqueAlpha(ReadOnlySpan<TexelRgb24> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		generationConfig.ThrowIfInvalid();
+		config.ThrowIfInvalid();
+
+		var width = generationConfig.Dimensions.X;
+		var height = generationConfig.Dimensions.Y;
+
+		var texelCount = width * height;
+		if (texelCount > texels.Length) {
+			throw new ArgumentException(
+				$"Texture dimensions are {width}x{height}, requiring a texel span of length {texelCount} or greater, " +
+				$"but actual span length was {texels.Length}.",
+				nameof(texels)
+			);
+		}
+
+		var buffer = PreallocateBuffer<TexelRgba32>(texelCount);
+		TextureUtils.Convert(texels, buffer.Span);
+		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
+	}
 	#endregion
 
 	#region Dynamic Overwrite

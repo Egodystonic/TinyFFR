@@ -82,7 +82,7 @@ public unsafe interface ITextureBuilder {
 			GenerateMipMaps = colorPattern.Dimensions.Area != 1,
 			IsLinearColorspace = false,
 			Name = name,
-			ProcessingToApply = TextureProcessingConfig.None
+			ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()
 		};
 		return CreateColorMap(colorPattern, includeAlpha, in creationConfig); 
 	}
@@ -106,6 +106,40 @@ public unsafe interface ITextureBuilder {
 			: CreateTexture(new TexelRgb24(color), isLinearColorspace: false, name);
 	}
 	Texture CreateColorMap(ColorVect color, bool includeAlpha, in TextureCreationConfig config) {
+		return includeAlpha
+			? CreateTexture(new TexelRgba32(color), in config)
+			: CreateTexture(new TexelRgb24(color), in config);
+	}
+
+	Texture CreateCanvasTexture(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, ReadOnlySpan<char> name = default) {
+		var creationConfig = new TextureCreationConfig {
+			GenerateMipMaps = colorPattern.Dimensions.Area != 1,
+			IsLinearColorspace = true,
+			Name = name,
+			ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()
+		};
+		return CreateColorMap(colorPattern, includeAlpha, in creationConfig);
+	}
+	Texture CreateCanvasTexture(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, in TextureCreationConfig config) {
+		if (includeAlpha) {
+			var buffer = PreallocateBuffer<TexelRgba32>(colorPattern.Dimensions.Area);
+			_ = PrintPattern(colorPattern, &TexelRgba32.ConvertFrom, buffer.Span);
+			return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = colorPattern.Dimensions }, in config);
+		}
+		else {
+			var buffer = PreallocateBuffer<TexelRgb24>(colorPattern.Dimensions.Area);
+			_ = PrintPattern(colorPattern, &TexelRgb24.ConvertFrom, buffer.Span);
+			return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = colorPattern.Dimensions }, in config);
+		}
+	}
+	
+	Texture CreateCanvasTexture(ReadOnlySpan<char> name = default) => CreateCanvasTexture(DefaultColor, includeAlpha: false, name);
+	Texture CreateCanvasTexture(ColorVect color, bool includeAlpha, ReadOnlySpan<char> name = default) {
+		return includeAlpha
+			? CreateTexture(new TexelRgba32(color), isLinearColorspace: true, name)
+			: CreateTexture(new TexelRgb24(color), isLinearColorspace: true, name);
+	}
+	Texture CreateCanvasTexture(ColorVect color, bool includeAlpha, in TextureCreationConfig config) {
 		return includeAlpha
 			? CreateTexture(new TexelRgba32(color), in config)
 			: CreateTexture(new TexelRgb24(color), in config);

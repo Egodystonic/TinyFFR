@@ -57,6 +57,8 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 	}
 	public static TexelRgba32 DeserializeFromBytes(ReadOnlySpan<byte> src) => new(src[0], src[1], src[2], src[3]);
 
+	public TexelRgba32 WithPremultipliedAlpha() => new(ToColorVect().WithPremultipliedAlpha());
+
 	public override string ToString() {
 		return $"{nameof(TexelRgba32)} " +
 			   $"{R}{NumberFormatInfo.CurrentInfo.NumberGroupSeparator} " +

@@ -25,7 +25,10 @@ unsafe partial class LocalAssetLoader {
 	public Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		
+		readConfig.ThrowIfInvalid();
+
+		var forceAlpha = readConfig.ForceWAlphaChannelPresence;
+
 		switch (_builtInTextureLibrary.GetLikelyBuiltInTextureType(filePath)) {
 			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.Texel:
 				var builtInTexel = _builtInTextureLibrary.TryGetBuiltInTexel(filePath);
@@ -33,11 +36,10 @@ unsafe partial class LocalAssetLoader {
 				var builtInRgba = builtInTexel?.Second;
 
 				if (builtInRgb is { } rgb) {
-					return _textureBuilder.CreateTexture(
-						new ReadOnlySpan<TexelRgb24>(in rgb),
-						new() { Dimensions = new(1, 1) },
-						config
-					);
+					var builtInRgbSpan = new ReadOnlySpan<TexelRgb24>(in rgb);
+					return forceAlpha
+						? _textureBuilder.CreateTextureWithAddedOpaqueAlpha(builtInRgbSpan, new() { Dimensions = new(1, 1) }, config)
+						: _textureBuilder.CreateTexture(builtInRgbSpan, new() { Dimensions = new(1, 1) }, config);
 				}
 				else if (builtInRgba is { } rgba) {
 					return _textureBuilder.CreateTexture(
@@ -58,11 +60,10 @@ unsafe partial class LocalAssetLoader {
 						);
 					}
 					else {
-						return _textureBuilder.CreateTexture(
-							MemoryMarshal.Cast<byte, TexelRgb24>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area],
-							new TextureGenerationConfig { Dimensions = tuple.Dimensions },
-							config
-						);
+						var embeddedRgbSpan = MemoryMarshal.Cast<byte, TexelRgb24>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area];
+						return forceAlpha
+							? _textureBuilder.CreateTextureWithAddedOpaqueAlpha(embeddedRgbSpan, new TextureGenerationConfig { Dimensions = tuple.Dimensions }, config)
+							: _textureBuilder.CreateTexture(embeddedRgbSpan, new TextureGenerationConfig { Dimensions = tuple.Dimensions }, config);
 					}
 				}
 				break;
@@ -77,7 +78,7 @@ unsafe partial class LocalAssetLoader {
 				out var channelCount
 			).ThrowIfFailure();
 
-			var includeAlpha = channelCount > 3 && readConfig.IncludeWAlphaChannel;
+			var includeAlpha = readConfig.IncludeWAlphaChannel && (channelCount > 3 || forceAlpha);
 
 			LoadTextureFileInToMemory(
 				in _assetFilePathBuffer.AsRef,

@@ -340,6 +340,8 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation, XYPair<float> pivotPointFraction) => throw new NotSupportedException();
 	public Texture GetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
 	public void SetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture newValue) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue) => throw new NotSupportedException();
 	public XYPair<int> GetCanvasObjectTextureDimensions(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
 	public XYPair<float> GetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
 	public void SetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue) => throw new NotSupportedException();

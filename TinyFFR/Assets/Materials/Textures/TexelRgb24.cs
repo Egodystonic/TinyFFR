@@ -53,6 +53,8 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 	}
 	public static TexelRgb24 DeserializeFromBytes(ReadOnlySpan<byte> src) => new(src[0], src[1], src[2]);
 
+	TexelRgb24 ITexel<TexelRgb24>.WithPremultipliedAlpha() => this;
+
 	public override string ToString() {
 		return $"{nameof(TexelRgb24)} " +
 			   $"{R}{NumberFormatInfo.CurrentInfo.NumberGroupSeparator} " +

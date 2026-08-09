@@ -38,7 +38,11 @@ class LocalCanvasTest {
 		using var canvas = factory.SceneBuilder.CreateCanvasScene();
 		using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvas, window);
 		
-		using var uvTex = factory.AssetLoader.LoadTexture(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture, isLinearColorspace: true);
+		using var uvTex = factory.AssetLoader.LoadTexture(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture, new TextureCreationConfig { IsLinearColorspace = true }, new TextureReadConfig { ForceWAlphaChannelPresence = true, IncludeWAlphaChannel = true });
+		using var blendTex = factory.TextureBuilder.CreateCanvasTexture(
+			TexturePattern.GradientHorizontal(ColorVect.RedOpaque, ColorVect.RedTransparent),
+			includeAlpha: true
+		);
 		using var canvasTex = canvas.Add(uvTex);
 		var arrowsAdjustPixelPos = true;
 		var sizeStates = new (float? Fraction, int? Pixels, string Label)[] {
@@ -49,12 +53,17 @@ class LocalCanvasTest {
 			(null, 600, "Px 600"),
 			(null, null, "Px <null>")
 		};
+		canvasTex.SetBlendTexture(blendTex);
 		var layerStates = new[] { -1, 0, 1 };
+		var blendDistanceStates = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
+		var fillStates = new[] { 1f, 0.75f, 0.5f, 0.25f, 0f };
 		const int MaxTextureCropStep = 8;
 		const float TextureCropStepSize = 0.05f;
 		var widthStateIdx = 0;
 		var heightStateIdx = 2;
 		var layerStateIdx = 1;
+		var blendDistanceStateIdx = 0;
+		var fillStateIdx = 0;
 		var textureCropStep = 0;
 		canvasTex.CanvasAnchor = Orientation2D.None;
 		canvasTex.PositionPixels = XYPair<int>.Zero;
@@ -63,9 +72,16 @@ class LocalCanvasTest {
 		ApplyHeightState();
 		ApplyLayerState();
 		ApplyTextureCrop();
+		ApplyBlendDistance();
+		ApplyFillFraction();
 
-		float TextureCropInset() => textureCropStep * TextureCropStepSize;
-		float TextureCropExtent() => 1f - TextureCropInset() * 2f;
+		float TextureCropExtent() => 1f - textureCropStep * TextureCropStepSize * 2f;
+		void ApplyBlendDistance() {
+			canvasTex.SetBlendTextureDistance(blendDistanceStates[blendDistanceStateIdx]);
+		}
+		void ApplyFillFraction() {
+			canvasTex.FillFraction = new XYPair<float>(fillStates[fillStateIdx], 1f);
+		}
 		void ApplyWidthState() {
 			canvasTex.WidthFraction = sizeStates[widthStateIdx].Fraction;
 			canvasTex.WidthPixels = sizeStates[widthStateIdx].Pixels;
@@ -78,7 +94,6 @@ class LocalCanvasTest {
 			canvasTex.Layer = layerStates[layerStateIdx];
 		}
 		void ApplyTextureCrop() {
-			canvasTex.SetTextureOffsetFraction(new XYPair<float>(TextureCropInset()));
 			canvasTex.SetTextureExtentFraction(new XYPair<float>(TextureCropExtent()));
 		}
 
@@ -162,6 +177,26 @@ class LocalCanvasTest {
 		textureCropText.SetPlacementFraction(
 			Orientation2D.UpLeft,
 			(0.01f, 0.25f),
+			0.02f
+		);
+
+		string BuildBlendDistanceText() {
+			return "[B] Blend Distance " + PercentageUtils.ConvertFractionToPercentageString(blendDistanceStates[blendDistanceStateIdx]);
+		}
+		using var blendDistanceText = canvas.Add(BuildBlendDistanceText(), fontPen);
+		blendDistanceText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.29f),
+			0.02f
+		);
+
+		string BuildFillFractionText() {
+			return "[F] Fill " + PercentageUtils.ConvertFractionToPercentageString(canvasTex.FillFraction);
+		}
+		using var fillFractionText = canvas.Add(BuildFillFractionText(), fontPen);
+		fillFractionText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.33f),
 			0.02f
 		);
 
@@ -275,6 +310,16 @@ class LocalCanvasTest {
 				textureCropStep--;
 				ApplyTextureCrop();
 				textureCropText.SetText(BuildTextureCropText());
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.B)) {
+				blendDistanceStateIdx = (blendDistanceStateIdx + 1) % blendDistanceStates.Length;
+				ApplyBlendDistance();
+				blendDistanceText.SetText(BuildBlendDistanceText());
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.F)) {
+				fillStateIdx = (fillStateIdx + 1) % fillStates.Length;
+				ApplyFillFraction();
+				fillFractionText.SetText(BuildFillFractionText());
 			}
 
 			cameraController.Angle += dt * 30f;

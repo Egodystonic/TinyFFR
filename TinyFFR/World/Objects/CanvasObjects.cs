@@ -182,6 +182,14 @@ public readonly record struct CanvasTexture : ICanvasObject {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTexture(Texture t) => Implementation.SetCanvasObjectTexture(SceneHandle, UnderlyingQuadInstance, t);
+	public XYPair<float> FillFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectFillFraction(SceneHandle, Instance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectFillFraction(SceneHandle, Instance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetFillFraction(XYPair<float> fillFraction) => FillFraction = fillFraction;
 	public XYPair<int> TextureDimensions {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetCanvasObjectTextureDimensions(SceneHandle, UnderlyingQuadInstance);
