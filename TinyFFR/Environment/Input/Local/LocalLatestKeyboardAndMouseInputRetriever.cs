@@ -2,23 +2,59 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Security;
+using System.Text;
+using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
+[SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalLatestKeyboardAndMouseInputRetriever : ILatestKeyboardAndMouseInputRetriever, IDisposable {
 	public readonly UnmanagedBuffer<KeyboardOrMouseKeyEvent> EventBuffer = new(LocalLatestInputRetriever.InitialEventBufferLength);
 	public readonly UnmanagedBuffer<MouseClickEvent> ClickBuffer = new(LocalLatestInputRetriever.InitialEventBufferLength);
+	public InteropStringBuffer TextInputBuffer = new(LocalLatestInputRetriever.InitialEventBufferLength, false);
+	readonly UnmanagedBuffer<char> _decodedTextInputBuffer = new(LocalLatestInputRetriever.InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _currentlyPressedKeys = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyDownEventBuffer = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyUpEventBuffer = new();
 	int _iterationVersion = 0;
 	int _kbmEventBufferCount = 0;
 	int _clickEventBufferCount = 0;
+	int _decodedTextInputCount = 0;
 	bool _isDisposed = false;
 
 	public XYPair<int> MouseCursorPosition { get; internal set; }
 	public XYPair<int> MouseCursorDelta { get; internal set; }
+
+	public ReadOnlySpan<char> TranscribedText {
+		get {
+			ThrowIfThisIsDisposed();
+			return _decodedTextInputBuffer.AsSpan[.._decodedTextInputCount];
+		}
+	}
+
+	public byte* DoubleTextInputBufferSize() {
+		var newBuffer = new InteropStringBuffer(TextInputBuffer.Length * 2, false);
+		TextInputBuffer.AsSpan.CopyTo(newBuffer.AsSpan);
+		TextInputBuffer.Dispose();
+		TextInputBuffer = newBuffer;
+		return TextInputBuffer.AsPointer;
+	}
+
+	public void UpdateTextInput(int newTextInputByteCount) {
+		if (newTextInputByteCount <= 0) {
+			_decodedTextInputCount = 0;
+			return;
+		}
+
+		if (newTextInputByteCount < TextInputBuffer.Length) TextInputBuffer.AsPointer[newTextInputByteCount] = 0;
+
+		var requiredCharCount = TextInputBuffer.GetUtf16Length();
+		if (_decodedTextInputBuffer.Length < requiredCharCount) _decodedTextInputBuffer.Resize(requiredCharCount);
+		_decodedTextInputCount = TextInputBuffer.ConvertToUtf16(_decodedTextInputBuffer.AsSpan);
+	}
 
 	public IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKeyEvent> NewKeyEvents => new(
 		this, _iterationVersion, &GetNewKeyEventsSpanLength, &GetIterationVersion, &GetNewKeyEvent
@@ -153,6 +189,8 @@ sealed unsafe class LocalLatestKeyboardAndMouseInputRetriever : ILatestKeyboardA
 			_keyDownEventBuffer.Dispose();
 			_keyUpEventBuffer.Dispose();
 			ClickBuffer.Dispose();
+			TextInputBuffer.Dispose();
+			_decodedTextInputBuffer.Dispose();
 			_currentlyPressedKeys.Dispose();
 		}
 		finally {

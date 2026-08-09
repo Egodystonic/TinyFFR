@@ -7,7 +7,10 @@ using static IConfigStruct;
 public enum AntiAliasingMode {
 	None = 0,
 	Fxaa = 1,
-	Taa = 2
+	TaaBalanced = 2,
+	TaaReducedGhosting = 3,
+	TaaReducedFlickering = 4,
+	TaaIncreasedSharpening = 5
 }
 
 public enum BuiltInQualityConfiguration {
@@ -15,12 +18,15 @@ public enum BuiltInQualityConfiguration {
 	High,
 	Ultra,
 	Low,
-	Lowest
+	Lowest,
+	Canvas,
+	DebugAndDiagnostic
 }
 
 public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityConfig> {
 	public const float MinInternalResolutionScalar = 0.1f;
 	public const float MaxInternalResolutionScalar = 1f;
+	public static readonly RenderQualityConfig Default = new();
 	
 	public Quality ShadowQuality { get; init; } = Quality.Standard;
 	public Quality ScreenSpaceEffectsQuality { get; init; } = Quality.Standard;
@@ -79,7 +85,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 			case BuiltInQualityConfiguration.High: {
 				ShadowQuality = Quality.High;
 				ScreenSpaceEffectsQuality = Quality.High;
-				AntiAliasingMode = AntiAliasingMode.Taa;
+				AntiAliasingMode = AntiAliasingMode.TaaBalanced;
 				AmbientOcclusionQuality = Quality.High;
 				InternalResolutionScalar = 1f;
 				HdrColorPrecision = Quality.High;
@@ -91,13 +97,43 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 			case BuiltInQualityConfiguration.Ultra: {
 				ShadowQuality = Quality.VeryHigh;
 				ScreenSpaceEffectsQuality = Quality.VeryHigh;
-				AntiAliasingMode = AntiAliasingMode.Taa;
+				AntiAliasingMode = AntiAliasingMode.TaaIncreasedSharpening;
 				AmbientOcclusionQuality = Quality.VeryHigh;
 				InternalResolutionScalar = 1f;
 				HdrColorPrecision = Quality.VeryHigh;
 				BloomQuality = Quality.VeryHigh;
 				DepthOfFieldQuality = Quality.VeryHigh;
 				DitheringEnabled = true;
+				break;
+			}
+			case BuiltInQualityConfiguration.Canvas: {
+				ShadowQuality = Quality.VeryLow;
+				ScreenSpaceEffectsQuality = Quality.VeryLow;
+				AmbientOcclusionQuality = Quality.VeryLow;
+				BloomQuality = Quality.VeryLow;
+				DepthOfFieldQuality = Quality.VeryLow;
+				PostProcessingEnabled = false;
+				ShadowsEnabled = false;
+				AntiAliasingMode = AntiAliasingMode.None;
+				DitheringEnabled = false;
+				AmbientOcclusionStrength = 0f;
+				BloomStrength = 0f;
+				DepthOfFieldStrength = 0f;
+				break;
+			}
+			case BuiltInQualityConfiguration.DebugAndDiagnostic: {
+				ShadowQuality = Quality.VeryLow;
+				ScreenSpaceEffectsQuality = Quality.VeryLow;
+				AmbientOcclusionQuality = Quality.VeryLow;
+				BloomQuality = Quality.VeryLow;
+				DepthOfFieldQuality = Quality.VeryLow;
+				PostProcessingEnabled = false;
+				ShadowsEnabled = false;
+				AntiAliasingMode = AntiAliasingMode.None;
+				DitheringEnabled = false;
+				AmbientOcclusionStrength = 0f;
+				BloomStrength = 0f;
+				DepthOfFieldStrength = 0f;
 				break;
 			}
 		}

@@ -174,6 +174,10 @@ class LocalSceneCompositingTest {
 		compositor.Add(redCubeRenderer, RenderCompositionType.RetainPreviousScenes);
 		compositor.Add(greenSphereRenderer, RenderCompositionType.Standard);
 		compositor.Add(blueCubeRenderer, RenderCompositionType.RetainPreviousScenes);
+		backdropRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
+		redCubeRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
+		greenSphereRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
+		blueCubeRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
 	
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {

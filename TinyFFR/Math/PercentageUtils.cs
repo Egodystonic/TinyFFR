@@ -7,6 +7,13 @@ namespace Egodystonic.TinyFFR;
 
 public static class PercentageUtils {
 	public const string StringSuffix = "%";
+	
+	public static string ConvertFractionToPercentageString(XYPair<float> fraction, string? format = null, IFormatProvider? formatProvider = null) {
+		return "<" + ConvertFractionToPercentageString(fraction.X, format, formatProvider) + ", " + ConvertFractionToPercentageString(fraction.Y, format, formatProvider) + ">";
+	}
+	public static string ConvertFractionToPercentageString(Vect fraction, string? format = null, IFormatProvider? formatProvider = null) {
+		return "<" + ConvertFractionToPercentageString(fraction.X, format, formatProvider) + ", " + ConvertFractionToPercentageString(fraction.Y, format, formatProvider) + ", " + ConvertFractionToPercentageString(fraction.Z, format, formatProvider) + ">";
+	}
 
 	public static string ConvertFractionToPercentageString(float fraction, string? format = null, IFormatProvider? formatProvider = null) {
 		var result = $"{(fraction * 100f).ToString(format, formatProvider)}{StringSuffix}";

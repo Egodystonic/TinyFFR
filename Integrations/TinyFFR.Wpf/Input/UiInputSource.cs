@@ -1,4 +1,4 @@
-// Created on 2026-07-30 by Ben Bowen
+﻿// Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -32,6 +32,7 @@ namespace Egodystonic.TinyFFR.Wpf.Input {
 			_element.MouseLeave += HandleMouseLeave;
 			_element.LostMouseCapture += HandleLostMouseCapture;
 			_element.LostKeyboardFocus += HandleLostKeyboardFocus;
+			_element.PreviewTextInput += HandleTextInput;
 			if (_element is FrameworkElement frameworkElement) frameworkElement.Loaded += HandleLoaded;
 
 			TrySubscribeToHostWindow();
@@ -48,6 +49,7 @@ namespace Egodystonic.TinyFFR.Wpf.Input {
 		static Key EffectiveKey(KeyEventArgs e) => e.Key == Key.System ? e.SystemKey : e.Key;
 
 		void HandleLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => _kbm.ReleaseAllHeldKeyboardKeys();
+		void HandleTextInput(object sender, TextCompositionEventArgs e) => _kbm.RecordTextInput(e.Text);
 
 		void HandleMouseDown(object sender, MouseButtonEventArgs e) {
 			var position = ToXyPair(e.GetPosition(_element));
@@ -119,6 +121,7 @@ namespace Egodystonic.TinyFFR.Wpf.Input {
 				_element.MouseLeave -= HandleMouseLeave;
 				_element.LostMouseCapture -= HandleLostMouseCapture;
 				_element.LostKeyboardFocus -= HandleLostKeyboardFocus;
+				_element.PreviewTextInput -= HandleTextInput;
 				if (_element is FrameworkElement frameworkElement) frameworkElement.Loaded -= HandleLoaded;
 				if (_subscribedWindow != null) {
 					_subscribedWindow.Closing -= HandleWindowClosing;

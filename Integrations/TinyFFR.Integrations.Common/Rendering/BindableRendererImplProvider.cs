@@ -1,4 +1,4 @@
-// Created on 2025-08-21 by Ben Bowen
+﻿// Created on 2025-08-21 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -291,19 +291,19 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
 		// The inner renderer targets a buffer, whose viewport dimensions are its texture dimensions by definition, so it can not
 		// make this adjustment itself; we pass 'true' downstream for disableDpiScalingAdjustment regardless to indicate the coordinate has already been converted.
-		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom, true);
+		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, coordOrigin, true);
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
 		// The inner renderer targets a buffer, whose viewport dimensions are its texture dimensions by definition, so it can not
 		// make this adjustment itself; we pass 'true' downstream for disableDpiScalingAdjustment regardless to indicate the coordinate has already been converted.
-		return _actualRenderer.CastRayFromRenderSubAreaSurface(pixelCoord, yZeroOriginAtBottom, true);
+		return _actualRenderer.CastRayFromRenderSubAreaSurface(pixelCoord, coordOrigin, true);
 	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) {

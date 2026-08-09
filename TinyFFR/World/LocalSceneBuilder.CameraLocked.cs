@@ -245,4 +245,23 @@ sealed partial class LocalSceneBuilder {
 			modelInstance.SetTransformWithoutUpdatingWorldMatrix(billboard with { Scaling = storedScaling });
 		}
 	}
+	
+	void DisposeAllCameraLockedData(ResourceHandle<Scene> handle) {
+		_camLockedTrivialInstanceMap.Remove(handle);
+		_camLockedAbridgedInstanceMapPool.Return(_camLockedAbridgedInstanceMap[handle]);
+		_camLockedAbridgedInstanceMap.Remove(handle);
+		_camLockedFullInstanceMapPool.Return(_camLockedFullInstanceMap[handle]);
+		_camLockedFullInstanceMap.Remove(handle);
+		_modelInstanceSetPool.Return(_cameraLockedInstancesLedger[handle]);
+		_cameraLockedInstancesLedger.Remove(handle);
+	}
+	
+	void DisposeAllCameraLockedResources() {
+		_camLockedTrivialInstanceMap.Dispose();
+		_camLockedAbridgedInstanceMap.Dispose();
+		_camLockedFullInstanceMap.Dispose();
+		_cameraLockedInstancesLedger.Dispose();
+		_camLockedAbridgedInstanceMapPool.Dispose();
+		_camLockedFullInstanceMapPool.Dispose();
+	}
 }

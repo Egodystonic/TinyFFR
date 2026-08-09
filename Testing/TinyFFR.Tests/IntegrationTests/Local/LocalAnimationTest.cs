@@ -128,7 +128,7 @@ class LocalAnimationTest {
 		using var nodeHighlighter = factory.ObjectBuilder.CreateModelInstance(nodeHighlightMesh, nodeHighlightMat); 
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-		renderer.SetQuality(new(BuiltInQualityConfiguration.Ultra));
+		renderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.Ultra));
 		
 
 		scene.Add(light);

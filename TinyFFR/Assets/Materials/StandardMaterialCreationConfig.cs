@@ -15,6 +15,25 @@ public enum StandardMaterialAlphaMode {
 public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<StandardMaterialCreationConfig> {
 	public static readonly StandardMaterialAlphaMode DefaultAlphaMode = StandardMaterialAlphaMode.MaskOnly;
 
+	static char[]? _colorMapParameterString = null;
+	public static ReadOnlySpan<char> ColorMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _colorMapParameterString, LocalShaderPackageConstants.StandardMaterialShader.ParamColorMap);
+
+	static char[]? _normalMapParameterString = null;
+	public static ReadOnlySpan<char> NormalMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _normalMapParameterString, LocalShaderPackageConstants.StandardMaterialShader.ParamNormalMap);
+
+	static char[]? _occlusionRoughnessMetallicReflectanceMapParameterString = null;
+	public static ReadOnlySpan<char> OcclusionRoughnessMetallicReflectanceMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _occlusionRoughnessMetallicReflectanceMapParameterString, LocalShaderPackageConstants.StandardMaterialShader.ParamOrmMap);
+	public static ReadOnlySpan<char> OcclusionRoughnessMetallicMapParameterString => OcclusionRoughnessMetallicReflectanceMapParameterString;
+
+	static char[]? _anisotropyMapParameterString = null;
+	public static ReadOnlySpan<char> AnisotropyMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _anisotropyMapParameterString, LocalShaderPackageConstants.StandardMaterialShader.ParamAnisotropyMap);
+
+	static char[]? _emissiveMapParameterString = null;
+	public static ReadOnlySpan<char> EmissiveMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _emissiveMapParameterString, LocalShaderPackageConstants.StandardMaterialShader.ParamEmissiveMap);
+
+	static char[]? _clearCoatMapParameterString = null;
+	public static ReadOnlySpan<char> ClearCoatMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _clearCoatMapParameterString, LocalShaderPackageConstants.StandardMaterialShader.ParamClearCoatMap);
+
 	public required Texture ColorMap { get; init; }
 	public Texture? NormalMap { get; init; }
 	public Texture? OcclusionRoughnessMetallicMap {

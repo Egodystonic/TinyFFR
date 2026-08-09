@@ -56,7 +56,6 @@ class LocalDiscsRenderTest {
 		using var scene = factory.SceneBuilder.CreateScene();
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-		scene.SetBackdrop(StandardColor.Black);
 		scene.Add(instance);
 		scene.Add(light);
 		scene.Add(sunlight);

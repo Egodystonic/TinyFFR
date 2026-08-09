@@ -2,11 +2,15 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public readonly ref struct LightingIgnoringMaterialCreationConfig : IConfigStruct<LightingIgnoringMaterialCreationConfig> {
+	static char[]? _colorMapParameterString = null;
+	public static ReadOnlySpan<char> ColorMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _colorMapParameterString, LocalShaderPackageConstants.LightingIgnoringMaterialShader.ParamColorMap);
+
 	public required Texture ColorMap { get; init; }
 
 	public MaterialCreationConfig BaseConfig { get; private init; } = new();

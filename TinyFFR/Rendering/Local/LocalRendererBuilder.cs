@@ -139,13 +139,13 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	readonly record struct CompositedRenderer(Renderer Renderer, RenderCompositionType CompositionType, bool IsEnabled);
 	readonly record struct RendererCompositorData(RenderTargetUnion RenderTarget, ArrayPoolBackedVector<CompositedRenderer> AddedRenderers, int NumRenderersCurrentlyEnabled, int FirstEnabledRendererIndex, int LastEnabledRendererIndex);
 	readonly unsafe struct OutputBufferCallbackData {
+		public static OutputBufferCallbackData None => new(false, null, null);
+
 		public bool InvertRows { get; }
 		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> OutputChangeHandler { get; }
 		public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? OutputChangeHandlerManaged { get; }
 
 		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
-
-		public static OutputBufferCallbackData None => new(false, null, null);
 
 		public OutputBufferCallbackData(
 			bool invertRows,
@@ -344,7 +344,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		return result;
 	}
 
-	public unsafe RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
+	public Renderer CreateRenderer<TRenderTarget>(CanvasScene scene, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
+		return CreateRenderer(scene.UnderlyingScene, scene.Camera, renderTarget, in config);
+	}
+
+	public RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
@@ -876,16 +880,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		}
 	}
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
 		var viewport = rendererData.Viewport;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
-		
+
 		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
 			pixelCoord = pixelCoord.ScaledByReal(curTargetSize.Cast<float>() / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
 		}
+
+		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(curTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
 
 		XYPair<int> viewportTopLeft;
 		if (viewport.LastCheckedRenderTargetSize == curTargetSize) {
@@ -898,12 +904,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		
 		var viewportRelativeCoord = new XYPair<int>(
 			pixelCoord.X - viewportTopLeft.X,
-			yZeroOriginAtBottom ? viewportTopLeft.Y - pixelCoord.Y : pixelCoord.Y - (curTargetSize.Y - viewportTopLeft.Y)
+			pixelCoord.Y - (curTargetSize.Y - viewportTopLeft.Y)
 		);
 
-		return CastRayFromViewportSurface(handle, viewportRelativeCoord, false, true);
+		return CastRayFromViewportSurface(handle, viewportRelativeCoord, DiagonalOrientation2D.UpLeft, true);
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
@@ -917,13 +923,15 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
 			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize.Cast<float>());
 		}
-		
+
+		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
+
 		var normalizedCoord = new XYPair<float>(
 			((Real) pixelCoord.X).RemapRange(new Pair<Real, Real>(0f, viewportSize.X), new Pair<Real, Real>(-1f, 1f)),
 			((Real) pixelCoord.Y).RemapRange(new Pair<Real, Real>(0f, viewportSize.Y), new Pair<Real, Real>(-1f, 1f))
 		);
-		if (!yZeroOriginAtBottom) normalizedCoord = normalizedCoord with { Y = -normalizedCoord.Y };
-		
+		normalizedCoord = normalizedCoord with { Y = -normalizedCoord.Y };
+
 		return rendererData.Camera.CastRayFromNearPlane(normalizedCoord);
 	}
 
@@ -983,6 +991,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
 		localSceneImpl.PrepareCameraSensitiveObjectsForRender(sceneHandle, camera);
+		var canvasBounds = viewport.DesiredDimensions.ExtractViewportPixelBounds(rendererData.RenderTarget.ViewportDimensions);
+		localSceneImpl.PrepareCanvasObjectsForRender(
+			sceneHandle,
+			canvasBounds.Size,
+			canvasBounds.BottomLeft,
+			rendererData.RenderTarget.ViewportDimensions,
+			rendererData.RenderTarget.IsWindow ? rendererData.RenderTarget.AsWindow.Size : rendererData.RenderTarget.ViewportDimensions
+		);
 		SetViewDepthOfFieldEnabled(viewport.Handle, camera.FocusDistance != null).ThrowIfFailure(); 
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
@@ -1281,8 +1297,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		ReleaseRenderTargetUnionIfUnused(data.RenderTarget);
 	}
 
-	// Tears down the shared native Renderer/SwapChain only once nothing (renderer or compositor) still targets the union.
-	// Called from both Renderer and RendererCompositor disposal because either may be the last holder of the target.
 	void ReleaseRenderTargetUnionIfUnused(RenderTargetUnion rtu) {
 		if (RenderTargetUnionIsInUse(rtu)) return;
 

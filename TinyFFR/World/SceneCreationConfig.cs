@@ -8,7 +8,7 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.World;
 
 public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConfig> {
-	public static readonly ColorVect DefaultInitialBackdropColor = ColorVect.FromRgb24(0x43A8D3);
+	public static readonly ColorVect DefaultInitialBackdropColor = ColorVect.FromRgb24(0x080808);
 
 	public ReadOnlySpan<char> Name { get; init; }
 	public ColorVect? InitialBackdropColor { get; init; } = DefaultInitialBackdropColor;

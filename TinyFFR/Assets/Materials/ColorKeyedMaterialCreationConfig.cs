@@ -2,11 +2,15 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public readonly ref struct ColorKeyedMaterialCreationConfig : IConfigStruct<ColorKeyedMaterialCreationConfig> {
+	static char[]? _keyMapParameterString = null;
+	public static ReadOnlySpan<char> KeyMapParameterString => MaterialCreationConfig.GetOrCreateParameterString(ref _keyMapParameterString, LocalShaderPackageConstants.ColorKeyedMaterialShader.ParamKeyMap);
+
 	public required Texture KeyMap { get; init; }
 	public bool BlendOutputAlphaWithScene { get; init; } = false;
 

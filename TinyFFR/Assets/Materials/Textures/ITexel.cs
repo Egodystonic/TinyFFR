@@ -21,6 +21,7 @@ public interface ITexel {
 public interface ITexel<TSelf> : ITexel, IBlendable<TSelf>, IFixedLengthByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf> {
 	TSelf WithInvertedChannelIfPresent(int channelIndex);
 	TSelf SwizzlePresentChannels(ColorChannel redSource, ColorChannel greenSource, ColorChannel blueSource, ColorChannel alphaSource);
+	TSelf WithPremultipliedAlpha();
 }
 public interface IConversionSupplyingTexel<TSelf, TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
 	static abstract TSelf ConvertFrom(TOther o);

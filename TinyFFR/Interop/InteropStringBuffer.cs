@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Egodystonic.TinyFFR.Interop;
 
-sealed unsafe class InteropStringBuffer : IDisposable {
+readonly unsafe struct InteropStringBuffer : IDisposable {
 	public InteropStringBuffer(int length, bool addOneForNullTerminator) {
 		if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length), length, "Buffer length must be positive.");
 		if (addOneForNullTerminator) length++;

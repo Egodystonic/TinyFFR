@@ -27,7 +27,7 @@ unsafe class ObjectPoolTest {
 
 	[TearDown]
 	public void TearDownTest() {
-		_simplePool.Dispose();
+		_simplePool.Dispose(false);
 		_argPool.Dispose(false);
 	}
 
@@ -74,7 +74,7 @@ unsafe class ObjectPoolTest {
 
 		const int NumIterations = 10_000;
 
-		_simplePool.Dispose();
+		_simplePool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 		_argPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 
 		_simplePool = new(&NullaryCreationFunc);
@@ -194,6 +194,39 @@ unsafe class ObjectPoolTest {
 		Assert.IsFalse(rented1.IsDisposed);
 		Assert.IsFalse(rented2.IsDisposed);
 		foreach (var item in items) Assert.IsFalse(item.IsDisposed);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDisposeContainedItemsWhenRequestedForArglessPool() {
+		static MockDisposable CreateDisposable() => new();
+
+		var pool = new ObjectPool<MockDisposable>(&CreateDisposable, 0);
+		var rented1 = pool.Rent();
+		var rented2 = pool.Rent();
+		pool.Return(rented1);
+		pool.Return(rented2);
+		pool.Dispose(true);
+		Assert.IsTrue(rented1.IsDisposed);
+		Assert.IsTrue(rented2.IsDisposed);
+
+		pool = new ObjectPool<MockDisposable>(&CreateDisposable, 0);
+		rented1 = pool.Rent();
+		rented2 = pool.Rent();
+		pool.Return(rented1);
+		pool.Return(rented2);
+		pool.ReleasePooledObjects(true);
+		Assert.IsTrue(rented1.IsDisposed);
+		Assert.IsTrue(rented2.IsDisposed);
+		pool.Dispose(false);
+
+		pool = new ObjectPool<MockDisposable>(&CreateDisposable, 0);
+		rented1 = pool.Rent();
+		rented2 = pool.Rent();
+		pool.Return(rented1);
+		pool.Return(rented2);
+		pool.Dispose(false);
+		Assert.IsFalse(rented1.IsDisposed);
+		Assert.IsFalse(rented2.IsDisposed);
 	}
 
 	[Test]

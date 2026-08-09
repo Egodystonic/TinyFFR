@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -174,20 +175,31 @@ public interface IObjectBuilder {
 	#endregion
 	
 	#region Text
-	TextInstance CreateTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? facingDirection = null, Direction? uprightDirection = null, TextMeshLayout? layout = null, ReadOnlySpan<char> name = default) {
-		layout ??= new TextMeshLayout();
+	TextInstance CreateTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? facingDirection = null, Direction? uprightDirection = null, TextLayout? layout = null, ReadOnlySpan<char> name = default) {
+		layout ??= new TextLayout();
 		return CreateTextInstance(pen, @string, layout.Value, new ModelInstanceCreationConfig {
 			Name = name,
 			InitialTransform = @string.Font.GetTextInstanceTransform(@string.Size, position ?? Location.Origin, facingDirection ?? Direction.Backward, uprightDirection, layout.Value)
 		});
 	}
-	TextInstance CreateTextInstance(FontPen pen, FontString @string, TextMeshLayout layout, in ModelInstanceCreationConfig config) {
-		var underlyingInstance = CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config);
-		return new TextInstance(underlyingInstance, pen, @string, layout);
+	TextInstance CreateTextInstance(FontPen pen, FontString @string, TextLayout layout, in ModelInstanceCreationConfig config) {
+		if (config.Name.IsEmpty) {
+			const string InstanceNamePrefix = "Instance of ";
+			const int MaxAutoNameLength = 5_000;
+			var concatenatedLength = @string.GetStringMesh().GetNameLength() + InstanceNamePrefix.Length;
+			if (concatenatedLength <= MaxAutoNameLength) {
+				Span<char> autoName = stackalloc char[concatenatedLength];
+				InstanceNamePrefix.CopyTo(autoName);
+				@string.GetStringMesh().CopyName(autoName[InstanceNamePrefix.Length..]);
+				return new TextInstance(CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), config with { Name = autoName }), pen, @string, layout);
+			}
+		}
+		
+		return new TextInstance(CreateModelInstance(@string.GetStringMesh(), pen.GetPenMaterial(), in config), pen, @string, layout);
 	}
 
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextMeshLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
-		layout ??= new TextMeshLayout();
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+		layout ??= new TextLayout();
 		return CreateCameraLockedTextInstance(
 			pen,
 			@string,
@@ -202,7 +214,7 @@ public interface IObjectBuilder {
 		);
 	}
 	// TODO xmldoc lockedUprightDirection can be None
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, TextMeshLayout layout, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, TextLayout layout, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
 		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, layout, in config), lockedUprightDirection, layout.PositionAnchor, scalingMode, lockStyle);
 	}
 	#endregion

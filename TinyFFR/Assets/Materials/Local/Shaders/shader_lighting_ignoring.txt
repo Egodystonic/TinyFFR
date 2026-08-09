@@ -28,7 +28,7 @@ fragment {
 
 #option AlphaMode
 #variant AlphaOff
-		material.postLightingColor.rgb = texture(materialParams_color_map, uv0).rgb;
+		material.postLightingColor = vec4(texture(materialParams_color_map, uv0).rgb, 1.0);
 #variant AlphaOn
 		material.postLightingColor.rgba = texture(materialParams_color_map, uv0).rgba;
 #endoption

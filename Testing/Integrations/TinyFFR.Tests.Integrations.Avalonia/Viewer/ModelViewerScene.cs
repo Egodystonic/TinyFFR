@@ -72,7 +72,7 @@ sealed class ModelViewerScene : IDisposable {
 		);
 		_scene = _factory.SceneBuilder.CreateScene(_backdrop);
 		_mainRenderer = _factory.RendererBuilder.CreateBindableRenderer(_scene, _camera, _factory.ResourceAllocator);
-		_mainRenderer.SetQuality(new(BuiltInQualityConfiguration.Ultra));
+		_mainRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
 
 		_scene.Add(_cameraLight);
 		_scene.Add(_sunlight);
@@ -204,7 +204,7 @@ sealed class ModelViewerScene : IDisposable {
 		}
 	}
 
-	public void SetQuality(BuiltInQualityConfiguration quality) => _mainRenderer.SetQuality(new(quality));
+	public void SetQuality(BuiltInQualityConfiguration quality) => _mainRenderer.SetQuality(quality);
 
 	public void SetCompositeMode(bool enabled) {
 		if (enabled == (_compositor != null)) return;

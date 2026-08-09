@@ -55,9 +55,9 @@ public static partial class TextureUtils {
 						|| config.YGreenFinalOutputSource != ColorChannel.G
 						|| config.ZBlueFinalOutputSource != ColorChannel.B
 						|| config.WAlphaFinalOutputSource != ColorChannel.A;
-		var shouldPreprocess = config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel || shouldSwizzle;
-		if (!shouldPreprocess) return;
-
+		var requiresSwizzleOrInversionOrAlphaPremultiply = config.MultiplyAlpha || config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel || shouldSwizzle;
+		if (!requiresSwizzleOrInversionOrAlphaPremultiply) return;
+		
 		for (var i = 0; i < texelCount; ++i) {
 			if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
 			if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
@@ -70,6 +70,9 @@ public static partial class TextureUtils {
 					config.ZBlueFinalOutputSource,
 					config.WAlphaFinalOutputSource
 				);
+			}
+			if (config.MultiplyAlpha) {
+				buffer[i] = buffer[i].WithPremultipliedAlpha();
 			}
 		}
 	}

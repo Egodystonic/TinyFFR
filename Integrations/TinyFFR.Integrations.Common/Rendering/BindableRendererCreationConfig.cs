@@ -11,12 +11,11 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	public const int DefaultGpuSynchronizationFrameBufferCount = RendererCreationConfig.DefaultGpuSynchronizationFrameBufferCount;
 	public const int MinGpuSynchronizationFrameBufferCount = RendererCreationConfig.MinGpuSynchronizationFrameBufferCount;
 	public const int MaxGpuSynchronizationFrameBufferCount = RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount;
-	public static readonly RenderQualityConfig DefaultQuality = RendererCreationConfig.DefaultQuality;
 	public static readonly XYPair<int> DefaultDefaultBufferSize = (960, 540);
 
 	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
 
-	public RendererCreationConfig BaseConfig { get; init; } = new();
+	public RendererCreationConfig BaseConfig { get; init; } = new() { Quality = RenderQualityConfig.Default };
 
 	public bool AutoUpdateCameraAspectRatio {
 		get => BaseConfig.AutoUpdateCameraAspectRatio;
@@ -26,7 +25,7 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 		get => BaseConfig.GpuSynchronizationFrameBufferCount;
 		init => BaseConfig = BaseConfig with { GpuSynchronizationFrameBufferCount = value };
 	}
-	public RenderQualityConfig Quality {
+	public required RenderQualityConfig Quality {
 		get => BaseConfig.Quality;
 		init => BaseConfig = BaseConfig with { Quality = value };
 	} 
@@ -54,9 +53,12 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
 	}
 	public static BindableRendererCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		var bufferSize = SerializationRead<XYPair<int>>(ref src);
+		var subConfig = SerializationReadSubConfig<RendererCreationConfig>(ref src);
 		return new() {
-			DefaultBufferSize = SerializationRead<XYPair<int>>(ref src),
-			BaseConfig = SerializationReadSubConfig<RendererCreationConfig>(ref src)
+			DefaultBufferSize = bufferSize,
+			BaseConfig = subConfig,
+			Quality = subConfig.Quality
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {

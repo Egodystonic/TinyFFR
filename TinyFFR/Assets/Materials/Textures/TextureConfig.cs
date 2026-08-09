@@ -42,22 +42,30 @@ public readonly record struct TextureRenderingConfig {
 
 public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> {
 	public bool IncludeWAlphaChannel { get; init; } = true;
+	public bool ForceWAlphaChannelPresence { get; init; } = false;
 
 	public TextureReadConfig() { }
 
 	internal void ThrowIfInvalid() {
-		/* no-op */
+		if (ForceWAlphaChannelPresence && !IncludeWAlphaChannel) {
+			throw new InvalidOperationException(
+				$"It is not permitted for {nameof(ForceWAlphaChannelPresence)} to be true while {nameof(IncludeWAlphaChannel)} is false."
+			);
+		}
 	}
 
 	public static int GetHeapStorageFormattedLength(in TextureReadConfig src) {
-		return SerializationSizeOfBool(); // IncludeWAlphaChannel
+		return	SerializationSizeOfBool() // IncludeWAlphaChannel
+			+	SerializationSizeOfBool(); // ForceWAlphaChannelPresence
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureReadConfig src) {
 		SerializationWriteBool(ref dest, src.IncludeWAlphaChannel);
+		SerializationWriteBool(ref dest, src.ForceWAlphaChannelPresence);
 	}
 	public static TextureReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new TextureReadConfig {
-			IncludeWAlphaChannel = SerializationReadBool(ref src)
+			IncludeWAlphaChannel = SerializationReadBool(ref src),
+			ForceWAlphaChannelPresence = SerializationReadBool(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -169,6 +177,13 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 			RequiresProcessing = RequiresProcessing || value;
 		}
 	} = false;
+	public bool MultiplyAlpha {
+		get;
+		init {
+			field = value;
+			RequiresProcessing = RequiresProcessing || value;
+		}
+	} = false;
 	// TODO xmldoc these four properties set which channels will make up the final output channels
 	// TODO e.g. if XRedFinalOutputSource is 'G', the YGreen channel will be copied to XRed as the last step
 	public ColorChannel XRedFinalOutputSource {
@@ -226,6 +241,11 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 			WAlphaFinalOutputSource = alphaSource
 		};
 	}
+	public static TextureProcessingConfig PremultiplyAlpha() {
+		return new() {
+			MultiplyAlpha = true
+		};
+	}
 
 	internal void ThrowIfInvalid() { /* no-op */ }
 
@@ -236,6 +256,7 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 			+ SerializationSizeOfBool() // InvertYGreenChannel
 			+ SerializationSizeOfBool() // InvertZBlueChannel
 			+ SerializationSizeOfBool() // InvertWAlphaChannel
+			+ SerializationSizeOfBool() // MultiplyAlpha
 			+ SerializationSizeOfInt() // XRedFinalOutputSource
 			+ SerializationSizeOfInt() // YGreenFinalOutputSource
 			+ SerializationSizeOfInt() // ZBlueFinalOutputSource
@@ -248,6 +269,7 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 		SerializationWriteBool(ref dest, src.InvertYGreenChannel);
 		SerializationWriteBool(ref dest, src.InvertZBlueChannel);
 		SerializationWriteBool(ref dest, src.InvertWAlphaChannel);
+		SerializationWriteBool(ref dest, src.MultiplyAlpha);
 		SerializationWriteInt(ref dest, (int) src.XRedFinalOutputSource);
 		SerializationWriteInt(ref dest, (int) src.YGreenFinalOutputSource);
 		SerializationWriteInt(ref dest, (int) src.ZBlueFinalOutputSource);
@@ -261,6 +283,7 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 			InvertYGreenChannel = SerializationReadBool(ref src),
 			InvertZBlueChannel = SerializationReadBool(ref src),
 			InvertWAlphaChannel = SerializationReadBool(ref src),
+			MultiplyAlpha = SerializationReadBool(ref src),
 			XRedFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
 			YGreenFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
 			ZBlueFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),

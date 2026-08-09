@@ -86,10 +86,13 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 
-	internal TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextMeshLayout layout) {
+	internal TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextLayout layout) {
 		UnderlyingModelInstance = underlyingModelInstance;
 		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string, layout);
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextLayout layout) => new(underlyingModelInstance, pen, @string, layout);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingModelInstance.GetNameAsNewStringObject();
@@ -98,7 +101,7 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
-	public void SetTransform(Location position, Direction facingDirection, Direction? uprightDirection, TextMeshLayout layout) {
+	public void SetTransform(Location position, Direction facingDirection, Direction? uprightDirection, TextLayout layout) {
 		UnderlyingModelInstance.Implementation.SetTextInstanceLayout(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), layout);
 		
 		var @string = String;

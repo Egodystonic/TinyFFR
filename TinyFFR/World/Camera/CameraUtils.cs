@@ -106,9 +106,9 @@ public static class CameraUtils {
 		return new Ray(Location.FromVector3(pixelWorldLocation.AsVector3()), Direction.FromVector3(dir));
 	}
 	
-	public static Ray CreateRayFromOrthographicCameraParameters(Location cameraPosition, Direction cameraViewDirection, Direction cameraUpDirection, float nearPlaneDistance, float farPlaneDistance, Angle verticalFov, float aspectRatio, XYPair<float> normalizedNearPlaneCoordinate) {
+	public static Ray CreateRayFromOrthographicCameraParameters(Location cameraPosition, Direction cameraViewDirection, Direction cameraUpDirection, float nearPlaneDistance, float farPlaneDistance, float orthographicHeight, float aspectRatio, XYPair<float> normalizedNearPlaneCoordinate) {
 		CalculateModelMatrix(cameraPosition, cameraViewDirection, cameraUpDirection, out var modelMat);
-		CalculatePerspectiveProjectionMatrix(nearPlaneDistance, farPlaneDistance, verticalFov, aspectRatio, out var projMat);
+		CalculateOrthographicProjectionMatrix(nearPlaneDistance, farPlaneDistance, orthographicHeight, aspectRatio, out var projMat);
 		return CreateRayFromOrthographicCameraParameters(in modelMat, in projMat, normalizedNearPlaneCoordinate);
 	}
 	

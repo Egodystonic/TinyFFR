@@ -71,6 +71,9 @@ class LocalShaderPackageConstantsTest {
 			shaderSet.Add(shader);
 		}
 
+		Assert.IsFalse(shaderSet.Contains(CanvasMaterialShader.ShaderResourceName));
+		shaderSet.Add(CanvasMaterialShader.ShaderResourceName);
+
 		Console.WriteLine($"Completed with {shaderSet.Count} distinct shaders.");
 	}
 

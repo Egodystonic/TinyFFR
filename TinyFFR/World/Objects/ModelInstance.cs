@@ -212,6 +212,9 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetEffectBlendDistance(MaterialEffectMapType mapType, float distance) => Implementation.SetMaterialEffectBlendDistance(_handle, mapType, distance);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEffectOpacity(float opacity) => Implementation.SetMaterialEffectOpacity(_handle, opacity);
+
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);

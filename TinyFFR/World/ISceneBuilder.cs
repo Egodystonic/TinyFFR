@@ -10,16 +10,21 @@ namespace Egodystonic.TinyFFR.World;
 
 public interface ISceneBuilder {
 	Scene CreateScene(ReadOnlySpan<char> name = default) {
-		return CreateScene(new SceneCreationConfig { Name = name});
+		return CreateScene(new SceneCreationConfig { Name = name });
 	}
 	Scene CreateScene(ColorVect? backdropColor, ReadOnlySpan<char> name = default) {
-		return CreateScene(new SceneCreationConfig { InitialBackdropColor = backdropColor, Name = name});
+		return CreateScene(new SceneCreationConfig { InitialBackdropColor = backdropColor, Name = name });
 	}
 	Scene CreateScene(BuiltInSceneBackdrop backdrop, ReadOnlySpan<char> name = default) {
-		return CreateScene(new SceneCreationConfig { InitialBackdrop = backdrop, Name = name});
+		return CreateScene(new SceneCreationConfig { InitialBackdrop = backdrop, Name = name });
 	}
 	Scene CreateScene(BackdropTexture backdrop, ReadOnlySpan<char> name = default) {
-		return CreateScene(new SceneCreationConfig { InitialBackdropTexture = backdrop, Name = name});
+		return CreateScene(new SceneCreationConfig { InitialBackdropTexture = backdrop, Name = name });
 	}
 	Scene CreateScene(in SceneCreationConfig config);
+
+	CanvasScene CreateCanvasScene(ReadOnlySpan<char> name = default) {
+		return CreateCanvasScene(new CanvasSceneCreationConfig { Name = name });
+	}
+	CanvasScene CreateCanvasScene(in CanvasSceneCreationConfig config);
 }

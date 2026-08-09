@@ -1,4 +1,4 @@
-// Created on 2026-07-30 by Ben Bowen
+﻿// Created on 2026-07-30 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -36,6 +36,7 @@ sealed class UiInputSource : IDisposable {
 		_element.PointerCaptureLost += HandlePointerCaptureLost;
 		_element.LostFocus += HandleLostFocus;
 		_element.AttachedToVisualTree += HandleAttachedToVisualTree;
+		_element.TextInput += HandleTextInput;
 
 		TrySubscribeToHostWindow();
 	}
@@ -45,6 +46,7 @@ sealed class UiInputSource : IDisposable {
 	void HandleKeyDown(object? sender, KeyEventArgs e) => _kbm.RecordKeyDown(KeyboardOrMouseKeyMap.Translate(e.Key, e.KeySymbol));
 	void HandleKeyUp(object? sender, KeyEventArgs e) => _kbm.RecordKeyUp(KeyboardOrMouseKeyMap.Translate(e.Key, e.KeySymbol));
 	void HandleLostFocus(object? sender, RoutedEventArgs e) => _kbm.ReleaseAllHeldKeyboardKeys();
+	void HandleTextInput(object? sender, TextInputEventArgs e) => _kbm.RecordTextInput(e.Text);
 
 	void HandlePointerPressed(object? sender, PointerPressedEventArgs e) {
 		var point = e.GetCurrentPoint(_element);
@@ -123,6 +125,7 @@ sealed class UiInputSource : IDisposable {
 			_element.PointerCaptureLost -= HandlePointerCaptureLost;
 			_element.LostFocus -= HandleLostFocus;
 			_element.AttachedToVisualTree -= HandleAttachedToVisualTree;
+			_element.TextInput -= HandleTextInput;
 			if (_subscribedWindow != null) {
 				_subscribedWindow.Closing -= HandleWindowClosing;
 				_subscribedWindow = null;

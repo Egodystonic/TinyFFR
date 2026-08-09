@@ -30,23 +30,10 @@ class LocalCameraRayCreationTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Keys: Mouse1 / Space / Enter");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin + Direction.Backward * 2f);
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere);
-		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		
-		var activeInstances = new ModelInstance[8];
-		for (var i = 0; i < activeInstances.Length; ++i) {
-			activeInstances[i] = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialScaling: new Vect(0.04f));
-		}
-		
-		using var light = factory.LightBuilder.CreateSpotLight(camera.Position, camera.ViewDirection, castsShadows: true, highQuality: true);
 		using var scene = factory.SceneBuilder.CreateScene();
-		scene.SetBackdrop(StandardColor.LightingAmbientOvercast, 0.3f);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-
-		scene.Add(light);
-		for (var i = 0; i < activeInstances.Length; ++i) {
-			scene.Add(activeInstances[i]);
-		}
+		ScenePrimitive? sceneRay = null;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
@@ -60,24 +47,17 @@ class LocalCameraRayCreationTest {
 
 			foreach (var mc in loop.Input.KeyboardAndMouse.NewMouseClicks) {
 				var ray = renderer.CastRayFromRenderSurface(mc.Location);
-				for (var i = 0; i < activeInstances.Length; ++i) {
-					activeInstances[i].SetPosition(ray.UnboundedLocationAtDistance(0.1f * (i + 1)));
-				}
+				ray = ray.MovedBy(ray.Direction * 0.01f);
+				sceneRay?.Dispose();
+				sceneRay = scene.AddPrimitiveShape(ray, constantScreenSize: false);
 			}
 			
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) {
 				camera.Position = Location.Origin + (Location.Origin >> camera.Position) * ((20f * deltaTime) % Direction.Down);
 				camera.LookAt(Location.Origin, Direction.Up);
-				light.Position = camera.Position;
-				light.ConeDirection = camera.ViewDirection;	
 			}
 			
 			renderer.Render();
-		}
-		
-		for (var i = 0; i < activeInstances.Length; ++i) {
-			scene.Remove(activeInstances[i]);
-			activeInstances[i].Dispose();
 		}
 	}
 }

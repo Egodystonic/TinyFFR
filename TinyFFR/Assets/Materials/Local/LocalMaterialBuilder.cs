@@ -32,6 +32,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		OrmMapBlend = 1 << 2,
 		EmissiveMapBlend = 1 << 3,
 		AtMapBlend = 1 << 4,
+		Opacity = 1 << 5,
 	}
 	readonly record struct MaterialData(IShaderPackageConstants PackageConstants, SupportedEffectsFlags SupportedEffects, Texture? EffectBlendColorMap, Texture? EffectBlendOrmMap, Texture? EffectBlendEmissiveMap, Texture? EffectBlendAbsorptionTransmissionMap) {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,6 +44,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	internal const string DefaultMaterialInstanceName = "Default Material";
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Material>, MaterialData> _activeMaterials = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Material>, ArrayPoolBackedStringKeyMap<Texture>> _activeMaterialMappedTextures = new();
+	readonly StringKeyMapPool<Texture> _activeMaterialMappedTexturesPool = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<ResourceGroup> _testMaterialTexturesRef;
 	bool _isDisposed = false;
@@ -88,6 +91,21 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, backgroundColor.AsVector4, shaderConstants.ParamBackgroundColor);
 		ApplyMaterialParam(result, outlineColor.AsVector4, shaderConstants.ParamOutlineColor);
 		ApplyMaterialParam(result, outlineThickness, shaderConstants.ParamOutlineThickness);
+
+		return result;
+	}
+
+	public Material AllocateCanvasMaterialInstance(Texture colorMap, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+
+		var shaderConstants = CanvasMaterialShader;
+
+		var result = InstantiateMaterial(shaderConstants.ShaderResourceName, name, shaderConstants);
+		ApplyMaterialParam(result, colorMap, shaderConstants.ParamColorMap);
+
+		var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend | SupportedEffectsFlags.Opacity;
+		SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
+		_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 
 		return result;
 	}
@@ -269,6 +287,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			var identityMat = Matrix4x4.Identity;
 			ApplyMaterialParam(mat, in identityMat, packageConstants.GetEffectUvTransformParamOrThrow());
 		}
+		if ((supportedEffects & SupportedEffectsFlags.Opacity) != 0) {
+			ApplyMaterialParam(mat, 1f, packageConstants.GetEffectOpacityParamOrThrow());
+		}
 	}
 
 	Material InstantiateMaterial(string shaderResourceName, ReadOnlySpan<char> resourceName, IShaderPackageConstants packageConstants) {
@@ -299,9 +320,26 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return newHandle;
 	}
 
+	ArrayPoolBackedStringKeyMap<Texture> GetOrCreateAssociatedTextureMap(ResourceHandle<Material> handle) {
+		if (_activeMaterialMappedTextures.TryGetValue(handle, out var result)) return result;
+		result = _activeMaterialMappedTexturesPool.Rent();
+		_activeMaterialMappedTextures.Add(handle, result);
+		return result;
+	}
+
+	public Texture? TryGetAssociatedTexture(ResourceHandle<Material> handle, ReadOnlySpan<char> parameterName) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMaterialMappedTextures.TryGetValue(handle, out var textureMap)) return null;
+		return textureMap.TryGetValue(parameterName, out var result) ? result : null;
+	}
+
 	void ApplyMaterialParam(Material material, Texture? map, ReadOnlySpan<byte> param) {
 		if (!map.HasValue) return;
 		var renderingConfig = map.Value.RenderingConfig;
+
+		Span<char> paramChars = stackalloc char[SpanUtils.GetUtf16Length(param)];
+		GetOrCreateAssociatedTextureMap(material.Handle)[SpanUtils.ConvertUtf8ToUtf16(paramChars, param)] = map.Value;
+
 		SetMaterialParameterTexture(
 			material.Handle,
 			in ParamRef(param),
@@ -373,6 +411,13 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Material>(newMaterialHandle).Ident, _globals.GetResourceName(handle.Ident, DefaultMaterialName), DefaultMaterialName);
 		_activeMaterials.Add(newMaterialHandle, _activeMaterials[handle]);
+
+		if (_activeMaterialMappedTextures.TryGetValue(handle, out var sourceTextureMap)) {
+			var destTextureMap = _activeMaterialMappedTexturesPool.Rent();
+			foreach (var kvp in sourceTextureMap) destTextureMap.Add(kvp.Key.AsSpan, kvp.Value);
+			_activeMaterialMappedTextures.Add(newMaterialHandle, destTextureMap);
+		}
+
 		return HandleToInstance(newMaterialHandle);
 	}
 
@@ -459,6 +504,15 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		if (!Single.IsFinite(distance)) distance = 0f;
 		ApplyMaterialParam(HandleToInstance(handle), distance, param);
+	}
+	public void SetEffectOpacity(ResourceHandle<Material> handle, float opacity) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var matData = _activeMaterials[handle];
+
+		if (!matData.SupportsEffect(SupportedEffectsFlags.Opacity)) return;
+
+		if (!Single.IsFinite(opacity)) opacity = 1f;
+		ApplyMaterialParam(HandleToInstance(handle), Single.Clamp(opacity, 0f, 1f), matData.PackageConstants.GetEffectOpacityParamOrThrow());
 	}
 
 	public void SetKeyedColor(ResourceHandle<Material> handle, ColorChannel key, ColorVect color) {
@@ -597,6 +651,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeMaterial);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
+		if (_activeMaterialMappedTextures.TryGetValue(handle, out var textureMap)) {
+			_activeMaterialMappedTexturesPool.Return(textureMap);
+			_activeMaterialMappedTextures.Remove(handle);
+		}
 		if (removeFromCollection) _activeMaterials.Remove(handle);
 	}
 
@@ -606,7 +664,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			foreach (var kvp in _activeMaterials) Dispose(kvp.Key, removeFromCollection: false);
 			foreach (var packageHandle in _loadedShaderPackages.Values) DisposeShaderPackage(packageHandle).ThrowIfFailure();
 
+			foreach (var textureMap in _activeMaterialMappedTextures.Values) textureMap.Dispose();
+
 			_activeMaterials.Dispose();
+			_activeMaterialMappedTextures.Dispose();
+			_activeMaterialMappedTexturesPool.Dispose();
 			_loadedShaderPackages.Dispose();
 		}
 		finally {

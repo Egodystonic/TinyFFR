@@ -45,6 +45,9 @@ class TextureConfigTest {
 
 		Assert.AreEqual(false, new TextureProcessingConfig { InvertWAlphaChannel = false }.RequiresProcessing);
 		Assert.AreEqual(true, new TextureProcessingConfig { InvertWAlphaChannel = true }.RequiresProcessing);
+		
+		Assert.AreEqual(false, new TextureProcessingConfig { MultiplyAlpha = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { MultiplyAlpha = true }.RequiresProcessing);
 
 		Assert.AreEqual(false, new TextureProcessingConfig { XRedFinalOutputSource = ColorChannel.R }.RequiresProcessing);
 		Assert.AreEqual(true, new TextureProcessingConfig { XRedFinalOutputSource = ColorChannel.G }.RequiresProcessing);
@@ -67,6 +70,7 @@ class TextureConfigTest {
 				InvertYGreenChannel = false,
 				InvertZBlueChannel = false,
 				InvertWAlphaChannel = false,
+				MultiplyAlpha = false,
 				XRedFinalOutputSource = ColorChannel.R,
 				YGreenFinalOutputSource = ColorChannel.G,
 				ZBlueFinalOutputSource = ColorChannel.B,
@@ -109,6 +113,7 @@ class TextureConfigTest {
 			InvertYGreenChannel = false,
 			InvertZBlueChannel = true,
 			InvertWAlphaChannel = false,
+			MultiplyAlpha = false,
 			XRedFinalOutputSource = ColorChannel.R,
 			YGreenFinalOutputSource = ColorChannel.G,
 			ZBlueFinalOutputSource = ColorChannel.B,
@@ -121,6 +126,7 @@ class TextureConfigTest {
 			InvertYGreenChannel = true,
 			InvertZBlueChannel = false,
 			InvertWAlphaChannel = true,
+			MultiplyAlpha = true,
 			XRedFinalOutputSource = ColorChannel.G,
 			YGreenFinalOutputSource = ColorChannel.B,
 			ZBlueFinalOutputSource = ColorChannel.A,
@@ -134,6 +140,7 @@ class TextureConfigTest {
 			Assert.AreEqual(expected.InvertYGreenChannel, actual.InvertYGreenChannel);
 			Assert.AreEqual(expected.InvertZBlueChannel, actual.InvertZBlueChannel);
 			Assert.AreEqual(expected.InvertWAlphaChannel, actual.InvertWAlphaChannel);
+			Assert.AreEqual(expected.MultiplyAlpha, actual.MultiplyAlpha);
 			Assert.AreEqual(expected.XRedFinalOutputSource, actual.XRedFinalOutputSource);
 			Assert.AreEqual(expected.YGreenFinalOutputSource, actual.YGreenFinalOutputSource);
 			Assert.AreEqual(expected.ZBlueFinalOutputSource, actual.ZBlueFinalOutputSource);
@@ -150,6 +157,7 @@ class TextureConfigTest {
 			.Bool(false)
 			.Bool(true)
 			.Bool(false)
+			.Bool(false)
 			.Int((int) ColorChannel.R)
 			.Int((int) ColorChannel.G)
 			.Int((int) ColorChannel.B)
@@ -162,6 +170,7 @@ class TextureConfigTest {
 			.Bool(false)
 			.Bool(true)
 			.Bool(false)
+			.Bool(true)
 			.Bool(true)
 			.Int((int) ColorChannel.G)
 			.Int((int) ColorChannel.B)
@@ -176,11 +185,57 @@ class TextureConfigTest {
 			.Including(nameof(TextureProcessingConfig.InvertYGreenChannel))
 			.Including(nameof(TextureProcessingConfig.InvertZBlueChannel))
 			.Including(nameof(TextureProcessingConfig.InvertWAlphaChannel))
+			.Including(nameof(TextureProcessingConfig.MultiplyAlpha))
 			.Including(nameof(TextureProcessingConfig.XRedFinalOutputSource))
 			.Including(nameof(TextureProcessingConfig.YGreenFinalOutputSource))
 			.Including(nameof(TextureProcessingConfig.ZBlueFinalOutputSource))
 			.Including(nameof(TextureProcessingConfig.WAlphaFinalOutputSource))
 			.End();
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertReadConfigToAndFromHeapStorageFormat() {
+		var testConfigA = new TextureReadConfig {
+			IncludeWAlphaChannel = true,
+			ForceWAlphaChannelPresence = true
+		};
+		var testConfigB = new TextureReadConfig {
+			IncludeWAlphaChannel = false,
+			ForceWAlphaChannelPresence = false
+		};
+
+		void AssertConfigsMatch(TextureReadConfig expected, TextureReadConfig actual) {
+			Assert.AreEqual(expected.IncludeWAlphaChannel, actual.IncludeWAlphaChannel);
+			Assert.AreEqual(expected.ForceWAlphaChannelPresence, actual.ForceWAlphaChannelPresence);
+		}
+
+		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
+		AssertRoundTripHeapStorage(testConfigB, AssertConfigsMatch);
+
+		AssertHeapSerializationWithObjects<TextureReadConfig>()
+			.Bool(true)
+			.Bool(true)
+			.For(testConfigA);
+
+		AssertHeapSerializationWithObjects<TextureReadConfig>()
+			.Bool(false)
+			.Bool(false)
+			.For(testConfigB);
+
+		AssertPropertiesAccountedFor<TextureReadConfig>()
+			.Including(nameof(TextureReadConfig.IncludeWAlphaChannel))
+			.Including(nameof(TextureReadConfig.ForceWAlphaChannelPresence))
+			.End();
+	}
+
+	[Test]
+	public void ReadConfigShouldRejectForcedAlphaWithoutIncludedAlpha() {
+		Assert.Throws<InvalidOperationException>(() => new TextureReadConfig { IncludeWAlphaChannel = false, ForceWAlphaChannelPresence = true }.ThrowIfInvalid());
+
+		Assert.DoesNotThrow(() => new TextureReadConfig { IncludeWAlphaChannel = true, ForceWAlphaChannelPresence = true }.ThrowIfInvalid());
+		Assert.DoesNotThrow(() => new TextureReadConfig { IncludeWAlphaChannel = true, ForceWAlphaChannelPresence = false }.ThrowIfInvalid());
+		Assert.DoesNotThrow(() => new TextureReadConfig { IncludeWAlphaChannel = false, ForceWAlphaChannelPresence = false }.ThrowIfInvalid());
+		Assert.DoesNotThrow(() => new TextureReadConfig().ThrowIfInvalid());
 	}
 
 	[Test]

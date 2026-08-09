@@ -23,7 +23,8 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		long PreviousIterationStartTimestamp, 
 		long PreviousIterationReturnTimestamp, 
 		TimeSpan TotalIteratedTime,
-		bool ShouldIterateInput
+		bool ShouldIterateInput,
+		bool ShouldTranscribeText
 	);
 	readonly record struct IterationTimingData(
 		PooledHeapMemory<TimeSpan> TimingBuffer,
@@ -58,7 +59,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) (++_prevHandleId);
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates));
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates, false));
 		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		return new(handle, this);
@@ -69,13 +70,24 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		return _latestInputRetriever;
 	}
 
+	public bool GetEnableInputTextTranscription(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _handleDataMap[handle].ShouldTranscribeText;
+	}
+	public void SetEnableInputTextTranscription(ResourceHandle<ApplicationLoop> handle, bool enable) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_handleDataMap[handle] = _handleDataMap[handle] with { ShouldTranscribeText = enable };
+	}
+
 	TimeSpan GetWaitTimeUntilNextFrameStart(ResourceHandle<ApplicationLoop> handle) {
 		var timeSinceLastIteration = Stopwatch.GetElapsedTime(_handleDataMap[handle].PreviousIterationStartTimestamp);
 		var result = _handleDataMap[handle].FrameInterval - timeSinceLastIteration;
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
 	}
-	void ExecuteIteration(bool shouldIterateInput) {
-		if (shouldIterateInput) _latestInputRetriever.IterateSystemWideInput();
+	void ExecuteIteration(bool shouldIterateInput, bool shouldTranscribeText) {
+		if (shouldIterateInput) {
+			_latestInputRetriever.IterateSystemWideInput(shouldTranscribeText);
+		}
 	}
 
 	public TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle) {
@@ -92,7 +104,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		}
 
 		_handleDataMap[handle] = _handleDataMap[handle] with { PreviousIterationStartTimestamp = Stopwatch.GetTimestamp() };
-		ExecuteIteration(_handleDataMap[handle].ShouldIterateInput);
+		ExecuteIteration(_handleDataMap[handle].ShouldIterateInput, _handleDataMap[handle].ShouldTranscribeText);
 
 		var dt = Stopwatch.GetElapsedTime(_handleDataMap[handle].PreviousIterationReturnTimestamp);
 		_handleDataMap[handle] = _handleDataMap[handle] with {
@@ -111,7 +123,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		}
 
 		_handleDataMap[handle] = _handleDataMap[handle] with { PreviousIterationStartTimestamp = Stopwatch.GetTimestamp() };
-		ExecuteIteration(_handleDataMap[handle].ShouldIterateInput);
+		ExecuteIteration(_handleDataMap[handle].ShouldIterateInput, _handleDataMap[handle].ShouldTranscribeText);
 
 		var dt = Stopwatch.GetElapsedTime(_handleDataMap[handle].PreviousIterationReturnTimestamp);
 		_handleDataMap[handle] = _handleDataMap[handle] with {

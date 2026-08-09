@@ -5,8 +5,8 @@ namespace Egodystonic.TinyFFR;
 
 public static class UiUtils {
 	public static XYPair<int> TranslateAnchoredCanvasOffset(XYPair<int> canvasSize, DiagonalOrientation2D canvasOrigin, Orientation2D anchor, XYPair<int> anchorOffset) {
-		if (!Enum.IsDefined(canvasOrigin) || canvasOrigin == DiagonalOrientation2D.None) {
-			throw new ArgumentOutOfRangeException(nameof(canvasOrigin), canvasOrigin, $"Canvas origin must be one of {DiagonalOrientation2D.DownLeft}, {DiagonalOrientation2D.DownRight}, {DiagonalOrientation2D.UpLeft} or {DiagonalOrientation2D.UpRight}.");
+		if (!Enum.IsDefined(canvasOrigin)) {
+			throw new ArgumentOutOfRangeException(nameof(canvasOrigin), canvasOrigin, $"Canvas origin must be {DiagonalOrientation2D.None} (indicating the canvas centre) or one of {DiagonalOrientation2D.DownLeft}, {DiagonalOrientation2D.DownRight}, {DiagonalOrientation2D.UpLeft} or {DiagonalOrientation2D.UpRight}.");
 		}
 
 		// Step 1: Determine the coord assuming the TinyFFR convention of bottom-left being (0, 0)
@@ -27,11 +27,13 @@ public static class UiUtils {
 		return new XYPair<int>(
 			canvasOrigin.GetHorizontalComponent() switch {
 				HorizontalOrientation2D.Right => canvasSize.X - downLeftOriginResult.X,
-				_ => downLeftOriginResult.X
+				HorizontalOrientation2D.Left => downLeftOriginResult.X,
+				_ => downLeftOriginResult.X - (canvasSize.X / 2)
 			},
 			canvasOrigin.GetVerticalComponent() switch {
 				VerticalOrientation2D.Up => canvasSize.Y - downLeftOriginResult.Y,
-				_ => downLeftOriginResult.Y
+				VerticalOrientation2D.Down => downLeftOriginResult.Y,
+				_ => downLeftOriginResult.Y - (canvasSize.Y / 2)
 			}
 		);
 	}
@@ -44,8 +46,8 @@ public static class UiUtils {
 		var anchorCoord = TranslateAnchoredCanvasOffset(canvasSize, canvasOrigin, anchor, anchorOffset);
 		var anchorH = anchor.GetHorizontalComponent();
 		var anchorV = anchor.GetVerticalComponent();
-		var canvasH = canvasOrigin.GetHorizontalComponent();
-		var canvasV = canvasOrigin.GetVerticalComponent();
+		var canvasH = canvasOrigin == DiagonalOrientation2D.None ? HorizontalOrientation2D.Left : canvasOrigin.GetHorizontalComponent();
+		var canvasV = canvasOrigin == DiagonalOrientation2D.None ? VerticalOrientation2D.Down : canvasOrigin.GetVerticalComponent();
 		
 		return new XYPair<int>(
 			(anchorH, canvasH) switch {

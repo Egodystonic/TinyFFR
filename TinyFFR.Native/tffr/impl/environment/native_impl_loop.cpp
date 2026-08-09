@@ -12,6 +12,7 @@ sdl_keycode_filter_translate_delegate native_impl_loop::keycode_filter_translate
 kbm_event_buffer_size_double_delegate native_impl_loop::kbm_event_buffer_double_delegate;
 controller_event_buffer_size_double_delegate native_impl_loop::controller_event_buffer_double_delegate;
 click_event_buffer_size_double_delegate native_impl_loop::click_event_buffer_double_delegate;
+text_input_buffer_size_double_delegate native_impl_loop::text_input_buffer_double_delegate;
 handle_new_controller_delegate native_impl_loop::handle_controller_delegate;
 KeyboardOrMouseKeyEvent* native_impl_loop::kbm_event_buffer;
 int32_t native_impl_loop::kbm_event_buffer_length;
@@ -19,31 +20,37 @@ RawGameControllerButtonEvent* native_impl_loop::controller_event_buffer;
 int32_t native_impl_loop::controller_event_buffer_length;
 MouseClickEvent* native_impl_loop::click_event_buffer;
 int32_t native_impl_loop::click_event_buffer_length;
+uint8_t* native_impl_loop::text_input_buffer;
+int32_t native_impl_loop::text_input_buffer_length;
 
-void native_impl_loop::set_event_poll_delegates(sdl_keycode_filter_translate_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
+void native_impl_loop::set_event_poll_delegates(sdl_keycode_filter_translate_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, text_input_buffer_size_double_delegate textInputBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
 	ThrowIfNull(keycodeFilterFuncPtr, "Keycode filter delegate was null.");
 	ThrowIfNull(kbmBufferDoubleDelegate, "Kbm buffer double delegate was null.");
 	ThrowIfNull(controllerBufferDoubleDelegate, "Controller buffer double delegate was null.");
 	ThrowIfNull(clickBufferDoubleDelegate, "Click buffer double delegate was null.");
+	ThrowIfNull(textInputBufferDoubleDelegate, "Text input buffer double delegate was null.");
 	ThrowIfNull(handleControllerDelegate, "Handle controller delegate was null.");
 
 	keycode_filter_translate_delegate = keycodeFilterFuncPtr;
 	kbm_event_buffer_double_delegate = kbmBufferDoubleDelegate;
 	controller_event_buffer_double_delegate = controllerBufferDoubleDelegate;
 	click_event_buffer_double_delegate = clickBufferDoubleDelegate;
+	text_input_buffer_double_delegate = textInputBufferDoubleDelegate;
 	handle_controller_delegate = handleControllerDelegate;
 }
-StartExportedFunc(set_event_poll_delegates, sdl_keycode_filter_translate_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
-	native_impl_loop::set_event_poll_delegates(keycodeFilterFuncPtr, kbmBufferDoubleDelegate, controllerBufferDoubleDelegate, clickBufferDoubleDelegate, handleControllerDelegate);
+StartExportedFunc(set_event_poll_delegates, sdl_keycode_filter_translate_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, text_input_buffer_size_double_delegate textInputBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
+	native_impl_loop::set_event_poll_delegates(keycodeFilterFuncPtr, kbmBufferDoubleDelegate, controllerBufferDoubleDelegate, clickBufferDoubleDelegate, textInputBufferDoubleDelegate, handleControllerDelegate);
 	EndExportedFunc
 }
-void native_impl_loop::set_event_poll_buffer_pointers(KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, MouseClickEvent* clickEventBuffer, int32_t clickEventBufferLength) {
+void native_impl_loop::set_event_poll_buffer_pointers(KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, MouseClickEvent* clickEventBuffer, int32_t clickEventBufferLength, uint8_t* textInputBuffer, int32_t textInputBufferLength) {
 	ThrowIfNull(kbmEventBuffer, "Kbm event buffer was null.");
 	ThrowIfNegative(kbmEventBufferLength, "Kbm event buffer length was negative.");
 	ThrowIfNull(controllerEventBuffer, "Controller event buffer was null.");
 	ThrowIfNegative(controllerEventBufferLength, "Controller event buffer length was negative.");
 	ThrowIfNull(clickEventBuffer, "Click event buffer was null.");
 	ThrowIfNegative(clickEventBufferLength, "Click event buffer length was negative.");
+	ThrowIfNull(textInputBuffer, "Text input buffer was null.");
+	ThrowIfNegative(textInputBufferLength, "Text input buffer length was negative.");
 
 	kbm_event_buffer = kbmEventBuffer;
 	kbm_event_buffer_length = kbmEventBufferLength;
@@ -51,9 +58,20 @@ void native_impl_loop::set_event_poll_buffer_pointers(KeyboardOrMouseKeyEvent* k
 	controller_event_buffer_length = controllerEventBufferLength;
 	click_event_buffer = clickEventBuffer;
 	click_event_buffer_length = clickEventBufferLength;
+	text_input_buffer = textInputBuffer;
+	text_input_buffer_length = textInputBufferLength;
 }
-StartExportedFunc(set_event_poll_buffer_pointers, KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, MouseClickEvent* clickEventBuffer, int32_t clickEventBufferLength) {
-	native_impl_loop::set_event_poll_buffer_pointers(kbmEventBuffer, kbmEventBufferLength, controllerEventBuffer, controllerEventBufferLength, clickEventBuffer, clickEventBufferLength);
+StartExportedFunc(set_event_poll_buffer_pointers, KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, MouseClickEvent* clickEventBuffer, int32_t clickEventBufferLength, uint8_t* textInputBuffer, int32_t textInputBufferLength) {
+	native_impl_loop::set_event_poll_buffer_pointers(kbmEventBuffer, kbmEventBufferLength, controllerEventBuffer, controllerEventBufferLength, clickEventBuffer, clickEventBufferLength, textInputBuffer, textInputBufferLength);
+	EndExportedFunc
+}
+
+void native_impl_loop::set_text_input_enabled(interop_bool enabled) {
+	if (enabled) SDL_StartTextInput();
+	else SDL_StopTextInput();
+}
+StartExportedFunc(set_text_input_enabled, interop_bool enabled) {
+	native_impl_loop::set_text_input_enabled(enabled);
 	EndExportedFunc
 }
 
@@ -124,10 +142,26 @@ void append_click_event(int32_t numEventsWrittenSoFar, int32_t x, int32_t y, int
 	native_impl_loop::click_event_buffer[numEventsWrittenSoFar].EventType = keyCode;
 	native_impl_loop::click_event_buffer[numEventsWrittenSoFar].ClickCount = clickCount;
 }
-void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested) {
+void append_text_input(int32_t* numBytesWrittenSoFar, const char* utf8Text) {
+	auto textLen = strlen(utf8Text);
+	if (textLen == 0) return;
+	if (textLen >= INT32_MAX) Throw("Text input event was impossibly long.");
+	auto textLenInt = static_cast<int32_t>(textLen);
+
+	while (native_impl_loop::text_input_buffer_length - *numBytesWrittenSoFar < textLenInt) {
+		if (native_impl_loop::text_input_buffer_length > (INT32_MAX / 2) - 1) Throw("Can not expand text input buffer any more.");
+		native_impl_loop::text_input_buffer = native_impl_loop::text_input_buffer_double_delegate();
+		native_impl_loop::text_input_buffer_length *= 2;
+	}
+
+	memcpy(native_impl_loop::text_input_buffer + *numBytesWrittenSoFar, utf8Text, textLenInt);
+	*numBytesWrittenSoFar += textLenInt;
+}
+void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outNumTextInputBytesWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested) {
 	ThrowIfNull(outNumKbmEventsWritten, "Num kbm events out pointer was null.");
 	ThrowIfNull(outNumControllerEventsWritten, "Num controller events out pointer was null.");
 	ThrowIfNull(outNumClickEventsWritten, "Num click events out pointer was null.");
+	ThrowIfNull(outNumTextInputBytesWritten, "Num text input bytes out pointer was null.");
 	ThrowIfNull(outMousePosX, "MouseX out pointer was null.");
 	ThrowIfNull(outMousePosY, "MouseY out pointer was null.");
 	ThrowIfNull(outMouseDeltaX, "MouseX delta out pointer was null.");
@@ -139,6 +173,7 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 	int32_t numKbmEventsWritten = 0;
 	int32_t numControllerEventsWritten = 0;
 	int32_t numClickEventsWritten = 0;
+	int32_t numTextInputBytesWritten = 0;
 	int32_t mousePosX = INT32_MIN;
 	int32_t mousePosY = INT32_MIN;
 	int32_t mouseDeltaX = 0;
@@ -207,6 +242,11 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				break;
 			}
 		
+			case SDL_EventType::SDL_TEXTINPUT: {
+				append_text_input(&numTextInputBytesWritten, event.text.text);
+				break;
+			}
+
 			case SDL_EventType::SDL_QUIT: {
 				quitRequested = interop_bool_true;
 				break;
@@ -224,17 +264,19 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 	*outNumKbmEventsWritten = numKbmEventsWritten;
 	*outNumControllerEventsWritten = numControllerEventsWritten;
 	*outNumClickEventsWritten = numClickEventsWritten;
+	*outNumTextInputBytesWritten = numTextInputBytesWritten;
 	*outMousePosX = mousePosX;
 	*outMousePosY = mousePosY;
 	*outMouseDeltaX = mouseDeltaX;
 	*outMouseDeltaY = mouseDeltaY;
 	*outQuitRequested = quitRequested;
 }
-StartExportedFunc(iterate_events, int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested) {
+StartExportedFunc(iterate_events, int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outNumTextInputBytesWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested) {
 	native_impl_loop::iterate_events(
 		outNumKbmEventsWritten,
 		outNumControllerEventsWritten,
 		outNumClickEventsWritten,
+		outNumTextInputBytesWritten,
 		outMousePosX,
 		outMousePosY,
 		outMouseDeltaX,

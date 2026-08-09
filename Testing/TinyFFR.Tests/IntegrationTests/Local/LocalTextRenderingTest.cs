@@ -76,13 +76,13 @@ class LocalTextRenderingTest {
 		
 		void UpdateInstanceTransform() {
 			if (curScalingParamsIdx == 0) {
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextMeshLayout(TextHeight, anchors[curAnchorIdx]));
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextLayout(TextHeight, anchors[curAnchorIdx]));
 			}
 			else if (curScalingParamsIdx == 1) {
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextMeshLayout(TextHeight, anchors[curAnchorIdx], null, true));
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextLayout(TextHeight, anchors[curAnchorIdx], null, true));
 			}
 			else {
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextMeshLayout(null, anchors[curAnchorIdx], TextWidth, false));
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, uprightDirection: camera.UpDirection, new TextLayout(null, anchors[curAnchorIdx], TextWidth, false));
 			}
 		}
 		

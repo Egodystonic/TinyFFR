@@ -1,4 +1,4 @@
-﻿material {
+material {
 	name : %NAME%,
 	parameters : [
 		{
@@ -16,6 +16,10 @@
 		{
 			type : float,
 			name : color_map_blend_distance
+		},
+		{
+			type : float,
+			name : opacity
 		}
 	],
 	requires : [
@@ -24,12 +28,7 @@
 	shadingModel : lit,
 	flipUV : false,
 	postLightingBlending : opaque,
-#option AlphaMode
-#variant AlphaOff
-	blending : opaque
-#variant AlphaOn
 	blending : fade
-#endoption
 }
 
 fragment {
@@ -39,15 +38,9 @@ fragment {
 
 		prepareMaterial(material);
 
-#option AlphaMode
-#variant AlphaOff
-		vec3 startColor = texture(materialParams_color_map, uv0).rgb;
-		vec3 endColor = texture(materialParams_color_map_blend, uv0).rgb;
-		material.postLightingColor = vec4(startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance, 1.0);
-#variant AlphaOn
 		vec4 startColor = texture(materialParams_color_map, uv0).rgba;
 		vec4 endColor = texture(materialParams_color_map_blend, uv0).rgba;
-		material.postLightingColor.rgba = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
-#endoption
+		vec4 blendedColor = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
+		material.postLightingColor = blendedColor * materialParams.opacity;
 	}
 }

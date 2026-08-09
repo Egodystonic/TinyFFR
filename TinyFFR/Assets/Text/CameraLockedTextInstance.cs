@@ -23,6 +23,11 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 		LockStyle = lockStyle;
 	}
 	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static CameraLockedTextInstance FromPreviouslyAllocatedUnderlyingTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
+		return new(underlyingTextInstance, lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+	}
+
 	public Font Font => UnderlyingTextInstance.Font;
 
 	public FontPen Pen {

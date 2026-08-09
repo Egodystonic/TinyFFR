@@ -86,7 +86,7 @@ class LocalRenderQualityTest {
 				_ => BuiltInQualityConfiguration.Medium,
 			};
 		}
-		static AntiAliasingMode CycleAa(AntiAliasingMode m) => m >= AntiAliasingMode.Taa ? AntiAliasingMode.None : (AntiAliasingMode) ((int) m + 1);
+		static AntiAliasingMode CycleAa(AntiAliasingMode m) => m >= AntiAliasingMode.TaaIncreasedSharpening ? AntiAliasingMode.None : (AntiAliasingMode) ((int) m + 1);
 		static float CycleResScale(float s) => s <= 0.25f ? 1f : s - 0.25f; // 1.0 -> 0.75 -> 0.5 -> 0.25 -> 1.0
 
 		RenderQualityConfig BuildConfig() => new() {
@@ -104,12 +104,21 @@ class LocalRenderQualityTest {
 		};
 
 		var summary = "";
+		static string QualityShortString(Quality q) => q switch {
+			Quality.VeryLow => "--",
+			Quality.Low => "-",
+			Quality.Standard => "=",
+			Quality.High => "+",
+			Quality.VeryHigh => "++",
+			_ => q.ToString()
+		};
+		static string BoolShortString(bool b) => b ? "✔️" : "❌";
 		void ApplyAndReport() {
 			renderer.SetQuality(BuildConfig());
 			summary =
-				$"[1]AA:{antiAliasing} [2]AO:{ambientOcclusionQuality} [3]PP:{postProcessingEnabled} [4]Scale:{internalResolutionScalar:0.00} " +
-				$"[5]HDR:{hdrColorPrecision} [6]Shad:{shadowsEnabled} [7]Bloom:{bloomQuality} [8]Dthr:{dithering} " +
-				$"[9]ShadQ:{shadowQuality} [0]SSE:{screenSpaceEffectsQuality} [-]DoF:{dofQuality} [Q]All";
+				$"[1]AA:{antiAliasing} [2]AO:{QualityShortString(ambientOcclusionQuality)} [3]PP:{BoolShortString(postProcessingEnabled)} [4]Scale:{internalResolutionScalar:0.00} " +
+				$"[5]HDR:{QualityShortString(hdrColorPrecision)} [6]Shad:{BoolShortString(shadowsEnabled)} [7]Bloom:{QualityShortString(bloomQuality)} [8]Dthr:{BoolShortString(dithering)} " +
+				$"[9]ShadQ:{QualityShortString(shadowQuality)} [0]SSE:{QualityShortString(screenSpaceEffectsQuality)} [-]DoF:{QualityShortString(dofQuality)} [Q]All";
 		}
 
 		ApplyAndReport();
@@ -149,7 +158,7 @@ class LocalRenderQualityTest {
 				camera.FocusDistance = dofEnabled ? 0.1f : null;
 			}
 
-			window.SetTitle(summary + $" [D]DoF:{dofEnabled} [F]Fog:{fogEnabled}" + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
+			window.SetTitle(summary + $" [D]DoF:{BoolShortString(dofEnabled)} [F]Fog:{BoolShortString(fogEnabled)}" + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");
 
 			DefaultCameraInputHandler.TickKbm(kbm, cameraController, dt, window);
 			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, dt);

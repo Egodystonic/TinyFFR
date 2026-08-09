@@ -1,4 +1,4 @@
-// Created on 2026-07-14 by Ben Bowen
+﻿// Created on 2026-07-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -30,8 +30,8 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public readonly List<bool> FrustumCullingCalls = new();
 	public readonly List<(Orientation2D Anchor, XYPair<float> Offset, XYPair<float> Dimensions)> SubAreaFractionCalls = new();
 	public readonly List<(Orientation2D Anchor, XYPair<int> Offset, XYPair<int> Dimensions)> SubAreaPixelCalls = new();
-	public readonly List<(XYPair<int> PixelCoord, bool YZeroOriginAtBottom, bool DisableDpiScalingAdjustment)> RenderSurfaceRayCalls = new();
-	public readonly List<(XYPair<int> PixelCoord, bool YZeroOriginAtBottom, bool DisableDpiScalingAdjustment)> ViewportSurfaceRayCalls = new();
+	public readonly List<(XYPair<int> PixelCoord, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> RenderSurfaceRayCalls = new();
+	public readonly List<(XYPair<int> PixelCoord, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> ViewportSurfaceRayCalls = new();
 
 	public FakeRendererImplProvider(ResourceHandle<Renderer> handle, Scene scene, Camera camera, RenderOutputBuffer targetBuffer, in RendererCreationConfig config) {
 		Handle = handle;
@@ -68,12 +68,12 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
 	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
-		RenderSurfaceRayCalls.Add((pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment));
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		RenderSurfaceRayCalls.Add((pixelCoord, coordOrigin, disableDpiScalingAdjustment));
 		return default;
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
-		ViewportSurfaceRayCalls.Add((pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment));
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		ViewportSurfaceRayCalls.Add((pixelCoord, coordOrigin, disableDpiScalingAdjustment));
 		return default;
 	}
 
@@ -171,6 +171,10 @@ sealed class FakeRendererBuilder : IRendererBuilder {
 		var impl = new FakeRendererImplProvider(++_previousHandleId, scene, camera, (RenderOutputBuffer) (object) renderTarget, in config);
 		CreatedRenderers.Add(impl);
 		return impl.RendererInstance;
+	}
+
+	public Renderer CreateRenderer<TRenderTarget>(CanvasScene scene, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
+		throw new NotSupportedException();
 	}
 
 	public RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
@@ -294,6 +298,74 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 
 	public IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle) => throw new NotSupportedException();
 	public IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle) => throw new NotSupportedException();
+
+	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture) => throw new NotSupportedException();
+	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material) => throw new NotSupportedException();
+	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) => throw new NotSupportedException();
+	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification) => throw new NotSupportedException();
+	public void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture) => throw new NotSupportedException();
+	public void SetCanvasBlendTextureDistance(ResourceHandle<Scene> handle, QuadInstance quad, float distance) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasPrecisePixelCoord(ResourceHandle<Scene> handle, XYPair<int> renderTargetCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasSizePixels(ResourceHandle<Scene> handle) => throw new NotSupportedException();
+	public XYPair<int> ConvertCanvasFractionToPixels(ResourceHandle<Scene> handle, XYPair<float> fraction) => throw new NotSupportedException();
+	public XYPair<float> ConvertCanvasPixelsToFraction(ResourceHandle<Scene> handle, XYPair<int> pixels) => throw new NotSupportedException();
+	public bool CanvasObjectContainsPixelCoord(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> coord, DiagonalOrientation2D coordOrigin) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasObjectActualSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasObjectActualSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectDockParent(ResourceHandle<Scene> handle, ModelInstance modelInstance, ModelInstance? parent) => throw new NotSupportedException();
+	public float GetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
+	public void SetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad, float newValue) => throw new NotSupportedException();
+	public Camera GetCanvasCamera(ResourceHandle<Scene> handle) => throw new NotSupportedException();
+	public Orientation2D GetCanvasObjectCanvasAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectCanvasAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D newValue) => throw new NotSupportedException();
+	public Orientation2D? GetCanvasObjectAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D? newValue) => throw new NotSupportedException();
+	public Angle GetCanvasObjectRotation(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectRotation(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle newValue) => throw new NotSupportedException();
+	public int GetCanvasObjectLayer(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectLayer(ResourceHandle<Scene> handle, ModelInstance modelInstance, int newValue) => throw new NotSupportedException();
+	public bool GetCanvasObjectVisibility(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectVisibility(ResourceHandle<Scene> handle, ModelInstance modelInstance, bool newValue) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasObjectPositionPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectPositionPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> newValue) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasObjectPositionFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectPositionFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue) => throw new NotSupportedException();
+	public int? GetCanvasObjectWidthPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectWidthPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, int? newValue) => throw new NotSupportedException();
+	public int? GetCanvasObjectHeightPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectHeightPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, int? newValue) => throw new NotSupportedException();
+	public float? GetCanvasObjectWidthFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectWidthFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, float? newValue) => throw new NotSupportedException();
+	public float? GetCanvasObjectHeightFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectHeightFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, float? newValue) => throw new NotSupportedException();
+	public void SetCanvasObjectPlacement(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<int> positionPixels, XYPair<float> positionFraction, int? widthPixels, int? heightPixels, float? widthFraction, float? heightFraction) => throw new NotSupportedException();
+	public void MoveCanvasObjectByPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> translation) => throw new NotSupportedException();
+	public void MoveCanvasObjectByFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> translation) => throw new NotSupportedException();
+	public void ScaleCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, float scalar) => throw new NotSupportedException();
+	public void ScaleCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> vect) => throw new NotSupportedException();
+	public void AdjustCanvasObjectScaleByPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> vect) => throw new NotSupportedException();
+	public void AdjustCanvasObjectScaleByFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> vect) => throw new NotSupportedException();
+	public void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation) => throw new NotSupportedException();
+	public void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation, XYPair<int> pivotPointPixels) => throw new NotSupportedException();
+	public void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation, XYPair<float> pivotPointFraction) => throw new NotSupportedException();
+	public Texture GetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
+	public void SetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture newValue) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasObjectTextureDimensions(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
+	public void SetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue) => throw new NotSupportedException();
+	public void SetCanvasObjectTextureOffsetPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
+	public void SetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue) => throw new NotSupportedException();
+	public void SetCanvasObjectTextureExtentPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue) => throw new NotSupportedException();
+	public void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, FontString newValue) => throw new NotSupportedException();
+	public void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, ReadOnlySpan<char> str, TextJustification multiLineJustification) => throw new NotSupportedException();
+	public TextLayout GetCanvasTextLayout(ResourceHandle<Scene> handle, TextInstance text) => throw new NotSupportedException();
+	public void SetCanvasTextLayout(ResourceHandle<Scene> handle, TextInstance text, TextLayout newValue) => throw new NotSupportedException();
+	public bool GetCanvasTextAutomaticLineCountScalingDisabled(ResourceHandle<Scene> handle, TextInstance text) => throw new NotSupportedException();
+	public void SetCanvasTextAutomaticLineCountScalingDisabled(ResourceHandle<Scene> handle, TextInstance text, bool newValue) => throw new NotSupportedException();
+	public void DisposeCanvasObject(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
 }
 
 sealed class FakeCameraImplProvider : ICameraImplProvider {

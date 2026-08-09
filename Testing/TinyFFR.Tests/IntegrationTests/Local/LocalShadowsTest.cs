@@ -119,7 +119,7 @@ class LocalShadowsTest {
 		directionalLight.SetSunDiscParameters(new() { Scaling = 5f });
 
 		scene.Add(directionalLight);
-		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+		renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryLow });
 
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(9d)) {
 			var dt = (float) loop.IterateOnce().TotalSeconds;
@@ -128,19 +128,19 @@ class LocalShadowsTest {
 			directionalLight.Direction = (Location.Origin + directionalLight.Direction * -3f + Direction.Up * dt * 0.02f).DirectionTo(Location.Origin);
 
 			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Low });
 				directionalLight.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Standard });
 				directionalLight.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.High });
 				directionalLight.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryHigh });
 				directionalLight.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
@@ -164,7 +164,7 @@ class LocalShadowsTest {
 		directionalLight.SetSunDiscParameters(new() { Scaling = 5f });
 
 		scene.Add(directionalLight);
-		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+		renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryLow });
 
 		camera.Position = new Location(-HalfGridSize, HalfGridSize, -HalfGridSize);
 		camera.LookAt(Location.Origin);
@@ -176,19 +176,19 @@ class LocalShadowsTest {
 			camera.LookAt(Location.Origin, Direction.Up);
 
 			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(2d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Low });
 				directionalLight.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Standard });
 				directionalLight.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.High });
 				directionalLight.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(8d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryHigh });
 				directionalLight.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(10d))) {
@@ -216,7 +216,7 @@ class LocalShadowsTest {
 
 		scene.Add(pointLightUpper);
 		scene.Add(pointLightLower);
-		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+		renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryLow });
 
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
 			var dt = (float) loop.IterateOnce().TotalSeconds;
@@ -227,19 +227,19 @@ class LocalShadowsTest {
 			camera.LookAt(FloorPosition, Direction.Up);
 
 			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Low });
 				pointLightUpper.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Standard });
 				pointLightUpper.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.High });
 				pointLightUpper.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryHigh });
 				pointLightUpper.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
@@ -272,7 +272,7 @@ class LocalShadowsTest {
 
 		scene.Add(spotlight);
 		scene.Add(overhead);
-		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+		renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryLow });
 
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
 			var dt = (float) loop.IterateOnce().TotalSeconds;
@@ -283,19 +283,19 @@ class LocalShadowsTest {
 			camera.LookAt(FloorPosition, Direction.Up);
 
 			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Low });
 				spotlight.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Standard });
 				spotlight.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.High });
 				spotlight.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryHigh });
 				spotlight.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
@@ -328,7 +328,7 @@ class LocalShadowsTest {
 
 		scene.Add(spotlightA);
 		scene.Add(spotlightB);
-		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+		renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryLow });
 
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
 			var dt = (float) loop.IterateOnce().TotalSeconds;
@@ -340,19 +340,19 @@ class LocalShadowsTest {
 			camera.LookAt(FloorPosition, Direction.Up);
 
 			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Low });
 				spotlightA.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.Standard });
 				spotlightA.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.High });
 				spotlightA.AdjustColorHueBy(30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
-				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryHigh });
 				spotlightA.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
@@ -377,12 +377,12 @@ class LocalShadowsTest {
 		directionalLight.SetSunDiscParameters(new() { Scaling = 5f });
 
 		scene.Add(directionalLight);
-		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+		renderer.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryLow });
 
 		using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value, size: (200, 200));
 		using var scene2 = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.BlackOpaque);
-		using var renderer2 = factory.RendererBuilder.CreateRenderer(scene2, camera, window2, new RendererCreationConfig { AutoUpdateCameraAspectRatio = false, GpuSynchronizationFrameBufferCount = -1 });
-		renderer2.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+		using var renderer2 = factory.RendererBuilder.CreateRenderer(scene2, camera, window2, new RendererCreationConfig { AutoUpdateCameraAspectRatio = false, GpuSynchronizationFrameBufferCount = -1, Quality = RenderQualityConfig.Default });
+		renderer2.SetQuality(new RenderQualityConfig() { ShadowQuality = Quality.VeryHigh });
 
 		using var directionalLight2 = lightBuilder.CreateDirectionalLight(
 			direction: new Location(0f, CubeSize, GridSize).DirectionTo(Location.Origin),

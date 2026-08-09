@@ -22,7 +22,8 @@ class ModelConfigTest {
 				OptimizeForGpu = false	
 			},
 			TextureConfig = new() {
-				IncludeWAlphaChannel = true
+				IncludeWAlphaChannel = true,
+				ForceWAlphaChannelPresence = true
 			},
 			HandleUriEscapedStrings = true,
 			GltfEmissiveStrengthScalar = 1f,
@@ -35,7 +36,8 @@ class ModelConfigTest {
 				OptimizeForGpu = true	
 			},
 			TextureConfig = new() {
-				IncludeWAlphaChannel = false
+				IncludeWAlphaChannel = false,
+				ForceWAlphaChannelPresence = false
 			},
 			HandleUriEscapedStrings = false,
 			GltfEmissiveStrengthScalar = 0.3f,
@@ -47,6 +49,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.MeshConfig.FixCommonExportErrors, actual.MeshConfig.FixCommonExportErrors);
 			Assert.AreEqual(expected.MeshConfig.OptimizeForGpu, actual.MeshConfig.OptimizeForGpu);
 			Assert.AreEqual(expected.TextureConfig.IncludeWAlphaChannel, actual.TextureConfig.IncludeWAlphaChannel);
+			Assert.AreEqual(expected.TextureConfig.ForceWAlphaChannelPresence, actual.TextureConfig.ForceWAlphaChannelPresence);
 			Assert.AreEqual(expected.HandleUriEscapedStrings, actual.HandleUriEscapedStrings);
 			Assert.AreEqual(expected.GltfEmissiveStrengthScalar, actual.GltfEmissiveStrengthScalar);
 			Assert.AreEqual(expected.EmissiveStrengthCap, actual.EmissiveStrengthCap);
