@@ -35,6 +35,9 @@ public readonly struct CanvasScene : IDisposable, IStringSpanNameEnabled, IEquat
 	internal CanvasScene(Scene underlyingScene) {
 		UnderlyingScene = underlyingScene;
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static CanvasScene FromPreviouslyAllocatedUnderlyingScene(Scene underlyingScene) => new(underlyingScene);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public CanvasTexture Add(Texture t) => Implementation.AddCanvasObject(SceneHandle, t);

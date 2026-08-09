@@ -139,6 +139,8 @@ class LocalCameraLockedObjectsTest {
 		autoCamController.Distance = 1.1f;
 		autoCamController.MinHeight = null;
 		autoCamController.Height = 0f;
+		userControlledSceneRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
+		automaticSceneRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
 	
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();

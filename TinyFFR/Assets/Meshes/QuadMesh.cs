@@ -16,6 +16,9 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 		UnderlyingMesh = underlyingMesh;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static QuadMesh FromPreviouslyAllocatedUnderlyingMesh(Mesh underlyingMesh) => new(underlyingMesh);
+
 	public static Transform CalculateTransformForStandardQuadMesh(Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
 		// Quad meshes are built as 1x1 squares centred on their origin on the XY plane facing backward with up being the upright direction by the IMeshBuilder default implementation
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection ?? Direction.Up);
@@ -63,6 +66,9 @@ public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, I
 	internal QuadInstance(ModelInstance underlyingModelInstance) {
 		UnderlyingModelInstance = underlyingModelInstance;
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static QuadInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance) => new(underlyingModelInstance);
 	
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -194,6 +200,11 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<Came
 		PositionAnchor = positionAnchor;
 		ScalingMode = scalingMode;
 		LockStyle = lockStyle;
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static CameraLockedQuadInstance FromPreviouslyAllocatedUnderlyingQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
+		return new(underlyingQuadInstance, lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
 	}
 	
 	public Location Position {

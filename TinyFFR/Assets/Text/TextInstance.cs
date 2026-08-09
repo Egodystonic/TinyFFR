@@ -90,6 +90,9 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 		UnderlyingModelInstance = underlyingModelInstance;
 		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string, layout);
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextLayout layout) => new(underlyingModelInstance, pen, @string, layout);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingModelInstance.GetNameAsNewStringObject();
