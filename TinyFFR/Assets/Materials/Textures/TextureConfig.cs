@@ -74,6 +74,32 @@ public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> 
 }
 
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
+	public static TextureCreationConfig ForColorTexture(ReadOnlySpan<char> name = default) => new() {
+		GenerateMipMaps = true,
+		IsLinearColorspace = false,
+		RenderingConfig = new(),
+		ProcessingToApply = TextureProcessingConfig.None,
+		Name = name
+	};
+	public static TextureCreationConfig ForCanvasTexture(ReadOnlySpan<char> name = default) => new() {
+		GenerateMipMaps = true,
+		IsLinearColorspace = true,
+		RenderingConfig = new() {
+			AnisotropicFilteringQuality	= Quality.VeryLow,
+			AnisotropyLevel = 0f,
+			DisableTextureRepeat = true
+		},
+		ProcessingToApply = TextureProcessingConfig.None,
+		Name = name
+	};
+	public static TextureCreationConfig ForDataTexture(ReadOnlySpan<char> name = default) => new() {
+		GenerateMipMaps = true,
+		IsLinearColorspace = true,
+		RenderingConfig = new(),
+		ProcessingToApply = TextureProcessingConfig.None,
+		Name = name
+	};
+	
 	public bool GenerateMipMaps { get; init; } = true;
 	public required bool IsLinearColorspace { get; init; }
 	public bool AllowsDynamicWrites {

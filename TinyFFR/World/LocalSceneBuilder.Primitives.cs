@@ -636,9 +636,14 @@ sealed partial class LocalSceneBuilder {
 
 		static float HalfLineWidthAt(Location end, float width, bool constantScreenSize, in ScreenScalingContext screenScaling) {
 			if (!constantScreenSize) return width * 0.5f;
-			if (screenScaling.ProjectionType == CameraProjectionType.Orthographic) return width * screenScaling.OrthographicHeight * screenScaling.AspectRatio * 0.5f;
-			var depth = MathF.Max((end.AsVect() - screenScaling.CameraPosition.AsVect()).Dot(screenScaling.CameraViewDirection), 0f);
-			return width * depth * screenScaling.HalfHorizontalFovTangent;
+			var viewportWidth = screenScaling.ProjectionType == CameraProjectionType.Orthographic
+				? CameraUtils.CalculateOrthographicViewportWorldSize(screenScaling.OrthographicHeight, screenScaling.AspectRatio).X
+				: CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistanceFromFovTangents(
+					screenScaling.HalfHorizontalFovTangent,
+					screenScaling.HalfVerticalFovTangent,
+					(end.AsVect() - screenScaling.CameraPosition.AsVect()).Dot(screenScaling.CameraViewDirection)
+				).X;
+			return width * viewportWidth * 0.5f;
 		}
 
 		foreach (var data in _primitiveMap[handle].Values) {

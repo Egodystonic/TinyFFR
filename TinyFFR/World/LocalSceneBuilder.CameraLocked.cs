@@ -215,16 +215,9 @@ sealed partial class LocalSceneBuilder {
 	static Vect CalculateWorldScaling(CameraLockedScalingMode mode, Vect storedScaling, Vect translation, in ScreenScalingContext scalingContext) {
 		if (mode == CameraLockedScalingMode.Standard) return storedScaling;
 
-		float screenW, screenH;
-		if (scalingContext.ProjectionType == CameraProjectionType.Orthographic) {
-			screenW = scalingContext.OrthographicHeight * scalingContext.AspectRatio;
-			screenH = scalingContext.OrthographicHeight;
-		}
-		else {
-			var doubleDepth = MathF.Max((translation.AsLocation() - scalingContext.CameraPosition).Dot(scalingContext.CameraViewDirection), 0f) * 2f;
-			screenW = doubleDepth * scalingContext.HalfHorizontalFovTangent;
-			screenH = doubleDepth * scalingContext.HalfVerticalFovTangent;
-		}
+		var (screenW, screenH) = scalingContext.ProjectionType == CameraProjectionType.Orthographic
+			? CameraUtils.CalculateOrthographicViewportWorldSize(scalingContext.OrthographicHeight, scalingContext.AspectRatio)
+			: CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistanceFromFovTangents(scalingContext.HalfHorizontalFovTangent, scalingContext.HalfVerticalFovTangent, (translation.AsLocation() - scalingContext.CameraPosition).Dot(scalingContext.CameraViewDirection));
 
 		return mode switch {
 			CameraLockedScalingMode.ViewportFractionalFixedWidth => new Vect(storedScaling.X * screenW, storedScaling.Y, storedScaling.Z),

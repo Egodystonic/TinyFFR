@@ -125,4 +125,62 @@ class CameraUtilsTest {
 		Assert.AreEqual(Direction.None, Calc(Orientation.None, Direction.Forward, Direction.Up));
 		Assert.AreEqual(Direction.None, Calc(Orientation.None, view, up));
 	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateViewportWorldSize() {
+		var ortho = CameraUtils.CalculateOrthographicViewportWorldSize(orthographicHeight: 9f, aspectRatio: 16f / 9f);
+		AssertToleranceEquals(16f, ortho.X, TestTolerance);
+		AssertToleranceEquals(9f, ortho.Y, TestTolerance);
+
+		var square = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistance(90f, 90f, 10f);
+		AssertToleranceEquals(20f, square.X, TestTolerance);
+		AssertToleranceEquals(20f, square.Y, TestTolerance);
+
+		var atOne = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistance(90f, 60f, 1f);
+		AssertToleranceEquals(2f, atOne.X, TestTolerance);
+		AssertToleranceEquals(2f * MathF.Tan(MathF.PI / 6f), atOne.Y, TestTolerance);
+		var atThree = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistance(90f, 60f, 3f);
+		AssertToleranceEquals(atOne.X * 3f, atThree.X, TestTolerance);
+		AssertToleranceEquals(atOne.Y * 3f, atThree.Y, TestTolerance);
+
+		var viaTangents = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistanceFromFovTangents(
+			MathF.Tan(MathF.PI * 0.25f),
+			MathF.Tan(MathF.PI / 6f),
+			3f
+		);
+		AssertToleranceEquals(atThree.X, viaTangents.X, TestTolerance);
+		AssertToleranceEquals(atThree.Y, viaTangents.Y, TestTolerance);
+
+		var atZero = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistance(90f, 60f, 0f);
+		AssertToleranceEquals(0f, atZero.X, TestTolerance);
+		AssertToleranceEquals(0f, atZero.Y, TestTolerance);
+		var behind = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistance(90f, 60f, -5f);
+		AssertToleranceEquals(0f, behind.X, TestTolerance);
+		AssertToleranceEquals(0f, behind.Y, TestTolerance);
+
+		const float VerticalFov = 60f;
+		const float AspectRatio = 16f / 9f;
+		const float Depth = 7f;
+		var horizontalFov = Angle.FromRadians(2f * MathF.Atan(AspectRatio * MathF.Tan(Angle.FromDegrees(VerticalFov).Radians * 0.5f)));
+
+		static Ray EdgeRay(float ndcX) => CameraUtils.CreateRayFromPerspectiveCameraParameters(
+			cameraPosition: Location.Origin,
+			cameraViewDirection: Direction.Forward,
+			cameraUpDirection: Direction.Up,
+			nearPlaneDistance: 0.1f,
+			farPlaneDistance: 1000f,
+			verticalFov: VerticalFov,
+			aspectRatio: AspectRatio,
+			normalizedNearPlaneCoordinate: new XYPair<float>(ndcX, 0f)
+		);
+
+		static Location PointAtDepth(Ray r, float depth) {
+			var startDepth = r.StartPoint.AsVect().Dot(Direction.Forward);
+			return r.UnboundedLocationAtDistance((depth - startDepth) / r.Direction.Dot(Direction.Forward));
+		}
+
+		var span = PointAtDepth(EdgeRay(-1f), Depth).DistanceFrom(PointAtDepth(EdgeRay(1f), Depth));
+		var expected = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistance(horizontalFov, VerticalFov, Depth);
+		AssertToleranceEquals(span, expected.X, TestTolerance);
+	}
 }

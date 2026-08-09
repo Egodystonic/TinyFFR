@@ -50,37 +50,23 @@ public interface IAssetLoader {
 	private static readonly Lock _staticMutationLock = new();
 	private static readonly HeapPool _mapTextureProcessingPool = new();
 
-	Texture LoadColorMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, isLinearColorspace: false, name: Path.GetFileName(filePath));
+	Texture LoadColorMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
 
 	Texture LoadCanvasTexture(ReadOnlySpan<char> filePath) {
-		return LoadTexture(
-			filePath,
-			new TextureCreationConfig {
-				IsLinearColorspace	= true,
-				GenerateMipMaps = true,
-				RenderingConfig = new() {
-					AnisotropicFilteringQuality	= Quality.VeryLow,
-					AnisotropyLevel = 0f,
-					DisableTextureRepeat = true
-				},
-				Name = Path.GetFileName(filePath)
-			}
-		);
+		return LoadTexture(filePath, TextureCreationConfig.ForCanvasTexture(Path.GetFileName(filePath)));
 	}
 
 	Texture LoadNormalMap(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
-		if (!isDirectXFormat) return LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath));
+		if (!isDirectXFormat) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
 		return LoadTexture(
-			filePath, 
-			new TextureCreationConfig {
-				IsLinearColorspace = true, 
-				ProcessingToApply = new TextureProcessingConfig { InvertYGreenChannel = true },
-				Name = Path.GetFileName(filePath)
+			filePath,
+			TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)) with {
+				ProcessingToApply = new TextureProcessingConfig { InvertYGreenChannel = true }
 			}
 		);
 	}
 
-	Texture LoadOcclusionRoughnessMetallicMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath));
+	Texture LoadOcclusionRoughnessMetallicMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
 	Texture LoadOcclusionRoughnessMetallicMap(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath) {
 		var a = Path.GetFileName(occlusionFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
@@ -97,14 +83,11 @@ public interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureC, R)
 			},
-			new TextureCreationConfig {
-				IsLinearColorspace = true,
-				Name = name
-			}
+			TextureCreationConfig.ForDataTexture(name)
 		);
 	}
 	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> filePath) {
-		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath));
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
 		else return LoadOcclusionRoughnessMetallicReflectanceMap(filePath, BuiltInTexturePaths.DefaultReflectanceMap);
 	}
 	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> occlusionRoughnessMetallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
@@ -122,10 +105,7 @@ public interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R),
 			},
-			new TextureCreationConfig {
-				IsLinearColorspace = true,
-				Name = name
-			}
+			TextureCreationConfig.ForDataTexture(name)
 		);
 	}
 	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
@@ -147,23 +127,18 @@ public interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureC, R),
 				OutputTextureWAlphaChannelSource = new(TextureD, R),
 			},
-			new TextureCreationConfig {
-				IsLinearColorspace = true,
-				Name = name
-			}
+			TextureCreationConfig.ForDataTexture(name)
 		);
 	}
 
 	Texture LoadAbsorptionTransmissionMap(ReadOnlySpan<char> filePath, bool invertAbsorption = false) {
 		var includesTransmission = ReadTextureMetadata(filePath).IncludesAlphaChannel;
 		if (!includesTransmission) return LoadAbsorptionTransmissionMap(filePath, BuiltInTexturePaths.DefaultTransmissionMap, invertAbsorption);
-		if (!invertAbsorption) return LoadTexture(filePath, isLinearColorspace: false, name: Path.GetFileName(filePath));
+		if (!invertAbsorption) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
 
 		return LoadTexture(
-			filePath, 
-			new TextureCreationConfig {
-				IsLinearColorspace = false,
-				Name = Path.GetFileName(filePath),
+			filePath,
+			TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)) with {
 				ProcessingToApply = TextureProcessingConfig.Invert(includeAlphaChannel: false)
 			}
 		);
@@ -183,15 +158,12 @@ public interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R)
 			},
-			new TextureCreationConfig {
-				IsLinearColorspace = false,
-				Name = name
-			}
+			TextureCreationConfig.ForColorTexture(name)
 		);
 	}
 
 	Texture LoadEmissiveMap(ReadOnlySpan<char> filePath) {
-		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, isLinearColorspace: false, name: Path.GetFileName(filePath));
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
 		else return LoadEmissiveMap(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityMap);
 	}
 	Texture LoadEmissiveMap(ReadOnlySpan<char> emissiveColorFilePath, ReadOnlySpan<char> emissiveIntensityFilePath) {
@@ -209,17 +181,14 @@ public interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R),
 			},
-			new TextureCreationConfig {
-				IsLinearColorspace = false,
-				Name = name
-			}
+			TextureCreationConfig.ForColorTexture(name)
 		);
 	}
 
 	Texture LoadAnisotropyMapVectorFormatted(ReadOnlySpan<char> filePath, ColorChannel? strengthChannel) {
 		return strengthChannel switch {
-			B => LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath)),
-			A => LoadTexture(filePath, new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(filePath), ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
+			B => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath))),
+			A => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
 			_ => LoadAnisotropyMapVectorFormatted(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap)
 		};
 	}
@@ -237,10 +206,7 @@ public interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureA, G),
 				OutputTextureZBlueChannelSource = new(TextureB, R),
 			},
-			new TextureCreationConfig {
-				IsLinearColorspace = true,
-				Name = name
-			}
+			TextureCreationConfig.ForDataTexture(name)
 		);
 	}
 
@@ -290,8 +256,8 @@ public interface IAssetLoader {
 			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Span, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel);
 			return TextureBuilder.CreateTexture(
 				texelPoolMemory.Span, 
-				new TextureGenerationConfig { Dimensions = fileMetadata.Dimensions }, 
-				new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(filePath) }
+				new TextureGenerationConfig { Dimensions = fileMetadata.Dimensions },
+				TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath))
 			);
 		}
 	}
@@ -315,12 +281,12 @@ public interface IAssetLoader {
 			return TextureBuilder.CreateTexture(
 				texelPoolMemory.Span,
 				new TextureGenerationConfig { Dimensions = combinedTexMetadata.Dimensions },
-				new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(name) }
+				TextureCreationConfig.ForDataTexture(name)
 			);
 		}
 	}
 
-	Texture LoadClearCoatMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath));
+	Texture LoadClearCoatMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
 	Texture LoadClearCoatMap(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath) {
 		var a = Path.GetFileName(thicknessFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
@@ -335,10 +301,7 @@ public interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureA, B)
 			},
-			new TextureCreationConfig {
-				IsLinearColorspace = true,
-				Name = name
-			}
+			TextureCreationConfig.ForDataTexture(name)
 		);
 	}
 	#endregion

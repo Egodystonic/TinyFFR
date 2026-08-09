@@ -37,7 +37,25 @@ public static class CameraUtils {
 			0f,													0f,									-(farPlaneDistance + nearPlaneDistance) / frustumLength,			1f
 		);
 	}
-	
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static XYPair<float> CalculateOrthographicViewportWorldSize(float orthographicHeight, float aspectRatio) {
+		return new XYPair<float>(orthographicHeight * aspectRatio, orthographicHeight);
+	}
+
+	public static XYPair<float> CalculatePerspectiveViewportWorldSizeAtDistance(Angle horizontalFieldOfView, Angle verticalFieldOfView, float distanceAlongViewDirection) {
+		return CalculatePerspectiveViewportWorldSizeAtDistanceFromFovTangents(
+			MathF.Tan(horizontalFieldOfView.Radians * 0.5f),
+			MathF.Tan(verticalFieldOfView.Radians * 0.5f),
+			distanceAlongViewDirection
+		);
+	}
+
+	public static XYPair<float> CalculatePerspectiveViewportWorldSizeAtDistanceFromFovTangents(float halfHorizontalFieldOfViewTangent, float halfVerticalFieldOfViewTangent, float distanceAlongViewDirection) {
+		var doubleDistance = MathF.Max(distanceAlongViewDirection, 0f) * 2f;
+		return new XYPair<float>(doubleDistance * halfHorizontalFieldOfViewTangent, doubleDistance * halfVerticalFieldOfViewTangent);
+	}
+
 	public static void CalculateModelMatrix(Location position, Direction viewDirection, Direction upDirection, out Matrix4x4 dest) {
 		var p = position.ToVector3();
 		var z = viewDirection.ToVector3();
