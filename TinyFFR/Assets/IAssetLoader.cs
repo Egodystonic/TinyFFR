@@ -52,7 +52,21 @@ public interface IAssetLoader {
 
 	Texture LoadColorMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, isLinearColorspace: false, name: Path.GetFileName(filePath));
 
-	Texture LoadCanvasTexture(ReadOnlySpan<char> filePath) => LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath));
+	Texture LoadCanvasTexture(ReadOnlySpan<char> filePath) {
+		return LoadTexture(
+			filePath,
+			new TextureCreationConfig {
+				IsLinearColorspace	= true,
+				GenerateMipMaps = true,
+				RenderingConfig = new() {
+					AnisotropicFilteringQuality	= Quality.VeryLow,
+					AnisotropyLevel = 0f,
+					DisableTextureRepeat = true
+				},
+				Name = Path.GetFileName(filePath)
+			}
+		);
+	}
 
 	Texture LoadNormalMap(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
 		if (!isDirectXFormat) return LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath));

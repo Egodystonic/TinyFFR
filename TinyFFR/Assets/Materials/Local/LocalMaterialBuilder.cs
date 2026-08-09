@@ -32,6 +32,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		OrmMapBlend = 1 << 2,
 		EmissiveMapBlend = 1 << 3,
 		AtMapBlend = 1 << 4,
+		Opacity = 1 << 5,
 	}
 	readonly record struct MaterialData(IShaderPackageConstants PackageConstants, SupportedEffectsFlags SupportedEffects, Texture? EffectBlendColorMap, Texture? EffectBlendOrmMap, Texture? EffectBlendEmissiveMap, Texture? EffectBlendAbsorptionTransmissionMap) {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -90,6 +91,21 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, backgroundColor.AsVector4, shaderConstants.ParamBackgroundColor);
 		ApplyMaterialParam(result, outlineColor.AsVector4, shaderConstants.ParamOutlineColor);
 		ApplyMaterialParam(result, outlineThickness, shaderConstants.ParamOutlineThickness);
+
+		return result;
+	}
+
+	public Material AllocateCanvasMaterialInstance(Texture colorMap, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+
+		var shaderConstants = CanvasMaterialShader;
+
+		var result = InstantiateMaterial(shaderConstants.ShaderResourceName, name, shaderConstants);
+		ApplyMaterialParam(result, colorMap, shaderConstants.ParamColorMap);
+
+		var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend | SupportedEffectsFlags.Opacity;
+		SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
+		_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 
 		return result;
 	}
@@ -270,6 +286,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if ((supportedEffects & SupportedEffectsFlags.UvTransform) != 0) {
 			var identityMat = Matrix4x4.Identity;
 			ApplyMaterialParam(mat, in identityMat, packageConstants.GetEffectUvTransformParamOrThrow());
+		}
+		if ((supportedEffects & SupportedEffectsFlags.Opacity) != 0) {
+			ApplyMaterialParam(mat, 1f, packageConstants.GetEffectOpacityParamOrThrow());
 		}
 	}
 
@@ -485,6 +504,15 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		if (!Single.IsFinite(distance)) distance = 0f;
 		ApplyMaterialParam(HandleToInstance(handle), distance, param);
+	}
+	public void SetEffectOpacity(ResourceHandle<Material> handle, float opacity) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var matData = _activeMaterials[handle];
+
+		if (!matData.SupportsEffect(SupportedEffectsFlags.Opacity)) return;
+
+		if (!Single.IsFinite(opacity)) opacity = 1f;
+		ApplyMaterialParam(HandleToInstance(handle), Single.Clamp(opacity, 0f, 1f), matData.PackageConstants.GetEffectOpacityParamOrThrow());
 	}
 
 	public void SetKeyedColor(ResourceHandle<Material> handle, ColorChannel key, ColorVect color) {

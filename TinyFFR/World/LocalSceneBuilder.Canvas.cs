@@ -3,6 +3,7 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
@@ -34,6 +35,7 @@ sealed partial class LocalSceneBuilder {
 		public int? HeightPixels { get; init; } = null;
 		public float? WidthFraction { get; init; } = null;
 		public float? HeightFraction { get; init; } = null;
+		public ResourceHandle<ModelInstance>? DockParent { get; init; } = null;
 
 		public CanvasDock() { }
 
@@ -57,6 +59,7 @@ sealed partial class LocalSceneBuilder {
 		public XYPair<float> UvExtent { get; init; } = new(1f);
 		public Texture? BlendTexture { get; init; } = null;
 		public float BlendDistance { get; init; } = 0f;
+		public float Opacity { get; init; } = 1f;
 
 		public CanvasTextureData() { }
 	}
@@ -182,7 +185,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	Material CreateCanvasTextureMaterial(Texture texture) {
-		return _assetLoader.MaterialBuilder.CreateLightingIgnoringMaterial(texture, enablePerInstanceEffects: true);
+		return ((LocalMaterialBuilder) _assetLoader.MaterialBuilder).AllocateCanvasMaterialInstance(texture, default);
 	}
 
 	public Camera GetCanvasCamera(ResourceHandle<Scene> handle) {
@@ -202,7 +205,32 @@ sealed partial class LocalSceneBuilder {
 			sceneData.Camera.SetAspectRatio(viewportSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
 			sceneData.Camera.SetOrthographicHeight(viewportSize.Y);
 
-			foreach (var item in _canvasItemMap[handle].Values) SetCanvasItemTransformAccordingToViewport(handle, in item, viewportSize);
+			foreach (var item in _canvasItemMap[handle].Values) {
+				if (item.Dock.DockParent != null) continue;
+				SetCanvasItemTransformAndDescendants(handle, in item, viewportSize);
+			}
+		}
+	}
+
+	void SetCanvasItemTransformAndDescendants(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> viewportSize) {
+		SetCanvasItemTransformAccordingToViewport(handle, in itemData, viewportSize);
+
+		if (!_canvasItemMap.TryGetValue(handle, out var itemMap)) return;
+		var parentHandle = itemData.ModelInstance.Handle;
+		foreach (var kvp in itemMap) {
+			if (kvp.Value.Dock.DockParent != parentHandle) continue;
+			SetCanvasItemTransformAndDescendants(handle, kvp.Value, viewportSize);
+		}
+	}
+
+	void OrphanCanvasDockChildren(ResourceHandle<Scene> handle, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasItemData> itemMap, ResourceHandle<ModelInstance> parentHandle) {
+		if (!_canvasSceneDataMap.TryGetValue(handle, out var sceneData)) return;
+
+		foreach (var kvp in itemMap) {
+			if (kvp.Value.Dock.DockParent != parentHandle) continue;
+			var orphanedData = kvp.Value with { Dock = kvp.Value.Dock with { DockParent = null } };
+			itemMap[kvp.Key] = orphanedData;
+			SetCanvasItemTransformAndDescendants(handle, in orphanedData, sceneData.ViewportSize);
 		}
 	}
 
@@ -210,9 +238,12 @@ sealed partial class LocalSceneBuilder {
 		if (viewportSize.X <= 0 || viewportSize.Y <= 0) return;
 
 		var dock = itemData.Dock;
-		var position = CalculateCanvasLocation(viewportSize, dock.CanvasAnchor, dock.ResolveOffset(viewportSize), dock.Layer);
-		var width = dock.ResolveWidth(viewportSize);
-		var height = dock.ResolveHeight(viewportSize);
+		var containerRect = ResolveCanvasItemContainerRect(handle, in dock, viewportSize);
+		var containerSize = containerRect.Size.Cast<int>();
+		var anchorCoord = containerRect.Centre + CalculateCanvasCenterRelativeCoord(containerSize, dock.CanvasAnchor, dock.ResolveOffset(containerSize));
+		var position = CanvasDimensionConverter.ConvertLocation(anchorCoord, dock.Layer);
+		var width = dock.ResolveWidth(containerSize);
+		var height = dock.ResolveHeight(containerSize);
 		var uprightDirection = dock.Rotation == Angle.Zero
 			? CanvasElementPositiveYDirection
 			: CanvasElementPositiveYDirection.RotatedBy(new Rotation(dock.Rotation, CanvasElementFacingDirection));
@@ -220,7 +251,7 @@ sealed partial class LocalSceneBuilder {
 		if (itemData.Quad is { } quad) {
 			quad.SetTransform(
 				position,
-				ResolveCanvasQuadSize(width, height, GetCanvasTextureData(handle, quad).TextureDimensions).ScaledBy(dock.FillFraction),
+				ResolveCanvasItemSignedSize(handle, in itemData, containerSize),
 				CanvasElementFacingDirection,
 				uprightDirection,
 				dock.EffectiveObjectAnchor
@@ -236,6 +267,54 @@ sealed partial class LocalSceneBuilder {
 				CreateCanvasTextLayout(in dock, width, height, GetCanvasTextData(handle, text).DisableAutoHeightScaling)
 			);
 		}
+	}
+
+	XYPair<float> ResolveCanvasItemSignedSize(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> containerSize) {
+		var dock = itemData.Dock;
+		var width = dock.ResolveWidth(containerSize);
+		var height = dock.ResolveHeight(containerSize);
+
+		if (itemData.Quad is { } quad) {
+			return ResolveCanvasQuadSize(width, height, GetCanvasTextureData(handle, quad).TextureDimensions).ScaledBy(dock.FillFraction);
+		}
+
+		var text = itemData.Text!.Value;
+		var layout = CreateCanvasTextLayout(in dock, width, height, GetCanvasTextData(handle, text).DisableAutoHeightScaling);
+		var stringSize = text.String.Size;
+		return stringSize.ScaledBy(text.Font.GetTextInstanceScaling(stringSize, layout));
+	}
+
+	(XYPair<float> Centre, XYPair<float> Size) ResolveCanvasItemRect(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> viewportSize) {
+		var dock = itemData.Dock;
+		var containerRect = ResolveCanvasItemContainerRect(handle, in dock, viewportSize);
+		var containerSize = containerRect.Size.Cast<int>();
+		var size = ResolveCanvasItemSignedSize(handle, in itemData, containerSize).Absolute;
+		var anchorCoord = containerRect.Centre + CalculateCanvasCenterRelativeCoord(containerSize, dock.CanvasAnchor, dock.ResolveOffset(containerSize));
+		return (anchorCoord + CalculateAnchorToCentreOffset(size, dock.EffectiveObjectAnchor), size);
+	}
+
+	(XYPair<float> Centre, XYPair<float> Size) ResolveCanvasItemContainerRect(ResourceHandle<Scene> handle, in CanvasDock dock, XYPair<int> viewportSize) {
+		if (dock.DockParent is { } parentHandle
+			&& _canvasItemMap.TryGetValue(handle, out var itemMap)
+			&& itemMap.TryGetValue(parentHandle, out var parentData)) {
+			return ResolveCanvasItemRect(handle, in parentData, viewportSize);
+		}
+		return (XYPair<float>.Zero, viewportSize.Cast<float>());
+	}
+
+	static XYPair<float> CalculateAnchorToCentreOffset(XYPair<float> size, Orientation2D anchor) {
+		return new XYPair<float>(
+			anchor.GetHorizontalComponent() switch {
+				HorizontalOrientation2D.Left => size.X * 0.5f,
+				HorizontalOrientation2D.Right => size.X * -0.5f,
+				_ => 0f
+			},
+			anchor.GetVerticalComponent() switch {
+				VerticalOrientation2D.Up => size.Y * -0.5f,
+				VerticalOrientation2D.Down => size.Y * 0.5f,
+				_ => 0f
+			}
+		);
 	}
 
 	static XYPair<float> ResolveCanvasQuadSize(float? width, float? height, XYPair<int> textureDimensions) {
@@ -261,7 +340,7 @@ sealed partial class LocalSceneBuilder {
 
 	void ReapplyCanvasItemTransform(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		var itemData = GetCanvasItemData(handle, modelInstance);
-		SetCanvasItemTransformAccordingToViewport(handle, in itemData, GetCanvasSceneData(handle).ViewportSize);
+		SetCanvasItemTransformAndDescendants(handle, in itemData, GetCanvasSceneData(handle).ViewportSize);
 	}
 
 	public XYPair<int> GetCanvasPrecisePixelCoord(ResourceHandle<Scene> handle, XYPair<int> renderTargetCoord) {
@@ -308,7 +387,7 @@ sealed partial class LocalSceneBuilder {
 
 		var newData = itemData with { Dock = newDock };
 		itemMap[instanceHandle] = newData;
-		SetCanvasItemTransformAccordingToViewport(handle, in newData, GetCanvasSceneData(handle).ViewportSize);
+		SetCanvasItemTransformAndDescendants(handle, in newData, GetCanvasSceneData(handle).ViewportSize);
 	}
 
 	CanvasTextureData GetCanvasTextureData(ResourceHandle<Scene> handle, QuadInstance quad) {
@@ -329,6 +408,51 @@ sealed partial class LocalSceneBuilder {
 	void SetCanvasTextData(ResourceHandle<Scene> handle, TextInstance text, in CanvasTextData newData) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_canvasTextDataMap[handle][text.UnderlyingModelInstance.Handle] = newData;
+	}
+
+	public XYPair<int> GetCanvasObjectActualSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		var itemData = GetCanvasItemData(handle, modelInstance);
+		return ResolveCanvasItemRect(handle, in itemData, GetCanvasSceneData(handle).ViewportSize).Size.CastWithRoundingIfNecessary<float, int>();
+	}
+
+	public XYPair<float> GetCanvasObjectActualSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		var itemData = GetCanvasItemData(handle, modelInstance);
+		var viewportSize = GetCanvasSceneData(handle).ViewportSize;
+		var containerSize = ResolveCanvasItemContainerRect(handle, itemData.Dock, viewportSize).Size;
+		var size = ResolveCanvasItemRect(handle, in itemData, viewportSize).Size;
+		return new XYPair<float>(
+			containerSize.X != 0f ? size.X / containerSize.X : 0f,
+			containerSize.Y != 0f ? size.Y / containerSize.Y : 0f
+		);
+	}
+
+	public void SetCanvasObjectDockParent(ResourceHandle<Scene> handle, ModelInstance modelInstance, ModelInstance? parent) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var itemMap = _canvasItemMap[handle];
+		var instanceHandle = modelInstance.Handle;
+		if (!itemMap.ContainsKey(instanceHandle)) return;
+
+		ResourceHandle<ModelInstance>? newParentHandle = null;
+		if (parent is { } parentInstance) {
+			newParentHandle = parentInstance.Handle;
+			if (newParentHandle == instanceHandle) {
+				SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { DockParent = null });
+				return;
+			}
+			if (!itemMap.TryGetValue(newParentHandle.Value, out var newParentData)) return;
+
+			var ancestor = newParentData.Dock.DockParent;
+			while (ancestor is { } ancestorHandle) {
+				if (ancestorHandle == instanceHandle) {
+					Console.WriteLine("Dock parent assignment cancelled; would create cyclical dependency graph.");
+					return;
+				}
+				if (!itemMap.TryGetValue(ancestorHandle, out var ancestorData)) break;
+				ancestor = ancestorData.Dock.DockParent;
+			}
+		}
+
+		SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { DockParent = newParentHandle });
 	}
 
 	public Orientation2D GetCanvasObjectCanvasAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
@@ -547,6 +671,14 @@ sealed partial class LocalSceneBuilder {
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
+	public float GetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad) {
+		return GetCanvasTextureData(handle, quad).Opacity;
+	}
+	public void SetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad, float newValue) {
+		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { Opacity = Single.Clamp(newValue, 0f, 1f) });
+		ApplyCanvasMaterialEffects(handle, quad);
+	}
+
 	static XYPair<float> CalculateCanvasAnchorUvFactor(Orientation2D anchor) {
 		return new XYPair<float>(
 			anchor.GetHorizontalComponent() switch {
@@ -575,6 +707,7 @@ sealed partial class LocalSceneBuilder {
 			_objectBuilder.SetMaterialEffectBlendTexture(instanceHandle, MaterialEffectMapType.Color, blendTexture);
 		}
 		_objectBuilder.SetMaterialEffectBlendDistance(instanceHandle, MaterialEffectMapType.Color, data.BlendDistance);
+		_objectBuilder.SetMaterialEffectOpacity(instanceHandle, data.Opacity);
 	}
 
 	public void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, FontString newValue) {
@@ -645,7 +778,10 @@ sealed partial class LocalSceneBuilder {
 		}
 
 		if (detachFromScene) {
-			if (_canvasItemMap.TryGetValue(handle, out var canvasItemMap)) canvasItemMap.Remove(instanceHandle);
+			if (_canvasItemMap.TryGetValue(handle, out var canvasItemMap)) {
+				OrphanCanvasDockChildren(handle, canvasItemMap, instanceHandle);
+				canvasItemMap.Remove(instanceHandle);
+			}
 			Remove(handle, modelInstance);
 			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
 		}

@@ -115,6 +115,11 @@ public unsafe interface ITextureBuilder {
 		var creationConfig = new TextureCreationConfig {
 			GenerateMipMaps = colorPattern.Dimensions.Area != 1,
 			IsLinearColorspace = true,
+			RenderingConfig = new() {
+				AnisotropicFilteringQuality	= Quality.VeryLow,
+				AnisotropyLevel = 0f,
+				DisableTextureRepeat = true
+			},
 			Name = name,
 			ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()
 		};

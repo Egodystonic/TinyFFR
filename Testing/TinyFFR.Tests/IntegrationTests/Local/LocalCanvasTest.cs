@@ -38,7 +38,7 @@ class LocalCanvasTest {
 		using var canvas = factory.SceneBuilder.CreateCanvasScene();
 		using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvas, window);
 		
-		using var uvTex = factory.AssetLoader.LoadTexture(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture, new TextureCreationConfig { IsLinearColorspace = true }, new TextureReadConfig { ForceWAlphaChannelPresence = true, IncludeWAlphaChannel = true });
+		using var uvTex = factory.AssetLoader.LoadCanvasTexture(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture);
 		using var blendTex = factory.TextureBuilder.CreateCanvasTexture(
 			TexturePattern.GradientHorizontal(ColorVect.RedOpaque, ColorVect.RedTransparent),
 			includeAlpha: true
@@ -57,6 +57,7 @@ class LocalCanvasTest {
 		var layerStates = new[] { -1, 0, 1 };
 		var blendDistanceStates = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
 		var fillStates = new[] { 1f, 0.75f, 0.5f, 0.25f, 0f };
+		var opacityStates = new[] { 1f, 0.75f, 0.5f, 0.25f, 0f };
 		const int MaxTextureCropStep = 8;
 		const float TextureCropStepSize = 0.05f;
 		var widthStateIdx = 0;
@@ -64,7 +65,9 @@ class LocalCanvasTest {
 		var layerStateIdx = 1;
 		var blendDistanceStateIdx = 0;
 		var fillStateIdx = 0;
+		var opacityStateIdx = 0;
 		var textureCropStep = 0;
+		var childIsDocked = true;
 		canvasTex.CanvasAnchor = Orientation2D.None;
 		canvasTex.PositionPixels = XYPair<int>.Zero;
 		canvasTex.Rotation = Angle.Zero;
@@ -74,6 +77,7 @@ class LocalCanvasTest {
 		ApplyTextureCrop();
 		ApplyBlendDistance();
 		ApplyFillFraction();
+		ApplyOpacity();
 
 		float TextureCropExtent() => 1f - textureCropStep * TextureCropStepSize * 2f;
 		void ApplyBlendDistance() {
@@ -81,6 +85,9 @@ class LocalCanvasTest {
 		}
 		void ApplyFillFraction() {
 			canvasTex.FillFraction = new XYPair<float>(fillStates[fillStateIdx], 1f);
+		}
+		void ApplyOpacity() {
+			canvasTex.Opacity = opacityStates[opacityStateIdx];
 		}
 		void ApplyWidthState() {
 			canvasTex.WidthFraction = sizeStates[widthStateIdx].Fraction;
@@ -200,6 +207,48 @@ class LocalCanvasTest {
 			0.02f
 		);
 
+		string BuildActualSizeText() {
+			return "Actual Size " + canvasTex.ActualSizePixels + " px / " +
+				PercentageUtils.ConvertFractionToPercentageString(canvasTex.ActualSizeFraction, "N0", null);
+		}
+		using var actualSizeText = canvas.Add(BuildActualSizeText(), fontPen);
+		actualSizeText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.41f),
+			0.02f
+		);
+
+		string BuildDockParentText() {
+			return "[D] Docked Child " + (childIsDocked ? "On" : "Off");
+		}
+		using var dockParentText = canvas.Add(BuildDockParentText(), fontPen);
+		dockParentText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.45f),
+			0.02f
+		);
+
+		using var dockedChild = canvas.Add("[Docked Child]", fontPen);
+		dockedChild.CanvasAnchor = Orientation2D.DownLeft;
+		dockedChild.HeightFraction = 0.1f;
+		dockedChild.Layer = 1;
+		ApplyDockParent();
+
+		void ApplyDockParent() {
+			if (childIsDocked) dockedChild.SetDockParent<CanvasTexture>(canvasTex);
+			else dockedChild.SetDockParent<CanvasTexture>(null);
+		}
+
+		string BuildOpacityText() {
+			return "[V] Opacity " + PercentageUtils.ConvertFractionToPercentageString(canvasTex.Opacity);
+		}
+		using var opacityText = canvas.Add(BuildOpacityText(), fontPen);
+		opacityText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.37f),
+			0.02f
+		);
+
 		using var compositor = factory.RendererBuilder.CreateCompositor(window);
 		compositor.Add(renderer, RenderCompositionType.Standard);
 		compositor.Add(canvasRenderer, RenderCompositionType.RetainPreviousScenes);
@@ -286,11 +335,13 @@ class LocalCanvasTest {
 				widthStateIdx = (widthStateIdx + 1) % sizeStates.Length;
 				ApplyWidthState();
 				textureSizeText.SetText(BuildTextureSizeText());
+				actualSizeText.SetText(BuildActualSizeText());
 			}
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.H)) {
 				heightStateIdx = (heightStateIdx + 1) % sizeStates.Length;
 				ApplyHeightState();
 				textureSizeText.SetText(BuildTextureSizeText());
+				actualSizeText.SetText(BuildActualSizeText());
 			}
 			if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.R)) {
 				canvasTex.RotateBy(90f * dt);
@@ -320,6 +371,17 @@ class LocalCanvasTest {
 				fillStateIdx = (fillStateIdx + 1) % fillStates.Length;
 				ApplyFillFraction();
 				fillFractionText.SetText(BuildFillFractionText());
+				actualSizeText.SetText(BuildActualSizeText());
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.D)) {
+				childIsDocked = !childIsDocked;
+				ApplyDockParent();
+				dockParentText.SetText(BuildDockParentText());
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.V)) {
+				opacityStateIdx = (opacityStateIdx + 1) % opacityStates.Length;
+				ApplyOpacity();
+				opacityText.SetText(BuildOpacityText());
 			}
 
 			cameraController.Angle += dt * 30f;

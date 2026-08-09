@@ -58,6 +58,9 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetEffectBlendDistance(MaterialEffectMapType mapType, float distance) => Implementation.SetEffectBlendDistance(_handle, mapType, distance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEffectOpacity(float opacity) => Implementation.SetEffectOpacity(_handle, opacity);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetKeyedColor(ColorChannel key, ColorVect color) => Implementation.SetKeyedColor(_handle, key, color);

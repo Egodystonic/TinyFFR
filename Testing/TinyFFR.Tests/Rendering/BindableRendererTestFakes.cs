@@ -305,6 +305,11 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification) => throw new NotSupportedException();
 	public void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture) => throw new NotSupportedException();
 	public void SetCanvasBlendTextureDistance(ResourceHandle<Scene> handle, QuadInstance quad, float distance) => throw new NotSupportedException();
+	public XYPair<int> GetCanvasObjectActualSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public XYPair<float> GetCanvasObjectActualSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
+	public void SetCanvasObjectDockParent(ResourceHandle<Scene> handle, ModelInstance modelInstance, ModelInstance? parent) => throw new NotSupportedException();
+	public float GetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad) => throw new NotSupportedException();
+	public void SetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad, float newValue) => throw new NotSupportedException();
 	public Camera GetCanvasCamera(ResourceHandle<Scene> handle) => throw new NotSupportedException();
 	public Orientation2D GetCanvasObjectCanvasAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
 	public void SetCanvasObjectCanvasAnchor(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D newValue) => throw new NotSupportedException();

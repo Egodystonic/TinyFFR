@@ -484,6 +484,10 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetOrCreateEffectMaterialCopy(handle)?.SetEffectBlendDistance(mapType, distance);
 	}
+	public void SetMaterialEffectOpacity(ResourceHandle<ModelInstance> handle, float opacity) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetOrCreateEffectMaterialCopy(handle)?.SetEffectOpacity(opacity);
+	}
 
 	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
 		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData)) {

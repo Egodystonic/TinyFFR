@@ -14,6 +14,7 @@ interface IShaderPackageConstants {
 	bool HasEffectEmissiveMap { get; }
 	bool HasEffectAbsorptionTransmissionMap { get; }
 	bool HasEffectOrmMap { get; }
+	bool HasEffectOpacity { get; }
 
 	ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow();
 	ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow();
@@ -24,6 +25,7 @@ interface IShaderPackageConstants {
 	ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow();
 	ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow();
 	ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow();
+	ReadOnlySpan<byte> GetEffectOpacityParamOrThrow();
 }
 
 #pragma warning disable CA1001 // Warning about the ArrayPoolBackMaps not being disposed; but we know they will live for the entire lifetime of the application
@@ -146,6 +148,7 @@ static class LocalShaderPackageConstants {
 		public bool HasEffectEmissiveMap { get; } = true;
 		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
 		public bool HasEffectOrmMap { get; } = true;
+		public bool HasEffectOpacity { get; } = false;
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => ParamEffectUvTransform;
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => ParamEffectColorMapBlend;
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => ParamEffectColorMapBlendDistance;
@@ -155,6 +158,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => ParamEffectOrmMapBlend;
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => ParamEffectOrmMapBlendDistance;
+		public ReadOnlySpan<byte> GetEffectOpacityParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 	}
 
 	public static TransmissiveMaterialShaderConstants TransmissiveMaterialShader { get; } = new();
@@ -289,6 +293,7 @@ static class LocalShaderPackageConstants {
 		public bool HasEffectEmissiveMap { get; } = true;
 		public bool HasEffectAbsorptionTransmissionMap { get; } = true;
 		public bool HasEffectOrmMap { get; } = true;
+		public bool HasEffectOpacity { get; } = false;
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => ParamEffectUvTransform;
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => ParamEffectColorMapBlend;
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => ParamEffectColorMapBlendDistance;
@@ -298,6 +303,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => ParamEffectAbsorptionTransmissionMapBlendDistance;
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => ParamEffectOrmMapBlend;
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => ParamEffectOrmMapBlendDistance;
+		public ReadOnlySpan<byte> GetEffectOpacityParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 	}
 
 	public static LightingIgnoringMaterialShaderConstants LightingIgnoringMaterialShader { get; } = new();
@@ -364,6 +370,7 @@ static class LocalShaderPackageConstants {
 		public bool HasEffectEmissiveMap { get; } = true;
 		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
 		public bool HasEffectOrmMap { get; } = false;
+		public bool HasEffectOpacity { get; } = false;
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => ParamEffectUvTransform;
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => ParamEffectColorMapBlend;
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => ParamEffectColorMapBlendDistance;
@@ -373,6 +380,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOpacityParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 	}
 	
 	public static ColorKeyedMaterialShaderConstants ColorKeyedMaterialShader { get; } = new();
@@ -434,6 +442,7 @@ static class LocalShaderPackageConstants {
 		public bool HasEffectEmissiveMap { get; } = false;
 		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
 		public bool HasEffectOrmMap { get; } = false;
+		public bool HasEffectOpacity { get; } = false;
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
@@ -443,6 +452,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOpacityParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 	}
 
 	public static DefaultMaterialShaderConstants DefaultMaterialShader { get; } = new();
@@ -506,6 +516,7 @@ static class LocalShaderPackageConstants {
 		public bool HasEffectEmissiveMap { get; } = false;
 		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
 		public bool HasEffectOrmMap { get; } = false;
+		public bool HasEffectOpacity { get; } = false;
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
@@ -515,6 +526,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOpacityParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 	}
 
 	public static TextMaterialShaderConstants TextMaterialShader { get; } = new();
@@ -534,6 +546,7 @@ static class LocalShaderPackageConstants {
 		public bool HasEffectEmissiveMap { get; } = false;
 		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
 		public bool HasEffectOrmMap { get; } = false;
+		public bool HasEffectOpacity { get; } = false;
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
@@ -543,6 +556,37 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOpacityParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+	}
+
+	public static CanvasMaterialShaderConstants CanvasMaterialShader { get; } = new();
+	public sealed class CanvasMaterialShaderConstants : IShaderPackageConstants {
+		public string ShaderResourceName { get; } = ResourceNamespace + "canvas" + ShaderResourceExtension;
+
+		public bool SupportsShadows { get; } = false;
+
+		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
+		public ReadOnlySpan<byte> ParamEffectUvTransform => "uv_transform"u8;
+		public ReadOnlySpan<byte> ParamEffectColorMapBlend => "color_map_blend"u8;
+		public ReadOnlySpan<byte> ParamEffectColorMapBlendDistance => "color_map_blend_distance"u8;
+		public ReadOnlySpan<byte> ParamEffectOpacity => "opacity"u8;
+
+		public bool HasEffectUvTransform { get; } = true;
+		public bool HasEffectColorMap { get; } = true;
+		public bool HasEffectEmissiveMap { get; } = false;
+		public bool HasEffectAbsorptionTransmissionMap { get; } = false;
+		public bool HasEffectOrmMap { get; } = false;
+		public bool HasEffectOpacity { get; } = true;
+		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => ParamEffectUvTransform;
+		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => ParamEffectColorMapBlend;
+		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => ParamEffectColorMapBlendDistance;
+		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectOpacityParamOrThrow() => ParamEffectOpacity;
 	}
 
 	static void Write(ref Span<char> dest, string str) {

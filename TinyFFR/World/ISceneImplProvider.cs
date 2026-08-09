@@ -104,6 +104,11 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void SetCanvasObjectTextureExtentPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue);
 	void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture);
 	void SetCanvasBlendTextureDistance(ResourceHandle<Scene> handle, QuadInstance quad, float distance);
+	XYPair<int> GetCanvasObjectActualSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	XYPair<float> GetCanvasObjectActualSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	void SetCanvasObjectDockParent(ResourceHandle<Scene> handle, ModelInstance modelInstance, ModelInstance? parent);
+	float GetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad);
+	void SetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad, float newValue);
 	void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, FontString newValue);
 	void SetCanvasTextString(ResourceHandle<Scene> handle, TextInstance text, ReadOnlySpan<char> str, TextJustification multiLineJustification);
 	TextLayout GetCanvasTextLayout(ResourceHandle<Scene> handle, TextInstance text);

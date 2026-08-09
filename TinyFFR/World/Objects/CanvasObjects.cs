@@ -12,6 +12,13 @@ namespace Egodystonic.TinyFFR.World;
 public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransformed2DSceneObject {
 	CanvasScene Canvas { get; }
 
+	ModelInstance UnderlyingModelInstance { get; }
+
+	public XYPair<int> ActualSizePixels { get; }
+	public XYPair<float> ActualSizeFraction { get; }
+
+	void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject;
+
 	public Orientation2D CanvasAnchor { get; set; }
 	public Orientation2D? ObjectAnchor { get; set; }
 
@@ -73,9 +80,27 @@ public readonly record struct CanvasTexture : ICanvasObject {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Canvas.UnderlyingScene.GetHandleWithoutDisposeCheck();
 	}
-	ModelInstance Instance {
+	public ModelInstance UnderlyingModelInstance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingQuadInstance.UnderlyingModelInstance;
+	}
+	ModelInstance Instance {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance;
+	}
+
+	public XYPair<int> ActualSizePixels {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectActualSizePixels(SceneHandle, Instance);
+	}
+	public XYPair<float> ActualSizeFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectActualSizeFraction(SceneHandle, Instance);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
+		Implementation.SetCanvasObjectDockParent(SceneHandle, Instance, parent?.UnderlyingModelInstance);
 	}
 
 	public Orientation2D CanvasAnchor {
@@ -230,6 +255,14 @@ public readonly record struct CanvasTexture : ICanvasObject {
 	public void SetBlendTexture(Texture blendTex) => Implementation.SetCanvasBlendTexture(SceneHandle, UnderlyingQuadInstance, blendTex);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBlendTextureDistance(float distance) => Implementation.SetCanvasBlendTextureDistance(SceneHandle, UnderlyingQuadInstance, distance);
+	public float Opacity {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectOpacity(SceneHandle, UnderlyingQuadInstance);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCanvasObjectOpacity(SceneHandle, UnderlyingQuadInstance, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetOpacity(float opacity) => Opacity = opacity;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ScaleBy(float scalar) => Implementation.ScaleCanvasObjectBy(SceneHandle, Instance, scalar);
@@ -279,9 +312,27 @@ public readonly record struct CanvasText : ICanvasObject {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Canvas.UnderlyingScene.GetHandleWithoutDisposeCheck();
 	}
-	ModelInstance Instance {
+	public ModelInstance UnderlyingModelInstance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingTextInstance.UnderlyingModelInstance;
+	}
+	ModelInstance Instance {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => UnderlyingModelInstance;
+	}
+
+	public XYPair<int> ActualSizePixels {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectActualSizePixels(SceneHandle, Instance);
+	}
+	public XYPair<float> ActualSizeFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCanvasObjectActualSizeFraction(SceneHandle, Instance);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
+		Implementation.SetCanvasObjectDockParent(SceneHandle, Instance, parent?.UnderlyingModelInstance);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
