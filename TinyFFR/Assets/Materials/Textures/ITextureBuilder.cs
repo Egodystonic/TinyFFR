@@ -141,8 +141,8 @@ public unsafe interface ITextureBuilder {
 	Texture CreateCanvasTexture(ReadOnlySpan<char> name = default) => CreateCanvasTexture(DefaultColor, includeAlpha: false, name);
 	Texture CreateCanvasTexture(ColorVect color, bool includeAlpha, ReadOnlySpan<char> name = default) {
 		return includeAlpha
-			? CreateTexture(new TexelRgba32(color), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, Name = name, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() })
-			: CreateTexture(new TexelRgb24(color), isLinearColorspace: true, name);
+			? CreateTexture(new TexelRgba32(color), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, Name = name, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true }, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() })
+			: CreateTexture(new TexelRgb24(color), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, Name = name, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 	}
 	Texture CreateCanvasTexture(ColorVect color, bool includeAlpha, in TextureCreationConfig config) {
 		return includeAlpha

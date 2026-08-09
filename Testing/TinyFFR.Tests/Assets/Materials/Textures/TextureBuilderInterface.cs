@@ -188,6 +188,9 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
+			Assert.AreEqual(Quality.VeryLow, cc.RenderingConfig.AnisotropicFilteringQuality);
+			Assert.AreEqual(0f, cc.RenderingConfig.AnisotropyLevel);
+			Assert.AreEqual(true, cc.RenderingConfig.DisableTextureRepeat);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
 		}
@@ -198,6 +201,9 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
+			Assert.AreEqual(Quality.VeryLow, cc.RenderingConfig.AnisotropicFilteringQuality);
+			Assert.AreEqual(0f, cc.RenderingConfig.AnisotropyLevel);
+			Assert.AreEqual(true, cc.RenderingConfig.DisableTextureRepeat);
 			Assert.AreEqual(TextureProcessingConfig.PremultiplyAlpha(), cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
 		}
@@ -205,11 +211,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false);
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
-		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
 		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false);
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
-		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, name: "abc");
@@ -219,11 +225,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()  });
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha(), RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() });
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha(), RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: true, name: "abc");
