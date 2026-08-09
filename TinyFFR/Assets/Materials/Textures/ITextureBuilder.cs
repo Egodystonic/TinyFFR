@@ -82,7 +82,7 @@ public unsafe interface ITextureBuilder {
 			GenerateMipMaps = colorPattern.Dimensions.Area != 1,
 			IsLinearColorspace = false,
 			Name = name,
-			ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()
+			ProcessingToApply = includeAlpha ? TextureProcessingConfig.PremultiplyAlpha() : TextureProcessingConfig.None
 		};
 		return CreateColorMap(colorPattern, includeAlpha, in creationConfig); 
 	}
@@ -102,7 +102,7 @@ public unsafe interface ITextureBuilder {
 	Texture CreateColorMap(ReadOnlySpan<char> name = default) => CreateColorMap(DefaultColor, includeAlpha: false, name);
 	Texture CreateColorMap(ColorVect color, bool includeAlpha, ReadOnlySpan<char> name = default) {
 		return includeAlpha
-			? CreateTexture(new TexelRgba32(color), isLinearColorspace: false, name)
+			? CreateTexture(new TexelRgba32(color), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false, Name = name, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() })
 			: CreateTexture(new TexelRgb24(color), isLinearColorspace: false, name);
 	}
 	Texture CreateColorMap(ColorVect color, bool includeAlpha, in TextureCreationConfig config) {
@@ -121,7 +121,7 @@ public unsafe interface ITextureBuilder {
 				DisableTextureRepeat = true
 			},
 			Name = name,
-			ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()
+			ProcessingToApply = includeAlpha ? TextureProcessingConfig.PremultiplyAlpha() : TextureProcessingConfig.None
 		};
 		return CreateColorMap(colorPattern, includeAlpha, in creationConfig);
 	}
@@ -141,7 +141,7 @@ public unsafe interface ITextureBuilder {
 	Texture CreateCanvasTexture(ReadOnlySpan<char> name = default) => CreateCanvasTexture(DefaultColor, includeAlpha: false, name);
 	Texture CreateCanvasTexture(ColorVect color, bool includeAlpha, ReadOnlySpan<char> name = default) {
 		return includeAlpha
-			? CreateTexture(new TexelRgba32(color), isLinearColorspace: true, name)
+			? CreateTexture(new TexelRgba32(color), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, Name = name, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() })
 			: CreateTexture(new TexelRgb24(color), isLinearColorspace: true, name);
 	}
 	Texture CreateCanvasTexture(ColorVect color, bool includeAlpha, in TextureCreationConfig config) {

@@ -147,7 +147,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
 			Assert.AreEqual(false, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
-			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
+			Assert.AreEqual(TextureProcessingConfig.PremultiplyAlpha(), cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
@@ -168,16 +168,67 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()  });
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() });
 
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: true, name: "abc");
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: true, name: "abc");
+	}
+	
+	[Test]
+	public void ShouldCorrectlyManageCanvasPatterns() {
+		void AssertRgbInvocation(ReadOnlySpan<TexelRgb24> texels, TextureGenerationConfig gc, TextureCreationConfig cc) {
+			Assert.AreEqual(1, texels.Length);
+			Assert.AreEqual(TexelRgb24.ConvertFrom(new ColorVect(0.1f, 0.2f, 0.3f)), texels[0]);
+			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
+			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(false, cc.GenerateMipMaps);
+			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
+			Assert.IsTrue(cc.Name.IsEmpty);
+		}
+
+		void AssertRgbaInvocation(ReadOnlySpan<TexelRgba32> texels, TextureGenerationConfig gc, TextureCreationConfig cc) {
+			Assert.AreEqual(1, texels.Length);
+			Assert.AreEqual(TexelRgba32.ConvertFrom(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), texels[0]);
+			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
+			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(false, cc.GenerateMipMaps);
+			Assert.AreEqual(TextureProcessingConfig.PremultiplyAlpha(), cc.ProcessingToApply);
+			Assert.IsTrue(cc.Name.IsEmpty);
+		}
+
+		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false);
+		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false);
+		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+
+		AssertCreateTextureName<TexelRgb24>("abc");
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, name: "abc");
+		AssertCreateTextureName<TexelRgb24>("abc");
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, name: "abc");
+
+		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true);
+		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()  });
+		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true);
+		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() });
+
+		AssertCreateTextureName<TexelRgba32>("abc");
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: true, name: "abc");
+		AssertCreateTextureName<TexelRgba32>("abc");
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: true, name: "abc");
 	}
 
 	[Test]
