@@ -165,7 +165,7 @@ sealed class FakeCompositorImplProvider : IRendererCompositorImplProvider {
 		}
 		return null;
 	}
-	public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int renderOnceEveryNFrames) => SetFrameRateRatioCalls.Add((renderer, renderOnceEveryNFrames));
+	public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int ratioDenominator) => SetFrameRateRatioCalls.Add((renderer, ratioDenominator));
 	public int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
 		for (var i = SetFrameRateRatioCalls.Count - 1; i >= 0; --i) {
 			if (SetFrameRateRatioCalls[i].Renderer == renderer) return SetFrameRateRatioCalls[i].RenderOnceEveryNFrames;

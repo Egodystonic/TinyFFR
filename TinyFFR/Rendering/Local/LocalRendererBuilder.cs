@@ -15,7 +15,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
-sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IResourceDirectory<RendererCompositor>, IDisposable {
+sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IResourceDirectory<RendererCompositor>, IDisposable {
 	enum RenderOrdering { Standalone, First, Middle, Last }
 
 	[StructLayout(LayoutKind.Explicit)]
@@ -136,16 +136,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode);
-	readonly record struct RateLimitResources(RenderOutputBuffer PrivateBuffer, Renderer ProxyRenderer, CanvasScene ProxyScene, CanvasTexture ProxyQuad, XYPair<int> BufferSize);
-	readonly record struct CompositedRenderer(Renderer Renderer, RenderCompositionType CompositionType, bool IsEnabled) {
-		public RendererFrameRateLimit FrameRateLimit { get; init; } = RendererFrameRateLimit.None;
-		public RateLimitResources? RateLimitResources { get; init; } = null;
-
-		public bool IsRateLimited => FrameRateLimit.IsLimiting;
-	}
-	readonly record struct RendererCompositorData(RenderTargetUnion RenderTarget, ArrayPoolBackedVector<CompositedRenderer> AddedRenderers, int NumRenderersCurrentlyEnabled, int FirstEnabledRendererIndex, int LastEnabledRendererIndex) {
-		public int NumEnabledRateLimitedRenderers { get; init; } = 0;
-	}
 	readonly unsafe struct OutputBufferCallbackData {
 		public static OutputBufferCallbackData None => new(false, null, null);
 
@@ -169,26 +159,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 	const string DefaultRendererName = "Unnamed Renderer";
 	const string DefaultRenderOutputBufferName = "Unnamed Render Output Buffer";
-	const string DefaultCompositorName = "Unnamed Renderer Compositor";
 	const string SnapshotBufferName = "Snapshot Buffer";
 	const string SnapshotRendererName = "Snapshot Renderer";
-	const string RateLimitBufferName = "Frame Rate Limit Buffer";
-	const string RateLimitSceneName = "Frame Rate Limit Canvas";
-	const string RateLimitProxyRendererName = "Frame Rate Limit Proxy Renderer";
 
 	static readonly Lock _loadedTargetDataMutationLock = new();
 	static readonly ArrayPoolBackedVector<LocalRendererBuilder> _buildersWithPotentialLoadedTargets = new();
 	static readonly ArrayPoolBackedMap<nuint, (LocalRendererBuilder Builder, ResourceHandle<RenderOutputBuffer> BufferHandle, OutputBufferCallbackData Callbacks)> _pendingRenderTargetReadbacks = new();
-	readonly VectorPool<CompositedRenderer> _compositedRendererVectorPool = new(true);
 	readonly ArrayPoolBackedMap<RenderTargetUnion, TargetSpecificData> _loadedTargets = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<RenderOutputBuffer>, OutputBufferData> _loadedBuffers = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, RendererData> _loadedRenderers = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<RendererCompositor>, RendererCompositorData> _loadedCompositors = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly LocalSceneBuilder _sceneBuilder;
 	readonly RendererBuilderConfig _config;
 	readonly RenderOutputBufferImplProvider _renderOutputBufferImplProvider;
-	readonly RendererCompositorImplProvider _rendererCompositorImplProvider;
 	readonly TextureImplProvider _textureImplProvider;
 	nuint _previousHandleId = 0U;
 	bool _isDisposed = false;
@@ -213,31 +195,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) => _owner.ClearOutputChangeHandlers(handle, cancelQueuedFrames);
 		public override string ToString() => _owner.ToString();
-	}
-
-	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
-	// on both IRendererCompositorImplProvider and IRendererImplProvider.
-	sealed class RendererCompositorImplProvider : IRendererCompositorImplProvider {
-		public LocalRendererBuilder Owner { get; }
-
-		public RendererCompositorImplProvider(LocalRendererBuilder owner) => Owner = owner;
-
-		public void SetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer, int? maxFramesPerSecond) => Owner.SetRendererFrameRateCap(handle, renderer, maxFramesPerSecond);
-		public int? GetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer) => Owner.GetRendererFrameRateCap(handle, renderer);
-		public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int renderOnceEveryNFrames) => Owner.SetRendererFrameRateRatio(handle, renderer, renderOnceEveryNFrames);
-		public int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer) => Owner.GetRendererFrameRateRatio(handle, renderer);
-		public string GetNameAsNewStringObject(ResourceHandle<RendererCompositor> handle) => Owner.GetNameAsNewStringObject(handle);
-		public int GetNameLength(ResourceHandle<RendererCompositor> handle) => Owner.GetNameLength(handle);
-		public void CopyName(ResourceHandle<RendererCompositor> handle, Span<char> destinationBuffer) => Owner.CopyName(handle, destinationBuffer);
-		public bool IsDisposed(ResourceHandle<RendererCompositor> handle) => Owner.IsDisposed(handle);
-		public void Dispose(ResourceHandle<RendererCompositor> handle) => Owner.Dispose(handle);
-		public void Dispose(ResourceHandle<RendererCompositor> handle, bool disposeContainedRenderers) => Owner.Dispose(handle, disposeContainedRenderers);
-		public IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle) => Owner.GetAddedRenderers(handle);
-		public void Add(ResourceHandle<RendererCompositor> handle, Renderer renderer, RenderCompositionType compositionType) => Owner.Add(handle, renderer, compositionType);
-		public void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState) => Owner.SetEnabledState(handle, renderer, newEnabledState);
-		public void RenderAll(ResourceHandle<RendererCompositor> handle) => Owner.RenderAll(handle);
-		public void WaitForGpu(ResourceHandle<RendererCompositor> handle) => Owner.WaitForGpu(handle);
-		public override string ToString() => Owner.ToString();
 	}
 
 	// This provides the implementation for textures created via RenderOutputBuffer.CreateDynamicTexture()
@@ -384,379 +341,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRenderOutputBufferName);
 		return HandleToInstance(handle);
-	}
-
-	public RendererCompositor CreateCompositor<TRenderTarget>(TRenderTarget renderTarget, ReadOnlySpan<char> name = default) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
-		ThrowIfThisIsDisposed();
-
-		var rtu = AllocateOrRetrieveRenderTargetUnion(renderTarget);
-		
-		_previousHandleId++;
-		var handle = new ResourceHandle<RendererCompositor>(_previousHandleId);
-		_loadedCompositors.Add(handle, new RendererCompositorData(rtu, _compositedRendererVectorPool.Rent(), 0, -1, -1));
-
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultCompositorName);
-		var result = HandleToInstance(handle);
-		_globals.DependencyTracker.RegisterDependency(result, renderTarget);
-		return result;
-	}
-
-	void RecalculateCompositorCounts(ResourceHandle<RendererCompositor> handle) {
-		var compositorData = _loadedCompositors[handle];
-		var count = 0;
-		var first = -1;
-		var last = -1;
-		var rateLimitedCount = 0;
-
-		for (var i = 0; i < compositorData.AddedRenderers.Count; ++i) {
-			var rd = compositorData.AddedRenderers[i];
-			if (!rd.IsEnabled) continue;
-
-			count++;
-			if (first == -1) first = i;
-			last = i;
-			if (rd.IsRateLimited) rateLimitedCount++;
-		}
-
-		_loadedCompositors[handle] = _loadedCompositors[handle] with {
-			NumRenderersCurrentlyEnabled = count,
-			FirstEnabledRendererIndex = first,
-			LastEnabledRendererIndex = last,
-			NumEnabledRateLimitedRenderers = rateLimitedCount
-		};
-	}
-
-	int GetAddedRendererIndexOrThrow(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
-		var addedRenderers = _loadedCompositors[handle].AddedRenderers;
-		for (var i = 0; i < addedRenderers.Count; ++i) {
-			if (addedRenderers[i].Renderer == renderer) return i;
-		}
-		throw new ArgumentException($"{renderer} has not been added to {HandleToInstance(handle)}.", nameof(renderer));
-	}
-
-	public void SetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer, int? maxFramesPerSecond) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (maxFramesPerSecond is <= 0) {
-			throw new ArgumentOutOfRangeException(nameof(maxFramesPerSecond), maxFramesPerSecond, "Frame rate cap must be positive (or null to remove the cap).");
-		}
-
-		var index = GetAddedRendererIndexOrThrow(handle, renderer);
-		var addedRenderers = _loadedCompositors[handle].AddedRenderers;
-		var newIntervalTicks = maxFramesPerSecond is { } hz ? RendererFrameRateLimit.TicksPerFrameAtFrameRate(hz) : 0L;
-		if (addedRenderers[index].FrameRateLimit.CapIntervalTicks == newIntervalTicks) return;
-
-		addedRenderers[index] = addedRenderers[index] with {
-			FrameRateLimit = addedRenderers[index].FrameRateLimit.WithCapIntervalTicks(newIntervalTicks)
-		};
-		SynchronizeRateLimitResources(handle, index);
-		RecalculateCompositorCounts(handle);
-	}
-
-	public int? GetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedCompositors[handle].AddedRenderers[GetAddedRendererIndexOrThrow(handle, renderer)].FrameRateLimit.FrameRateCapHz;
-	}
-
-	public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int renderOnceEveryNFrames) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (renderOnceEveryNFrames < 1) {
-			throw new ArgumentOutOfRangeException(nameof(renderOnceEveryNFrames), renderOnceEveryNFrames, "Frame rate ratio must be at least 1 (1 indicates no rate limiting).");
-		}
-
-		var index = GetAddedRendererIndexOrThrow(handle, renderer);
-		var addedRenderers = _loadedCompositors[handle].AddedRenderers;
-		if (addedRenderers[index].FrameRateLimit.FrameRatio == renderOnceEveryNFrames) return;
-
-		addedRenderers[index] = addedRenderers[index] with {
-			FrameRateLimit = addedRenderers[index].FrameRateLimit.WithFrameRatio(renderOnceEveryNFrames)
-		};
-		SynchronizeRateLimitResources(handle, index);
-		RecalculateCompositorCounts(handle);
-	}
-
-	public int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedCompositors[handle].AddedRenderers[GetAddedRendererIndexOrThrow(handle, renderer)].FrameRateLimit.FrameRatio;
-	}
-
-	void SynchronizeRateLimitResources(ResourceHandle<RendererCompositor> handle, int index) {
-		var addedRenderers = _loadedCompositors[handle].AddedRenderers;
-		var entry = addedRenderers[index];
-
-		if (entry.IsRateLimited) {
-			if (entry.RateLimitResources != null) return;
-			addedRenderers[index] = entry with { RateLimitResources = AllocateRateLimitResources(handle, entry.Renderer) };
-		}
-		else {
-			if (entry.RateLimitResources is not { } resources) return;
-			addedRenderers[index] = entry with { RateLimitResources = null };
-			DisposeRateLimitResources(entry.Renderer, resources);
-		}
-	}
-
-	XYPair<int> DetermineRateLimitBufferSize(RenderTargetUnion renderTarget) {
-		return renderTarget.ViewportDimensions.Clamp(
-			new XYPair<int>(RenderOutputBufferCreationConfig.MinTextureDimensionXY),
-			new XYPair<int>(RenderOutputBufferCreationConfig.MaxTextureDimensionXY)
-		);
-	}
-
-	RenderOutputBuffer AllocateRateLimitBufferAndRenderTargetUnion(XYPair<int> bufferSize) {
-		var buffer = CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
-			TextureDimensions = bufferSize,
-			Name = RateLimitBufferName
-		});
-		AllocateOrRetrieveRenderTargetUnion(buffer);
-		return buffer;
-	}
-
-	void ReleaseRateLimitBuffer(RenderOutputBuffer buffer) {
-		ReleaseRenderTargetUnionIfUnused(new RenderTargetUnion(buffer));
-		Dispose(buffer.GetHandleWithoutDisposeCheck());
-	}
-
-	RateLimitResources AllocateRateLimitResources(ResourceHandle<RendererCompositor> compositorHandle, Renderer renderer) {
-		var compositorTarget = _loadedCompositors[compositorHandle].RenderTarget;
-		var bufferSize = DetermineRateLimitBufferSize(compositorTarget);
-		var privateBuffer = AllocateRateLimitBufferAndRenderTargetUnion(bufferSize);
-
-		var proxyScene = _sceneBuilder.CreateCanvasScene(new CanvasSceneCreationConfig { Name = RateLimitSceneName });
-		var proxyQuad = proxyScene.Add(privateBuffer.CreateDynamicTexture());
-		proxyQuad.CanvasAnchor = Orientation2D.None;
-		proxyQuad.WidthFraction = 1f;
-		proxyQuad.HeightFraction = 1f;
-		proxyQuad.TextureExtentFraction = (1f, -1f);
-		proxyQuad.TextureOffsetFraction = (0f, -2f);
-
-		var proxyConfig = new RendererCreationConfig {
-			Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Canvas),
-			AutoUpdateCameraAspectRatio = false,
-			GpuSynchronizationFrameBufferCount = -1,
-			Name = RateLimitProxyRendererName
-		};
-		var proxyRenderer = compositorTarget.IsWindow
-			? CreateRenderer(proxyScene, compositorTarget.AsWindow, in proxyConfig)
-			: CreateRenderer(proxyScene, compositorTarget.AsBuffer, in proxyConfig);
-
-		RedirectViewToRateLimitBuffer(renderer, privateBuffer);
-
-		return new RateLimitResources(privateBuffer, proxyRenderer, proxyScene, proxyQuad, bufferSize);
-	}
-
-	void RedirectViewToRateLimitBuffer(Renderer renderer, RenderOutputBuffer buffer) {
-		SetViewRenderTarget(
-			_loadedRenderers[renderer.GetHandleWithoutDisposeCheck()].Viewport.Handle,
-			_loadedBuffers[buffer.GetHandleWithoutDisposeCheck()].RenderTargetHandle
-		).ThrowIfFailure();
-	}
-
-	void DisposeRateLimitResources(Renderer renderer, RateLimitResources resources) {
-		var rendererHandle = renderer.GetHandleWithoutDisposeCheck();
-		if (!IsDisposed(rendererHandle)) {
-			SetViewRenderTarget(_loadedRenderers[rendererHandle].Viewport.Handle, UIntPtr.Zero).ThrowIfFailure();
-			_loadedRenderers[rendererHandle] = _loadedRenderers[rendererHandle] with { LastPushedCompositingMode = null };
-		}
-
-		Dispose(resources.ProxyRenderer.GetHandleWithoutDisposeCheck());
-		resources.ProxyScene.Dispose();
-		ReleaseRateLimitBuffer(resources.PrivateBuffer);
-	}
-
-	RateLimitResources ResizeRateLimitResourcesIfNecessary(ResourceHandle<RendererCompositor> compositorHandle, Renderer renderer, RateLimitResources resources) {
-		var requiredSize = DetermineRateLimitBufferSize(_loadedCompositors[compositorHandle].RenderTarget);
-		if (requiredSize == resources.BufferSize) return resources;
-
-		var newBuffer = AllocateRateLimitBufferAndRenderTargetUnion(requiredSize);
-		resources.ProxyQuad.SetTexture(newBuffer.CreateDynamicTexture());
-		RedirectViewToRateLimitBuffer(renderer, newBuffer);
-		ReleaseRateLimitBuffer(resources.PrivateBuffer);
-
-		return resources with { PrivateBuffer = newBuffer, BufferSize = requiredSize };
-	}
-
-
-	public void Add(ResourceHandle<RendererCompositor> handle, Renderer renderer, RenderCompositionType compositionType) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-
-		var compositorData = _loadedCompositors[handle];
-		var rendererTarget = _loadedRenderers[renderer.Handle].RenderTarget;
-		
-		foreach (var rd in compositorData.AddedRenderers) {
-			if (rd.Renderer == renderer) {
-				throw new ArgumentException($"{renderer} has already been added to {HandleToInstance(handle)}.", nameof(renderer));
-			}
-		}
-
-		if (compositorData.RenderTarget != rendererTarget) {
-			throw new ArgumentException(
-				$"{renderer} targets {rendererTarget}, but this compositor was created targeting {compositorData.RenderTarget}.",
-				nameof(renderer)
-			);
-		}
-
-		compositorData.AddedRenderers.Add(new(renderer, compositionType, true));
-		RecalculateCompositorCounts(handle);
-		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), renderer);
-	}
-	
-	public void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-
-		var compositorData = _loadedCompositors[handle];
-		for (var i = 0; i < compositorData.AddedRenderers.Count; ++i) {
-			if (compositorData.AddedRenderers[i].Renderer == renderer) {
-				compositorData.AddedRenderers[i] = compositorData.AddedRenderers[i] with { IsEnabled = newEnabledState };
-				RecalculateCompositorCounts(handle);
-				return;
-			}
-		}
-		
-		throw new ArgumentException($"{renderer} has not been added to {HandleToInstance(handle)}.", nameof(renderer));
-	}
-	public unsafe IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		
-		var compositorData = _loadedCompositors[handle];
-		
-		static int GetCount(RendererCompositor rc) => ((RendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers.Count;
-		static int GetVersion(RendererCompositor rc) => ((RendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers.Version;
-		static Renderer GetItem(RendererCompositor rc, int index) => ((RendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers[index].Renderer;
-		
-		return new IndirectEnumerable<RendererCompositor, Renderer>(
-			HandleToInstance(handle),
-			compositorData.AddedRenderers.Version,
-			&GetCount,
-			&GetVersion,
-			&GetItem
-		);
-	}
-	static ResourceHandle<Renderer> GetCompositedRenderHandle(in CompositedRenderer compositedRenderer) {
-		return compositedRenderer.RateLimitResources is { } resources ? resources.ProxyRenderer.Handle : compositedRenderer.Renderer.Handle;
-	}
-
-	public void RenderAll(ResourceHandle<RendererCompositor> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var compositorData = _loadedCompositors[handle];
-
-		if (compositorData.NumRenderersCurrentlyEnabled == 0) return;
-
-		if (compositorData.NumEnabledRateLimitedRenderers > 0) RenderRateLimitedRenderersDueThisFrame(handle);
-
-		if (compositorData.NumRenderersCurrentlyEnabled == 1) {
-			var sole = compositorData.AddedRenderers[compositorData.FirstEnabledRendererIndex];
-			RenderInternal(GetCompositedRenderHandle(in sole), RenderOrdering.Standalone, sole.CompositionType, sole.Renderer.Handle);
-			return;
-		}
-
-		var first = compositorData.AddedRenderers[compositorData.FirstEnabledRendererIndex];
-		var last = compositorData.AddedRenderers[compositorData.LastEnabledRendererIndex];
-		RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, first.Renderer.Handle);
-		try {
-			for (var i = compositorData.FirstEnabledRendererIndex + 1; i < compositorData.LastEnabledRendererIndex; ++i) {
-				var middle = compositorData.AddedRenderers[i];
-				if (!middle.IsEnabled) continue;
-				RenderInternal(GetCompositedRenderHandle(in middle), RenderOrdering.Middle, middle.CompositionType, middle.Renderer.Handle);
-			}
-		}
-		finally {
-			RenderInternal(GetCompositedRenderHandle(in last), RenderOrdering.Last, last.CompositionType, last.Renderer.Handle);
-		}
-	}
-
-	void RenderRateLimitedRenderersDueThisFrame(ResourceHandle<RendererCompositor> handle) {
-		var addedRenderers = _loadedCompositors[handle].AddedRenderers;
-		var currentTimestamp = Stopwatch.GetTimestamp();
-
-		for (var i = 0; i < addedRenderers.Count; ++i) {
-			var entry = addedRenderers[i];
-			if (!entry.IsEnabled || !entry.IsRateLimited || entry.RateLimitResources is not { } resources) continue;
-
-			var frameRateLimit = entry.FrameRateLimit;
-			var isDue = RendererFrameRateLimit.AdvanceAndDetermineIfDue(ref frameRateLimit, currentTimestamp);
-			entry = entry with { FrameRateLimit = frameRateLimit };
-			if (!isDue) {
-				addedRenderers[i] = entry;
-				continue;
-			}
-
-			resources = ResizeRateLimitResourcesIfNecessary(handle, entry.Renderer, resources);
-			addedRenderers[i] = entry with { RateLimitResources = resources };
-			RenderRateLimitedRendererOffscreen(entry.Renderer.Handle, resources);
-		}
-	}
-
-	unsafe void RenderRateLimitedRendererOffscreen(ResourceHandle<Renderer> handle, RateLimitResources resources) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-
-		SetUpSceneForRender(handle);
-
-		var rendererData = _loadedRenderers[handle];
-		var viewportData = rendererData.Viewport;
-		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
-		if (viewportData.LastCheckedRenderTargetSize != curTargetSize) {
-			var viewportBounds = viewportData.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
-			viewportData = viewportData with {
-				LastCheckedRenderTargetSize = curTargetSize,
-				LastSetViewportBottomLeft = viewportBounds.BottomLeft,
-				LastSetViewportSize = viewportBounds.Size
-			};
-			rendererData = rendererData with { Viewport = viewportData };
-			SetViewDescriptorSize(
-				viewportData.Handle,
-				viewportBounds.BottomLeft.X,
-				viewportBounds.BottomLeft.Y,
-				(uint) viewportBounds.Size.X,
-				(uint) viewportBounds.Size.Y
-			).ThrowIfFailure();
-			_loadedRenderers[handle] = rendererData;
-			if (rendererData.AutoUpdateCameraAspectRatio) {
-				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
-			}
-		}
-
-		var desiredCompositing = (Translucent: true, ClearDepth: true);
-		if (rendererData.LastPushedCompositingMode != desiredCompositing) {
-			SetViewCompositingMode(viewportData.Handle, desiredCompositing.Translucent, desiredCompositing.ClearDepth).ThrowIfFailure();
-			_loadedRenderers[handle] = rendererData with { LastPushedCompositingMode = desiredCompositing };
-		}
-
-		TargetSpecificData offscreenTargetData;
-		lock (_loadedTargetDataMutationLock) {
-			offscreenTargetData = _loadedTargets[new RenderTargetUnion(resources.PrivateBuffer)];
-		}
-
-		RenderScene(
-			offscreenTargetData.RendererPtr,
-			viewportData.Handle,
-			_loadedBuffers[resources.PrivateBuffer.GetHandleWithoutDisposeCheck()].RenderTargetHandle,
-			true,
-			null,
-			0U,
-			0U,
-			0U,
-			0U,
-			false
-		).ThrowIfFailure();
-	}
-	public void WaitForGpu(ResourceHandle<RendererCompositor> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var compositorData = _loadedCompositors[handle];
-		if (compositorData.NumRenderersCurrentlyEnabled == 0) return;
-		
-		WaitForGpu(compositorData.AddedRenderers[compositorData.LastEnabledRendererIndex].Renderer.Handle);
-	}
-
-	public string GetNameAsNewStringObject(ResourceHandle<RendererCompositor> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return new String(_globals.GetResourceName(handle.Ident, DefaultCompositorName));
-	}
-	public int GetNameLength(ResourceHandle<RendererCompositor> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultCompositorName).Length;
-	}
-	public void CopyName(ResourceHandle<RendererCompositor> handle, Span<char> destinationBuffer) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		_globals.CopyResourceName(handle.Ident, DefaultCompositorName, destinationBuffer);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1378,11 +962,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		InteropBool blendTranslucent,
 		InteropBool clearDepth
 	);
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_render_target")]
-	static extern InteropResult SetViewRenderTarget(
-		UIntPtr viewDescriptorHandle,
-		UIntPtr optionalRenderTargetHandle
-	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "render_scene")]
 	static extern InteropResult RenderScene(
@@ -1436,8 +1015,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Renderer HandleToInstance(ResourceHandle<Renderer> h) => new(h, this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	RendererCompositor HandleToInstance(ResourceHandle<RendererCompositor> h) => new(h, _rendererCompositorImplProvider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	RenderOutputBuffer HandleToInstance(ResourceHandle<RenderOutputBuffer> h) => new(h, _renderOutputBufferImplProvider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1493,30 +1070,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		return allowPartialMatch
 			? _globals.GetResourceName(handle.Ident, DefaultRenderOutputBufferName).Contains(name, comparisonType)
 			: _globals.GetResourceName(handle.Ident, DefaultRenderOutputBufferName).Equals(name, comparisonType);
-	}
-	unsafe IndirectEnumerable<object, RendererCompositor> IResourceDirectory<RendererCompositor>.AllActiveInstances {
-		get {
-			static LocalRendererBuilder CastSelf(object self) => self as LocalRendererBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
-			static int GetCount(object self) => CastSelf(self)._loadedCompositors.Count;
-			static int GetVersion(object self) => CastSelf(self)._loadedCompositors.Version;
-			static RendererCompositor GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._loadedCompositors.GetPairAtIndex(index).Key);
-
-			ThrowIfThisIsDisposed();
-			return new(
-				this,
-				GetVersion(this),
-				&GetCount,
-				&GetVersion,
-				&GetItem
-			);
-		}
-	}
-	bool IResourceDirectory<RendererCompositor>.ResourceNameMatchIsMatching(RendererCompositor resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
-		var handle = resource.GetHandleWithoutDisposeCheck();
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return allowPartialMatch
-			? _globals.GetResourceName(handle.Ident, DefaultCompositorName).Contains(name, comparisonType)
-			: _globals.GetResourceName(handle.Ident, DefaultCompositorName).Equals(name, comparisonType);
 	}
 	#endregion
 
@@ -1584,32 +1137,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		_loadedBuffers.Remove(handle);
 	}
 
-	public bool IsDisposed(ResourceHandle<RendererCompositor> handle) => _isDisposed || !_loadedCompositors.ContainsKey(handle);
-	public void Dispose(ResourceHandle<RendererCompositor> handle) => Dispose(handle, false);
-	public void Dispose(ResourceHandle<RendererCompositor> handle, bool disposeContainedRenderers) {
-		if (IsDisposed(handle)) return;
-		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-
-		var data = _loadedCompositors[handle];
-		for (var i = data.AddedRenderers.Count - 1; i >= 0; --i) {
-			var addedRenderer = data.AddedRenderers[i];
-			if (addedRenderer.RateLimitResources is { } resources) {
-				data.AddedRenderers[i] = addedRenderer with { RateLimitResources = null };
-				DisposeRateLimitResources(addedRenderer.Renderer, resources);
-			}
-			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), addedRenderer.Renderer);
-			if (disposeContainedRenderers) Dispose(addedRenderer.Renderer.GetHandleWithoutDisposeCheck());
-		}
-
-		if (data.RenderTarget.IsWindow) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsWindow);
-		if (data.RenderTarget.IsBuffer) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsBuffer);
-
-		_compositedRendererVectorPool.Return(data.AddedRenderers);
-		_globals.DisposeResourceNameIfExists(handle.Ident);
-		_loadedCompositors.Remove(handle);
-		ReleaseRenderTargetUnionIfUnused(data.RenderTarget);
-	}
-
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
@@ -1640,7 +1167,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Renderer> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Renderer));
-	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<RendererCompositor> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(RendererCompositor));
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<RenderOutputBuffer> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(RenderOutputBuffer));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion

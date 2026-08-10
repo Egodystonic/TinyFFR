@@ -10,7 +10,7 @@ public interface IRendererCompositorImplProvider : IDisposableResourceImplProvid
 	void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState);
 	void SetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer, int? maxFramesPerSecond);
 	int? GetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer);
-	void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int renderOnceEveryNFrames);
+	void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int ratioDenominator);
 	int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer);
 	IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle);
 	void RenderAll(ResourceHandle<RendererCompositor> handle);

@@ -160,13 +160,13 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		return _addedRenderers[GetAddedRendererIndexOrThrow(renderer)].FrameRateCap;
 	}
 
-	public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int renderOnceEveryNFrames) {
+	public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int ratioDenominator) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		ThrowIfDisposed();
 
 		var index = GetAddedRendererIndexOrThrow(renderer);
-		_actualCompositor.SetRendererFrameRateRatio(BindableRendererImplProvider.GetBindableImplementationOrThrow(renderer).ActualRenderer, renderOnceEveryNFrames);
-		_addedRenderers[index] = _addedRenderers[index] with { FrameRateRatio = renderOnceEveryNFrames };
+		_actualCompositor.SetRendererFrameRateRatio(BindableRendererImplProvider.GetBindableImplementationOrThrow(renderer).ActualRenderer, ratioDenominator);
+		_addedRenderers[index] = _addedRenderers[index] with { FrameRateRatio = ratioDenominator };
 	}
 
 	public int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
