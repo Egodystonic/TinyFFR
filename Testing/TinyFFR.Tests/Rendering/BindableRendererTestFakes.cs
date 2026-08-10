@@ -131,6 +131,8 @@ sealed class FakeCompositorImplProvider : IRendererCompositorImplProvider {
 	public int WaitForGpuCount { get; private set; }
 	public readonly List<(Renderer Renderer, RenderCompositionType CompositionType)> AddCalls = new();
 	public readonly List<(Renderer Renderer, bool Enabled)> SetEnabledStateCalls = new();
+	public readonly List<(Renderer Renderer, int? MaxFramesPerSecond)> SetFrameRateCapCalls = new();
+	public readonly List<(Renderer Renderer, int RenderOnceEveryNFrames)> SetFrameRateRatioCalls = new();
 
 	public FakeCompositorImplProvider(ResourceHandle<RendererCompositor> handle, RenderOutputBuffer target, string name) {
 		Handle = handle;
@@ -156,6 +158,20 @@ sealed class FakeCompositorImplProvider : IRendererCompositorImplProvider {
 
 	public void Add(ResourceHandle<RendererCompositor> handle, Renderer renderer, RenderCompositionType compositionType) => AddCalls.Add((renderer, compositionType));
 	public void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState) => SetEnabledStateCalls.Add((renderer, newEnabledState));
+	public void SetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer, int? maxFramesPerSecond) => SetFrameRateCapCalls.Add((renderer, maxFramesPerSecond));
+	public int? GetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
+		for (var i = SetFrameRateCapCalls.Count - 1; i >= 0; --i) {
+			if (SetFrameRateCapCalls[i].Renderer == renderer) return SetFrameRateCapCalls[i].MaxFramesPerSecond;
+		}
+		return null;
+	}
+	public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int renderOnceEveryNFrames) => SetFrameRateRatioCalls.Add((renderer, renderOnceEveryNFrames));
+	public int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
+		for (var i = SetFrameRateRatioCalls.Count - 1; i >= 0; --i) {
+			if (SetFrameRateRatioCalls[i].Renderer == renderer) return SetFrameRateRatioCalls[i].RenderOnceEveryNFrames;
+		}
+		return 1;
+	}
 	public IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle) => throw new NotSupportedException();
 	public void RenderAll(ResourceHandle<RendererCompositor> handle) => RenderAllCount++;
 	public void WaitForGpu(ResourceHandle<RendererCompositor> handle) => WaitForGpuCount++;

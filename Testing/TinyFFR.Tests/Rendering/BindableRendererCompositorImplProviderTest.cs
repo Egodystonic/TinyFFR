@@ -165,6 +165,46 @@ class BindableRendererCompositorImplProviderTest {
 	}
 
 	[Test]
+	public void ShouldForwardAndPersistFrameRateLimits() {
+		var compositor = _builder.CreateBindableCompositor();
+		var innerCompositor = LatestInnerCompositor;
+		var rendererA = CreateBindableRenderer();
+		var rendererB = CreateBindableRenderer();
+		var unaddedRenderer = CreateBindableRenderer();
+		compositor.Add(rendererA, RenderCompositionType.Standard);
+		var innerRendererA = LatestInnerRenderer;
+		compositor.Add(rendererB, RenderCompositionType.RetainPreviousScenes);
+		var innerRendererB = LatestInnerRenderer;
+
+		compositor.SetRendererFrameRateCap(rendererB, 60);
+		compositor.SetRendererFrameRateRatio(rendererA, 3);
+
+		Assert.AreEqual(1, innerCompositor.SetFrameRateCapCalls.Count);
+		Assert.AreEqual((innerRendererB.RendererInstance, (int?) 60), innerCompositor.SetFrameRateCapCalls[0]);
+		Assert.AreEqual(1, innerCompositor.SetFrameRateRatioCalls.Count);
+		Assert.AreEqual((innerRendererA.RendererInstance, 3), innerCompositor.SetFrameRateRatioCalls[0]);
+
+		Assert.AreEqual(60, compositor.GetRendererFrameRateCap(rendererB));
+		Assert.AreEqual(null, compositor.GetRendererFrameRateCap(rendererA));
+		Assert.AreEqual(3, compositor.GetRendererFrameRateRatio(rendererA));
+		Assert.AreEqual(1, compositor.GetRendererFrameRateRatio(rendererB));
+
+		Assert.Throws<ArgumentException>(() => compositor.SetRendererFrameRateCap(unaddedRenderer, 30));
+		Assert.Throws<ArgumentException>(() => compositor.SetRendererFrameRateRatio(unaddedRenderer, 2));
+
+		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (100, 50), (100, 50), NoopFrameHandler);
+
+		var recreatedInnerCompositor = LatestInnerCompositor;
+		Assert.AreNotEqual(innerCompositor, recreatedInnerCompositor);
+		Assert.AreEqual(1, recreatedInnerCompositor.SetFrameRateCapCalls.Count);
+		Assert.AreEqual((int?) 60, recreatedInnerCompositor.SetFrameRateCapCalls[0].MaxFramesPerSecond);
+		Assert.AreEqual(recreatedInnerCompositor.AddCalls[1].Renderer, recreatedInnerCompositor.SetFrameRateCapCalls[0].Renderer);
+		Assert.AreEqual(1, recreatedInnerCompositor.SetFrameRateRatioCalls.Count);
+		Assert.AreEqual(3, recreatedInnerCompositor.SetFrameRateRatioCalls[0].RenderOnceEveryNFrames);
+		Assert.AreEqual(recreatedInnerCompositor.AddCalls[0].Renderer, recreatedInnerCompositor.SetFrameRateRatioCalls[0].Renderer);
+	}
+
+	[Test]
 	public void ShouldForwardRenderAllAndWaitForGpu() {
 		var compositor = _builder.CreateBindableCompositor();
 		var innerCompositor = LatestInnerCompositor;
