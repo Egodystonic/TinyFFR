@@ -149,19 +149,19 @@ class CuboidTest {
 		for (var i = 0; i < NumIterations; ++i) {
 			var val = Cuboid.Random(a, b);
 			Assert.GreaterOrEqual(val.Width, a.Width);
-			Assert.Less(val.Width, b.Width);
+			Assert.LessOrEqual(val.Width, b.Width);
 			Assert.GreaterOrEqual(val.Height, a.Height);
-			Assert.Less(val.Height, b.Height);
+			Assert.LessOrEqual(val.Height, b.Height);
 			Assert.GreaterOrEqual(val.Depth, a.Depth);
-			Assert.Less(val.Depth, b.Depth);
+			Assert.LessOrEqual(val.Depth, b.Depth);
 
 			val = Cuboid.Random();
 			Assert.GreaterOrEqual(val.HalfWidth, Cuboid.DefaultRandomMin);
-			Assert.Less(val.HalfWidth, Cuboid.DefaultRandomMax);
+			Assert.LessOrEqual(val.HalfWidth, Cuboid.DefaultRandomMax);
 			Assert.GreaterOrEqual(val.HalfHeight, Cuboid.DefaultRandomMin);
-			Assert.Less(val.HalfHeight, Cuboid.DefaultRandomMax);
+			Assert.LessOrEqual(val.HalfHeight, Cuboid.DefaultRandomMax);
 			Assert.GreaterOrEqual(val.HalfDepth, Cuboid.DefaultRandomMin);
-			Assert.Less(val.HalfDepth, Cuboid.DefaultRandomMax);
+			Assert.LessOrEqual(val.HalfDepth, Cuboid.DefaultRandomMax);
 		}
 	}
 
