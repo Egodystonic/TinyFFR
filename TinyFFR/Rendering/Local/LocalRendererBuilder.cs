@@ -346,6 +346,32 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Render(ResourceHandle<Renderer> handle) => RenderInternal(handle, RenderOrdering.Standalone, RenderCompositionType.Standard, handle);
 
+	bool RefreshViewportDimensionsIfRenderTargetSizeChanged(ResourceHandle<Renderer> handle, ref RendererData rendererData, ref ViewportData viewportData) {
+		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
+		if (viewportData.LastCheckedRenderTargetSize == curTargetSize) return false;
+
+		var viewportBounds = viewportData.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
+		viewportData = viewportData with {
+			LastCheckedRenderTargetSize = curTargetSize,
+			LastSetViewportBottomLeft = viewportBounds.BottomLeft,
+			LastSetViewportSize = viewportBounds.Size
+		};
+		rendererData = rendererData with { Viewport = viewportData };
+		SetViewDescriptorSize(
+			viewportData.Handle,
+			viewportBounds.BottomLeft.X,
+			viewportBounds.BottomLeft.Y,
+			(uint) viewportBounds.Size.X,
+			(uint) viewportBounds.Size.Y
+		).ThrowIfFailure();
+		_loadedRenderers[handle] = rendererData;
+		if (rendererData.AutoUpdateCameraAspectRatio) {
+			rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
+		}
+
+		return true;
+	}
+
 	unsafe void RenderInternal(ResourceHandle<Renderer> handle, RenderOrdering ordering, RenderCompositionType compositionType, ResourceHandle<Renderer> fenceEmittingHandle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
@@ -358,30 +384,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			targetData = _loadedTargets[rendererData.RenderTarget];
 		}
 
-		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
-		var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetData.SwapchainShouldBeRenewed;
-		if (viewportData.LastCheckedRenderTargetSize != curTargetSize) {
-			var viewportBounds = viewportData.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
-			viewportData = viewportData with {
-				LastCheckedRenderTargetSize = curTargetSize,
-				LastSetViewportBottomLeft = viewportBounds.BottomLeft,
-				LastSetViewportSize = viewportBounds.Size
-			};
-			rendererData = rendererData with { Viewport = viewportData };
-			SetViewDescriptorSize(
-				viewportData.Handle,
-				viewportBounds.BottomLeft.X,
-				viewportBounds.BottomLeft.Y,
-				(uint) viewportBounds.Size.X,
-				(uint) viewportBounds.Size.Y
-			).ThrowIfFailure();
-			_loadedRenderers[handle] = rendererData;
-			if (rendererData.AutoUpdateCameraAspectRatio) {
-				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
-			}
-
-			shouldRenewSwapChainIfIsWindowAndAlreadyExists = true;
-		}
+		var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetData.SwapchainShouldBeRenewed
+			|| RefreshViewportDimensionsIfRenderTargetSizeChanged(handle, ref rendererData, ref viewportData);
 
 		// The swap chain must be renewed at most once per composed frame and never between a 'first'
 		// renderer's beginFrame and a 'last' renderer's endFrame; only the frame-opening renderer does it.

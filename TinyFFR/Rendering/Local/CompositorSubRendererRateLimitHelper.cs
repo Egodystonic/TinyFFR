@@ -14,6 +14,7 @@ readonly record struct CompositorSubRendererRateLimitHelper {
 	public long PreviousCompositorFrameTimestamp { get; init; } = 0L;
 	public int RateRatio { get; init; } = 1;
 	public int ConsecutiveSkippedFramesCount { get; init; } = 0;
+	public bool InitialPostConfigChangeFrameStillPending { get; init; } = false;
 
 	public CompositorSubRendererRateLimitHelper() { }
 
@@ -28,20 +29,32 @@ readonly record struct CompositorSubRendererRateLimitHelper {
 		return this with {
 			RateCapPeriodTicks = framesPerSecond is { } fps ? TicksPerFrameAtFrameRate(fps) : 0L,
 			RateCapAccumulatedTicks = 0L,
-			PreviousCompositorFrameTimestamp = 0L
+			PreviousCompositorFrameTimestamp = 0L,
+			InitialPostConfigChangeFrameStillPending = true
 		};
 	}
 
 	public CompositorSubRendererRateLimitHelper WithFrameRatio(int newFrameRatio) {
 		return this with {
 			RateRatio = newFrameRatio,
-			ConsecutiveSkippedFramesCount = 0
+			ConsecutiveSkippedFramesCount = 0,
+			InitialPostConfigChangeFrameStillPending = true
 		};
 	}
 
 	public static bool ExecuteCompositorFrameAndDetermineIfShouldRender(ref CompositorSubRendererRateLimitHelper @this, long currentTimestamp) {
 		const int CapToleranceShift = 6;
-		
+
+		if (@this.InitialPostConfigChangeFrameStillPending) {
+			@this = @this with {
+				InitialPostConfigChangeFrameStillPending = false,
+				RateCapAccumulatedTicks = 0L,
+				PreviousCompositorFrameTimestamp = currentTimestamp,
+				ConsecutiveSkippedFramesCount = 0
+			};
+			return true;
+		}
+
 		var accumulatedTicks = @this.RateCapAccumulatedTicks;
 
 		if (@this.CapEnabled) {

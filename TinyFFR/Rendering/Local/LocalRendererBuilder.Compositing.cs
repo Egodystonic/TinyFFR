@@ -373,27 +373,7 @@ sealed partial class LocalRendererBuilder {
 
 		var rendererData = _loadedRenderers[originalHandle];
 		var viewportData = rendererData.Viewport;
-		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
-		if (viewportData.LastCheckedRenderTargetSize != curTargetSize) {
-			var viewportBounds = viewportData.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
-			viewportData = viewportData with {
-				LastCheckedRenderTargetSize = curTargetSize,
-				LastSetViewportBottomLeft = viewportBounds.BottomLeft,
-				LastSetViewportSize = viewportBounds.Size
-			};
-			rendererData = rendererData with { Viewport = viewportData };
-			SetViewDescriptorSize(
-				viewportData.Handle,
-				viewportBounds.BottomLeft.X,
-				viewportBounds.BottomLeft.Y,
-				(uint) viewportBounds.Size.X,
-				(uint) viewportBounds.Size.Y
-			).ThrowIfFailure();
-			_loadedRenderers[originalHandle] = rendererData;
-			if (rendererData.AutoUpdateCameraAspectRatio) {
-				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
-			}
-		}
+		RefreshViewportDimensionsIfRenderTargetSizeChanged(originalHandle, ref rendererData, ref viewportData);
 
 		var desiredCompositing = (Translucent: true, ClearDepth: true);
 		if (rendererData.LastPushedCompositingMode != desiredCompositing) {

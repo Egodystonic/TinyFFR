@@ -69,7 +69,7 @@ class LocalSceneCompositingTest {
 		var hudUpdateCount = 0;
 		using var hudCounterText = hudScene.Add("HUD 0", fontPen);
 		hudCounterText.SetPlacementFraction(Orientation2D.UpLeft, (0.02f, 0.02f), 0.05f);
-		using var hudInstructionsText = hudScene.Add("[1] HUD cap 10Hz  [2] HUD cap 60Hz  [3] HUD uncapped  [4] PiP every 4th frame  [5] PiP every frame  [Esc] Quit", fontPen);
+		using var hudInstructionsText = hudScene.Add("[1] Backdrop  [2] Cubes  [3] PiP  [4] HUD  -  cycle rate limit  |  [Esc] Quit", fontPen);
 		hudInstructionsText.SetPlacementFraction(Orientation2D.Down, (0f, 0.02f), 0.022f);
 		using var hudPickingText = hudScene.Add("Cursor: -", fontPen);
 		hudPickingText.SetPlacementFraction(Orientation2D.UpLeft, (0.02f, 0.09f), 0.03f);
@@ -83,9 +83,37 @@ class LocalSceneCompositingTest {
 		cubeRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
 		pipRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
 
-		compositor.SetRendererFrameRateCap(hudRenderer, 10);
+		var rateLimitCycle = new (int? Cap, int Ratio)[] {
+			(null, 1), (60, 1), (10, 1), (null, 4), (null, 10), (60, 4), (60, 10), (10, 4), (10, 10)
+		};
+		var cycledRenderers = new[] { backdropRenderer, cubeRenderer, pipRenderer, hudRenderer };
+		var cycledRendererNames = new[] { "Backdrop", "Cubes", "PiP", "HUD" };
+		var cycledRendererKeys = new[] {
+			KeyboardOrMouseKey.NumberRow1, KeyboardOrMouseKey.NumberRow2,
+			KeyboardOrMouseKey.NumberRow3, KeyboardOrMouseKey.NumberRow4
+		};
+		var rateLimitCycleIndices = new int[cycledRenderers.Length];
 
-		Assert.AreEqual(10, compositor.GetRendererFrameRateCap(hudRenderer));
+		void ApplyRateLimitCycleState(int rendererIndex) {
+			var (cap, ratio) = rateLimitCycle[rateLimitCycleIndices[rendererIndex]];
+			compositor.SetRendererFrameRateCap(cycledRenderers[rendererIndex], cap);
+			compositor.SetRendererFrameRateRatio(cycledRenderers[rendererIndex], ratio);
+		}
+
+		static string DescribeRateLimit(int? cap, int ratio) {
+			if (cap == null) return ratio <= 1 ? "unlimited" : $"1/{ratio}";
+			return ratio <= 1 ? $"{cap}Hz" : $"{cap}Hz 1/{ratio}";
+		}
+
+		foreach (var (cap, ratio) in rateLimitCycle) {
+			compositor.SetRendererFrameRateCap(hudRenderer, cap);
+			compositor.SetRendererFrameRateRatio(hudRenderer, ratio);
+			Assert.AreEqual(cap, compositor.GetRendererFrameRateCap(hudRenderer));
+			Assert.AreEqual(ratio, compositor.GetRendererFrameRateRatio(hudRenderer));
+		}
+		for (var i = 0; i < cycledRenderers.Length; ++i) ApplyRateLimitCycleState(i);
+
+		Assert.AreEqual(null, compositor.GetRendererFrameRateCap(hudRenderer));
 		Assert.AreEqual(1, compositor.GetRendererFrameRateRatio(hudRenderer));
 		Assert.AreEqual(null, compositor.GetRendererFrameRateCap(cubeRenderer));
 		Assert.Throws<ArgumentOutOfRangeException>(() => compositor.SetRendererFrameRateCap(hudRenderer, 0));
@@ -96,11 +124,11 @@ class LocalSceneCompositingTest {
 			var dt = loop.IterateOnce().AsDeltaTime();
 			var kbm = loop.Input.KeyboardAndMouse;
 
-			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) compositor.SetRendererFrameRateCap(hudRenderer, 10);
-			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) compositor.SetRendererFrameRateCap(hudRenderer, 60);
-			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) compositor.SetRendererFrameRateCap(hudRenderer, null);
-			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow4)) compositor.SetRendererFrameRateRatio(pipRenderer, 4);
-			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow5)) compositor.SetRendererFrameRateRatio(pipRenderer, 1);
+			for (var i = 0; i < cycledRenderers.Length; ++i) {
+				if (!kbm.KeyWasPressedThisIteration(cycledRendererKeys[i])) continue;
+				rateLimitCycleIndices[i] = (rateLimitCycleIndices[i] + 1) % rateLimitCycle.Length;
+				ApplyRateLimitCycleState(i);
+			}
 
 			cubeCamera.RotateBy(36f % Direction.Up * dt);
 			pipCamera.RotateBy(36f % Direction.Up * -dt);
@@ -113,10 +141,12 @@ class LocalSceneCompositingTest {
 
 			compositor.RenderAll();
 
+			var rateLimitSummary = String.Join(" | ", cycledRenderers.Select((r, i) =>
+				$"{cycledRendererNames[i]}: {DescribeRateLimit(compositor.GetRendererFrameRateCap(r), compositor.GetRendererFrameRateRatio(r))}"));
+
 			window.SetTitle(
 				$"FPS: {loop.FramesPerSecondRecentAverage:0000} avg, {loop.FramesPerSecondRecentMin:0000} min, {loop.FramesPerSecondRecentMax:0000} max | " +
-				$"HUD cap: {compositor.GetRendererFrameRateCap(hudRenderer)?.ToString() ?? "none"} | " +
-				$"PiP ratio: 1/{compositor.GetRendererFrameRateRatio(pipRenderer)}"
+				rateLimitSummary
 			);
 		}
 
