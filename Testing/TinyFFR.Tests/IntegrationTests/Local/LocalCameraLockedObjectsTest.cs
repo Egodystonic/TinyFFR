@@ -139,9 +139,9 @@ class LocalCameraLockedObjectsTest {
 		autoCamController.Distance = 1.1f;
 		autoCamController.MinHeight = null;
 		autoCamController.Height = 0f;
-		userControlledSceneRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
-		automaticSceneRenderer.SetQuality(BuiltInQualityConfiguration.Lowest);
-	
+		userControlledSceneRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
+		automaticSceneRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
+		compositor.SetRendererFrameRateCap(automaticSceneRenderer, 15);
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {

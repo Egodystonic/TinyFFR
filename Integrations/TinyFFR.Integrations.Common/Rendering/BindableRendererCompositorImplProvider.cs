@@ -8,7 +8,10 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Rendering;
 
 sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplProvider {
-	readonly record struct AddedRendererData(Renderer BindableRenderer, RenderCompositionType CompositionType, bool IsEnabled);
+	readonly record struct AddedRendererData(Renderer BindableRenderer, RenderCompositionType CompositionType, bool IsEnabled) {
+		public int? FrameRateCap { get; init; } = null;
+		public int FrameRateRatio { get; init; } = 1;
+	}
 
 	const string DefaultCompositorName = "Unnamed Bindable Renderer Compositor";
 	static nuint _previousHandleId = 0;
@@ -95,6 +98,8 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 			var actualRenderer = BindableRendererImplProvider.GetBindableImplementationOrThrow(entry.BindableRenderer).RecreateActualRendererOnSharedBuffer(_sharedBuffer, _sharedBufferSizePixels, _cursorCoordinateSpaceSize);
 			_actualCompositor.Add(actualRenderer, entry.CompositionType);
 			if (!entry.IsEnabled) _actualCompositor.SetEnabledState(actualRenderer, false);
+			if (entry.FrameRateCap != null) _actualCompositor.SetRendererFrameRateCap(actualRenderer, entry.FrameRateCap);
+			if (entry.FrameRateRatio != 1) _actualCompositor.SetRendererFrameRateRatio(actualRenderer, entry.FrameRateRatio);
 		}
 	}
 
@@ -131,6 +136,43 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		}
 
 		throw new ArgumentException($"{renderer} has not been added to {BindableCompositorInstance}.", nameof(renderer));
+	}
+
+	int GetAddedRendererIndexOrThrow(Renderer renderer) {
+		for (var i = 0; i < _addedRenderers.Count; ++i) {
+			if (_addedRenderers[i].BindableRenderer == renderer) return i;
+		}
+		throw new ArgumentException($"{renderer} has not been added to {BindableCompositorInstance}.", nameof(renderer));
+	}
+
+	public void SetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer, int? maxFramesPerSecond) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		ThrowIfDisposed();
+
+		var index = GetAddedRendererIndexOrThrow(renderer);
+		_actualCompositor.SetRendererFrameRateCap(BindableRendererImplProvider.GetBindableImplementationOrThrow(renderer).ActualRenderer, maxFramesPerSecond);
+		_addedRenderers[index] = _addedRenderers[index] with { FrameRateCap = maxFramesPerSecond };
+	}
+
+	public int? GetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		ThrowIfDisposed();
+		return _addedRenderers[GetAddedRendererIndexOrThrow(renderer)].FrameRateCap;
+	}
+
+	public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int ratioDenominator) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		ThrowIfDisposed();
+
+		var index = GetAddedRendererIndexOrThrow(renderer);
+		_actualCompositor.SetRendererFrameRateRatio(BindableRendererImplProvider.GetBindableImplementationOrThrow(renderer).ActualRenderer, ratioDenominator);
+		_addedRenderers[index] = _addedRenderers[index] with { FrameRateRatio = ratioDenominator };
+	}
+
+	public int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		ThrowIfDisposed();
+		return _addedRenderers[GetAddedRendererIndexOrThrow(renderer)].FrameRateRatio;
 	}
 
 	public unsafe IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle) {

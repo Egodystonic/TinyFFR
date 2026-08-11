@@ -33,6 +33,18 @@ public readonly struct RendererCompositor : IDisposableResource<RendererComposit
 	public void SetEnabledState(Renderer renderer, bool enabled) => Implementation.SetEnabledState(_handle, renderer, enabled);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetRendererFrameRateCap(Renderer renderer, int? maxFramesPerSecond) => Implementation.SetRendererFrameRateCap(_handle, renderer, maxFramesPerSecond);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int? GetRendererFrameRateCap(Renderer renderer) => Implementation.GetRendererFrameRateCap(_handle, renderer);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetRendererFrameRateRatio(Renderer renderer, int ratioDenominator) => Implementation.SetRendererFrameRateRatio(_handle, renderer, ratioDenominator);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetRendererFrameRateRatio(Renderer renderer) => Implementation.GetRendererFrameRateRatio(_handle, renderer);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RenderAll() => Implementation.RenderAll(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

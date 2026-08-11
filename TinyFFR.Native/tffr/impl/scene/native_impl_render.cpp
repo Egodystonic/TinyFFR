@@ -161,6 +161,15 @@ StartExportedFunc(set_view_compositing_mode, ViewDescriptorHandle viewDescriptor
 	EndExportedFunc
 }
 
+void native_impl_render::set_view_render_target(ViewDescriptorHandle viewDescriptor, RenderTargetHandle optionalRenderTarget) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	viewDescriptor->setRenderTarget(optionalRenderTarget);
+}
+StartExportedFunc(set_view_render_target, ViewDescriptorHandle viewDescriptor, RenderTargetHandle optionalRenderTarget) {
+	native_impl_render::set_view_render_target(viewDescriptor, optionalRenderTarget);
+	EndExportedFunc
+}
+
 // Maps a TinyFFR Quality level (-2 VeryLow .. +2 VeryHigh) onto a Filament QualityLevel, with the given level treated as MEDIUM==Standard.
 static QualityLevel quality_level_from_tinyffr(int32_t level) {
 	switch (level) {
