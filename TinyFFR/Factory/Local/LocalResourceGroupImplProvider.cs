@@ -11,6 +11,7 @@ using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
+readonly record struct SpecializedResourceData(ResourceStub Stub, nuint SpecializationTypeIdentifier, ReadOnlyMemory<byte> SpecializationData);
 sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider, IResourceDirectory<ResourceGroup>, IDisposable {
 	readonly record struct GroupData(ResourceStub[] StubArray, int Count, bool DisposeContainedResourcesWhenDisposed, bool IsSealed) {
 		public void ThrowIfSealed(ReadOnlySpan<char> name) {

@@ -9,12 +9,23 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatable<QuadMesh> {
+public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IDisposable, IStringSpanNameEnabled, IEquatable<QuadMesh> {
 	public Mesh UnderlyingMesh { get; } 
 
 	internal QuadMesh(Mesh underlyingMesh) {
 		UnderlyingMesh = underlyingMesh;
 	}
+	
+	#region Specialization
+	static nuint IResourceSpecialization<QuadMesh, Mesh>.SpecializationTypeIdentifier => 0x72AD0354U;
+	int IResourceSpecialization<QuadMesh, Mesh>.SpecializationDataLength => 0;
+	static void IResourceSpecialization<QuadMesh, Mesh>.Smuggle(QuadMesh resource, Memory<byte> specializationDataBuffer, out Mesh outBaseResource) {
+		outBaseResource = resource.UnderlyingMesh;
+	}
+	static QuadMesh IResourceSpecialization<QuadMesh, Mesh>.DeSmuggle(Mesh baseResource, ReadOnlyMemory<byte> specializationDataBuffer) {
+		return new(baseResource);	
+	}
+	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static QuadMesh FromPreviouslyAllocatedUnderlyingMesh(Mesh underlyingMesh) => new(underlyingMesh);

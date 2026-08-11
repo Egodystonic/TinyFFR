@@ -9,7 +9,7 @@ using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
 
-public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResourceGroupImplProvider> {
+public readonly partial struct ResourceGroup : IDisposableResource<ResourceGroup, IResourceGroupImplProvider> {
 	readonly ResourceHandle<ResourceGroup> _handle;
 	readonly IResourceGroupImplProvider _impl;
 
@@ -70,6 +70,12 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add<TResource, TBase>(TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource(Handle, resource);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(QuadMesh resource) => Add<QuadMesh, Mesh>(resource);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Seal() => Implementation.Seal(Handle);

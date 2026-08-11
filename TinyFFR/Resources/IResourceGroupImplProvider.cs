@@ -13,6 +13,7 @@ public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<Re
 	bool IsSealed(ResourceHandle<ResourceGroup> handle);
 	void Seal(ResourceHandle<ResourceGroup> handle);
 	void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource;
+	void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
 	IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource>;
 	TResource GetNthResourceOfType<TResource>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResource<TResource>;
 
