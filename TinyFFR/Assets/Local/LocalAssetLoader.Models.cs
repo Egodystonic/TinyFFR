@@ -667,15 +667,17 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		const string TextureTypeName = "emissive";
 		if (colorParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && intensityParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
-		static void ApplyEmissiveIntensityCap(Span<TexelRgba32> texels, bool targetAlphaChannel, byte cap) {
+		static void ScaleAndCapEmissiveIntensity(Span<TexelRgba32> texels, bool targetAlphaChannel, float scalar, byte cap) {
 			if (targetAlphaChannel) {
 				for (var i = 0; i < texels.Length; ++i) {
-					if (texels[i].A > cap) texels[i] = texels[i] with { A = cap };
-				}	
+					var scaled = (byte) MathF.Round(Single.Clamp(texels[i].A * scalar, 0f, cap));
+					texels[i] = texels[i] with { A = scaled };
+				}
 			}
 			else {
 				for (var i = 0; i < texels.Length; ++i) {
-					if (texels[i].R > cap) texels[i] = texels[i] with { R = cap };
+					var scaled = (byte) MathF.Round(Single.Clamp(texels[i].R * scalar, 0f, cap));
+					texels[i] = texels[i] with { R = scaled };
 				}
 			}
 		}
@@ -689,7 +691,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				in creationParams.AssetRootDirStrRef,
 				creationParams.UriUnescapeEmbeddedResourceStrings
 			);
-			ApplyEmissiveIntensityCap(embeddedTex.TexelSpan, true, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
+			ScaleAndCapEmissiveIntensity(embeddedTex.TexelSpan, true, creationParams.GltfEmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
 			return TextureBuilder.CreateTexture(
 				embeddedTex.TexelSpan,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
@@ -725,7 +727,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			out var intensityEmbeddedTex
 		);
 		if (intensityParamPtr->Format == AssetMaterialParamDataFormat.TextureMap) {
-			ApplyEmissiveIntensityCap(intensityTexels, false, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
+			ScaleAndCapEmissiveIntensity(intensityTexels, false, creationParams.GltfEmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
 		}
 
 		try {

@@ -94,9 +94,11 @@ fragment {
 #endif Orm
 
 #if Emissive
+		const float EMISSIVE_DEFAULT_EXPOSURE_NORMALIZATION = 38400.0;
+		const float EMISSIVE_LUMINANCE_SCALE = 100.0 * EMISSIVE_DEFAULT_EXPOSURE_NORMALIZATION;
 		vec4 emissive = texture(materialParams_emissive_map, uv0).rgba;
-		material.emissive.rgb = emissive.rgb * (100.0 * emissive.a);
-		material.emissive.a = 0.05;
+		material.emissive.rgb = emissive.rgb * (EMISSIVE_LUMINANCE_SCALE * emissive.a);
+		material.emissive.a = 1.0;
 #endif Emissive
 
 #if Anisotropy
