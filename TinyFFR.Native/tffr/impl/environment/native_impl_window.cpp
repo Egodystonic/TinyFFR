@@ -266,6 +266,79 @@ StartExportedFunc(get_window_cursor_lock_state, WindowHandle handle, interop_boo
 
 
 
+static SDL_Cursor* cached_system_cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
+
+void native_impl_window::set_cursor_style(int32_t systemCursorIndex) {
+	ThrowIfNegative(systemCursorIndex, "System cursor index was negative.");
+	ThrowIf(systemCursorIndex >= SDL_NUM_SYSTEM_CURSORS, "System cursor index was out of range.");
+	if (cached_system_cursors[systemCursorIndex] == nullptr) {
+		auto newCursor = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(systemCursorIndex));
+		ThrowIfNull(newCursor, "Could not create system cursor: ", SDL_GetError());
+		cached_system_cursors[systemCursorIndex] = newCursor;
+	}
+	SDL_SetCursor(cached_system_cursors[systemCursorIndex]);
+}
+StartExportedFunc(set_cursor_style, int32_t systemCursorIndex) {
+	native_impl_window::set_cursor_style(systemCursorIndex);
+	EndExportedFunc
+}
+
+void native_impl_window::set_cursor_visibility(interop_bool visible) {
+	auto result = SDL_ShowCursor(visible ? SDL_ENABLE : SDL_DISABLE);
+	ThrowIfNegative(result, "Could not set cursor visibility: ", SDL_GetError());
+}
+StartExportedFunc(set_cursor_visibility, interop_bool visible) {
+	native_impl_window::set_cursor_visibility(visible);
+	EndExportedFunc
+}
+
+void native_impl_window::get_clipboard_text_length(int32_t* outByteLength) {
+	ThrowIfNull(outByteLength, "Out byte length pointer was null.");
+	if (SDL_HasClipboardText() != SDL_TRUE) {
+		*outByteLength = 0;
+		return;
+	}
+	auto text = SDL_GetClipboardText();
+	if (text == nullptr) {
+		*outByteLength = 0;
+		return;
+	}
+	*outByteLength = static_cast<int32_t>(SDL_strlen(text));
+	SDL_free(text);
+}
+StartExportedFunc(get_clipboard_text_length, int32_t* outByteLength) {
+	native_impl_window::get_clipboard_text_length(outByteLength);
+	EndExportedFunc
+}
+
+void native_impl_window::get_clipboard_text(char* resultBuffer, int32_t bufferLen) {
+	ThrowIfNull(resultBuffer, "Result buffer was null.");
+	ThrowIfNegative(bufferLen, "Buffer length was negative.");
+	if (bufferLen == 0) return;
+	auto text = SDL_GetClipboardText();
+	if (text == nullptr) {
+		resultBuffer[0] = '\0';
+		return;
+	}
+	interop_utils::safe_copy_string(resultBuffer, bufferLen, text);
+	SDL_free(text);
+}
+StartExportedFunc(get_clipboard_text, char* resultBuffer, int32_t bufferLen) {
+	native_impl_window::get_clipboard_text(resultBuffer, bufferLen);
+	EndExportedFunc
+}
+
+void native_impl_window::set_clipboard_text(const char* newText) {
+	ThrowIfNull(newText, "Text was null.");
+	ThrowIfNotZero(SDL_SetClipboardText(newText), "Could not set clipboard text: ", SDL_GetError());
+}
+StartExportedFunc(set_clipboard_text, const char* newText) {
+	native_impl_window::set_clipboard_text(newText);
+	EndExportedFunc
+}
+
+
+
 void native_impl_window::dispose_window(WindowHandle handle) {
 	ThrowIfNull(handle, "Window was null.");
 	SDL_DestroyWindow(handle);

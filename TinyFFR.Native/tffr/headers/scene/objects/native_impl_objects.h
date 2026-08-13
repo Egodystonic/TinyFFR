@@ -15,6 +15,7 @@ public:
 	static void set_model_instance_aabb(ModelInstanceHandle modelInstance, float3 aabbCenter, float3 aabbHalfExtents);
 	static void set_model_instance_material(ModelInstanceHandle modelInstance, MaterialHandle material);
 	static void set_model_instance_shadow_options(ModelInstanceHandle modelInstance, interop_bool castShadows, interop_bool receiveShadows);
+	static void set_model_instance_blend_order(ModelInstanceHandle modelInstance, uint16_t blendOrder, interop_bool globalOrderingEnabled);
 	static void set_model_instance_world_mat(ModelInstanceHandle modelInstance, mat4f* worldMatPtr);
 	static void set_model_instance_bone_transforms(ModelInstanceHandle modelInstance, mat4f* transforms, int32_t boneCount);
 	static void dispose_model_instance(ModelInstanceHandle modelInstance);

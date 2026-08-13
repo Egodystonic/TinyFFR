@@ -122,6 +122,7 @@ nav:
         - tutorials/integrating_wpf.md
         - tutorials/integrating_avalonia.md
         - tutorials/integrating_winforms.md
+        - tutorials/integrating_imgui.md
     - Topics:
       - tutorials/materials.md
       - tutorials/lighting.md

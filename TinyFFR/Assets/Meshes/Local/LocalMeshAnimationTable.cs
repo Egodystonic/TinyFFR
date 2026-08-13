@@ -38,7 +38,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		Matrix4x4 ModelImportTransformMatrix
 	);
 	static nuint _prevHandleId = 0U;
-	readonly MeshNodeImplProvider _meshNodeImplProvider;
+	readonly LocalMeshNodeImplProvider _meshNodeImplProvider;
 	readonly ArrayPoolBackedStringKeyMap<MeshAnimation> _animationNameMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<MeshAnimation>, AnimationData> _animationDataMap = new();
 	readonly ArrayPoolBackedStringKeyMap<MeshNode> _nodeNameMap = new();
@@ -50,17 +50,6 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public LocalMeshAnimationTable(LocalFactoryGlobalObjectGroup globals) {
 		_globals = globals;
 		_meshNodeImplProvider = new(this);
-	}
-
-	sealed class MeshNodeImplProvider : IMeshNodeImplProvider {
-		readonly LocalMeshAnimationTable _owner;
-		public MeshNodeImplProvider(LocalMeshAnimationTable owner) => _owner = owner;
-		
-		public string GetNameAsNewStringObject(ResourceHandle<MeshNode> handle) => _owner.GetNameAsNewStringObject(handle);
-		public int GetNameLength(ResourceHandle<MeshNode> handle) => _owner.GetNameLength(handle);
-		public void CopyName(ResourceHandle<MeshNode> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
-		public bool IsDisposed(ResourceHandle<MeshNode> handle) => _owner.IsDisposed(handle);
-		public int GetIndex(ResourceHandle<MeshNode> handle) => _owner.GetIndex(handle);
 	}
 
 	#region Initialization + Setup
@@ -278,7 +267,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		return MeshAnimationType.Skeletal;
 	}
 	
-	int GetIndex(ResourceHandle<MeshNode> handle) {
+	internal int GetIndex(ResourceHandle<MeshNode> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return (int) handle.AsInteger;
 	}

@@ -170,67 +170,20 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, RendererData> _loadedRenderers = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly RendererBuilderConfig _config;
-	readonly RenderOutputBufferImplProvider _renderOutputBufferImplProvider;
-	readonly TextureImplProvider _textureImplProvider;
+	readonly LocalRenderOutputBufferImplProvider _renderOutputBufferImplProvider;
+	readonly LocalRenderOutputBufferTextureImplProvider _textureImplProvider;
 	nuint _previousHandleId = 0U;
 	bool _isDisposed = false;
 	static BitmapSaveConfig? _nextScreenshotCaptureConfig = null;
 	static ManagedStringPool.RentedStringHandle? _nextScreenshotCaptureFilePath = null;
 
-	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
-	// on both IRenderOutputBufferImplProvider and IRendererBuilder. 
-	sealed class RenderOutputBufferImplProvider : IRenderOutputBufferImplProvider {
-		readonly LocalRendererBuilder _owner;
-
-		public RenderOutputBufferImplProvider(LocalRendererBuilder owner) => _owner = owner;
-
-		public string GetNameAsNewStringObject(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetNameAsNewStringObject(handle);
-		public int GetNameLength(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetNameLength(handle);
-		public void CopyName(ResourceHandle<RenderOutputBuffer> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
-		public bool IsDisposed(ResourceHandle<RenderOutputBuffer> handle) => _owner.IsDisposed(handle);
-		public void Dispose(ResourceHandle<RenderOutputBuffer> handle) => _owner.Dispose(handle);
-		public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) => _owner.CreateDynamicTexture(handle);
-		public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetTextureDimensions(handle);
-		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
-		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
-		public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) => _owner.ClearOutputChangeHandlers(handle, cancelQueuedFrames);
-		public override string ToString() => _owner.ToString();
+	internal ResourceHandle<RenderOutputBuffer>? TryGetBufferOwningTexture(ResourceHandle<Texture> textureHandle) {
+		foreach (var kvp in _loadedBuffers) {
+			if (kvp.Value.TextureHandle == textureHandle) return kvp.Key;
+		}
+		return null;
 	}
-
-	// This provides the implementation for textures created via RenderOutputBuffer.CreateDynamicTexture()
-	sealed class TextureImplProvider : ITextureImplProvider {
-		const string NamePrefix = "Dynamic texture for ";
-		readonly LocalRendererBuilder _owner;
-
-		public TextureImplProvider(LocalRendererBuilder owner) => _owner = owner;
-		
-		ResourceHandle<RenderOutputBuffer> GetOwningBuffer(ResourceHandle<Texture> handle) {
-			return TryGetOwningBuffer(handle) ?? throw new ObjectDisposedException($"Can not use given {nameof(Texture)} as its owning {nameof(RenderOutputBuffer)} has been disposed.");
-		}
-		ResourceHandle<RenderOutputBuffer>? TryGetOwningBuffer(ResourceHandle<Texture> handle) {
-			foreach (var kvp in _owner._loadedBuffers) {
-				if (kvp.Value.TextureHandle == handle) return kvp.Key;
-			}
-			return null;
-		}
-
-		public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) => NamePrefix + _owner.GetNameAsNewStringObject(GetOwningBuffer(handle));
-		public int GetNameLength(ResourceHandle<Texture> handle) => NamePrefix.Length + _owner.GetNameLength(GetOwningBuffer(handle));
-		public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) {
-			NamePrefix.CopyTo(destinationBuffer);
-			_owner.CopyName(GetOwningBuffer(handle), destinationBuffer[NamePrefix.Length..]);
-		}
-		public bool IsDisposed(ResourceHandle<Texture> handle) => TryGetOwningBuffer(handle) == null;
-		public void Dispose(ResourceHandle<Texture> handle) { /* no-op */ }
-		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner._loadedBuffers[GetOwningBuffer(handle)].TextureDimensions.Cast<int>();
-		public TexelType GetTexelType(ResourceHandle<Texture> handle) => TexelType.Rgba32;
-		public bool GetAllowsDynamicWrites(ResourceHandle<Texture> handle) => false;
-		public bool GetContainsMipMaps(ResourceHandle<Texture> handle) => false;
-		public TextureRenderingConfig GetRenderingConfig(ResourceHandle<Texture> handle) => new(true, false, Quality.Standard);
-		public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
-			throw new InvalidOperationException($"Dynamic textures associated with {nameof(RenderOutputBuffer)}s can not be dynamically written to.");
-		}
-	}
+	internal XYPair<int> GetBufferTextureDimensions(ResourceHandle<RenderOutputBuffer> bufferHandle) => _loadedBuffers[bufferHandle].TextureDimensions.Cast<int>();
 
 	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals, LocalSceneBuilder sceneBuilder, RendererBuilderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);

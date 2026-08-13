@@ -15,5 +15,7 @@ public interface IMaterialImplProvider : IDisposableResourceImplProvider<Materia
 	void SetEffectBlendTexture(ResourceHandle<Material> handle, MaterialEffectMapType mapType, Texture mapTexture);
 	void SetEffectBlendDistance(ResourceHandle<Material> handle, MaterialEffectMapType mapType, float distance);
 	void SetEffectOpacity(ResourceHandle<Material> handle, float opacity);
+	void SetScissorRect(ResourceHandle<Material> handle, XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions);
+	void ClearScissorRect(ResourceHandle<Material> handle);
 	void SetKeyedColor(ResourceHandle<Material> handle, ColorChannel key, ColorVect color);
 }

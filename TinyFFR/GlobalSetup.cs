@@ -3,4 +3,5 @@
 
 [assembly: InternalsVisibleTo("TinyFFR.Tests")]
 [assembly: InternalsVisibleTo("TinyFFR.Integrations.Common")]
+[assembly: InternalsVisibleTo("TinyFFR.ImGui")]
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]

@@ -26,28 +26,12 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	readonly string _hdrPreprocessorFilePath;
 	readonly string _hdrPreprocessorResourceName;
 	readonly FixedByteBufferPool _ktxFileBufferPool;
-	readonly BackdropTextureImplProvider _backdropTextureImplProvider;
+	readonly LocalBackdropTextureImplProvider _backdropTextureImplProvider;
 	readonly TimeSpan _maxHdrProcessingTime;
 	readonly ArrayPoolBackedMap<ResourceHandle<BackdropTexture>, BackdropTextureData> _loadedBackdropTextures = new();
 	nuint _prevBackdropTextureHandle = 0;
 	bool _hdrPreprocessorHasBeenExtracted = false;
 	
-	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
-	// on both IModelImplProvider and IBackdropTextureImplProvider. 
-	sealed class BackdropTextureImplProvider : IBackdropTextureImplProvider {
-		readonly LocalAssetLoader _owner;
-
-		public BackdropTextureImplProvider(LocalAssetLoader owner) => _owner = owner;
-
-		public UIntPtr GetSkyboxTextureHandle(ResourceHandle<BackdropTexture> handle) => _owner.GetSkyboxTextureHandle(handle);
-		public UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<BackdropTexture> handle) => _owner.GetIndirectLightingTextureHandle(handle);
-		public string GetNameAsNewStringObject(ResourceHandle<BackdropTexture> handle) => _owner.GetNameAsNewStringObject(handle);
-		public int GetNameLength(ResourceHandle<BackdropTexture> handle) => _owner.GetNameLength(handle);
-		public void CopyName(ResourceHandle<BackdropTexture> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
-		public bool IsDisposed(ResourceHandle<BackdropTexture> handle) => _owner.IsDisposed(handle);
-		public void Dispose(ResourceHandle<BackdropTexture> handle) => _owner.Dispose(handle);
-		public override string ToString() => _owner.ToString();
-	}
 	
 	void ExtractHdrPreprocessorIfNecessary() {
 		if (_hdrPreprocessorHasBeenExtracted) return;

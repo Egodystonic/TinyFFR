@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <LangVersion>preview</LangVersion>
+    <Platforms>x64;ARM64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Integrations\TinyFFR.ImGui\TinyFFR.ImGui.csproj" />
+    <ProjectReference Include="..\..\TestCommon\TestCommon.csproj" />
+  </ItemGroup>
+
+</Project>

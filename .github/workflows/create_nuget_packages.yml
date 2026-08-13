@@ -195,6 +195,12 @@ jobs:
           dotnet restore
           dotnet build -c Release --no-restore
 
+      - name: Build ImGui Lib
+        run: |
+          cd ./Integrations/TinyFFR.ImGui/
+          dotnet restore
+          dotnet build -c Release --no-restore
+
       - name: Build WPF Lib
         run: |
           cd ./Integrations/TinyFFR.Wpf/
@@ -219,6 +225,12 @@ jobs:
           dotnet restore
           dotnet pack -c Release --no-build --no-restore
 
+      - name: Build ImGui Nuget Package
+        run: | 
+          cd ./Publishing/TinyFFR.ImGui.NuGet/
+          dotnet restore
+          dotnet pack -c Release --no-build --no-restore
+
       - name: Build WPF Nuget Package
         run: | 
           cd ./Publishing/TinyFFR.Wpf.NuGet/
@@ -238,6 +250,7 @@ jobs:
           path: | 
             ./Publishing/TinyFFR.NuGet/build_output/*.nupkg
             ./Publishing/TinyFFR.Avalonia.NuGet/build_output/*.nupkg
+            ./Publishing/TinyFFR.ImGui.NuGet/build_output/*.nupkg
             ./Publishing/TinyFFR.Wpf.NuGet/build_output/*.nupkg
             ./Publishing/TinyFFR.WinForms.NuGet/build_output/*.nupkg
  

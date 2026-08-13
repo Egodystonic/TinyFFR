@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Egodystonic.TinyFFR.DearImGui</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AssemblyVersion>$(TffrVersion).0</AssemblyVersion>
+    <FileVersion>$(TffrVersion)</FileVersion>
+    <InformationalVersion>$(TffrVersion)$(TffrVersionSuffix)</InformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hexa.NET.ImGui" Version="$(HexaImGuiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\TinyFFR\TinyFFR.csproj" />
+  </ItemGroup>
+
+</Project>
