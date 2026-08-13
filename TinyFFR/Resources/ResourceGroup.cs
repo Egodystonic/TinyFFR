@@ -44,11 +44,6 @@ public readonly partial struct ResourceGroup : IDisposableResource<ResourceGroup
 	public IndirectEnumerable<EnumerationInput, ModelInstance> ModelInstances => GetAllResourcesOfType<ModelInstance>();
 	#endregion
 
-	internal ReadOnlySpan<ResourceStub> Resources {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetResources(Handle);
-	}
-
 	internal ResourceGroup(ResourceHandle<ResourceGroup> handle, IResourceGroupImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
@@ -72,10 +67,10 @@ public readonly partial struct ResourceGroup : IDisposableResource<ResourceGroup
 	public void Add<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add<TResource, TBase>(TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource(Handle, resource);
+	public void Add<TResource, TBase>(TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource<TResource, TBase>(Handle, resource);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(QuadMesh resource) => Add<QuadMesh, Mesh>(resource);
+	public void Add(QuadMesh resource) => Add<QuadMesh, Mesh>(resource); // TODO repeat this pattern
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Seal() => Implementation.Seal(Handle);

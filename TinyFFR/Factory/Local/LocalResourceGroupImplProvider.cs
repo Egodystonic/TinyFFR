@@ -11,9 +11,9 @@ using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-readonly record struct SpecializedResourceData(ResourceStub Stub, nuint SpecializationTypeIdentifier, ReadOnlyMemory<byte> SpecializationData);
+readonly record struct SerializedResourceData(ResourceStub Stub, nuint SpecializationTypeIdentifier, PooledHeapMemory<byte> SpecializationData);
 sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider, IResourceDirectory<ResourceGroup>, IDisposable {
-	readonly record struct GroupData(ResourceStub[] StubArray, int Count, bool DisposeContainedResourcesWhenDisposed, bool IsSealed) {
+	readonly record struct GroupData(SerializedResourceData[] DataArray, int Count, bool DisposeContainedResourcesWhenDisposed, bool IsSealed) {
 		public void ThrowIfSealed(ReadOnlySpan<char> name) {
 			if (IsSealed) throw new ResourceGroupSealedException($"Can not add resource to {nameof(ResourceGroup)} '{name}' as it is sealed.");
 		}
@@ -23,7 +23,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	const string DefaultGroupName = "Unnamed Resource Group";
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ArrayPool<ResourceStub> _stubArrayPool = ArrayPool<ResourceStub>.Shared;
+	readonly ArrayPool<SerializedResourceData> _dataArrayPool = ArrayPool<SerializedResourceData>.Shared;
 	readonly ArrayPoolBackedMap<ResourceHandle<ResourceGroup>, GroupData> _dataMap = new();
 	nuint _previousGroupId = 0;
 	bool _isDisposed = false;
@@ -37,7 +37,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	public ResourceGroup CreateGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity = DefaultInitialCapacity) {
 		if (initialCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity), initialCapacity, "Must be positive value.");
 
-		var stubArray = _stubArrayPool.Rent(initialCapacity);
+		var stubArray = _dataArrayPool.Rent(initialCapacity);
 		var handle = new ResourceHandle<ResourceGroup>(++_previousGroupId);
 		_dataMap.Add(handle, new(stubArray, 0, disposeContainedResourcesWhenDisposed, false));
 
@@ -63,24 +63,29 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		_dataMap[handle] = data with { IsSealed = true };
 	}
 
-	public ReadOnlySpan<ResourceStub> GetResources(ResourceHandle<ResourceGroup> handle) {
-		var data = GetDataForHandleOrThrow(handle);
-		return data.StubArray.AsSpan(0, data.Count); 
+	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource {
+		AddResource(handle, new SerializedResourceData(resource.AsStub, 0U, default), resource);
 	}
 
-	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource {
+	public void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+		var specializationDataBuffer = _globals.HeapPool.Borrow(resource.SpecializationDataLength);
+		TResource.Smuggle(resource, specializationDataBuffer.Span, out var underlyingResource);
+		AddResource(handle, new(underlyingResource.AsStub, TResource.SpecializationTypeIdentifier, specializationDataBuffer), underlyingResource);
+	}
+	
+	void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, SerializedResourceData serializedData, TResource underlyingResource) where TResource : IResource {
 		var data = GetDataForHandleOrThrow(handle);
 		data.ThrowIfSealed(_globals.GetResourceName(handle.Ident, DefaultGroupName));
 
-		if (data.Count == data.StubArray.Length) {
-			var newArray = _stubArrayPool.Rent(data.Count * 2);
-			data.StubArray.CopyTo(newArray.AsSpan());
-			_stubArrayPool.Return(data.StubArray);
-			data = data with { StubArray = newArray };
+		if (data.Count == data.DataArray.Length) {
+			var newArray = _dataArrayPool.Rent(data.Count * 2);
+			data.DataArray.CopyTo(newArray.AsSpan());
+			_dataArrayPool.Return(data.DataArray);
+			data = data with { DataArray = newArray };
 		}
-		data.StubArray[data.Count] = resource.AsStub;
+		data.DataArray[data.Count] = serializedData;
 		_dataMap[handle] = data with { Count = data.Count + 1 };
-		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), resource);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), underlyingResource);
 	}
 
 	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource> {
@@ -99,7 +104,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 		var result = 0;
 		for (var i = 0; i < data.Count; ++i) {
-			if (data.StubArray[i].TypeHandle == input.ResourceTypeHandle) ++result;
+			if (data.DataArray[i].TypeHandle == input.ResourceTypeHandle) ++result;
 		}
 		return result;
 	}
@@ -109,7 +114,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 		var count = 0;
 		for (var i = 0; i < data.Count; ++i) {
-			var stub = data.StubArray[i];
+			var stub = data.DataArray[i];
 			if (stub.TypeHandle != input.ResourceTypeHandle) continue;
 			if (count == index) return TResource.CreateFromStub(stub);
 			++count;
@@ -164,11 +169,11 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	public bool IsDisposed(ResourceHandle<ResourceGroup> handle) => !_dataMap.ContainsKey(handle.AsInteger);
 	public void Dispose(ResourceHandle<ResourceGroup> handle) {
 		if (!_dataMap.TryGetValue(handle, out var data)) return;
-		Dispose(handle, data.StubArray, data.Count, data.DisposeContainedResourcesWhenDisposed);
+		Dispose(handle, data.DataArray, data.Count, data.DisposeContainedResourcesWhenDisposed);
 	}
 	public void Dispose(ResourceHandle<ResourceGroup> handle, bool disposeContainedResources) {
 		if (!_dataMap.TryGetValue(handle, out var data)) return;
-		Dispose(handle, data.StubArray, data.Count, disposeContainedResources);
+		Dispose(handle, data.DataArray, data.Count, disposeContainedResources);
 	}
 	void Dispose(ResourceHandle<ResourceGroup> handle, ResourceStub[] stubArray, int count, bool disposeContainedResources) {
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
@@ -182,7 +187,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		_dataMap.Remove(handle);
-		_stubArrayPool.Return(stubArray);
+		_dataArrayPool.Return(stubArray);
 	}
 	public bool GetDisposesContainedResourcesByDefaultWhenDisposed(ResourceHandle<ResourceGroup> handle) => GetDataForHandleOrThrow(handle).DisposeContainedResourcesWhenDisposed;
 	public void Dispose() {
