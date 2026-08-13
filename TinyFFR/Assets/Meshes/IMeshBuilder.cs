@@ -552,6 +552,8 @@ public interface IMeshBuilder {
 	protected ScopedSpanLease<MeshVertex> GetPooledVertexBuffer(int vertexCount);
 	protected ScopedSpanLease<VertexTriangle> GetPooledTriangleBuffer(int triangleCount);
 	
+	DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, ReadOnlySpan<char> name = default);
+
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
 

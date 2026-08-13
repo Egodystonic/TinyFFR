@@ -56,6 +56,13 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture);
 	void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance);
 	void SetMaterialEffectOpacity(ResourceHandle<ModelInstance> handle, float opacity);
+
+	int? GetDrawOrderDeferralAmount(ResourceHandle<ModelInstance> handle);
+	void SetDrawOrderDeferralAmount(ResourceHandle<ModelInstance> handle, int? newValue);
+
+	void SetScissorRect(ResourceHandle<ModelInstance> handle, XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions);
+	void ClearScissorRect(ResourceHandle<ModelInstance> handle);
+	Material GetOrCreatePrivateMaterial(ResourceHandle<ModelInstance> handle);
 	
 	void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string, TextLayout layout);
 	void SetTextInstanceLayout(ResourceHandle<ModelInstance> handle, TextLayout layout);

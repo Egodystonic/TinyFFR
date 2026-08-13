@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
@@ -158,6 +159,15 @@ class LocalResourceDependencyTest {
 			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateTransmissiveMaterial(t, absorptionTransmissionMap: t, emissiveMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Emissive, t));
 			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateTransmissiveMaterial(t, absorptionTransmissionMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.AbsorptionTransmission, t));
 			// ReSharper restore AccessToDisposedClosure
+
+			var localMaterialBuilder = (LocalMaterialBuilder) factory.MaterialBuilder;
+			var imguiTexA = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
+			var imguiTexB = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
+			var imguiMat = localMaterialBuilder.AllocateImGuiMaterialInstance(imguiTexA, "Rebind Test Material");
+			Assert.Catch<ResourceDependencyException>(imguiTexA.Dispose);
+			localMaterialBuilder.SetImGuiMaterialColorMap(imguiMat, imguiTexB);
+			Assert.DoesNotThrow(imguiTexA.Dispose);
+			AssertDependency(imguiTexB, imguiMat);
 		}
 
 		Assert.DoesNotThrow(() => new LocalTinyFfrFactory().Dispose());

@@ -10,6 +10,9 @@
     <Project Path="Integrations/TinyFFR.Avalonia/TinyFFR.Avalonia.csproj" Id="c766b289-b94d-4f56-a55f-77005c1098d5">
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
+    <Project Path="Integrations/TinyFFR.ImGui/TinyFFR.ImGui.csproj" Id="be586331-4c44-4056-86c7-e3fe0965a809">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
     <Project Path="Integrations/TinyFFR.Integrations.Common/TinyFFR.Integrations.Common.csproj" Id="789fc824-141f-4b7a-8959-f389f704e7e1">
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
@@ -28,6 +31,12 @@
     <File Path="README.md" />
     <File Path="THIRD_PARTY_NOTICES.md" />
     <Project Path="Publishing/TinyFFR.Avalonia.NuGet/TinyFFR.Avalonia.NuGet.csproj" Id="c951296c-96f7-4f80-a793-75b6db2d595f">
+      <BuildType Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="Publishing/TinyFFR.ImGui.NuGet/TinyFFR.ImGui.NuGet.csproj" Id="33d316d5-6f42-42d9-add1-403bf4701544">
       <BuildType Project="Release" />
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
@@ -79,6 +88,11 @@
     </Project>
     <Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.Avalonia/TinyFFR.Tests.Integrations.Avalonia.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.ImGui/TinyFFR.Tests.Integrations.ImGui.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.WinForms/TinyFFR.Tests.Integrations.WinForms.csproj" Id="ca7c90a7-5dc6-4007-8bb3-2126bff1e9d4">
       <BuildType Solution="Optimized|*" Project="Release" />

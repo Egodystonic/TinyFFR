@@ -22,7 +22,13 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<MeshAnimation>, IResourceDirectory<MeshNode>, IDisposable {
 	readonly record struct MeshData(MeshBufferData BufferData, PositionedCuboid BoundingBox);
 	
+	readonly record struct DynamicVertexBufferData(UIntPtr VertexBufferHandle, UIntPtr IndexBufferHandle, int VertexCapacity, int IndexCapacity);
+
 	const string DefaultMeshName = "Unnamed Mesh";
+	const string DefaultDynamicVertexBufferName = "Unnamed Dynamic Vertex Buffer";
+	static readonly PositionedCuboid DefaultDynamicMeshViewBoundingBox = new(new Cuboid(20000f, 20000f, 20000f), Location.Origin);
+	readonly ArrayPoolBackedMap<ResourceHandle<DynamicVertexBuffer>, DynamicVertexBufferData> _activeDynamicVertexBuffers = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, ResourceHandle<DynamicVertexBuffer>> _meshViewParents = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, PooledHeapMemory<MeshVertex>> _defaultMutableVerticesMap = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex> _mutableVertexLeaseTracker;
@@ -36,6 +42,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	bool _isDisposed = false;
 	nuint _prevHandleId = 0;
 	int _meshAnimDirectoryVersion = 0;
+	LocalDynamicVertexBufferProvider? _dynamicMeshProvider;
+
+	internal LocalDynamicVertexBufferProvider DynamicVertexBufferProvider => _dynamicMeshProvider ??= new(this);
 
 	public LocalMeshBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -493,6 +502,189 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Mesh HandleToInstance(ResourceHandle<Mesh> h) => new(h, this);
 
+	#region Dynamic Vertex Buffers
+	public DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, ReadOnlySpan<char> name = default) {
+		(UIntPtr VertexBuffer, UIntPtr IndexBuffer) AllocateDynamicBuffers(int vertexCapacity, int indexCapacity) {
+			var vertexBuffer = _globals.CreateGpuHoldingBuffer<MeshVertexImGui>(vertexCapacity); // TODO and below, and check everywhere that the vertex types match
+			vertexBuffer.AsSpan<MeshVertexImGui>().Clear();
+			AllocateVertexBufferImGui(vertexBuffer.BufferIdentity, (MeshVertexImGui*) vertexBuffer.DataPtr, vertexCapacity, out var vbHandle).ThrowIfFailure();
+
+			var indexBuffer = _globals.CreateGpuHoldingBuffer<ushort>(indexCapacity);
+			indexBuffer.AsSpan<ushort>().Clear();
+			AllocateIndexBufferUShort(indexBuffer.BufferIdentity, (ushort*) indexBuffer.DataPtr, indexCapacity, out var ibHandle).ThrowIfFailure();
+
+			_vertexBufferRefCounts.Add(vbHandle, 1);
+			_indexBufferRefCounts.Add(ibHandle, 1);
+			return (vbHandle, ibHandle);
+		}
+		
+		ThrowIfThisIsDisposed();
+		if (initialVertexCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialVertexCapacity), initialVertexCapacity, "Initial vertex capacity must be positive.");
+		if (initialIndexCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialIndexCapacity), initialIndexCapacity, "Initial index capacity must be positive.");
+
+		var handle = (ResourceHandle<DynamicVertexBuffer>) (++_prevHandleId);
+		var (vbHand, ibHand) = AllocateDynamicBuffers(initialVertexCapacity, initialIndexCapacity);
+		_activeDynamicVertexBuffers.Add(handle, new(vbHand, ibHand, initialVertexCapacity, initialIndexCapacity));
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultDynamicVertexBufferName);
+		return HandleToInstance(handle);
+	}
+
+
+	public int GetVertexBufferSize(ResourceHandle<DynamicVertexBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeDynamicVertexBuffers[handle].VertexCapacity;
+	}
+	public int GetIndexBufferSize(ResourceHandle<DynamicVertexBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeDynamicVertexBuffers[handle].IndexCapacity;
+	}
+
+	public void ResizeVertexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (newBufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(newBufferSize), newBufferSize, "Vertex capacity must be positive.");
+		var data = _activeDynamicVertexBuffers[handle];
+		if (data.VertexCapacity == newBufferSize) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+
+		_vertexBufferRefCounts.Remove(data.VertexBufferHandle);
+		LocalFrameSynchronizationManager.QueueResourceDisposal(data.VertexBufferHandle, &DisposeVertexBuffer);
+
+		var vertexBuffer = _globals.CreateGpuHoldingBuffer<MeshVertexImGui>(newBufferSize); // TODO
+		vertexBuffer.AsSpan<MeshVertexImGui>().Clear();
+		AllocateVertexBufferImGui(vertexBuffer.BufferIdentity, (MeshVertexImGui*) vertexBuffer.DataPtr, newBufferSize, out var newVbHandle).ThrowIfFailure();
+		_vertexBufferRefCounts.Add(newVbHandle, 1);
+		_activeDynamicVertexBuffers[handle] = data with { VertexBufferHandle = newVbHandle, VertexCapacity = newBufferSize };
+	}
+
+	public void ResizeIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (newBufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(newBufferSize), newBufferSize, "Index capacity must be positive.");
+		var data = _activeDynamicVertexBuffers[handle];
+		if (data.IndexCapacity == newBufferSize) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+
+		_indexBufferRefCounts.Remove(data.IndexBufferHandle);
+		LocalFrameSynchronizationManager.QueueResourceDisposal(data.IndexBufferHandle, &DisposeIndexBuffer);
+
+		var indexBuffer = _globals.CreateGpuHoldingBuffer<ushort>(newBufferSize);
+		indexBuffer.AsSpan<ushort>().Clear();
+		AllocateIndexBufferUShort(indexBuffer.BufferIdentity, (ushort*) indexBuffer.DataPtr, newBufferSize, out var newIbHandle).ThrowIfFailure();
+		_indexBufferRefCounts.Add(newIbHandle, 1);
+		_activeDynamicVertexBuffers[handle] = data with { IndexBufferHandle = newIbHandle, IndexCapacity = newBufferSize };
+	}
+
+	public void SetVertices(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<MeshVertex> vertices, int offset) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (vertices.Length == 0) return;
+		var data = _activeDynamicVertexBuffers[handle];
+		if (offset < 0 || offset + vertices.Length > data.VertexCapacity) {
+			throw new ArgumentOutOfRangeException(nameof(vertices), vertices.Length, $"Writing {vertices.Length} vertices at this offset ({offset}) would exceed the buffer capacity of {data.VertexCapacity}.");
+		}
+
+		var holdingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
+		UpdateVertexBuffer(data.VertexBufferHandle, holdingBuffer.BufferIdentity, (MeshVertex*) holdingBuffer.DataPtr, vertices.Length, offset).ThrowIfFailure();
+	}
+	
+	public void SetVerticesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<MeshVertexImGui> vertices, int offset) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (vertices.Length == 0) return;
+		var data = _activeDynamicVertexBuffers[handle];
+		if (offset < 0 || offset + vertices.Length > data.VertexCapacity) {
+			throw new ArgumentOutOfRangeException(nameof(vertices), vertices.Length, $"Writing {vertices.Length} vertices at this offset ({offset}) would exceed the buffer capacity of {data.VertexCapacity}.");
+		}
+
+		var holdingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
+		UpdateVertexBufferImGui(data.VertexBufferHandle, holdingBuffer.BufferIdentity, (MeshVertexImGui*) holdingBuffer.DataPtr, vertices.Length, offset).ThrowIfFailure();
+	}
+
+	public void SetIndices(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<ushort> indices, int offset) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (indices.Length == 0) return;
+		var data = _activeDynamicVertexBuffers[handle];
+		if (offset < 0 || offset + indices.Length > data.IndexCapacity) {
+			throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Writing {indices.Length} indices at this offset would exceed the buffer capacity of {data.IndexCapacity}.");
+		}
+
+		var holdingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(indices);
+		UpdateIndexBufferUShort(data.IndexBufferHandle, holdingBuffer.BufferIdentity, (ushort*) holdingBuffer.DataPtr, indices.Length, offset).ThrowIfFailure();
+	}
+
+	public Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range indicesRange, PositionedCuboid? boundingBoxOverride) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var data = _activeDynamicVertexBuffers[handle];
+		int offset, count;
+		try {
+			(offset, count) = indicesRange.GetOffsetAndLength(data.IndexCapacity);
+			if (offset < 0) throw new ArgumentOutOfRangeException(nameof(indicesRange), indicesRange, "Index start must not be negative.");
+			if (count < 0) throw new ArgumentOutOfRangeException(nameof(indicesRange), indicesRange, "Index count must not be negative.");
+			if (offset + count > data.IndexCapacity) {
+				throw new ArgumentOutOfRangeException(nameof(indicesRange), indicesRange, $"Index range [{offset}, {offset + count}) exceeds the index buffer capacity of {data.IndexCapacity}.");
+			}
+		}
+		catch (ArgumentOutOfRangeException e) {
+			throw new ArgumentOutOfRangeException($"Index range is invalid for the index buffer size of this {HandleToInstance(handle)} (size = {data.IndexCapacity}).", e);
+		}
+
+		var viewHandle = (ResourceHandle<Mesh>) (++_prevHandleId);
+		_vertexBufferRefCounts[data.VertexBufferHandle] += 1;
+		_indexBufferRefCounts[data.IndexBufferHandle] += 1;
+		_activeMeshes.Add(viewHandle, new(
+			new MeshBufferData(data.VertexBufferHandle, data.IndexBufferHandle, offset, count, 0),
+			boundingBoxOverride ?? DefaultDynamicMeshViewBoundingBox
+		));
+		_meshViewParents.Add(viewHandle, handle);
+		_globals.StoreResourceNameOrDefaultIfEmpty(viewHandle.Ident, default, DefaultMeshName);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(viewHandle), HandleToInstance(handle));
+		return HandleToInstance(viewHandle);
+	}
+
+	public string GetNameAsNewStringObject(ResourceHandle<DynamicVertexBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultDynamicVertexBufferName));
+	}
+	public int GetNameLength(ResourceHandle<DynamicVertexBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultDynamicVertexBufferName).Length;
+	}
+	public void CopyName(ResourceHandle<DynamicVertexBuffer> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultDynamicVertexBufferName, destinationBuffer);
+	}
+
+	public bool IsDynamicVertexBufferDisposed(ResourceHandle<DynamicVertexBuffer> handle) => _isDisposed || !_activeDynamicVertexBuffers.ContainsKey(handle);
+
+	public void Dispose(ResourceHandle<DynamicVertexBuffer> handle) => Dispose(handle, removeFromMap: true);
+
+	void Dispose(ResourceHandle<DynamicVertexBuffer> handle, bool removeFromMap) {
+		if (IsDynamicVertexBufferDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		var data = _activeDynamicVertexBuffers[handle];
+		if (_vertexBufferRefCounts.TryGetValue(data.VertexBufferHandle, out var vbRefCount)) {
+			if (vbRefCount <= 1) {
+				_vertexBufferRefCounts.Remove(data.VertexBufferHandle);
+				LocalFrameSynchronizationManager.QueueResourceDisposal(data.VertexBufferHandle, &DisposeVertexBuffer);
+			}
+			else _vertexBufferRefCounts[data.VertexBufferHandle] = vbRefCount - 1;
+		}
+		if (_indexBufferRefCounts.TryGetValue(data.IndexBufferHandle, out var ibRefCount)) {
+			if (ibRefCount <= 1) {
+				_indexBufferRefCounts.Remove(data.IndexBufferHandle);
+				LocalFrameSynchronizationManager.QueueResourceDisposal(data.IndexBufferHandle, &DisposeIndexBuffer);
+			}
+			else _indexBufferRefCounts[data.IndexBufferHandle] = ibRefCount - 1;
+		}
+		_globals.DisposeResourceNameIfExists(handle.Ident);
+		if (removeFromMap) _activeDynamicVertexBuffers.Remove(handle);
+	}
+
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<DynamicVertexBuffer> handle) {
+		ObjectDisposedException.ThrowIf(IsDynamicVertexBufferDisposed(handle), typeof(DynamicVertexBuffer));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	DynamicVertexBuffer HandleToInstance(ResourceHandle<DynamicVertexBuffer> h) => new(h, DynamicVertexBufferProvider);
+	#endregion
+
 	#region Resource Directory
 	public IndirectEnumerable<object, Mesh> AllActiveInstances {
 		get {
@@ -634,6 +826,49 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		out UIntPtr outBufferHandle
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer_imgui")]
+	static extern InteropResult AllocateVertexBufferImGui(
+		nuint bufferId,
+		MeshVertexImGui* verticesPtr,
+		int numVertices,
+		out UIntPtr outBufferHandle
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_vertex_buffer")]
+	public static extern InteropResult UpdateVertexBuffer(
+		UIntPtr bufferHandle,
+		nuint bufferId,
+		MeshVertex* verticesPtr,
+		int vertexCount,
+		int startingIndex
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_vertex_buffer_imgui")]
+	static extern InteropResult UpdateVertexBufferImGui(
+		UIntPtr bufferHandle,
+		nuint bufferId,
+		MeshVertexImGui* verticesPtr,
+		int numVertices,
+		int startingIndex
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer_ushort")]
+	static extern InteropResult AllocateIndexBufferUShort(
+		nuint bufferId,
+		ushort* indicesPtr,
+		int numIndices,
+		out UIntPtr outBufferHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_index_buffer_ushort")]
+	static extern InteropResult UpdateIndexBufferUShort(
+		UIntPtr bufferHandle,
+		nuint bufferId,
+		ushort* indicesPtr,
+		int numIndices,
+		int startingIndex
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
 	static extern InteropResult DisposeIndexBuffer(
 		UIntPtr bufferHandle
@@ -673,9 +908,18 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			_vertexBufferRefCounts.Remove(bufferData.VertexBufferHandle);
 			LocalFrameSynchronizationManager.QueueResourceDisposal(bufferData.VertexBufferHandle, &DisposeVertexBuffer);
 		}
+		else {
+			_vertexBufferRefCounts[bufferData.VertexBufferHandle] = curVbRefCount - 1;
+		}
 		if (curIbRefCount <= 1) {
 			_indexBufferRefCounts.Remove(bufferData.IndexBufferHandle);
 			LocalFrameSynchronizationManager.QueueResourceDisposal(bufferData.IndexBufferHandle, &DisposeIndexBuffer);
+		}
+		else {
+			_indexBufferRefCounts[bufferData.IndexBufferHandle] = curIbRefCount - 1;
+		}
+		if (_meshViewParents.Remove(handle, out var parentDynamicMeshHandle)) {
+			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), HandleToInstance(parentDynamicMeshHandle));
 		}
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeMeshes.Remove(handle);
@@ -684,12 +928,15 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			foreach (var kvp in _activeDynamicVertexBuffers) Dispose(kvp.Key, removeFromMap: false);
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
 			_mutableVertexLeaseTracker.Dispose();
 			_defaultMutableVerticesMap.Dispose();
 			_activeMeshWireframeBufferData.Dispose();
 			_activeMeshes.Dispose();
 			_activeMeshAnimationTables.Dispose();
+			_activeDynamicVertexBuffers.Dispose();
+			_meshViewParents.Dispose();
 
 			// In theory, both ref-count maps should be empty at this point. But we'll do this anyway.
 			foreach (var kvp in _vertexBufferRefCounts) {

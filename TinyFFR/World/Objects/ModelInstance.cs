@@ -215,6 +215,26 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetEffectOpacity(float opacity) => Implementation.SetMaterialEffectOpacity(_handle, opacity);
 
+	public const int MaxDrawOrderDeferralAmount = 32767;
+
+	public int? DrawOrderDeferralAmount {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetDrawOrderDeferralAmount(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetDrawOrderDeferralAmount(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDrawOrderDeferralAmount(int? newValue) => DrawOrderDeferralAmount = newValue;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetScissorRect(XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions) => Implementation.SetScissorRect(_handle, viewportRelativeBottomLeftOffset, dimensions);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void ClearScissorRect() => Implementation.ClearScissorRect(_handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal Material GetOrCreatePrivateMaterial() => Implementation.GetOrCreatePrivateMaterial(_handle);
+
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);

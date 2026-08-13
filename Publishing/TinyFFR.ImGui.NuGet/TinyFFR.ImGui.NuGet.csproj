@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
+
+    <PackageIcon>package_logo.png</PackageIcon>
+    <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+
+    <PackageVersion>$(TffrVersion)$(TffrVersionSuffix)</PackageVersion>
+    <PackageId>$(TffrPackageId).ImGui</PackageId>
+    <Authors>$(TffrAuthors)</Authors>
+    <Company>$(TffrCompany)</Company>
+    <Description>$(TffrDescription) Dear ImGui integration package.</Description>
+    <PackageTags>$(TffrPackageTags)</PackageTags>
+    <RepositoryUrl>$(TffrRepositoryUrl)</RepositoryUrl>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+    <OutputPath>build_output\</OutputPath>
+    <BaseIntermediateOutputPath>build_output\intermediate\</BaseIntermediateOutputPath>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <RestoreAdditionalProjectSources>..\TinyFFR.NuGet\build_output\</RestoreAdditionalProjectSources>
+
+    <Configurations>Release</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\PACKAGE_README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="..\package_logo.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\Integrations\TinyFFR.ImGui\bin\Release\TinyFFR.ImGui.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+
+    <PackageReference Include="$(TffrPackageId)" Version="$(TffrVersion)$(TffrVersionSuffix)" />
+    <PackageReference Include="Hexa.NET.ImGui" Version="$(HexaImGuiDependencyVersion)" />
+  </ItemGroup>
+
+</Project>

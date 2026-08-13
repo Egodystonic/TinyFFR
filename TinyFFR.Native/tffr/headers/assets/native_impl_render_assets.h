@@ -50,11 +50,25 @@ public:
 	PopSafeStructPacking
 	static_assert(sizeof(MeshVertexPrimitive) == 44);
 
+	PushSafeStructPacking
+	struct MeshVertexImGui {
+		float2 Position;
+		float2 TextureUV;
+		uint8_t Color[4];
+	};
+	PopSafeStructPacking
+	static_assert(sizeof(MeshVertexImGui) == 20);
+
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void update_vertex_buffer(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, int32_t startingIndex);
 	static void allocate_vertex_buffer_skeletal(BufferIdentity bufferIdentity, MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void allocate_vertex_buffer_primitive(BufferIdentity bufferIdentity, MeshVertexPrimitive* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
+	static void allocate_vertex_buffer_imgui(BufferIdentity bufferIdentity, MeshVertexImGui* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
+	static void update_vertex_buffer_imgui(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertexImGui* vertices, int32_t vertexCount, int32_t startingIndex);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
+	static void update_index_buffer(IndexBufferHandle buffer, BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, int32_t startingIndex);
+	static void allocate_index_buffer_ushort(BufferIdentity bufferIdentity, uint16_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
+	static void update_index_buffer_ushort(IndexBufferHandle buffer, BufferIdentity bufferIdentity, uint16_t* indices, int32_t indexCount, int32_t startingIndex);
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);
 	static void dispose_index_buffer(IndexBufferHandle buffer);
 	static void calculate_tangent_rotation(float3 tangent, float3 bitangent, float3 normal, float4* outRotation);
@@ -72,6 +86,8 @@ public:
 	static void set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val);
 	static void set_material_parameter_vect(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float4 val);
 	static void set_material_parameter_matrix(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, mat4f& valRef);
+	static void set_material_scissor(MaterialHandle material, int32_t left, int32_t bottom, int32_t width, int32_t height);
+	static void unset_material_scissor(MaterialHandle material);
 	static void dispose_material(MaterialHandle material);
 	static void dispose_shader_package(PackageHandle handle);
 };

@@ -82,6 +82,38 @@ StartExportedFunc(allocate_vertex_buffer_primitive, BufferIdentity bufferIdentit
 	EndExportedFunc
 }
 
+void native_impl_render_assets::allocate_vertex_buffer_imgui(BufferIdentity bufferIdentity, MeshVertexImGui* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
+	ThrowIfNull(vertices, "Vertices pointer was null.");
+	ThrowIfNegative(vertexCount, "Vertex count was negative.");
+	ThrowIfNull(outBuffer, "Out buffer pointer was null.");
+	*outBuffer = VertexBuffer::Builder()
+		.vertexCount(vertexCount)
+		.bufferCount(1)
+		.attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT2, 0, sizeof(MeshVertexImGui))
+		.attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT2, 8, sizeof(MeshVertexImGui))
+		.attribute(VertexAttribute::COLOR, 0, VertexBuffer::AttributeType::UBYTE4, 16, sizeof(MeshVertexImGui))
+		.normalized(VertexAttribute::COLOR)
+		.build(*filament_engine);
+	(*outBuffer)->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertexImGui), &handle_filament_buffer_copy_callback, bufferIdentity });
+}
+StartExportedFunc(allocate_vertex_buffer_imgui, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertexImGui* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
+	native_impl_render_assets::allocate_vertex_buffer_imgui(bufferIdentity, vertices, vertexCount, outBuffer);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::update_vertex_buffer_imgui(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertexImGui* vertices, int32_t vertexCount, int32_t startingIndex) {
+	ThrowIfNull(buffer, "Buffer was null.");
+	ThrowIfNull(vertices, "Vertices pointer was null.");
+	ThrowIfNegative(vertexCount, "Vertex count was negative.");
+	ThrowIfNegative(startingIndex, "Vertex start index was negative.");
+	ThrowIf(vertexCount + startingIndex > buffer->getVertexCount(), "Vertex count plus start index exceeded buffer capacity.");
+	buffer->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertexImGui), &handle_filament_buffer_copy_callback, bufferIdentity }, startingIndex * sizeof(MeshVertexImGui));
+}
+StartExportedFunc(update_vertex_buffer_imgui, VertexBufferHandle buffer, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertexImGui* vertices, int32_t vertexCount, int32_t startingIndex) {
+	native_impl_render_assets::update_vertex_buffer_imgui(buffer, bufferIdentity, vertices, vertexCount, startingIndex);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
 	ThrowIfNull(indices, "Indices pointer was null.");
 	ThrowIfNegative(indexCount, "Index count was negative.");
@@ -94,6 +126,47 @@ void native_impl_render_assets::allocate_index_buffer(BufferIdentity bufferIdent
 }
 StartExportedFunc(allocate_index_buffer, BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
 	native_impl_render_assets::allocate_index_buffer(bufferIdentity, indices, indexCount, outBuffer);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::update_index_buffer(IndexBufferHandle buffer, BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, int32_t startingIndex) {
+	ThrowIfNull(buffer, "Buffer was null.");
+	ThrowIfNull(indices, "Indices pointer was null.");
+	ThrowIfNegative(indexCount, "Index count was negative.");
+	ThrowIfNegative(startingIndex, "Index start index was negative.");
+	ThrowIf(indexCount + startingIndex > buffer->getIndexCount(), "Index count plus start index exceeded buffer capacity.");
+	buffer->setBuffer(*filament_engine, IndexBuffer::BufferDescriptor{ indices, indexCount * sizeof(int32_t), &handle_filament_buffer_copy_callback, bufferIdentity }, startingIndex * sizeof(int32_t));
+}
+StartExportedFunc(update_index_buffer, IndexBufferHandle buffer, BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, int32_t startingIndex) {
+	native_impl_render_assets::update_index_buffer(buffer, bufferIdentity, indices, indexCount, startingIndex);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::allocate_index_buffer_ushort(BufferIdentity bufferIdentity, uint16_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
+	ThrowIfNull(indices, "Indices pointer was null.");
+	ThrowIfNegative(indexCount, "Index count was negative.");
+	ThrowIfNull(outBuffer, "Out buffer pointer was null.");
+	*outBuffer = IndexBuffer::Builder()
+		.indexCount(indexCount)
+		.bufferType(IndexBuffer::IndexType::USHORT)
+		.build(*filament_engine);
+	(*outBuffer)->setBuffer(*filament_engine, IndexBuffer::BufferDescriptor{ indices, indexCount * sizeof(uint16_t), &handle_filament_buffer_copy_callback, bufferIdentity });
+}
+StartExportedFunc(allocate_index_buffer_ushort, BufferIdentity bufferIdentity, uint16_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
+	native_impl_render_assets::allocate_index_buffer_ushort(bufferIdentity, indices, indexCount, outBuffer);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::update_index_buffer_ushort(IndexBufferHandle buffer, BufferIdentity bufferIdentity, uint16_t* indices, int32_t indexCount, int32_t startingIndex) {
+	ThrowIfNull(buffer, "Buffer was null.");
+	ThrowIfNull(indices, "Indices pointer was null.");
+	ThrowIfNegative(indexCount, "Index count was negative.");
+	ThrowIfNegative(startingIndex, "Index start index was negative.");
+	ThrowIf(indexCount + startingIndex > buffer->getIndexCount(), "Index count plus start index exceeded buffer capacity.");
+	buffer->setBuffer(*filament_engine, IndexBuffer::BufferDescriptor{ indices, indexCount * sizeof(uint16_t), &handle_filament_buffer_copy_callback, bufferIdentity }, startingIndex * sizeof(uint16_t));
+}
+StartExportedFunc(update_index_buffer_ushort, IndexBufferHandle buffer, BufferIdentity bufferIdentity, uint16_t* indices, int32_t indexCount, int32_t startingIndex) {
+	native_impl_render_assets::update_index_buffer_ushort(buffer, bufferIdentity, indices, indexCount, startingIndex);
 	EndExportedFunc
 }
 
@@ -313,6 +386,31 @@ void native_impl_render_assets::set_material_parameter_texture(MaterialHandle ma
 }
 StartExportedFunc(set_material_parameter_texture, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture, interop_bool disableMinMapFiltering, interop_bool disableBilinearFiltering, interop_bool disableTextureRepeat, float_t anisotropyLevel) {
 	native_impl_render_assets::set_material_parameter_texture(material, parameterName, parameterNameLength, texture, disableMinMapFiltering, disableBilinearFiltering, disableTextureRepeat, anisotropyLevel);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::set_material_scissor(MaterialHandle material, int32_t left, int32_t bottom, int32_t width, int32_t height) {
+	ThrowIfNull(material, "Material was null.");
+	ThrowIfNegative(width, "Scissor width was negative.");
+	ThrowIfNegative(height, "Scissor height was negative.");
+	material->setScissor(
+		static_cast<uint32_t>(std::max(0, left)),
+		static_cast<uint32_t>(std::max(0, bottom)),
+		static_cast<uint32_t>(width),
+		static_cast<uint32_t>(height)
+	);
+}
+StartExportedFunc(set_material_scissor, MaterialHandle material, int32_t left, int32_t bottom, int32_t width, int32_t height) {
+	native_impl_render_assets::set_material_scissor(material, left, bottom, width, height);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::unset_material_scissor(MaterialHandle material) {
+	ThrowIfNull(material, "Material was null.");
+	material->unsetScissor();
+}
+StartExportedFunc(unset_material_scissor, MaterialHandle material) {
+	native_impl_render_assets::unset_material_scissor(material);
 	EndExportedFunc
 }
 void native_impl_render_assets::set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val) {

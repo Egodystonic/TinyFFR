@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -31,6 +32,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, PrivateMaterialData> _privateMaterialInstances = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, TextInstanceData> _activeInstanceTextInstanceData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, int> _activeInstanceDrawOrderDeferralAmounts = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
 	readonly LocalMaterialBuilder _materialBuilder;
 	bool _isDisposed = false;
@@ -326,7 +328,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		}
 
 		var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertexMutationData.CurrentVertices.Span[leaseData.Range]);
-		UpdateVertexBuffer(
+		LocalMeshBuilder.UpdateVertexBuffer(
 			vertexMutationData.PrivateVertexBufferHandle,
 			gpuHoldingBuffer.BufferIdentity,
 			(MeshVertex*) gpuHoldingBuffer.DataPtr,
@@ -489,6 +491,42 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		GetOrCreateEffectMaterialCopy(handle)?.SetEffectOpacity(opacity);
 	}
 
+	public int? GetDrawOrderDeferralAmount(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceDrawOrderDeferralAmounts.TryGetValue(handle, out var result) ? result : null;
+	}
+	public void SetDrawOrderDeferralAmount(ResourceHandle<ModelInstance> handle, int? newValue) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (newValue is not { } newValueActual) {
+			_activeInstanceDrawOrderDeferralAmounts.Remove(handle);
+			SetModelInstanceBlendOrder(handle, 0, false).ThrowIfFailure();
+			return;
+		}
+
+		_activeInstanceDrawOrderDeferralAmounts[handle] = Int32.Clamp(newValueActual, 0, ModelInstance.MaxDrawOrderDeferralAmount);
+		SetModelInstanceBlendOrder(handle, (ushort) newValueActual, true).ThrowIfFailure();
+	}
+
+	public void SetScissorRect(ResourceHandle<ModelInstance> handle, XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetOrCreatePrivateMaterialCopy(handle).SetScissorRect(viewportRelativeBottomLeftOffset, dimensions);
+	}
+	public void ClearScissorRect(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetOrCreatePrivateMaterialCopy(handle).ClearScissorRect();
+	}
+	public Material GetOrCreatePrivateMaterial(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return GetOrCreatePrivateMaterialCopy(handle);
+	}
+
+	Material GetOrCreatePrivateMaterialCopy(ResourceHandle<ModelInstance> handle) {
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsDefault) {
+			return privateMatData.Material;
+		}
+		return DuplicateAndTrackPrivateMaterialCopy(handle, GetMaterial(handle));
+	}
+
 	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
 		if (_privateMaterialInstances.TryGetValue(handle, out var privateMatData)) {
 			return privateMatData.IsDefault ? null : privateMatData.Material;
@@ -644,14 +682,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		out UIntPtr outBufferHandle
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_vertex_buffer")]
-	static extern InteropResult UpdateVertexBuffer(
-		UIntPtr bufferHandle,
-		nuint bufferId,
-		MeshVertex* verticesPtr,
-		int vertexCount,
-		int startingIndex
-	);
+	
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
 	static extern InteropResult DisposeVertexBuffer(UIntPtr bufferHandle);
@@ -667,6 +698,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		UIntPtr modelInstanceHandle,
 		InteropBool castShadows,
 		InteropBool receiveShadows
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_blend_order")]
+	static extern InteropResult SetModelInstanceBlendOrder(
+		UIntPtr modelInstanceHandle,
+		ushort blendOrder,
+		InteropBool globalOrderingEnabled
 	);
 
 	[SuppressGCTransition]
@@ -695,6 +733,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		DisposePrivateMaterialIfPresent(handle);
 		DisposeMutationDataIfPresent(handle);
 		DisposeTextInstanceDataIfPresent(handle);
+		_activeInstanceDrawOrderDeferralAmounts.Remove(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
 	
@@ -720,6 +759,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();
 			_activeInstanceTextInstanceData.Dispose();
+			_activeInstanceDrawOrderDeferralAmounts.Dispose();
 		}
 		finally {
 			_isDisposed = true;
