@@ -58,7 +58,7 @@ C++20 code built with CMake. Bridges C# to Filament, SDL2, and Assimp via P/Invo
 Public resource types are structs containing a `ResourceHandle<T>` and an `IXxxImplProvider` interface. This separates the public API from internal implementation and enables unit testing via NSubstitute mocking without heavy abstractions.
 
 ### Integration Projects (`Integrations/`)
-Embed TinyFFR rendering into UI frameworks (WPF, Avalonia, WinForms). Each provides a custom control that renders to an output buffer and copies to the framework's texture system.
+Embed TinyFFR rendering into UI frameworks (WPF, Avalonia, WinForms). Each provides a custom control that renders to an output buffer and copies to the framework's texture system. `TinyFFR.ImGui` inverts this: TinyFFR acts as Dear ImGui's platform and renderer backend, drawing ImGui draw data over a scene.
 
 ## Key Design Conventions
 

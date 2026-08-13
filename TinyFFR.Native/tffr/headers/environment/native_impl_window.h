@@ -31,5 +31,12 @@ public:
 	static void set_window_cursor_lock_state(WindowHandle handle, interop_bool lockState);
 	static void get_window_cursor_lock_state(WindowHandle handle, interop_bool* outLockState);
 
+	static void set_cursor_style(int32_t systemCursorIndex);
+	static void set_cursor_visibility(interop_bool visible);
+
+	static void get_clipboard_text_length(int32_t* outByteLength);
+	static void get_clipboard_text(char* resultBuffer, int32_t bufferLen);
+	static void set_clipboard_text(const char* newText);
+
 	static void dispose_window(WindowHandle handle);
 };

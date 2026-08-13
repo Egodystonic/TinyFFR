@@ -110,6 +110,22 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return result;
 	}
 
+	public Material AllocateImGuiMaterialInstance(Texture colorMap, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+
+		var shaderConstants = ImGuiMaterialShader;
+
+		var result = InstantiateMaterial(shaderConstants.ShaderResourceName, name, shaderConstants);
+		ApplyMaterialParam(result, colorMap, shaderConstants.ParamColorMap);
+
+		return result;
+	}
+
+	public void SetImGuiMaterialColorMap(Material material, Texture colorMap) {
+		ThrowIfThisIsDisposed();
+		ApplyMaterialParam(material, colorMap, ImGuiMaterialShader.ParamColorMap);
+	}
+
 	public Material CreateTestMaterial(bool ignoresLighting) {
 		ThrowIfThisIsDisposed();
 		
@@ -338,7 +354,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var renderingConfig = map.Value.RenderingConfig;
 
 		Span<char> paramChars = stackalloc char[SpanUtils.GetUtf16Length(param)];
-		GetOrCreateAssociatedTextureMap(material.Handle)[SpanUtils.ConvertUtf8ToUtf16(paramChars, param)] = map.Value;
+		var paramName = SpanUtils.ConvertUtf8ToUtf16(paramChars, param);
+		var associatedTextures = GetOrCreateAssociatedTextureMap(material.Handle);
+		var hasPreviousMap = associatedTextures.TryGetValue(paramName, out var previousMap);
+		associatedTextures[paramName] = map.Value;
+		if (hasPreviousMap && previousMap != map.Value) {
+			var previousMapStillBound = false;
+			foreach (var associatedTexture in associatedTextures.Values) {
+				if (associatedTexture != previousMap) continue;
+				previousMapStillBound = true;
+				break;
+			}
+			if (!previousMapStillBound) _globals.DependencyTracker.DeregisterDependency(material, previousMap);
+		}
 
 		SetMaterialParameterTexture(
 			material.Handle,
@@ -515,6 +543,24 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(HandleToInstance(handle), Single.Clamp(opacity, 0f, 1f), matData.PackageConstants.GetEffectOpacityParamOrThrow());
 	}
 
+	public void SetScissorRect(ResourceHandle<Material> handle, XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (dimensions.X < 0 || dimensions.Y < 0) {
+			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, "Scissor rectangle dimensions must not be negative.");
+		}
+		SetMaterialScissor(
+			handle,
+			viewportRelativeBottomLeftOffset.X,
+			viewportRelativeBottomLeftOffset.Y,
+			dimensions.X,
+			dimensions.Y
+		).ThrowIfFailure();
+	}
+	public void ClearScissorRect(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UnsetMaterialScissor(handle).ThrowIfFailure();
+	}
+
 	public void SetKeyedColor(ResourceHandle<Material> handle, ColorChannel key, ColorVect color) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (_activeMaterials[handle].PackageConstants != ColorKeyedMaterialShader) return;
@@ -579,6 +625,20 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ref readonly byte utf8ParameterNameBuffer,
 		int parameterNameBufferLength,
 		float val
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_scissor")]
+	static extern InteropResult SetMaterialScissor(
+		UIntPtr materialHandle,
+		int left,
+		int bottom,
+		int width,
+		int height
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unset_material_scissor")]
+	static extern InteropResult UnsetMaterialScissor(
+		UIntPtr materialHandle
 	);
 	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_vect")]

@@ -61,6 +61,9 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetEffectOpacity(float opacity) => Implementation.SetEffectOpacity(_handle, opacity);
+
+	internal void SetScissorRect(XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions) => Implementation.SetScissorRect(_handle, viewportRelativeBottomLeftOffset, dimensions);
+	internal void ClearScissorRect() => Implementation.ClearScissorRect(_handle);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetKeyedColor(ColorChannel key, ColorVect color) => Implementation.SetKeyedColor(_handle, key, color);

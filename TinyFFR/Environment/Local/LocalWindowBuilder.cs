@@ -25,6 +25,8 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 	readonly RenderingBackendApi _actualRenderingApi;
 	readonly ReadOnlyMemory<Display> _displaysOrderedByIndex;
 	bool _isDisposed = false;
+	MouseCursorStyle _currentCursorStyle = MouseCursorStyle.Arrow;
+	bool _cursorIsVisible = true;
 
 	public LocalWindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config, RenderingBackendApi actualRenderingApi, ReadOnlyMemory<Display> displaysOrderedByIndex) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -384,6 +386,26 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 		).ThrowIfFailure();
 	}
 
+	public MouseCursorStyle GetCursorStyle(ResourceHandle<Window> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _currentCursorStyle;
+	}
+	public void SetCursorStyle(ResourceHandle<Window> handle, MouseCursorStyle newStyle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!Enum.IsDefined(newStyle)) {
+			throw new ArgumentOutOfRangeException(nameof(newStyle), newStyle, $"Unrecognised {nameof(MouseCursorStyle)} value.");
+		}
+		if (_currentCursorStyle == newStyle) return;
+
+		var shouldBeVisible = newStyle != MouseCursorStyle.Invisible;
+		if (shouldBeVisible) SetCursorStyle((int) newStyle).ThrowIfFailure();
+		if (_cursorIsVisible != shouldBeVisible) {
+			SetCursorVisibility((InteropBool) shouldBeVisible).ThrowIfFailure();
+			_cursorIsVisible = shouldBeVisible;
+		}
+		_currentCursorStyle = newStyle;
+	}
+
 	public override string ToString() => _isDisposed ? "TinyFFR Window Builder [Disposed]" : "TinyFFR Window Builder";
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -491,6 +513,12 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_cursor_lock_state")]
 	static extern InteropResult SetWindowCursorLockState(UIntPtr handle, InteropBool lockState);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_cursor_style")]
+	static extern InteropResult SetCursorStyle(int systemCursorIndex);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_cursor_visibility")]
+	static extern InteropResult SetCursorVisibility(InteropBool visible);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_title")]
 	static extern InteropResult GetWindowTitle(UIntPtr handle, ref byte utf8BufferPtr, int bufferLength);

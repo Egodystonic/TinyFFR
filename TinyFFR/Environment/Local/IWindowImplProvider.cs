@@ -32,4 +32,7 @@ public interface IWindowImplProvider : IDisposableResourceImplProvider<Window> {
 
 	bool GetCursorLock(ResourceHandle<Window> handle);
 	void SetCursorLock(ResourceHandle<Window> handle, bool newLockSetting);
+
+	MouseCursorStyle GetCursorStyle(ResourceHandle<Window> handle);
+	void SetCursorStyle(ResourceHandle<Window> handle, MouseCursorStyle newStyle);
 }

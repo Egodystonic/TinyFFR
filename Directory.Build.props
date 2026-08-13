@@ -20,6 +20,8 @@
   <PropertyGroup>
     <AvaloniaVersion>12.*</AvaloniaVersion>
     <AvaloniaDependencyVersion>[12.0.0,13.0.0)</AvaloniaDependencyVersion>
+    <HexaImGuiVersion>2.*</HexaImGuiVersion>
+    <HexaImGuiDependencyVersion>[2.2.9,3.0.0)</HexaImGuiDependencyVersion>
     <CommunityToolkitVersion>8.*</CommunityToolkitVersion>
   </PropertyGroup>
 

@@ -64,6 +64,15 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetLockCursor(bool lockCursor) => LockCursor = lockCursor;
 
+	public MouseCursorStyle CursorStyle {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCursorStyle(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetCursorStyle(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetCursorStyle(MouseCursorStyle style) => CursorStyle = style;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO xmldoc the icon must be no larger than 128px in either dimension
 	public void SetIcon(ReadOnlySpan<char> iconFilePath) => Implementation.SetIcon(_handle, iconFilePath);
 

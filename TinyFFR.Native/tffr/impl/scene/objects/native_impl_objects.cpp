@@ -108,6 +108,18 @@ StartExportedFunc(set_model_instance_shadow_options, ModelInstanceHandle modelIn
 	EndExportedFunc
 }
 
+void native_impl_objects::set_model_instance_blend_order(ModelInstanceHandle modelInstance, uint16_t blendOrder, interop_bool globalOrderingEnabled) {
+	auto& manager = filament_engine->getRenderableManager();
+	auto instance = manager.getInstance(Entity::import(modelInstance));
+	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
+	manager.setBlendOrderAt(instance, 0, blendOrder);
+	manager.setGlobalBlendOrderEnabledAt(instance, 0, globalOrderingEnabled);
+}
+StartExportedFunc(set_model_instance_blend_order, ModelInstanceHandle modelInstance, uint16_t blendOrder, interop_bool globalOrderingEnabled) {
+	native_impl_objects::set_model_instance_blend_order(modelInstance, blendOrder, globalOrderingEnabled);
+	EndExportedFunc
+}
+
 void native_impl_objects::set_model_instance_world_mat(ModelInstanceHandle modelInstance, mat4f* worldMatPtr) {
 	ThrowIfNull(worldMatPtr, "World matrix was null.");
 
