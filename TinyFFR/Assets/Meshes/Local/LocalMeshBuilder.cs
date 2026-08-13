@@ -658,7 +658,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (result.UsesImGuiVertices) {
 			throw new InvalidOperationException(
 				$"Can not borrow or recalculate bounding boxes for {HandleToInstance(handle)} because it was created as an ImGui vertex buffer. " +
-				$"ImGui buffers do not retain a CPU-side copy of their data."
+				$"ImGui buffers do not retain a CPU-side copy of their data. This is a bug in TinyFFR."
 			);
 		}
 		return result;
@@ -752,7 +752,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (vertices.Length == 0) return;
 		var data = _activeDynamicVertexBuffers[handle];
-		if (!data.UsesImGuiVertices) throw new InvalidOperationException($"{HandleToInstance(handle)} was not created as an ImGui vertex buffer.");
+		if (!data.UsesImGuiVertices) throw new InvalidOperationException($"{HandleToInstance(handle)} was not created as an ImGui vertex buffer. This is a bug in TinyFFR.");
 		if (offset < 0 || offset + vertices.Length > data.VertexCapacity) {
 			throw new ArgumentOutOfRangeException(nameof(vertices), vertices.Length, $"Writing {vertices.Length} vertices at this offset ({offset}) would exceed the buffer capacity of {data.VertexCapacity}.");
 		}
@@ -764,7 +764,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (indices.Length == 0) return;
 		var data = _activeDynamicVertexBuffers[handle];
-		if (!data.UsesImGuiVertices) throw new InvalidOperationException($"{HandleToInstance(handle)} was not created as an ImGui vertex buffer.");
+		if (!data.UsesImGuiVertices) throw new InvalidOperationException($"{HandleToInstance(handle)} was not created as an ImGui vertex buffer. This is a bug in TinyFFR.");
 		if (offset < 0 || offset + indices.Length > data.IndexCapacity) {
 			throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Writing {indices.Length} indices at this offset would exceed the buffer capacity of {data.IndexCapacity}.");
 		}
@@ -791,7 +791,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (boundingBoxOverride == null && data.UsesImGuiVertices) {
 			throw new InvalidOperationException(
 				$"A bounding box must be supplied explicitly when creating a {nameof(Mesh)} from {HandleToInstance(handle)} " +
-				$"because it was created as an ImGui vertex buffer and therefore can not calculate one."
+				$"because it was created as an ImGui vertex buffer and therefore can not calculate one. This is a bug in TinyFFR."
 			);
 		}
 
