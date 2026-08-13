@@ -6,6 +6,8 @@ using System.Numerics;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.DearImGui;
+using Egodystonic.TinyFFR.DearImGui.Input;
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
 using Hexa.NET.ImGui;
 
@@ -276,6 +278,91 @@ static class HeadlessDpiCheck {
 		}
 		catch (Exception e) {
 			failures += Expect(false, "propagation to a bound ModelInstance succeeds (threw " + e.GetType().Name + ")");
+		}
+
+		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
+		return failures == 0 ? 0 : 1;
+	}
+
+	public static int RunGamepadMappingCheck() {
+		Console.WriteLine("Gamepad mapping check:");
+		var failures = 0;
+
+		var mappedButtons = ImGuiKeyMap.MappedGamepadButtons;
+		var buttonKeys = new List<ImGuiKey>();
+		for (var i = 0; i < mappedButtons.Length; ++i) buttonKeys.Add(ImGuiKeyMap.TranslateGamepadButton(mappedButtons[i]));
+
+		failures += Expect(buttonKeys.All(k => k != ImGuiKey.None), "every mapped button translates to a real ImGuiKey");
+		failures += Expect(buttonKeys.Distinct().Count() == buttonKeys.Count, "no two buttons translate to the same ImGuiKey");
+
+		failures += Expect(ImGuiKeyMap.TranslateGamepadButton(GameControllerButton.A) == ImGuiKey.GamepadFaceDown, "A maps to the positional bottom face button");
+		failures += Expect(ImGuiKeyMap.TranslateGamepadButton(GameControllerButton.B) == ImGuiKey.GamepadFaceRight, "B maps to the positional right face button");
+		failures += Expect(ImGuiKeyMap.TranslateGamepadButton(GameControllerButton.X) == ImGuiKey.GamepadFaceLeft, "X maps to the positional left face button");
+		failures += Expect(ImGuiKeyMap.TranslateGamepadButton(GameControllerButton.Y) == ImGuiKey.GamepadFaceUp, "Y maps to the positional top face button");
+		failures += Expect(ImGuiKeyMap.TranslateGamepadButton(GameControllerButton.LeftTrigger) == ImGuiKey.None, "left trigger is not mapped as a button");
+		failures += Expect(ImGuiKeyMap.TranslateGamepadButton(GameControllerButton.RightTrigger) == ImGuiKey.None, "right trigger is not mapped as a button");
+
+		var analogKeys = new[] {
+			ImGuiKey.GamepadLStickLeft, ImGuiKey.GamepadLStickRight, ImGuiKey.GamepadLStickUp, ImGuiKey.GamepadLStickDown,
+			ImGuiKey.GamepadRStickLeft, ImGuiKey.GamepadRStickRight, ImGuiKey.GamepadRStickUp, ImGuiKey.GamepadRStickDown,
+			ImGuiKey.GamepadL2, ImGuiKey.GamepadR2
+		};
+		var covered = buttonKeys.Concat(analogKeys).ToList();
+		var allGamepadKeys = Enum.GetValues<ImGuiKey>().Where(k => Enum.GetName(k)?.StartsWith("Gamepad", StringComparison.Ordinal) ?? false).Distinct().ToList();
+
+		failures += Expect(covered.Distinct().Count() == covered.Count, "button and analog key sets do not overlap");
+		failures += Expect(allGamepadKeys.Count == 24, $"ImGui exposes 24 gamepad keys (found {allGamepadKeys.Count})");
+		var uncovered = allGamepadKeys.Except(covered).ToList();
+		failures += Expect(uncovered.Count == 0, $"every ImGui gamepad key is driven (uncovered: {(uncovered.Count == 0 ? "none" : String.Join(", ", uncovered))})");
+
+		const float Deadzone = GameControllerStickPosition.RecommendedDeadzoneSize;
+
+		ImGuiKeyMap.DecomposeStick(GameControllerStickPosition.Centered, Deadzone, out var l, out var r, out var u, out var d);
+		failures += Expect(l == 0f && r == 0f && u == 0f && d == 0f, "centred stick produces no displacement on any direction");
+
+		ImGuiKeyMap.DecomposeStick(new GameControllerStickPosition(Int16.MinValue, 0), Deadzone, out l, out r, out u, out d);
+		failures += Expect(MathF.Abs(l - 1f) < 0.001f && r == 0f, $"full left gives left=1 right=0 (got {l:N3}/{r:N3})");
+
+		ImGuiKeyMap.DecomposeStick(new GameControllerStickPosition(Int16.MaxValue, 0), Deadzone, out l, out r, out u, out d);
+		failures += Expect(MathF.Abs(r - 1f) < 0.001f && l == 0f, $"full right gives right=1 left=0 (got {r:N3}/{l:N3})");
+
+		ImGuiKeyMap.DecomposeStick(new GameControllerStickPosition(0, Int16.MaxValue), Deadzone, out l, out r, out u, out d);
+		failures += Expect(MathF.Abs(u - 1f) < 0.001f && d == 0f, $"positive vertical means UP, not down (got up={u:N3} down={d:N3})");
+
+		ImGuiKeyMap.DecomposeStick(new GameControllerStickPosition(0, Int16.MinValue), Deadzone, out l, out r, out u, out d);
+		failures += Expect(MathF.Abs(d - 1f) < 0.001f && u == 0f, $"negative vertical means DOWN (got down={d:N3} up={u:N3})");
+
+		ImGuiKeyMap.DecomposeStick(new GameControllerStickPosition(4000, 4000), Deadzone, out l, out r, out u, out d);
+		failures += Expect(l == 0f && r == 0f && u == 0f && d == 0f, "displacement inside the deadzone is fully suppressed");
+
+		ImGuiKeyMap.DecomposeStick(new GameControllerStickPosition(Int16.MaxValue / 2, 0), Deadzone, out l, out r, out u, out d);
+		failures += Expect(r > 0f && r < 1f, $"partial displacement is renormalized into (0, 1) (got {r:N3})");
+
+		using (var factory = new LocalTinyFfrFactory()) {
+			using (var imgui = factory.SceneBuilder.CreateImGuiScene(factory)) {
+				ImGui.SetCurrentContext(imgui.Context);
+				var flags = ImGui.GetIO().ConfigFlags;
+				failures += Expect(!flags.HasFlag(ImGuiConfigFlags.NavEnableGamepad), "gamepad nav is off by default");
+				failures += Expect(flags.HasFlag(ImGuiConfigFlags.DockingEnable), "docking remains on by default");
+			}
+
+			using (var imgui = factory.SceneBuilder.CreateImGuiScene(factory, new ImGuiSceneCreationConfig { EnableGamepadNavigation = true })) {
+				ImGui.SetCurrentContext(imgui.Context);
+				var flags = ImGui.GetIO().ConfigFlags;
+				var backendFlags = ImGui.GetIO().BackendFlags;
+				failures += Expect(flags.HasFlag(ImGuiConfigFlags.NavEnableGamepad), "EnableGamepadNavigation sets NavEnableGamepad");
+				failures += Expect(flags.HasFlag(ImGuiConfigFlags.DockingEnable), "docking is unaffected by the gamepad option");
+				failures += Expect(backendFlags.HasFlag(ImGuiBackendFlags.RendererHasTextures), "renderer texture support is still advertised");
+			}
+
+			var threw = false;
+			try {
+				using var imgui = factory.SceneBuilder.CreateImGuiScene(factory, new ImGuiSceneCreationConfig { GamepadStickDeadzone = 1.5f });
+			}
+			catch (ArgumentOutOfRangeException) {
+				threw = true;
+			}
+			failures += Expect(threw, "an out-of-range deadzone is rejected");
 		}
 
 		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");

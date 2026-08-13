@@ -9,6 +9,52 @@ using Hexa.NET.ImGui;
 namespace Egodystonic.TinyFFR.DearImGui.Input;
 
 static class ImGuiKeyMap {
+	static readonly GameControllerButton[] _mappedGamepadButtons = {
+		GameControllerButton.A,
+		GameControllerButton.B,
+		GameControllerButton.X,
+		GameControllerButton.Y,
+		GameControllerButton.SelectOrView,
+		GameControllerButton.StartOrMenu,
+		GameControllerButton.LeftBumper,
+		GameControllerButton.RightBumper,
+		GameControllerButton.LeftStick,
+		GameControllerButton.RightStick,
+		GameControllerButton.DirectionalPadUp,
+		GameControllerButton.DirectionalPadDown,
+		GameControllerButton.DirectionalPadLeft,
+		GameControllerButton.DirectionalPadRight
+	};
+
+	public static ReadOnlySpan<GameControllerButton> MappedGamepadButtons => _mappedGamepadButtons;
+
+	public static ImGuiKey TranslateGamepadButton(GameControllerButton button) => button switch {
+		GameControllerButton.A => ImGuiKey.GamepadFaceDown,
+		GameControllerButton.B => ImGuiKey.GamepadFaceRight,
+		GameControllerButton.X => ImGuiKey.GamepadFaceLeft,
+		GameControllerButton.Y => ImGuiKey.GamepadFaceUp,
+		GameControllerButton.SelectOrView => ImGuiKey.GamepadBack,
+		GameControllerButton.StartOrMenu => ImGuiKey.GamepadStart,
+		GameControllerButton.LeftBumper => ImGuiKey.GamepadL1,
+		GameControllerButton.RightBumper => ImGuiKey.GamepadR1,
+		GameControllerButton.LeftStick => ImGuiKey.GamepadL3,
+		GameControllerButton.RightStick => ImGuiKey.GamepadR3,
+		GameControllerButton.DirectionalPadUp => ImGuiKey.GamepadDpadUp,
+		GameControllerButton.DirectionalPadDown => ImGuiKey.GamepadDpadDown,
+		GameControllerButton.DirectionalPadLeft => ImGuiKey.GamepadDpadLeft,
+		GameControllerButton.DirectionalPadRight => ImGuiKey.GamepadDpadRight,
+		_ => ImGuiKey.None
+	};
+
+	public static void DecomposeStick(GameControllerStickPosition stick, float deadzone, out float left, out float right, out float up, out float down) {
+		var horizontal = stick.GetDisplacementHorizontalWithDeadzone(deadzone);
+		var vertical = stick.GetDisplacementVerticalWithDeadzone(deadzone);
+		left = horizontal < 0f ? -horizontal : 0f;
+		right = horizontal > 0f ? horizontal : 0f;
+		up = vertical > 0f ? vertical : 0f;
+		down = vertical < 0f ? -vertical : 0f;
+	}
+
 	public static int TranslateMouseButton(KeyboardOrMouseKey key) => key switch {
 		KeyboardOrMouseKey.MouseLeft => 0,
 		KeyboardOrMouseKey.MouseRight => 1,

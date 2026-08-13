@@ -18,6 +18,7 @@ if (args.Length > 0 && args[0] == "--headless-dpi-check") return HeadlessDpiChec
 if (args.Length > 2 && args[0] == "--headless-ui-dump") return HeadlessDpiCheck.RunUiDump(args[1], Single.Parse(args[2]));
 if (args.Length > 0 && args[0] == "--headless-dynamic-buffer-check") return HeadlessDpiCheck.RunDynamicBufferCheck();
 if (args.Length > 0 && args[0] == "--headless-texture-churn") return HeadlessDpiCheck.RunTextureChurn(args.Length > 1 ? Int32.Parse(args[1]) : 60);
+if (args.Length > 0 && args[0] == "--headless-gamepad-check") return HeadlessDpiCheck.RunGamepadMappingCheck();
 
 using var factory = new LocalTinyFfrFactory();
 var display = factory.DisplayDiscoverer.Primary!.Value;
@@ -34,7 +35,7 @@ scene.Add(light);
 using var camera = factory.CameraBuilder.CreateCamera(initialPosition: new Location(0f, 0f, -3f));
 using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-using var imgui = factory.SceneBuilder.CreateImGuiScene(factory);
+using var imgui = factory.SceneBuilder.CreateImGuiScene(factory, new ImGuiSceneCreationConfig { EnableGamepadNavigation = true });
 using var imguiRenderer = factory.RendererBuilder.CreateRenderer(imgui, window);
 
 using var compositor = factory.RendererBuilder.CreateCompositor(window);
@@ -78,6 +79,39 @@ while (!loop.Input.UserQuitRequested) {
 			for (var i = 0; i < 40; ++i) ImGui.Text($"Clipped line {i}");
 		}
 		ImGui.EndChild();
+	}
+	ImGui.End();
+
+	ImGui.SetNextWindowPos(new Vector2(400f, 20f), ImGuiCond.FirstUseEver);
+	ImGui.SetNextWindowSize(new Vector2(380f, 340f), ImGuiCond.FirstUseEver);
+	if (ImGui.Begin("Gamepad")) {
+		var controllers = loop.Input.GameControllers;
+		ImGui.Text($"Connected: {controllers.Count}");
+		for (var i = 0; i < controllers.Count; ++i) ImGui.Text($"  [{i}] {controllers[i].GetNameAsNewStringObject()}");
+
+		var pad = loop.Input.GameControllersCombined;
+		ImGui.Separator();
+		ImGui.Text($"L stick  X {pad.LeftStickPosition.GetDisplacementHorizontalWithDeadzone(),6:N2}  Y {pad.LeftStickPosition.GetDisplacementVerticalWithDeadzone(),6:N2}");
+		ImGui.Text($"R stick  X {pad.RightStickPosition.GetDisplacementHorizontalWithDeadzone(),6:N2}  Y {pad.RightStickPosition.GetDisplacementVerticalWithDeadzone(),6:N2}");
+		ImGui.Text($"Triggers L {pad.LeftTriggerPosition.GetDisplacementWithDeadzone(),6:N2}  R {pad.RightTriggerPosition.GetDisplacementWithDeadzone(),6:N2}");
+
+		ImGui.Separator();
+		ImGui.Text("TinyFFR reports held:");
+		var held = String.Join(", ", pad.CurrentlyPressedButtons);
+		ImGui.TextWrapped(held.Length == 0 ? "  (none)" : "  " + held);
+
+		ImGui.Separator();
+		ImGui.Text("ImGui received:");
+		var received = new List<string>();
+		foreach (var key in Enum.GetValues<ImGuiKey>()) {
+			if (!(Enum.GetName(key)?.StartsWith("Gamepad", StringComparison.Ordinal) ?? false)) continue;
+			if (ImGui.IsKeyDown(key)) received.Add(Enum.GetName(key)!["Gamepad".Length..]);
+		}
+		ImGui.TextWrapped(received.Count == 0 ? "  (none)" : "  " + String.Join(", ", received));
+
+		ImGui.Separator();
+		ImGui.Text("D-pad moves focus, bottom face activates.");
+		ImGui.Text("Sticks scroll; L1/R1 change tweak speed.");
 	}
 	ImGui.End();
 

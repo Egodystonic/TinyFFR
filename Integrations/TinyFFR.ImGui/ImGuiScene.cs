@@ -27,7 +27,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	readonly LocalMaterialBuilder _materialBuilder;
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly ImGuiContextPtr _context;
-	readonly ImGuiInputPump _inputPump = new();
+	readonly ImGuiInputPump _inputPump;
 	readonly Dictionary<int, Texture> _textures = new();
 	readonly List<DynamicVertexBuffer> _meshPool = new();
 	readonly List<int> _meshVertexCapacities = new();
@@ -55,10 +55,12 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		public Texture CurrentTexture { get; set; }
 	}
 
-	internal ImGuiScene(ITinyFfrFactory factory) {
+	internal ImGuiScene(ITinyFfrFactory factory, in ImGuiSceneCreationConfig config) {
 		ArgumentNullException.ThrowIfNull(factory);
+		config.ThrowIfInvalid();
 		_factory = factory;
 		_materialBuilder = (LocalMaterialBuilder) factory.MaterialBuilder;
+		_inputPump = new ImGuiInputPump(config.EnableGamepadNavigation, config.GamepadStickDeadzone, config.GamepadTriggerDeadzone);
 
 		UnderlyingScene = factory.SceneBuilder.CreateScene(new SceneCreationConfig { InitialBackdropColor = null, Name = "ImGui Scene" });
 		Camera = factory.CameraBuilder.CreateCamera(new CameraCreationConfig {
@@ -88,8 +90,10 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		_context = ImGui.CreateContext();
 		ImGui.SetCurrentContext(_context);
 		var io = ImGui.GetIO();
-		io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
-		io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+		io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures | ImGuiBackendFlags.HasMouseCursors;
+		if (config.EnableDocking) io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+		if (config.EnableKeyboardNavigation) io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+		if (config.EnableGamepadNavigation) io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
 		ImGui.StyleColorsDark();
 		_pristineStyle = *ImGui.GetStyle().Handle;
 	}

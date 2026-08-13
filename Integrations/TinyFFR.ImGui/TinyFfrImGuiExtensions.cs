@@ -11,9 +11,13 @@ namespace Egodystonic.TinyFFR.DearImGui;
 
 public static class TinyFfrImGuiExtensions {
 	public static ImGuiScene CreateImGuiScene(this ISceneBuilder @this, ITinyFfrFactory factory) {
+		return CreateImGuiScene(@this, factory, new ImGuiSceneCreationConfig());
+	}
+
+	public static ImGuiScene CreateImGuiScene(this ISceneBuilder @this, ITinyFfrFactory factory, in ImGuiSceneCreationConfig config) {
 		ArgumentNullException.ThrowIfNull(@this);
 		ArgumentNullException.ThrowIfNull(factory);
-		return new ImGuiScene(factory);
+		return new ImGuiScene(factory, in config);
 	}
 
 	public static Renderer CreateRenderer<TRenderTarget>(this IRendererBuilder @this, ImGuiScene scene, TRenderTarget renderTarget, ReadOnlySpan<char> name = default) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
