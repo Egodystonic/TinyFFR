@@ -37,6 +37,7 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	ScopedSpanLease<MeshVertex> BorrowVerticesSpan(ResourceHandle<ModelInstance> handle, Range range, bool recalculateBoundingBox);
 	ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<ModelInstance> handle);
 	void TriggerManualBoundingBoxRecalculation(ResourceHandle<ModelInstance> handle);
+	void SetBoundingBox(ResourceHandle<ModelInstance> handle, PositionedCuboid newBoundingBox);
 
 	void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation);

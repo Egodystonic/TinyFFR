@@ -73,15 +73,6 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCursorStyle(MouseCursorStyle style) => CursorStyle = style;
 
-	public bool CursorIsVisible {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCursorVisibility(_handle);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetCursorVisibility(_handle, value);
-	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCursorVisibility(bool visible) => CursorIsVisible = visible;
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO xmldoc the icon must be no larger than 128px in either dimension
 	public void SetIcon(ReadOnlySpan<char> iconFilePath) => Implementation.SetIcon(_handle, iconFilePath);
 

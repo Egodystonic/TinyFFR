@@ -16,6 +16,7 @@ CommonTestSupportFunctions.ResolveNativeAssembliesFromBuildOutputDir();
 
 if (args.Length > 0 && args[0] == "--headless-dpi-check") return HeadlessDpiCheck.Run(args.Length > 1 ? args[1] : null);
 if (args.Length > 2 && args[0] == "--headless-ui-dump") return HeadlessDpiCheck.RunUiDump(args[1], Single.Parse(args[2]));
+if (args.Length > 0 && args[0] == "--headless-dynamic-buffer-check") return HeadlessDpiCheck.RunDynamicBufferCheck();
 if (args.Length > 0 && args[0] == "--headless-texture-churn") return HeadlessDpiCheck.RunTextureChurn(args.Length > 1 ? Int32.Parse(args[1]) : 60);
 
 using var factory = new LocalTinyFfrFactory();

@@ -35,6 +35,4 @@ public interface IWindowImplProvider : IDisposableResourceImplProvider<Window> {
 
 	MouseCursorStyle GetCursorStyle(ResourceHandle<Window> handle);
 	void SetCursorStyle(ResourceHandle<Window> handle, MouseCursorStyle newStyle);
-	bool GetCursorVisibility(ResourceHandle<Window> handle);
-	void SetCursorVisibility(ResourceHandle<Window> handle, bool newVisibility);
 }

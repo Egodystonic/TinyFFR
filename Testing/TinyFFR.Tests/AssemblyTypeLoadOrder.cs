@@ -28,6 +28,7 @@ sealed class AssemblyTypeLoadOrderAnchor {
 	BackdropTexture _backdropTexture;
 	Camera _camera;
 	DirectionalLight _directionalLight;
+	DynamicVertexBuffer _dynamicVertexBuffer;
 	Display _display;
 	Font _font;
 	Light _light;

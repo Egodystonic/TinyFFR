@@ -6,6 +6,7 @@ using System.Numerics;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.DearImGui.Input;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -20,9 +21,11 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	const int InitialVertexCapacity = 4096;
 	const int InitialIndexCapacity = 8192;
 	const float CameraDistance = 10f;
+	static readonly PositionedCuboid MeshViewBoundingBox = new(new Cuboid(20000f, 20000f, 20000f), Location.Origin);
 
 	readonly ITinyFfrFactory _factory;
 	readonly LocalMaterialBuilder _materialBuilder;
+	readonly LocalMeshBuilder _meshBuilder;
 	readonly ImGuiContextPtr _context;
 	readonly ImGuiInputPump _inputPump = new();
 	readonly Dictionary<int, Texture> _textures = new();
@@ -68,9 +71,10 @@ public sealed unsafe class ImGuiScene : IDisposable {
 			Name = "ImGui Camera"
 		});
 
-		_parkingVertexBuffer = factory.MeshBuilder.CreateDynamicVertexBuffer(3, 3, "ImGui Parking Mesh");
-		_parkingVertexBuffer.SetIndices(stackalloc ushort[] { 0, 1, 2 });
-		_parkingView = _parkingVertexBuffer.CreateMesh(0, 3);
+		_meshBuilder = (LocalMeshBuilder) factory.MeshBuilder;
+		_parkingVertexBuffer = _meshBuilder.CreateImGuiDynamicVertexBuffer(3, 3, "ImGui Parking Mesh");
+		_parkingVertexBuffer.SetImGuiIndices(stackalloc ushort[] { 0, 1, 2 });
+		_parkingView = _parkingVertexBuffer.CreateMesh(0..3, MeshViewBoundingBox);
 		_parkingTexture = factory.TextureBuilder.CreateTexture(
 			stackalloc TexelRgba32[] { new TexelRgba32(255, 255, 255, 255) },
 			new TextureGenerationConfig { Dimensions = new(1, 1) },
@@ -170,7 +174,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 
 			var mesh = GetOrGrowMesh(listIndex, vertexCount, indexCount);
 			mesh.SetImGuiVertices(new ReadOnlySpan<MeshVertexImGui>(cmdList.VtxBuffer.Data, vertexCount));
-			mesh.SetIndices(new ReadOnlySpan<ushort>(cmdList.IdxBuffer.Data, indexCount));
+			mesh.SetImGuiIndices(new ReadOnlySpan<ushort>(cmdList.IdxBuffer.Data, indexCount));
 
 			for (var cmdIndex = 0; cmdIndex < cmdList.CmdBuffer.Size; ++cmdIndex) {
 				var cmd = cmdList.CmdBuffer.Data[cmdIndex];
@@ -187,7 +191,8 @@ public sealed unsafe class ImGuiScene : IDisposable {
 				var scissorWidth = (int) (clipMaxX - clipMinX);
 				var scissorHeight = (int) (clipMaxY - clipMinY);
 
-				var view = mesh.CreateMesh((int) cmd.IdxOffset, (int) cmd.ElemCount);
+				var indexStart = (int) cmd.IdxOffset;
+				var view = mesh.CreateMesh(indexStart..(indexStart + (int) cmd.ElemCount), MeshViewBoundingBox);
 
 				var drawCall = GetOrCreateDrawCall(_activeDrawCallCount);
 				var instance = drawCall.Instance;
@@ -292,7 +297,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 
 	DynamicVertexBuffer GetOrGrowMesh(int index, int vertexCount, int indexCount) {
 		while (_meshPool.Count <= index) {
-			_meshPool.Add(_factory.MeshBuilder.CreateDynamicVertexBuffer(InitialVertexCapacity, InitialIndexCapacity, "ImGui Draw List Mesh"));
+			_meshPool.Add(_meshBuilder.CreateImGuiDynamicVertexBuffer(InitialVertexCapacity, InitialIndexCapacity, "ImGui Draw List Mesh"));
 			_meshVertexCapacities.Add(InitialVertexCapacity);
 			_meshIndexCapacities.Add(InitialIndexCapacity);
 		}

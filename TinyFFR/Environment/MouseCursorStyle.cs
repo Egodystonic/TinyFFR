@@ -15,5 +15,6 @@ public enum MouseCursorStyle {
 	ResizeVertical = 8,
 	ResizeAll = 9,
 	NotAllowed = 10,
-	Hand = 11
+	Hand = 11,
+	Invisible = 100_000
 }

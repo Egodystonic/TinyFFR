@@ -43,7 +43,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_ktxFileBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxKtxFileBufferSizeBytes);
 		_embeddedAssetTextureBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxEmbeddedAssetTextureFileSizeBytes);
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
-		_backdropTextureImplProvider = new BackdropTextureImplProvider(this);
+		_backdropTextureImplProvider = new LocalBackdropTextureImplProvider(this);
 
 		if (OperatingSystem.IsWindows()) {
 			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameWin);

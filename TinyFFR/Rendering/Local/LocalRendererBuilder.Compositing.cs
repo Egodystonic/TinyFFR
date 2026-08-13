@@ -30,32 +30,7 @@ sealed partial class LocalRendererBuilder {
 	readonly VectorPool<CompositedRenderer> _compositedRendererVectorPool = new(true);
 	readonly ArrayPoolBackedMap<ResourceHandle<RendererCompositor>, RendererCompositorData> _loadedCompositors = new();
 	readonly LocalSceneBuilder _sceneBuilder;
-	readonly RendererCompositorImplProvider _rendererCompositorImplProvider;
-
-	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
-	// on both IRendererCompositorImplProvider and IRendererImplProvider.
-	sealed class RendererCompositorImplProvider : IRendererCompositorImplProvider {
-		public LocalRendererBuilder Owner { get; }
-
-		public RendererCompositorImplProvider(LocalRendererBuilder owner) => Owner = owner;
-
-		public void SetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer, int? maxFramesPerSecond) => Owner.SetRendererFrameRateCap(handle, renderer, maxFramesPerSecond);
-		public int? GetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer) => Owner.GetRendererFrameRateCap(handle, renderer);
-		public void SetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer, int ratioDenominator) => Owner.SetRendererFrameRateRatio(handle, renderer, ratioDenominator);
-		public int GetRendererFrameRateRatio(ResourceHandle<RendererCompositor> handle, Renderer renderer) => Owner.GetRendererFrameRateRatio(handle, renderer);
-		public string GetNameAsNewStringObject(ResourceHandle<RendererCompositor> handle) => Owner.GetNameAsNewStringObject(handle);
-		public int GetNameLength(ResourceHandle<RendererCompositor> handle) => Owner.GetNameLength(handle);
-		public void CopyName(ResourceHandle<RendererCompositor> handle, Span<char> destinationBuffer) => Owner.CopyName(handle, destinationBuffer);
-		public bool IsDisposed(ResourceHandle<RendererCompositor> handle) => Owner.IsDisposed(handle);
-		public void Dispose(ResourceHandle<RendererCompositor> handle) => Owner.Dispose(handle);
-		public void Dispose(ResourceHandle<RendererCompositor> handle, bool disposeContainedRenderers) => Owner.Dispose(handle, disposeContainedRenderers);
-		public IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle) => Owner.GetAddedRenderers(handle);
-		public void Add(ResourceHandle<RendererCompositor> handle, Renderer renderer, RenderCompositionType compositionType) => Owner.Add(handle, renderer, compositionType);
-		public void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState) => Owner.SetEnabledState(handle, renderer, newEnabledState);
-		public void RenderAll(ResourceHandle<RendererCompositor> handle) => Owner.RenderAll(handle);
-		public void WaitForGpu(ResourceHandle<RendererCompositor> handle) => Owner.WaitForGpu(handle);
-		public override string ToString() => Owner.ToString();
-	}
+	readonly LocalRendererCompositorImplProvider _rendererCompositorImplProvider;
 
 	public RendererCompositor CreateCompositor<TRenderTarget>(TRenderTarget renderTarget, ReadOnlySpan<char> name = default) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
 		ThrowIfThisIsDisposed();
@@ -149,9 +124,9 @@ sealed partial class LocalRendererBuilder {
 		
 		var compositorData = _loadedCompositors[handle];
 		
-		static int GetCount(RendererCompositor rc) => ((RendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers.Count;
-		static int GetVersion(RendererCompositor rc) => ((RendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers.Version;
-		static Renderer GetItem(RendererCompositor rc, int index) => ((RendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers[index].Renderer;
+		static int GetCount(RendererCompositor rc) => ((LocalRendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers.Count;
+		static int GetVersion(RendererCompositor rc) => ((LocalRendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers.Version;
+		static Renderer GetItem(RendererCompositor rc, int index) => ((LocalRendererCompositorImplProvider) rc.Implementation).Owner._loadedCompositors[rc.Handle].AddedRenderers[index].Renderer;
 		
 		return new IndirectEnumerable<RendererCompositor, Renderer>(
 			HandleToInstance(handle),

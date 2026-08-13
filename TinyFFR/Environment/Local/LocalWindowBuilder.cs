@@ -396,19 +396,14 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 			throw new ArgumentOutOfRangeException(nameof(newStyle), newStyle, $"Unrecognised {nameof(MouseCursorStyle)} value.");
 		}
 		if (_currentCursorStyle == newStyle) return;
-		SetCursorStyle((int) newStyle).ThrowIfFailure();
-		_currentCursorStyle = newStyle;
-	}
 
-	public bool GetCursorVisibility(ResourceHandle<Window> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _cursorIsVisible;
-	}
-	public void SetCursorVisibility(ResourceHandle<Window> handle, bool newVisibility) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (_cursorIsVisible == newVisibility) return;
-		SetCursorVisibility((InteropBool) newVisibility).ThrowIfFailure();
-		_cursorIsVisible = newVisibility;
+		var shouldBeVisible = newStyle != MouseCursorStyle.Invisible;
+		if (shouldBeVisible) SetCursorStyle((int) newStyle).ThrowIfFailure();
+		if (_cursorIsVisible != shouldBeVisible) {
+			SetCursorVisibility((InteropBool) shouldBeVisible).ThrowIfFailure();
+			_cursorIsVisible = shouldBeVisible;
+		}
+		_currentCursorStyle = newStyle;
 	}
 
 	public override string ToString() => _isDisposed ? "TinyFFR Window Builder [Disposed]" : "TinyFFR Window Builder";

@@ -11,7 +11,6 @@ namespace Egodystonic.TinyFFR.DearImGui.Input;
 
 sealed class ImGuiInputPump {
 	MouseCursorStyle _lastAppliedCursorStyle = MouseCursorStyle.Arrow;
-	bool _lastAppliedCursorVisibility = true;
 
 	public void Pump(ImGuiIOPtr io, ILatestInputRetriever input, Window? window, XYPair<float> dpiScale) {
 		var kbm = input.KeyboardAndMouse;
@@ -48,21 +47,7 @@ sealed class ImGuiInputPump {
 	}
 
 	void ApplyCursor(ImGuiIOPtr io, Window window) {
-		var desiredCursor = ImGui.GetMouseCursor();
-		if (desiredCursor == ImGuiMouseCursor.None) {
-			if (_lastAppliedCursorVisibility) {
-				window.CursorIsVisible = false;
-				_lastAppliedCursorVisibility = false;
-			}
-			return;
-		}
-
-		if (!_lastAppliedCursorVisibility) {
-			window.CursorIsVisible = true;
-			_lastAppliedCursorVisibility = true;
-		}
-
-		var style = ImGuiKeyMap.TranslateCursor(desiredCursor);
+		var style = ImGuiKeyMap.TranslateCursor(ImGui.GetMouseCursor());
 		if (style == _lastAppliedCursorStyle) return;
 		window.CursorStyle = style;
 		_lastAppliedCursorStyle = style;

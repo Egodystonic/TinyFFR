@@ -37,19 +37,34 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 	public void ResizeIndexBuffer(int newBufferSize) => Implementation.ResizeIndexBuffer(_handle, newBufferSize);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetIndices(ReadOnlySpan<ushort> indices) => Implementation.SetIndices(_handle, indices, 0);
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) => Implementation.BorrowVerticesSpan(_handle, Range.All, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetIndices(ReadOnlySpan<ushort> indices, int offset) => Implementation.SetIndices(_handle, indices, offset);
-	
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes, Range range) => Implementation.BorrowVerticesSpan(_handle, range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetVertices(ReadOnlySpan<MeshVertex> vertices) => Implementation.SetVertices(_handle, vertices, 0);
+	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly() => Implementation.BorrowVerticesSpanReadOnly(_handle);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetVertices(ReadOnlySpan<MeshVertex> vertices, int offset) => Implementation.SetVertices(_handle, vertices, offset);
+	public ScopedSpanLease<ushort> BorrowIndicesSpan(bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) => Implementation.BorrowIndicesSpan(_handle, Range.All, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedSpanLease<ushort> BorrowIndicesSpan(bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes, Range range) => Implementation.BorrowIndicesSpan(_handle, range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedReadOnlySpanLease<ushort> BorrowIndicesSpanReadOnly() => Implementation.BorrowIndicesSpanReadOnly(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetImGuiVertices(ReadOnlySpan<MeshVertexImGui> vertices) => Implementation.SetVerticesImGui(_handle, vertices, 0);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetImGuiVertices(ReadOnlySpan<MeshVertexImGui> vertices, int offset) => Implementation.SetVerticesImGui(_handle, vertices, offset);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetImGuiIndices(ReadOnlySpan<ushort> indices) => Implementation.SetIndicesImGui(_handle, indices, 0);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetImGuiIndices(ReadOnlySpan<ushort> indices, int offset) => Implementation.SetIndicesImGui(_handle, indices, offset);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void TriggerManualBoundingBoxRecalculation(bool overwriteChildMeshBoundingBoxes) => Implementation.TriggerManualBoundingBoxRecalculation(_handle, overwriteChildMeshBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBoundingBox(PositionedCuboid newBoundingBox, bool overwriteChildMeshBoundingBoxes) => Implementation.SetBoundingBox(_handle, newBoundingBox, overwriteChildMeshBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBoundingBox(Mesh mesh, PositionedCuboid newBoundingBox) => Implementation.SetBoundingBox(_handle, mesh, newBoundingBox);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Mesh CreateMesh() => Implementation.CreateMeshView(_handle, Range.All, null);
@@ -81,7 +96,7 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 	}
 	#endregion
 
-	public override string ToString() => $"Dynamic Mesh {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
+	public override string ToString() => $"Dynamic Vertex Buffer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(DynamicVertexBuffer other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);

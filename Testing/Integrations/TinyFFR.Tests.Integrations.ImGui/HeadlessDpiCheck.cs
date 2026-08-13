@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.DearImGui;
 using Egodystonic.TinyFFR.Factory.Local;
 using Hexa.NET.ImGui;
@@ -215,6 +216,82 @@ static class HeadlessDpiCheck {
 		Console.WriteLine($"Survived {frames} frames across {scaleChanges} DPI scale changes with no exception.");
 		Console.WriteLine("RESULT: PASS");
 		return 0;
+	}
+
+	public static int RunDynamicBufferCheck() {
+		using var factory = new LocalTinyFfrFactory();
+		var failures = 0;
+
+		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(8, 12, "Check Buffer");
+
+		static void WriteCube(Span<MeshVertex> verts, float extent) {
+			for (var i = 0; i < verts.Length; ++i) {
+				verts[i] = new MeshVertex {
+					Location = new Location(
+						(i & 0b001) == 0 ? -extent : extent,
+						(i & 0b010) == 0 ? -extent : extent,
+						(i & 0b100) == 0 ? -extent : extent
+					)
+				};
+			}
+		}
+
+		using (var lease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: false)) {
+			WriteCube(lease.Span, 1f);
+		}
+		using (var lease = buffer.BorrowIndicesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
+			for (var i = 0; i < lease.Span.Length; ++i) lease.Span[i] = (ushort) (i % 8);
+		}
+
+		using var viewA = buffer.CreateMesh();
+		failures += ExpectExtent(viewA.BoundingBox, 1.015f, "new view picks up recalculated box");
+
+		using (var lease = buffer.BorrowVerticesSpanReadOnly()) {
+			failures += Expect(lease.Span.Length == 8, "readonly lease spans the whole buffer");
+			failures += Expect(lease.Span[7].Location == new Location(1f, 1f, 1f), "readonly lease reads back written data");
+		}
+
+		using (var lease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: false)) {
+			WriteCube(lease.Span, 5f);
+		}
+		failures += ExpectExtent(viewA.BoundingBox, 1.015f, "existing view untouched when overwriteChildMeshBoundingBoxes is false");
+		using var viewB = buffer.CreateMesh();
+		failures += ExpectExtent(viewB.BoundingBox, 5.015f, "later view picks up the newer box");
+
+		buffer.TriggerManualBoundingBoxRecalculation(overwriteChildMeshBoundingBoxes: true);
+		failures += ExpectExtent(viewA.BoundingBox, 5.015f, "existing view updated when overwriteChildMeshBoundingBoxes is true");
+
+		buffer.SetBoundingBox(new PositionedCuboid(new Cuboid(20f, 20f, 20f), Location.Origin), overwriteChildMeshBoundingBoxes: true);
+		failures += ExpectExtent(viewA.BoundingBox, 10f, "explicit SetBoundingBox propagates to views");
+
+		buffer.SetBoundingBox(viewB, new PositionedCuboid(new Cuboid(4f, 4f, 4f), Location.Origin));
+		failures += ExpectExtent(viewB.BoundingBox, 2f, "per-mesh SetBoundingBox targets one view");
+		failures += ExpectExtent(viewA.BoundingBox, 10f, "per-mesh SetBoundingBox leaves other views alone");
+
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var instance = factory.ObjectBuilder.CreateModelInstance(viewA, material);
+		try {
+			buffer.SetBoundingBox(new PositionedCuboid(new Cuboid(6f, 6f, 6f), Location.Origin), overwriteChildMeshBoundingBoxes: true);
+			failures += Expect(true, "propagation to a bound ModelInstance succeeds");
+		}
+		catch (Exception e) {
+			failures += Expect(false, "propagation to a bound ModelInstance succeeds (threw " + e.GetType().Name + ")");
+		}
+
+		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
+		return failures == 0 ? 0 : 1;
+	}
+
+	static int ExpectExtent(PositionedCuboid box, float expectedHalfExtent, string description) {
+		var ok = MathF.Abs(box.HalfWidth - expectedHalfExtent) < 0.001f
+			  && MathF.Abs(box.HalfHeight - expectedHalfExtent) < 0.001f
+			  && MathF.Abs(box.HalfDepth - expectedHalfExtent) < 0.001f;
+		Console.WriteLine($"  {description}: half-extent {box.HalfWidth:N3} (expected {expectedHalfExtent:N3}) [{(ok ? "PASS" : "FAIL")}]");
+		return ok ? 0 : 1;
+	}
+	static int Expect(bool condition, string description) {
+		Console.WriteLine($"  {description} [{(condition ? "PASS" : "FAIL")}]");
+		return condition ? 0 : 1;
 	}
 
 	static int CountRed(TexelRgba32[] texels, XYPair<int> size, int x0, int y0, int w, int h) {

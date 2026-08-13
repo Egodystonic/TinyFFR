@@ -177,6 +177,9 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void TriggerManualBoundingBoxRecalculation() => Implementation.TriggerManualBoundingBoxRecalculation(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBoundingBox(PositionedCuboid newBoundingBox) => Implementation.SetBoundingBox(_handle, newBoundingBox);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameLength() => Implementation.GetNameLength(_handle);

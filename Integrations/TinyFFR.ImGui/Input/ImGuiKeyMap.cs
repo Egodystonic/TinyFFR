@@ -27,6 +27,7 @@ static class ImGuiKeyMap {
 		ImGuiMouseCursor.ResizeNwse => MouseCursorStyle.ResizeTopLeftBottomRight,
 		ImGuiMouseCursor.Hand => MouseCursorStyle.Hand,
 		ImGuiMouseCursor.NotAllowed => MouseCursorStyle.NotAllowed,
+		ImGuiMouseCursor.None => MouseCursorStyle.Invisible,
 		_ => MouseCursorStyle.Arrow
 	};
 
