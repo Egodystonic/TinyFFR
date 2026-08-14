@@ -71,7 +71,7 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 	void RotateBy(Angle rotation, XYPair<int> pivotPointPixels);
 }
 
-public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecialization<TSelf, TBase> where TSelf : ICanvasObject<TSelf, TBase> where TBase : IResource<TBase>;
+public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecialization<TSelf, TBase> where TSelf : struct, ICanvasObject<TSelf, TBase> where TBase : IResource<TBase>;
 
 public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, ModelInstance> {
 	public CanvasScene Canvas { get; }

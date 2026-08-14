@@ -12,11 +12,12 @@ public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<Re
 	bool IsSealed(ResourceHandle<ResourceGroup> handle);
 	void Seal(ResourceHandle<ResourceGroup> handle);
 	void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource;
-	void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
+	void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
 	IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource>;
-	IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
+	IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
 	TResource GetNthResourceOfType<TResource>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResource<TResource>;
-	TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
+	TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
+	internal IReadOnlyCollection<object> GetAllResourcesBoxed(ResourceHandle<ResourceGroup> handle);
 
 	void Dispose(ResourceHandle<ResourceGroup> handle, bool disposeContainedResources);
 	bool GetDisposesContainedResourcesByDefaultWhenDisposed(ResourceHandle<ResourceGroup> handle);

@@ -13,7 +13,7 @@ using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
 
-public readonly partial struct ResourceGroup : IDisposableResource<ResourceGroup, IResourceGroupImplProvider> {
+public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResourceGroupImplProvider> {
 	readonly ResourceHandle<ResourceGroup> _handle;
 	readonly IResourceGroupImplProvider _impl;
 
@@ -96,7 +96,7 @@ public readonly partial struct ResourceGroup : IDisposableResource<ResourceGroup
 	public void Add<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add<TResource, TBase>(TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource<TResource, TBase>(Handle, resource);
+	public void Add<TResource, TBase>(TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource<TResource, TBase>(Handle, resource);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(QuadMesh resource) => Add<QuadMesh, Mesh>(resource);
@@ -132,12 +132,15 @@ public readonly partial struct ResourceGroup : IDisposableResource<ResourceGroup
 	public void Seal() => Implementation.Seal(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public IReadOnlyCollection<object> GetAllResourcesBoxed() => Implementation.GetAllResourcesBoxed(Handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
 		return Implementation.GetAllResourcesOfType<TResource>(Handle);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>() where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>() where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
 		return Implementation.GetAllResourcesOfType<TResource, TBase>(Handle);
 	}
 
@@ -147,7 +150,7 @@ public readonly partial struct ResourceGroup : IDisposableResource<ResourceGroup
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TResource GetNthResourceOfType<TResource, TBase>(int index) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+	public TResource GetNthResourceOfType<TResource, TBase>(int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
 		return Implementation.GetNthResourceOfType<TResource, TBase>(Handle, index);
 	}
 

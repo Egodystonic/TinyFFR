@@ -17,12 +17,15 @@ readonly unsafe struct SerializedResourceData {
 	public PooledHeapMemory<byte> SpecializationData { get; init; }
 	public ResourceStub? AdditionalResourceRef { get; init; }
 	public delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, void> SpecializedResourceDisposalStub { get; init; }
-	public SerializedResourceData(ResourceStub stub, IntPtr specializationTypeIdentifier, PooledHeapMemory<byte> specializationData, ResourceStub? additionalResourceRef, delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, void> specializedResourceDisposalStub) {
+	public delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, object> SpecializedResourceBoxingStub { get; init; }
+	public bool IsSpecialized => SpecializationTypeIdentifier != default;
+	public SerializedResourceData(ResourceStub stub, IntPtr specializationTypeIdentifier, PooledHeapMemory<byte> specializationData, ResourceStub? additionalResourceRef, delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, void> specializedResourceDisposalStub, delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, object> specializedResourceBoxingStub) {
 		Stub = stub;
 		SpecializationTypeIdentifier = specializationTypeIdentifier;
 		SpecializationData = specializationData;
 		AdditionalResourceRef = additionalResourceRef;
 		SpecializedResourceDisposalStub = specializedResourceDisposalStub;
+		SpecializedResourceBoxingStub = specializedResourceBoxingStub;
 	}
 }
 
@@ -78,28 +81,41 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	}
 
 	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource {
-		AddResource(handle, new SerializedResourceData(resource.AsStub, default, default, default, null), resource);
+		var data = ValidateCanAddAndGetData(handle);
+		AddResource(handle, data, new SerializedResourceData(resource.AsStub, default, default, default, null, null), resource);
 	}
 
-	public void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+	public void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+		var data = ValidateCanAddAndGetData(handle);
 		var specializationDataBuffer = _globals.HeapPool.Borrow(resource.SpecializationDataLength);
 		TResource.Smuggle(resource, specializationDataBuffer.Span, out var underlyingResource, out var additionalResourceRef);
-		AddResource(handle, new(underlyingResource.AsStub, TResource.SpecializationTypeIdentifier, specializationDataBuffer, additionalResourceRef, &IResourceSpecialization<TResource, TBase>.DisposeViaStub), underlyingResource);
+		AddResource(
+			handle,
+			data,
+			new(underlyingResource.AsStub, TResource.SpecializationTypeIdentifier, specializationDataBuffer, additionalResourceRef, &IResourceSpecialization<TResource, TBase>.DisposeViaStub, &IResourceSpecialization<TResource, TBase>.BoxViaStub),
+			underlyingResource
+		);
 	}
-	
-	void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, SerializedResourceData serializedData, TResource underlyingResource) where TResource : IResource {
+
+	GroupData ValidateCanAddAndGetData(ResourceHandle<ResourceGroup> handle) {
 		var data = GetDataForHandleOrThrow(handle);
 		data.ThrowIfSealed(_globals.GetResourceName(handle.Ident, DefaultGroupName));
+		return data;
+	}
 
+	void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, GroupData data, SerializedResourceData serializedData, TResource underlyingResource) where TResource : IResource {
 		if (data.Count == data.DataArray.Length) {
 			var newArray = _dataArrayPool.Rent(data.Count * 2);
 			data.DataArray.CopyTo(newArray.AsSpan());
-			_dataArrayPool.Return(data.DataArray);
+			_dataArrayPool.Return(data.DataArray, clearArray: true);
 			data = data with { DataArray = newArray };
 		}
 		data.DataArray[data.Count] = serializedData;
 		_dataMap[handle] = data with { Count = data.Count + 1 };
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), underlyingResource);
+		if (serializedData.AdditionalResourceRef is { } additionalResourceRef) {
+			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), additionalResourceRef);
+		}
 	}
 
 	#region Standard Resource Enumeration
@@ -143,7 +159,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	#endregion
 
 	#region Specialized Resource Enumeration
-	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
 		return new IndirectEnumerable<EnumerationInput, TResource>(
 			new(this, handle, (nint) TResource.SpecializationTypeIdentifier),
 			GetDataForHandleOrThrow(handle).Count,
@@ -162,7 +178,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		}
 		return result;
 	}
-	static TResource GetEnumeratorSpecializedResourceAtIndex<TResource, TBase>(EnumerationInput input, int index) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+	static TResource GetEnumeratorSpecializedResourceAtIndex<TResource, TBase>(EnumerationInput input, int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
 		var implProvider = (input.Impl as LocalResourceGroupImplProvider) ?? throw new InvalidOperationException($"Expected impl provider to be of type {nameof(LocalResourceGroupImplProvider)}.");
 		var data = implProvider.GetDataForHandleOrThrow(input.Handle);
 
@@ -176,10 +192,21 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 		throw new ArgumentOutOfRangeException(nameof(index), $"Index '{index}' is out of range for resources of type '{typeof(TResource).Name}' in this resource group (actual count = {count}).");
 	}
-	public TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
-		return GetEnumeratorSpecializedResourceAtIndex<TResource, TBase>(new EnumerationInput(this, handle, typeof(TResource).TypeHandle.Value), index);
+	public TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+		return GetEnumeratorSpecializedResourceAtIndex<TResource, TBase>(new EnumerationInput(this, handle, (nint) TResource.SpecializationTypeIdentifier), index);
 	}
 	#endregion
+
+	public IReadOnlyCollection<object> GetAllResourcesBoxed(ResourceHandle<ResourceGroup> handle) {
+		var data = GetDataForHandleOrThrow(handle);
+
+		var result = new List<object>(data.Count);
+		for (var i = 0; i < data.Count; ++i) {
+			var d = data.DataArray[i];
+			result.Add(d.IsSpecialized ? d.SpecializedResourceBoxingStub(d.Stub, d.SpecializationData.Span, d.AdditionalResourceRef) : d.Stub);
+		}
+		return result;
+	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<ResourceGroup> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -237,25 +264,36 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		for (var i = count - 1; i >= 0; --i) {
 			var data = dataArray[i];
 			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Stub);
-			var isSpecializedResource = data.SpecializationTypeIdentifier != 0U;
-			if (isSpecializedResource) data.SpecializationData.Dispose();
-			if (!disposeContainedResources) continue;
-			
-			if (isSpecializedResource) {
-				if (data.SpecializedResourceDisposalStub != null) {
-					data.SpecializedResourceDisposalStub(data.Stub, data.SpecializationData.Span, data.AdditionalResourceRef);
-				}
+			if (data.AdditionalResourceRef is { } additionalResourceRef) {
+				_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), additionalResourceRef);
 			}
-			else data.Stub.Dispose();
+
+			if (disposeContainedResources) {
+				if (data.IsSpecialized) {
+					if (data.SpecializedResourceDisposalStub != null) {
+						data.SpecializedResourceDisposalStub(data.Stub, data.SpecializationData.Span, data.AdditionalResourceRef);
+					}
+				}
+				else data.Stub.Dispose();
+			}
+
+			if (data.IsSpecialized) data.SpecializationData.Dispose();
 		}
 
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		_dataMap.Remove(handle);
-		_dataArrayPool.Return(dataArray);
+		_dataArrayPool.Return(dataArray, clearArray: true);
 	}
 	public bool GetDisposesContainedResourcesByDefaultWhenDisposed(ResourceHandle<ResourceGroup> handle) => GetDataForHandleOrThrow(handle).DisposeContainedResourcesWhenDisposed;
 	public void Dispose() {
 		if (_isDisposed) return;
+		for (var i = 0; i < _dataMap.Count; ++i) {
+			var data = _dataMap.GetPairAtIndex(i).Value;
+			for (var j = 0; j < data.Count; ++j) {
+				if (data.DataArray[j].IsSpecialized) data.DataArray[j].SpecializationData.Dispose();
+			}
+			_dataArrayPool.Return(data.DataArray, clearArray: true);
+		}
 		_dataMap.Dispose();
 		_isDisposed = true;
 	}
