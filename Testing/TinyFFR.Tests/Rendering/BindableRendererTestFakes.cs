@@ -230,7 +230,6 @@ sealed class FakeResourceGroupImplProvider : IResourceGroupImplProvider {
 	public int GetNameLength(ResourceHandle<ResourceGroup> handle) => Name.Length;
 	public void CopyName(ResourceHandle<ResourceGroup> handle, Span<char> destinationBuffer) => Name.CopyTo(destinationBuffer);
 
-	ReadOnlySpan<ResourceStub> IResourceGroupImplProvider.GetResources(ResourceHandle<ResourceGroup> handle) => throw new NotSupportedException();
 	public int GetResourceCount(ResourceHandle<ResourceGroup> handle) => _resources.Count;
 	public bool IsSealed(ResourceHandle<ResourceGroup> handle) => Sealed;
 	public void Seal(ResourceHandle<ResourceGroup> handle) => Sealed = true;

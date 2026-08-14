@@ -71,7 +71,9 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 	void RotateBy(Angle rotation, XYPair<int> pivotPointPixels);
 }
 
-public readonly record struct CanvasTexture : ICanvasObject {
+public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecialization<TSelf, TBase> where TSelf : ICanvasObject<TSelf, TBase> where TBase : IResource<TBase>;
+
+public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, ModelInstance> {
 	public CanvasScene Canvas { get; }
 	public QuadInstance UnderlyingQuadInstance { get; }
 
@@ -210,6 +212,18 @@ public readonly record struct CanvasTexture : ICanvasObject {
 		UnderlyingQuadInstance = underlyingQuadInstance;
 	}
 	
+	#region Specialization
+	static IntPtr IResourceSpecialization<CanvasTexture, ModelInstance>.SpecializationTypeIdentifier => typeof(CanvasTexture).TypeHandle.Value;
+	int IResourceSpecialization<CanvasTexture, ModelInstance>.SpecializationDataLength => 0;
+	static void IResourceSpecialization<CanvasTexture, ModelInstance>.Smuggle(CanvasTexture resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = ((IResource<Scene>) resource.Canvas.UnderlyingScene).AsStub;
+		outBaseResource = resource.UnderlyingQuadInstance.UnderlyingModelInstance;
+	}
+	static CanvasTexture IResourceSpecialization<CanvasTexture, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
+		return new(new CanvasScene(TypeUtils.StubToResource<Scene>(additionalResourceRef!.Value)), new QuadInstance(baseResource));	
+	}
+	#endregion
+	
 	public void SetPlacementPixels(Orientation2D canvasAnchor, XYPair<int> position, XYPair<int> size, Orientation2D? objectAnchor = null) {
 		Implementation.SetCanvasObjectPlacement(SceneHandle, Instance, canvasAnchor, objectAnchor, position, XYPair<float>.Zero, size.X, size.Y, null, null);
 	}
@@ -312,7 +326,7 @@ public readonly record struct CanvasTexture : ICanvasObject {
 	public override string ToString() => $"Canvas Texture {UnderlyingQuadInstance.UnderlyingModelInstance}";
 }
 
-public readonly record struct CanvasText : ICanvasObject {
+public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstance> {
 	public CanvasScene Canvas { get; }
 	public TextInstance UnderlyingTextInstance { get; }
 
@@ -482,6 +496,18 @@ public readonly record struct CanvasText : ICanvasObject {
 		Canvas = canvas;
 		UnderlyingTextInstance = underlyingTextInstance;
 	}
+	
+	#region Specialization
+	static IntPtr IResourceSpecialization<CanvasText, ModelInstance>.SpecializationTypeIdentifier => typeof(CanvasText).TypeHandle.Value;
+	int IResourceSpecialization<CanvasText, ModelInstance>.SpecializationDataLength => 0;
+	static void IResourceSpecialization<CanvasText, ModelInstance>.Smuggle(CanvasText resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = ((IResource<Scene>) resource.Canvas.UnderlyingScene).AsStub;
+		outBaseResource = resource.UnderlyingTextInstance.UnderlyingModelInstance;
+	}
+	static CanvasText IResourceSpecialization<CanvasText, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
+		return new(new CanvasScene(TypeUtils.StubToResource<Scene>(additionalResourceRef!.Value)), new TextInstance(baseResource));	
+	}
+	#endregion
 	
 	public void SetPlacementPixels(Orientation2D canvasAnchor, XYPair<int> position, int fontHeight, Orientation2D? objectAnchor = null) {
 		Implementation.SetCanvasObjectPlacement(SceneHandle, Instance, canvasAnchor, objectAnchor, position, XYPair<float>.Zero, null, fontHeight, null, null);

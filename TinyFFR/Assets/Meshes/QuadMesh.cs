@@ -3,13 +3,14 @@
 
 using Egodystonic.TinyFFR.Resources;
 using System;
+using System.Buffers.Binary;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IDisposable, IStringSpanNameEnabled, IEquatable<QuadMesh> {
+public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IStringSpanNameEnabled, IEquatable<QuadMesh> {
 	public Mesh UnderlyingMesh { get; } 
 
 	internal QuadMesh(Mesh underlyingMesh) {
@@ -17,12 +18,13 @@ public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IDisp
 	}
 	
 	#region Specialization
-	static nuint IResourceSpecialization<QuadMesh, Mesh>.SpecializationTypeIdentifier => 0x72AD0354U;
+	static IntPtr IResourceSpecialization<QuadMesh, Mesh>.SpecializationTypeIdentifier => typeof(QuadMesh).TypeHandle.Value;
 	int IResourceSpecialization<QuadMesh, Mesh>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<QuadMesh, Mesh>.Smuggle(QuadMesh resource, Memory<byte> specializationDataBuffer, out Mesh outBaseResource) {
+	static void IResourceSpecialization<QuadMesh, Mesh>.Smuggle(QuadMesh resource, Span<byte> specializationDataBuffer, out Mesh outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = null;
 		outBaseResource = resource.UnderlyingMesh;
 	}
-	static QuadMesh IResourceSpecialization<QuadMesh, Mesh>.DeSmuggle(Mesh baseResource, ReadOnlyMemory<byte> specializationDataBuffer) {
+	static QuadMesh IResourceSpecialization<QuadMesh, Mesh>.DeSmuggle(Mesh baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
 		return new(baseResource);	
 	}
 	#endregion
@@ -71,12 +73,24 @@ public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IDisp
 
 public interface IQuadInstance : IDisposable, IStringSpanNameEnabled;
 
-public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
+public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<QuadInstance, ModelInstance>, IEquatable<QuadInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
 	public ModelInstance UnderlyingModelInstance { get; }
 
 	internal QuadInstance(ModelInstance underlyingModelInstance) {
 		UnderlyingModelInstance = underlyingModelInstance;
 	}
+	
+	#region Specialization
+	static IntPtr IResourceSpecialization<QuadInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(QuadInstance).TypeHandle.Value;
+	int IResourceSpecialization<QuadInstance, ModelInstance>.SpecializationDataLength => 0;
+	static void IResourceSpecialization<QuadInstance, ModelInstance>.Smuggle(QuadInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = null;
+		outBaseResource = resource.UnderlyingModelInstance;
+	}
+	static QuadInstance IResourceSpecialization<QuadInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
+		return new(baseResource);	
+	}
+	#endregion
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static QuadInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance) => new(underlyingModelInstance);
@@ -198,7 +212,7 @@ public readonly struct QuadInstance : IQuadInstance, IEquatable<QuadInstance>, I
 	#endregion
 }
 
-public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<CameraLockedQuadInstance>, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject {
+public readonly struct CameraLockedQuadInstance : IQuadInstance, IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>, IEquatable<CameraLockedQuadInstance>, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject {
 	public QuadInstance UnderlyingQuadInstance { get; }
 	public Direction LockedUprightDirection { get; }
 	public Orientation2D PositionAnchor { get; }
@@ -212,6 +226,28 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IEquatable<Came
 		ScalingMode = scalingMode;
 		LockStyle = lockStyle;
 	}
+	
+	#region Specialization
+	static IntPtr IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(CameraLockedQuadInstance).TypeHandle.Value;
+	int IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.SpecializationDataLength => Direction.SerializationByteSpanLength + sizeof(int) + sizeof(int) + sizeof(int);
+	static void IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.Smuggle(CameraLockedQuadInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = null;
+		Direction.SerializeToBytes(specializationDataBuffer, resource.LockedUprightDirection);
+		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..], (int) resource.PositionAnchor);
+		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..], (int) resource.ScalingMode);
+		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..], (int) resource.LockStyle);
+		outBaseResource = resource.UnderlyingQuadInstance.UnderlyingModelInstance;
+	}
+	static CameraLockedQuadInstance IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
+		return new(
+			new QuadInstance(baseResource),
+			Direction.DeserializeFromBytes(specializationDataBuffer),
+			(Orientation2D) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..]),
+			(CameraLockedScalingMode) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..]),
+			(CameraLockStyle) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..])
+		);	
+	}
+	#endregion
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CameraLockedQuadInstance FromPreviouslyAllocatedUnderlyingQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
