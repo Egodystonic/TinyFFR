@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -230,12 +231,15 @@ sealed class FakeResourceGroupImplProvider : IResourceGroupImplProvider {
 	public int GetNameLength(ResourceHandle<ResourceGroup> handle) => Name.Length;
 	public void CopyName(ResourceHandle<ResourceGroup> handle, Span<char> destinationBuffer) => Name.CopyTo(destinationBuffer);
 
-	ReadOnlySpan<ResourceStub> IResourceGroupImplProvider.GetResources(ResourceHandle<ResourceGroup> handle) => throw new NotSupportedException();
 	public int GetResourceCount(ResourceHandle<ResourceGroup> handle) => _resources.Count;
 	public bool IsSealed(ResourceHandle<ResourceGroup> handle) => Sealed;
 	public void Seal(ResourceHandle<ResourceGroup> handle) => Sealed = true;
 	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource => _resources.Add(resource);
+	public void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
+	public IReadOnlyCollection<object> GetAllResourcesBoxed(ResourceHandle<ResourceGroup> handle) => _resources.Cast<object>().ToArray();
 	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource> => throw new NotSupportedException();
+	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
+	public TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
 	public TResource GetNthResourceOfType<TResource>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResource<TResource> {
 		var seen = 0;
 		foreach (var resource in _resources) {

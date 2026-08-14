@@ -3,11 +3,12 @@
 
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
-public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, ITransformedSceneObject {
+public readonly struct TextInstance : ITextInstance, IResourceSpecialization<TextInstance, ModelInstance>, IEquatable<TextInstance>, ITransformedSceneObject {
 	public ModelInstance UnderlyingModelInstance { get; }
 	
 	public Font Font => String.Font;
@@ -86,10 +87,26 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(XYPair<float> scaling) => Scaling = scaling;
 
+	internal TextInstance(ModelInstance underlyingModelInstance) {
+		UnderlyingModelInstance = underlyingModelInstance;
+	}
+	
 	internal TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextLayout layout) {
 		UnderlyingModelInstance = underlyingModelInstance;
 		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string, layout);
 	}
+	
+	#region Specialization
+	static IntPtr IResourceSpecialization<TextInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(TextInstance).TypeHandle.Value;
+	int IResourceSpecialization<TextInstance, ModelInstance>.SpecializationDataLength => 0;
+	static void IResourceSpecialization<TextInstance, ModelInstance>.Smuggle(TextInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = null;
+		outBaseResource = resource.UnderlyingModelInstance;
+	}
+	static TextInstance IResourceSpecialization<TextInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
+		return new(baseResource);	
+	}
+	#endregion
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static TextInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextLayout layout) => new(underlyingModelInstance, pen, @string, layout);

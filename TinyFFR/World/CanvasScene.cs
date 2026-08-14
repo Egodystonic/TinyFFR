@@ -10,7 +10,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct CanvasScene : IDisposable, IStringSpanNameEnabled, IEquatable<CanvasScene> {
+public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>, IStringSpanNameEnabled, IEquatable<CanvasScene> {
 	public const int LayerMax = 100;
 	public const int LayerMin = -100;
 	public const int LayerDefault = 0;
@@ -35,6 +35,18 @@ public readonly struct CanvasScene : IDisposable, IStringSpanNameEnabled, IEquat
 	internal CanvasScene(Scene underlyingScene) {
 		UnderlyingScene = underlyingScene;
 	}
+	
+	#region Specialization
+	static IntPtr IResourceSpecialization<CanvasScene, Scene>.SpecializationTypeIdentifier => typeof(CanvasScene).TypeHandle.Value;
+	int IResourceSpecialization<CanvasScene, Scene>.SpecializationDataLength => 0;
+	static void IResourceSpecialization<CanvasScene, Scene>.Smuggle(CanvasScene resource, Span<byte> specializationDataBuffer, out Scene outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = null;
+		outBaseResource = resource.UnderlyingScene;
+	}
+	static CanvasScene IResourceSpecialization<CanvasScene, Scene>.DeSmuggle(Scene baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
+		return new(baseResource);	
+	}
+	#endregion
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CanvasScene FromPreviouslyAllocatedUnderlyingScene(Scene underlyingScene) => new(underlyingScene);
