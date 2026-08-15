@@ -80,7 +80,7 @@ var subAreaModes = new (string Name, Orientation2D Anchor, XYPair<float> Offset,
 	("5 bottom half", Orientation2D.Down, (0f, 0f), (1f, 0.5f))
 };
 
-Console.WriteLine("[V] cycle sub-area modes");
+Console.WriteLine("[F3] cycle sub-area modes");
 
 while (!loop.Input.UserQuitRequested) {
 	var deltaTime = loop.IterateOnce();
@@ -92,7 +92,7 @@ while (!loop.Input.UserQuitRequested) {
 	viewportCube.SetRotation(new Rotation(totalRotation * -45f, Direction.Up));
 
 	var modeChanged = false;
-	if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.V)) subAreaMode = (subAreaMode + 1) % subAreaModes.Length;
+	if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.F3)) subAreaMode = (subAreaMode + 1) % subAreaModes.Length;
 	if (subAreaMode != appliedSubAreaMode) {
 		var mode = subAreaModes[subAreaMode];
 		imguiRenderer.SetRenderSubAreaFraction(mode.Anchor, mode.Offset, mode.Size);

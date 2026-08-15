@@ -12,9 +12,6 @@ public interface ILatestInputRetriever {
 
 	IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputRetriever> GameControllers { get; }
 	ILatestGameControllerInputRetriever GameControllersCombined { get; }
-
-	int GetClipboardTextLength() => Local.LocalClipboard.GetTextLength();
-	int CopyClipboardText(Span<char> destinationBuffer) => Local.LocalClipboard.CopyText(destinationBuffer);
-	string GetClipboardTextAsNewStringObject() => Local.LocalClipboard.GetTextAsNewStringObject();
-	void SetClipboardText(ReadOnlySpan<char> newText) => Local.LocalClipboard.SetText(newText);
+	
+	IInputClipboard Clipboard { get; }
 }

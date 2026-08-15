@@ -50,7 +50,8 @@ static partial class TestMain {
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
-			
+		
+			context.Renderer.Render();
 			return context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape);
 		}
 	}

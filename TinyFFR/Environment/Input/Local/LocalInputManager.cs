@@ -85,6 +85,7 @@ static unsafe class LocalInputManager {
 		byte* textInputBufferPtr,
 		int textInputBufferLen
 	);
+	
 	[UnmanagedCallersOnly]
 	static KeyboardOrMouseKeyEvent* ResizeCurrentPollInstanceKbmEventBuffer() {
 		ThrowIfNoLiveInstance();

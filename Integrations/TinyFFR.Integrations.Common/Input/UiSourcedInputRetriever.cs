@@ -3,12 +3,14 @@
 
 using System;
 using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment.Input.Local;
 
 namespace Egodystonic.TinyFFR.Input;
 
 sealed class UiSourcedInputRetriever : ILatestInputRetriever, IDisposable {
 	readonly UiSourcedKeyboardAndMouseInputRetriever _kbmState = new();
 	readonly StubGameControllerInputRetriever _combinedControllerState = new();
+	readonly LocalInputClipboard _clipboard = new();
 	bool _isDisposed = false;
 
 	public bool UserQuitRequested { get; private set; } = false;
@@ -31,6 +33,7 @@ sealed class UiSourcedInputRetriever : ILatestInputRetriever, IDisposable {
 			return _combinedControllerState;
 		}
 	}
+	public IInputClipboard Clipboard => _clipboard;
 
 	internal UiSourcedKeyboardAndMouseInputRetriever KeyboardAndMouseState => _kbmState;
 
@@ -47,6 +50,7 @@ sealed class UiSourcedInputRetriever : ILatestInputRetriever, IDisposable {
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			_clipboard.Dispose();
 			_kbmState.Dispose();
 		}
 		finally {

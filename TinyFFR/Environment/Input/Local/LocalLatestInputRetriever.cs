@@ -20,6 +20,7 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 	readonly ArrayPoolBackedVector<ILatestGameControllerInputRetriever> _detectedControllerStateVector = new();
 	readonly ArrayPoolBackedMap<UIntPtr, LocalLatestGameControllerState> _detectedControllerStateMap = new();
 	readonly LocalLatestGameControllerState _combinedControllerState;
+	readonly LocalInputClipboard _clipboard;
 	bool _isDisposed = false;
 	bool _textInputEnabled = false;
 	int _iterationVersion = 0;
@@ -30,10 +31,12 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		this, _iterationVersion, &GetGameControllersCount, &GetIterationVersion, &GetGameController
 	);
 	public ILatestGameControllerInputRetriever GameControllersCombined => _combinedControllerState;
+	public IInputClipboard Clipboard => _clipboard;
 
 	public LocalLatestInputRetriever() {
 		_combinedControllerState = new(CombinedGameControllerHandle);
 		_combinedControllerState.NameBuffer.ConvertFromUtf16(CombinedGameControllerName);
+		_clipboard = new();
 	}
 
 	static int GetGameControllersCount(ILatestInputRetriever input) {
@@ -168,6 +171,8 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			_clipboard.Dispose();
+			
 			foreach (var kvp in _detectedControllerStateMap) kvp.Value.Dispose();
 
 			_controllerEventBuffer.Dispose();
