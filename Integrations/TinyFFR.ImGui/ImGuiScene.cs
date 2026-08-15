@@ -111,12 +111,12 @@ public sealed unsafe class ImGuiScene : IDisposable {
 
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, Window window, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
-		BeginFrame(deltaTime, input, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaOffset(), renderer.GetRenderSubAreaDimensions(), window);
+		BeginFrame(deltaTime, input, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window);
 	}
 
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
-		BeginFrame(deltaTime, input, logicalSize, framebufferSize, renderer.GetRenderSubAreaOffset(), renderer.GetRenderSubAreaDimensions(), null);
+		BeginFrame(deltaTime, input, logicalSize, framebufferSize, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), null);
 	}
 
 	// Filament decides what a MaterialInstance scissor rectangle is relative to via

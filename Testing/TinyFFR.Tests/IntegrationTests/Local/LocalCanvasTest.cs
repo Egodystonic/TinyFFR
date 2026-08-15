@@ -269,6 +269,13 @@ class LocalCanvasTest {
 			(0.01f, 0.37f),
 			0.02f
 		);
+		
+		using var viewportText = canvas.Add("[F3] SubArea Viewport Toggle", fontPen);
+		viewportText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.57f),
+			0.02f
+		);
 
 		using var compositor = factory.RendererBuilder.CreateCompositor(window);
 		compositor.Add(renderer, RenderCompositionType.Standard);
@@ -421,6 +428,14 @@ class LocalCanvasTest {
 				opacityStateIdx = (opacityStateIdx + 1) % opacityStates.Length;
 				ApplyOpacity();
 				opacityText.SetText(BuildOpacityText());
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.F3)) {
+				if (canvasRenderer.GetRenderSubAreaPixelOffset() != XYPair<int>.Zero) {
+					canvasRenderer.SetRenderSubAreaFraction(Orientation2D.UpLeft, (0f, 0f), (1f, 1f));
+				}
+				else {
+					canvasRenderer.SetRenderSubAreaFraction(Orientation2D.DownRight, (0f, 0f), (0.5f, 0.5f));
+				}
 			}
 
 			primitive.SetGeometryShape(new PositionedRotatedCuboid(0.5f, 0.5f, 0.5f, (-1.3f, 0.5f, 0f), 45f % Direction.Right + (30f * loop.TotalIteratedTime.AsDeltaTime()) % Direction.Down));

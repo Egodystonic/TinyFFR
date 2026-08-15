@@ -116,7 +116,7 @@ while (!loop.Input.UserQuitRequested) {
 
 		ImGui.Separator();
 		ImGui.Text($"[V] sub-area mode: {subAreaModes[subAreaMode].Name}");
-		ImGui.Text($"sub-area {imguiRenderer.GetRenderSubAreaDimensions()} at {imguiRenderer.GetRenderSubAreaOffset()}");
+		ImGui.Text($"sub-area {imguiRenderer.GetRenderSubAreaPixelDimensions()} at {imguiRenderer.GetRenderSubAreaPixelOffset()}");
 
 		ImGui.Separator();
 		ImGui.Text("Type here (tests text input + clipboard):");

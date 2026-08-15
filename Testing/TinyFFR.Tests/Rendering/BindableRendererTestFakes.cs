@@ -68,8 +68,8 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 		SubAreaPixelCalls.Add((anchor, fractionalLocation, pixelDimensions));
 	}
 
-	public XYPair<int> GetTargetViewportDimensions(ResourceHandle<Renderer> handle) => SubAreaDimensions;
-	public XYPair<int> GetTargetViewportOffset(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin) => SubAreaOffset;
+	public XYPair<int> GetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle) => SubAreaDimensions;
+	public XYPair<int> GetTargetViewportOffsetByPixel(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin) => SubAreaOffset;
 	public void MarkSubAreaAsHandledDownstream(ResourceHandle<Renderer> handle, bool isHandledDownstream) => SubAreaGpuViewportSuppressedCalls.Add(isHandledDownstream);
 
 	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, XYPair<int>? captureResolution) => throw new NotSupportedException();

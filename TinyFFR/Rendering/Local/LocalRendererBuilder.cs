@@ -568,12 +568,12 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		};
 	}
 
-	public XYPair<int> GetTargetViewportDimensions(ResourceHandle<Renderer> handle) {
+	public XYPair<int> GetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return ResolveViewportPixelBounds(handle).Size;
 	}
 
-	public XYPair<int> GetTargetViewportOffset(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin) {
+	public XYPair<int> GetTargetViewportOffsetByPixel(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var bounds = ResolveViewportPixelBounds(handle);
 		var distanceFromLeft = bounds.BottomLeft.X;

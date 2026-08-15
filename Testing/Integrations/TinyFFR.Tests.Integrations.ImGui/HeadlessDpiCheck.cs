@@ -389,13 +389,13 @@ static class HeadlessDpiCheck {
 
 		renderer.SetRenderSubAreaPixels(Orientation2D.UpRight, subAreaOffsetFromTopRight, subAreaSize);
 
-		failures += Expect(renderer.GetRenderSubAreaDimensions() == subAreaSize, $"reported sub-area size matches what was set (got {renderer.GetRenderSubAreaDimensions()})");
-		var offsetUpRight = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.UpRight);
+		failures += Expect(renderer.GetRenderSubAreaPixelDimensions() == subAreaSize, $"reported sub-area size matches what was set (got {renderer.GetRenderSubAreaPixelDimensions()})");
+		var offsetUpRight = renderer.GetRenderSubAreaPixelOffset(DiagonalOrientation2D.UpRight);
 		failures += Expect(offsetUpRight == subAreaOffsetFromTopRight, $"UpRight offset round-trips the anchored offset (got {offsetUpRight})");
 
-		var offsetUpLeft = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.UpLeft);
-		var offsetDownLeft = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.DownLeft);
-		var offsetDownRight = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.DownRight);
+		var offsetUpLeft = renderer.GetRenderSubAreaPixelOffset(DiagonalOrientation2D.UpLeft);
+		var offsetDownLeft = renderer.GetRenderSubAreaPixelOffset(DiagonalOrientation2D.DownLeft);
+		var offsetDownRight = renderer.GetRenderSubAreaPixelOffset(DiagonalOrientation2D.DownRight);
 		failures += Expect(offsetUpLeft.X == offsetDownLeft.X, $"left distance is origin-independent ({offsetUpLeft.X} vs {offsetDownLeft.X})");
 		failures += Expect(offsetUpRight.Y == offsetUpLeft.Y, $"top distance is origin-independent ({offsetUpRight.Y} vs {offsetUpLeft.Y})");
 		failures += Expect(offsetUpLeft.Y + subAreaSize.Y + offsetDownLeft.Y == targetSize.Y, $"vertical offsets and size span the target ({offsetUpLeft.Y} + {subAreaSize.Y} + {offsetDownLeft.Y} vs {targetSize.Y})");
@@ -496,7 +496,7 @@ static class HeadlessDpiCheck {
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 
-		var reportedOffset = imguiRenderer.GetRenderSubAreaOffset();
+		var reportedOffset = imguiRenderer.GetRenderSubAreaPixelOffset();
 		failures += Expect(reportedOffset == subAreaOffset, $"sub-area offset is as expected (got {reportedOffset}, wanted {subAreaOffset})");
 
 		var capturedSize = default(XYPair<int>);

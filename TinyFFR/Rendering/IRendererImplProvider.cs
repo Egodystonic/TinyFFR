@@ -25,8 +25,8 @@ public interface IRendererImplProvider : IDisposableResourceImplProvider<Rendere
 	Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment);
 	void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions);
 	void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<int> fractionalLocation, XYPair<int> pixelDimensions);
-	XYPair<int> GetTargetViewportDimensions(ResourceHandle<Renderer> handle);
-	XYPair<int> GetTargetViewportOffset(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin);
+	XYPair<int> GetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle);
+	XYPair<int> GetTargetViewportOffsetByPixel(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin);
 	
 	// Sub-area being handled downstream is required because of a quirk in filament's handling of viewports;
 	// currently really only required by the ImGui integration but may in theory be required by other things 

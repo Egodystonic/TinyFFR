@@ -97,10 +97,10 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	public void SetRenderSubAreaFraction(Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions) => Implementation.SetTargetViewportDimensionsByFraction(_handle, anchor, fractionalOffset, fractionalDimensions);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<int> GetRenderSubAreaDimensions() => Implementation.GetTargetViewportDimensions(_handle);
+	public XYPair<int> GetRenderSubAreaPixelDimensions() => Implementation.GetTargetViewportDimensionsByPixel(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<int> GetRenderSubAreaOffset(DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.GetTargetViewportOffset(_handle, coordOrigin);
+	public XYPair<int> GetRenderSubAreaPixelOffset(DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.GetTargetViewportOffsetByPixel(_handle, coordOrigin);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void MarkSubAreaAsHandledDownstream(bool isHandledDownstream) => Implementation.MarkSubAreaAsHandledDownstream(_handle, isHandledDownstream);
