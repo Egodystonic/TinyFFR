@@ -29,6 +29,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	readonly ImGuiContextPtr _context;
 	readonly ImGuiInputPump _inputPump;
 	readonly Dictionary<int, Texture> _textures = new();
+	readonly Dictionary<int, Texture> _userTextures = new();
 	readonly List<DynamicVertexBuffer> _meshPool = new();
 	readonly List<int> _meshVertexCapacities = new();
 	readonly List<int> _meshIndexCapacities = new();
@@ -42,11 +43,16 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	XYPair<float> _dpiScale = new(1f, 1f);
 	float _appliedStyleScale = 1f;
 	int _activeDrawCallCount;
+	int _nextUserTextureId = -1;
+	XYPair<int> _fullTargetSize;
 	bool _isDisposed;
 
 	public Scene UnderlyingScene { get; }
 	public Camera Camera { get; }
 	public ImGuiContextPtr Context => _context;
+
+	internal XYPair<int> LastFrameSubAreaOffset { get; private set; }
+	internal XYPair<int> LastFrameSubAreaSize { get; private set; }
 
 	sealed class DrawCall {
 		public required ModelInstance Instance { get; init; }
@@ -99,14 +105,42 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	}
 
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, Window window) {
-		BeginFrame(deltaTime, input, window.Size, ((IRenderTarget) window).ViewportDimensions, window);
+		var framebufferSize = ((IRenderTarget) window).ViewportDimensions;
+		BeginFrame(deltaTime, input, window.Size, framebufferSize, XYPair<int>.Zero, framebufferSize, window);
 	}
+
+	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, Window window, Renderer renderer) {
+		AdoptSubAreaFrom(renderer);
+		BeginFrame(deltaTime, input, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaOffset(), renderer.GetRenderSubAreaDimensions(), window);
+	}
+
+	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, Renderer renderer) {
+		AdoptSubAreaFrom(renderer);
+		BeginFrame(deltaTime, input, logicalSize, framebufferSize, renderer.GetRenderSubAreaOffset(), renderer.GetRenderSubAreaDimensions(), null);
+	}
+
+	// Filament decides what a MaterialInstance scissor rectangle is relative to via
+	// Renderer.cpp's `setScissorViewport(useIntermediateBuffer ? xvp : vp)`, directly beneath a FIXME conceding the
+	// choice is unreliable when rendering straight into a swapchain. ImGui scenes use Canvas quality, which disables
+	// post-processing and therefore takes exactly that unreliable branch: with a non-zero Filament viewport offset and
+	// the view composited into a shared beginFrame/endFrame, our per-command scissors silently clip away nearly all of
+	// the UI. Verified three ways -- it renders correctly uncomposited, correctly with post-processing forced on, and
+	// correctly at any zero-offset viewport.
+	// So we never give Filament an offset viewport for ImGui. The renderer keeps reporting the sub-area the caller
+	// asked for (GetRenderSubArea* below still work), but its GPU viewport is forced to the whole target and we place
+	// the UI ourselves: the orthographic camera covers the full target and the ImGui-to-world transform and scissor
+	// rectangles are offset into the sub-area instead.
+	static void AdoptSubAreaFrom(Renderer renderer) => renderer.MarkSubAreaAsHandledDownstream(true);
 
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize) {
-		BeginFrame(deltaTime, input, logicalSize, framebufferSize, null);
+		BeginFrame(deltaTime, input, logicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, null);
 	}
 
-	void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, Window? window) {
+	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffsetFromTopLeft, XYPair<int> subAreaDimensions) {
+		BeginFrame(deltaTime, input, logicalSize, framebufferSize, subAreaOffsetFromTopLeft, subAreaDimensions, null);
+	}
+
+	void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffset, XYPair<int> subAreaSize, Window? window) {
 		ThrowIfDisposed();
 		ImGui.SetCurrentContext(_context);
 
@@ -115,16 +149,22 @@ public sealed unsafe class ImGuiScene : IDisposable {
 			: new XYPair<float>(1f, 1f);
 
 		var io = ImGui.GetIO();
-		io.DisplaySize = new Vector2(framebufferSize.X, framebufferSize.Y);
+		io.DisplaySize = new Vector2(subAreaSize.X, subAreaSize.Y);
 		io.DisplayFramebufferScale = Vector2.One;
 		io.DeltaTime = MathF.Max((float) deltaTime.TotalSeconds, 1f / 1000f);
 
+		LastFrameSubAreaOffset = subAreaOffset;
+		LastFrameSubAreaSize = subAreaSize;
+		_fullTargetSize = framebufferSize;
+
 		ApplyStyleScale(MathF.Max(_dpiScale.X, _dpiScale.Y));
 
+		// The camera always spans the whole render target, never just the sub-area, because the sub-area is applied to
+		// the geometry rather than to Filament's viewport (see the comment on AdoptSubAreaFrom above).
 		Camera.SetOrthographicHeight(framebufferSize.Y);
 		Camera.SetAspectRatio(framebufferSize.Ratio ?? 1f);
 
-		_inputPump.Pump(io, input, window, _dpiScale);
+		_inputPump.Pump(io, input, window, _dpiScale, subAreaOffset);
 		ImGui.NewFrame();
 	}
 
@@ -165,8 +205,10 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		var displayPos = drawData.DisplayPos;
 		var scale = drawData.FramebufferScale;
 		var drawOrder = 0;
+		// Offsets the UI into the sub-area, because the camera and Filament viewport both span the whole target
+		// rather than the sub-area itself -- see AdoptSubAreaFrom.
 		var imGuiToWorldTransform = new Transform(
-			translation: new Vect(framebufferSize.X * 0.5f, framebufferSize.Y * 0.5f, 0f),
+			translation: new Vect(_fullTargetSize.X * 0.5f - LastFrameSubAreaOffset.X, _fullTargetSize.Y * 0.5f - LastFrameSubAreaOffset.Y, 0f),
 			scaling: new Vect(-1f, -1f, 1f)
 		);
 
@@ -190,8 +232,10 @@ public sealed unsafe class ImGuiScene : IDisposable {
 				var clipMaxY = MathF.Min((cmd.ClipRect.W - displayPos.Y) * scale.Y, framebufferSize.Y);
 				if (clipMaxX <= clipMinX || clipMaxY <= clipMinY) continue;
 
-				var scissorLeft = (int) clipMinX;
-				var scissorBottom = (int) (framebufferSize.Y - clipMaxY);
+				// Scissor rectangles are in whole-target space (offset into the sub-area, Y flipped to Filament's
+				// bottom-left origin) because the Filament viewport spans the whole target -- see AdoptSubAreaFrom.
+				var scissorLeft = LastFrameSubAreaOffset.X + (int) clipMinX;
+				var scissorBottom = _fullTargetSize.Y - (LastFrameSubAreaOffset.Y + (int) clipMaxY);
 				var scissorWidth = (int) (clipMaxX - clipMinX);
 				var scissorHeight = (int) (clipMaxY - clipMinY);
 
@@ -296,7 +340,25 @@ public sealed unsafe class ImGuiScene : IDisposable {
 
 	Texture ResolveTexture(ImTextureRef texRef) {
 		var id = (int) texRef.GetTexID().Handle;
-		return _textures.GetValueOrDefault(id);
+		if (_textures.TryGetValue(id, out var atlasTexture)) return atlasTexture;
+		if (_userTextures.TryGetValue(id, out var userTexture)) return userTexture;
+		return _parkingTexture;
+	}
+
+	public ImTextureID RegisterTexture(Texture texture) {
+		ThrowIfDisposed();
+		var id = _nextUserTextureId--;
+		_userTextures[id] = texture;
+		return new ImTextureID(id);
+	}
+
+	public void UnregisterTexture(ImTextureID id) {
+		ThrowIfDisposed();
+		if (!_userTextures.Remove((int) id.Handle, out var texture)) return;
+		for (var i = 0; i < _drawCallPool.Count; ++i) {
+			if (_drawCallPool[i].CurrentTexture != texture) continue;
+			ParkDrawCallTexture(_drawCallPool[i]);
+		}
 	}
 
 	DynamicVertexBuffer GetOrGrowMesh(int index, int vertexCount, int indexCount) {
@@ -368,6 +430,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 			_meshPool.Clear();
 			foreach (var kvp in _textures) kvp.Value.Dispose();
 			_textures.Clear();
+			_userTextures.Clear();
 			for (var i = 0; i < _pendingTextureDisposals.Count; ++i) _pendingTextureDisposals[i].Dispose();
 			_pendingTextureDisposals.Clear();
 			_parkingTexture.Dispose();

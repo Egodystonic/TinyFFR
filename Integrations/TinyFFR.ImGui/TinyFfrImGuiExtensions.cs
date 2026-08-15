@@ -2,7 +2,9 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
+using System.Numerics;
 using Egodystonic.TinyFFR.Factory;
+using Hexa.NET.ImGui;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
@@ -18,6 +20,10 @@ public static class TinyFfrImGuiExtensions {
 		ArgumentNullException.ThrowIfNull(@this);
 		ArgumentNullException.ThrowIfNull(factory);
 		return new ImGuiScene(factory, in config);
+	}
+
+	public static unsafe void Image(ImTextureID textureId, Vector2 size) {
+		Hexa.NET.ImGui.ImGui.Image(new ImTextureRef(null, textureId), size);
 	}
 
 	public static Renderer CreateRenderer<TRenderTarget>(this IRendererBuilder @this, ImGuiScene scene, TRenderTarget renderTarget, ReadOnlySpan<char> name = default) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {

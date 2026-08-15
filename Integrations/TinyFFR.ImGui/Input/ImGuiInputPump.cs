@@ -24,11 +24,11 @@ sealed class ImGuiInputPump {
 		_triggerDeadzone = triggerDeadzone;
 	}
 
-	public void Pump(ImGuiIOPtr io, ILatestInputRetriever input, Window? window, XYPair<float> dpiScale) {
+	public void Pump(ImGuiIOPtr io, ILatestInputRetriever input, Window? window, XYPair<float> dpiScale, XYPair<int> subAreaOffset) {
 		var kbm = input.KeyboardAndMouse;
 
 		var cursorPos = kbm.MouseCursorPosition;
-		io.AddMousePosEvent(cursorPos.X * dpiScale.X, cursorPos.Y * dpiScale.Y);
+		io.AddMousePosEvent(cursorPos.X * dpiScale.X - subAreaOffset.X, cursorPos.Y * dpiScale.Y - subAreaOffset.Y);
 
 		foreach (var keyEvent in kbm.NewKeyEvents) {
 			var mouseButton = ImGuiKeyMap.TranslateMouseButton(keyEvent.Key);

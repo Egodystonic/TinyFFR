@@ -134,7 +134,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	}
 	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
-	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions);
+	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions, bool SubAreaIsHandledDownstream = false);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode);
 	readonly unsafe struct OutputBufferCallbackData {
 		public static OutputBufferCallbackData None => new(false, null, null);
@@ -310,12 +310,19 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			LastSetViewportSize = viewportBounds.Size
 		};
 		rendererData = rendererData with { Viewport = viewportData };
+		// Sub-area being handled downstream is required because of a quirk in filament's handling of viewports;
+		// currently really only required by the ImGui integration but may in theory be required by other things 
+		// in future.
+		// This flag, if true, *reports* the requested sub area as set by the user but actually passes a full target
+		// size/offset to filament.
+		var filamentBottomLeft = viewportData.SubAreaIsHandledDownstream ? XYPair<int>.Zero : viewportBounds.BottomLeft;
+		var filamentSize = viewportData.SubAreaIsHandledDownstream ? curTargetSize : viewportBounds.Size;
 		SetViewDescriptorSize(
 			viewportData.Handle,
-			viewportBounds.BottomLeft.X,
-			viewportBounds.BottomLeft.Y,
-			(uint) viewportBounds.Size.X,
-			(uint) viewportBounds.Size.Y
+			filamentBottomLeft.X,
+			filamentBottomLeft.Y,
+			(uint) filamentSize.X,
+			(uint) filamentSize.Y
 		).ThrowIfFailure();
 		_loadedRenderers[handle] = rendererData;
 		if (rendererData.AutoUpdateCameraAspectRatio) {
@@ -535,6 +542,50 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					pixelDimensions
 				)
 			}
+		};
+	}
+
+	(XYPair<int> BottomLeft, XYPair<int> Size, XYPair<int> TargetSize) ResolveViewportPixelBounds(ResourceHandle<Renderer> handle) {
+		var rendererData = _loadedRenderers[handle];
+		var viewport = rendererData.Viewport;
+		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
+		if (viewport.LastCheckedRenderTargetSize == curTargetSize) {
+			return (viewport.LastSetViewportBottomLeft, viewport.LastSetViewportSize, curTargetSize);
+		}
+		var bounds = viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
+		return (bounds.BottomLeft, bounds.Size, curTargetSize);
+	}
+
+	public void MarkSubAreaAsHandledDownstream(ResourceHandle<Renderer> handle, bool isHandledDownstream) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var rendererData = _loadedRenderers[handle];
+		if (rendererData.Viewport.SubAreaIsHandledDownstream == isHandledDownstream) return;
+		_loadedRenderers[handle] = rendererData with {
+			Viewport = rendererData.Viewport with {
+				LastCheckedRenderTargetSize = XYPair<int>.Zero,
+				SubAreaIsHandledDownstream = isHandledDownstream
+			}
+		};
+	}
+
+	public XYPair<int> GetTargetViewportDimensions(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return ResolveViewportPixelBounds(handle).Size;
+	}
+
+	public XYPair<int> GetTargetViewportOffset(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var bounds = ResolveViewportPixelBounds(handle);
+		var distanceFromLeft = bounds.BottomLeft.X;
+		var distanceFromBottom = bounds.BottomLeft.Y;
+		var distanceFromRight = bounds.TargetSize.X - (bounds.BottomLeft.X + bounds.Size.X);
+		var distanceFromTop = bounds.TargetSize.Y - (bounds.BottomLeft.Y + bounds.Size.Y);
+		return coordOrigin switch {
+			DiagonalOrientation2D.UpLeft => new(distanceFromLeft, distanceFromTop),
+			DiagonalOrientation2D.UpRight => new(distanceFromRight, distanceFromTop),
+			DiagonalOrientation2D.DownLeft => new(distanceFromLeft, distanceFromBottom),
+			DiagonalOrientation2D.DownRight => new(distanceFromRight, distanceFromBottom),
+			_ => throw new ArgumentOutOfRangeException(nameof(coordOrigin), coordOrigin, $"Coordinate origin must be one of {DiagonalOrientation2D.DownLeft}, {DiagonalOrientation2D.DownRight}, {DiagonalOrientation2D.UpLeft} or {DiagonalOrientation2D.UpRight}.")
 		};
 	}
 

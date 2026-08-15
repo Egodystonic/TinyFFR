@@ -9,6 +9,7 @@ using Egodystonic.TinyFFR.DearImGui;
 using Egodystonic.TinyFFR.DearImGui.Input;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Hexa.NET.ImGui;
 
 namespace Egodystonic.TinyFFR;
@@ -367,6 +368,361 @@ static class HeadlessDpiCheck {
 
 		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
 		return failures == 0 ? 0 : 1;
+	}
+
+	public static int RunSubAreaCheck() {
+		Console.WriteLine("ImGui sub-area check:");
+		var failures = 0;
+
+		var logicalSize = new XYPair<int>(1000, 600);
+		var targetSize = new XYPair<int>(1000, 600);
+		var subAreaOffsetFromTopRight = new XYPair<int>(40, 30);
+		var subAreaSize = new XYPair<int>(400, 200);
+		const int RedWindowW = 100;
+		const int RedWindowH = 50;
+
+		using var factory = new LocalTinyFfrFactory();
+		using var buffer = factory.RendererBuilder.CreateRenderOutputBuffer(targetSize);
+		using var imgui = factory.SceneBuilder.CreateImGuiScene(factory);
+		using var renderer = factory.RendererBuilder.CreateRenderer(imgui, buffer);
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
+
+		renderer.SetRenderSubAreaPixels(Orientation2D.UpRight, subAreaOffsetFromTopRight, subAreaSize);
+
+		failures += Expect(renderer.GetRenderSubAreaDimensions() == subAreaSize, $"reported sub-area size matches what was set (got {renderer.GetRenderSubAreaDimensions()})");
+		var offsetUpRight = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.UpRight);
+		failures += Expect(offsetUpRight == subAreaOffsetFromTopRight, $"UpRight offset round-trips the anchored offset (got {offsetUpRight})");
+
+		var offsetUpLeft = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.UpLeft);
+		var offsetDownLeft = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.DownLeft);
+		var offsetDownRight = renderer.GetRenderSubAreaOffset(DiagonalOrientation2D.DownRight);
+		failures += Expect(offsetUpLeft.X == offsetDownLeft.X, $"left distance is origin-independent ({offsetUpLeft.X} vs {offsetDownLeft.X})");
+		failures += Expect(offsetUpRight.Y == offsetUpLeft.Y, $"top distance is origin-independent ({offsetUpRight.Y} vs {offsetUpLeft.Y})");
+		failures += Expect(offsetUpLeft.Y + subAreaSize.Y + offsetDownLeft.Y == targetSize.Y, $"vertical offsets and size span the target ({offsetUpLeft.Y} + {subAreaSize.Y} + {offsetDownLeft.Y} vs {targetSize.Y})");
+		failures += Expect(offsetUpLeft.X + subAreaSize.X + offsetDownRight.X == targetSize.X, $"horizontal offsets and size span the target ({offsetUpLeft.X} + {subAreaSize.X} + {offsetDownRight.X} vs {targetSize.X})");
+
+		var capturedSize = default(XYPair<int>);
+		TexelRgba32[]? captured = null;
+
+		for (var frame = 0; frame < 5; ++frame) {
+			var deltaTime = loop.IterateOnce();
+			imgui.BeginFrame(deltaTime, loop.Input, logicalSize, targetSize, renderer);
+
+			var displaySize = ImGui.GetIO().DisplaySize;
+			if (frame == 0) {
+				failures += Expect(
+					(int) displaySize.X == subAreaSize.X && (int) displaySize.Y == subAreaSize.Y,
+					$"io.DisplaySize is the sub-area, not the target (got {displaySize.X}x{displaySize.Y}, wanted {subAreaSize.X}x{subAreaSize.Y})"
+				);
+			}
+
+			ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(1f, 0f, 0f, 1f));
+			ImGui.SetNextWindowPos(new Vector2(Margin, Margin));
+			ImGui.SetNextWindowSize(new Vector2(RedWindowW, RedWindowH));
+			ImGui.Begin(
+				"subarea",
+				ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
+				| ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings
+			);
+			ImGui.End();
+			ImGui.PopStyleColor();
+
+			imgui.EndFrame();
+
+			if (frame == 4) {
+				buffer.ReadNextFrame((size, texels) => {
+					capturedSize = size;
+					captured = texels.ToArray();
+				}, presentFrameTopToBottom: true);
+			}
+			renderer.Render();
+		}
+
+		if (captured == null) {
+			Console.WriteLine("  FAIL: no frame was captured.");
+			return failures + 1;
+		}
+
+		var totalRed = CountRed(captured, capturedSize, 0, 0, capturedSize.X, capturedSize.Y);
+		var insideSubArea = CountRed(captured, capturedSize, offsetUpLeft.X, offsetUpLeft.Y, subAreaSize.X, subAreaSize.Y);
+		var expectedRect = CountRed(captured, capturedSize, offsetUpLeft.X + Margin, offsetUpLeft.Y + Margin, RedWindowW, RedWindowH);
+		var expectedArea = RedWindowW * RedWindowH;
+
+		failures += Expect(totalRed > 0, $"the window rendered at all ({totalRed} red px)");
+		failures += Expect(totalRed == insideSubArea, $"no pixels rendered outside the sub-area ({totalRed - insideSubArea} stray px)");
+		failures += Expect(
+			expectedRect > expectedArea * 0.9f,
+			$"the {RedWindowW}x{RedWindowH} window occupies its full unscaled pixel footprint inside the sub-area ({expectedRect}/{expectedArea} px)"
+		);
+		failures += Expect(
+			totalRed < expectedArea * 1.1f,
+			$"the window is not drawn larger than requested ({totalRed}/{expectedArea} px)"
+		);
+
+		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
+		return failures == 0 ? 0 : 1;
+	}
+
+	public static int RunSubAreaCompositorCheck() {
+		Console.WriteLine("ImGui sub-area via compositor check:");
+		var failures = 0;
+
+		var targetSize = new XYPair<int>(1000, 600);
+		var subAreaSize = new XYPair<int>(300, 600);
+		var subAreaOffset = new XYPair<int>(700, 0);
+		const int RedWindowW = 100;
+		const int RedWindowH = 50;
+
+		using var factory = new LocalTinyFfrFactory();
+		using var buffer = factory.RendererBuilder.CreateRenderOutputBuffer(targetSize);
+
+		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+		using var cubeMaterial = factory.MaterialBuilder.CreateTestMaterial();
+		using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, cubeMaterial);
+		using var light = factory.LightBuilder.CreatePointLight(new Location(2f, 2f, -2f));
+		using var backdropScene = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.BlackOpaque);
+		backdropScene.Add(cube);
+		backdropScene.Add(light);
+		using var backdropCamera = factory.CameraBuilder.CreateCamera(initialPosition: new Location(0f, 0f, -3f));
+		using var backdropRenderer = factory.RendererBuilder.CreateRenderer(backdropScene, backdropCamera, buffer);
+
+		using var imgui = factory.SceneBuilder.CreateImGuiScene(factory);
+		var imguiRenderer = factory.RendererBuilder.CreateRenderer(imgui, buffer);
+		imguiRenderer.SetRenderSubAreaPixels(Orientation2D.Right, (0, 0), subAreaSize);
+
+		var compositor = factory.RendererBuilder.CreateCompositor(buffer);
+		compositor.Add(backdropRenderer, RenderCompositionType.Standard);
+		compositor.Add(imguiRenderer, RenderCompositionType.RetainPreviousScenes);
+
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
+
+		var reportedOffset = imguiRenderer.GetRenderSubAreaOffset();
+		failures += Expect(reportedOffset == subAreaOffset, $"sub-area offset is as expected (got {reportedOffset}, wanted {subAreaOffset})");
+
+		var capturedSize = default(XYPair<int>);
+		TexelRgba32[]? captured = null;
+
+		for (var frame = 0; frame < 5; ++frame) {
+			var deltaTime = loop.IterateOnce();
+			imgui.BeginFrame(deltaTime, loop.Input, targetSize / 2, targetSize, imguiRenderer);
+
+			ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(1f, 0f, 0f, 1f));
+			ImGui.SetNextWindowPos(new Vector2(Margin, Margin));
+			ImGui.SetNextWindowSize(new Vector2(RedWindowW, RedWindowH));
+			ImGui.Begin(
+				"compositorsub",
+				ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
+				| ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings
+			);
+			ImGui.End();
+			ImGui.PopStyleColor();
+
+			imgui.EndFrame();
+
+			if (frame == 4) {
+				buffer.ReadNextFrame((size, texels) => {
+					capturedSize = size;
+					captured = texels.ToArray();
+				}, presentFrameTopToBottom: true);
+			}
+			compositor.RenderAll();
+		}
+
+		if (captured == null) {
+			Console.WriteLine("  FAIL: no frame was captured.");
+			return failures + 1;
+		}
+
+		var expectedRect = CountRed(captured, capturedSize, subAreaOffset.X + Margin, subAreaOffset.Y + Margin, RedWindowW, RedWindowH);
+		var totalRed = CountRed(captured, capturedSize, 0, 0, capturedSize.X, capturedSize.Y);
+		var expectedArea = RedWindowW * RedWindowH;
+
+		failures += Expect(totalRed > 0, $"the ImGui window rendered at all through the compositor ({totalRed} red px)");
+		failures += Expect(
+			expectedRect > expectedArea * 0.9f,
+			$"the window lands at its correct place inside the sub-area ({expectedRect}/{expectedArea} px)"
+		);
+
+		compositor.Dispose();
+		imguiRenderer.Dispose();
+
+		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
+		return failures == 0 ? 0 : 1;
+	}
+
+	public static int RunImGuiTextureCheck() {
+		Console.WriteLine("ImGui external texture check:");
+		var failures = 0;
+
+		var targetSize = new XYPair<int>(600, 400);
+		const int ImageW = 160;
+		const int ImageH = 120;
+
+		using var factory = new LocalTinyFfrFactory();
+		using var buffer = factory.RendererBuilder.CreateRenderOutputBuffer(targetSize);
+		using var imgui = factory.SceneBuilder.CreateImGuiScene(factory);
+		var renderer = factory.RendererBuilder.CreateRenderer(imgui, buffer);
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
+
+		const int FixtureDim = 16;
+		var splitTexels = new TexelRgba32[FixtureDim * FixtureDim];
+		for (var y = 0; y < FixtureDim; ++y) {
+			for (var x = 0; x < FixtureDim; ++x) {
+				splitTexels[y * FixtureDim + x] = y < FixtureDim / 2 ? new TexelRgba32(255, 0, 0, 255) : new TexelRgba32(0, 0, 255, 255);
+			}
+		}
+		var splitTexture = factory.TextureBuilder.CreateTexture(
+			splitTexels,
+			new TextureGenerationConfig { Dimensions = new(FixtureDim, FixtureDim) },
+			new TextureCreationConfig { IsLinearColorspace = true, GenerateMipMaps = false, Name = "Split Test Texture" }
+		);
+
+		var splitId = imgui.RegisterTexture(splitTexture);
+		var secondId = imgui.RegisterTexture(splitTexture);
+		failures += Expect((long) splitId.Handle < 0L, $"registered ids are negative so they cannot collide with ImGui atlas ids (got {(long) splitId.Handle})");
+		failures += Expect((long) splitId.Handle != 0L, "registered ids are never the invalid id 0");
+		failures += Expect((long) secondId.Handle != (long) splitId.Handle, "each registration yields a distinct id");
+		imgui.UnregisterTexture(secondId);
+
+		var viewportBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((256, 256));
+		var viewportTexture = viewportBuffer.CreateDynamicTexture();
+		var viewportId = imgui.RegisterTexture(viewportTexture);
+
+		using var viewportMesh = factory.MeshBuilder.CreateMesh(new Cuboid(0.8f));
+		using var viewportMaterial = factory.MaterialBuilder.CreateTestMaterial();
+		using var viewportCube = factory.ObjectBuilder.CreateModelInstance(viewportMesh, viewportMaterial, new Location(0f, 0.9f, 0f));
+		using var viewportLight = factory.LightBuilder.CreatePointLight(new Location(1.5f, 2.5f, -2f));
+		using var viewportCamera = factory.CameraBuilder.CreateCamera(initialPosition: new Location(0f, 0f, -3f));
+		using var viewportScene = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.BlackOpaque);
+		viewportScene.Add(viewportCube);
+		viewportScene.Add(viewportLight);
+		var viewportRenderer = factory.RendererBuilder.CreateRenderer(viewportScene, viewportCamera, viewportBuffer);
+
+		var bogusId = new ImTextureID(unchecked((nint) (-999999)));
+
+		var capturedSize = default(XYPair<int>);
+		TexelRgba32[]? captured = null;
+		var threw = false;
+
+		try {
+			for (var frame = 0; frame < 5; ++frame) {
+				var deltaTime = loop.IterateOnce();
+				viewportRenderer.Render();
+				imgui.BeginFrame(deltaTime, loop.Input, targetSize, targetSize);
+
+				ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0f, 0f));
+				ImGui.SetNextWindowPos(new Vector2(Margin, Margin));
+				ImGui.SetNextWindowSize(new Vector2(ImageW, ImageH));
+				ImGui.Begin(
+					"img",
+					ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
+					| ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBackground
+				);
+				TinyFfrImGuiExtensions.Image(splitId, new Vector2(ImageW, ImageH));
+				ImGui.End();
+
+				ImGui.SetNextWindowPos(new Vector2(Margin, Margin + ImageH + Margin));
+				ImGui.SetNextWindowSize(new Vector2(ImageW, ImageH));
+				ImGui.Begin(
+					"vp",
+					ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
+					| ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBackground
+				);
+				TinyFfrImGuiExtensions.Image(viewportId, new Vector2(ImageW, ImageH));
+				TinyFfrImGuiExtensions.Image(bogusId, new Vector2(8f, 8f));
+				ImGui.End();
+				ImGui.PopStyleVar();
+
+				imgui.EndFrame();
+
+				if (frame == 4) {
+					buffer.ReadNextFrame((size, texels) => {
+						capturedSize = size;
+						captured = texels.ToArray();
+					}, presentFrameTopToBottom: true);
+				}
+				renderer.Render();
+			}
+		}
+		catch (Exception e) {
+			threw = true;
+			Console.WriteLine($"  (threw {e.GetType().Name}: {e.Message})");
+		}
+
+		failures += Expect(!threw, "drawing registered and unregistered texture ids does not throw");
+
+		if (captured == null) {
+			Console.WriteLine("  FAIL: no frame was captured.");
+			++failures;
+		}
+		else {
+			var halfH = ImageH / 2;
+			var redInTopHalf = CountWhere(captured, capturedSize, Margin, Margin, ImageW, halfH, IsRed);
+			var blueInTopHalf = CountWhere(captured, capturedSize, Margin, Margin, ImageW, halfH, IsBlue);
+			var redInBottomHalf = CountWhere(captured, capturedSize, Margin, Margin + halfH, ImageW, halfH, IsRed);
+			var blueInBottomHalf = CountWhere(captured, capturedSize, Margin, Margin + halfH, ImageW, halfH, IsBlue);
+			var halfArea = ImageW * halfH;
+
+			failures += Expect(redInTopHalf + blueInTopHalf > halfArea * 0.5f, $"a registered texture is actually sampled by the ImGui material ({redInTopHalf + blueInTopHalf}/{halfArea} px)");
+			failures += Expect(
+				redInTopHalf > blueInTopHalf && redInTopHalf > halfArea * 0.5f,
+				$"uploaded texture is not vertically flipped: first texel rows appear at the TOP (red {redInTopHalf} vs blue {blueInTopHalf} in top half)"
+			);
+			failures += Expect(
+				blueInBottomHalf > redInBottomHalf && blueInBottomHalf > halfArea * 0.5f,
+				$"uploaded texture is not vertically flipped: last texel rows appear at the BOTTOM (blue {blueInBottomHalf} vs red {redInBottomHalf} in bottom half)"
+			);
+
+			var vpTop = Margin + ImageH + Margin;
+			var litInTopHalf = CountWhere(captured, capturedSize, Margin, vpTop, ImageW, halfH, IsLit);
+			var litInBottomHalf = CountWhere(captured, capturedSize, Margin, vpTop + halfH, ImageW, halfH, IsLit);
+			failures += Expect(litInTopHalf + litInBottomHalf > 0, $"the offscreen scene rendered into the buffer at all ({litInTopHalf + litInBottomHalf} lit px)");
+			failures += Expect(
+				litInTopHalf > litInBottomHalf * 4,
+				$"render target texture is not vertically flipped: the raised cube appears in the TOP half ({litInTopHalf} lit px top vs {litInBottomHalf} bottom)"
+			);
+		}
+
+		imgui.UnregisterTexture(viewportId);
+		viewportRenderer.Dispose();
+		var disposeThrew = false;
+		try {
+			viewportBuffer.Dispose();
+		}
+		catch (Exception e) {
+			disposeThrew = true;
+			Console.WriteLine($"  (dispose threw {e.GetType().Name}: {e.Message})");
+		}
+		failures += Expect(!disposeThrew, "a render output buffer can be disposed after its texture is unregistered");
+
+		renderer.Dispose();
+		imgui.Dispose();
+		var textureSurvived = true;
+		try {
+			_ = splitTexture.Dimensions;
+		}
+		catch (ObjectDisposedException) {
+			textureSurvived = false;
+		}
+		failures += Expect(textureSurvived, "ImGuiScene does not dispose textures it does not own");
+		splitTexture.Dispose();
+
+		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
+		return failures == 0 ? 0 : 1;
+	}
+
+	static bool IsRed(TexelRgba32 t) => t.R > 100 && t.G < 100 && t.B < 100;
+	static bool IsBlue(TexelRgba32 t) => t.B > 100 && t.R < 100 && t.G < 100;
+	static bool IsLit(TexelRgba32 t) => t.R > 60 || t.G > 60 || t.B > 60;
+
+	static int CountWhere(TexelRgba32[] texels, XYPair<int> size, int x0, int y0, int w, int h, Func<TexelRgba32, bool> predicate) {
+		var count = 0;
+		for (var y = Math.Max(0, y0); y < Math.Min(size.Y, y0 + h); ++y) {
+			for (var x = Math.Max(0, x0); x < Math.Min(size.X, x0 + w); ++x) {
+				if (predicate(texels[y * size.X + x])) ++count;
+			}
+		}
+		return count;
 	}
 
 	static int ExpectExtent(PositionedCuboid box, float expectedHalfExtent, string description) {

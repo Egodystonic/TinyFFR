@@ -265,6 +265,21 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_viewportFractionalDimensions = fractionalDimensions;
 		_actualRenderer.SetRenderSubAreaFraction(anchor, fractionalOffset, fractionalDimensions);
 	}
+	public XYPair<int> GetTargetViewportDimensions(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.GetRenderSubAreaDimensions();
+	}
+
+	public XYPair<int> GetTargetViewportOffset(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.GetRenderSubAreaOffset(coordOrigin);
+	}
+
+	public void MarkSubAreaAsHandledDownstream(ResourceHandle<Renderer> handle, bool isHandledDownstream) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.MarkSubAreaAsHandledDownstream(isHandledDownstream);
+	}
+
 	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<int> fractionalLocation, XYPair<int> pixelDimensions) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_viewportOverrideKind = ViewportOverrideKind.Pixel;

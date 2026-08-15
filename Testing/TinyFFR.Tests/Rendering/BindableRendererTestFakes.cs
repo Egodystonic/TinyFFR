@@ -27,6 +27,9 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public bool Disposed { get; private set; }
 	public int RenderCount { get; private set; }
 	public int WaitForGpuCount { get; private set; }
+	public readonly List<bool> SubAreaGpuViewportSuppressedCalls = new();
+	public XYPair<int> SubAreaDimensions { get; set; } = XYPair<int>.Zero;
+	public XYPair<int> SubAreaOffset { get; set; } = XYPair<int>.Zero;
 	public readonly List<bool> FrustumCullingCalls = new();
 	public readonly List<(Orientation2D Anchor, XYPair<float> Offset, XYPair<float> Dimensions)> SubAreaFractionCalls = new();
 	public readonly List<(Orientation2D Anchor, XYPair<int> Offset, XYPair<int> Dimensions)> SubAreaPixelCalls = new();
@@ -63,6 +66,10 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<int> fractionalLocation, XYPair<int> pixelDimensions) {
 		SubAreaPixelCalls.Add((anchor, fractionalLocation, pixelDimensions));
 	}
+
+	public XYPair<int> GetTargetViewportDimensions(ResourceHandle<Renderer> handle) => SubAreaDimensions;
+	public XYPair<int> GetTargetViewportOffset(ResourceHandle<Renderer> handle, DiagonalOrientation2D coordOrigin) => SubAreaOffset;
+	public void MarkSubAreaAsHandledDownstream(ResourceHandle<Renderer> handle, bool isHandledDownstream) => SubAreaGpuViewportSuppressedCalls.Add(isHandledDownstream);
 
 	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, XYPair<int>? captureResolution) => throw new NotSupportedException();
 	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
