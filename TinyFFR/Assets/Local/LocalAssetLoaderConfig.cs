@@ -21,7 +21,7 @@ public sealed record LocalAssetLoaderConfig {
 	public const int DefaultMaxAssetVertexIndexBufferSizeBytes = 1_000_000 * MeshVertex.ExpectedSerializedSize; // 1m vertex mesh
 	public const int DefaultMaxKtxFileBufferSizeBytes = 256 * 1024 * 1024; // 256 MB
 	public const int DefaultMaxEmbeddedAssetTextureFileSizeBytes = 8192 * 8192 * 4; // 8k image; 256MB
-	public const int DefaultMaxCachedTextMeshesPerFont = 512;
+	public const int DefaultMaxCachedTextMeshesPerFont = 64;
 	public static readonly TimeSpan DefaultMaxHdrProcessingTime = TimeSpan.FromMinutes(2d);
 
 	public int MaxAssetFilePathLengthChars {

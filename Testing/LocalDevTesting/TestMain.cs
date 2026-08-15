@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Rendering;
 
 namespace Egodystonic.TinyFFR.Testing.Local;
@@ -37,6 +38,7 @@ static partial class TestMain {
 		//			Some values depend on others; for example if you set "builder.Context.Factory = null;" no other resources will be created by default.
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
+		builder.Context.Factory = new LocalTinyFfrFactory(assetLoaderConfig: new LocalAssetLoaderConfig() { MaxCachedTextMeshesPerFont = 64 }, rendererBuilderConfig: new RendererBuilderConfig { EnableVSync = false });
 	}
 
 	public static void StartTest(TestContext context) {
@@ -46,10 +48,32 @@ static partial class TestMain {
 		//		You can remove BeginDefaultLoop and Tick if you prefer to write your own loop.
 		//		The Tick function passed to BeginDefaultLoop should return `true` to exit the loop.
 		//		If you pass a CameraController to BeginDefaultLoop, it will be possible to control the camera with keyboard/mouse or gamepad using the default controller input mapping.
+
+		static string RandomStr() => Guid.NewGuid().ToString();
+		
+		using var font = context.Factory.AssetLoader.LoadFont(BuiltInFont.Default);
+		using var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
+		const int NumStrings = 300;
+		
+		List<string> storedStrings = new List<string>();
+		List<CameraLockedTextInstance> texts = new();
+		for (var i = 0; i < NumStrings; ++i) {
+			var s = RandomStr();
+			storedStrings.Add(s);
+			texts.Add(context.Factory.ObjectBuilder.CreateCameraLockedTextInstance(pen, font.CreateString(s), Location.Random(Sphere.UnitSphere)));
+			context.Scene.Add(texts[i]);
+		}
 		
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
+			
+			for (var i = 0; i < NumStrings; ++i) {
+				var prevStr = texts[i].String;
+				var newStr = font.CreateString(RandomStr());
+				texts[i].SetString(newStr);
+				prevStr.Dispose();
+			}
 		
 			context.Renderer.Render();
 			return context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape);
