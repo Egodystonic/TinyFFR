@@ -34,8 +34,11 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 	public void Dispose() {
 		Clear();
 		_twoDimensionalBuffer?.Dispose();
+		_twoDimensionalBuffer = null;
 		_vertexBuffer?.Dispose();
+		_vertexBuffer = null;
 		_triangleBuffer?.Dispose();
+		_triangleBuffer = null;
 		_disposalAction(_parentBuilder, this);
 	}
 
@@ -96,7 +99,9 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 		HighestIndividualVertexCount = 0;
 		HighestIndividualTriangleCount = 0;
 		_vertexList?.Dispose();
+		_vertexList = null;
 		_metadataList?.Dispose();
+		_metadataList = null;
 	}
 
 	public Span<XYPair<float>> Reallocate2DBufferForCurrentCount() {

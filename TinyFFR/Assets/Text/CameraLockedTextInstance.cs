@@ -1,14 +1,16 @@
 // Created on 2026-07-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Buffers.Binary;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
-public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject {
+public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecialization<CameraLockedTextInstance, ModelInstance>, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject {
 	public TextInstance UnderlyingTextInstance { get; }
 	public Direction LockedUprightDirection { get; } // Can be None
 	public Orientation2D PositionAnchor { get; }
@@ -22,6 +24,28 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 		ScalingMode = scalingMode;
 		LockStyle = lockStyle;
 	}
+	
+	#region Specialization
+	static IntPtr IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(CameraLockedTextInstance).TypeHandle.Value;
+	int IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.SpecializationDataLength => Direction.SerializationByteSpanLength + sizeof(int) + sizeof(int) + sizeof(int);
+	static void IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.Smuggle(CameraLockedTextInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
+		additionalResourceRef = null;
+		Direction.SerializeToBytes(specializationDataBuffer, resource.LockedUprightDirection);
+		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..], (int) resource.PositionAnchor);
+		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..], (int) resource.ScalingMode);
+		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..], (int) resource.LockStyle);
+		outBaseResource = resource.UnderlyingTextInstance.UnderlyingModelInstance;
+	}
+	static CameraLockedTextInstance IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
+		return new(
+			new TextInstance(baseResource),
+			Direction.DeserializeFromBytes(specializationDataBuffer),
+			(Orientation2D) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..]),
+			(CameraLockedScalingMode) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..]),
+			(CameraLockStyle) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..])
+		);	
+	}
+	#endregion
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CameraLockedTextInstance FromPreviouslyAllocatedUnderlyingTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {

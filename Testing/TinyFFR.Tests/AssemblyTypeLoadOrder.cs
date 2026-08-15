@@ -54,7 +54,10 @@ sealed class AssemblyTypeLoadOrderAnchor {
 // safely here because the first anchor has already forced their embedded resource types to load.
 sealed class AssemblyTypeLoadOrderAnchorStage2 {
 	CanvasScene _canvasScene;
+	FontPen _fontPen;
+	FontString _fontString;
 	QuadInstance _quadInstance;
+	QuadMesh _quadMesh;
 	TextInstance _textInstance;
 }
 
