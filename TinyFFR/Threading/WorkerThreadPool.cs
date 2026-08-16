@@ -10,57 +10,35 @@ using System.Threading.Tasks;
 
 namespace Egodystonic.TinyFFR.Threading;
 
-readonly unsafe struct WorkerThreadJob<TContext> where TContext : unmanaged {
+readonly unsafe struct WorkerThreadJob<TContext, TResult> where TContext : unmanaged {
+	public readonly TinyFfrAsyncOperation<TResult> SharedOperation;
 	public readonly TContext Context;
-	public readonly delegate* managed<ref TContext, void> Execution;
-	public readonly delegate* managed<in TContext, Exception?, void> Continuation;
+	public readonly delegate* managed<TContext, TResult> WorkerThreadWork;
 
-	public WorkerThreadJob(TContext context, delegate*<ref TContext, void> execution, delegate*<in TContext, Exception?, void> continuation) {
+	public WorkerThreadJob(TinyFfrAsyncOperation<TResult> sharedOperation, TContext context, delegate* managed<TContext, TResult> workerThreadWork) {
+		InvalidObjectException.ThrowIfDefault(sharedOperation);
+		ArgumentNullException.ThrowIfNull(workerThreadWork);
+		SharedOperation = sharedOperation;
 		Context = context;
-		Execution = execution;
-		Continuation = continuation;
-	}
-	
-	public static WorkerThreadPool.JobDescriptor CreateJobDescriptor(in WorkerThreadJob<TContext> job) {
-		var serializedContext = new WorkerThreadPool.SerializedJobContext();
-		BinaryPrimitives.WriteUIntPtrLittleEndian(serializedContext, (UIntPtr) job.Execution);
-		BinaryPrimitives.WriteUIntPtrLittleEndian(serializedContext[sizeof(UIntPtr)..], (UIntPtr) job.Continuation);
-		MemoryMarshal.AsBytes(new ReadOnlySpan<TContext>(in job.Context)).CopyTo(serializedContext[(sizeof(UIntPtr) * 2)..]);
-		return new WorkerThreadPool.JobDescriptor(serializedContext, &DispatchSerializedExecution, &DispatchSerializedContinuation); 
-	}
-	
-	static void DispatchSerializedExecution(ref WorkerThreadPool.SerializedJobContext ctx) {
-		var executionPtr = (delegate* managed<ref TContext, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(ctx);
-		ref var context = ref MemoryMarshal.AsRef<TContext>(ctx[(sizeof(UIntPtr) * 2)..]);
-		if (executionPtr == null) return;
-		executionPtr(ref context);
-	}
-	
-	static void DispatchSerializedContinuation(in WorkerThreadPool.SerializedJobContext ctx, Exception? exception) {
-		var continuationPtr = (delegate* managed<in TContext, Exception?, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(ctx[sizeof(UIntPtr)..]);
-		ref readonly var context = ref MemoryMarshal.AsRef<TContext>(ctx[(sizeof(UIntPtr) * 2)..]);
-		if (continuationPtr == null) return;
-		continuationPtr(in context, exception);
+		WorkerThreadWork = workerThreadWork;
 	}
 }
 
-sealed unsafe class WorkerThreadPool : IDisposable {
-	internal const int MaxJobContextSerializedSizeBytes = 128;
-	internal const int JobContextSize = sizeof(ulong) * 2 + MaxJobContextSerializedSizeBytes;
-	[InlineArray(MaxJobContextSerializedSizeBytes)] internal struct SerializedJobContext { byte _; }
-	internal struct JobDescriptor {
-		public SerializedJobContext Context;
-		public readonly delegate* managed<ref SerializedJobContext, void> SerializedExecution;
-		public readonly delegate* managed<in SerializedJobContext, Exception?, void> SerializedContinuation;
+sealed unsafe class WorkerThreadPool : IWorkSchedulerFacade, IDisposable {
+	public const int MaxJobContextSerializedSizeBytes = 96;
+	const int QueuedJobSerializedContextSizeBytes = sizeof(ulong) + TinyFfrAsyncOperation.SmuggleSizeBytes + MaxJobContextSerializedSizeBytes;
+	[InlineArray(QueuedJobSerializedContextSizeBytes)] internal struct SerializedJobContext { byte _; }
+	struct QueuedJob {
+		public readonly SerializedJobContext Context;
+		public readonly delegate* managed<in SerializedJobContext, void> WorkerThreadWork;
 
-		public JobDescriptor(SerializedJobContext context, delegate*<ref SerializedJobContext, void> serializedExecution, delegate*<in SerializedJobContext, Exception?, void> serializedContinuation) {
+		public QueuedJob(SerializedJobContext context, delegate*<in SerializedJobContext, void> workerThreadWork) {
 			Context = context;
-			SerializedExecution = serializedExecution;
-			SerializedContinuation = serializedContinuation;
+			WorkerThreadWork = workerThreadWork;
 		}
 	}  
 	
-	readonly BlockingCollection<JobDescriptor> _jobChannel;
+	readonly BlockingCollection<QueuedJob> _jobQueue;
 	readonly CancellationTokenSource _poolDisposalCts = new();
 	readonly ThreadingConfig _config;
 	readonly Thread[] _threads;
@@ -70,7 +48,7 @@ sealed unsafe class WorkerThreadPool : IDisposable {
 
 	public WorkerThreadPool(ThreadingConfig config) {
 		_config = config;
-		_jobChannel = new BlockingCollection<JobDescriptor>(new ConcurrentQueue<JobDescriptor>());
+		_jobQueue = new BlockingCollection<QueuedJob>(new ConcurrentQueue<QueuedJob>());
 		
 		var threadCount = Int32.Max(0, config.WorkerThreadCount ?? System.Environment.ProcessorCount);
 		_allJobsShouldBeSynchronous = threadCount > 0;
@@ -86,30 +64,57 @@ sealed unsafe class WorkerThreadPool : IDisposable {
 		}
 	}
 	
-	public void AddJob(JobDescriptor job) {
+	public void AddJob<TContext, TResult>(WorkerThreadJob<TContext, TResult> job) where TContext : unmanaged {
 		ObjectDisposedException.ThrowIf(_poolDisposalCts.IsCancellationRequested, this);
+		if (job.WorkerThreadWork == null) throw new ArgumentException("Given job had null worker thread work pointer.", nameof(job));
+		InvalidObjectException.ThrowIfDefault(job.SharedOperation);
 		
-		if (_allJobsShouldBeSynchronous) {
-			ExecuteJob(ref job);
-			return;
+		static void DispatchSerializedExecution(in SerializedJobContext ctx) {
+			var executionPtr = (delegate* managed<TContext, TResult>) BinaryPrimitives.ReadUIntPtrLittleEndian(ctx);
+			var sharedOperation = TinyFfrAsyncOperation<TResult>.DeSmuggle(ctx[sizeof(UIntPtr)..]);
+			var context = MemoryMarshal.AsRef<TContext>(ctx[(sizeof(UIntPtr) + TinyFfrAsyncOperation.SmuggleSizeBytes)..]);
+			
+			try {
+				if (executionPtr == null) throw new InvalidOperationException("Deserialized execution pointer was null (this is a bug in TinyFFR).");
+				var result = executionPtr(context);
+				sharedOperation.SetResult(result);
+			}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- We're passing it on to the continuation
+			catch (Exception e) {
+#pragma warning restore CA1031
+				sharedOperation.SetException(e);
+			}
 		}
 		
-		_jobChannel.Add(job);
+		static QueuedJob TranslateToInternalJobRepresentation(WorkerThreadJob<TContext, TResult> externalRepresentation) {
+			var serializedContext = new SerializedJobContext();
+			BinaryPrimitives.WriteUIntPtrLittleEndian(serializedContext, (UIntPtr) externalRepresentation.WorkerThreadWork);
+			Span<byte> smuggledSharedOperation = stackalloc byte[TinyFfrAsyncOperation.SmuggleSizeBytes];
+			TinyFfrAsyncOperation<TResult>.Smuggle(in externalRepresentation.SharedOperation, smuggledSharedOperation);
+			smuggledSharedOperation.CopyTo(serializedContext[sizeof(UIntPtr)..]);
+			MemoryMarshal.AsBytes(new ReadOnlySpan<TContext>(in externalRepresentation.Context)).CopyTo(serializedContext[(sizeof(UIntPtr) + TinyFfrAsyncOperation.SmuggleSizeBytes)..]);
+			return new QueuedJob(serializedContext, &DispatchSerializedExecution); 
+		}
+		
+		var internalRepresentation = TranslateToInternalJobRepresentation(job);
+		
+		if (_allJobsShouldBeSynchronous) ExecuteJob(in internalRepresentation);
+		else _jobQueue.Add(internalRepresentation);
 	}
 	
 	void WorkerThreadEntry() {
 		try {
 			var disposalToken = _poolDisposalCts.Token;
 			while (!disposalToken.IsCancellationRequested) {
-				JobDescriptor job;
+				QueuedJob job;
 				try {
-					job = _jobChannel.Take(disposalToken);
+					job = _jobQueue.Take(disposalToken);
 				}
 				catch (Exception takeException) when (takeException is OperationCanceledException or ObjectDisposedException && disposalToken.IsCancellationRequested) {
 					// Do nothing- this is just the thread pool being shut down
 					break;
 				}
-				ExecuteJob(ref job);
+				ExecuteJob(in job);
 			}
 		}
 		catch (Exception e) {
@@ -119,16 +124,9 @@ sealed unsafe class WorkerThreadPool : IDisposable {
 		}
 	}
 	
-	static void ExecuteJob(ref JobDescriptor job) {
-		if (job.SerializedExecution == null || job.SerializedContinuation == null) throw new InvalidOperationException("Job execution or serialization pointer was null (this is a bug in TinyFFR).");
-		try {
-			job.SerializedExecution(ref job.Context);
-		}
-#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- We're passing it on to the continuation
-		catch (Exception executionException) {
-#pragma warning restore CA1031
-			job.SerializedContinuation(in job.Context, executionException);
-		}
+	static void ExecuteJob(in QueuedJob job) {
+		if (job.WorkerThreadWork == null) throw new InvalidOperationException("Job work pointer was null (this is a bug in TinyFFR).");
+		job.WorkerThreadWork(in job.Context);
 	}
 
 	public void Dispose() {
@@ -146,6 +144,6 @@ sealed unsafe class WorkerThreadPool : IDisposable {
 			remainingTime = Stopwatch.GetElapsedTime(startTimestamp);
 		}
 		
-		_jobChannel.Dispose();
+		_jobQueue.Dispose();
 	}
 }
