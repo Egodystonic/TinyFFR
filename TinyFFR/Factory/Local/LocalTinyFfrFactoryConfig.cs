@@ -1,6 +1,8 @@
 ﻿// Created on 2024-10-02 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Threading;
+
 namespace Egodystonic.TinyFFR.Factory.Local;
 
 public enum MemoryUsageRubric {
@@ -35,4 +37,6 @@ public sealed class LocalTinyFfrFactoryConfig {
 	} = DefaultMemoryUsageRubric;
 	
 	public bool EnhanceSecurity { get; init; } = DefaultEnhanceSecurity;
+	
+	public ThreadingConfig ThreadingConfig { get; init; } = new();
 }
