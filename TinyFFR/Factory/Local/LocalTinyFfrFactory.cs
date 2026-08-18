@@ -93,6 +93,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
+		ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
 		LocalFileSystemUtils.AttemptToEnsureApplicationDataFolderExists();
 		LocalNativeUtils.InitializeNativeLibIfNecessary();
 		
@@ -162,6 +163,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 		if (IsDisposed) return;
 		try {
+			DisposeObjectIfDisposable(_threadPool);
+
 			_dependencyTracker.EraseAllDependencies();
 
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in the ctor above)
@@ -182,13 +185,13 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			DisposeObjectIfDisposable(_heapPool);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);
-			DisposeObjectIfDisposable(_threadPool);
 			OnFactoryTeardown().ThrowIfFailure();
 			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);
 		}
 		finally {
 			IsDisposed = true;
 			_instance = null;
+			ThreadSafetyTracker.ClearPrimaryThread();
 		}
 	}
 

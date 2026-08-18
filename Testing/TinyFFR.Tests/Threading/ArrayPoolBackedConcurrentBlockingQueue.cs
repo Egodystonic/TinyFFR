@@ -291,4 +291,55 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 
 		for (var p = 0; p < ProducerCount; ++p) Assert.AreEqual(ItemsPerProducer - 1, lastSeenSequenceIndices[p]);
 	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldDrainRemainingItemsAfterCompleteAdding() {
+		_queue.Enqueue(1);
+		_queue.Enqueue(2);
+		_queue.Seal();
+
+		Assert.IsTrue(_queue.TryDequeueBlocking(out var first));
+		Assert.AreEqual(1, first);
+		Assert.IsTrue(_queue.TryDequeueBlocking(out var second));
+		Assert.AreEqual(2, second);
+		Assert.IsFalse(_queue.TryDequeueBlocking(out _));
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldRejectEnqueueAfterCompleteAdding() {
+		_queue.Seal();
+
+		Assert.Throws<InvalidOperationException>(() => _queue.Enqueue(1));
+		Assert.DoesNotThrow(() => _queue.Seal());
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldUnblockWaitingDequeuersOnCompleteAdding() {
+		const int ThreadCount = 4;
+
+		using var startSignal = new CountdownEvent(ThreadCount);
+		var unblockedCount = 0;
+		var threads = new Thread[ThreadCount];
+
+		for (var i = 0; i < ThreadCount; ++i) {
+			threads[i] = new Thread(() => {
+				startSignal.Signal();
+				if (!_queue.TryDequeueBlocking(out _)) Interlocked.Increment(ref unblockedCount);
+			}) { IsBackground = true };
+			threads[i].Start();
+		}
+
+		Assert.IsTrue(startSignal.Wait(WaitTimeout));
+		Thread.Sleep(100);
+		_queue.Seal();
+
+		foreach (var thread in threads) Assert.IsTrue(thread.Join(WaitTimeout));
+		Assert.AreEqual(ThreadCount, unblockedCount);
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldUseTheFullCapacityOfTheRentedBuffer() {
+		for (var i = 0; i < 16; ++i) _queue.Enqueue(i);
+		for (var i = 0; i < 16; ++i) Assert.AreEqual(i, _queue.DequeueBlocking());
+	}
 }

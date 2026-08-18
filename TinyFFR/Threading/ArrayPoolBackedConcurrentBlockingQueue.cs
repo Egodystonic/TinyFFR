@@ -10,27 +10,48 @@ namespace Egodystonic.TinyFFR.Threading;
 sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 	const int InitialCapacity = 4; // Must be power of 2
 	readonly object _monitorObject = new();
-	T[] _buffer = ArrayPool<T>.Shared.Rent(InitialCapacity);
-	ulong _headBitmask = (ulong) (InitialCapacity - 1);
+	T[] _buffer;
+	ulong _headBitmask;
 	bool _isDisposed;
+	bool _queueIsSealed;
 	ulong _writeCounter;
 	ulong _readCounter;
-	
-	int WriteHead => (int) (_writeCounter & _headBitmask); 
+
+	public ArrayPoolBackedConcurrentBlockingQueue() {
+		_buffer = ArrayPool<T>.Shared.Rent(InitialCapacity);
+		_headBitmask = GetUsableCapacityBitmask(_buffer);
+	}
+
+	int WriteHead => (int) (_writeCounter & _headBitmask);
 	int ReadHead => (int) (_readCounter & _headBitmask);
 	int Count => (int) (_writeCounter - _readCounter);
 	int Capacity => (int) (_headBitmask + 1UL);
 
+	public bool HasPendingItems {
+		get {
+			lock (_monitorObject) {
+				return !_isDisposed && Count > 0;
+			}
+		}
+	}
+
+	static ulong GetUsableCapacityBitmask(T[] buffer) {
+		var usableCapacity = (uint) buffer.Length;
+		if (!BitOperations.IsPow2(usableCapacity)) usableCapacity = BitOperations.RoundUpToPowerOf2(usableCapacity) >> 1;
+		return usableCapacity - 1UL;
+	}
+
 	public void Enqueue(T item) {
 		lock (_monitorObject) {
 			ObjectDisposedException.ThrowIf(_isDisposed, this);
+			if (_queueIsSealed) throw new InvalidOperationException($"Can not enqueue to this {nameof(ArrayPoolBackedConcurrentBlockingQueue<T>)} after {nameof(Seal)} has been invoked.");
 			if (Count == Capacity) GrowBuffer();
 			_buffer[WriteHead] = item;
 			++_writeCounter;
 			Monitor.Pulse(_monitorObject);
 		}
 	}
-	
+
 	public bool TryDequeue(out T outItem) {
 		lock (_monitorObject) {
 			ObjectDisposedException.ThrowIf(_isDisposed, this);
@@ -44,17 +65,30 @@ sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 			}
 		}
 	}
-	
-	public T DequeueBlocking() {
+
+	public bool TryDequeueBlocking(out T outItem) {
 		lock (_monitorObject) {
 			while (!_isDisposed) {
-				if (Count > 0) return TakeNextItem();
+				if (Count > 0) {
+					outItem = TakeNextItem();
+					return true;
+				}
+				if (_queueIsSealed) break;
 				Monitor.Wait(_monitorObject);
 			}
-			throw new ObjectDisposedException(ToString());
+			outItem = default!;
+			return false;
 		}
 	}
-	
+
+	public void Seal() {
+		lock (_monitorObject) {
+			if (_queueIsSealed) return;
+			_queueIsSealed = true;
+			Monitor.PulseAll(_monitorObject);
+		}
+	}
+
 	T TakeNextItem() {
 		Debug.Assert(Monitor.IsEntered(_monitorObject));
 		Debug.Assert(Count > 0);
@@ -63,28 +97,35 @@ sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 		++_readCounter;
 		return result;
 	}
-	
+
 	void GrowBuffer() {
 		Debug.Assert(Monitor.IsEntered(_monitorObject));
 		Debug.Assert(WriteHead == ReadHead);
-		var newBuffer = ArrayPool<T>.Shared.Rent(Capacity * 2);
-		Array.Copy(_buffer, WriteHead, newBuffer, 0, Capacity - WriteHead);
-		Array.Copy(_buffer, 0, newBuffer, Capacity - WriteHead, WriteHead);
-		ArrayPool<T>.Shared.Return(_buffer);
-		_writeCounter = (ulong) Capacity;
-		_readCounter = 0UL;
+		var oldCapacity = Capacity;
+		var oldReadHead = ReadHead;
+		var newBuffer = ArrayPool<T>.Shared.Rent(oldCapacity * 2);
+		Array.Copy(_buffer, oldReadHead, newBuffer, 0, oldCapacity - oldReadHead);
+		Array.Copy(_buffer, 0, newBuffer, oldCapacity - oldReadHead, oldReadHead);
+		ArrayPool<T>.Shared.Return(_buffer, true);
 		_buffer = newBuffer;
-		_headBitmask = (ulong) (Capacity * 2) - 1UL;
+		_headBitmask = GetUsableCapacityBitmask(newBuffer);
+		_writeCounter = (ulong) oldCapacity;
+		_readCounter = 0UL;
 	}
 
 	public void Dispose() {
 		lock (_monitorObject) {
 			if (_isDisposed) return;
 			try {
-				ArrayPool<T>.Shared.Return(_buffer);
+				ArrayPool<T>.Shared.Return(_buffer, true);
 			}
 			finally {
+				_buffer = Array.Empty<T>();
+				_headBitmask = 0UL;
+				_writeCounter = 0UL;
+				_readCounter = 0UL;
 				_isDisposed = true;
+				_queueIsSealed = true;
 				Monitor.PulseAll(_monitorObject);
 			}
 		}

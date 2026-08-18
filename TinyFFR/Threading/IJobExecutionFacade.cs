@@ -8,6 +8,7 @@ namespace Egodystonic.TinyFFR.Threading;
 interface IPrimaryThreadDispatcher {
 	void ExecutePendingCooperativeJobs();
 	bool BlockPrimaryThreadUntilConditionSatisfied(ManualResetEventSlim mre, TimeSpan timeout, CancellationToken cancellationToken);
+	void NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
 }
 
 interface IJobExecutionFacade {
