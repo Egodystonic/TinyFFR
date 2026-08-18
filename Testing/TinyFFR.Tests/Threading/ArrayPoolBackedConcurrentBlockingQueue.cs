@@ -19,6 +19,11 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 		_queue.Dispose();
 	}
 
+	int DequeueOrFail() {
+		Assert.IsTrue(_queue.TryDequeueBlocking(out var result));
+		return result;
+	}
+
 	static Thread StartBackgroundThread(Action threadBody) {
 		var result = new Thread(() => {
 			try {
@@ -36,9 +41,9 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 		_queue.Enqueue(20);
 		_queue.Enqueue(30);
 
-		Assert.AreEqual(10, _queue.DequeueBlocking());
-		Assert.AreEqual(20, _queue.DequeueBlocking());
-		Assert.AreEqual(30, _queue.DequeueBlocking());
+		Assert.AreEqual(10, DequeueOrFail());
+		Assert.AreEqual(20, DequeueOrFail());
+		Assert.AreEqual(30, DequeueOrFail());
 	}
 
 	[Test]
@@ -46,7 +51,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 		const int ItemCount = 100;
 
 		for (var i = 0; i < ItemCount; ++i) _queue.Enqueue(i);
-		for (var i = 0; i < ItemCount; ++i) Assert.AreEqual(i, _queue.DequeueBlocking());
+		for (var i = 0; i < ItemCount; ++i) Assert.AreEqual(i, DequeueOrFail());
 	}
 
 	[Test]
@@ -63,11 +68,11 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 
 		for (var i = 0; i < rotationCount; ++i) {
 			_queue.Enqueue(-1);
-			Assert.AreEqual(-1, _queue.DequeueBlocking());
+			Assert.AreEqual(-1, DequeueOrFail());
 		}
 
 		for (var i = 0; i < ItemCount; ++i) _queue.Enqueue(i);
-		for (var i = 0; i < ItemCount; ++i) Assert.AreEqual(i, _queue.DequeueBlocking());
+		for (var i = 0; i < ItemCount; ++i) Assert.AreEqual(i, DequeueOrFail());
 	}
 
 	[Test]
@@ -85,7 +90,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 
 		for (var i = 0; i < rotationCount; ++i) {
 			_queue.Enqueue(-1);
-			Assert.AreEqual(-1, _queue.DequeueBlocking());
+			Assert.AreEqual(-1, DequeueOrFail());
 		}
 
 		var expectation = new Queue<int>();
@@ -97,10 +102,10 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 				expectation.Enqueue(nextItem);
 				++nextItem;
 			}
-			Assert.AreEqual(expectation.Dequeue(), _queue.DequeueBlocking());
+			Assert.AreEqual(expectation.Dequeue(), DequeueOrFail());
 		}
 
-		while (expectation.Count > 0) Assert.AreEqual(expectation.Dequeue(), _queue.DequeueBlocking());
+		while (expectation.Count > 0) Assert.AreEqual(expectation.Dequeue(), DequeueOrFail());
 	}
 
 	[Test]
@@ -109,7 +114,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 
 		for (var i = 0; i < CycleCount; ++i) {
 			_queue.Enqueue(i);
-			Assert.AreEqual(i, _queue.DequeueBlocking());
+			Assert.AreEqual(i, DequeueOrFail());
 		}
 	}
 
@@ -128,11 +133,11 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 				++nextItem;
 			}
 			else {
-				Assert.AreEqual(expectation.Dequeue(), _queue.DequeueBlocking());
+				Assert.AreEqual(expectation.Dequeue(), DequeueOrFail());
 			}
 		}
 
-		while (expectation.Count > 0) Assert.AreEqual(expectation.Dequeue(), _queue.DequeueBlocking());
+		while (expectation.Count > 0) Assert.AreEqual(expectation.Dequeue(), DequeueOrFail());
 	}
 
 	[Test]
@@ -143,12 +148,12 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 	}
 
 	[Test]
-	public void ShouldThrowOnDequeueAfterDisposal() {
+	public void ShouldStopDequeueingAfterDisposal() {
 		_queue.Enqueue(1);
 		_queue.Enqueue(2);
 		_queue.Dispose();
 
-		Assert.Throws<ObjectDisposedException>(() => _queue.DequeueBlocking());
+		Assert.IsFalse(_queue.TryDequeueBlocking(out _));
 	}
 
 	[Test]
@@ -165,7 +170,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 		const int ThreadCount = 4;
 
 		using var startSignal = new CountdownEvent(ThreadCount);
-		var disposalExceptionCount = 0;
+		var unblockedCount = 0;
 		var unexpectedExceptionCount = 0;
 		var threads = new Thread[ThreadCount];
 
@@ -173,10 +178,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 			threads[i] = new Thread(() => {
 				try {
 					startSignal.Signal();
-					_queue.DequeueBlocking();
-				}
-				catch (ObjectDisposedException) {
-					Interlocked.Increment(ref disposalExceptionCount);
+					if (!_queue.TryDequeueBlocking(out _)) Interlocked.Increment(ref unblockedCount);
 				}
 #pragma warning disable CA1031
 				catch (Exception) {
@@ -192,7 +194,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 		_queue.Dispose();
 
 		foreach (var thread in threads) Assert.IsTrue(thread.Join(WaitTimeout));
-		Assert.AreEqual(ThreadCount, disposalExceptionCount);
+		Assert.AreEqual(ThreadCount, unblockedCount);
 		Assert.AreEqual(0, unexpectedExceptionCount);
 	}
 
@@ -202,7 +204,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 		var result = 0;
 
 		var consumer = StartBackgroundThread(() => {
-			result = _queue.DequeueBlocking();
+			if (_queue.TryDequeueBlocking(out var dequeuedValue)) result = dequeuedValue;
 			resultSignal.Set();
 		});
 
@@ -231,7 +233,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 			consumedPerThread[c] = consumedItems;
 			consumers[c] = StartBackgroundThread(() => {
 				while (Interlocked.Increment(ref claimCounter) <= TotalItemCount) {
-					consumedItems.Add(_queue.DequeueBlocking());
+					if (_queue.TryDequeueBlocking(out var dequeuedValue)) consumedItems.Add(dequeuedValue);
 				}
 			});
 		}
@@ -263,7 +265,9 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 
 		var consumedItems = new List<int>(TotalItemCount);
 		var consumer = StartBackgroundThread(() => {
-			for (var i = 0; i < TotalItemCount; ++i) consumedItems.Add(_queue.DequeueBlocking());
+			for (var i = 0; i < TotalItemCount; ++i) {
+				if (_queue.TryDequeueBlocking(out var dequeuedValue)) consumedItems.Add(dequeuedValue);
+			}
 		});
 
 		var producers = new Thread[ProducerCount];
@@ -293,7 +297,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 	}
 
 	[Test, Timeout(30_000)]
-	public void ShouldDrainRemainingItemsAfterCompleteAdding() {
+	public void ShouldDrainRemainingItemsAfterSeal() {
 		_queue.Enqueue(1);
 		_queue.Enqueue(2);
 		_queue.Seal();
@@ -306,7 +310,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 	}
 
 	[Test, Timeout(30_000)]
-	public void ShouldRejectEnqueueAfterCompleteAdding() {
+	public void ShouldRejectEnqueueAfterSeal() {
 		_queue.Seal();
 
 		Assert.Throws<InvalidOperationException>(() => _queue.Enqueue(1));
@@ -314,7 +318,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 	}
 
 	[Test, Timeout(30_000)]
-	public void ShouldUnblockWaitingDequeuersOnCompleteAdding() {
+	public void ShouldUnblockWaitingDequeuersOnSeal() {
 		const int ThreadCount = 4;
 
 		using var startSignal = new CountdownEvent(ThreadCount);
@@ -340,6 +344,6 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 	[Test, Timeout(30_000)]
 	public void ShouldUseTheFullCapacityOfTheRentedBuffer() {
 		for (var i = 0; i < 16; ++i) _queue.Enqueue(i);
-		for (var i = 0; i < 16; ++i) Assert.AreEqual(i, _queue.DequeueBlocking());
+		for (var i = 0; i < 16; ++i) Assert.AreEqual(i, DequeueOrFail());
 	}
 }

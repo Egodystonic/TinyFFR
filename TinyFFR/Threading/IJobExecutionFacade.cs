@@ -6,7 +6,7 @@ using System.Threading;
 namespace Egodystonic.TinyFFR.Threading;
 
 interface IPrimaryThreadDispatcher {
-	void ExecutePendingCooperativeJobs();
+	void ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap);
 	bool BlockPrimaryThreadUntilConditionSatisfied(ManualResetEventSlim mre, TimeSpan timeout, CancellationToken cancellationToken);
 	void NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
 }

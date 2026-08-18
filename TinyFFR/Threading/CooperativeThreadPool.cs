@@ -91,17 +91,19 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 	}
 
-	void IPrimaryThreadDispatcher.ExecutePendingCooperativeJobs() => ExecutePendingCooperativeJobs();
+	void IPrimaryThreadDispatcher.ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) => ExecutePendingCooperativeJobs(targetExecutionTimeCap);
 
-	void ExecutePendingCooperativeJobs() {
+	void ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) {
 		Debug.Assert(Thread.CurrentThread == _primaryThread);
 		if (_isDisposed) return;
 		if (_currentCooperativeJobHydrationStackDepth >= MaxCooperativeJobHydrationStackDepth) return;
 
+		var startTimestamp = Stopwatch.GetTimestamp();
 		++_currentCooperativeJobHydrationStackDepth;
 		try {
 			while (!_isDisposed && _primaryJobQueue.TryDequeue(out var job)) {
 				job.Execute(_completionRegistrar);
+				if (targetExecutionTimeCap is { } maxTime && Stopwatch.GetElapsedTime(startTimestamp) >= maxTime) return;
 			}
 		}
 		finally {
@@ -128,7 +130,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 
 		try {
 			while (true) {
-				ExecutePendingCooperativeJobs();
+				ExecutePendingCooperativeJobs(null);
 				if (mre.IsSet) return true;
 				cancellationToken.ThrowIfCancellationRequested();
 				if (_isDisposed) return mre.IsSet;
@@ -180,6 +182,8 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		_primaryJobQueue.Seal();
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
 
+		AbandonRemainingJobs(_primaryJobQueue);
+
 		var startTimestamp = Stopwatch.GetTimestamp();
 		foreach (var workerThread in _workerThreads) {
 			var remainingTime = _config.MaxShutdownWaitTime - Stopwatch.GetElapsedTime(startTimestamp);
@@ -192,7 +196,6 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 
 		AbandonRemainingJobs(_workerJobQueue);
 		AbandonRemainingJobs(_primaryJobQueue);
-
 		_completionRegistrar.Dispose();
 		_workerJobQueue.Dispose();
 		_primaryJobQueue.Dispose();

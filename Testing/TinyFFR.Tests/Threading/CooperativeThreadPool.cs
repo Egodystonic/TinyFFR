@@ -15,7 +15,10 @@ unsafe class CooperativeThreadPoolTest {
 		public string? StringResult;
 		public Exception? Error;
 		public int ExecutingThreadId;
+		public CooperativeThreadPool? Pool;
+		public TimeSpan WorkDuration;
 		public readonly ManualResetEventSlim Done = new(false);
+		public readonly ManualResetEventSlim HandoffStarted = new(false);
 	}
 
 	static int DoubleInput(JobContext context) {
@@ -27,6 +30,22 @@ unsafe class CooperativeThreadPoolTest {
 		context.Error = error;
 		context.IntResult = result;
 		context.Done.Set();
+	}
+
+	static int SleepThenDoubleInput(JobContext context) {
+		context.ExecutingThreadId = System.Environment.CurrentManagedThreadId;
+		if (context.WorkDuration > TimeSpan.Zero) Thread.Sleep(context.WorkDuration);
+		return context.Input * 2;
+	}
+
+	static int NoOpWork(JobContext context) => 0;
+
+	static void NoOpCompletion(JobContext context, Exception? error, int result) { }
+
+	static int HandOffToPrimaryThread(JobContext context) {
+		context.HandoffStarted.Set();
+		context.Pool!.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &NoOpWork, &NoOpCompletion));
+		return 0;
 	}
 
 	static string ThrowingManagedWork(JobContext context) => throw new InvalidOperationException("Deliberate test failure.");
@@ -168,6 +187,76 @@ unsafe class CooperativeThreadPoolTest {
 		Assert.IsFalse(wasSatisfied);
 		Assert.GreaterOrEqual(elapsed, TimeSpan.FromMilliseconds(90d));
 		Assert.Less(elapsed, TimeSpan.FromSeconds(2d));
+	}
+
+	[Test, Timeout(60_000)]
+	public void ShouldDisposePromptlyWhileWorkerIsBlockedOnPrimaryThreadHandoff() {
+		var neverPumpingPrimaryThread = new Thread(static () => { }) { IsBackground = true };
+		var pool = new CooperativeThreadPool(
+			new ThreadingConfig { WorkerThreadCount = 1, MaxShutdownWaitTime = TimeSpan.FromSeconds(10d) },
+			neverPumpingPrimaryThread
+		);
+		var context = new JobContext { Pool = pool };
+
+		pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &HandOffToPrimaryThread, &RecordIntResult));
+		Assert.IsTrue(context.HandoffStarted.Wait(WaitTimeout));
+		Thread.Sleep(200);
+
+		var startTimestamp = Stopwatch.GetTimestamp();
+		pool.Dispose();
+		var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+
+		Assert.Less(elapsed, TimeSpan.FromSeconds(2d));
+	}
+
+	[Test, Timeout(60_000)]
+	public void ShouldRespectPrimaryThreadPumpTimeBudget() {
+		const int JobCount = 10;
+
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		var contexts = new JobContext[JobCount];
+		for (var i = 0; i < JobCount; ++i) contexts[i] = new JobContext { Input = i, WorkDuration = TimeSpan.FromMilliseconds(30d) };
+
+		var submitter = new Thread(() => {
+			foreach (var context in contexts) {
+				pool.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &SleepThenDoubleInput, &RecordIntResult));
+			}
+		}) { IsBackground = true };
+		submitter.Start();
+		Assert.IsTrue(submitter.Join(WaitTimeout));
+
+		((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(TimeSpan.FromMilliseconds(90d));
+
+		var budgetedCompletionCount = contexts.Count(context => context.Done.IsSet);
+		Assert.Greater(budgetedCompletionCount, 0);
+		Assert.Less(budgetedCompletionCount, JobCount);
+
+		((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(null);
+		Assert.AreEqual(JobCount, contexts.Count(context => context.Done.IsSet));
+		for (var i = 0; i < JobCount; ++i) Assert.AreEqual(i * 2, contexts[i].IntResult);
+	}
+
+	[Test, Timeout(60_000)]
+	public void ShouldExecuteAtLeastOneJobPerPumpRegardlessOfBudget() {
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		var contexts = new[] {
+			new JobContext { WorkDuration = TimeSpan.FromMilliseconds(50d) },
+			new JobContext { WorkDuration = TimeSpan.FromMilliseconds(50d) }
+		};
+
+		var submitter = new Thread(() => {
+			foreach (var context in contexts) {
+				pool.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &SleepThenDoubleInput, &RecordIntResult));
+			}
+		}) { IsBackground = true };
+		submitter.Start();
+		Assert.IsTrue(submitter.Join(WaitTimeout));
+
+		((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(TimeSpan.FromTicks(1L));
+		Assert.AreEqual(1, contexts.Count(context => context.Done.IsSet));
+
+		((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(TimeSpan.FromTicks(1L));
+		Assert.AreEqual(2, contexts.Count(context => context.Done.IsSet));
 	}
 }
 

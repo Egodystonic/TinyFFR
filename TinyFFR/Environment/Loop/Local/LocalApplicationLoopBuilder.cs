@@ -43,6 +43,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	readonly int _iterationTimingBufferMask;
 #pragma warning restore CA2213
 	nuint _prevHandleId = 0;
+	readonly TimeSpan? _maxCooperativeTaskTimePerIteration;
 	bool _isDisposed = false;
 
 	public LocalApplicationLoopBuilder(LocalApplicationLoopBuilderConfig config, LocalFactoryGlobalObjectGroup globals) {
@@ -51,6 +52,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_globals = globals;
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 		_iterationTimingBufferMask = (1 << config.FrameRateBufferSizeLog2) - 1;
+		_maxCooperativeTaskTimePerIteration = config.TargetPerFrameAsyncCooperativeTaskTime;
 	}
 
 	public ApplicationLoop CreateLoop(in LocalApplicationLoopCreationConfig config) {
@@ -93,7 +95,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle, bool executePendingPrimaryThreadCooperativeTasks) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
-		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs();
+		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs(_maxCooperativeTaskTimePerIteration);
 
 		var waitTime = GetWaitTimeUntilNextFrameStart(handle);
 		var maxCpuBusyWaitTime = _handleDataMap[handle].MaxCpuBusyWaitTime;
@@ -119,7 +121,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime, bool executePendingPrimaryThreadCooperativeTasks) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
-		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs();
+		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs(_maxCooperativeTaskTimePerIteration);
 
 		if (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) {
 			outDeltaTime = default;

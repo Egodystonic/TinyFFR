@@ -117,5 +117,5 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(int sizeBytes) => LocalNativeUtils.CreateGpuHoldingBuffer(_factory, sizeBytes);
 	public unsafe TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(int sizeBytes, delegate* managed<nuint, Span<byte>, void> readbackFunc) => LocalNativeUtils.CreateGpuHoldingBuffer(_factory, sizeBytes, readbackFunc);
 	
-	public void ExecutePendingCooperativePrimaryThreadJobs() => ((IPrimaryThreadDispatcher) _threadPool).ExecutePendingCooperativeJobs();
+	public void ExecutePendingCooperativePrimaryThreadJobs(TimeSpan? maxExecutionTime) => ((IPrimaryThreadDispatcher) _threadPool).ExecutePendingCooperativeJobs(maxExecutionTime);
 }

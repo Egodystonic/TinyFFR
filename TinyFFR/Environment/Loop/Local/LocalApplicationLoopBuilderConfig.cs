@@ -18,4 +18,14 @@ public sealed record LocalApplicationLoopBuilderConfig {
 			field = value;
 		}
 	} = DefaultFrameRateBufferSizeLog2;
+
+	public TimeSpan? TargetPerFrameAsyncCooperativeTaskTime {
+		get;
+		init {
+			if (value is not null && value <= TimeSpan.Zero) {
+				throw new ArgumentOutOfRangeException(nameof(TargetPerFrameAsyncCooperativeTaskTime), value, $"Must be a positive value (or null for no limit).");
+			}
+			field = value;
+		}
+	} = null;
 }
