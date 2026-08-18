@@ -15,8 +15,8 @@ public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<
 	float GetFramesPerSecondLatest(ResourceHandle<ApplicationLoop> handle);
 	float GetFramesPerSecondRecentMin(ResourceHandle<ApplicationLoop> handle);
 	float GetFramesPerSecondRecentMax(ResourceHandle<ApplicationLoop> handle);
-	TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle);
-	bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime);
+	TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle, bool executePendingPrimaryThreadCooperativeTasks);
+	bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime, bool executePendingPrimaryThreadCooperativeTasks);
 	TimeSpan GetTimeUntilNextIteration(ResourceHandle<ApplicationLoop> handle);
 	TimeSpan GetTotalIteratedTime(ResourceHandle<ApplicationLoop> handle);
 	void SetTotalIteratedTime(ResourceHandle<ApplicationLoop> handle, TimeSpan newValue);

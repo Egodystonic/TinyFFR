@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Threading;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -32,7 +33,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly FixedByteBufferPool _gpuHoldingBufferPool;
 #pragma warning restore CA2213
 
-	readonly WorkerThreadPool _workerThreadPool;
+	readonly CooperativeThreadPool _threadPool;
 	readonly LocalDisplayDiscoverer _displayDiscoverer;
 	readonly LocalWindowBuilder _windowBuilder;
 	readonly LocalApplicationLoopBuilder _applicationLoopBuilder;
@@ -113,12 +114,12 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			&LocalRendererBuilder.RenewSwapchains
 		).ThrowIfFailure();
 
-		_workerThreadPool = new WorkerThreadPool(factoryConfig.ThreadingConfig);
+		_threadPool = new CooperativeThreadPool(factoryConfig.ThreadingConfig, Thread.CurrentThread);
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
 		_gpuHoldingBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
 		var globals = new LocalFactoryGlobalObjectGroup(
 			this,
-			_workerThreadPool,
+			_threadPool,
 			_resourceNameMap,
 			_dependencyTracker,
 			_stringPool,
@@ -181,7 +182,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			DisposeObjectIfDisposable(_heapPool);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);
-			DisposeObjectIfDisposable(_workerThreadPool);
+			DisposeObjectIfDisposable(_threadPool);
 			OnFactoryTeardown().ThrowIfFailure();
 			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);
 		}

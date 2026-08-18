@@ -98,10 +98,10 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear here and in TryIterateOnce that the DeltaTime returned is the time since the last iteration, not the time it took to iterate
-	public TimeSpan IterateOnce() => Implementation.IterateOnce(_handle);
+	public TimeSpan IterateOnce(bool executePendingPrimaryThreadCooperativeTasks = true) => Implementation.IterateOnce(_handle, executePendingPrimaryThreadCooperativeTasks);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryIterateOnce(out TimeSpan outDeltaTime) => Implementation.TryIterateOnce(_handle, out outDeltaTime);
+	public bool TryIterateOnce(out TimeSpan outDeltaTime, bool executePendingPrimaryThreadCooperativeTasks = true) => Implementation.TryIterateOnce(_handle, out outDeltaTime, executePendingPrimaryThreadCooperativeTasks);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ResetTotalIteratedTime() => TotalIteratedTime = TimeSpan.Zero;

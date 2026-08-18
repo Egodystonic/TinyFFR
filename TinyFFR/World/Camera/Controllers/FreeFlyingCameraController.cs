@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.World;
 
 public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCameraController> {
 	#region Creation / Pooling
-	static readonly unsafe ObjectPool<FreeFlyingCameraController> _controllerPool = new(&New);
+	static readonly unsafe ArrayPoolBackedObjectPool<FreeFlyingCameraController> _controllerPool = new(&New);
 	static FreeFlyingCameraController New() => new();
 	static FreeFlyingCameraController ICameraController<FreeFlyingCameraController>.RentAndTetherToCamera(Camera camera) {
 		var result = _controllerPool.Rent();

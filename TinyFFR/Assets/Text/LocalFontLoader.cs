@@ -43,7 +43,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	readonly MapPool<ulong, float> _kerningMapPool = new(false);
 	readonly MapPool<nuint, PenData> _penMapPool = new(false);
 	readonly MapPool<nuint, StringData> _stringMapPool = new(false);
-	readonly ObjectPool<ArrayPoolBackedLruCache<int, RenderedTextData>, LocalFontLoader> _renderedTextCachePool;
+	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedLruCache<int, RenderedTextData>, LocalFontLoader> _renderedTextCachePool;
 	readonly ArrayPoolBackedMap<Rune, int> _fontLoadRuneToGlyphMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Font>, FontData> _activeFonts = new();
 	nuint _prevHandleId = 0U;

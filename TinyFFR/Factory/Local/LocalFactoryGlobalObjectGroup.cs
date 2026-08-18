@@ -13,11 +13,11 @@ using Egodystonic.TinyFFR.Threading;
 namespace Egodystonic.TinyFFR.Factory.Local;
 
 sealed class LocalFactoryGlobalObjectGroup {
-	readonly SynchronousWorkScheduler _synchronousWorkScheduler = new();
+	readonly SynchronousWorkExecutionFacade _synchronousWorkScheduler = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap;
 	readonly DeferredRef<LocalResourceGroupImplProvider> _resourceGroupProvider;
 	readonly LocalTinyFfrFactory _factory;
-	readonly WorkerThreadPool _threadPool;
+	readonly CooperativeThreadPool _threadPool;
 
 	public IResourceDependencyTracker DependencyTracker { get; }
 	public ManagedStringPool StringPool { get; }
@@ -25,10 +25,10 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public LocalResourceGroupImplProvider ResourceGroupProvider => _resourceGroupProvider;
 	public bool InEnhancedSecurityEnvironment { get; }
 	
-	public IWorkSchedulerFacade SynchronousWorkScheduler => _synchronousWorkScheduler;
-	public IWorkSchedulerFacade ThreadPoolWorkScheduler => _threadPool;
+	public IJobExecutionFacade SynchronousWorkScheduler => _synchronousWorkScheduler;
+	public IJobExecutionFacade ThreadPoolWorkScheduler => _threadPool;
 
-	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, WorkerThreadPool threadPool, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, bool inEnhancedSecurityEnvironment) {
+	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, CooperativeThreadPool threadPool, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, bool inEnhancedSecurityEnvironment) {
 		ArgumentNullException.ThrowIfNull(factory);
 		ArgumentNullException.ThrowIfNull(threadPool);
 		ArgumentNullException.ThrowIfNull(resourceNameMap);
@@ -116,4 +116,6 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer<T>(int numElements) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBuffer<T>(_factory, numElements);
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(int sizeBytes) => LocalNativeUtils.CreateGpuHoldingBuffer(_factory, sizeBytes);
 	public unsafe TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(int sizeBytes, delegate* managed<nuint, Span<byte>, void> readbackFunc) => LocalNativeUtils.CreateGpuHoldingBuffer(_factory, sizeBytes, readbackFunc);
+	
+	public void ExecutePendingCooperativePrimaryThreadJobs() => ((IPrimaryThreadDispatcher) _threadPool).ExecutePendingCooperativeJobs();
 }

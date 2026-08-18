@@ -90,8 +90,10 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		}
 	}
 
-	public TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle) {
+	public TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle, bool executePendingPrimaryThreadCooperativeTasks) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs();
 
 		var waitTime = GetWaitTimeUntilNextFrameStart(handle);
 		var maxCpuBusyWaitTime = _handleDataMap[handle].MaxCpuBusyWaitTime;
@@ -114,8 +116,10 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		LogIterationTiming(handle, dt);
 		return dt;
 	}
-	public bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime) {
+	public bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime, bool executePendingPrimaryThreadCooperativeTasks) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs();
 
 		if (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) {
 			outDeltaTime = default;

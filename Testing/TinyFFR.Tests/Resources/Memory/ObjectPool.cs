@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 [TestFixture]
-unsafe class ObjectPoolTest {
+unsafe class ArrayPoolBackedObjectPoolTest {
 	class MockDisposable : IDisposable {
 		public bool IsDisposed { get; set; } = false;
 		public void Dispose() => IsDisposed = true;
@@ -12,8 +12,8 @@ unsafe class ObjectPoolTest {
 	
 	const int InitialPoolCount = 10;
 	const int ArgPoolArg = 5;
-	ObjectPool<List<string>> _simplePool = null!;
-	ObjectPool<List<string>, int> _argPool = null!;
+	ArrayPoolBackedObjectPool<List<string>> _simplePool = null!;
+	ArrayPoolBackedObjectPool<List<string>, int> _argPool = null!;
 	VectorPool<string> _vectorPool = null!;
 	MapPool<string, string> _mapPool = null!;
 
@@ -137,7 +137,7 @@ unsafe class ObjectPoolTest {
 			return result;
 		}
 
-		var pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+		var pool = new ArrayPoolBackedObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
 
 		var rented1 = pool.Rent();
 		var rented2 = pool.Rent();
@@ -151,7 +151,7 @@ unsafe class ObjectPoolTest {
 		foreach (var item in items) Assert.IsTrue(item.IsDisposed);
 		
 		items.Clear();
-		pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+		pool = new ArrayPoolBackedObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
 
 		rented1 = pool.Rent();
 		rented2 = pool.Rent();
@@ -168,7 +168,7 @@ unsafe class ObjectPoolTest {
 		
 		
 		items.Clear();
-		pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+		pool = new ArrayPoolBackedObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
 
 		rented1 = pool.Rent();
 		rented2 = pool.Rent();
@@ -182,7 +182,7 @@ unsafe class ObjectPoolTest {
 		foreach (var item in items) Assert.IsFalse(item.IsDisposed);
 		
 		items.Clear();
-		pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+		pool = new ArrayPoolBackedObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
 
 		rented1 = pool.Rent();
 		rented2 = pool.Rent();
@@ -200,7 +200,7 @@ unsafe class ObjectPoolTest {
 	public void ShouldCorrectlyDisposeContainedItemsWhenRequestedForArglessPool() {
 		static MockDisposable CreateDisposable() => new();
 
-		var pool = new ObjectPool<MockDisposable>(&CreateDisposable, 0);
+		var pool = new ArrayPoolBackedObjectPool<MockDisposable>(&CreateDisposable, 0);
 		var rented1 = pool.Rent();
 		var rented2 = pool.Rent();
 		pool.Return(rented1);
@@ -209,7 +209,7 @@ unsafe class ObjectPoolTest {
 		Assert.IsTrue(rented1.IsDisposed);
 		Assert.IsTrue(rented2.IsDisposed);
 
-		pool = new ObjectPool<MockDisposable>(&CreateDisposable, 0);
+		pool = new ArrayPoolBackedObjectPool<MockDisposable>(&CreateDisposable, 0);
 		rented1 = pool.Rent();
 		rented2 = pool.Rent();
 		pool.Return(rented1);
@@ -219,7 +219,7 @@ unsafe class ObjectPoolTest {
 		Assert.IsTrue(rented2.IsDisposed);
 		pool.Dispose(false);
 
-		pool = new ObjectPool<MockDisposable>(&CreateDisposable, 0);
+		pool = new ArrayPoolBackedObjectPool<MockDisposable>(&CreateDisposable, 0);
 		rented1 = pool.Rent();
 		rented2 = pool.Rent();
 		pool.Return(rented1);
@@ -238,7 +238,7 @@ unsafe class ObjectPoolTest {
 			return tracker;
 		}
 
-		var pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateTracker, trackers, 0);
+		var pool = new ArrayPoolBackedObjectPool<MockDisposable, List<MockDisposable>>(&CreateTracker, trackers, 0);
 
 		var rented1 = pool.Rent();
 		pool.Return(rented1);

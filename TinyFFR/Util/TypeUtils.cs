@@ -24,3 +24,7 @@ static class TypeUtils {
 	public static ResourceStub ResourceToStub<TResource>(TResource resource) where TResource : IResource => resource.AsStub;
 	public static TResource StubToResource<TResource>(ResourceStub stub) where TResource : IResource<TResource> => TResource.CreateFromStub(stub);
 }
+
+#pragma warning disable CS0169 
+readonly struct Unused { readonly nint _; }
+#pragma warning restore CS0169 

@@ -3,11 +3,11 @@
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
-sealed unsafe class ObjectPool<T> : IDisposable {
+sealed unsafe class ArrayPoolBackedObjectPool<T> : IDisposable {
 	readonly delegate* managed<T> _newItemCreationFunc;
 	readonly ArrayPoolBackedVector<T> _pool;
 
-	public ObjectPool(delegate*<T> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<T>.DefaultInitialCapacity) {
+	public ArrayPoolBackedObjectPool(delegate*<T> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<T>.DefaultInitialCapacity) {
 		if (initialPoolCount < 0) throw new ArgumentOutOfRangeException(nameof(initialPoolCount), initialPoolCount, $"Must be a positive value (or 0).");
 		_newItemCreationFunc = newItemCreationFunc;
 		_pool = new ArrayPoolBackedVector<T>(Math.Max(initialPoolCount * 2, ArrayPoolBackedVector<T>.DefaultInitialCapacity));
@@ -37,12 +37,12 @@ sealed unsafe class ObjectPool<T> : IDisposable {
 	}
 }
 
-sealed unsafe class ObjectPool<T, TArg> : IDisposable {
+sealed unsafe class ArrayPoolBackedObjectPool<T, TArg> : IDisposable {
 	readonly delegate* managed<TArg, T> _newItemCreationFunc;
 	readonly TArg _arg;
 	readonly ArrayPoolBackedVector<T> _pool;
 
-	public ObjectPool(delegate*<TArg, T> newItemCreationFunc, TArg arg, int initialPoolCount = ArrayPoolBackedVector<T>.DefaultInitialCapacity) {
+	public ArrayPoolBackedObjectPool(delegate*<TArg, T> newItemCreationFunc, TArg arg, int initialPoolCount = ArrayPoolBackedVector<T>.DefaultInitialCapacity) {
 		if (initialPoolCount < 0) throw new ArgumentOutOfRangeException(nameof(initialPoolCount), initialPoolCount, $"Must be a positive value (or 0).");
 		_newItemCreationFunc = newItemCreationFunc;
 		_pool = new ArrayPoolBackedVector<T>(Math.Max(initialPoolCount * 2, ArrayPoolBackedVector<T>.DefaultInitialCapacity));
@@ -75,7 +75,7 @@ sealed unsafe class ObjectPool<T, TArg> : IDisposable {
 
 sealed unsafe class VectorPool<T> : IDisposable {
 	readonly bool _zeroMemoryOnReturn;
-	readonly ObjectPool<ArrayPoolBackedVector<T>> _objectPool;
+	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedVector<T>> _objectPool;
 
 	public VectorPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewVector, initialPoolCount) { }
 
@@ -99,7 +99,7 @@ sealed unsafe class VectorPool<T> : IDisposable {
 
 sealed unsafe class MapPool<TKey, TValue> : IDisposable {
 	readonly bool _zeroMemoryOnReturn;
-	readonly ObjectPool<ArrayPoolBackedMap<TKey, TValue>> _objectPool;
+	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedMap<TKey, TValue>> _objectPool;
 
 	public MapPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<MapPool<TKey, TValue>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewMap, initialPoolCount) { }
 
@@ -122,7 +122,7 @@ sealed unsafe class MapPool<TKey, TValue> : IDisposable {
 }
 
 sealed unsafe class StringKeyMapPool<TValue> : IDisposable {
-	readonly ObjectPool<ArrayPoolBackedStringKeyMap<TValue>> _objectPool;
+	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedStringKeyMap<TValue>> _objectPool;
 
 	public StringKeyMapPool(int initialPoolCount = ArrayPoolBackedVector<StringKeyMapPool<TValue>>.DefaultInitialCapacity) : this(&CreateNewMap, initialPoolCount) { }
 
@@ -144,7 +144,7 @@ sealed unsafe class StringKeyMapPool<TValue> : IDisposable {
 
 sealed unsafe class SetPool<T> : IDisposable {
 	readonly bool _zeroMemoryOnReturn;
-	readonly ObjectPool<ArrayPoolBackedSet<T>> _objectPool;
+	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedSet<T>> _objectPool;
 
 	public SetPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<SetPool<T>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewSet, initialPoolCount) { }
 

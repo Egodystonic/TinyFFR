@@ -46,8 +46,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshWireframeBufferData = new();
-	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
-	readonly ObjectPool<LocalMeshAnimationTable, LocalMeshBuilder> _meshAnimationTablePool;
+	readonly ArrayPoolBackedObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
+	readonly ArrayPoolBackedObjectPool<LocalMeshAnimationTable, LocalMeshBuilder> _meshAnimationTablePool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshAnimationTable> _activeMeshAnimationTables = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;

@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.World;
 
 public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomCameraController> {
 	#region Creation / Pooling
-	static readonly unsafe ObjectPool<PanTiltZoomCameraController> _controllerPool = new(&New);
+	static readonly unsafe ArrayPoolBackedObjectPool<PanTiltZoomCameraController> _controllerPool = new(&New);
 	static PanTiltZoomCameraController New() => new();
 	static PanTiltZoomCameraController ICameraController<PanTiltZoomCameraController>.RentAndTetherToCamera(Camera camera) {
 		var result = _controllerPool.Rent();
