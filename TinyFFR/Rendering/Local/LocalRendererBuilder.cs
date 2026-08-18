@@ -11,6 +11,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering.Local;
@@ -334,6 +335,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 	unsafe void RenderInternal(ResourceHandle<Renderer> handle, RenderOrdering ordering, RenderCompositionType compositionType, ResourceHandle<Renderer> fenceEmittingHandle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		SetUpSceneForRender(handle);
 		

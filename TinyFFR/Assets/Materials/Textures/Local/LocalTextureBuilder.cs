@@ -17,6 +17,7 @@ using System.Resources;
 using System.Security;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
+using Egodystonic.TinyFFR.Threading;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -40,6 +41,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		generationConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		if (preallocatedBuffer.Span.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(ITextureBuilder.PreallocatedBuffer<TTexel>));
 		if (generationConfig.Dimensions.Area > preallocatedBuffer.Span.Length) {

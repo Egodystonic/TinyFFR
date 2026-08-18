@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Threading;
+using Egodystonic.TinyFFR.Factory;
 
 namespace Egodystonic.TinyFFR.Threading;
 
@@ -22,10 +23,15 @@ static class ThreadSafetyTracker {
 		}
 	}
 
+	// Maintainer's note: This isn't meant to be used exhaustively everywhere throughout the library, just in choice places
+	// that are off the hot path and would have the most destructive impact if not checked
 	public static void AssertCurrentThreadIsPrimary() {
 		lock (_staticMutationLock) {
 			if (_primaryThread != Thread.CurrentThread) {
-				throw new InvalidOperationException($"Current thread is {Thread.CurrentThread}, primary was previously marked as {_primaryThread}.");
+				throw new InvalidOperationException(
+					$"TinyFFR: The requested operation can not be executed from the current thread (\"{Thread.CurrentThread}\"), only the primary thread (\"{_primaryThread}\"). " +
+					$"The primary thread is set as the thread used to create the active {nameof(ITinyFfrFactory)}."
+				);
 			}
 		}
 	}

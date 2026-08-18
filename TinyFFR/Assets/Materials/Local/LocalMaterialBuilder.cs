@@ -18,6 +18,7 @@ using System.Resources;
 using System.Security;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
+using Egodystonic.TinyFFR.Threading;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -309,6 +310,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	Material InstantiateMaterial(string shaderResourceName, ReadOnlySpan<char> resourceName, IShaderPackageConstants packageConstants) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderResourceName);
 
 		CreateMaterial(

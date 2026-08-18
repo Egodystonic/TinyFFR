@@ -11,6 +11,7 @@ using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
@@ -121,6 +122,8 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	public BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		
 		try {
 			checked {
 				using var skyboxFs = new FileStream(skyboxKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -162,6 +165,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	public BackdropTexture LoadBinaryBackdropTexture(EmbeddedResourceResolver.ResourceDataRef iblData, EmbeddedResourceResolver.ResourceDataRef skyData, in BackdropTextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		
 		LoadSkyboxFileInToMemory(
 			(byte*) skyData.DataPtr, 
