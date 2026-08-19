@@ -116,6 +116,9 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		).ThrowIfFailure();
 
 		_threadPool = new CooperativeThreadPool(factoryConfig.ThreadingConfig, Thread.CurrentThread);
+		if (SynchronizationContext.Current == null && factoryConfig.InstallTinyFfrSynchronizationContextIfNonePreExisting) {
+			SynchronizationContext.SetSynchronizationContext(new TinyFfrSynchronizationContext(_threadPool));
+		}
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
 		_gpuHoldingBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
 		var globals = new LocalFactoryGlobalObjectGroup(
@@ -191,6 +194,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		finally {
 			IsDisposed = true;
 			_instance = null;
+			if (SynchronizationContext.Current is TinyFfrSynchronizationContext) SynchronizationContext.SetSynchronizationContext(null);
 			ThreadSafetyTracker.ClearPrimaryThread();
 		}
 	}

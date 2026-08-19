@@ -25,6 +25,12 @@ static class ThreadSafetyTracker {
 
 	// Maintainer's note: This isn't meant to be used exhaustively everywhere throughout the library, just in choice places
 	// that are off the hot path and would have the most destructive impact if not checked
+	public static bool CurrentThreadIsPrimary() {
+		lock (_staticMutationLock) {
+			return _primaryThread == Thread.CurrentThread;
+		}
+	}
+
 	public static void AssertCurrentThreadIsPrimary() {
 		lock (_staticMutationLock) {
 			if (_primaryThread != Thread.CurrentThread) {

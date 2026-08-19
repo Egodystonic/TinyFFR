@@ -111,6 +111,26 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 	}
 
+	public void SchedulePrimaryThreadContinuation(Action continuation) {
+		ArgumentNullException.ThrowIfNull(continuation);
+
+		static Unused InvokeContinuation(Action continuation) {
+			continuation();
+			return default;
+		}
+		static void CompleteContinuation(Action continuation, Exception? error, Unused result) {
+			if (error != null) Console.WriteLine($"Primary thread continuation failed with unhandled exception '{error}' | {error.GetAllMessages()}.");
+		}
+
+		if (_isDisposed) {
+			continuation();
+			return;
+		}
+
+		_primaryJobQueue.Enqueue(ThreadJob.CreateWithManagedContextUnmanagedResult(continuation, &InvokeContinuation, &CompleteContinuation));
+		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+	}
+
 	public void NotifyPrimaryThreadOfEventIfCurrentlyBlocked() {
 		lock (_primaryWakeMonitor) {
 			Monitor.PulseAll(_primaryWakeMonitor);
@@ -130,6 +150,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 
 		try {
 			while (true) {
+				if (mre.IsSet) return true;
 				ExecutePendingCooperativeJobs(null);
 				if (mre.IsSet) return true;
 				cancellationToken.ThrowIfCancellationRequested();
@@ -196,6 +217,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 
 		AbandonRemainingJobs(_workerJobQueue);
 		AbandonRemainingJobs(_primaryJobQueue);
+		OutstandingAsyncOperationRegistry.FaultAllOutstanding(new ObjectDisposedException(ToString(), $"{nameof(CooperativeThreadPool)} was disposed before this operation completed."));
 		_completionRegistrar.Dispose();
 		_workerJobQueue.Dispose();
 		_primaryJobQueue.Dispose();

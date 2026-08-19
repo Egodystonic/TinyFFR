@@ -39,4 +39,6 @@ public sealed class LocalTinyFfrFactoryConfig {
 	public bool EnhanceSecurity { get; init; } = DefaultEnhanceSecurity;
 	
 	public ThreadingConfig ThreadingConfig { get; init; } = new();
+
+	public bool InstallTinyFfrSynchronizationContextIfNonePreExisting { get; init; } = true;
 }

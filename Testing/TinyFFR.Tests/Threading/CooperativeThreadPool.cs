@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Egodystonic.TinyFFR.Threading;
 
@@ -262,6 +263,8 @@ unsafe class CooperativeThreadPoolTest {
 
 [TestFixture]
 unsafe class TinyFfrAsyncOperationTest {
+	static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(10d);
+
 	CooperativeThreadPool _pool = null!;
 	IPrimaryThreadDispatcher Dispatcher => _pool;
 
@@ -363,5 +366,125 @@ unsafe class TinyFfrAsyncOperationTest {
 		Assert.Throws<InvalidObjectException>(() => default(TinyFfrAsyncOperation<int>).WaitForCompletion());
 		Assert.Throws<InvalidObjectException>(() => default(TinyFfrAsyncOperation).WaitForCompletion());
 		Assert.Throws<InvalidObjectException>(() => _ = default(TinyFfrAsyncOperation<int>).GetResultAndDisposeOperation());
+	}
+
+	void PumpPrimaryThreadJobs() => ((IPrimaryThreadDispatcher) _pool).ExecutePendingCooperativeJobs(null);
+
+
+
+
+
+
+
+	[Test, Timeout(30_000)]
+	public void ShouldResumeAwaitContinuationOnPrimaryThread() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		var continuationThreadId = 0;
+		var continuationRan = false;
+
+		var awaiter = operation.GetAwaiter();
+		awaiter.OnCompleted(() => {
+			continuationThreadId = System.Environment.CurrentManagedThreadId;
+			continuationRan = true;
+		});
+
+		var completer = new Thread(() => operation.SetResult(9)) { IsBackground = true };
+		completer.Start();
+		Assert.IsTrue(completer.Join(WaitTimeout));
+
+		Assert.IsFalse(continuationRan);
+
+		PumpPrimaryThreadJobs();
+
+		Assert.IsTrue(continuationRan);
+		Assert.AreEqual(System.Environment.CurrentManagedThreadId, continuationThreadId);
+		Assert.AreEqual(9, awaiter.GetResult());
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldResumeOnPrimaryThreadEvenWhenAwaitedFromWorkerThread() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		operation.SetResult(11);
+
+		var awaiterReportedCompleted = true;
+		var continuationThreadId = 0;
+		var continuationRan = false;
+
+		var awaitingThread = new Thread(() => {
+			var awaiter = operation.GetAwaiter();
+			awaiterReportedCompleted = awaiter.IsCompleted;
+			awaiter.OnCompleted(() => {
+				continuationThreadId = System.Environment.CurrentManagedThreadId;
+				continuationRan = true;
+			});
+		}) { IsBackground = true };
+		awaitingThread.Start();
+		Assert.IsTrue(awaitingThread.Join(WaitTimeout));
+
+		Assert.IsFalse(awaiterReportedCompleted);
+		Assert.IsFalse(continuationRan);
+
+		PumpPrimaryThreadJobs();
+
+		Assert.IsTrue(continuationRan);
+		Assert.AreEqual(System.Environment.CurrentManagedThreadId, continuationThreadId);
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldRecycleTrackingDataWhenAwaited() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		operation.SetResult(5);
+
+		Assert.AreEqual(1, OutstandingAsyncOperationRegistry.OutstandingCount);
+
+		var awaiter = operation.GetAwaiter();
+		Assert.IsTrue(awaiter.IsCompleted);
+		Assert.AreEqual(5, awaiter.GetResult());
+
+		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
+		Assert.Throws<InvalidOperationException>(() => _ = operation.IsCompleted);
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldRunContinuationScheduledAfterCompletion() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		operation.SetResult(13);
+
+		var continuationRan = false;
+		var awaiter = operation.GetAwaiter();
+		awaiter.OnCompleted(() => continuationRan = true);
+
+		Assert.IsFalse(continuationRan);
+		PumpPrimaryThreadJobs();
+
+		Assert.IsTrue(continuationRan);
+		Assert.AreEqual(13, awaiter.GetResult());
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldThrowFromAwaiterGetResultWhenOperationFaults() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		operation.SetException(new InvalidOperationException("Deliberate test failure."));
+
+		var awaiter = operation.GetAwaiter();
+		Assert.IsTrue(awaiter.IsCompleted);
+
+		var thrown = Assert.Throws<AggregateException>(() => _ = awaiter.GetResult());
+		Assert.IsInstanceOf<InvalidOperationException>(thrown!.GetBaseException());
+		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldFaultOutstandingOperationsWhenPoolDisposed() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		var continuationRan = false;
+		var awaiter = operation.GetAwaiter();
+		awaiter.OnCompleted(() => continuationRan = true);
+
+		_pool.Dispose();
+
+		Assert.IsTrue(continuationRan);
+		var thrown = Assert.Throws<AggregateException>(() => _ = awaiter.GetResult());
+		Assert.IsInstanceOf<ObjectDisposedException>(thrown!.GetBaseException());
 	}
 }

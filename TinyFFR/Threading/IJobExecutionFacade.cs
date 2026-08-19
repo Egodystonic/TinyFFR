@@ -9,6 +9,7 @@ interface IPrimaryThreadDispatcher {
 	void ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap);
 	bool BlockPrimaryThreadUntilConditionSatisfied(ManualResetEventSlim mre, TimeSpan timeout, CancellationToken cancellationToken);
 	void NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+	void SchedulePrimaryThreadContinuation(Action continuation);
 }
 
 interface IJobExecutionFacade {

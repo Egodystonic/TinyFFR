@@ -9,26 +9,94 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Threading;
 
 interface IAsyncOperationTrackingData {
-	ulong CycleCount { get; }
-	bool GetIsCompleted(ulong cycleCount);
-	bool WaitForCompletion(ulong cycleCount, TimeSpan timeout, CancellationToken cancellationToken);
+	ulong Version { get; }
+	bool GetIsCompleted(ulong version);
+	bool WaitForCompletion(ulong version, TimeSpan timeout, CancellationToken cancellationToken);
+	void ScheduleContinuation(ulong version, Action continuation);
+	void DiscardResultAndClearWithoutWaiting(ulong version);
+	void FaultIfIncomplete(Exception error);
+}
+
+static class OutstandingAsyncOperationRegistry {
+	static readonly List<IAsyncOperationTrackingData> _outstandingOperations = new();
+
+	public static int OutstandingCount {
+		get {
+			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+			return _outstandingOperations.Count;
+		}
+	}
+
+	public static void Register(IAsyncOperationTrackingData trackingData) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		_outstandingOperations.Add(trackingData);
+	}
+
+	public static void Unregister(IAsyncOperationTrackingData trackingData) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		_outstandingOperations.Remove(trackingData);
+	}
+
+	public static void FaultAllOutstanding(Exception error) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		var snapshot = _outstandingOperations.ToArray();
+		_outstandingOperations.Clear();
+		foreach (var trackingData in snapshot) trackingData.FaultIfIncomplete(error);
+	}
+}
+
+public readonly record struct TinyFfrAsyncOperationAwaiter : ICriticalNotifyCompletion {
+	readonly TinyFfrAsyncOperation _operation;
+
+	internal TinyFfrAsyncOperationAwaiter(TinyFfrAsyncOperation operation) => _operation = operation;
+
+	public bool IsCompleted => _operation.IsCompleted && ThreadSafetyTracker.CurrentThreadIsPrimary();
+	public void OnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+	public void UnsafeOnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+	public void GetResult() => _operation.DiscardResultAndDisposeOperationWithoutWaiting();
+}
+
+public readonly record struct TinyFfrAsyncOperationAwaiter<T> : ICriticalNotifyCompletion {
+	readonly TinyFfrAsyncOperation<T> _operation;
+
+	internal TinyFfrAsyncOperationAwaiter(TinyFfrAsyncOperation<T> operation) => _operation = operation;
+
+	public bool IsCompleted => _operation.IsCompleted && ThreadSafetyTracker.CurrentThreadIsPrimary();
+	public void OnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+	public void UnsafeOnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+	public T GetResult() => _operation.GetResultAndDisposeOperationWithoutWaiting();
 }
 
 public readonly record struct TinyFfrAsyncOperation {
 	internal const int SmuggleSizeBytes = 16;
 	internal IAsyncOperationTrackingData TrackingData { get; }
-	internal ulong CycleCount { get; }
+	internal ulong Version { get; }
 
 	public bool IsCompleted {
 		get {
 			if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
-			return TrackingData.GetIsCompleted(CycleCount);
+			return TrackingData.GetIsCompleted(Version);
 		}
 	}
 
-	internal TinyFfrAsyncOperation(IAsyncOperationTrackingData trackingData, ulong cycleCount) {
+	internal TinyFfrAsyncOperation(IAsyncOperationTrackingData trackingData, ulong version) {
 		TrackingData = trackingData;
-		CycleCount = cycleCount;
+		Version = version;
+	}
+
+	public TinyFfrAsyncOperationAwaiter GetAwaiter() {
+		if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
+		return new(this);
+	}
+
+	internal void ScheduleContinuation(Action continuation) {
+		if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
+		TrackingData.ScheduleContinuation(Version, continuation);
+	}
+
+	internal void DiscardResultAndDisposeOperationWithoutWaiting() {
+		if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
+		TrackingData.DiscardResultAndClearWithoutWaiting(Version);
 	}
 
 	public void WaitForCompletion() => WaitForCompletion(Timeout.InfiniteTimeSpan, default);
@@ -36,7 +104,7 @@ public readonly record struct TinyFfrAsyncOperation {
 	public void WaitForCompletion(CancellationToken cancellationToken) => WaitForCompletion(Timeout.InfiniteTimeSpan, cancellationToken);
 	public bool WaitForCompletion(TimeSpan timeout, CancellationToken cancellationToken) {
 		if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
-		return TrackingData.WaitForCompletion(CycleCount, timeout, cancellationToken);
+		return TrackingData.WaitForCompletion(Version, timeout, cancellationToken);
 	}
 
 	public static void WaitForAllToComplete(params ReadOnlySpan<TinyFfrAsyncOperation> operations) => WaitForAllToComplete(Timeout.InfiniteTimeSpan, default, operations);
@@ -65,14 +133,15 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 #pragma warning restore CA1001
 		readonly Lock _lock = new();
 		readonly ManualResetEventSlim _completionIndicator = new(false);
-		IPrimaryThreadDispatcher _primaryThreadDispatcher = null!;
-		ulong _currentCycleCount;
+		IPrimaryThreadDispatcher? _primaryThreadDispatcher = null;
+		Action? _continuations = null;
+		ulong _version;
 		T _result = default!;
-		Exception? _exception;
+		Exception? _exception = null;
 
-		public ulong CycleCount {
+		public ulong Version {
 			get {
-				lock (_lock) return _currentCycleCount;
+				lock (_lock) return _version;
 			}
 		}
 
@@ -80,10 +149,10 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 			lock (_lock) Clear();
 		}
 
-		void ThrowIfIncorrectCycleCount(ulong cycleCount) {
+		void ThrowIfIncorrectVersion(ulong version) {
 			Debug.Assert(_lock.IsHeldByCurrentThread);
-			if (cycleCount != _currentCycleCount) {
-				throw new InvalidOperationException($"Cycle counts do not match (this is a concurrency failure regarding {nameof(TinyFfrAsyncOperation)}).");
+			if (version != _version) {
+				throw new InvalidOperationException($"Operation versions do not match: this {nameof(TinyFfrAsyncOperation)} has already been disposed or recycled.");
 			}
 		}
 
@@ -91,9 +160,15 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 			Debug.Assert(_lock.IsHeldByCurrentThread);
 			_result = default!;
 			_exception = null;
-			_primaryThreadDispatcher = null!;
+			_primaryThreadDispatcher = null;
+			_continuations = null;
 			_completionIndicator.Reset();
-			++_currentCycleCount;
+			++_version;
+		}
+
+		static void ScheduleOrInvokeContinuations(IPrimaryThreadDispatcher? dispatcher, Action continuations) {
+			if (dispatcher != null) dispatcher.SchedulePrimaryThreadContinuation(continuations);
+			else continuations();
 		}
 
 		public void Reset(IPrimaryThreadDispatcher primaryThreadDispatcher) {
@@ -104,62 +179,109 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 			}
 		}
 
-		public bool GetIsCompleted(ulong cycleCount) {
+		public bool GetIsCompleted(ulong version) {
 			lock (_lock) {
-				if (cycleCount != _currentCycleCount) {
-					throw new InvalidOperationException($"It is not permitted to check {nameof(IsCompleted)} after invoking {nameof(GetResultAndDisposeOperation)}.");
+				if (version != _version) {
+					throw new InvalidOperationException($"It is not permitted to check {nameof(IsCompleted)} after this {nameof(TinyFfrAsyncOperation)} has been disposed.");
 				}
 				return _completionIndicator.IsSet;
 			}
 		}
 
-		public void SetResult(ulong cycleCount, T result) {
+		public void SetResult(ulong version, T result) {
 			IPrimaryThreadDispatcher? dispatcher;
+			Action? continuationsLocal;
 			lock (_lock) {
-				ThrowIfIncorrectCycleCount(cycleCount);
+				ThrowIfIncorrectVersion(version);
 				if (_completionIndicator.IsSet) return;
 				_result = result;
 				_completionIndicator.Set();
 				dispatcher = _primaryThreadDispatcher;
+				continuationsLocal = _continuations;
+				_continuations = null;
 			}
 			dispatcher?.NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+			if (continuationsLocal != null) ScheduleOrInvokeContinuations(dispatcher, continuationsLocal);
 		}
 
-		public void SetException(ulong cycleCount, Exception error) {
+		public void SetException(ulong version, Exception error) {
 			IPrimaryThreadDispatcher? dispatcher;
+			Action? continuationsLocal;
 			lock (_lock) {
-				ThrowIfIncorrectCycleCount(cycleCount);
+				ThrowIfIncorrectVersion(version);
 				if (_completionIndicator.IsSet) return;
 				_exception = error;
 				_completionIndicator.Set();
 				dispatcher = _primaryThreadDispatcher;
+				continuationsLocal = _continuations;
+				_continuations = null;
 			}
 			dispatcher?.NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+			if (continuationsLocal != null) ScheduleOrInvokeContinuations(dispatcher, continuationsLocal);
 		}
 
-		public bool WaitForCompletion(ulong cycleCount, TimeSpan timeout, CancellationToken cancellationToken) {
+		public void FaultIfIncomplete(Exception error) {
+			Action? continuationsLocal;
+			lock (_lock) {
+				if (_completionIndicator.IsSet) return;
+				_exception = error;
+				_completionIndicator.Set();
+				continuationsLocal = _continuations;
+				_continuations = null;
+			}
+			continuationsLocal?.Invoke();
+		}
+
+		public void ScheduleContinuation(ulong version, Action continuation) {
+			ArgumentNullException.ThrowIfNull(continuation);
+
+			IPrimaryThreadDispatcher? dispatcher;
+			lock (_lock) {
+				ThrowIfIncorrectVersion(version);
+				dispatcher = _primaryThreadDispatcher;
+				if (!_completionIndicator.IsSet) {
+					_continuations += continuation;
+					return;
+				}
+			}
+			ScheduleOrInvokeContinuations(dispatcher, continuation);
+		}
+
+		public bool WaitForCompletion(ulong version, TimeSpan timeout, CancellationToken cancellationToken) {
 			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 			IPrimaryThreadDispatcher dispatcher;
 			lock (_lock) {
-				ThrowIfIncorrectCycleCount(cycleCount);
-				dispatcher = _primaryThreadDispatcher;
+				ThrowIfIncorrectVersion(version);
+				dispatcher = _primaryThreadDispatcher!;
 			}
 			return dispatcher.BlockPrimaryThreadUntilConditionSatisfied(_completionIndicator, timeout, cancellationToken);
 		}
 
-		public bool TryGetResultAndClear(ulong cycleCount, out T result, TimeSpan timeout, CancellationToken cancellationToken, out bool canBeReturnedToPool) {
+		public bool TryGetResultAndClear(ulong version, out T result, TimeSpan timeout, CancellationToken cancellationToken, out bool canBeReturnedToPool) {
 			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 			canBeReturnedToPool = false;
 
-			if (!WaitForCompletion(cycleCount, timeout, cancellationToken)) {
+			if (!WaitForCompletion(version, timeout, cancellationToken)) {
 				result = default!;
 				return false;
 			}
 
+			result = GetResultAndClearWithoutWaiting(version, out canBeReturnedToPool);
+			return true;
+		}
+
+		public T GetResultAndClearWithoutWaiting(ulong version, out bool canBeReturnedToPool) {
+			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+			canBeReturnedToPool = false;
+
 			Exception? exceptionLocal;
+			T result;
 			lock (_lock) {
-				ThrowIfIncorrectCycleCount(cycleCount);
+				ThrowIfIncorrectVersion(version);
+				if (!_completionIndicator.IsSet) {
+					throw new InvalidOperationException($"Can not extract the result of this {nameof(TinyFfrAsyncOperation)}: it has not completed yet.");
+				}
 				exceptionLocal = _exception;
 				result = _result;
 				Clear();
@@ -169,8 +291,10 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 			if (exceptionLocal != null) {
 				throw new AggregateException($"{nameof(TinyFfrAsyncOperation)} failed due to async exception ({exceptionLocal.GetAllMessages()}).", exceptionLocal);
 			}
-			return true;
+			return result;
 		}
+
+		void IAsyncOperationTrackingData.DiscardResultAndClearWithoutWaiting(ulong version) => _ = new TinyFfrAsyncOperation<T>(this, version).GetResultAndDisposeOperationWithoutWaiting();
 	}
 
 	static readonly ArrayPoolBackedObjectPool<AsyncOperationTrackingData> _trackerPool = new(&CreateDataObject);
@@ -178,20 +302,23 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 
 	static AsyncOperationTrackingData RentTracker() {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		return _trackerPool.Rent();
+		var result = _trackerPool.Rent();
+		OutstandingAsyncOperationRegistry.Register(result);
+		return result;
 	}
 	static void ReturnTracker(AsyncOperationTrackingData trackingData) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		OutstandingAsyncOperationRegistry.Unregister(trackingData);
 		_trackerPool.Return(trackingData);
 	}
 
 	readonly AsyncOperationTrackingData _trackingData;
-	readonly ulong _cycleCount;
+	readonly ulong _version;
 
 	public bool IsCompleted {
 		get {
 			if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
-			return _trackingData.GetIsCompleted(_cycleCount);
+			return _trackingData.GetIsCompleted(_version);
 		}
 	}
 
@@ -199,12 +326,34 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 		ArgumentNullException.ThrowIfNull(primaryThreadDispatcher);
 		_trackingData = RentTracker();
 		_trackingData.Reset(primaryThreadDispatcher);
-		_cycleCount = _trackingData.CycleCount;
+		_version = _trackingData.Version;
 	}
 
-	TinyFfrAsyncOperation(AsyncOperationTrackingData trackingData, ulong cycleCount) {
+	TinyFfrAsyncOperation(AsyncOperationTrackingData trackingData, ulong version) {
 		_trackingData = trackingData;
-		_cycleCount = cycleCount;
+		_version = version;
+	}
+
+	public TinyFfrAsyncOperationAwaiter<T> GetAwaiter() {
+		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
+		return new(this);
+	}
+
+	internal void ScheduleContinuation(Action continuation) {
+		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
+		_trackingData.ScheduleContinuation(_version, continuation);
+	}
+
+	internal T GetResultAndDisposeOperationWithoutWaiting() {
+		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
+
+		var canBeReturnedToPool = false;
+		try {
+			return _trackingData.GetResultAndClearWithoutWaiting(_version, out canBeReturnedToPool);
+		}
+		finally {
+			if (canBeReturnedToPool) ReturnTracker(_trackingData);
+		}
 	}
 
 	public void WaitForCompletion() => WaitForCompletion(Timeout.InfiniteTimeSpan, default);
@@ -212,7 +361,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 	public void WaitForCompletion(CancellationToken cancellationToken) => WaitForCompletion(Timeout.InfiniteTimeSpan, cancellationToken);
 	public bool WaitForCompletion(TimeSpan timeout, CancellationToken cancellationToken) {
 		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
-		return _trackingData.WaitForCompletion(_cycleCount, timeout, cancellationToken);
+		return _trackingData.WaitForCompletion(_version, timeout, cancellationToken);
 	}
 
 	public T GetResultAndDisposeOperation() {
@@ -229,7 +378,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 
 		var canBeReturnedToPool = false;
 		try {
-			return _trackingData.TryGetResultAndClear(_cycleCount, out result, timeout, cancellationToken, out canBeReturnedToPool);
+			return _trackingData.TryGetResultAndClear(_version, out result, timeout, cancellationToken, out canBeReturnedToPool);
 		}
 		finally {
 			if (canBeReturnedToPool) ReturnTracker(_trackingData);
@@ -237,28 +386,28 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 	}
 
 	internal void SetResult(T result) {
-		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>(); // (20)
-		_trackingData.SetResult(_cycleCount, result);
+		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
+		_trackingData.SetResult(_version, result);
 	}
 
 	internal void SetException(Exception error) {
-		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>(); // (20)
-		_trackingData.SetException(_cycleCount, error);
+		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
+		_trackingData.SetException(_version, error);
 	}
 
-	public static implicit operator TinyFfrAsyncOperation(TinyFfrAsyncOperation<T> operand) => new(operand._trackingData, operand._cycleCount);
+	public static implicit operator TinyFfrAsyncOperation(TinyFfrAsyncOperation<T> operand) => new(operand._trackingData, operand._version);
 	public static explicit operator TinyFfrAsyncOperation<T>(TinyFfrAsyncOperation operand) {
 		if (operand.TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
 		if (operand.TrackingData is not AsyncOperationTrackingData typedTrackingData) {
 			throw new InvalidCastException($"Given {nameof(TinyFfrAsyncOperation)} does not represent an operation whose result type is {typeof(T).Name}.");
 		}
-		return new(typedTrackingData, operand.CycleCount);
+		return new(typedTrackingData, operand.Version);
 	}
 
 	internal static void Smuggle(in TinyFfrAsyncOperation<T> target, Span<byte> dest) {
 		var wrapperHandle = GCHandle.Alloc(target._trackingData, GCHandleType.Normal);
 		BinaryPrimitives.WriteIntPtrLittleEndian(dest, GCHandle.ToIntPtr(wrapperHandle));
-		BinaryPrimitives.WriteUInt64LittleEndian(dest[sizeof(IntPtr)..], target._cycleCount);
+		BinaryPrimitives.WriteUInt64LittleEndian(dest[sizeof(IntPtr)..], target._version);
 	}
 
 	internal static TinyFfrAsyncOperation<T> DeSmuggle(ReadOnlySpan<byte> src) {
