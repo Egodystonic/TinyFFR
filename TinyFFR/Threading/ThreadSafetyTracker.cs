@@ -1,6 +1,7 @@
 // Created on 2026-08-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Diagnostics;
 using System.Threading;
 using Egodystonic.TinyFFR.Factory;
 

@@ -32,16 +32,21 @@ sealed unsafe class WorkerResourceCreationSyncHelper<TContext, TResult> : IDispo
 			context.Error = error;
 		}
 		
-		facade.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(syncObject, &Work, &Completion));
-		
-		var result = syncObject.NewResource;
-		var error = syncObject.Error;
-		 
-		syncObject.Recycle();
-		_threadLocalObjectPool.Value!.Return(syncObject);
-		
+		TResult result;
+		Exception? error;
+		try {
+			facade.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(syncObject, &Work, &Completion));
+
+			result = syncObject.NewResource;
+			error = syncObject.Error;
+		}
+		finally {
+			syncObject.Recycle();
+			_threadLocalObjectPool.Value!.Return(syncObject);
+		}
+
 		if (error != null) throw new AggregateException($"Could not create resource on primary thread ({error.GetAllMessages()}).", error);
-		
+
 		return result;
 	}
 

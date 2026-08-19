@@ -16,7 +16,7 @@ class TinyFfrSynchronizationContextTest {
 	[SetUp]
 	public void SetUpTest() {
 		ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
-		_pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		_pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
 		_context = new TinyFfrSynchronizationContext(_pool);
 	}
 
@@ -138,5 +138,41 @@ class TinyFfrSynchronizationContextTest {
 		finally {
 			SynchronizationContext.SetSynchronizationContext(previousContext);
 		}
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldReleaseSendersBlockedAtDisposal() {
+		using var sendReturned = new ManualResetEventSlim(false);
+
+		var sender = new Thread(() => {
+			try {
+				_context.Send(_ => { }, null);
+			}
+#pragma warning disable CA1031
+			catch (Exception) { }
+#pragma warning restore CA1031
+			finally {
+				sendReturned.Set();
+			}
+		}) { IsBackground = true };
+		sender.Start();
+		Thread.Sleep(100);
+
+		Assert.IsFalse(sendReturned.IsSet);
+
+		_pool.Dispose();
+
+		Assert.IsTrue(sendReturned.Wait(WaitTimeout));
+		Assert.IsTrue(sender.Join(WaitTimeout));
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldStillRunContinuationsScheduledAfterDisposal() {
+		_pool.Dispose();
+
+		var continuationRan = false;
+		((IPrimaryThreadDispatcher) _pool).SchedulePrimaryThreadContinuation(() => continuationRan = true);
+
+		Assert.IsTrue(continuationRan);
 	}
 }

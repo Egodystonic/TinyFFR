@@ -41,7 +41,16 @@ static class OutstandingAsyncOperationRegistry {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		var snapshot = _outstandingOperations.ToArray();
 		_outstandingOperations.Clear();
-		foreach (var trackingData in snapshot) trackingData.FaultIfIncomplete(error);
+		foreach (var trackingData in snapshot) {
+			try {
+				trackingData.FaultIfIncomplete(error);
+			}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- One operation must not prevent the rest being faulted
+			catch (Exception e) {
+#pragma warning restore CA1031
+				Console.WriteLine($"Could not fault outstanding async operation during teardown: {e.GetAllMessages()}.");
+			}
+		}
 	}
 }
 
@@ -67,6 +76,10 @@ public readonly record struct TinyFfrAsyncOperationAwaiter<T> : ICriticalNotifyC
 	public T GetResult() => _operation.GetResultAndDisposeOperationWithoutWaiting();
 }
 
+//TODO xmldoc Every TinyFfrAsyncOperation returned by the library must be consumed exactly once, either by awaiting it or by
+//TODO xmldoc calling GetResultAndDisposeOperation(). Consuming an operation is what releases its internal tracking data back to
+//TODO xmldoc the pool; an operation that is never consumed retains that tracking data (and its wait handle) for the lifetime of
+//TODO xmldoc the process. An operation whose wait timed out has not been consumed, and must still be consumed once it completes.
 public readonly record struct TinyFfrAsyncOperation {
 	internal const int SmuggleSizeBytes = 16;
 	internal IAsyncOperationTrackingData TrackingData { get; }
@@ -127,6 +140,10 @@ public readonly record struct TinyFfrAsyncOperation {
 	}
 }
 
+//TODO xmldoc Every TinyFfrAsyncOperation<T> returned by the library must be consumed exactly once, either by awaiting it or by
+//TODO xmldoc calling GetResultAndDisposeOperation(). Consuming an operation is what releases its internal tracking data back to
+//TODO xmldoc the pool; an operation that is never consumed retains that tracking data (and its wait handle) for the lifetime of
+//TODO xmldoc the process. An operation whose wait timed out has not been consumed, and must still be consumed once it completes.
 public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 #pragma warning disable CA1001 // "Should be disposable" -- These objects live the lifetime of the application
 	sealed class AsyncOperationTrackingData : IAsyncOperationTrackingData {
@@ -167,8 +184,23 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 		}
 
 		static void ScheduleOrInvokeContinuations(IPrimaryThreadDispatcher? dispatcher, Action continuations) {
-			if (dispatcher != null) dispatcher.SchedulePrimaryThreadContinuation(continuations);
-			else continuations();
+			foreach (var invocationListEntry in continuations.GetInvocationList()) {
+				var continuation = (Action) invocationListEntry;
+				if (dispatcher != null) {
+					dispatcher.SchedulePrimaryThreadContinuation(continuation);
+					continue;
+				}
+
+				try {
+					continuation();
+				}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- One continuation must not prevent the rest being invoked
+				catch (Exception e) {
+#pragma warning restore CA1031
+					Console.WriteLine($"{nameof(TinyFfrAsyncOperation)} continuation failed with unhandled exception '{e}' | {e.GetAllMessages()}.");
+					Console.WriteLine(e.StackTrace);
+				}
+			}
 		}
 
 		public void Reset(IPrimaryThreadDispatcher primaryThreadDispatcher) {
@@ -229,7 +261,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 				continuationsLocal = _continuations;
 				_continuations = null;
 			}
-			continuationsLocal?.Invoke();
+			if (continuationsLocal != null) ScheduleOrInvokeContinuations(null, continuationsLocal);
 		}
 
 		public void ScheduleContinuation(ulong version, Action continuation) {
@@ -255,7 +287,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 				ThrowIfIncorrectVersion(version);
 				dispatcher = _primaryThreadDispatcher!;
 			}
-			return dispatcher.BlockPrimaryThreadUntilConditionSatisfied(_completionIndicator, timeout, cancellationToken);
+			return dispatcher.BlockPrimaryThreadUntilConditionSatisfied(_completionIndicator, this, version, timeout, cancellationToken);
 		}
 
 		public bool TryGetResultAndClear(ulong version, out T result, TimeSpan timeout, CancellationToken cancellationToken, out bool canBeReturnedToPool) {

@@ -313,7 +313,7 @@ class ArrayPoolBackedConcurrentBlockingQueueTest {
 	public void ShouldRejectEnqueueAfterSeal() {
 		_queue.Seal();
 
-		Assert.Throws<InvalidOperationException>(() => _queue.Enqueue(1));
+		Assert.Throws<ObjectDisposedException>(() => _queue.Enqueue(1));
 		Assert.DoesNotThrow(() => _queue.Seal());
 	}
 

@@ -10,6 +10,57 @@ namespace Egodystonic.TinyFFR.Threading;
 unsafe class CooperativeThreadPoolTest {
 	static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(10d);
 
+	sealed class PrimaryThreadHarness : IDisposable {
+		readonly Thread _thread;
+		readonly ManualResetEventSlim _ready = new(false);
+		readonly ManualResetEventSlim _actionAssigned = new(false);
+		readonly ManualResetEventSlim _actionComplete = new(false);
+		Action? _action;
+		Exception? _error;
+
+		public PrimaryThreadHarness() {
+			_thread = new Thread(ThreadEntry) { IsBackground = true, Name = "Test Primary Thread" };
+			_thread.Start();
+			if (!_ready.Wait(WaitTimeout)) throw new TimeoutException("Primary thread harness did not start.");
+		}
+
+		void ThreadEntry() {
+			ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
+			_ready.Set();
+			_actionAssigned.Wait();
+			if (_action == null) return;
+			try {
+				_action();
+			}
+#pragma warning disable CA1031
+			catch (Exception e) {
+#pragma warning restore CA1031
+				_error = e;
+			}
+			finally {
+				_actionComplete.Set();
+			}
+		}
+
+		public TimeSpan Invoke(Action action) {
+			_action = action;
+			var startTimestamp = Stopwatch.GetTimestamp();
+			_actionAssigned.Set();
+			if (!_actionComplete.Wait(WaitTimeout)) throw new TimeoutException("Primary thread harness action did not complete.");
+			var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+			if (_error != null) throw _error;
+			return elapsed;
+		}
+
+		public void Dispose() {
+			_actionAssigned.Set();
+			_thread.Join(WaitTimeout);
+			_ready.Dispose();
+			_actionAssigned.Dispose();
+			_actionComplete.Dispose();
+		}
+	}
+
 	sealed class JobContext {
 		public int Input;
 		public int IntResult;
@@ -31,6 +82,13 @@ unsafe class CooperativeThreadPoolTest {
 		context.Error = error;
 		context.IntResult = result;
 		context.Done.Set();
+	}
+
+	static void ThrowingCompletion(JobContext context, Exception? error, int result) {
+		context.Error = error;
+		context.IntResult = result;
+		context.Done.Set();
+		throw new InvalidOperationException("Deliberate test failure.");
 	}
 
 	static int SleepThenDoubleInput(JobContext context) {
@@ -63,11 +121,9 @@ unsafe class CooperativeThreadPoolTest {
 	[TearDown]
 	public void TearDownTest() => ThreadSafetyTracker.ClearPrimaryThread();
 
-	// (Plan step 7, covers finding 1) A job that throws used to reach GCHandle.FromIntPtr(0) inside its completion,
-	// which threw from within Execute's catch block and killed the process via the worker loop's rethrow.
 	[Test, Timeout(30_000)]
 	public void ShouldSurfaceJobExceptionForManagedResultInsteadOfCrashing() {
-		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 2 }, Thread.CurrentThread);
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 2 });
 		var context = new JobContext();
 
 		pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextManagedResult(context, &ThrowingManagedWork, &RecordStringResult));
@@ -81,7 +137,7 @@ unsafe class CooperativeThreadPoolTest {
 	public void ShouldExecuteWorkerJobsAndReportResults() {
 		const int JobCount = 50;
 
-		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 4 }, Thread.CurrentThread);
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 4 });
 		var contexts = new JobContext[JobCount];
 
 		for (var i = 0; i < JobCount; ++i) {
@@ -96,11 +152,9 @@ unsafe class CooperativeThreadPoolTest {
 		}
 	}
 
-	// (Plan step 7, covers finding 4) HasWorkerThreads was computed but never acted on, so a zero-thread pool enqueued
-	// worker jobs to a queue with no consumers at all and they simply never ran.
 	[Test, Timeout(30_000)]
 	public void ShouldExecuteInlineWhenConfiguredWithNoWorkerThreads() {
-		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
 		var context = new JobContext { Input = 5 };
 
 		pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &DoubleInput, &RecordIntResult));
@@ -110,14 +164,9 @@ unsafe class CooperativeThreadPoolTest {
 		Assert.AreEqual(10, context.IntResult);
 	}
 
-	// (Plan step 7, covers finding 2) Dispose never cancelled anything and joined before disposing the queues that
-	// would have woken the workers, so it always burned the entire MaxShutdownWaitTime and then skipped its own cleanup.
 	[Test, Timeout(60_000)]
 	public void ShouldDisposePromptlyAndJoinWorkerThreads() {
-		var pool = new CooperativeThreadPool(
-			new ThreadingConfig { WorkerThreadCount = 4, MaxShutdownWaitTime = TimeSpan.FromSeconds(10d) },
-			Thread.CurrentThread
-		);
+		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 4, MaxShutdownWaitTime = TimeSpan.FromSeconds(10d) });
 
 		var startTimestamp = Stopwatch.GetTimestamp();
 		pool.Dispose();
@@ -128,36 +177,58 @@ unsafe class CooperativeThreadPoolTest {
 
 	[Test, Timeout(30_000)]
 	public void ShouldTolerateRepeatedDisposal() {
-		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 2 }, Thread.CurrentThread);
+		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 2 });
 
 		pool.Dispose();
 		Assert.DoesNotThrow(() => pool.Dispose());
 		Assert.Throws<ObjectDisposedException>(() => pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(new JobContext(), &DoubleInput, &RecordIntResult)));
 	}
 
-	// (Plan step 7, covers findings 6 and 17) Jobs still queued at disposal used to be dropped silently: their waiters
-	// were never released and the context GCHandle allocated at creation time leaked permanently.
 	[Test, Timeout(30_000)]
-	public void ShouldReleasePrimaryThreadJobsAbandonedAtDisposal() {
-		// A primary thread that never pumps, so the job is guaranteed to still be queued when we dispose.
-		var neverPumpingPrimaryThread = new Thread(static () => { }) { IsBackground = true };
-		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, neverPumpingPrimaryThread);
+	public void ShouldRejectDisposalFromNonPrimaryThread() {
+		using var primaryThread = new PrimaryThreadHarness();
+		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
+
+		Assert.Throws<InvalidOperationException>(() => pool.Dispose());
+
+		primaryThread.Invoke(pool.Dispose);
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldCompletePendingPrimaryThreadJobsAtDisposal() {
+		using var primaryThread = new PrimaryThreadHarness();
+		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
 		var context = new JobContext { Input = 3 };
 
 		pool.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &DoubleInput, &RecordIntResult));
 		Assert.IsFalse(context.Done.IsSet);
 
-		pool.Dispose();
+		primaryThread.Invoke(pool.Dispose);
 
 		Assert.IsTrue(context.Done.Wait(WaitTimeout));
-		Assert.IsInstanceOf<OperationCanceledException>(context.Error);
+		Assert.IsNull(context.Error);
+		Assert.AreEqual(6, context.IntResult);
 	}
 
-	// (Plan step 7, covers plan step 6) With the old 100ms poll the primary thread sat inside mre.Wait and could not
-	// notice a newly-enqueued primary job until that wait expired, so this took ~100ms rather than ~20ms.
+	[Test, Timeout(30_000)]
+	public void ShouldReleaseWorkerJobsAbandonedAtDisposal() {
+		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 1, MaxShutdownWaitTime = TimeSpan.Zero });
+		var occupyingContext = new JobContext { WorkDuration = TimeSpan.FromSeconds(3d) };
+		var abandonedContext = new JobContext { Input = 7 };
+
+		pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(occupyingContext, &SleepThenDoubleInput, &RecordIntResult));
+		Thread.Sleep(200);
+		pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(abandonedContext, &DoubleInput, &RecordIntResult));
+
+		pool.Dispose();
+
+		Assert.IsTrue(abandonedContext.Done.Wait(WaitTimeout));
+		Assert.IsInstanceOf<OperationCanceledException>(abandonedContext.Error);
+	}
+
 	[Test, Timeout(30_000)]
 	public void ShouldWakePrimaryThreadWithoutWaitingForAPollInterval() {
-		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
 		var context = new JobContext { Input = 21 };
 
 		var submitter = new Thread(() => {
@@ -167,7 +238,7 @@ unsafe class CooperativeThreadPoolTest {
 		submitter.Start();
 
 		var startTimestamp = Stopwatch.GetTimestamp();
-		var wasSatisfied = ((IPrimaryThreadDispatcher) pool).BlockPrimaryThreadUntilConditionSatisfied(context.Done, TimeSpan.FromSeconds(5d), default);
+		var wasSatisfied = ((IPrimaryThreadDispatcher) pool).BlockPrimaryThreadUntilConditionSatisfied(context.Done, null, 0UL, TimeSpan.FromSeconds(5d), default);
 		var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
 		Assert.IsTrue(submitter.Join(WaitTimeout));
@@ -178,11 +249,11 @@ unsafe class CooperativeThreadPoolTest {
 
 	[Test, Timeout(30_000)]
 	public void ShouldReportTimeoutWhenConditionIsNeverSatisfied() {
-		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
 		using var neverSetIndicator = new ManualResetEventSlim(false);
 
 		var startTimestamp = Stopwatch.GetTimestamp();
-		var wasSatisfied = ((IPrimaryThreadDispatcher) pool).BlockPrimaryThreadUntilConditionSatisfied(neverSetIndicator, TimeSpan.FromMilliseconds(100d), default);
+		var wasSatisfied = ((IPrimaryThreadDispatcher) pool).BlockPrimaryThreadUntilConditionSatisfied(neverSetIndicator, null, 0UL, TimeSpan.FromMilliseconds(100d), default);
 		var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
 		Assert.IsFalse(wasSatisfied);
@@ -190,31 +261,110 @@ unsafe class CooperativeThreadPoolTest {
 		Assert.Less(elapsed, TimeSpan.FromSeconds(2d));
 	}
 
+	[Test, Timeout(30_000)]
+	public void ShouldHonourWaitTimeoutWhilePumpingQueuedJobs() {
+		const int JobCount = 8;
+
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
+		using var neverSetIndicator = new ManualResetEventSlim(false);
+		var contexts = new JobContext[JobCount];
+		for (var i = 0; i < JobCount; ++i) contexts[i] = new JobContext { Input = i, WorkDuration = TimeSpan.FromMilliseconds(100d) };
+
+		var submitter = new Thread(() => {
+			foreach (var context in contexts) {
+				pool.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &SleepThenDoubleInput, &RecordIntResult));
+			}
+		}) { IsBackground = true };
+		submitter.Start();
+		Assert.IsTrue(submitter.Join(WaitTimeout));
+
+		var startTimestamp = Stopwatch.GetTimestamp();
+		var wasSatisfied = ((IPrimaryThreadDispatcher) pool).BlockPrimaryThreadUntilConditionSatisfied(neverSetIndicator, null, 0UL, TimeSpan.FromMilliseconds(100d), default);
+		var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+
+		Assert.IsFalse(wasSatisfied);
+		Assert.Less(elapsed, TimeSpan.FromMilliseconds(500d));
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldNotLetAThrowingCompletionEscapeOrStrandThePump() {
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
+		var throwingContext = new JobContext { Input = 1 };
+		var subsequentContext = new JobContext { Input = 2 };
+
+		var submitter = new Thread(() => {
+			pool.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(throwingContext, &DoubleInput, &ThrowingCompletion));
+			pool.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(subsequentContext, &DoubleInput, &RecordIntResult));
+		}) { IsBackground = true };
+		submitter.Start();
+		Assert.IsTrue(submitter.Join(WaitTimeout));
+
+		Assert.DoesNotThrow(() => ((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(null));
+
+		Assert.IsTrue(throwingContext.Done.IsSet);
+		Assert.IsTrue(subsequentContext.Done.IsSet);
+		Assert.AreEqual(4, subsequentContext.IntResult);
+	}
+
+	[Test, Timeout(60_000)]
+	public void ShouldNotDropJobsWhenSubmissionRacesDisposal() {
+		const int AttemptCount = 20;
+		const int JobsPerAttempt = 20;
+
+		for (var attempt = 0; attempt < AttemptCount; ++attempt) {
+			var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 2 });
+			var contexts = new JobContext[JobsPerAttempt];
+			for (var i = 0; i < JobsPerAttempt; ++i) contexts[i] = new JobContext { Input = i };
+
+			var unexpectedException = (Exception?) null;
+			var submitter = new Thread(() => {
+				foreach (var context in contexts) {
+					try {
+						pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &DoubleInput, &RecordIntResult));
+					}
+					catch (ObjectDisposedException) { }
+#pragma warning disable CA1031
+					catch (Exception e) {
+#pragma warning restore CA1031
+						unexpectedException = e;
+						return;
+					}
+				}
+			}) { IsBackground = true };
+
+			submitter.Start();
+			pool.Dispose();
+			Assert.IsTrue(submitter.Join(WaitTimeout));
+
+			Assert.IsNull(unexpectedException);
+			foreach (var context in contexts) {
+				Assert.IsTrue(context.Done.Wait(WaitTimeout), "A job was neither executed nor cancelled.");
+			}
+		}
+	}
+
 	[Test, Timeout(60_000)]
 	public void ShouldDisposePromptlyWhileWorkerIsBlockedOnPrimaryThreadHandoff() {
-		var neverPumpingPrimaryThread = new Thread(static () => { }) { IsBackground = true };
-		var pool = new CooperativeThreadPool(
-			new ThreadingConfig { WorkerThreadCount = 1, MaxShutdownWaitTime = TimeSpan.FromSeconds(10d) },
-			neverPumpingPrimaryThread
-		);
+		using var primaryThread = new PrimaryThreadHarness();
+		var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 1, MaxShutdownWaitTime = TimeSpan.FromSeconds(10d) });
 		var context = new JobContext { Pool = pool };
 
 		pool.AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &HandOffToPrimaryThread, &RecordIntResult));
 		Assert.IsTrue(context.HandoffStarted.Wait(WaitTimeout));
 		Thread.Sleep(200);
 
-		var startTimestamp = Stopwatch.GetTimestamp();
-		pool.Dispose();
-		var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+		var elapsed = primaryThread.Invoke(pool.Dispose);
 
 		Assert.Less(elapsed, TimeSpan.FromSeconds(2d));
+		Assert.IsTrue(context.Done.Wait(WaitTimeout));
+		Assert.IsNull(context.Error);
 	}
 
 	[Test, Timeout(60_000)]
 	public void ShouldRespectPrimaryThreadPumpTimeBudget() {
 		const int JobCount = 10;
 
-		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
 		var contexts = new JobContext[JobCount];
 		for (var i = 0; i < JobCount; ++i) contexts[i] = new JobContext { Input = i, WorkDuration = TimeSpan.FromMilliseconds(30d) };
 
@@ -239,7 +389,7 @@ unsafe class CooperativeThreadPoolTest {
 
 	[Test, Timeout(60_000)]
 	public void ShouldExecuteAtLeastOneJobPerPumpRegardlessOfBudget() {
-		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
 		var contexts = new[] {
 			new JobContext { WorkDuration = TimeSpan.FromMilliseconds(50d) },
 			new JobContext { WorkDuration = TimeSpan.FromMilliseconds(50d) }
@@ -258,233 +408,5 @@ unsafe class CooperativeThreadPoolTest {
 
 		((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(TimeSpan.FromTicks(1L));
 		Assert.AreEqual(2, contexts.Count(context => context.Done.IsSet));
-	}
-}
-
-[TestFixture]
-unsafe class TinyFfrAsyncOperationTest {
-	static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(10d);
-
-	CooperativeThreadPool _pool = null!;
-	IPrimaryThreadDispatcher Dispatcher => _pool;
-
-	[SetUp]
-	public void SetUpTest() {
-		ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
-		_pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 }, Thread.CurrentThread);
-	}
-
-	[TearDown]
-	public void TearDownTest() {
-		_pool.Dispose();
-		ThreadSafetyTracker.ClearPrimaryThread();
-	}
-
-	// (Plan step 7, covers finding 11) Every one of these calls goes through ThrowIfIncorrectCycleCount while holding
-	// the lock in write mode, which tripped the old Debug.Assert(_rwls.IsReadLockHeld) in every Debug build.
-	[Test, Timeout(30_000)]
-	public void ShouldCompleteOperationWithResult() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-
-		Assert.IsFalse(operation.IsCompleted);
-		operation.SetResult(7);
-		Assert.IsTrue(operation.IsCompleted);
-		Assert.AreEqual(7, operation.GetResultAndDisposeOperation());
-	}
-
-	[Test, Timeout(30_000)]
-	public void ShouldPropagateOperationException() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-
-		operation.SetException(new InvalidOperationException("Deliberate test failure."));
-
-		Assert.IsTrue(operation.IsCompleted);
-		Assert.Throws<AggregateException>(() => operation.GetResultAndDisposeOperation());
-	}
-
-	// (Plan step 7, covers finding 7) A timed-out operation used to be handed back to the tracker pool from a finally
-	// block even though Clear() had never run, so its cycle count was unchanged: the still-running job's SetResult then
-	// passed the cycle check and wrote its result on to whichever operation had since re-rented that tracker. The pool
-	// is LIFO, so under the old behaviour the very next rental below would be the timed-out operation's own tracker.
-	[Test, Timeout(30_000)]
-	public void ShouldNotRecycleTrackingDataForTimedOutOperation() {
-		const int SubsequentOperationCount = 32;
-
-		var timedOutOperation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		Assert.IsFalse(timedOutOperation.GetResultAndDisposeOperation(TimeSpan.FromMilliseconds(50d), default, out _));
-
-		var subsequentOperations = new TinyFfrAsyncOperation<int>[SubsequentOperationCount];
-		for (var i = 0; i < SubsequentOperationCount; ++i) subsequentOperations[i] = new TinyFfrAsyncOperation<int>(Dispatcher);
-
-		timedOutOperation.SetResult(11);
-
-		foreach (var subsequentOperation in subsequentOperations) {
-			Assert.IsFalse(subsequentOperation.IsCompleted);
-		}
-
-		Assert.IsTrue(timedOutOperation.IsCompleted);
-		Assert.AreEqual(11, timedOutOperation.GetResultAndDisposeOperation());
-	}
-
-	[Test, Timeout(30_000)]
-	public void ShouldWaitForAllOperationsToComplete() {
-		var first = new TinyFfrAsyncOperation<int>(Dispatcher);
-		var second = new TinyFfrAsyncOperation<int>(Dispatcher);
-
-		Assert.IsFalse(TinyFfrAsyncOperation.WaitForAllToComplete(TimeSpan.FromMilliseconds(50d), first, second));
-
-		first.SetResult(1);
-		second.SetResult(2);
-
-		Assert.IsTrue(TinyFfrAsyncOperation.WaitForAllToComplete(TimeSpan.FromSeconds(5d), first, second));
-		Assert.AreEqual(1, first.GetResultAndDisposeOperation());
-		Assert.AreEqual(2, second.GetResultAndDisposeOperation());
-	}
-
-	// (Plan step 7, covers finding 19) The old implementation used 'operation != operations[^1]' as a position test,
-	// which is structural equality on a record struct: repeating one operation stopped the timeout being decremented.
-	[Test, Timeout(30_000)]
-	public void ShouldRespectTimeoutWhenTheSameOperationIsRepeated() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		TinyFfrAsyncOperation asNonGeneric = operation;
-
-		var startTimestamp = Stopwatch.GetTimestamp();
-		Assert.IsFalse(TinyFfrAsyncOperation.WaitForAllToComplete(TimeSpan.FromMilliseconds(100d), asNonGeneric, asNonGeneric, asNonGeneric));
-		var elapsed = Stopwatch.GetElapsedTime(startTimestamp);
-
-		Assert.Less(elapsed, TimeSpan.FromSeconds(2d));
-
-		operation.SetResult(0);
-		_ = operation.GetResultAndDisposeOperation();
-	}
-
-	// (Plan step 7, covers finding 20) IsCompleted was the one member that dereferenced its tracking data unguarded.
-	[Test, Timeout(30_000)]
-	public void ShouldRejectDefaultOperations() {
-		Assert.Throws<InvalidObjectException>(() => _ = default(TinyFfrAsyncOperation<int>).IsCompleted);
-		Assert.Throws<InvalidObjectException>(() => _ = default(TinyFfrAsyncOperation).IsCompleted);
-		Assert.Throws<InvalidObjectException>(() => default(TinyFfrAsyncOperation<int>).WaitForCompletion());
-		Assert.Throws<InvalidObjectException>(() => default(TinyFfrAsyncOperation).WaitForCompletion());
-		Assert.Throws<InvalidObjectException>(() => _ = default(TinyFfrAsyncOperation<int>).GetResultAndDisposeOperation());
-	}
-
-	void PumpPrimaryThreadJobs() => ((IPrimaryThreadDispatcher) _pool).ExecutePendingCooperativeJobs(null);
-
-
-
-
-
-
-
-	[Test, Timeout(30_000)]
-	public void ShouldResumeAwaitContinuationOnPrimaryThread() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		var continuationThreadId = 0;
-		var continuationRan = false;
-
-		var awaiter = operation.GetAwaiter();
-		awaiter.OnCompleted(() => {
-			continuationThreadId = System.Environment.CurrentManagedThreadId;
-			continuationRan = true;
-		});
-
-		var completer = new Thread(() => operation.SetResult(9)) { IsBackground = true };
-		completer.Start();
-		Assert.IsTrue(completer.Join(WaitTimeout));
-
-		Assert.IsFalse(continuationRan);
-
-		PumpPrimaryThreadJobs();
-
-		Assert.IsTrue(continuationRan);
-		Assert.AreEqual(System.Environment.CurrentManagedThreadId, continuationThreadId);
-		Assert.AreEqual(9, awaiter.GetResult());
-	}
-
-	[Test, Timeout(30_000)]
-	public void ShouldResumeOnPrimaryThreadEvenWhenAwaitedFromWorkerThread() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		operation.SetResult(11);
-
-		var awaiterReportedCompleted = true;
-		var continuationThreadId = 0;
-		var continuationRan = false;
-
-		var awaitingThread = new Thread(() => {
-			var awaiter = operation.GetAwaiter();
-			awaiterReportedCompleted = awaiter.IsCompleted;
-			awaiter.OnCompleted(() => {
-				continuationThreadId = System.Environment.CurrentManagedThreadId;
-				continuationRan = true;
-			});
-		}) { IsBackground = true };
-		awaitingThread.Start();
-		Assert.IsTrue(awaitingThread.Join(WaitTimeout));
-
-		Assert.IsFalse(awaiterReportedCompleted);
-		Assert.IsFalse(continuationRan);
-
-		PumpPrimaryThreadJobs();
-
-		Assert.IsTrue(continuationRan);
-		Assert.AreEqual(System.Environment.CurrentManagedThreadId, continuationThreadId);
-	}
-
-	[Test, Timeout(30_000)]
-	public void ShouldRecycleTrackingDataWhenAwaited() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		operation.SetResult(5);
-
-		Assert.AreEqual(1, OutstandingAsyncOperationRegistry.OutstandingCount);
-
-		var awaiter = operation.GetAwaiter();
-		Assert.IsTrue(awaiter.IsCompleted);
-		Assert.AreEqual(5, awaiter.GetResult());
-
-		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
-		Assert.Throws<InvalidOperationException>(() => _ = operation.IsCompleted);
-	}
-
-	[Test, Timeout(30_000)]
-	public void ShouldRunContinuationScheduledAfterCompletion() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		operation.SetResult(13);
-
-		var continuationRan = false;
-		var awaiter = operation.GetAwaiter();
-		awaiter.OnCompleted(() => continuationRan = true);
-
-		Assert.IsFalse(continuationRan);
-		PumpPrimaryThreadJobs();
-
-		Assert.IsTrue(continuationRan);
-		Assert.AreEqual(13, awaiter.GetResult());
-	}
-
-	[Test, Timeout(30_000)]
-	public void ShouldThrowFromAwaiterGetResultWhenOperationFaults() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		operation.SetException(new InvalidOperationException("Deliberate test failure."));
-
-		var awaiter = operation.GetAwaiter();
-		Assert.IsTrue(awaiter.IsCompleted);
-
-		var thrown = Assert.Throws<AggregateException>(() => _ = awaiter.GetResult());
-		Assert.IsInstanceOf<InvalidOperationException>(thrown!.GetBaseException());
-		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
-	}
-
-	[Test, Timeout(30_000)]
-	public void ShouldFaultOutstandingOperationsWhenPoolDisposed() {
-		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
-		var continuationRan = false;
-		var awaiter = operation.GetAwaiter();
-		awaiter.OnCompleted(() => continuationRan = true);
-
-		_pool.Dispose();
-
-		Assert.IsTrue(continuationRan);
-		var thrown = Assert.Throws<AggregateException>(() => _ = awaiter.GetResult());
-		Assert.IsInstanceOf<ObjectDisposedException>(thrown!.GetBaseException());
 	}
 }

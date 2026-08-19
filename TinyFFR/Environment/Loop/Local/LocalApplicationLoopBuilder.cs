@@ -87,6 +87,11 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var result = _handleDataMap[handle].FrameInterval - timeSinceLastIteration;
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
 	}
+	TimeSpan? GetCooperativeTaskBudget(TimeSpan idleTime) {
+		if (_maxCooperativeTaskTimePerIteration is not { } configuredMaxTime) return null;
+		if (configuredMaxTime > TimeSpan.Zero) return configuredMaxTime;
+		return idleTime > TimeSpan.Zero ? idleTime : TimeSpan.Zero;
+	}
 	void ExecuteIteration(bool shouldIterateInput, bool shouldTranscribeText) {
 		if (shouldIterateInput) {
 			_latestInputRetriever.IterateSystemWideInput(shouldTranscribeText);
@@ -96,10 +101,14 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle, bool executePendingPrimaryThreadCooperativeTasks) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
-		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs(_maxCooperativeTaskTimePerIteration);
-
 		var waitTime = GetWaitTimeUntilNextFrameStart(handle);
 		var maxCpuBusyWaitTime = _handleDataMap[handle].MaxCpuBusyWaitTime;
+
+		if (executePendingPrimaryThreadCooperativeTasks) {
+			_globals.ExecutePendingCooperativePrimaryThreadJobs(GetCooperativeTaskBudget(waitTime - maxCpuBusyWaitTime));
+			waitTime = GetWaitTimeUntilNextFrameStart(handle);
+		}
+
 		if (waitTime > maxCpuBusyWaitTime) {
 			Thread.Sleep(waitTime - maxCpuBusyWaitTime);
 		}
@@ -122,7 +131,9 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime, bool executePendingPrimaryThreadCooperativeTasks) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
-		if (executePendingPrimaryThreadCooperativeTasks) _globals.ExecutePendingCooperativePrimaryThreadJobs(_maxCooperativeTaskTimePerIteration);
+		if (executePendingPrimaryThreadCooperativeTasks) {
+			_globals.ExecutePendingCooperativePrimaryThreadJobs(GetCooperativeTaskBudget(GetWaitTimeUntilNextFrameStart(handle)));
+		}
 
 		if (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) {
 			outDeltaTime = default;

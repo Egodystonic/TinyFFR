@@ -44,7 +44,7 @@ sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 	public void Enqueue(T item) {
 		lock (_monitorObject) {
 			ObjectDisposedException.ThrowIf(_isDisposed, this);
-			if (_queueIsSealed) throw new InvalidOperationException($"Can not enqueue to this {nameof(ArrayPoolBackedConcurrentBlockingQueue<T>)} after {nameof(Seal)} has been invoked.");
+			if (_queueIsSealed) throw new ObjectDisposedException(ToString(), $"Can not enqueue to this {nameof(ArrayPoolBackedConcurrentBlockingQueue<T>)} after {nameof(Seal)} has been invoked.");
 			if (Count == Capacity) GrowBuffer();
 			_buffer[WriteHead] = item;
 			++_writeCounter;

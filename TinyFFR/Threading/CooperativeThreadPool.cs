@@ -2,33 +2,34 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Egodystonic.TinyFFR.Threading;
 
 sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadDispatcher, IDisposable {
 	const int MaxCooperativeJobHydrationStackDepth = 8;
+	static readonly TimeSpan ShutdownDrainPollInterval = TimeSpan.FromMilliseconds(10d);
 	int _currentCooperativeJobHydrationStackDepth = 0;
 
 	readonly ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> _primaryJobQueue;
 	readonly ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> _workerJobQueue;
 	readonly object _primaryWakeMonitor = new();
 	readonly ThreadingConfig _config;
-	readonly Thread _primaryThread;
 	readonly Thread[] _workerThreads;
 	readonly JobCompletionRegistrar _completionRegistrar;
 	// ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable Reference kept to avoid GC collect
 	readonly ThreadStart _workerThreadEntryRef;
+	int _liveWorkerThreadCount;
+	volatile bool _isDisposing;
 	volatile bool _isDisposed;
 
 	public bool HasWorkerThreads { get; }
 
-	public CooperativeThreadPool(ThreadingConfig config, Thread primaryThread) {
+	public CooperativeThreadPool(ThreadingConfig config) {
 		ArgumentNullException.ThrowIfNull(config);
-		ArgumentNullException.ThrowIfNull(primaryThread);
 
 		_config = config;
-		_primaryThread = primaryThread;
 		_primaryJobQueue = new ArrayPoolBackedConcurrentBlockingQueue<ThreadJob>();
 		_workerJobQueue = new ArrayPoolBackedConcurrentBlockingQueue<ThreadJob>();
 		_completionRegistrar = new();
@@ -37,6 +38,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		HasWorkerThreads = threadCount > 0;
 		_workerThreads = new Thread[threadCount];
 		_workerThreadEntryRef = WorkerThreadEntry;
+		_liveWorkerThreadCount = threadCount;
 
 		for (var i = 0; i < threadCount; ++i) {
 			_workerThreads[i] = new Thread(_workerThreadEntryRef) {
@@ -47,43 +49,52 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 	}
 
+	void EnqueueOrCancel(ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> queue, ThreadJob job) {
+		try {
+			queue.Enqueue(job);
+		}
+		catch {
+			job.Cancel(_completionRegistrar);
+			throw;
+		}
+	}
+
+	[DoesNotReturn]
+	void CancelJobAndThrowObjectDisposed(ThreadJob job) {
+		job.Cancel(_completionRegistrar);
+		throw new ObjectDisposedException(ToString());
+	}
+
 	public void AddWorkerThreadJob(ThreadJob job) {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
+		if (_isDisposing) CancelJobAndThrowObjectDisposed(job);
 		if (!HasWorkerThreads) {
 			job.Execute(_completionRegistrar);
 			return;
 		}
 
-		_workerJobQueue.Enqueue(job);
+		EnqueueOrCancel(_workerJobQueue, job);
 	}
 
 	public void AddPrimaryThreadJob(ThreadJob job) {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
-		if (Thread.CurrentThread == _primaryThread) {
+		if (_isDisposed) CancelJobAndThrowObjectDisposed(job);
+		if (ThreadSafetyTracker.CurrentThreadIsPrimary()) {
 			job.Execute(_completionRegistrar);
 			return;
 		}
 
-		_primaryJobQueue.Enqueue(job);
+		EnqueueOrCancel(_primaryJobQueue, job);
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
 	}
 
 	public void AddPrimaryThreadJobAndWait(ThreadJob job) {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
-		if (Thread.CurrentThread == _primaryThread) {
+		if (_isDisposed) CancelJobAndThrowObjectDisposed(job);
+		if (ThreadSafetyTracker.CurrentThreadIsPrimary()) {
 			job.Execute(_completionRegistrar);
 			return;
 		}
 
 		_completionRegistrar.RegisterInterest(job.JobId);
-		try {
-			_primaryJobQueue.Enqueue(job);
-		}
-		catch {
-			_completionRegistrar.NotifyCompletion(job.JobId);
-			throw;
-		}
-
+		EnqueueOrCancel(_primaryJobQueue, job);
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
 
 		if (!_completionRegistrar.WaitForCompletion(job.JobId, Timeout.InfiniteTimeSpan, CancellationToken.None)) {
@@ -94,15 +105,27 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 	void IPrimaryThreadDispatcher.ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) => ExecutePendingCooperativeJobs(targetExecutionTimeCap);
 
 	void ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) {
-		Debug.Assert(Thread.CurrentThread == _primaryThread);
 		if (_isDisposed) return;
+		ExecutePendingCooperativeJobsRegardlessOfDisposalState(targetExecutionTimeCap);
+	}
+
+	void ExecutePendingCooperativeJobsRegardlessOfDisposalState(TimeSpan? targetExecutionTimeCap) {
+		Debug.Assert(ThreadSafetyTracker.CurrentThreadIsPrimary());
 		if (_currentCooperativeJobHydrationStackDepth >= MaxCooperativeJobHydrationStackDepth) return;
 
 		var startTimestamp = Stopwatch.GetTimestamp();
 		++_currentCooperativeJobHydrationStackDepth;
 		try {
-			while (!_isDisposed && _primaryJobQueue.TryDequeue(out var job)) {
-				job.Execute(_completionRegistrar);
+			while (_primaryJobQueue.TryDequeue(out var job)) {
+				try {
+					job.Execute(_completionRegistrar);
+				}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- We're logging it, not much else to do
+				catch (Exception e) {
+#pragma warning restore CA1031
+					Console.WriteLine($"{Thread.CurrentThread} failed to execute a primary thread job with unhandled exception '{e}' | {e.GetAllMessages()}.");
+					Console.WriteLine(e.StackTrace);
+				}
 				if (targetExecutionTimeCap is { } maxTime && Stopwatch.GetElapsedTime(startTimestamp) >= maxTime) return;
 			}
 		}
@@ -115,20 +138,40 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		ArgumentNullException.ThrowIfNull(continuation);
 
 		static Unused InvokeContinuation(Action continuation) {
-			continuation();
+			InvokeContinuationAndLogAnyError(continuation);
 			return default;
 		}
 		static void CompleteContinuation(Action continuation, Exception? error, Unused result) {
-			if (error != null) Console.WriteLine($"Primary thread continuation failed with unhandled exception '{error}' | {error.GetAllMessages()}.");
+			if (error == null) return;
+			InvokeContinuationAndLogAnyError(continuation);
 		}
 
 		if (_isDisposed) {
-			continuation();
+			InvokeContinuationAndLogAnyError(continuation);
 			return;
 		}
 
-		_primaryJobQueue.Enqueue(ThreadJob.CreateWithManagedContextUnmanagedResult(continuation, &InvokeContinuation, &CompleteContinuation));
+		var job = ThreadJob.CreateWithManagedContextUnmanagedResult(continuation, &InvokeContinuation, &CompleteContinuation);
+		try {
+			_primaryJobQueue.Enqueue(job);
+		}
+		catch (ObjectDisposedException) {
+			job.Cancel(_completionRegistrar);
+			return;
+		}
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+	}
+
+	static void InvokeContinuationAndLogAnyError(Action continuation) {
+		try {
+			continuation();
+		}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- We're logging it, not much else to do
+		catch (Exception e) {
+#pragma warning restore CA1031
+			Console.WriteLine($"Primary thread continuation failed with unhandled exception '{e}' | {e.GetAllMessages()}.");
+			Console.WriteLine(e.StackTrace);
+		}
 	}
 
 	public void NotifyPrimaryThreadOfEventIfCurrentlyBlocked() {
@@ -137,24 +180,24 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 	}
 
-	bool IPrimaryThreadDispatcher.BlockPrimaryThreadUntilConditionSatisfied(ManualResetEventSlim mre, TimeSpan timeout, CancellationToken cancellationToken) {
+	bool IPrimaryThreadDispatcher.BlockPrimaryThreadUntilConditionSatisfied(ManualResetEventSlim mre, IAsyncOperationTrackingData? versionOwner, ulong expectedVersion, TimeSpan timeout, CancellationToken cancellationToken) {
 		ArgumentNullException.ThrowIfNull(mre);
-		Debug.Assert(Thread.CurrentThread == _primaryThread);
+		Debug.Assert(ThreadSafetyTracker.CurrentThreadIsPrimary());
 
 		var startTimestamp = Stopwatch.GetTimestamp();
 		var hasTimeout = timeout >= TimeSpan.Zero;
-		
+
+		static bool ConditionIsSatisfied(ManualResetEventSlim mre, IAsyncOperationTrackingData? versionOwner, ulong expectedVersion) {
+			return mre.IsSet || (versionOwner != null && versionOwner.Version != expectedVersion);
+		}
+
 		var cancellationRegistration = cancellationToken.CanBeCanceled
 			? cancellationToken.UnsafeRegister(static state => ((CooperativeThreadPool) state!).NotifyPrimaryThreadOfEventIfCurrentlyBlocked(), this)
 			: default;
 
 		try {
 			while (true) {
-				if (mre.IsSet) return true;
-				ExecutePendingCooperativeJobs(null);
-				if (mre.IsSet) return true;
-				cancellationToken.ThrowIfCancellationRequested();
-				if (_isDisposed) return mre.IsSet;
+				if (ConditionIsSatisfied(mre, versionOwner, expectedVersion)) return true;
 
 				var remainingTime = Timeout.InfiniteTimeSpan;
 				if (hasTimeout) {
@@ -162,8 +205,19 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 					if (remainingTime <= TimeSpan.Zero) return false;
 				}
 
+				ExecutePendingCooperativeJobs(hasTimeout ? remainingTime : null);
+
+				if (ConditionIsSatisfied(mre, versionOwner, expectedVersion)) return true;
+				cancellationToken.ThrowIfCancellationRequested();
+				if (_isDisposed) return ConditionIsSatisfied(mre, versionOwner, expectedVersion);
+
+				if (hasTimeout) {
+					remainingTime = timeout - Stopwatch.GetElapsedTime(startTimestamp);
+					if (remainingTime <= TimeSpan.Zero) return false;
+				}
+
 				lock (_primaryWakeMonitor) {
-					if (mre.IsSet || _primaryJobQueue.HasPendingItems || cancellationToken.IsCancellationRequested) continue;
+					if (_isDisposed || ConditionIsSatisfied(mre, versionOwner, expectedVersion) || _primaryJobQueue.HasPendingItems || cancellationToken.IsCancellationRequested) continue;
 					Monitor.Wait(_primaryWakeMonitor, remainingTime);
 				}
 			}
@@ -174,53 +228,80 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 	}
 
 	void WorkerThreadEntry() {
-		while (!_isDisposed) {
-			ThreadJob job;
-			try {
-				if (!_workerJobQueue.TryDequeueBlocking(out job)) break;
-			}
-			catch (ObjectDisposedException) {
-				break;
-			}
+		try {
+			while (true) {
+				ThreadJob job;
+				try {
+					if (!_workerJobQueue.TryDequeueBlocking(out job)) break;
+				}
+				catch (ObjectDisposedException) {
+					break;
+				}
 
-			try {
-				job.Execute(_completionRegistrar);
-			}
+				try {
+					job.Execute(_completionRegistrar);
+				}
 #pragma warning disable CA1031 // "Don't catch/swallow Exception" -- We're logging it, not much else to do
-			catch (Exception e) {
+				catch (Exception e) {
 #pragma warning restore CA1031
-				Console.WriteLine($"{Thread.CurrentThread} failed with unhandled exception '{e}' | {e.GetAllMessages()}.");
-				Console.WriteLine(e.StackTrace);
+					Console.WriteLine($"{Thread.CurrentThread} failed with unhandled exception '{e}' | {e.GetAllMessages()}.");
+					Console.WriteLine(e.StackTrace);
+				}
 			}
+		}
+		finally {
+			Interlocked.Decrement(ref _liveWorkerThreadCount);
+			NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
 		}
 	}
 
 	public void Dispose() {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		if (_isDisposed) return;
-		_isDisposed = true;
+		_isDisposing = true;
 
 		_workerJobQueue.Seal();
-		_primaryJobQueue.Seal();
-		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
-
-		AbandonRemainingJobs(_primaryJobQueue);
 
 		var startTimestamp = Stopwatch.GetTimestamp();
+		while (true) {
+			ExecutePendingCooperativeJobsRegardlessOfDisposalState(null);
+			if (Volatile.Read(ref _liveWorkerThreadCount) <= 0 && !_primaryJobQueue.HasPendingItems) break;
+			if (Stopwatch.GetElapsedTime(startTimestamp) >= _config.MaxShutdownWaitTime) break;
+
+			lock (_primaryWakeMonitor) {
+				if (_primaryJobQueue.HasPendingItems || Volatile.Read(ref _liveWorkerThreadCount) <= 0) continue;
+				Monitor.Wait(_primaryWakeMonitor, ShutdownDrainPollInterval);
+			}
+		}
+
+		_isDisposed = true;
+		_primaryJobQueue.Seal();
+
 		foreach (var workerThread in _workerThreads) {
 			var remainingTime = _config.MaxShutdownWaitTime - Stopwatch.GetElapsedTime(startTimestamp);
 			if (remainingTime < TimeSpan.Zero) remainingTime = TimeSpan.Zero;
 
 			if (workerThread.Join(remainingTime)) continue;
-			Console.WriteLine($"Could not join all worker thread pool threads before {nameof(ThreadingConfig.MaxShutdownWaitTime)} elapsed.");
+			Console.WriteLine(
+				$"Could not join all worker thread pool threads before {nameof(ThreadingConfig.MaxShutdownWaitTime)} elapsed. " +
+				$"Resources may be torn down while worker threads are still executing."
+			);
 			break;
 		}
 
 		AbandonRemainingJobs(_workerJobQueue);
 		AbandonRemainingJobs(_primaryJobQueue);
-		OutstandingAsyncOperationRegistry.FaultAllOutstanding(new ObjectDisposedException(ToString(), $"{nameof(CooperativeThreadPool)} was disposed before this operation completed."));
-		_completionRegistrar.Dispose();
-		_workerJobQueue.Dispose();
-		_primaryJobQueue.Dispose();
+
+		try {
+			OutstandingAsyncOperationRegistry.FaultAllOutstanding(new ObjectDisposedException(ToString(), $"{nameof(CooperativeThreadPool)} was disposed before this operation completed."));
+		}
+		finally {
+			Debug.Assert(!_workerJobQueue.HasPendingItems);
+			Debug.Assert(!_primaryJobQueue.HasPendingItems);
+			_completionRegistrar.Dispose();
+			_workerJobQueue.Dispose();
+			_primaryJobQueue.Dispose();
+		}
 	}
 
 	void AbandonRemainingJobs(ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> queue) {
