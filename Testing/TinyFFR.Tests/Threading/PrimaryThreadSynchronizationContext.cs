@@ -1,4 +1,4 @@
-// Created on 2026-08-18 by Ben Bowen
+﻿// Created on 2026-08-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Diagnostics;
@@ -23,6 +23,7 @@ class TinyFfrSynchronizationContextTest {
 	[TearDown]
 	public void TearDownTest() {
 		_pool.Dispose();
+		OutstandingAsyncOperationRegistry.InvokeDeferredContinuations();
 		ThreadSafetyTracker.ClearPrimaryThread();
 	}
 

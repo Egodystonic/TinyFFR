@@ -1,4 +1,4 @@
-// Created on 2026-08-16 by Ben Bowen
+﻿// Created on 2026-08-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Threading;
@@ -9,7 +9,7 @@ interface IPrimaryThreadDispatcher {
 	void ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap);
 	bool BlockPrimaryThreadUntilConditionSatisfied(ManualResetEventSlim mre, IAsyncOperationTrackingData? versionOwner, ulong expectedVersion, TimeSpan timeout, CancellationToken cancellationToken);
 	void NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
-	void SchedulePrimaryThreadContinuation(Action continuation);
+	bool SchedulePrimaryThreadContinuation(Action continuation);
 }
 
 interface IJobExecutionFacade {

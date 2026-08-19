@@ -1,4 +1,4 @@
-// Created on 2026-08-17 by Ben Bowen
+﻿// Created on 2026-08-17 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Threading;
@@ -32,18 +32,12 @@ sealed unsafe class WorkerResourceCreationSyncHelper<TContext, TResult> : IDispo
 			context.Error = error;
 		}
 		
-		TResult result;
-		Exception? error;
-		try {
-			facade.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(syncObject, &Work, &Completion));
+		facade.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(syncObject, &Work, &Completion));
 
-			result = syncObject.NewResource;
-			error = syncObject.Error;
-		}
-		finally {
-			syncObject.Recycle();
-			_threadLocalObjectPool.Value!.Return(syncObject);
-		}
+		var result = syncObject.NewResource;
+		var error = syncObject.Error;
+		syncObject.Recycle();
+		_threadLocalObjectPool.Value!.Return(syncObject);
 
 		if (error != null) throw new AggregateException($"Could not create resource on primary thread ({error.GetAllMessages()}).", error);
 

@@ -1,4 +1,4 @@
-// Created on 2026-08-16 by Ben Bowen
+﻿// Created on 2026-08-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Buffers.Binary;
@@ -14,11 +14,12 @@ interface IAsyncOperationTrackingData {
 	bool WaitForCompletion(ulong version, TimeSpan timeout, CancellationToken cancellationToken);
 	void ScheduleContinuation(ulong version, Action continuation);
 	void DiscardResultAndClearWithoutWaiting(ulong version);
-	void FaultIfIncomplete(Exception error);
+	Action? FaultIfIncompleteAndExtractContinuations(Exception error);
 }
 
 static class OutstandingAsyncOperationRegistry {
 	static readonly List<IAsyncOperationTrackingData> _outstandingOperations = new();
+	static readonly List<Action> _deferredContinuations = new();
 
 	public static int OutstandingCount {
 		get {
@@ -43,12 +44,38 @@ static class OutstandingAsyncOperationRegistry {
 		_outstandingOperations.Clear();
 		foreach (var trackingData in snapshot) {
 			try {
-				trackingData.FaultIfIncomplete(error);
+				var continuations = trackingData.FaultIfIncompleteAndExtractContinuations(error);
+				if (continuations != null) _deferredContinuations.Add(continuations);
 			}
 #pragma warning disable CA1031 // "Don't catch/swallow Exception" -- One operation must not prevent the rest being faulted
 			catch (Exception e) {
 #pragma warning restore CA1031
 				Console.WriteLine($"Could not fault outstanding async operation during teardown: {e.GetAllMessages()}.");
+			}
+		}
+	}
+
+	public static void InvokeDeferredContinuations() {
+		if (_deferredContinuations.Count == 0) return;
+		var snapshot = _deferredContinuations.ToArray();
+		_deferredContinuations.Clear();
+
+		if (!ThreadSafetyTracker.CurrentThreadIsPrimary()) {
+			Console.WriteLine($"Discarding {snapshot.Length} deferred async operation continuation set(s): teardown did not complete on the primary thread.");
+			return;
+		}
+
+		foreach (var continuations in snapshot) {
+			foreach (var invocationListEntry in continuations.GetInvocationList()) {
+				try {
+					((Action) invocationListEntry)();
+				}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- One continuation must not prevent the rest being invoked
+				catch (Exception e) {
+#pragma warning restore CA1031
+					Console.WriteLine($"Deferred {nameof(TinyFfrAsyncOperation)} continuation failed with unhandled exception '{e}' | {e.GetAllMessages()}.");
+					Console.WriteLine(e.StackTrace);
+				}
 			}
 		}
 	}
@@ -252,16 +279,15 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 			if (continuationsLocal != null) ScheduleOrInvokeContinuations(dispatcher, continuationsLocal);
 		}
 
-		public void FaultIfIncomplete(Exception error) {
-			Action? continuationsLocal;
+		public Action? FaultIfIncompleteAndExtractContinuations(Exception error) {
 			lock (_lock) {
-				if (_completionIndicator.IsSet) return;
+				if (_completionIndicator.IsSet) return null;
 				_exception = error;
 				_completionIndicator.Set();
-				continuationsLocal = _continuations;
+				var continuationsLocal = _continuations;
 				_continuations = null;
+				return continuationsLocal;
 			}
-			if (continuationsLocal != null) ScheduleOrInvokeContinuations(null, continuationsLocal);
 		}
 
 		public void ScheduleContinuation(ulong version, Action continuation) {

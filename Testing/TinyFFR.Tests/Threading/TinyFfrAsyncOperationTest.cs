@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 
 namespace Egodystonic.TinyFFR.Threading;
@@ -30,6 +30,7 @@ unsafe class TinyFfrAsyncOperationTest {
 	[TearDown]
 	public void TearDownTest() {
 		_pool.Dispose();
+		OutstandingAsyncOperationRegistry.InvokeDeferredContinuations();
 		ThreadSafetyTracker.ClearPrimaryThread();
 	}
 
@@ -254,6 +255,9 @@ unsafe class TinyFfrAsyncOperationTest {
 		awaiter.OnCompleted(() => continuationRan = true);
 
 		_pool.Dispose();
+
+		Assert.IsFalse(continuationRan);
+		OutstandingAsyncOperationRegistry.InvokeDeferredContinuations();
 
 		Assert.IsTrue(continuationRan);
 		var thrown = Assert.Throws<AggregateException>(() => _ = awaiter.GetResult());

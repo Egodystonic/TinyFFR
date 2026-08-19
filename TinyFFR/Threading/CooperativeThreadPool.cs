@@ -1,4 +1,4 @@
-// Created on 2026-08-16 by Ben Bowen
+﻿// Created on 2026-08-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Diagnostics;
@@ -102,16 +102,16 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 	}
 
-	void IPrimaryThreadDispatcher.ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) => ExecutePendingCooperativeJobs(targetExecutionTimeCap);
+	void IPrimaryThreadDispatcher.ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) => _ = ExecutePendingCooperativeJobs(targetExecutionTimeCap);
 
-	void ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) {
-		if (_isDisposed) return;
-		ExecutePendingCooperativeJobsRegardlessOfDisposalState(targetExecutionTimeCap);
+	bool ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) {
+		if (_isDisposed) return false;
+		return ExecutePendingCooperativeJobsRegardlessOfDisposalState(targetExecutionTimeCap);
 	}
 
-	void ExecutePendingCooperativeJobsRegardlessOfDisposalState(TimeSpan? targetExecutionTimeCap) {
+	bool ExecutePendingCooperativeJobsRegardlessOfDisposalState(TimeSpan? targetExecutionTimeCap) {
 		Debug.Assert(ThreadSafetyTracker.CurrentThreadIsPrimary());
-		if (_currentCooperativeJobHydrationStackDepth >= MaxCooperativeJobHydrationStackDepth) return;
+		if (_currentCooperativeJobHydrationStackDepth >= MaxCooperativeJobHydrationStackDepth) return false;
 
 		var startTimestamp = Stopwatch.GetTimestamp();
 		++_currentCooperativeJobHydrationStackDepth;
@@ -126,15 +126,16 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 					Console.WriteLine($"{Thread.CurrentThread} failed to execute a primary thread job with unhandled exception '{e}' | {e.GetAllMessages()}.");
 					Console.WriteLine(e.StackTrace);
 				}
-				if (targetExecutionTimeCap is { } maxTime && Stopwatch.GetElapsedTime(startTimestamp) >= maxTime) return;
+				if (targetExecutionTimeCap is { } maxTime && Stopwatch.GetElapsedTime(startTimestamp) >= maxTime) break;
 			}
 		}
 		finally {
 			--_currentCooperativeJobHydrationStackDepth;
 		}
+		return true;
 	}
 
-	public void SchedulePrimaryThreadContinuation(Action continuation) {
+	public bool SchedulePrimaryThreadContinuation(Action continuation) {
 		ArgumentNullException.ThrowIfNull(continuation);
 
 		static Unused InvokeContinuation(Action continuation) {
@@ -143,13 +144,10 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 		static void CompleteContinuation(Action continuation, Exception? error, Unused result) {
 			if (error == null) return;
-			InvokeContinuationAndLogAnyError(continuation);
+			InvokeContinuationOnPrimaryThreadOrDiscard(continuation);
 		}
 
-		if (_isDisposed) {
-			InvokeContinuationAndLogAnyError(continuation);
-			return;
-		}
+		if (_isDisposed) return InvokeContinuationOnPrimaryThreadOrDiscard(continuation);
 
 		var job = ThreadJob.CreateWithManagedContextUnmanagedResult(continuation, &InvokeContinuation, &CompleteContinuation);
 		try {
@@ -157,9 +155,22 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 		catch (ObjectDisposedException) {
 			job.Cancel(_completionRegistrar);
-			return;
+			return ThreadSafetyTracker.CurrentThreadIsPrimary();
 		}
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+		return true;
+	}
+
+	static bool InvokeContinuationOnPrimaryThreadOrDiscard(Action continuation) {
+		if (!ThreadSafetyTracker.CurrentThreadIsPrimary()) {
+			Console.WriteLine(
+				$"Discarding a primary thread continuation scheduled from {Thread.CurrentThread} after {nameof(CooperativeThreadPool)} disposal: " +
+				$"it can not be invoked on the primary thread."
+			);
+			return false;
+		}
+		InvokeContinuationAndLogAnyError(continuation);
+		return true;
 	}
 
 	static void InvokeContinuationAndLogAnyError(Action continuation) {
@@ -205,7 +216,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 					if (remainingTime <= TimeSpan.Zero) return false;
 				}
 
-				ExecutePendingCooperativeJobs(hasTimeout ? remainingTime : null);
+				var pumpWasPermitted = ExecutePendingCooperativeJobs(hasTimeout ? remainingTime : null);
 
 				if (ConditionIsSatisfied(mre, versionOwner, expectedVersion)) return true;
 				cancellationToken.ThrowIfCancellationRequested();
@@ -217,7 +228,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 				}
 
 				lock (_primaryWakeMonitor) {
-					if (_isDisposed || ConditionIsSatisfied(mre, versionOwner, expectedVersion) || _primaryJobQueue.HasPendingItems || cancellationToken.IsCancellationRequested) continue;
+					if (_isDisposed || ConditionIsSatisfied(mre, versionOwner, expectedVersion) || (pumpWasPermitted && _primaryJobQueue.HasPendingItems) || cancellationToken.IsCancellationRequested) continue;
 					Monitor.Wait(_primaryWakeMonitor, remainingTime);
 				}
 			}
@@ -264,12 +275,12 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 
 		var startTimestamp = Stopwatch.GetTimestamp();
 		while (true) {
-			ExecutePendingCooperativeJobsRegardlessOfDisposalState(null);
+			var pumpWasPermitted = ExecutePendingCooperativeJobsRegardlessOfDisposalState(null);
 			if (Volatile.Read(ref _liveWorkerThreadCount) <= 0 && !_primaryJobQueue.HasPendingItems) break;
 			if (Stopwatch.GetElapsedTime(startTimestamp) >= _config.MaxShutdownWaitTime) break;
 
 			lock (_primaryWakeMonitor) {
-				if (_primaryJobQueue.HasPendingItems || Volatile.Read(ref _liveWorkerThreadCount) <= 0) continue;
+				if (pumpWasPermitted && (_primaryJobQueue.HasPendingItems || Volatile.Read(ref _liveWorkerThreadCount) <= 0)) continue;
 				Monitor.Wait(_primaryWakeMonitor, ShutdownDrainPollInterval);
 			}
 		}

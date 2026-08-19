@@ -1,4 +1,4 @@
-// Created on 2026-08-18 by Ben Bowen
+﻿// Created on 2026-08-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Diagnostics;
@@ -106,6 +106,29 @@ unsafe class CooperativeThreadPoolTest {
 		context.Pool!.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &NoOpWork, &NoOpCompletion));
 		return 0;
 	}
+
+	sealed class NestedWaitContext {
+		public TinyFfrAsyncOperation<int>[] Operations = Array.Empty<TinyFfrAsyncOperation<int>>();
+		public int NextOperationIndex;
+		public int CurrentNesting;
+		public int MaxObservedNesting;
+		public Exception? Error;
+	}
+
+	static int WaitOnNextOperation(NestedWaitContext context) {
+		var index = context.NextOperationIndex++;
+		++context.CurrentNesting;
+		context.MaxObservedNesting = Int32.Max(context.MaxObservedNesting, context.CurrentNesting);
+		try {
+			context.Operations[index].WaitForCompletion();
+		}
+		finally {
+			--context.CurrentNesting;
+		}
+		return index;
+	}
+
+	static void RecordNestedResult(NestedWaitContext context, Exception? error, int result) => context.Error = error;
 
 	static string ThrowingManagedWork(JobContext context) => throw new InvalidOperationException("Deliberate test failure.");
 
@@ -408,5 +431,45 @@ unsafe class CooperativeThreadPoolTest {
 
 		((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(TimeSpan.FromTicks(1L));
 		Assert.AreEqual(2, contexts.Count(context => context.Done.IsSet));
+	}
+
+	[Test, Timeout(60_000)]
+	public void ShouldNotBusyWaitWhenCooperativePumpingHitsMaxNestingDepth() {
+		const int ExpectedHydrationDepthCap = 8;
+		const int QueuedJobCount = ExpectedHydrationDepthCap + 4;
+		var unblockDelay = TimeSpan.FromSeconds(1d);
+
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
+		var context = new NestedWaitContext { Operations = new TinyFfrAsyncOperation<int>[QueuedJobCount] };
+		for (var i = 0; i < QueuedJobCount; ++i) context.Operations[i] = new TinyFfrAsyncOperation<int>(pool);
+
+		var submitter = new Thread(() => {
+			for (var i = 0; i < QueuedJobCount; ++i) {
+				pool.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &WaitOnNextOperation, &RecordNestedResult));
+			}
+		}) { IsBackground = true };
+		submitter.Start();
+		Assert.IsTrue(submitter.Join(WaitTimeout));
+
+		var unblocker = new Thread(() => {
+			Thread.Sleep(unblockDelay);
+			for (var i = QueuedJobCount - 1; i >= 0; --i) context.Operations[i].SetResult(i);
+		}) { IsBackground = true };
+		unblocker.Start();
+
+		var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime;
+		var wallStart = Stopwatch.GetTimestamp();
+		((IPrimaryThreadDispatcher) pool).ExecutePendingCooperativeJobs(null);
+		var wallElapsed = Stopwatch.GetElapsedTime(wallStart);
+		var cpuElapsed = Process.GetCurrentProcess().TotalProcessorTime - cpuBefore;
+
+		Assert.IsTrue(unblocker.Join(WaitTimeout));
+		Assert.IsNull(context.Error);
+		Assert.AreEqual(ExpectedHydrationDepthCap, context.MaxObservedNesting);
+		Assert.AreEqual(QueuedJobCount, context.NextOperationIndex);
+		Assert.GreaterOrEqual(wallElapsed, unblockDelay);
+		Assert.Less(cpuElapsed, wallElapsed * 0.4d);
+
+		for (var i = 0; i < QueuedJobCount; ++i) _ = context.Operations[i].GetResultAndDisposeOperation();
 	}
 }

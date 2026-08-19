@@ -103,51 +103,63 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		rendererBuilderConfig ??= new();
 		localLoopBuilderConfig ??= new();
 
-		OnFactoryBuild(
-			rendererBuilderConfig.EnableVSync,
-			factoryConfig.MemoryUsageRubric switch {
-				MemoryUsageRubric.UseSignificantlyLessMemory => 2U,
-				MemoryUsageRubric.UseLessMemory => 15U,
-				_ => 50U
-			},
-			factoryConfig.MemoryUsageRubric == MemoryUsageRubric.UseSignificantlyLessMemory,
-			(int) rendererBuilderConfig.GetActualRenderingApi(),
-			&LocalRendererBuilder.RenewSwapchains
-		).ThrowIfFailure();
+		try {
+			OnFactoryBuild(
+				rendererBuilderConfig.EnableVSync,
+				factoryConfig.MemoryUsageRubric switch {
+					MemoryUsageRubric.UseSignificantlyLessMemory => 2U,
+					MemoryUsageRubric.UseLessMemory => 15U,
+					_ => 50U
+				},
+				factoryConfig.MemoryUsageRubric == MemoryUsageRubric.UseSignificantlyLessMemory,
+				(int) rendererBuilderConfig.GetActualRenderingApi(),
+				&LocalRendererBuilder.RenewSwapchains
+			).ThrowIfFailure();
 
-		_threadPool = new CooperativeThreadPool(factoryConfig.ThreadingConfig);
-		if (SynchronizationContext.Current == null && factoryConfig.InstallTinyFfrSynchronizationContextIfNonePreExisting) {
-			SynchronizationContext.SetSynchronizationContext(new TinyFfrSynchronizationContext(_threadPool));
-		}
-		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
-		_gpuHoldingBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
-		var globals = new LocalFactoryGlobalObjectGroup(
-			this,
-			_threadPool,
-			_resourceNameMap,
-			_dependencyTracker,
-			_stringPool,
-			_heapPool,
-			resourceGroupProviderRef,
-			factoryConfig.EnhanceSecurity
-		);
-		_resourceGroupProvider = new(globals);
-		resourceGroupProviderRef.Resolve(_resourceGroupProvider);
+			_threadPool = new CooperativeThreadPool(factoryConfig.ThreadingConfig);
+			if (SynchronizationContext.Current == null && factoryConfig.InstallTinyFfrSynchronizationContextIfNonePreExisting) {
+				SynchronizationContext.SetSynchronizationContext(new TinyFfrSynchronizationContext(_threadPool));
+			}
+			var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
+			_gpuHoldingBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
+			var globals = new LocalFactoryGlobalObjectGroup(
+				this,
+				_threadPool,
+				_resourceNameMap,
+				_dependencyTracker,
+				_stringPool,
+				_heapPool,
+				resourceGroupProviderRef,
+				factoryConfig.EnhanceSecurity
+			);
+			_resourceGroupProvider = new(globals);
+			resourceGroupProviderRef.Resolve(_resourceGroupProvider);
 
-		_displayDiscoverer = new LocalDisplayDiscoverer(globals);
-		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig, rendererBuilderConfig.GetActualRenderingApi(), _displayDiscoverer.All.ToArray().AsMemory());
-		_applicationLoopBuilder = new LocalApplicationLoopBuilder(localLoopBuilderConfig, globals);
-		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig);
-		_cameraBuilder = new LocalCameraBuilder(globals);
-		_lightBuilder = new LocalLightBuilder(globals);
-		_objectBuilder = new LocalObjectBuilder(globals, (LocalMaterialBuilder) _assetLoader.MaterialBuilder);
-		_sceneBuilder = new LocalSceneBuilder(globals, _assetLoader, _cameraBuilder, _objectBuilder);
-		_rendererBuilder = new LocalRendererBuilder(globals, _sceneBuilder, rendererBuilderConfig);
-		_resourceAllocator = new LocalResourceAllocator(globals);
+			_displayDiscoverer = new LocalDisplayDiscoverer(globals);
+			_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig, rendererBuilderConfig.GetActualRenderingApi(), _displayDiscoverer.All.ToArray().AsMemory());
+			_applicationLoopBuilder = new LocalApplicationLoopBuilder(localLoopBuilderConfig, globals);
+			_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig);
+			_cameraBuilder = new LocalCameraBuilder(globals);
+			_lightBuilder = new LocalLightBuilder(globals);
+			_objectBuilder = new LocalObjectBuilder(globals, (LocalMaterialBuilder) _assetLoader.MaterialBuilder);
+			_sceneBuilder = new LocalSceneBuilder(globals, _assetLoader, _cameraBuilder, _objectBuilder);
+			_rendererBuilder = new LocalRendererBuilder(globals, _sceneBuilder, rendererBuilderConfig);
+			_resourceAllocator = new LocalResourceAllocator(globals);
 		
-		_resourceDirectory = ConstructResourceDirectory();
+			_resourceDirectory = ConstructResourceDirectory();
 
-		_instance = this;
+			_instance = this;
+		}
+		catch {
+			try {
+				_threadPool?.Dispose();
+			}
+			finally {
+				if (SynchronizationContext.Current is TinyFfrSynchronizationContext) SynchronizationContext.SetSynchronizationContext(null);
+				ThreadSafetyTracker.ClearPrimaryThread();
+			}
+			throw;
+		}
 	}
 
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
@@ -165,6 +177,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		}
 
 		if (IsDisposed) return;
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		try {
 			DisposeObjectIfDisposable(_threadPool);
 
@@ -194,6 +207,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		finally {
 			IsDisposed = true;
 			_instance = null;
+			OutstandingAsyncOperationRegistry.InvokeDeferredContinuations();
 			if (SynchronizationContext.Current is TinyFfrSynchronizationContext) SynchronizationContext.SetSynchronizationContext(null);
 			ThreadSafetyTracker.ClearPrimaryThread();
 		}

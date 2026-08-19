@@ -1,4 +1,4 @@
-// Created on 2026-08-18 by Ben Bowen
+﻿// Created on 2026-08-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Runtime.ExceptionServices;
@@ -16,7 +16,7 @@ sealed class TinyFfrSynchronizationContext : SynchronizationContext {
 
 	public override void Post(SendOrPostCallback d, object? state) {
 		ArgumentNullException.ThrowIfNull(d);
-		_dispatcher.SchedulePrimaryThreadContinuation(() => d(state));
+		_ = _dispatcher.SchedulePrimaryThreadContinuation(() => d(state));
 	}
 
 	public override void Send(SendOrPostCallback d, object? state) {
@@ -29,7 +29,7 @@ sealed class TinyFfrSynchronizationContext : SynchronizationContext {
 
 		using var completionIndicator = new ManualResetEventSlim(false);
 		ExceptionDispatchInfo? capturedException = null;
-		_dispatcher.SchedulePrimaryThreadContinuation(() => {
+		var wasScheduled = _dispatcher.SchedulePrimaryThreadContinuation(() => {
 			try {
 				d(state);
 			}
@@ -43,6 +43,13 @@ sealed class TinyFfrSynchronizationContext : SynchronizationContext {
 				completionIndicator.Set();
 			}
 		});
+
+		if (!wasScheduled) {
+			throw new ObjectDisposedException(
+				nameof(TinyFfrSynchronizationContext),
+				$"Can not send a callback to the primary thread: TinyFFR has been torn down and the primary thread is no longer accepting work."
+			);
+		}
 
 		completionIndicator.Wait();
 		capturedException?.Throw();
