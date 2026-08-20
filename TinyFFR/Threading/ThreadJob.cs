@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Threading;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Threading;
 
@@ -10,8 +11,9 @@ readonly unsafe struct ThreadJob {
 	const int PointerSize = 8;
 	const int MaxSerializedJobArgumentSizeBytes = 32; // Can be increased if necessary
 	const int WorkPtrOffset = PointerSize * 0;
-	const int CompletionPtrOffset = PointerSize * 1;
-	const int ContextOffset = PointerSize * 2;
+	const int ContextOffset = PointerSize * 1;
+	const int CompletionPtrOffset = PointerSize * 2;
+	const int AsyncOperationOffset = PointerSize * 2;
 	const int ResultOffset = PointerSize * 0;
 	static ulong _prevJobId;
 
@@ -72,11 +74,82 @@ readonly unsafe struct ThreadJob {
 			completionRegistrar?.NotifyCompletion(JobId);
 		}
 	}
+	
+	public static ThreadJob CreateWithAsyncOpArbitraryResult<TContext, TResult>(TContext? context, delegate*<TContext?, TResult?> work, TinyFfrAsyncOperation<TResult?> asyncOp) where TContext : class where TResult : class {
+		static SerializedJobData Work(SerializedJobData serializedContext) {
+			var workPtr = (delegate* managed<TContext?, TResult?>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[WorkPtrOffset..]);
+			var unwrappedContext = (TContext) GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..])).Target!;
+			var result = workPtr(unwrappedContext);
+			var resultHandle = GCHandle.Alloc(result);
+			var serializedResult = new SerializedJobData();
+			BinaryPrimitives.WriteIntPtrLittleEndian(serializedResult[ResultOffset..], GCHandle.ToIntPtr(resultHandle));
+			return serializedResult;
+		}
+		
+		static void Completion(SerializedJobData serializedContext, Exception? error, SerializedJobData serializedResult) {
+			var asyncOp = TinyFfrAsyncOperation<TResult?>.DeSmuggle(serializedContext[AsyncOperationOffset..]);
+			var contextHandle = GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..]));
+			contextHandle.Free();
 
-	public static ThreadJob CreateWithManagedContextManagedResult<TContext, TResult>(TContext context, delegate* managed<TContext, TResult> work, delegate* managed<TContext, Exception?, TResult, void> completion) where TContext : class where TResult : class {
+			if (error == null) {
+				var resultHandle = GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedResult[ResultOffset..]));
+				var deserializedResult = (TResult?) resultHandle.Target;
+				resultHandle.Free();
+				asyncOp.SetResult(deserializedResult);
+			}
+			else {
+				asyncOp.SetException(error);	
+			}
+		}
+		
+		ArgumentNullException.ThrowIfNull(context);
+		var serializedContext = new SerializedJobData();
+		BinaryPrimitives.WriteUIntPtrLittleEndian(serializedContext[WorkPtrOffset..], (UIntPtr) work);
+		var contextHandle = GCHandle.Alloc(context);
+		BinaryPrimitives.WriteIntPtrLittleEndian(serializedContext[ContextOffset..], GCHandle.ToIntPtr(contextHandle));
+		TinyFfrAsyncOperation<TResult?>.Smuggle(in asyncOp, serializedContext[AsyncOperationOffset..]);
+
+		return new ThreadJob(serializedContext, &Work, &Completion);
+	}
+	
+	public static ThreadJob CreateWithAsyncOpResourceResult<TContext, TResult>(TContext context, delegate* managed<TContext, TResult> work, TinyFfrAsyncOperation<TResult> asyncOp) where TContext : class where TResult : struct, IResource<TResult> {
 		static SerializedJobData Work(SerializedJobData serializedContext) {
 			var workPtr = (delegate* managed<TContext, TResult>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[WorkPtrOffset..]);
 			var unwrappedContext = (TContext) GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..])).Target!;
+			var result = workPtr(unwrappedContext);
+			var serializedResult = new SerializedJobData();
+			result.AllocateGcHandleAndSerializeResource(serializedResult[ResultOffset..]);
+			return serializedResult;
+		}
+
+		static void Completion(SerializedJobData serializedContext, Exception? error, SerializedJobData serializedResult) {
+			var asyncOp = TinyFfrAsyncOperation<TResult>.DeSmuggle(serializedContext[AsyncOperationOffset..]);
+			var contextHandle = GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..]));
+			contextHandle.Free();
+
+			if (error == null) {
+				var deserializedResult = TResult.CreateFromSerializedAndFreeAllocatedGcHandle(serializedResult[ResultOffset..]);
+				asyncOp.SetResult(deserializedResult);
+			}
+			else {
+				asyncOp.SetException(error);	
+			}
+		}
+
+		ArgumentNullException.ThrowIfNull(context);
+		var serializedContext = new SerializedJobData();
+		BinaryPrimitives.WriteUIntPtrLittleEndian(serializedContext[WorkPtrOffset..], (UIntPtr) work);
+		var contextHandle = GCHandle.Alloc(context);
+		BinaryPrimitives.WriteIntPtrLittleEndian(serializedContext[ContextOffset..], GCHandle.ToIntPtr(contextHandle));
+		TinyFfrAsyncOperation<TResult>.Smuggle(in asyncOp, serializedContext[AsyncOperationOffset..]);
+
+		return new ThreadJob(serializedContext, &Work, &Completion);
+	}
+
+	public static ThreadJob CreateWithManagedContextManagedResult<TContext, TResult>(TContext? context, delegate* managed<TContext?, TResult?> work, delegate* managed<TContext?, Exception?, TResult?, void> completion) where TContext : class where TResult : class {
+		static SerializedJobData Work(SerializedJobData serializedContext) {
+			var workPtr = (delegate* managed<TContext?, TResult?>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[WorkPtrOffset..]);
+			var unwrappedContext = (TContext?) GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..])).Target;
 			var result = workPtr(unwrappedContext);
 			var resultHandle = GCHandle.Alloc(result);
 			var serializedResult = new SerializedJobData();
@@ -85,15 +158,15 @@ readonly unsafe struct ThreadJob {
 		}
 
 		static void Completion(SerializedJobData serializedContext, Exception? error, SerializedJobData serializedResult) {
-			var completionPtr = (delegate* managed<TContext, Exception?, TResult, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[CompletionPtrOffset..]);
+			var completionPtr = (delegate* managed<TContext?, Exception?, TResult?, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[CompletionPtrOffset..]);
 			var contextHandle = GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..]));
-			var unwrappedContext = (TContext) contextHandle.Target!;
+			var unwrappedContext = (TContext?) contextHandle.Target;
 			contextHandle.Free();
 
-			var unwrappedResult = default(TResult)!;
+			var unwrappedResult = default(TResult?);
 			if (error == null) {
 				var resultHandle = GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedResult[ResultOffset..]));
-				unwrappedResult = (TResult) resultHandle.Target!;
+				unwrappedResult = (TResult?) resultHandle.Target;
 				resultHandle.Free();
 			}
 
@@ -142,10 +215,10 @@ readonly unsafe struct ThreadJob {
 		return new ThreadJob(serializedContext, &Work, &Completion);
 	}
 
-	public static ThreadJob CreateWithManagedContextUnmanagedResult<TContext, TResult>(TContext context, delegate* managed<TContext, TResult> work, delegate* managed<TContext, Exception?, TResult, void> completion) where TContext : class where TResult : unmanaged {
+	public static ThreadJob CreateWithManagedContextUnmanagedResult<TContext, TResult>(TContext? context, delegate* managed<TContext?, TResult> work, delegate* managed<TContext?, Exception?, TResult, void> completion) where TContext : class where TResult : unmanaged {
 		static SerializedJobData Work(SerializedJobData serializedContext) {
-			var workPtr = (delegate* managed<TContext, TResult>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[WorkPtrOffset..]);
-			var unwrappedContext = (TContext) GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..])).Target!;
+			var workPtr = (delegate* managed<TContext?, TResult>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[WorkPtrOffset..]);
+			var unwrappedContext = (TContext?) GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..])).Target;
 			var result = workPtr(unwrappedContext);
 			var serializedResult = new SerializedJobData();
 			MemoryMarshal.Write(serializedResult[ResultOffset..], result);
@@ -153,9 +226,9 @@ readonly unsafe struct ThreadJob {
 		}
 
 		static void Completion(SerializedJobData serializedContext, Exception? error, SerializedJobData serializedResult) {
-			var completionPtr = (delegate* managed<TContext, Exception?, TResult, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[CompletionPtrOffset..]);
+			var completionPtr = (delegate* managed<TContext?, Exception?, TResult, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[CompletionPtrOffset..]);
 			var contextHandle = GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..]));
-			var unwrappedContext = (TContext) contextHandle.Target!;
+			var unwrappedContext = (TContext?) contextHandle.Target;
 			contextHandle.Free();
 			var unwrappedResult = error == null ? MemoryMarshal.Read<TResult>(serializedResult[ResultOffset..]) : default;
 
@@ -175,9 +248,9 @@ readonly unsafe struct ThreadJob {
 		return new ThreadJob(serializedContext, &Work, &Completion);
 	}
 
-	public static ThreadJob CreateWithUnmanagedContextManagedResult<TContext, TResult>(TContext context, delegate* managed<TContext, TResult> work, delegate* managed<TContext, Exception?, TResult, void> completion) where TContext : unmanaged where TResult : class {
+	public static ThreadJob CreateWithUnmanagedContextManagedResult<TContext, TResult>(TContext context, delegate* managed<TContext, TResult?> work, delegate* managed<TContext, Exception?, TResult?, void> completion) where TContext : unmanaged where TResult : class {
 		static SerializedJobData Work(SerializedJobData serializedContext) {
-			var workPtr = (delegate* managed<TContext, TResult>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[WorkPtrOffset..]);
+			var workPtr = (delegate* managed<TContext, TResult?>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[WorkPtrOffset..]);
 			var unwrappedContext = MemoryMarshal.Read<TContext>(serializedContext[ContextOffset..]);
 			var result = workPtr(unwrappedContext);
 			var resultHandle = GCHandle.Alloc(result);
@@ -187,13 +260,13 @@ readonly unsafe struct ThreadJob {
 		}
 
 		static void Completion(SerializedJobData serializedContext, Exception? error, SerializedJobData serializedResult) {
-			var completionPtr = (delegate* managed<TContext, Exception?, TResult, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[CompletionPtrOffset..]);
+			var completionPtr = (delegate* managed<TContext, Exception?, TResult?, void>) BinaryPrimitives.ReadUIntPtrLittleEndian(serializedContext[CompletionPtrOffset..]);
 			var unwrappedContext = MemoryMarshal.Read<TContext>(serializedContext[ContextOffset..]);
 
-			var unwrappedResult = default(TResult)!;
+			var unwrappedResult = default(TResult?);
 			if (error == null) {
 				var resultHandle = GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedResult[ResultOffset..]));
-				unwrappedResult = (TResult) resultHandle.Target!;
+				unwrappedResult = (TResult?) resultHandle.Target;
 				resultHandle.Free();
 			}
 

@@ -138,13 +138,13 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 	public bool SchedulePrimaryThreadContinuation(Action continuation) {
 		ArgumentNullException.ThrowIfNull(continuation);
 
-		static Unused InvokeContinuation(Action continuation) {
-			InvokeContinuationAndLogAnyError(continuation);
+		static Unused InvokeContinuation(Action? continuation) {
+			InvokeContinuationAndLogAnyError(continuation!);
 			return default;
 		}
-		static void CompleteContinuation(Action continuation, Exception? error, Unused result) {
+		static void CompleteContinuation(Action? continuation, Exception? error, Unused result) {
 			if (error == null) return;
-			InvokeContinuationOnPrimaryThreadOrDiscard(continuation);
+			InvokeContinuationOnPrimaryThreadOrDiscard(continuation!);
 		}
 
 		if (_isDisposed) return InvokeContinuationOnPrimaryThreadOrDiscard(continuation);

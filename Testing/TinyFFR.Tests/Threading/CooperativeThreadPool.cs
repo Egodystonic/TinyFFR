@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Threading.Tasks;
+// ReSharper disable AccessToDisposedClosure
 
 namespace Egodystonic.TinyFFR.Threading;
 
@@ -73,36 +74,36 @@ unsafe class CooperativeThreadPoolTest {
 		public readonly ManualResetEventSlim HandoffStarted = new(false);
 	}
 
-	static int DoubleInput(JobContext context) {
-		context.ExecutingThreadId = System.Environment.CurrentManagedThreadId;
+	static int DoubleInput(JobContext? context) {
+		context!.ExecutingThreadId = System.Environment.CurrentManagedThreadId;
 		return context.Input * 2;
 	}
 
-	static void RecordIntResult(JobContext context, Exception? error, int result) {
-		context.Error = error;
+	static void RecordIntResult(JobContext? context, Exception? error, int result) {
+		context!.Error = error;
 		context.IntResult = result;
 		context.Done.Set();
 	}
 
-	static void ThrowingCompletion(JobContext context, Exception? error, int result) {
-		context.Error = error;
+	static void ThrowingCompletion(JobContext? context, Exception? error, int result) {
+		context!.Error = error;
 		context.IntResult = result;
 		context.Done.Set();
 		throw new InvalidOperationException("Deliberate test failure.");
 	}
 
-	static int SleepThenDoubleInput(JobContext context) {
-		context.ExecutingThreadId = System.Environment.CurrentManagedThreadId;
+	static int SleepThenDoubleInput(JobContext? context) {
+		context!.ExecutingThreadId = System.Environment.CurrentManagedThreadId;
 		if (context.WorkDuration > TimeSpan.Zero) Thread.Sleep(context.WorkDuration);
 		return context.Input * 2;
 	}
 
-	static int NoOpWork(JobContext context) => 0;
+	static int NoOpWork(JobContext? context) => 0;
 
-	static void NoOpCompletion(JobContext context, Exception? error, int result) { }
+	static void NoOpCompletion(JobContext? context, Exception? error, int result) { }
 
-	static int HandOffToPrimaryThread(JobContext context) {
-		context.HandoffStarted.Set();
+	static int HandOffToPrimaryThread(JobContext? context) {
+		context!.HandoffStarted.Set();
 		context.Pool!.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(context, &NoOpWork, &NoOpCompletion));
 		return 0;
 	}
@@ -115,8 +116,8 @@ unsafe class CooperativeThreadPoolTest {
 		public Exception? Error;
 	}
 
-	static int WaitOnNextOperation(NestedWaitContext context) {
-		var index = context.NextOperationIndex++;
+	static int WaitOnNextOperation(NestedWaitContext? context) {
+		var index = context!.NextOperationIndex++;
 		++context.CurrentNesting;
 		context.MaxObservedNesting = Int32.Max(context.MaxObservedNesting, context.CurrentNesting);
 		try {
@@ -128,12 +129,12 @@ unsafe class CooperativeThreadPoolTest {
 		return index;
 	}
 
-	static void RecordNestedResult(NestedWaitContext context, Exception? error, int result) => context.Error = error;
+	static void RecordNestedResult(NestedWaitContext? context, Exception? error, int result) => context!.Error = error;
 
-	static string ThrowingManagedWork(JobContext context) => throw new InvalidOperationException("Deliberate test failure.");
+	static string ThrowingManagedWork(JobContext? context) => throw new InvalidOperationException("Deliberate test failure.");
 
-	static void RecordStringResult(JobContext context, Exception? error, string result) {
-		context.Error = error;
+	static void RecordStringResult(JobContext? context, Exception? error, string? result) {
+		context!.Error = error;
 		context.StringResult = result;
 		context.Done.Set();
 	}

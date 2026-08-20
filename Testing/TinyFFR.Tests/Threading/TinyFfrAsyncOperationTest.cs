@@ -11,12 +11,12 @@ unsafe class TinyFfrAsyncOperationTest {
 		public TinyFfrAsyncOperation<int> Operation;
 	}
 
-	static Unused CompleteOperation(OperationCompletingContext context) {
-		context.Operation.SetResult(5);
+	static Unused CompleteOperation(OperationCompletingContext? context) {
+		context!.Operation.SetResult(5);
 		return default;
 	}
 
-	static void NoOpOperationCompletion(OperationCompletingContext context, Exception? error, Unused result) { }
+	static void NoOpOperationCompletion(OperationCompletingContext? context, Exception? error, Unused result) { }
 
 	CooperativeThreadPool _pool = null!;
 	IPrimaryThreadDispatcher Dispatcher => _pool;

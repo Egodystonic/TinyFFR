@@ -27,6 +27,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 	
 	public IJobExecutionFacade SynchronousWorkScheduler => _synchronousWorkScheduler;
 	public IJobExecutionFacade ThreadPoolWorkScheduler => _threadPool;
+	public IPrimaryThreadDispatcher PrimaryThreadDispatcher => _threadPool;
 
 	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, CooperativeThreadPool threadPool, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, bool inEnhancedSecurityEnvironment) {
 		ArgumentNullException.ThrowIfNull(factory);

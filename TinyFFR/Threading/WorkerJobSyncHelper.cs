@@ -7,9 +7,9 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Threading;
 
-sealed unsafe class WorkerResourceCreationSyncHelper<TContext, TResult> : IDisposable where TContext : class, WorkerResourceCreationSyncHelper<TContext, TResult>.IPooledSyncObject, new() where TResult : IResource<TResult> {
+sealed unsafe class WorkerJobSyncHelper<TContext, TResult> : IDisposable where TContext : class, WorkerJobSyncHelper<TContext, TResult>.IPooledSyncObject, new() {
 	public interface IPooledSyncObject {
-		TResult NewResource { get; }
+		TResult Result { get; }
 		Exception? Error { get; set; }
 		void CreateResource();
 		void Recycle();
@@ -24,17 +24,17 @@ sealed unsafe class WorkerResourceCreationSyncHelper<TContext, TResult> : IDispo
 	}
 	
 	public TResult GenerateResultOnPrimaryThread(TContext syncObject, IJobExecutionFacade facade) {
-		static Unused Work(TContext context) {
-			context.CreateResource();
+		static Unused Work(TContext? context) {
+			context!.CreateResource();
 			return default;
 		}
-		static void Completion(TContext context, Exception? error, Unused _) {
-			context.Error = error;
+		static void Completion(TContext? context, Exception? error, Unused _) {
+			context!.Error = error;
 		}
 		
 		facade.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(syncObject, &Work, &Completion));
 
-		var result = syncObject.NewResource;
+		var result = syncObject.Result;
 		var error = syncObject.Error;
 		syncObject.Recycle();
 		_threadLocalObjectPool.Value!.Return(syncObject);

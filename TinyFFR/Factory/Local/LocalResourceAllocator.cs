@@ -2,12 +2,14 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Buffers;
+using System.Buffers.Binary;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
@@ -74,6 +76,21 @@ sealed class LocalResourceAllocator : IResourceAllocator, IDisposable {
 	public IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>() => new ArrayPoolBackedSet<T>();
 	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache);
 	public unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate*<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache, cacheEvictionCallback, cacheEvictionCallbackArg);
+
+	public unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class {
+		static TResult? Work(Tuple<TContext?, Func<TContext?, TResult?>>? contextAndWorkTuple) {
+			return contextAndWorkTuple!.Item2(contextAndWorkTuple.Item1);
+		}
+		
+		// Deliberately using older class-type-based tuple
+		var contextAndWorkTuple = new Tuple<TContext?, Func<TContext?, TResult?>>(context, work);
+		return DispatchWorkerThreadJob(contextAndWorkTuple, &Work);
+	}
+	public unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, delegate*<TContext?, TResult?> work) where TContext : class where TResult : class {
+		var result = new TinyFfrAsyncOperation<TResult?>(_globals.PrimaryThreadDispatcher);
+		_globals.ThreadPoolWorkScheduler.AddWorkerThreadJob(ThreadJob.CreateWithAsyncOpArbitraryResult(context, work, result));
+		return result;
+	}
 
 	public void Dispose() {
 		if (_isDisposed) return;
