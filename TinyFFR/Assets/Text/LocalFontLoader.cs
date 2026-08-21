@@ -13,6 +13,7 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
@@ -32,8 +33,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	const byte SdfOnEdgeValue = 180; // Changes to this require changing the text shader | Defines the crossover point (on the 0 to 255 scale) where anything lower becomes 'outline' -- higher is better to give more resolution
 	const float SdfPixelDistScale = SdfOnEdgeValue / (float) SdfRenderPadding;
 	const float DefaultFontHeight = 0.1f;
-	readonly int[] _atlasSizeTargets = [ 1024, 2048, 4096, 8192 ];
-	readonly int[] _sdfRenderHeightTargets = [ 64, 48, 32 ];
+	static readonly int[] _atlasSizeTargets = [ 1024, 2048, 4096, 8192 ];
+	static readonly int[] _sdfRenderHeightTargets = [ 64, 48, 32 ];
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalAssetLoaderConfig _config;
 	readonly LocalMeshBuilder _meshBuilder;
@@ -44,8 +45,9 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	readonly MapPool<nuint, PenData> _penMapPool = new(false);
 	readonly MapPool<nuint, StringData> _stringMapPool = new(false);
 	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedLruCache<int, RenderedTextData>, LocalFontLoader> _renderedTextCachePool;
-	readonly ArrayPoolBackedMap<Rune, int> _fontLoadRuneToGlyphMap = new();
+	readonly MapPool<Rune, int> _fontLoadRuneToGlyphMapMap = new(zeroMemoryOnReturn: false);
 	readonly ArrayPoolBackedMap<ResourceHandle<Font>, FontData> _activeFonts = new();
+	readonly WorkerJobSyncHelper<LocalFontLoader, FontLoadContext, FontCreationConfig> _fontLoadWorkerSyncHelper;
 	nuint _prevHandleId = 0U;
 	bool _isDisposed = false;
 	
@@ -66,56 +68,116 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		_textureBuilder = textureBuilder;
 		_materialBuilder = materialBuilder;
 		_renderedTextCachePool = new(&CreateNewTextCache, this);
+		_fontLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
+	}
+
+	#region Creation
+	sealed class FontLoadContext : WorkerJobSyncHelper<LocalFontLoader, FontLoadContext, FontCreationConfig>.WorkerJobSyncHelperContext {
+		// Primary thread owned
+		public ArrayPoolBackedMap<Rune, int> FontLoadRuneToGlyphMap { get; set; } = null!;
+		public ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap { get; set; } = null!;
+		public ArrayPoolBackedMap<ulong, float> KerningMap { get; set; } = null!;
+		public EmbeddedResourceResolver.ResourceDataRef? DataRef { get; set; } = null;
+		public PooledHeapMemory<char>? HeapPoolFilePath { get; set; } = null;
+	
+		// Worker thead owned
+		public PooledHeapMemory<TexelRgb24> TexelBuffer { get; set; }		
+		public int AtlasDimension { get; set; }
+		public float Ascent { get; set; }
+		public float Descent { get; set; }
+		public float LineAdvance { get; set; }
+		public Rune LineBreakRune { get; set; }
+
+		public override void TearDown() {
+			Self._fontLoadRuneToGlyphMapMap.Return(FontLoadRuneToGlyphMap);
+			if (HeapPoolSerializedConfig is { } config) {
+				FontCreationConfig.DisposeAllocatedHeapStorage(config.Span);
+				config.Dispose();
+				HeapPoolSerializedConfig = null;
+			}
+			HeapPoolFilePath?.Dispose();
+			HeapPoolFilePath = null;
+			HeapPool = null!;
+			DataRef = null;
+			RuneMap = null!;
+			KerningMap = null!;
+			FontLoadRuneToGlyphMap = null!;
+			Self = null!;
+		}
 	}
 	
+	EmbeddedResourceResolver.ResourceDataRef GetResourceDataRefForBuiltInFont(BuiltInFont font) {
+		return font switch {
+			BuiltInFont.Serif => EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_serif.zip"),
+			BuiltInFont.Monospace => EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_mono.zip"),
+			_ => EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_sans.zip")
+		};
+	}
+	
+	void SetUpContext(FontLoadContext context, ReadOnlySpan<char> name) {
+		context.FontLoadRuneToGlyphMap = _fontLoadRuneToGlyphMapMap.Rent();
+		context.RuneMap = _runeMapPool.Rent();
+		context.KerningMap = _kerningMapPool.Rent();
+		context.SetName(name);
+	}
 	public Font LoadFont(BuiltInFont font, in FontCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		switch (font) {
-			case BuiltInFont.Serif: {
-				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_serif.zip");	
-				return config.Name.IsEmpty
-					? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In Font 'Serif'" })
-					: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
-			}
-			case BuiltInFont.Monospace: {
-				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_mono.zip");	
-				return config.Name.IsEmpty
-					? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In Font 'Monospace'" })
-					: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
-			}
-			case BuiltInFont.SansSerif:
-			default: {
-				var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavu_sans.zip");	
-				return config.Name.IsEmpty
-					? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In Font 'Sans-Serif'" })
-					: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
-			}
-		}
+		
+		var contextWrapper = _fontLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.DataRef = GetResourceDataRefForBuiltInFont(font);
+		SetUpContext(
+			contextWrapper.Context,
+			!config.Name.IsEmpty ? config.Name : (font switch {
+				BuiltInFont.Serif => "Built-In Font 'Serif'",
+				BuiltInFont.Monospace => "Built-In Font 'Monospace'",
+				_ => "Built-In Font 'Sans-Serif'",
+			})
+		);
+		
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadFontCore, in config);
 	}
 	public Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		try {
-			var fontFileDataStream = new FileStream(fontFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
-			var streamLengthBytes = checked((int) fontFileDataStream.Length);
-			using var fileBuffer = _globals.HeapPool.Borrow<byte>(streamLengthBytes);
-			fontFileDataStream.ReadExactly(fileBuffer.Span);
-			fontFileDataStream.Dispose();
-			
-			fixed (byte* bufferPtr = fileBuffer.Span) {
-				return config.Name.IsEmpty
-					? LoadFont(bufferPtr, streamLengthBytes, config with { Name = Path.GetFileName(fontFilePath) })
-					: LoadFont(bufferPtr, streamLengthBytes, in config);
-			}
-		}
-		catch (Exception e) {
-			if (!File.Exists(fontFilePath.ToString())) throw new InvalidOperationException($"File '{fontFilePath}' does not exist.", e);
-			throw new InvalidOperationException("Error occured when reading and/or loading font file.", e);
-		}
+		
+		var contextWrapper = _fontLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.HeapPoolFilePath = _globals.HeapPool.BorrowAndCopy(fontFilePath);
+		SetUpContext(contextWrapper.Context, !config.Name.IsEmpty ? config.Name : Path.GetFileName(fontFilePath));
+		
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadFontCore, in config);
 	}
-	int GetAtlasCellHeight(int renderHeight) => renderHeight + SdfRenderPadding * 2 + AdditionalAtlasGlyphCellPadding;
-	(int RenderHeight, float ScalingConstant, int AtlasDimension, float Ascent, float Descent, float LineGap) DetermineAppropriateFontRenderMetrics(UIntPtr fontHandle, in FontCreationConfig config) {
+	public TinyFfrAsyncOperation<Font> LoadFontAsync(BuiltInFont font, in FontCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		
+		var contextWrapper = _fontLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.DataRef = GetResourceDataRefForBuiltInFont(font);
+		SetUpContext(
+			contextWrapper.Context,
+			!config.Name.IsEmpty ? config.Name : (font switch {
+				BuiltInFont.Serif => "Built-In Font 'Serif'",
+				BuiltInFont.Monospace => "Built-In Font 'Monospace'",
+				_ => "Built-In Font 'Sans-Serif'",
+			})
+		);
+		
+		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadFontCore, in config);
+	}
+	public TinyFfrAsyncOperation<Font> LoadFontAsync(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		
+		var contextWrapper = _fontLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.HeapPoolFilePath = _globals.HeapPool.BorrowAndCopy(fontFilePath);
+		SetUpContext(contextWrapper.Context, !config.Name.IsEmpty ? config.Name : Path.GetFileName(fontFilePath));
+		
+		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadFontCore, in config);
+	}
+
+
+	static int GetAtlasCellHeight(int renderHeight) => renderHeight + SdfRenderPadding * 2 + AdditionalAtlasGlyphCellPadding;
+	static (int RenderHeight, float ScalingConstant, int AtlasDimension, float Ascent, float Descent, float LineGap) DetermineAppropriateFontRenderMetrics(UIntPtr fontHandle, ArrayPoolBackedMap<Rune, int> fontLoadRuneToGlyphMap, in FontCreationConfig config) {
 		// Assumes _fontLoadRuneToGlyphMap has been populated
 		
 		for (var i = 0; i < _atlasSizeTargets.Length; ++i) {
@@ -140,7 +202,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				var texelsRemainingInCurrentRow = _atlasSizeTargets[i] - (ReservedBackgroundBlockDimension + AdditionalAtlasGlyphCellPadding);
 				
 				for (var r = 0; r < config.SupportedRunes.Length; ++r) {
-					var glyphIndex = _fontLoadRuneToGlyphMap[config.SupportedRunes[r]];
+					var glyphIndex = fontLoadRuneToGlyphMap[config.SupportedRunes[r]];
 					if (glyphIndex == 0) continue;
 
 					FontGetSdfBufferDimensions(
@@ -175,10 +237,37 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			$"support dynamic font atlas writing for larger rune sets."
 		);
 	}
-	Font LoadFont(byte* ttfFileStreamPtr, int ttfFileStreamLengthBytes, in FontCreationConfig config) {
-		ThrowIfThisIsDisposed();
-		config.ThrowIfInvalid();
-
+	static Font LoadFontCore(FontLoadContext context, in FontCreationConfig config) {
+		byte* ttfFileStreamPtr;
+		int ttfFileStreamLengthBytes;
+		PooledHeapMemory<byte>? ttfFileData = null;
+		GCHandle? ttfFixedFileDataHandle = null;
+		
+		if (context.DataRef is { } dataRef) {
+			ttfFileStreamPtr = (byte*) dataRef.DataPtr;
+			ttfFileStreamLengthBytes = dataRef.DataLenBytes;
+		}
+		else if (context.HeapPoolFilePath is { } filePath) {
+			try {
+				var fontFileDataStream = new FileStream(filePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+				var streamLengthBytes = checked((int) fontFileDataStream.Length);
+				ttfFileData = context.HeapPool.Borrow<byte>(streamLengthBytes);
+				fontFileDataStream.ReadExactly(ttfFileData.Value.Span);
+				fontFileDataStream.Dispose();
+			}
+			catch (Exception e) {
+				if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
+				throw new InvalidOperationException("Error occured when reading and/or loading font file.", e);
+			}
+			
+			ttfFixedFileDataHandle = ttfFileData.Value.FixData();
+			ttfFileStreamPtr = (byte*) ttfFixedFileDataHandle.Value.AddrOfPinnedObject();
+			ttfFileStreamLengthBytes = ttfFileData.Value.Span.Length;
+		}
+		else {
+			throw new InvalidOperationException("No data ref or file path set in context (this is a bug in TinyFFR).");
+		}
+		
 		FontLoad(
 			ttfFileStreamPtr,
 			ttfFileStreamLengthBytes, 
@@ -188,23 +277,21 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		try {
 			var runes = config.SupportedRunes;
 		
-			_fontLoadRuneToGlyphMap.ClearWithoutZeroingMemory();
+			context.FontLoadRuneToGlyphMap.ClearWithoutZeroingMemory();
 			for (var r = 0; r < runes.Length; ++r) {
 				FontGetCodepointGlyphIndex(
 					fontHandle,
 					runes[r].Value,
 					out var glyphIndex
 				).ThrowIfFailure();
-				_fontLoadRuneToGlyphMap[runes[r]] = glyphIndex;
+				context.FontLoadRuneToGlyphMap[runes[r]] = glyphIndex;
 			}
 			
-			var (renderHeight, scalingConstant, atlasDimension, ascent, descent, lineGap) = DetermineAppropriateFontRenderMetrics(fontHandle, in config);
+			var (renderHeight, scalingConstant, atlasDimension, ascent, descent, lineGap) = DetermineAppropriateFontRenderMetrics(fontHandle, context.FontLoadRuneToGlyphMap, in config);
 			var atlasDimensionReciprocal = 1f / atlasDimension;
 			var cellHeight = GetAtlasCellHeight(renderHeight);
-			var runeMap = _runeMapPool.Rent();
-			var kerningMap = _kerningMapPool.Rent();
 			try {
-				using var texelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(atlasDimension * atlasDimension);
+				using var texelBuffer = context.HeapPool.Borrow<TexelRgb24>(atlasDimension * atlasDimension);
 				texelBuffer.Span.Clear();
 				for (var row = 0; row < ReservedBackgroundBlockDimension; ++row) {
 					for (var column = 0; column < ReservedBackgroundBlockDimension; ++column) {
@@ -214,16 +301,16 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				var nib = new XYPair<int>(ReservedBackgroundBlockDimension + AdditionalAtlasGlyphCellPadding, 0);
 				
 				for (var r = 0; r < runes.Length; ++r) {
-					if (_fontLoadRuneToGlyphMap[runes[r]] == 0) continue;
+					if (context.FontLoadRuneToGlyphMap[runes[r]] == 0) continue;
 
-					FontGetGlyphAdvance(fontHandle, _fontLoadRuneToGlyphMap[runes[r]], out var rawAdvance).ThrowIfFailure();
+					FontGetGlyphAdvance(fontHandle, context.FontLoadRuneToGlyphMap[runes[r]], out var rawAdvance).ThrowIfFailure();
 					var advanceWidth = rawAdvance * scalingConstant * atlasDimensionReciprocal;
 
 					byte* potentialBufferPtr = null;
 					try {
 						FontGenerateSdfBuffer(
 							fontHandle,
-							_fontLoadRuneToGlyphMap[runes[r]],
+							context.FontLoadRuneToGlyphMap[runes[r]],
 							scalingConstant,
 							SdfRenderPadding,
 							SdfOnEdgeValue,
@@ -236,7 +323,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 						).ThrowIfFailure();
 						
 						if (potentialBufferPtr == null || bufferWidth == 0 || bufferHeight == 0) {
-							runeMap[runes[r]] = new AtlasRuneData(XYPair<float>.Zero, XYPair<float>.Zero, XYPair<float>.Zero, advanceWidth);
+							context.RuneMap[runes[r]] = new AtlasRuneData(XYPair<float>.Zero, XYPair<float>.Zero, XYPair<float>.Zero, advanceWidth);
 							continue;
 						}
 						if (nib.X + bufferWidth > atlasDimension) {
@@ -257,7 +344,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 							}
 						}
 						
-						runeMap[runes[r]] = new AtlasRuneData(
+						context.RuneMap[runes[r]] = new AtlasRuneData(
 							nib.Cast<float>() * atlasDimensionReciprocal,
 							new XYPair<float>(bufferWidth, bufferHeight) * atlasDimensionReciprocal, 
 							new XYPair<float>(xOffset, yOffset) * atlasDimensionReciprocal,
@@ -274,63 +361,83 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				FontGetKerningDataPresent(fontHandle, out var fontHasKerningData).ThrowIfFailure();
 				if (fontHasKerningData) {
 					for (var first = 0; first < runes.Length; ++first) {
-						var firstGlyphIndex = _fontLoadRuneToGlyphMap[runes[first]];
+						var firstGlyphIndex = context.FontLoadRuneToGlyphMap[runes[first]];
 						if (firstGlyphIndex == 0) continue;
 
 						for (var second = 0; second < runes.Length; ++second) {
-							var secondGlyphIndex = _fontLoadRuneToGlyphMap[runes[second]];
+							var secondGlyphIndex = context.FontLoadRuneToGlyphMap[runes[second]];
 							if (secondGlyphIndex == 0) continue;
 
 							FontGetGlyphPairKernAdvance(fontHandle, firstGlyphIndex, secondGlyphIndex, out var rawKerningAdvance).ThrowIfFailure();
 							if (rawKerningAdvance == 0) continue;
-							kerningMap[PackRunePair(runes[first], runes[second])] = rawKerningAdvance * scalingConstant * atlasDimensionReciprocal;
+							context.KerningMap[PackRunePair(runes[first], runes[second])] = rawKerningAdvance * scalingConstant * atlasDimensionReciprocal;
 						}
 					}
 				}
-
-				var atlas = _textureBuilder.CreateTexture(
-					texelBuffer.Span,
-					new TextureGenerationConfig {
-						Dimensions = new(atlasDimension, atlasDimension)
-					},
-					new TextureCreationConfig {
-						IsLinearColorspace = true,
-						GenerateMipMaps = false,
-						RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),
-						Name = config.Name
-					}
-				);
-
-				_prevHandleId++;
-				var handle = new ResourceHandle<Font>(_prevHandleId);
-				_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultFontName);
-				_activeFonts.Add(
-					handle, 
-					new FontData(
-						atlas,
-						ascent * scalingConstant * atlasDimensionReciprocal,
-						descent * scalingConstant * atlasDimensionReciprocal,
-						(ascent - descent + lineGap) * scalingConstant * atlasDimensionReciprocal * config.LineSpacingMultiplier,
-						config.LineBreakRune,
-						runeMap,
-						kerningMap, 
-						_penMapPool.Rent(), 
-						_stringMapPool.Rent(), 
-						_renderedTextCachePool.Rent()
-					)
-				);
-				return HandleToInstance(handle);
+				
+				context.AtlasDimension = atlasDimension; 
+				context.TexelBuffer = texelBuffer;
+				context.Ascent = ascent * scalingConstant * atlasDimensionReciprocal; 
+				context.Descent = descent * scalingConstant * atlasDimensionReciprocal; 
+				context.LineAdvance = (ascent - descent + lineGap) * scalingConstant * atlasDimensionReciprocal * config.LineSpacingMultiplier;
+				context.LineBreakRune = config.LineBreakRune;
+				
+				static Font Complete(FontLoadContext ctx) {
+					ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+					
+					var atlas = ctx.Self._textureBuilder.CreateTexture(
+						ctx.TexelBuffer.Span,
+						new TextureGenerationConfig {
+							Dimensions = new(ctx.AtlasDimension, ctx.AtlasDimension)
+						},
+						new TextureCreationConfig {
+							IsLinearColorspace = true,
+							GenerateMipMaps = false,
+							RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),
+							Name = ctx.Name
+						}
+					);
+					
+					ctx.Self._prevHandleId++;
+					var handle = new ResourceHandle<Font>(ctx.Self._prevHandleId);
+					ctx.Self._globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, ctx.Name, DefaultFontName);
+					ctx.Self._activeFonts.Add(
+						handle, 
+						new FontData(
+							atlas,
+							ctx.Ascent,
+							ctx.Descent,
+							ctx.LineAdvance,
+							ctx.LineBreakRune,
+							ctx.RuneMap,
+							ctx.KerningMap, 
+							ctx.Self._penMapPool.Rent(), 
+							ctx.Self._stringMapPool.Rent(), 
+							ctx.Self._renderedTextCachePool.Rent()
+						)
+					);
+					return ctx.Self.HandleToInstance(handle);
+				}
+				
+				return context.GenerateResourceOnPrimary(&Complete);
 			}
 			catch {
-				_runeMapPool.Return(runeMap);
-				_kerningMapPool.Return(kerningMap);
+				static void ReturnMapPools(FontLoadContext ctx) {
+					ctx.Self._runeMapPool.Return(ctx.RuneMap);
+					ctx.Self._kerningMapPool.Return(ctx.KerningMap);
+					
+				}
+				context.DispatchOnPrimary(&ReturnMapPools);
 				throw;
 			}
 		}
 		finally {
+			ttfFixedFileDataHandle?.Free();
+			ttfFileData?.Dispose();
 			FontDispose(fontHandle).ThrowIfFailure();
 		}
 	}
+	#endregion
 
 	static int GetTextCacheKey(ReadOnlySpan<char> text, TextJustification justification) {
 		return HashCode.Combine(String.GetHashCode(text, StringComparison.Ordinal), justification);
@@ -861,7 +968,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			_fontLoadRuneToGlyphMap.Dispose();
+			_fontLoadRuneToGlyphMapMap.Dispose();
 
 			foreach (var kvp in _activeFonts) { 
 				Dispose(kvp.Key, false);
@@ -873,6 +980,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			_stringMapPool.Dispose();
 			_runeMapPool.Dispose();
 			_kerningMapPool.Dispose();
+			_fontLoadWorkerSyncHelper.Dispose();
 		}
 		finally {
 			_isDisposed = true;

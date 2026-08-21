@@ -8,6 +8,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 using static Egodystonic.TinyFFR.Assets.Materials.TextureCombinationSourceTexture;
 using static Egodystonic.TinyFFR.ColorChannel;
 
@@ -407,6 +408,15 @@ public interface IAssetLoader {
 	}
 	Font LoadFont(BuiltInFont font, in FontCreationConfig config);
 	Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config);
+	
+	TinyFfrAsyncOperation<Font> LoadFontAsync(BuiltInFont font = BuiltInFont.Default, ReadOnlySpan<char> name = default) {
+		return LoadFontAsync(font, new FontCreationConfig { Name = name });
+	}
+	TinyFfrAsyncOperation<Font> LoadFontAsync(ReadOnlySpan<char> fontFilePath, ReadOnlySpan<char> name = default) {
+		return LoadFontAsync(fontFilePath, new FontCreationConfig { Name = name });
+	}
+	TinyFfrAsyncOperation<Font> LoadFontAsync(BuiltInFont font, in FontCreationConfig config);
+	TinyFfrAsyncOperation<Font> LoadFontAsync(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config);
 	#endregion
 
 	#region Load / Read Mesh

@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
@@ -25,6 +26,15 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Font> {
 	public Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		return _fontLoader.LoadFont(fontFilePath, in config);
+	}
+
+	public TinyFfrAsyncOperation<Font> LoadFontAsync(BuiltInFont font, in FontCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		return _fontLoader.LoadFontAsync(font, in config);
+	}
+	public TinyFfrAsyncOperation<Font> LoadFontAsync(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		return _fontLoader.LoadFontAsync(fontFilePath, in config);
 	}
 
 	IndirectEnumerable<object, Font> IResourceDirectory<Font>.AllActiveInstances {

@@ -7,10 +7,21 @@ using System.Threading.Tasks;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
-sealed unsafe class HeapPool : IDisposable {
+interface IHeapPool {
+	PooledHeapMemory<T> BorrowAndCopy<T>(ReadOnlySpan<T> copySource) where T : unmanaged;
+	PooledHeapMemory<T> Borrow<T>(int numElements) where T : unmanaged;
+	PooledHeapMemory<T> Borrow<T>(int numElements, int elementSize) where T : unmanaged;
+	PooledHeapMemory<byte> Borrow(int numBytes);
+}
+
+sealed unsafe class HeapPool : IHeapPool, IDisposable {
 	readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
 	readonly ArrayPoolBackedMap<nuint, byte[]> _activeSpanLeases = new();
 	nuint _prevSpanLeaseId = 0U;
+	
+	public ThreadSafeHeapPoolWrapper ThreadSafeWrapper { get; }
+
+	public HeapPool() => ThreadSafeWrapper = new(this);
 
 	public PooledHeapMemory<T> BorrowAndCopy<T>(ReadOnlySpan<T> copySource) where T : unmanaged {
 		var result = Borrow<T>(copySource.Length);
@@ -55,6 +66,26 @@ readonly record struct PooledHeapMemory<T> : IDisposable where T : unmanaged {
 	}
 
 	public Span<T> Span => MemoryMarshal.Cast<byte, T>(_buffer.AsSpan(0, _requestedSizeBytes));
+	
+	public GCHandle FixData() => GCHandle.Alloc(_buffer, GCHandleType.Pinned);
 
 	public void Dispose() => _pool.Return(_buffer);
+}
+
+sealed class ThreadSafeHeapPoolWrapper : IHeapPool {
+	readonly HeapPool _owner;
+
+	public ThreadSafeHeapPoolWrapper(HeapPool owner) {
+		ArgumentNullException.ThrowIfNull(owner);
+		_owner = owner;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PooledHeapMemory<T> BorrowAndCopy<T>(ReadOnlySpan<T> copySource) where T : unmanaged => _owner.BorrowAndCopy(copySource);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PooledHeapMemory<T> Borrow<T>(int numElements) where T : unmanaged => _owner.Borrow<T>(numElements);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PooledHeapMemory<T> Borrow<T>(int numElements, int elementSize) where T : unmanaged => _owner.Borrow<T>(numElements, elementSize);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PooledHeapMemory<byte> Borrow(int numBytes) => _owner.Borrow(numBytes);
 }

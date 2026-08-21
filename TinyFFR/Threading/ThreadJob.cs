@@ -16,6 +16,8 @@ readonly unsafe struct ThreadJob {
 	const int AsyncOperationOffset = PointerSize * 2;
 	const int ResultOffset = PointerSize * 0;
 	static ulong _prevJobId;
+	
+	public static void NoOpCompletion<TContext, TResult>(TContext _, Exception? __, TResult ___) {}
 
 #if DEBUG
 #pragma warning disable CA1065 // "Do not raise exceptions in unexpected locations" -- Failing at type-load is the point: every offset below would be silently wrong
