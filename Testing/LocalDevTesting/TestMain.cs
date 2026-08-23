@@ -71,6 +71,12 @@ static partial class TestMain {
 		
 		startTime = Stopwatch.GetTimestamp();
 		var fontOp = (TinyFfrAsyncOperation<Font>?) context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		var fontOp2 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		var fontOp3 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		var fontOp4 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		var fontOp5 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		var fontOp6 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
@@ -82,11 +88,14 @@ static partial class TestMain {
 				prevStr.Dispose();
 			}
 			
-			if (fontOp?.IsCompleted ?? false) {
-				font = fontOp.Value.GetResultAndDisposeOperation();
-				fontOp = null;
-				Console.WriteLine(Stopwatch.GetElapsedTime(startTime));
+			if (fontOp != null) {
+				Console.WriteLine(TinyFfrAsyncOperation.GetCompletionStats(fontOp.Value, fontOp2, fontOp3, fontOp4, fontOp5, fontOp6));
 			}
+			// if (fontOp?.IsCompleted ?? false) {
+			// 	font = fontOp.Value.GetResultAndDisposeOperation();
+			// 	fontOp = null;
+			// 	Console.WriteLine(Stopwatch.GetElapsedTime(startTime));
+			// }
 		
 			context.Renderer.Render();
 			return context.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape);

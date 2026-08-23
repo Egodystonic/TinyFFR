@@ -17,6 +17,8 @@ interface IAsyncOperationTrackingData {
 	Action? FaultIfIncompleteAndExtractContinuations(Exception error);
 }
 
+public readonly record struct OngoingAsynchronousOperationStatistics(int OperationCount, int CompletedCount, float CompletedFraction);
+
 static class OutstandingAsyncOperationRegistry {
 	static readonly List<IAsyncOperationTrackingData> _outstandingOperations = new();
 	static readonly List<Action> _deferredContinuations = new();
@@ -81,33 +83,24 @@ static class OutstandingAsyncOperationRegistry {
 	}
 }
 
-public readonly record struct TinyFfrAsyncOperationAwaiter : ICriticalNotifyCompletion {
-	readonly TinyFfrAsyncOperation _operation;
-
-	internal TinyFfrAsyncOperationAwaiter(TinyFfrAsyncOperation operation) => _operation = operation;
-
-	public bool IsCompleted => _operation.IsCompleted && ThreadSafetyTracker.CurrentThreadIsPrimary();
-	public void OnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
-	public void UnsafeOnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
-	public void GetResult() => _operation.DiscardResultAndDisposeOperationWithoutWaiting();
-}
-
-public readonly record struct TinyFfrAsyncOperationAwaiter<T> : ICriticalNotifyCompletion {
-	readonly TinyFfrAsyncOperation<T> _operation;
-
-	internal TinyFfrAsyncOperationAwaiter(TinyFfrAsyncOperation<T> operation) => _operation = operation;
-
-	public bool IsCompleted => _operation.IsCompleted && ThreadSafetyTracker.CurrentThreadIsPrimary();
-	public void OnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
-	public void UnsafeOnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
-	public T GetResult() => _operation.GetResultAndDisposeOperationWithoutWaiting();
-}
-
 //TODO xmldoc Every TinyFfrAsyncOperation returned by the library must be consumed exactly once, either by awaiting it or by
 //TODO xmldoc calling GetResultAndDisposeOperation(). Consuming an operation is what releases its internal tracking data back to
 //TODO xmldoc the pool; an operation that is never consumed retains that tracking data (and its wait handle) for the lifetime of
 //TODO xmldoc the process. An operation whose wait timed out has not been consumed, and must still be consumed once it completes.
 public readonly record struct TinyFfrAsyncOperation {
+#pragma warning disable CA1034 // "Don't nest public classes" -- I'll do what I want
+	public readonly record struct Awaiter : ICriticalNotifyCompletion {
+#pragma warning restore CA1034
+		readonly TinyFfrAsyncOperation _operation;
+
+		internal Awaiter(TinyFfrAsyncOperation operation) => _operation = operation;
+
+		public bool IsCompleted => _operation.IsCompleted && ThreadSafetyTracker.CurrentThreadIsPrimary();
+		public void OnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+		public void UnsafeOnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+		public void GetResult() => _operation.DiscardResultAndDisposeOperationWithoutWaiting();
+	}
+	
 	internal const int SmuggleSizeBytes = 16;
 	internal IAsyncOperationTrackingData TrackingData { get; }
 	internal ulong Version { get; }
@@ -124,7 +117,7 @@ public readonly record struct TinyFfrAsyncOperation {
 		Version = version;
 	}
 
-	public TinyFfrAsyncOperationAwaiter GetAwaiter() {
+	public Awaiter GetAwaiter() {
 		if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
 		return new(this);
 	}
@@ -137,6 +130,22 @@ public readonly record struct TinyFfrAsyncOperation {
 	internal void DiscardResultAndDisposeOperationWithoutWaiting() {
 		if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
 		TrackingData.DiscardResultAndClearWithoutWaiting(Version);
+	}
+	
+	public static OngoingAsynchronousOperationStatistics GetCompletionStats(params ReadOnlySpan<TinyFfrAsyncOperation> operations) {
+		var completed = 0;
+		for (var i = 0; i < operations.Length; ++i) {
+			if (operations[i].IsCompleted) ++completed;
+		}
+		return new OngoingAsynchronousOperationStatistics(operations.Length, completed, (float) completed / (float) operations.Length);
+	}
+	public static OngoingAsynchronousOperationStatistics GetCompletionStats<TCollection>(TCollection operations) where TCollection : IReadOnlyList<TinyFfrAsyncOperation> {
+		var completed = 0;
+		var count = operations.Count;
+		for (var i = 0; i < count; ++i) {
+			if (operations[i].IsCompleted) ++completed;
+		}
+		return new OngoingAsynchronousOperationStatistics(count, completed, (float) completed / (float) count);
 	}
 
 	public void WaitForCompletion() => WaitForCompletion(Timeout.InfiniteTimeSpan, default);
@@ -165,6 +174,27 @@ public readonly record struct TinyFfrAsyncOperation {
 
 		return true;
 	}
+	
+	public static void WaitForAllToComplete<TCollection>(TCollection operations) where TCollection : IReadOnlyList<TinyFfrAsyncOperation> => WaitForAllToComplete(Timeout.InfiniteTimeSpan, default, operations);
+	public static bool WaitForAllToComplete<TCollection>(TimeSpan timeout, TCollection operations) where TCollection : IReadOnlyList<TinyFfrAsyncOperation> => WaitForAllToComplete(timeout, default, operations);
+#pragma warning disable CA1068 // "CancellationToken should be last parameter" -- Not wrong, but done this way for consistency with params overloads above
+	public static void WaitForAllToComplete<TCollection>(CancellationToken cancellationToken, TCollection operations) where TCollection : IReadOnlyList<TinyFfrAsyncOperation> => WaitForAllToComplete(Timeout.InfiniteTimeSpan, cancellationToken, operations);
+	public static bool WaitForAllToComplete<TCollection>(TimeSpan timeout, CancellationToken cancellationToken, TCollection operations) where TCollection : IReadOnlyList<TinyFfrAsyncOperation> {
+#pragma warning restore CA1068
+		var startTimestamp = Stopwatch.GetTimestamp();
+		var hasTimeout = timeout >= TimeSpan.Zero;
+
+		for (var i = 0; i < operations.Count; ++i) {
+			var remainingTime = timeout;
+			if (hasTimeout) {
+				remainingTime = timeout - Stopwatch.GetElapsedTime(startTimestamp);
+				if (remainingTime < TimeSpan.Zero) return false;
+			}
+			if (!operations[i].WaitForCompletion(remainingTime, cancellationToken)) return false;
+		}
+
+		return true;
+	}
 }
 
 //TODO xmldoc Every TinyFfrAsyncOperation<T> returned by the library must be consumed exactly once, either by awaiting it or by
@@ -172,9 +202,22 @@ public readonly record struct TinyFfrAsyncOperation {
 //TODO xmldoc the pool; an operation that is never consumed retains that tracking data (and its wait handle) for the lifetime of
 //TODO xmldoc the process. An operation whose wait timed out has not been consumed, and must still be consumed once it completes.
 public readonly unsafe record struct TinyFfrAsyncOperation<T> {
+#pragma warning disable CA1034 // "Don't nest public classes" -- I'll do what I want
+	public readonly record struct Awaiter : ICriticalNotifyCompletion {
+#pragma warning restore CA1034
+		readonly TinyFfrAsyncOperation<T> _operation;
+
+		internal Awaiter(TinyFfrAsyncOperation<T> operation) => _operation = operation;
+
+		public bool IsCompleted => _operation.IsCompleted && ThreadSafetyTracker.CurrentThreadIsPrimary();
+		public void OnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+		public void UnsafeOnCompleted(Action continuation) => _operation.ScheduleContinuation(continuation);
+		public T GetResult() => _operation.GetResultAndDisposeOperationWithoutWaiting();
+	}
+	
 #pragma warning disable CA1001 // "Should be disposable" -- These objects live the lifetime of the application
 	sealed class AsyncOperationTrackingData : IAsyncOperationTrackingData {
-#pragma warning restore CA1001
+#pragma warning restore CA1001	
 		readonly Lock _lock = new();
 		readonly ManualResetEventSlim _completionIndicator = new(false);
 		IPrimaryThreadDispatcher? _primaryThreadDispatcher = null;
@@ -392,7 +435,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 		_version = version;
 	}
 
-	public TinyFfrAsyncOperationAwaiter<T> GetAwaiter() {
+	public Awaiter GetAwaiter() {
 		if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
 		return new(this);
 	}
