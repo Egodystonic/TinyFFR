@@ -215,7 +215,8 @@ unsafe class TinyFfrAsyncOperationTest {
 		Assert.AreEqual(5, awaiter.GetResult());
 
 		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
-		Assert.Throws<InvalidOperationException>(() => _ = operation.IsCompleted);
+		Assert.IsTrue(operation.IsCompleted);
+		Assert.IsTrue(operation.IsDisposed);
 	}
 
 	[Test, Timeout(30_000)]

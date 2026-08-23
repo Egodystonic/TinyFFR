@@ -123,7 +123,8 @@ public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
 	
 	public bool IsDisposed {
 		get {
-			return TrackingData == null || Version != TrackingData.Version;
+			if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
+			return Version != TrackingData.Version;
 		}
 	}
 	
@@ -443,7 +444,8 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOpe
 	
 	public bool IsDisposed {
 		get {
-			return _trackingData == null || _version != _trackingData.Version;
+			if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
+			return _version != _trackingData.Version;
 		}
 	}
 	
