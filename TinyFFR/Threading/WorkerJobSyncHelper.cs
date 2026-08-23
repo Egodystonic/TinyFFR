@@ -186,7 +186,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 					return ((delegate* managed<TContext, TResult?>) contextWrapper.WorkPtr)(contextWrapper.Context);
 				}
 				finally {
-					contextWrapper.Context.JobDispatcher.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ReturnContextToPoolIfNoErrorOnPrimaryThread));
+					contextWrapper.Context.JobDispatcher.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ReturnContextToPoolIfNoErrorOnPrimaryThread));
 				}
 			}
 			
@@ -208,7 +208,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 					return ((delegate* managed<TContext, in TConfig, TResult>) contextWrapper.WorkPtr)(contextWrapper.Context, contextWrapper.Context.Config);
 				}
 				finally {
-					contextWrapper.Context.JobDispatcher.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ReturnContextToPoolIfNoErrorOnPrimaryThread));
+					contextWrapper.Context.JobDispatcher.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ReturnContextToPoolIfNoErrorOnPrimaryThread));
 				}
 			}
 			

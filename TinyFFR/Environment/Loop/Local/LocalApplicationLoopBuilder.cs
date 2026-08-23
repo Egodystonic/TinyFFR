@@ -24,6 +24,8 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		long PreviousIterationStartTimestamp, 
 		long PreviousIterationReturnTimestamp, 
 		TimeSpan TotalIteratedTime,
+		TimeSpan CooperativeTaskTimeSinceLastIteration,
+		TimeSpan BaselineIterationInterval,
 		bool ShouldIterateInput,
 		bool ShouldTranscribeText
 	);
@@ -36,6 +38,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	}
 
 	const string DefaultLoopName = "Unnamed Loop";
+	const double BaselineIterationIntervalSmoothingFactor = 0.1d;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ResourceHandle<ApplicationLoop>, HandleTrackingData> _handleDataMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ApplicationLoop>, IterationTimingData> _iterationTimingsMap = new();
@@ -44,7 +47,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	readonly int _iterationTimingBufferMask;
 #pragma warning restore CA2213
 	nuint _prevHandleId = 0;
-	readonly TimeSpan? _maxCooperativeTaskTimePerIteration;
+	readonly float? _cooperativeTaskTimeFractionPerIteration;
 	bool _isDisposed = false;
 
 	public LocalApplicationLoopBuilder(LocalApplicationLoopBuilderConfig config, LocalFactoryGlobalObjectGroup globals) {
@@ -53,7 +56,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_globals = globals;
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 		_iterationTimingBufferMask = (1 << config.FrameRateBufferSizeLog2) - 1;
-		_maxCooperativeTaskTimePerIteration = config.TargetPerFrameAsyncCooperativeTaskTime;
+		_cooperativeTaskTimeFractionPerIteration = config.TargetPerFrameAsyncCooperativeTaskTimeFraction;
 	}
 
 	public ApplicationLoop CreateLoop(in LocalApplicationLoopCreationConfig config) {
@@ -62,7 +65,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) (++_prevHandleId);
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates, false));
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates, false));
 		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		return new(handle, this);
@@ -87,10 +90,32 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var result = _handleDataMap[handle].FrameInterval - timeSinceLastIteration;
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
 	}
-	TimeSpan? GetCooperativeTaskBudget(TimeSpan idleTime) {
-		if (_maxCooperativeTaskTimePerIteration is not { } configuredMaxTime) return null;
-		if (configuredMaxTime > TimeSpan.Zero) return configuredMaxTime;
-		return idleTime > TimeSpan.Zero ? idleTime : TimeSpan.Zero;
+	TimeSpan? GetCooperativeTaskBudget(ResourceHandle<ApplicationLoop> handle) {
+		if (_cooperativeTaskTimeFractionPerIteration is not { } configuredFraction) return null;
+		if (configuredFraction <= 0f) return TimeSpan.Zero;
+		var baselineInterval = _handleDataMap[handle].BaselineIterationInterval;
+		if (baselineInterval <= TimeSpan.Zero) return TimeSpan.Zero;
+		return baselineInterval * configuredFraction;
+	}
+
+	void ExecuteCooperativeTasksAndRecordElapsedTime(ResourceHandle<ApplicationLoop> handle) {
+		var startTimestamp = Stopwatch.GetTimestamp();
+		_globals.ExecutePendingCooperativePrimaryThreadJobs(GetCooperativeTaskBudget(handle));
+		_handleDataMap[handle] = _handleDataMap[handle] with {
+			CooperativeTaskTimeSinceLastIteration = _handleDataMap[handle].CooperativeTaskTimeSinceLastIteration + Stopwatch.GetElapsedTime(startTimestamp)
+		};
+	}
+
+	void UpdateBaselineIterationInterval(ResourceHandle<ApplicationLoop> handle, TimeSpan deltaTime) {
+		var curData = _handleDataMap[handle];
+		var intervalExcludingCooperativeTasks = deltaTime - curData.CooperativeTaskTimeSinceLastIteration;
+		if (intervalExcludingCooperativeTasks < TimeSpan.Zero) intervalExcludingCooperativeTasks = TimeSpan.Zero;
+		_handleDataMap[handle] = curData with {
+			BaselineIterationInterval = curData.BaselineIterationInterval <= TimeSpan.Zero
+				? intervalExcludingCooperativeTasks
+				: curData.BaselineIterationInterval + (intervalExcludingCooperativeTasks - curData.BaselineIterationInterval) * BaselineIterationIntervalSmoothingFactor,
+			CooperativeTaskTimeSinceLastIteration = TimeSpan.Zero
+		};
 	}
 	void ExecuteIteration(bool shouldIterateInput, bool shouldTranscribeText) {
 		if (shouldIterateInput) {
@@ -105,7 +130,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var maxCpuBusyWaitTime = _handleDataMap[handle].MaxCpuBusyWaitTime;
 
 		if (executePendingPrimaryThreadCooperativeTasks) {
-			_globals.ExecutePendingCooperativePrimaryThreadJobs(GetCooperativeTaskBudget(waitTime - maxCpuBusyWaitTime));
+			ExecuteCooperativeTasksAndRecordElapsedTime(handle);
 			waitTime = GetWaitTimeUntilNextFrameStart(handle);
 		}
 
@@ -125,6 +150,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 			PreviousIterationReturnTimestamp = Stopwatch.GetTimestamp(),
 			TotalIteratedTime = _handleDataMap[handle].TotalIteratedTime + dt
 		};
+		UpdateBaselineIterationInterval(handle, dt);
 		LogIterationTiming(handle, dt);
 		return dt;
 	}
@@ -132,7 +158,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
 		if (executePendingPrimaryThreadCooperativeTasks) {
-			_globals.ExecutePendingCooperativePrimaryThreadJobs(GetCooperativeTaskBudget(GetWaitTimeUntilNextFrameStart(handle)));
+			ExecuteCooperativeTasksAndRecordElapsedTime(handle);
 		}
 
 		if (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) {
@@ -148,6 +174,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 			PreviousIterationReturnTimestamp = Stopwatch.GetTimestamp(),
 			TotalIteratedTime = _handleDataMap[handle].TotalIteratedTime + dt
 		};
+		UpdateBaselineIterationInterval(handle, dt);
 		LogIterationTiming(handle, dt);
 		outDeltaTime = dt;
 		return true;
