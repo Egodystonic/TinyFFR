@@ -81,7 +81,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		public PooledHeapMemory<char>? HeapPoolFilePath { get; set; } = null;
 	
 		// Worker thead owned
-		public PooledHeapMemory<TexelRgb24> TexelBuffer { get; set; }		
+		public PooledHeapMemory<TexelRgb24>? TexelBuffer { get; set; }		
 		public int AtlasDimension { get; set; }
 		public float Ascent { get; set; }
 		public float Descent { get; set; }
@@ -89,7 +89,11 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		public Rune LineBreakRune { get; set; }
 
 		public override void TearDown() {
-			Self._fontLoadRuneToGlyphMapMap.Return(FontLoadRuneToGlyphMap);
+			TexelBuffer?.Dispose();
+			TexelBuffer = null;
+			if (FontLoadRuneToGlyphMap != null) Self._fontLoadRuneToGlyphMapMap.Return(FontLoadRuneToGlyphMap);
+			if (RuneMap != null) Self._runeMapPool.Return(RuneMap);
+			if (KerningMap != null) Self._kerningMapPool.Return(KerningMap);
 			if (HeapPoolSerializedConfig is { } config) {
 				FontCreationConfig.DisposeAllocatedHeapStorage(config.Span);
 				config.Dispose();
@@ -121,6 +125,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		context.SetName(name);
 	}
 	public Font LoadFont(BuiltInFont font, in FontCreationConfig config) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		
@@ -138,6 +143,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadFontCore, in config);
 	}
 	public Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		
@@ -148,6 +154,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadFontCore, in config);
 	}
 	public TinyFfrAsyncOperation<Font> LoadFontAsync(BuiltInFont font, in FontCreationConfig config) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		
@@ -165,6 +172,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadFontCore, in config);
 	}
 	public TinyFfrAsyncOperation<Font> LoadFontAsync(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		
@@ -242,39 +250,43 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		int ttfFileStreamLengthBytes;
 		PooledHeapMemory<byte>? ttfFileData = null;
 		GCHandle? ttfFixedFileDataHandle = null;
+		nuint fontHandle = default;
+		InteropResult? fontLoadInteropResult = null;
 		
-		if (context.DataRef is { } dataRef) {
-			ttfFileStreamPtr = (byte*) dataRef.DataPtr;
-			ttfFileStreamLengthBytes = dataRef.DataLenBytes;
-		}
-		else if (context.HeapPoolFilePath is { } filePath) {
-			try {
-				var fontFileDataStream = new FileStream(filePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
-				var streamLengthBytes = checked((int) fontFileDataStream.Length);
-				ttfFileData = context.HeapPool.Borrow<byte>(streamLengthBytes);
-				fontFileDataStream.ReadExactly(ttfFileData.Value.Span);
-				fontFileDataStream.Dispose();
+		try {
+			if (context.DataRef is { } dataRef) {
+				ttfFileStreamPtr = (byte*) dataRef.DataPtr;
+				ttfFileStreamLengthBytes = dataRef.DataLenBytes;
 			}
-			catch (Exception e) {
-				if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
-				throw new InvalidOperationException("Error occured when reading and/or loading font file.", e);
+			else if (context.HeapPoolFilePath is { } filePath) {
+				try {
+					using var fontFileDataStream = new FileStream(filePath.Span.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+					var streamLengthBytes = checked((int) fontFileDataStream.Length);
+					ttfFileData = context.HeapPool.Borrow<byte>(streamLengthBytes);
+					fontFileDataStream.ReadExactly(ttfFileData.Value.Span);
+				}
+				catch (Exception e) {
+					ttfFileData?.Dispose();
+					ttfFileData = null;
+					if (!File.Exists(filePath.Span.ToString())) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
+					throw new InvalidOperationException("Error occured when reading and/or loading font file.", e);
+				}
+				
+				ttfFixedFileDataHandle = ttfFileData.Value.FixData();
+				ttfFileStreamPtr = (byte*) ttfFixedFileDataHandle.Value.AddrOfPinnedObject();
+				ttfFileStreamLengthBytes = ttfFileData.Value.Span.Length;
+			}
+			else {
+				throw new InvalidOperationException("No data ref or file path set in context (this is a bug in TinyFFR).");
 			}
 			
-			ttfFixedFileDataHandle = ttfFileData.Value.FixData();
-			ttfFileStreamPtr = (byte*) ttfFixedFileDataHandle.Value.AddrOfPinnedObject();
-			ttfFileStreamLengthBytes = ttfFileData.Value.Span.Length;
-		}
-		else {
-			throw new InvalidOperationException("No data ref or file path set in context (this is a bug in TinyFFR).");
-		}
-		
-		FontLoad(
-			ttfFileStreamPtr,
-			ttfFileStreamLengthBytes, 
-			0, 
-			out var fontHandle
-		).ThrowIfFailure();
-		try {
+			fontLoadInteropResult = FontLoad(
+				ttfFileStreamPtr,
+				ttfFileStreamLengthBytes, 
+				0, 
+				out fontHandle
+			);
+			fontLoadInteropResult.Value.ThrowIfFailure();
 			var runes = config.SupportedRunes;
 		
 			context.FontLoadRuneToGlyphMap.ClearWithoutZeroingMemory();
@@ -290,151 +302,143 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			var (renderHeight, scalingConstant, atlasDimension, ascent, descent, lineGap) = DetermineAppropriateFontRenderMetrics(fontHandle, context.FontLoadRuneToGlyphMap, in config);
 			var atlasDimensionReciprocal = 1f / atlasDimension;
 			var cellHeight = GetAtlasCellHeight(renderHeight);
-			try {
-				using var texelBuffer = context.HeapPool.Borrow<TexelRgb24>(atlasDimension * atlasDimension);
-				texelBuffer.Span.Clear();
-				for (var row = 0; row < ReservedBackgroundBlockDimension; ++row) {
-					for (var column = 0; column < ReservedBackgroundBlockDimension; ++column) {
-						texelBuffer.Span[row * atlasDimension + column] = new TexelRgb24(0, 0, 255);
-					}
+			var texelBuffer = context.HeapPool.Borrow<TexelRgb24>(atlasDimension * atlasDimension);
+			context.TexelBuffer = texelBuffer;
+			texelBuffer.Span.Clear();
+			for (var row = 0; row < ReservedBackgroundBlockDimension; ++row) {
+				for (var column = 0; column < ReservedBackgroundBlockDimension; ++column) {
+					texelBuffer.Span[row * atlasDimension + column] = new TexelRgb24(0, 0, 255);
 				}
-				var nib = new XYPair<int>(ReservedBackgroundBlockDimension + AdditionalAtlasGlyphCellPadding, 0);
-				
-				for (var r = 0; r < runes.Length; ++r) {
-					if (context.FontLoadRuneToGlyphMap[runes[r]] == 0) continue;
+			}
+			var nib = new XYPair<int>(ReservedBackgroundBlockDimension + AdditionalAtlasGlyphCellPadding, 0);
+			
+			for (var r = 0; r < runes.Length; ++r) {
+				if (context.FontLoadRuneToGlyphMap[runes[r]] == 0) continue;
 
-					FontGetGlyphAdvance(fontHandle, context.FontLoadRuneToGlyphMap[runes[r]], out var rawAdvance).ThrowIfFailure();
-					var advanceWidth = rawAdvance * scalingConstant * atlasDimensionReciprocal;
+				FontGetGlyphAdvance(fontHandle, context.FontLoadRuneToGlyphMap[runes[r]], out var rawAdvance).ThrowIfFailure();
+				var advanceWidth = rawAdvance * scalingConstant * atlasDimensionReciprocal;
 
-					byte* potentialBufferPtr = null;
-					try {
-						FontGenerateSdfBuffer(
-							fontHandle,
-							context.FontLoadRuneToGlyphMap[runes[r]],
-							scalingConstant,
-							SdfRenderPadding,
-							SdfOnEdgeValue,
-							SdfPixelDistScale,
-							out var bufferWidth,
-							out var bufferHeight,
-							out var xOffset,
-							out var yOffset,
-							out potentialBufferPtr
-						).ThrowIfFailure();
-						
-						if (potentialBufferPtr == null || bufferWidth == 0 || bufferHeight == 0) {
-							context.RuneMap[runes[r]] = new AtlasRuneData(XYPair<float>.Zero, XYPair<float>.Zero, XYPair<float>.Zero, advanceWidth);
-							continue;
-						}
-						if (nib.X + bufferWidth > atlasDimension) {
-							nib = (0, nib.Y + cellHeight);
-							if (bufferWidth > atlasDimension || nib.Y + cellHeight > atlasDimension) {
-								throw new InvalidOperationException("Ran out of atlas space when generating font (this is a bug in TinyFFR).");
-							}
-						}
-						
-						bufferHeight = Int32.Min(bufferHeight, cellHeight);
-						for (var row = 0; row < bufferHeight; ++row) {
-							var verticalNibOffset = bufferHeight - (row + 1); // Because stb returns bitmap in top-to-bottom order
-							var spanStartIndex = (verticalNibOffset + nib.Y) * atlasDimension + nib.X;
-							var bufferStartIndex = row * bufferWidth;
-							for (var column = 0; column < bufferWidth; ++column) {
-								var sdfValue = potentialBufferPtr[bufferStartIndex + column];
-								texelBuffer.Span[spanStartIndex + column] = new TexelRgb24(sdfValue, sdfValue, 0);
-							}
-						}
-						
-						context.RuneMap[runes[r]] = new AtlasRuneData(
-							nib.Cast<float>() * atlasDimensionReciprocal,
-							new XYPair<float>(bufferWidth, bufferHeight) * atlasDimensionReciprocal, 
-							new XYPair<float>(xOffset, yOffset) * atlasDimensionReciprocal,
-							advanceWidth
-						);
-						
-						nib = nib with { X = nib.X + bufferWidth + AdditionalAtlasGlyphCellPadding };
-					}
-					finally {
-						if (potentialBufferPtr != null) FontFreeSdfBuffer(potentialBufferPtr).ThrowIfFailure();
-					}
-				}
-
-				FontGetKerningDataPresent(fontHandle, out var fontHasKerningData).ThrowIfFailure();
-				if (fontHasKerningData) {
-					for (var first = 0; first < runes.Length; ++first) {
-						var firstGlyphIndex = context.FontLoadRuneToGlyphMap[runes[first]];
-						if (firstGlyphIndex == 0) continue;
-
-						for (var second = 0; second < runes.Length; ++second) {
-							var secondGlyphIndex = context.FontLoadRuneToGlyphMap[runes[second]];
-							if (secondGlyphIndex == 0) continue;
-
-							FontGetGlyphPairKernAdvance(fontHandle, firstGlyphIndex, secondGlyphIndex, out var rawKerningAdvance).ThrowIfFailure();
-							if (rawKerningAdvance == 0) continue;
-							context.KerningMap[PackRunePair(runes[first], runes[second])] = rawKerningAdvance * scalingConstant * atlasDimensionReciprocal;
-						}
-					}
-				}
-				
-				context.AtlasDimension = atlasDimension; 
-				context.TexelBuffer = texelBuffer;
-				context.Ascent = ascent * scalingConstant * atlasDimensionReciprocal; 
-				context.Descent = descent * scalingConstant * atlasDimensionReciprocal; 
-				context.LineAdvance = (ascent - descent + lineGap) * scalingConstant * atlasDimensionReciprocal * config.LineSpacingMultiplier;
-				context.LineBreakRune = config.LineBreakRune;
-				
-				static Font Complete(FontLoadContext ctx) {
-					ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+				byte* potentialBufferPtr = null;
+				try {
+					FontGenerateSdfBuffer(
+						fontHandle,
+						context.FontLoadRuneToGlyphMap[runes[r]],
+						scalingConstant,
+						SdfRenderPadding,
+						SdfOnEdgeValue,
+						SdfPixelDistScale,
+						out var bufferWidth,
+						out var bufferHeight,
+						out var xOffset,
+						out var yOffset,
+						out potentialBufferPtr
+					).ThrowIfFailure();
 					
-					var atlas = ctx.Self._textureBuilder.CreateTexture(
-						ctx.TexelBuffer.Span,
-						new TextureGenerationConfig {
-							Dimensions = new(ctx.AtlasDimension, ctx.AtlasDimension)
-						},
-						new TextureCreationConfig {
-							IsLinearColorspace = true,
-							GenerateMipMaps = false,
-							RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),
-							Name = ctx.Name
+					if (potentialBufferPtr == null || bufferWidth == 0 || bufferHeight == 0) {
+						context.RuneMap[runes[r]] = new AtlasRuneData(XYPair<float>.Zero, XYPair<float>.Zero, XYPair<float>.Zero, advanceWidth);
+						continue;
+					}
+					if (nib.X + bufferWidth > atlasDimension) {
+						nib = (0, nib.Y + cellHeight);
+						if (bufferWidth > atlasDimension || nib.Y + cellHeight > atlasDimension) {
+							throw new InvalidOperationException("Ran out of atlas space when generating font (this is a bug in TinyFFR).");
 						}
+					}
+					
+					bufferHeight = Int32.Min(bufferHeight, cellHeight);
+					for (var row = 0; row < bufferHeight; ++row) {
+						var verticalNibOffset = bufferHeight - (row + 1); // Because stb returns bitmap in top-to-bottom order
+						var spanStartIndex = (verticalNibOffset + nib.Y) * atlasDimension + nib.X;
+						var bufferStartIndex = row * bufferWidth;
+						for (var column = 0; column < bufferWidth; ++column) {
+							var sdfValue = potentialBufferPtr[bufferStartIndex + column];
+							texelBuffer.Span[spanStartIndex + column] = new TexelRgb24(sdfValue, sdfValue, 0);
+						}
+					}
+					
+					context.RuneMap[runes[r]] = new AtlasRuneData(
+						nib.Cast<float>() * atlasDimensionReciprocal,
+						new XYPair<float>(bufferWidth, bufferHeight) * atlasDimensionReciprocal, 
+						new XYPair<float>(xOffset, yOffset) * atlasDimensionReciprocal,
+						advanceWidth
 					);
 					
-					ctx.Self._prevHandleId++;
-					var handle = new ResourceHandle<Font>(ctx.Self._prevHandleId);
-					ctx.Self._globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, ctx.Name, DefaultFontName);
-					ctx.Self._activeFonts.Add(
-						handle, 
-						new FontData(
-							atlas,
-							ctx.Ascent,
-							ctx.Descent,
-							ctx.LineAdvance,
-							ctx.LineBreakRune,
-							ctx.RuneMap,
-							ctx.KerningMap, 
-							ctx.Self._penMapPool.Rent(), 
-							ctx.Self._stringMapPool.Rent(), 
-							ctx.Self._renderedTextCachePool.Rent()
-						)
-					);
-					return ctx.Self.HandleToInstance(handle);
+					nib = nib with { X = nib.X + bufferWidth + AdditionalAtlasGlyphCellPadding };
 				}
+				finally {
+					if (potentialBufferPtr != null) FontFreeSdfBuffer(potentialBufferPtr).ThrowIfFailure();
+				}
+			}
+
+			FontGetKerningDataPresent(fontHandle, out var fontHasKerningData).ThrowIfFailure();
+			if (fontHasKerningData) {
+				for (var first = 0; first < runes.Length; ++first) {
+					var firstGlyphIndex = context.FontLoadRuneToGlyphMap[runes[first]];
+					if (firstGlyphIndex == 0) continue;
+
+					for (var second = 0; second < runes.Length; ++second) {
+						var secondGlyphIndex = context.FontLoadRuneToGlyphMap[runes[second]];
+						if (secondGlyphIndex == 0) continue;
+
+						FontGetGlyphPairKernAdvance(fontHandle, firstGlyphIndex, secondGlyphIndex, out var rawKerningAdvance).ThrowIfFailure();
+						if (rawKerningAdvance == 0) continue;
+						context.KerningMap[PackRunePair(runes[first], runes[second])] = rawKerningAdvance * scalingConstant * atlasDimensionReciprocal;
+					}
+				}
+			}
+			
+			context.AtlasDimension = atlasDimension; 
+			context.Ascent = ascent * scalingConstant * atlasDimensionReciprocal; 
+			context.Descent = descent * scalingConstant * atlasDimensionReciprocal; 
+			context.LineAdvance = (ascent - descent + lineGap) * scalingConstant * atlasDimensionReciprocal * config.LineSpacingMultiplier;
+			context.LineBreakRune = config.LineBreakRune;
+			
+			static Font Complete(FontLoadContext ctx) {
+				ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+				if (ctx.TexelBuffer is not { } texelBuffer) throw new InvalidOperationException("Texel buffer was null (this is a bug in TinyFFR).");
 				
-				return context.GenerateResourceOnPrimary(&Complete);
+				var atlas = ctx.Self._textureBuilder.CreateTexture(
+					texelBuffer.Span,
+					new TextureGenerationConfig {
+						Dimensions = new(ctx.AtlasDimension, ctx.AtlasDimension)
+					},
+					new TextureCreationConfig {
+						IsLinearColorspace = true,
+						GenerateMipMaps = false,
+						RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),
+						Name = ctx.Name
+					}
+				);
+				
+				ctx.Self._prevHandleId++;
+				var handle = new ResourceHandle<Font>(ctx.Self._prevHandleId);
+				ctx.Self._globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, ctx.Name, DefaultFontName);
+				ctx.Self._activeFonts.Add(
+					handle, 
+					new FontData(
+						atlas,
+						ctx.Ascent,
+						ctx.Descent,
+						ctx.LineAdvance,
+						ctx.LineBreakRune,
+						ctx.RuneMap,
+						ctx.KerningMap, 
+						ctx.Self._penMapPool.Rent(), 
+						ctx.Self._stringMapPool.Rent(), 
+						ctx.Self._renderedTextCachePool.Rent()
+					)
+				);
+				ctx.RuneMap = null!;
+				ctx.KerningMap = null!;
+				return ctx.Self.HandleToInstance(handle);
 			}
-			catch {
-				static void ReturnMapPools(FontLoadContext ctx) {
-					ctx.Self._runeMapPool.Return(ctx.RuneMap);
-					ctx.Self._kerningMapPool.Return(ctx.KerningMap);
-					
-				}
-				context.DispatchOnPrimary(&ReturnMapPools);
-				throw;
-			}
+			
+			return context.GenerateResourceOnPrimary(&Complete);
 		}
 		finally {
 			ttfFixedFileDataHandle?.Free();
 			ttfFileData?.Dispose();
-			FontDispose(fontHandle).ThrowIfFailure();
+			if (fontLoadInteropResult is { } r && r) FontDispose(fontHandle).ThrowIfFailure();
 		}
 	}
 	#endregion

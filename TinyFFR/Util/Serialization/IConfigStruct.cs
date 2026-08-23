@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR;
@@ -22,7 +23,7 @@ public interface IConfigStruct {
 	protected static int SerializationSizeOfString(ReadOnlySpan<char> v) => SerializationFieldCountSizeBytes + v.Length * sizeof(char);
 	protected static int SerializationSizeOfSubConfig<T>(scoped in T v) where T : struct, IConfigStruct<T>, allows ref struct => SerializationFieldCountSizeBytes + T.GetHeapStorageFormattedLength(v);
 	protected static int SerializationSizeOfResource() => IResource.SerializedLengthBytes;
-	protected static int SerializationSizeOfSpan<T>(ReadOnlySpan<T> v) where T : unmanaged => sizeof(int) + MemoryMarshal.AsBytes(v).Length;
+	protected static int SerializationSizeOfSpan<T>(ReadOnlySpan<T> v) where T : unmanaged => SerializationFieldCountSizeBytes + MemoryMarshal.AsBytes(v).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected static int SerializationSizeOfNullableFloat() => sizeof(bool) + sizeof(float);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -158,6 +159,7 @@ public interface IConfigStruct {
 	}
 	protected static ReadOnlySpan<T> SerializationReadSpan<T>(scoped ref ReadOnlySpan<byte> src) where T : unmanaged {
 		var length = SerializationReadInt(ref src);
+		Debug.Assert(length % Unsafe.SizeOf<T>() == 0, $"Serialized span byte length {length} is not a whole multiple of sizeof({typeof(T).Name}) ({Unsafe.SizeOf<T>()}); MemoryMarshal.Cast would silently drop the ragged tail.");
 		var result = MemoryMarshal.Cast<byte, T>(src[..length]);
 		src = src[length..];
 		return result;

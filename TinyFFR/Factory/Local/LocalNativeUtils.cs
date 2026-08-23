@@ -5,7 +5,6 @@ using System;
 using System.Text;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
@@ -28,17 +27,23 @@ static unsafe class LocalNativeUtils {
 	static readonly ArrayPoolBackedMap<nuint, ActiveBufferData> _activeTemporaryBuffers = new();
 
 	public const string NativeLibName = "TinyFFR.Native";
-	const int NativeErrorBufferLength = 1001;
 	static bool _nativeLibInitialized = false;
 	static nuint _nextTemporaryBufferId = 0;
 
 	[DllImport(NativeLibName, EntryPoint = "get_err_buffer")]
 	static extern byte* GetErrorBuffer();
 
+	[DllImport(NativeLibName, EntryPoint = "get_err_buffer_length")]
+	static extern int GetErrorBufferLength();
+
+	[DllImport(NativeLibName, EntryPoint = "inject_fake_error")]
+	internal static extern InteropResult InjectFakeError(byte* utf8Message);
+
 	public static string GetLastError() {
-		var asSpan = new ReadOnlySpan<byte>(GetErrorBuffer(), NativeErrorBufferLength);
+		var bufferLength = GetErrorBufferLength();
+		var asSpan = new ReadOnlySpan<byte>(GetErrorBuffer(), bufferLength);
 		var firstZero = asSpan.IndexOf((byte) 0);
-		return Encoding.UTF8.GetString(asSpan[..(firstZero >= 0 ? firstZero : NativeErrorBufferLength)]);
+		return Encoding.UTF8.GetString(asSpan[..(firstZero >= 0 ? firstZero : bufferLength)]);
 	}
 
 	[DllImport(NativeLibName, EntryPoint = "exec_once_only_initialization")]
@@ -68,7 +73,7 @@ static unsafe class LocalNativeUtils {
 
 	[DllImport(NativeLibName, EntryPoint = "set_log_notify_delegate")]
 	static extern InteropResult SetLogNotifyDelegate(
-		delegate* unmanaged<void> logNotifyDelegate
+		delegate* unmanaged<byte*, void> logNotifyDelegate
 	);
 
 	[UnmanagedCallersOnly]
@@ -83,8 +88,8 @@ static unsafe class LocalNativeUtils {
 	}
 
 	[UnmanagedCallersOnly]
-	static void HandleLogMessage() {
-		Console.WriteLine(GetLastError());
+	static void HandleLogMessage(byte* message) {
+		Console.WriteLine(message == null ? String.Empty : Marshal.PtrToStringUTF8((IntPtr) message) ?? String.Empty);
 	}
 
 	internal static void DisposeTemporaryCpuBufferPoolIfSafe(ILocalGpuHoldingBufferAllocator allocator) {

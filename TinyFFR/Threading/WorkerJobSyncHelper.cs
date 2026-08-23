@@ -44,6 +44,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 		}
 		
 		public void DispatchOnPrimary(delegate* managed<TContext, void> work) {
+			_dispatchException = null;
 			_dispatchWorkPtr = work;
 			
 			static Unused Work(TContext? @this) {
@@ -102,6 +103,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 				hpsc.Dispose();
 			}
 			wrapper.Context.HeapPoolName?.Dispose();
+			wrapper.Context.HeapPoolName = null!;
 			wrapper.Context.HeapPool = null!;
 			wrapper.Context.JobDispatcher = null!;
 			wrapper.Context.PrimaryThreadDispatcher = null!;
@@ -109,12 +111,29 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 			return default;
 		}
 		
+		static void ReturnContextToPoolIfNoErrorOnPrimaryThread(WorkerJobSyncContextWrapper? wrapper, Exception? error, Unused result) {
+			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+			
+			// If there's an error the teardown could have left the context object in a half-torn-down state
+			// which we should just release to the GC rather than putting back in to the pool
+			if (error != null) {
+				Console.WriteLine($"Error in teardown for asynchronous context (of type {typeof(TContext)}): {error.GetAllMessages()}");
+				Console.WriteLine(error.StackTrace);
+				return;
+			} 
+			if (wrapper == null) {
+				Console.WriteLine($"Error in teardown for asynchronous context (of type {typeof(TContext)}): Null wrapper");
+				return;
+			}
+			
+			wrapper.OwningHelper._contextWrapperPool.Return(wrapper);
+		}
+		
 		void SetUpContextOnPrimaryThread(bool synchronous) {
 			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 			Context.Self = OwningHelper._self;
 			Context.PrimaryThreadDispatcher = OwningHelper._primaryThreadDispatcher;
 			Context.JobDispatcher = synchronous ? OwningHelper._synchronousJobDispatcher : OwningHelper._asynchronousJobDispatcher;
-			Context.HeapPool = OwningHelper._heapPool;
 		}
 		
 		public TResult? DispatchArbitrarySynchronousOperation<TResult>(delegate* managed<TContext, TResult?> work) where TResult : class {
@@ -123,15 +142,17 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 				return work(Context);
 			}
 			finally {
+				var exceptionCaught = false;
 				try {
 					TearDownContextOnPrimaryThread(this);
 				}
-				finally {
-					// Note: For thread safety this MUST be the very last thing we do in this static Work function
-					lock (OwningHelper._contextWrapperPoolLock) {
-						OwningHelper._contextWrapperPool.Return(this);
-					}
+#pragma warning disable CA1031 // Exception is propagated to logging method
+				catch (Exception e) {
+#pragma warning restore CA1031
+					exceptionCaught = true;
+					ReturnContextToPoolIfNoErrorOnPrimaryThread(this, e, default);
 				}
+				if (!exceptionCaught) ReturnContextToPoolIfNoErrorOnPrimaryThread(this, null, default); 
 			}
 		}
 		
@@ -141,15 +162,17 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 				return work(Context, in config);
 			}
 			finally {
+				var exceptionCaught = false;
 				try {
 					TearDownContextOnPrimaryThread(this);
 				}
-				finally {
-					// Note: For thread safety this MUST be the very last thing we do in this static Work function
-					lock (OwningHelper._contextWrapperPoolLock) {
-						OwningHelper._contextWrapperPool.Return(this);
-					}
+#pragma warning disable CA1031 // Exception is propagated to logging method
+				catch (Exception e) {
+#pragma warning restore CA1031
+					exceptionCaught = true;
+					ReturnContextToPoolIfNoErrorOnPrimaryThread(this, e, default);
 				}
+				if (!exceptionCaught) ReturnContextToPoolIfNoErrorOnPrimaryThread(this, null, default);
 			}
 		}
 
@@ -163,15 +186,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 					return ((delegate* managed<TContext, TResult?>) contextWrapper.WorkPtr)(contextWrapper.Context);
 				}
 				finally {
-					try {
-						contextWrapper.Context.JobDispatcher.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ThreadJob.NoOpCompletion));
-					}
-					finally {
-						// Note: For thread safety this MUST be the very last thing we do in this static Work function
-						lock (contextWrapper.OwningHelper._contextWrapperPoolLock) {
-							contextWrapper.OwningHelper._contextWrapperPool.Return(contextWrapper);
-						}
-					}
+					contextWrapper.Context.JobDispatcher.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ReturnContextToPoolIfNoErrorOnPrimaryThread));
 				}
 			}
 			
@@ -193,19 +208,12 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 					return ((delegate* managed<TContext, in TConfig, TResult>) contextWrapper.WorkPtr)(contextWrapper.Context, contextWrapper.Context.Config);
 				}
 				finally {
-					try {
-						contextWrapper.Context.JobDispatcher.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ThreadJob.NoOpCompletion));
-					}
-					finally {
-						// Note: For thread safety this MUST be the very last thing we do in this static Work function
-						lock (contextWrapper.OwningHelper._contextWrapperPoolLock) {
-							contextWrapper.OwningHelper._contextWrapperPool.Return(contextWrapper);
-						}
-					}
+					contextWrapper.Context.JobDispatcher.AddPrimaryThreadJobAndWait(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ReturnContextToPoolIfNoErrorOnPrimaryThread));
 				}
 			}
 			
 			SetUpContextOnPrimaryThread(false);
+			Context.SetConfig(in config);
 			WorkPtr = work;
 			var result = new TinyFfrAsyncOperation<TResult>(OwningHelper._primaryThreadDispatcher);
 			var job = ThreadJob.CreateWithAsyncOpResourceResult(this, &Work, result);
@@ -213,7 +221,6 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 			return result;
 		}
 	}
-	readonly Lock _contextWrapperPoolLock = new();
 	readonly ArrayPoolBackedObjectPool<WorkerJobSyncContextWrapper, WorkerJobSyncHelper<TSelf, TContext, TConfig>> _contextWrapperPool;
 	readonly TSelf _self;
 	readonly ThreadSafeHeapPoolWrapper _heapPool;
@@ -235,14 +242,10 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 	}
 
 	public WorkerJobSyncContextWrapper CreateContextWrapper() {
-		lock (_contextWrapperPoolLock) {
-			return _contextWrapperPool.Rent();
-		}
+		var result = _contextWrapperPool.Rent();
+		result.Context.HeapPool = _heapPool;
+		return result;
 	}
 
-	public void Dispose() {
-		lock (_contextWrapperPoolLock) {
-			_contextWrapperPool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
-		}
-	}
+	public void Dispose() => _contextWrapperPool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
 }

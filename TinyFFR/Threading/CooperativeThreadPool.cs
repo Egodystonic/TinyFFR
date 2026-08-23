@@ -8,9 +8,7 @@ using System.Threading;
 namespace Egodystonic.TinyFFR.Threading;
 
 sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadDispatcher, IDisposable {
-	const int MaxCooperativeJobHydrationStackDepth = 8;
 	static readonly TimeSpan ShutdownDrainPollInterval = TimeSpan.FromMilliseconds(10d);
-	int _currentCooperativeJobHydrationStackDepth = 0;
 
 	readonly ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> _primaryJobQueue;
 	readonly ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> _workerJobQueue;
@@ -102,37 +100,29 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		}
 	}
 
-	void IPrimaryThreadDispatcher.ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) => _ = ExecutePendingCooperativeJobs(targetExecutionTimeCap);
+	void IPrimaryThreadDispatcher.ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) => ExecutePendingCooperativeJobs(targetExecutionTimeCap);
 
-	bool ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) {
-		if (_isDisposed) return false;
-		return ExecutePendingCooperativeJobsRegardlessOfDisposalState(targetExecutionTimeCap);
+	void ExecutePendingCooperativeJobs(TimeSpan? targetExecutionTimeCap) {
+		if (_isDisposed) return;
+		ExecutePendingCooperativeJobsRegardlessOfDisposalState(targetExecutionTimeCap);
 	}
 
-	bool ExecutePendingCooperativeJobsRegardlessOfDisposalState(TimeSpan? targetExecutionTimeCap) {
+	void ExecutePendingCooperativeJobsRegardlessOfDisposalState(TimeSpan? targetExecutionTimeCap) {
 		Debug.Assert(ThreadSafetyTracker.CurrentThreadIsPrimary());
-		if (_currentCooperativeJobHydrationStackDepth >= MaxCooperativeJobHydrationStackDepth) return false;
 
 		var startTimestamp = Stopwatch.GetTimestamp();
-		++_currentCooperativeJobHydrationStackDepth;
-		try {
-			while (_primaryJobQueue.TryDequeue(out var job)) {
-				try {
-					job.Execute(_completionRegistrar);
-				}
-#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- We're logging it, not much else to do
-				catch (Exception e) {
-#pragma warning restore CA1031
-					Console.WriteLine($"{Thread.CurrentThread} failed to execute a primary thread job with unhandled exception '{e}' | {e.GetAllMessages()}.");
-					Console.WriteLine(e.StackTrace);
-				}
-				if (targetExecutionTimeCap is { } maxTime && Stopwatch.GetElapsedTime(startTimestamp) >= maxTime) break;
+		while (_primaryJobQueue.TryDequeue(out var job)) {
+			try {
+				job.Execute(_completionRegistrar);
 			}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- We're logging it, not much else to do
+			catch (Exception e) {
+#pragma warning restore CA1031
+				Console.WriteLine($"{Thread.CurrentThread} failed to execute a primary thread job with unhandled exception '{e}' | {e.GetAllMessages()}.");
+				Console.WriteLine(e.StackTrace);
+			}
+			if (targetExecutionTimeCap is { } maxTime && Stopwatch.GetElapsedTime(startTimestamp) >= maxTime) break;
 		}
-		finally {
-			--_currentCooperativeJobHydrationStackDepth;
-		}
-		return true;
 	}
 
 	public bool SchedulePrimaryThreadContinuation(Action continuation) {
@@ -216,7 +206,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 					if (remainingTime <= TimeSpan.Zero) return false;
 				}
 
-				var pumpWasPermitted = ExecutePendingCooperativeJobs(hasTimeout ? remainingTime : null);
+				ExecutePendingCooperativeJobs(hasTimeout ? remainingTime : null);
 
 				if (ConditionIsSatisfied(mre, versionOwner, expectedVersion)) return true;
 				cancellationToken.ThrowIfCancellationRequested();
@@ -228,7 +218,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 				}
 
 				lock (_primaryWakeMonitor) {
-					if (_isDisposed || ConditionIsSatisfied(mre, versionOwner, expectedVersion) || (pumpWasPermitted && _primaryJobQueue.HasPendingItems) || cancellationToken.IsCancellationRequested) continue;
+					if (_isDisposed || ConditionIsSatisfied(mre, versionOwner, expectedVersion) || _primaryJobQueue.HasPendingItems || cancellationToken.IsCancellationRequested) continue;
 					Monitor.Wait(_primaryWakeMonitor, remainingTime);
 				}
 			}
@@ -275,12 +265,12 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 
 		var startTimestamp = Stopwatch.GetTimestamp();
 		while (true) {
-			var pumpWasPermitted = ExecutePendingCooperativeJobsRegardlessOfDisposalState(null);
+			ExecutePendingCooperativeJobsRegardlessOfDisposalState(null);
 			if (Volatile.Read(ref _liveWorkerThreadCount) <= 0 && !_primaryJobQueue.HasPendingItems) break;
 			if (Stopwatch.GetElapsedTime(startTimestamp) >= _config.MaxShutdownWaitTime) break;
 
 			lock (_primaryWakeMonitor) {
-				if (pumpWasPermitted && (_primaryJobQueue.HasPendingItems || Volatile.Read(ref _liveWorkerThreadCount) <= 0)) continue;
+				if (_primaryJobQueue.HasPendingItems || Volatile.Read(ref _liveWorkerThreadCount) <= 0) continue;
 				Monitor.Wait(_primaryWakeMonitor, ShutdownDrainPollInterval);
 			}
 		}

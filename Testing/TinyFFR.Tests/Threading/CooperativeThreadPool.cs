@@ -435,9 +435,8 @@ unsafe class CooperativeThreadPoolTest {
 	}
 
 	[Test, Timeout(60_000)]
-	public void ShouldNotBusyWaitWhenCooperativePumpingHitsMaxNestingDepth() {
-		const int ExpectedHydrationDepthCap = 8;
-		const int QueuedJobCount = ExpectedHydrationDepthCap + 4;
+	public void ShouldNotBusyWaitWhileNestedCooperativeWaitsAreBlocked() {
+		const int QueuedJobCount = 12;
 		var unblockDelay = TimeSpan.FromSeconds(1d);
 
 		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
@@ -466,7 +465,7 @@ unsafe class CooperativeThreadPoolTest {
 
 		Assert.IsTrue(unblocker.Join(WaitTimeout));
 		Assert.IsNull(context.Error);
-		Assert.AreEqual(ExpectedHydrationDepthCap, context.MaxObservedNesting);
+		Assert.AreEqual(QueuedJobCount, context.MaxObservedNesting);
 		Assert.AreEqual(QueuedJobCount, context.NextOperationIndex);
 		Assert.GreaterOrEqual(wallElapsed, unblockDelay);
 		Assert.Less(cpuElapsed, wallElapsed * 0.4d);

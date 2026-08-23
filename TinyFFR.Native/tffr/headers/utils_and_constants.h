@@ -139,9 +139,9 @@ typedef uint8_t interop_bool;
 
 #define Log(...) \
 	{ \
-		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		interop_utils::copy_concat_space_to_err_buffer(); \
-		native_impl_init::notify_of_log_msg(); \
+		char tffrLogMsgBuffer[interop_utils::error_msg_buf_len]; \
+		interop_utils::combine_into(tffrLogMsgBuffer, interop_utils::error_msg_buf_len, __VA_ARGS__); \
+		native_impl_init::notify_of_log_msg(tffrLogMsgBuffer); \
 	} \
 
 
@@ -150,9 +150,9 @@ typedef uint8_t interop_bool;
 
 #define DebugLog(...) \
 	{ \
-		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		interop_utils::copy_concat_space_to_err_buffer(); \
-		native_impl_init::notify_of_log_msg(); \
+		char tffrLogMsgBuffer[interop_utils::error_msg_buf_len]; \
+		interop_utils::combine_into(tffrLogMsgBuffer, interop_utils::error_msg_buf_len, __VA_ARGS__); \
+		native_impl_init::notify_of_log_msg(tffrLogMsgBuffer); \
 	} \
 
 #else

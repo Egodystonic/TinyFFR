@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
@@ -13,6 +14,7 @@ using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Testing.Local;
 
@@ -39,6 +41,7 @@ static partial class TestMain {
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
 		builder.Context.Factory = new LocalTinyFfrFactory(assetLoaderConfig: new LocalAssetLoaderConfig() { MaxCachedTextMeshesPerFont = 64 }, rendererBuilderConfig: new RendererBuilderConfig { EnableVSync = false });
+		builder.DefaultLoopSlowFrameReportingEnable = false;
 	}
 
 	public static void StartTest(TestContext context) {
@@ -51,9 +54,11 @@ static partial class TestMain {
 
 		static string RandomStr() => Guid.NewGuid().ToString();
 		
-		using var font = context.Factory.AssetLoader.LoadFont(BuiltInFont.Default);
+		var startTime = Stopwatch.GetTimestamp();
+		var font = context.Factory.AssetLoader.LoadFont(BuiltInFont.Default);
+		Console.WriteLine(Stopwatch.GetElapsedTime(startTime));
 		using var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
-		const int NumStrings = 300;
+		const int NumStrings = 30;
 		
 		List<string> storedStrings = new List<string>();
 		List<CameraLockedTextInstance> texts = new();
@@ -64,6 +69,8 @@ static partial class TestMain {
 			context.Scene.Add(texts[i]);
 		}
 		
+		startTime = Stopwatch.GetTimestamp();
+		var fontOp = (TinyFfrAsyncOperation<Font>?) context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
@@ -73,6 +80,12 @@ static partial class TestMain {
 				var newStr = font.CreateString(RandomStr());
 				texts[i].SetString(newStr);
 				prevStr.Dispose();
+			}
+			
+			if (fontOp?.IsCompleted ?? false) {
+				font = fontOp.Value.GetResultAndDisposeOperation();
+				fontOp = null;
+				Console.WriteLine(Stopwatch.GetElapsedTime(startTime));
 			}
 		
 			context.Renderer.Render();
