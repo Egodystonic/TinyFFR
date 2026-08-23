@@ -397,6 +397,14 @@ public interface IAssetLoader {
 		);
 	}
 	BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
+	
+	TinyFfrAsyncOperation<BackdropTexture> LoadPreprocessedBackdropTextureAsync(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
+		return LoadPreprocessedBackdropTextureAsync(
+			skyboxKtxFilePath, iblKtxFilePath,
+			new BackdropTextureCreationConfig { Name = name }
+		);
+	}
+	TinyFfrAsyncOperation<BackdropTexture> LoadPreprocessedBackdropTextureAsync(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
 	#endregion
 	
 	#region Load Font

@@ -57,7 +57,7 @@ static partial class TestMain {
 		var startTime = Stopwatch.GetTimestamp();
 		var font = context.Factory.AssetLoader.LoadFont(BuiltInFont.Default);
 		Console.WriteLine(Stopwatch.GetElapsedTime(startTime));
-		using var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
+		var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
 		const int NumStrings = 30;
 		
 		List<string> storedStrings = new List<string>();
@@ -69,13 +69,8 @@ static partial class TestMain {
 			context.Scene.Add(texts[i]);
 		}
 		
-		startTime = Stopwatch.GetTimestamp();
-		var fontOp = (TinyFfrAsyncOperation<Font>?) context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
-		var fontOp2 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
-		var fontOp3 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
-		var fontOp4 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
-		var fontOp5 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
-		var fontOp6 = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		var fontOp = context.Factory.AssetLoader.LoadFontAsync(BuiltInFont.Monospace, "myfontname");
+		var skyboxOp = context.Factory.AssetLoader.LoadBackdropTextureAsync(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), BackdropTextureResolution.VeryHigh);
 		
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
@@ -85,12 +80,20 @@ static partial class TestMain {
 				var prevStr = texts[i].String;
 				var newStr = font.CreateString(RandomStr());
 				texts[i].SetString(newStr);
+				texts[i].SetPen(pen);
 				prevStr.Dispose();
 			}
 			
-			if (fontOp != null) {
-				Console.WriteLine(TinyFfrAsyncOperation.GetCompletionStats(fontOp.Value, fontOp2, fontOp3, fontOp4, fontOp5, fontOp6));
+			if (skyboxOp.IsResultAvailable) {
+				context.Scene.SetBackdrop(skyboxOp.GetResultAndDisposeOperation());
 			}
+			if (fontOp.IsResultAvailable) {
+				font = fontOp.GetResultAndDisposeOperation();
+				pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
+			}
+			// if (fontOp != null) {
+			// 	Console.WriteLine(TinyFfrAsyncOperation.GetCompletionStats(fontOp.Value, fontOp2, fontOp3, fontOp4, fontOp5, fontOp6));
+			// }
 			// if (fontOp?.IsCompleted ?? false) {
 			// 	font = fontOp.Value.GetResultAndDisposeOperation();
 			// 	fontOp = null;

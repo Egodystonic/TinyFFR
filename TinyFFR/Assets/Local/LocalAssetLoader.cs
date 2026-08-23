@@ -40,10 +40,11 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_vertexTriangleBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxAssetVertexIndexBufferSizeBytes);
 		_skeletalNodeBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxSkeletalAnimationNodeCount * sizeof(NodeHandle), nameof(config.MaxSkeletalAnimationNodeCount));
 		_skeletalAnimationKeyframeDataPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxSkeletalAnimationChannelKeyframeCount * sizeof(Quaternion), nameof(config.MaxSkeletalAnimationChannelKeyframeCount));
-		_ktxFileBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxKtxFileBufferSizeBytes);
+		_maxKtxFileSizeBytes = config.MaxKtxFileBufferSizeBytes;
 		_embeddedAssetTextureBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxEmbeddedAssetTextureFileSizeBytes);
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
 		_backdropTextureImplProvider = new LocalBackdropTextureImplProvider(this);
+		_backdropLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 
 		if (OperatingSystem.IsWindows()) {
 			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameWin);
@@ -68,7 +69,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 			foreach (var model in _loadedModels.Keys) Dispose(model, removeFromCollection: false);
 			foreach (var backdropTex in _loadedBackdropTextures.Keys) Dispose(backdropTex, removeFromCollection: false);
 			_embeddedAssetTextureBufferPool.Dispose();
-			_ktxFileBufferPool.Dispose();
+			_backdropLoadWorkerSyncHelper.Dispose();
 			_vertexTriangleBufferPool.Dispose();
 			_skeletalNodeBufferPool.Dispose();
 			_skeletalAnimationKeyframeDataPool.Dispose();

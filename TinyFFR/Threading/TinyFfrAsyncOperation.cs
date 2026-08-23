@@ -83,11 +83,21 @@ static class OutstandingAsyncOperationRegistry {
 	}
 }
 
+public interface ITinyFfrAsyncOperation {
+	// TODO xmldoc the difference between these three properties:
+	//	IsCompleted = The async operation has finished (whether or not this operation has been disposed)
+	//	IsDisposed = The async operation has been disposed
+	//	IsResultAvailable = The async operation is complete and GetResultAndDisposeOperation will return immediately
+	bool IsCompleted { get; }
+	bool IsDisposed { get; }
+	bool IsResultAvailable { get; }
+}
+
 //TODO xmldoc Every TinyFfrAsyncOperation returned by the library must be consumed exactly once, either by awaiting it or by
 //TODO xmldoc calling GetResultAndDisposeOperation(). Consuming an operation is what releases its internal tracking data back to
 //TODO xmldoc the pool; an operation that is never consumed retains that tracking data (and its wait handle) for the lifetime of
 //TODO xmldoc the process. An operation whose wait timed out has not been consumed, and must still be consumed once it completes.
-public readonly record struct TinyFfrAsyncOperation {
+public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
 #pragma warning disable CA1034 // "Don't nest public classes" -- I'll do what I want
 	public readonly record struct Awaiter : ICriticalNotifyCompletion {
 #pragma warning restore CA1034
@@ -107,8 +117,19 @@ public readonly record struct TinyFfrAsyncOperation {
 
 	public bool IsCompleted {
 		get {
-			if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
-			return TrackingData.GetIsCompleted(Version);
+			return IsDisposed || TrackingData.GetIsCompleted(Version);
+		}
+	}
+	
+	public bool IsDisposed {
+		get {
+			return TrackingData == null || Version != TrackingData.Version;
+		}
+	}
+	
+	public bool IsResultAvailable {
+		get {
+			return !IsDisposed && TrackingData.GetIsCompleted(Version);
 		}
 	}
 
@@ -201,7 +222,7 @@ public readonly record struct TinyFfrAsyncOperation {
 //TODO xmldoc calling GetResultAndDisposeOperation(). Consuming an operation is what releases its internal tracking data back to
 //TODO xmldoc the pool; an operation that is never consumed retains that tracking data (and its wait handle) for the lifetime of
 //TODO xmldoc the process. An operation whose wait timed out has not been consumed, and must still be consumed once it completes.
-public readonly unsafe record struct TinyFfrAsyncOperation<T> {
+public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOperation {
 #pragma warning disable CA1034 // "Don't nest public classes" -- I'll do what I want
 	public readonly record struct Awaiter : ICriticalNotifyCompletion {
 #pragma warning restore CA1034
@@ -283,9 +304,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 
 		public bool GetIsCompleted(ulong version) {
 			lock (_lock) {
-				if (version != _version) {
-					throw new InvalidOperationException($"It is not permitted to check {nameof(IsCompleted)} after this {nameof(TinyFfrAsyncOperation)} has been disposed.");
-				}
+				ThrowIfIncorrectVersion(version);
 				return _completionIndicator.IsSet;
 			}
 		}
@@ -418,8 +437,19 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> {
 
 	public bool IsCompleted {
 		get {
-			if (_trackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation<T>>();
-			return _trackingData.GetIsCompleted(_version);
+			return IsDisposed || _trackingData.GetIsCompleted(_version);
+		}
+	}
+	
+	public bool IsDisposed {
+		get {
+			return _trackingData == null || _version != _trackingData.Version;
+		}
+	}
+	
+	public bool IsResultAvailable {
+		get {
+			return !IsDisposed && _trackingData.GetIsCompleted(_version);
 		}
 	}
 

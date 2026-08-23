@@ -22,7 +22,7 @@ public sealed record LocalAssetLoaderConfig {
 	public const int DefaultMaxKtxFileBufferSizeBytes = 256 * 1024 * 1024; // 256 MB
 	public const int DefaultMaxEmbeddedAssetTextureFileSizeBytes = 8192 * 8192 * 4; // 8k image; 256MB
 	public const int DefaultMaxCachedTextMeshesPerFont = 64;
-	public static readonly TimeSpan DefaultMaxHdrProcessingTime = TimeSpan.FromMinutes(2d);
+	public static readonly TimeSpan DefaultMaxHdrProcessingTime = TimeSpan.FromMinutes(15d);
 
 	public int MaxAssetFilePathLengthChars {
 		get;
