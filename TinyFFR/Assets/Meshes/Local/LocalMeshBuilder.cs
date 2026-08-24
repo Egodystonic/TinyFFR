@@ -106,15 +106,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	}
 
 	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config) {
-		var boneCount = 0;
-		for (var i = 0; i < skeletalNodes.Length; ++i) {
-			if (skeletalNodes[i].CorrespondingBoneIndex >= boneCount) boneCount = skeletalNodes[i].CorrespondingBoneIndex!.Value + 1;
-		}
-		
-		if (boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
-			throw new ArgumentException($"TinyFFR only supports a maximum of {IMeshBuilder.MaxSkeletalBoneCount} skeletal bones (given nodes refer to a bone at index {boneCount - 1}).");
-		}
-		
+		var boneCount = CalculateAndValidateBoneCount(skeletalNodes);
+
 		// If there are 0 bones we'll create a mesh with a default value for a single bone instead.
 		// This just makes things easier elsewhere as we don't have to branch around 'null' or 'invalid' skeleton setups.
 		// Supplying an animation skeleton with no bones is kind of an error anyway and there's no meaningful result
@@ -127,28 +120,42 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 				null,
 				0
 			);
-			 
+
 			return CreateMesh(
-				vertices, 
-				triangles, 
+				vertices,
+				triangles,
 				new ReadOnlySpan<SkeletalAnimationNode>(in defaultNode),
 				in config
 			);
 		}
 
 		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneCount);
-
-		var modelImportTransformMatrix = Matrix4x4.CreateTranslation(-(config.OriginTranslation.ToVector3())) * Matrix4x4.CreateScale(config.LinearRescalingFactor);
-		var animTable = _meshAnimationTablePool.Rent();
-		animTable.SetSkeleton(result, boneCount, skeletalNodes, modelImportTransformMatrix);
-		_activeMeshAnimationTables.Add(result.Handle, animTable);
+		AttachSkeletonToMesh(result, boneCount, skeletalNodes, config.OriginTranslation, config.LinearRescalingFactor);
 		return result;
 	}
-	
-	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount) where TVertex : unmanaged, IMeshVertex {
-		ThrowIfThisIsDisposed();
+
+	internal static int CalculateAndValidateBoneCount(ReadOnlySpan<SkeletalAnimationNode> skeletalNodes) {
+		var boneCount = 0;
+		for (var i = 0; i < skeletalNodes.Length; ++i) {
+			if (skeletalNodes[i].CorrespondingBoneIndex >= boneCount) boneCount = skeletalNodes[i].CorrespondingBoneIndex!.Value + 1;
+		}
+
+		if (boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
+			throw new ArgumentException($"TinyFFR only supports a maximum of {IMeshBuilder.MaxSkeletalBoneCount} skeletal bones (given nodes refer to a bone at index {boneCount - 1}).");
+		}
+
+		return boneCount;
+	}
+
+	internal void AttachSkeletonToMesh(Mesh mesh, int boneCount, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, Vect originTranslation, float linearRescalingFactor) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		
+		var modelImportTransformMatrix = Matrix4x4.CreateTranslation(-(originTranslation.ToVector3())) * Matrix4x4.CreateScale(linearRescalingFactor);
+		var animTable = _meshAnimationTablePool.Rent();
+		animTable.SetSkeleton(mesh, boneCount, skeletalNodes, modelImportTransformMatrix);
+		_activeMeshAnimationTables.Add(mesh.Handle, animTable);
+	}
+
+	internal static void ValidateMeshData<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
 			if (value < 0 || value >= numVertices) {
 				throw new ArgumentException($"Index '{indexChar}' in triangle #{triangleIndex} (0-indexed) is \"{value}\"; " +
@@ -162,66 +169,120 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (config.AllowsPerInstanceVertexMutation && typeof(TVertex) != typeof(MeshVertex)) {
 			throw new ArgumentException($"Per-instance vertex mutation is only supported for non-skeletal meshes.", nameof(config));
 		}
-		var generateWireframeData = config.GenerateWireframeData
-			&& !config.AllowsPerInstanceVertexMutation
-			&& typeof(TVertex) == typeof(MeshVertex);
-		
+
 		for (var i = 0; i < triangles.Length; ++i) {
 			CheckTriangleIndex('A', i, triangles[i].IndexA, vertices.Length);
 			CheckTriangleIndex('B', i, triangles[i].IndexB, vertices.Length);
 			CheckTriangleIndex('C', i, triangles[i].IndexC, vertices.Length);
 		}
-		
+	}
+
+	internal static bool GetShouldGenerateWireframeData<TVertex>(in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
+		return config.GenerateWireframeData
+			&& !config.AllowsPerInstanceVertexMutation
+			&& typeof(TVertex) == typeof(MeshVertex);
+	}
+
+	internal static void FlipTriangleWindings(Span<VertexTriangle> triangles) {
+		for (var i = 0; i < triangles.Length; ++i) {
+			triangles[i] = new VertexTriangle(triangles[i].IndexB, triangles[i].IndexA, triangles[i].IndexC);
+		}
+	}
+
+	internal static void ApplyVertexTransforms<TVertex>(Span<TVertex> vertices, in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
+		// ReSharper disable once CompareOfFloatsByEqualityOperator Direct comparison with 1f is correct and exact
+		if (!config.InvertTextureU && !config.InvertTextureV && config.OriginTranslation == Vect.Zero && config.LinearRescalingFactor == 1f) return;
+
+		for (var v = 0; v < vertices.Length; ++v) {
+			vertices[v] = vertices[v] with {
+				Location = (vertices[v].Location - config.OriginTranslation).ScaledFromOriginBy(config.LinearRescalingFactor),
+				TextureCoords = (
+					config.InvertTextureU ? 1f - vertices[v].TextureCoords.X : vertices[v].TextureCoords.X,
+					config.InvertTextureV ? 1f - vertices[v].TextureCoords.Y : vertices[v].TextureCoords.Y
+				)
+			};
+		}
+	}
+
+	// Maintainer's note: Do not replace this with the CalculateBoundingBox override that takes a margin parameter;
+	// the code below applies the margin to the user's override if there is one.
+	internal static PositionedCuboid CalculateMeshBoundingBox<TVertex>(ReadOnlySpan<TVertex> transformedVertices, in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
+		return (config.BoundingBoxOverride ?? MathUtils.CalculateBoundingBox(transformedVertices))
+			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
+	}
+
+	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount) where TVertex : unmanaged, IMeshVertex {
+		ThrowIfThisIsDisposed();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ValidateMeshData(vertices, triangles, in config);
+
+		var generateWireframeData = GetShouldGenerateWireframeData<TVertex>(in config);
+
 		_prevHandleId++;
 		var handle = new ResourceHandle<Mesh>(_prevHandleId);
 
 		var tempVertexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
 		var tempIndexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(triangles);
-		
-		if (config.FlipTriangles) {
-			var intSpan = tempIndexBuffer.AsSpan<int>();
-			for (var i = 0; i < triangles.Length; ++i) {
-				var a = intSpan[i * 3];
-				var b = intSpan[i * 3 + 1];
-				intSpan[i * 3] = b;
-				intSpan[i * 3 + 1] = a;
-			}
-		}
 
-		// ReSharper disable once CompareOfFloatsByEqualityOperator Direct comparison with 1f is correct and exact
-		if (config.InvertTextureU || config.InvertTextureV || config.OriginTranslation != Vect.Zero || config.LinearRescalingFactor != 1f) {
-			var vBufferSpan = tempVertexBuffer.AsSpan<TVertex>();
-			for (var v = 0; v < vBufferSpan.Length; ++v) {
-				vBufferSpan[v] = vBufferSpan[v] with {
-					Location = (vBufferSpan[v].Location - config.OriginTranslation).ScaledFromOriginBy(config.LinearRescalingFactor),
-					TextureCoords = (
-						config.InvertTextureU ? 1f - vBufferSpan[v].TextureCoords.X : vBufferSpan[v].TextureCoords.X,
-						config.InvertTextureV ? 1f - vBufferSpan[v].TextureCoords.Y : vBufferSpan[v].TextureCoords.Y
-					)
-				};
-			}
-		}
+		if (config.FlipTriangles) FlipTriangleWindings(tempIndexBuffer.AsSpan<VertexTriangle>());
+		ApplyVertexTransforms(tempVertexBuffer.AsSpan<TVertex>(), in config);
 
-		// Maintainer's note: Do not replace this with the CalculateBoundingBox override that takes a margin parameter;
-		// the code below applies the margin to the user's override if there is one.
-		var boundingBox = (config.BoundingBoxOverride ?? MathUtils.CalculateBoundingBox(tempVertexBuffer.AsSpan<TVertex>()))
-			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
+		var boundingBox = CalculateMeshBoundingBox<TVertex>(tempVertexBuffer.AsSpan<TVertex>(), in config);
 
-		var indexBufferCount = checked(triangles.Length * 3);
+		return CompleteMeshCreation<TVertex>(
+			handle,
+			tempVertexBuffer,
+			tempIndexBuffer,
+			vertices.Length,
+			triangles.Length,
+			boundingBox,
+			config.AllowsPerInstanceVertexMutation,
+			generateWireframeData,
+			config.Name,
+			boneCount
+		);
+	}
+
+	internal Mesh CreateMeshFromPreValidatedAndTransformedData<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
+		ThrowIfThisIsDisposed();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+		_prevHandleId++;
+		var handle = new ResourceHandle<Mesh>(_prevHandleId);
+
+		var tempVertexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
+		var tempIndexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(triangles);
+
+		return CompleteMeshCreation<TVertex>(
+			handle,
+			tempVertexBuffer,
+			tempIndexBuffer,
+			vertices.Length,
+			triangles.Length,
+			boundingBox,
+			allowsPerInstanceVertexMutation,
+			generateWireframeData,
+			name,
+			boneCount
+		);
+	}
+
+	Mesh CompleteMeshCreation<TVertex>(ResourceHandle<Mesh> handle, TemporaryLoadSpaceBuffer tempVertexBuffer, TemporaryLoadSpaceBuffer tempIndexBuffer, int vertexCount, int triangleCount, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
+		var indexBufferCount = checked(triangleCount * 3);
 
 		if (generateWireframeData) {
 			GenerateAndStoreWireframeBuffers(handle, tempVertexBuffer.AsSpan<MeshVertex>(), tempIndexBuffer.AsSpan<VertexTriangle>());
 		}
-		
+
 		UIntPtr vbHandle;
 		if (typeof(TVertex) == typeof(MeshVertex)) {
-			AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out vbHandle).ThrowIfFailure();
-			if (config.AllowsPerInstanceVertexMutation) {
+			AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertexCount, out vbHandle).ThrowIfFailure();
+			if (allowsPerInstanceVertexMutation) {
 				_defaultMutableVerticesMap[handle] = _globals.HeapPool.BorrowAndCopy(tempVertexBuffer.AsSpan<MeshVertex>());
 			}
 		}
 		else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
-			AllocateSkeletalVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertexSkeletal*) tempVertexBuffer.DataPtr, vertices.Length, out vbHandle).ThrowIfFailure();
+			AllocateSkeletalVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertexSkeletal*) tempVertexBuffer.DataPtr, vertexCount, out vbHandle).ThrowIfFailure();
 		}
 		else {
 			throw new InvalidOperationException($"Unexpected mesh vertex type '{typeof(TVertex)}'.");
@@ -232,7 +293,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
 		_activeMeshes.Add(handle, new(new MeshBufferData(vbHandle, ibHandle, 0, indexBufferCount, boneCount), boundingBox));
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMeshName);
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultMeshName);
 		return new Mesh(handle, this);
 	}
 

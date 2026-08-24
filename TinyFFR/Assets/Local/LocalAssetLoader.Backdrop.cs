@@ -28,7 +28,6 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	readonly string _hdrPreprocessorResourceName;
 	readonly LocalBackdropTextureImplProvider _backdropTextureImplProvider;
 	readonly TimeSpan _maxHdrProcessingTime;
-	readonly int _maxKtxFileSizeBytes;
 	readonly WorkerJobSyncHelper<LocalAssetLoader, BackdropLoadContext, BackdropTextureCreationConfig> _backdropLoadWorkerSyncHelper;
 	readonly ArrayPoolBackedMap<ResourceHandle<BackdropTexture>, BackdropTextureData> _loadedBackdropTextures = new();
 	nuint _prevBackdropTextureHandle = 0;
@@ -318,12 +317,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	static PooledHeapMemory<byte> ReadKtxFile(BackdropLoadContext context, string filePath) {
 		using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 		var fileLengthBytes = checked((int) fileStream.Length);
-		if (fileLengthBytes > context.Self._maxKtxFileSizeBytes) {
-			throw new InvalidOperationException($"Can not load KTX file '{filePath}' because its size ({fileLengthBytes} bytes) exceeds the configured maximum " +
-												$"({context.Self._maxKtxFileSizeBytes} bytes; the limit can be raised by setting the " +
-												$"{nameof(LocalAssetLoaderConfig.MaxKtxFileBufferSizeBytes)} value in the {nameof(LocalAssetLoaderConfig)} " +
-												$"passed in to the {nameof(LocalTinyFfrFactory)} constructor).");
-		}
+		ThrowIfAssetBufferSizeExceedsMaximum(fileLengthBytes, $"KTX file '{filePath}'");
 
 		var result = context.HeapPool.Borrow<byte>(fileLengthBytes);
 		try {

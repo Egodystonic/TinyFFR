@@ -1,4 +1,4 @@
-﻿// Created on 2024-08-19 by Ben Bowen
+// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Diagnostics;
@@ -16,6 +16,8 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, IDisposable {
+	internal const int MaxAssetBufferSizeBytes = 1 << 30;
+
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _assetFilePathBuffer;
 	bool _isDisposed = false;
@@ -37,14 +39,11 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_fontLoader = new LocalFontLoader(globals, config, _meshBuilder, _textureBuilder, _materialBuilder);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_animationAndNodeNameBuffer = new InteropStringBuffer(config.MaxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
-		_vertexTriangleBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxAssetVertexIndexBufferSizeBytes);
-		_skeletalNodeBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxSkeletalAnimationNodeCount * sizeof(NodeHandle), nameof(config.MaxSkeletalAnimationNodeCount));
-		_skeletalAnimationKeyframeDataPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxSkeletalAnimationChannelKeyframeCount * sizeof(Quaternion), nameof(config.MaxSkeletalAnimationChannelKeyframeCount));
-		_maxKtxFileSizeBytes = config.MaxKtxFileBufferSizeBytes;
-		_embeddedAssetTextureBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxEmbeddedAssetTextureFileSizeBytes);
+		_maxAnimationAndNodeNameLengthChars = config.MaxAnimationAndNodeNameLengthChars;
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
 		_backdropTextureImplProvider = new LocalBackdropTextureImplProvider(this);
 		_backdropLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
+		_meshLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 
 		if (OperatingSystem.IsWindows()) {
 			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameWin);
@@ -60,6 +59,14 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		}
 	}
 
+	internal static void ThrowIfAssetBufferSizeExceedsMaximum(long requiredSizeBytes, string assetDescription) {
+		if (requiredSizeBytes <= MaxAssetBufferSizeBytes) return;
+		throw new InvalidOperationException(
+			$"Can not load {assetDescription} because it requires an in-memory buffer of {requiredSizeBytes} bytes, " +
+			$"which exceeds the maximum size TinyFFR supports for a single asset buffer ({MaxAssetBufferSizeBytes} bytes)."
+		);
+	}
+
 	public override string ToString() => _isDisposed ? "TinyFFR Local Asset Loader [Disposed]" : "TinyFFR Local Asset Loader";
 
 	#region Disposal
@@ -68,11 +75,9 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		try {
 			foreach (var model in _loadedModels.Keys) Dispose(model, removeFromCollection: false);
 			foreach (var backdropTex in _loadedBackdropTextures.Keys) Dispose(backdropTex, removeFromCollection: false);
-			_embeddedAssetTextureBufferPool.Dispose();
 			_backdropLoadWorkerSyncHelper.Dispose();
-			_vertexTriangleBufferPool.Dispose();
-			_skeletalNodeBufferPool.Dispose();
-			_skeletalAnimationKeyframeDataPool.Dispose();
+			_meshLoadWorkerSyncHelper.Dispose();
+			_primaryThreadGatherBuffers.Dispose();
 			_animationAndNodeNameBuffer.Dispose();
 			_assetFilePathBuffer.Dispose();
 			_fontLoader.Dispose();

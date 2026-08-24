@@ -189,4 +189,61 @@ class MeshConfigTest {
 			.Including(nameof(MeshCreationConfig.Name))
 			.End();
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertLoadConfigToAndFromHeapStorageFormat() {
+		var testConfig = new MeshLoadConfig {
+			CreationConfig = new MeshCreationConfig {
+				FlipTriangles = true,
+				InvertTextureU = false,
+				InvertTextureV = true,
+				OriginTranslation = new Vect(1f, 2f, 3f),
+				LinearRescalingFactor = 2.5f,
+				BoundingBoxOverride = null,
+				BoundingBoxAdditionalMargin = 0.1f,
+				AllowsPerInstanceVertexMutation = true,
+				GenerateWireframeData = false,
+				Name = "test mesh"
+			},
+			ReadConfig = new MeshReadConfig {
+				FixCommonExportErrors = false,
+				OptimizeForGpu = true,
+				CorrectFlippedOrientation = false,
+				LoadSkeletalAnimationDataIfPresent = true,
+				SubMeshIndex = 3,
+				AnimationTicksPerSecondOverride = 24f
+			}
+		};
+
+		void AssertConfigsMatch(MeshLoadConfig expected, MeshLoadConfig actual) {
+			Assert.AreEqual(expected.CreationConfig.FlipTriangles, actual.CreationConfig.FlipTriangles);
+			Assert.AreEqual(expected.CreationConfig.InvertTextureU, actual.CreationConfig.InvertTextureU);
+			Assert.AreEqual(expected.CreationConfig.InvertTextureV, actual.CreationConfig.InvertTextureV);
+			Assert.AreEqual(expected.CreationConfig.OriginTranslation, actual.CreationConfig.OriginTranslation);
+			Assert.AreEqual(expected.CreationConfig.LinearRescalingFactor, actual.CreationConfig.LinearRescalingFactor);
+			Assert.AreEqual(expected.CreationConfig.BoundingBoxOverride, actual.CreationConfig.BoundingBoxOverride);
+			Assert.AreEqual(expected.CreationConfig.BoundingBoxAdditionalMargin, actual.CreationConfig.BoundingBoxAdditionalMargin);
+			Assert.AreEqual(expected.CreationConfig.AllowsPerInstanceVertexMutation, actual.CreationConfig.AllowsPerInstanceVertexMutation);
+			Assert.AreEqual(expected.CreationConfig.GenerateWireframeData, actual.CreationConfig.GenerateWireframeData);
+			Assert.IsTrue(expected.CreationConfig.Name.SequenceEqual(actual.CreationConfig.Name));
+			Assert.AreEqual(expected.ReadConfig.FixCommonExportErrors, actual.ReadConfig.FixCommonExportErrors);
+			Assert.AreEqual(expected.ReadConfig.OptimizeForGpu, actual.ReadConfig.OptimizeForGpu);
+			Assert.AreEqual(expected.ReadConfig.CorrectFlippedOrientation, actual.ReadConfig.CorrectFlippedOrientation);
+			Assert.AreEqual(expected.ReadConfig.LoadSkeletalAnimationDataIfPresent, actual.ReadConfig.LoadSkeletalAnimationDataIfPresent);
+			Assert.AreEqual(expected.ReadConfig.SubMeshIndex, actual.ReadConfig.SubMeshIndex);
+			Assert.AreEqual(expected.ReadConfig.AnimationTicksPerSecondOverride, actual.ReadConfig.AnimationTicksPerSecondOverride);
+		}
+
+		AssertRoundTripHeapStorage(testConfig, AssertConfigsMatch);
+
+		AssertHeapSerializationWithObjects<MeshLoadConfig>()
+			.SubConfig(testConfig.CreationConfig)
+			.SubConfig(testConfig.ReadConfig)
+			.For(testConfig);
+
+		AssertPropertiesAccountedFor<MeshLoadConfig>()
+			.Including(nameof(MeshLoadConfig.CreationConfig))
+			.Including(nameof(MeshLoadConfig.ReadConfig))
+			.End();
+	}
 }

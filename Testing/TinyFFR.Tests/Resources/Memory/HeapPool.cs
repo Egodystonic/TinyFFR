@@ -241,4 +241,27 @@ unsafe class HeapPoolTest {
 			}
 		});
 	}
+
+	[Test]
+	public void ShouldNotAllocateWhenRepeatedlyBorrowingAndDisposingLargeBuffers() {
+		const int BufferSizeBytes = 36 * 1024 * 1024;
+		const int NumCycles = 50;
+
+		_pool.Borrow(BufferSizeBytes).Dispose();
+
+		var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+		for (var i = 0; i < NumCycles; ++i) {
+			var buffer = _pool.Borrow(BufferSizeBytes);
+			buffer.Span[0] = (byte) i;
+			buffer.Dispose();
+		}
+		var allocatedDuring = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+
+		Assert.Less(
+			allocatedDuring,
+			BufferSizeBytes,
+			$"Borrowing and disposing a {BufferSizeBytes} byte buffer {NumCycles} times allocated {allocatedDuring} bytes; " +
+			$"the pool is not recycling buffers of this size."
+		);
+	}
 }

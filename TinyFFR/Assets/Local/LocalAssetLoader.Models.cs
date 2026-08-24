@@ -66,19 +66,17 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	};
 	readonly struct EmbeddedTextureData : IDisposable {
-		readonly FixedByteBufferPool _owningPool;
-		readonly FixedByteBufferPool.FixedByteBuffer _rentedBuffer;
+		readonly PooledHeapMemory<TexelRgba32> _texelBuffer;
 		public readonly XYPair<int> Dimensions;
 		
-		public Span<TexelRgba32> TexelSpan => _rentedBuffer.AsSpan<TexelRgba32>(Dimensions.Area);
+		public Span<TexelRgba32> TexelSpan => _texelBuffer.Span[..Dimensions.Area];
 
-		public EmbeddedTextureData(FixedByteBufferPool owningPool, FixedByteBufferPool.FixedByteBuffer rentedBuffer, XYPair<int> dimensions) {
-			_owningPool = owningPool;
-			_rentedBuffer = rentedBuffer;
+		public EmbeddedTextureData(PooledHeapMemory<TexelRgba32> texelBuffer, XYPair<int> dimensions) {
+			_texelBuffer = texelBuffer;
 			Dimensions = dimensions;
 		}
 
-		public void Dispose() => _owningPool.Return(_rentedBuffer);
+		public void Dispose() => _texelBuffer.Dispose();
 	}
 	readonly ref struct AssetMaterialCreationParameters {
 		readonly Span<char> _subResourceNameBuffer;
@@ -114,7 +112,6 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	
 	const string DefaultModelName = "Unnamed Model";
 	const int MaxExternalAssetFilePathLength = 2048;
-	readonly FixedByteBufferPool _embeddedAssetTextureBufferPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Model>, (Mesh Mesh, Material Material)> _loadedModels = new();
 	nuint _prevModelHandle = 0;
 	
@@ -188,9 +185,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
 				var texelCount = width * height;
 
-				var resultBuffer = _embeddedAssetTextureBufferPool.Rent<TexelRgba32>(checked(width * height));
-				new ReadOnlySpan<TexelRgba32>(texBuf, texelCount).CopyTo(resultBuffer.AsSpan<TexelRgba32>(texelCount));
-				return new(_embeddedAssetTextureBufferPool, resultBuffer, new XYPair<int>(width, height));
+				ThrowIfAssetBufferSizeExceedsMaximum((long) texelCount * sizeof(TexelRgba32), $"embedded asset texture ({width}x{height})");
+				var resultBuffer = _globals.HeapPool.Borrow<TexelRgba32>(checked(width * height));
+				new ReadOnlySpan<TexelRgba32>(texBuf, texelCount).CopyTo(resultBuffer.Span);
+				return new(resultBuffer, new XYPair<int>(width, height));
 			}
 			finally {
 				UnloadTextureFileFromMemory(texBuf).ThrowIfFailure();
@@ -207,19 +205,22 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		
 		if (outWidth < 0 || outHeight < 0) throw new InvalidOperationException($"Width or height for asset texture at index '{textureIndex}' was malformed.");
 		
-		var texelBuffer = _embeddedAssetTextureBufferPool.Rent<TexelRgba32>(checked(outWidth * outHeight));
+		ThrowIfAssetBufferSizeExceedsMaximum((long) outWidth * outHeight * sizeof(TexelRgba32), $"embedded asset texture ({outWidth}x{outHeight})");
+		var texelBuffer = _globals.HeapPool.Borrow<TexelRgba32>(checked(outWidth * outHeight));
 		
-		GetLoadedAssetTextureData(
-			assetHandle,
-			textureIndex,
-			in assetRootDirStrRef,
-			(void*) texelBuffer.StartPtr,
-			texelBuffer.SizeBytes,
-			out outWidth,
-			out outHeight
-		).ThrowIfFailure();
+		fixed (TexelRgba32* texelBufferPtr = texelBuffer.Span) {
+			GetLoadedAssetTextureData(
+				assetHandle,
+				textureIndex,
+				in assetRootDirStrRef,
+				(void*) texelBufferPtr,
+				checked(outWidth * outHeight * sizeof(TexelRgba32)),
+				out outWidth,
+				out outHeight
+			).ThrowIfFailure();
+		}
 		
-		return new(_embeddedAssetTextureBufferPool, texelBuffer, new XYPair<int>(outWidth, outHeight));
+		return new(texelBuffer, new XYPair<int>(outWidth, outHeight));
 	}
 	
 	Span<TexelRgba32> AbstractTexelSpanFromParamPtr(AssetMaterialParam* paramPtr, UIntPtr assetHandle, int materialIndex, bool uriUnescapeEmbeddedResourceStrings, ref readonly byte assetRootDirStrRef, ref TexelRgba32 stackTexelWithDefaultValue, out EmbeddedTextureData? outEmbeddedTex) {
@@ -924,6 +925,85 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 	
+	Mesh LoadNonSkeletalSubMeshOnPrimaryThread(UIntPtr assetHandle, int subMeshIndex, bool correctFlippedOrientation, in MeshCreationConfig meshConfig) {
+		GetLoadedAssetMeshVertexCount(assetHandle, subMeshIndex, out var vertexCount).ThrowIfFailure();
+		GetLoadedAssetMeshTriangleCount(assetHandle, subMeshIndex, out var triangleCount).ThrowIfFailure();
+		ThrowIfAssetBufferSizeExceedsMaximum((long) vertexCount * sizeof(MeshVertex), $"mesh vertex data ({vertexCount} vertices)");
+		ThrowIfAssetBufferSizeExceedsMaximum((long) triangleCount * sizeof(VertexTriangle), $"mesh triangle data ({triangleCount} triangles)");
+
+		using var vertexData = _globals.HeapPool.Borrow<MeshVertex>(vertexCount);
+		using var triangleData = _globals.HeapPool.Borrow<VertexTriangle>(triangleCount);
+
+		fixed (MeshVertex* vertexPtr = vertexData.Span)
+		fixed (VertexTriangle* trianglePtr = triangleData.Span) {
+			CopySubMeshDataFromAsset(assetHandle, correctFlippedOrientation, subMeshIndex, vertexPtr, vertexCount, trianglePtr, triangleCount);
+		}
+
+		return _meshBuilder.CreateMesh(vertexData.Span, triangleData.Span, in meshConfig);
+	}
+
+	Mesh LoadSkeletalSubMeshOnPrimaryThread(UIntPtr assetHandle, int subMeshIndex, in ModelReadConfig readConfig, in MeshCreationConfig meshConfig) {
+		GetLoadedAssetMeshVertexCount(assetHandle, subMeshIndex, out var vertexCount).ThrowIfFailure();
+		GetLoadedAssetMeshTriangleCount(assetHandle, subMeshIndex, out var triangleCount).ThrowIfFailure();
+		ThrowIfAssetBufferSizeExceedsMaximum((long) vertexCount * sizeof(MeshVertexSkeletal), $"mesh vertex data ({vertexCount} vertices)");
+		ThrowIfAssetBufferSizeExceedsMaximum((long) triangleCount * sizeof(VertexTriangle), $"mesh triangle data ({triangleCount} triangles)");
+
+		using var vertexData = _globals.HeapPool.Borrow<MeshVertexSkeletal>(vertexCount);
+		using var triangleData = _globals.HeapPool.Borrow<VertexTriangle>(triangleCount);
+
+		fixed (MeshVertexSkeletal* vertexPtr = vertexData.Span)
+		fixed (VertexTriangle* trianglePtr = triangleData.Span) {
+			CopySubMeshDataFromAsset(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, subMeshIndex, vertexPtr, vertexCount, trianglePtr, triangleCount);
+		}
+
+		GetLoadedAssetMeshSkeletalNodeCount(assetHandle, subMeshIndex, out var nodeCount).ThrowIfFailure();
+		ThrowIfAssetBufferSizeExceedsMaximum((long) nodeCount * sizeof(NodeHandle), $"mesh skeletal node data ({nodeCount} nodes)");
+
+		using var internalNodeData = _globals.HeapPool.Borrow<byte>(nodeCount * sizeof(NodeHandle));
+		using var translatedNodeBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNode>(nodeCount);
+
+		fixed (byte* internalNodeBufferPtr = internalNodeData.Span) {
+			var nodeHandles = (NodeHandle*) internalNodeBufferPtr;
+			GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(assetHandle, subMeshIndex, nodeHandles, nodeCount).ThrowIfFailure();
+
+			var maxNodeNameLength = 0;
+			for (var n = 0; n < nodeCount; ++n) {
+				GetLoadedAssetMeshSkeletalNode(
+					nodeHandles,
+					nodeCount,
+					n,
+					out var inverseBindPoseMatrix,
+					out var defaultTransformMatrix,
+					out var parentNodeIndex,
+					out var boneIndex,
+					out var nameLength
+				).ThrowIfFailure();
+
+				translatedNodeBuffer.Span[n] = new(
+					defaultTransformMatrix,
+					inverseBindPoseMatrix,
+					parentNodeIndex >= 0 ? parentNodeIndex : null,
+					boneIndex >= 0 ? boneIndex : null
+				);
+				maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
+			}
+
+			var result = _meshBuilder.CreateMesh(vertexData.Span, triangleData.Span, translatedNodeBuffer.Span, in meshConfig);
+
+			try {
+				GatherMeshAnimations(assetHandle, nodeHandles, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, _animationAndNodeNameBuffer, _globals.HeapPool, _primaryThreadGatherBuffers);
+				GatherNodeNames(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), maxNodeNameLength, _animationAndNodeNameBuffer, _globals.HeapPool, _primaryThreadGatherBuffers);
+				AttachGatheredMeshAnimations(_meshBuilder, result, _primaryThreadGatherBuffers);
+				ApplyGatheredNodeNames(_meshBuilder, result, _primaryThreadGatherBuffers);
+			}
+			finally {
+				_primaryThreadGatherBuffers.DisposeUntransferredBuffersAndReset();
+			}
+
+			return result;
+		}
+	}
+
 	public ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
 		const int MaxIndicesOnStack = 1024;
 		ThrowIfThisIsDisposed();
@@ -972,74 +1052,9 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 						loadSkeletalAnimationData = false;
 					}
 					
-					var copyResult = loadSkeletalAnimationData
-						? CopySubMeshDataFromAsset<MeshVertexSkeletal>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i)
-						: CopySubMeshDataFromAsset<MeshVertex>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i);
-
-					Mesh mesh;
-					try {
-						if (loadSkeletalAnimationData) {
-							GetLoadedAssetMeshSkeletalNodeCount(assetHandle, i, out var nodeCount).ThrowIfFailure();
-							var internalNodeBuffer = _skeletalNodeBufferPool.Rent<NodeHandle>(nodeCount);
-							var translatedNodeBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNode>(nodeCount);
-							
-							try {
-								GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(
-									assetHandle,
-									i,
-									(NodeHandle*) internalNodeBuffer.StartPtr,
-									nodeCount
-								).ThrowIfFailure();
-								
-								var maxNodeNameLength = 0;
-								for (var n = 0; n < nodeCount; ++n) {
-									GetLoadedAssetMeshSkeletalNode(
-										(NodeHandle*) internalNodeBuffer.StartPtr,
-										nodeCount,
-										n,
-										out var inverseBindPoseMatrix,
-										out var defaultTransformMatrix,
-										out var parentNodeIndex,
-										out var boneIndex,
-										out var nameLength
-									).ThrowIfFailure();
-									
-									translatedNodeBuffer.Span[n] = new(
-										defaultTransformMatrix,
-										inverseBindPoseMatrix,
-										parentNodeIndex >= 0 ? parentNodeIndex : null,
-										boneIndex >= 0 ? boneIndex : null
-									);
-									maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
-								}
-
-								mesh = _meshBuilder.CreateMesh(
-									copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
-									copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-									translatedNodeBuffer.Span,
-									config.MeshConfig with { Name = meshName }
-								);
-
-								LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, mesh);
-								LoadAndSetNodeNames(internalNodeBuffer.AsReadOnlySpan<NodeHandle>(nodeCount), maxNodeNameLength, mesh);
-							}
-							finally {
-								_skeletalNodeBufferPool.Return(internalNodeBuffer);
-								translatedNodeBuffer.Dispose();
-							}
-						}
-						else {
-							mesh = _meshBuilder.CreateMesh(
-								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertex>(copyResult.NumVerticesWritten),
-								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-								config.MeshConfig with { Name = meshName }
-							);
-						}
-					}
-					finally {
-						_vertexTriangleBufferPool.Return(copyResult.VertexBuffer);
-						_vertexTriangleBufferPool.Return(copyResult.TriangleBuffer);
-					}
+					var mesh = loadSkeletalAnimationData
+						? LoadSkeletalSubMeshOnPrimaryThread(assetHandle, i, in readConfig, config.MeshConfig with { Name = meshName })
+						: LoadNonSkeletalSubMeshOnPrimaryThread(assetHandle, i, readConfig.MeshConfig.CorrectFlippedOrientation, config.MeshConfig with { Name = meshName });
 
 					result.Add(mesh);
 				

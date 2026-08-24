@@ -439,16 +439,16 @@ public interface IAssetLoader {
 	Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMesh(filePath, config, new MeshReadConfig());
 	Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
 	
-	// TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
-	// 	return LoadMeshAsync(
-	// 		filePath,
-	// 		new MeshCreationConfig {
-	// 			Name = name.IsEmpty ? Path.GetFileName(filePath) : name
-	// 		}
-	// 	);
-	// }
-	// TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMeshAsync(filePath, config, new MeshReadConfig());
-	// TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
+	TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadMeshAsync(
+			filePath,
+			new MeshCreationConfig {
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMeshAsync(filePath, config, new MeshReadConfig());
+	TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
 	
 	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath) => ReadMeshMetadata(filePath, new MeshReadConfig());
 	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath, in MeshReadConfig readConfig);
