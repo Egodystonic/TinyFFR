@@ -5,6 +5,12 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
 class TextureUtilsTest {
+	sealed class PostProcessingRecorder {
+		public int InvocationCount { get; set; }
+		public TexelRgba32[] SeenRgba32 { get; set; } = Array.Empty<TexelRgba32>();
+		public TexelRgb24[] SeenRgb24 { get; set; } = Array.Empty<TexelRgb24>();
+	}
+	
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -12,7 +18,7 @@ class TextureUtilsTest {
 	public void TearDownTest() { }
 
 	[Test]
-	public void ShouldCorrectlyProcessTextures() {
+	public unsafe void ShouldCorrectlyProcessTextures() {
 		var testTexture = new TexelRgba32[] {
 			// 0                        1                        2                        3
 			new(255, 000, 000, 255), new(255, 000, 000, 255), new(255, 000, 000, 255), new(255, 000, 000, 255),
@@ -79,6 +85,67 @@ class TextureUtilsTest {
 			 new(000, 255, 255, 255), new(255, 255, 255, 000), new(255, 255, 000, 255), new(255, 000, 255, 255),
 			 new(000, 000, 255, 255), new(000, 000, 255, 255), new(000, 000, 255, 255), new(000, 000, 255, 255)
 		);
+		
+		// == Post-processing
+		
+		static void RecordRgba32(Span<TexelRgba32> texels, object? argument) {
+			var recorder = (PostProcessingRecorder) argument!;
+			recorder.InvocationCount++;
+			recorder.SeenRgba32 = texels.ToArray();
+		}
+
+		static void RecordRgb24(Span<TexelRgb24> texels, object? argument) {
+			var recorder = (PostProcessingRecorder) argument!;
+			recorder.InvocationCount++;
+			recorder.SeenRgb24 = texels.ToArray();
+		}
+		
+		var recorder = new PostProcessingRecorder();
+		var texture32 = new TexelRgba32[] { new(10, 20, 30, 40), new(50, 60, 70, 80) };
+		var config = new TextureProcessingConfig {
+			XRedFinalOutputSource = ColorChannel.G,
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgba32>(&RecordRgba32),
+			PostProcessingArgument = recorder
+		};
+
+		TextureUtils.ProcessTexture(texture32.AsSpan(), (2, 1), config);
+
+		Assert.AreEqual(1, recorder.InvocationCount);
+		Assert.AreEqual(20, recorder.SeenRgba32[0].R, "Post-processing function ran before the swizzle rather than after it.");
+		Assert.AreEqual(60, recorder.SeenRgba32[1].R, "Post-processing function ran before the swizzle rather than after it.");
+
+		recorder = new PostProcessingRecorder();
+		var texture24 = new TexelRgb24[] { new(1, 2, 3) };
+		config = new TextureProcessingConfig {
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&RecordRgb24),
+			PostProcessingArgument = recorder
+		};
+
+		Assert.AreEqual(true, config.RequiresProcessing);
+		TextureUtils.ProcessTexture(texture24.AsSpan(), (1, 1), config);
+
+		Assert.AreEqual(1, recorder.InvocationCount);
+		Assert.AreEqual(new TexelRgb24(1, 2, 3), recorder.SeenRgb24[0]);
+
+		recorder = new PostProcessingRecorder();
+		texture24 = new TexelRgb24[8];
+		config = new TextureProcessingConfig {
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&RecordRgb24),
+			PostProcessingArgument = recorder
+		};
+
+		TextureUtils.ProcessTexture(texture24.AsSpan(), (2, 2), config);
+
+		Assert.AreEqual(4, recorder.SeenRgb24.Length, "Post-processing function was given the whole buffer rather than only the texture's texels.");
+
+		recorder = new PostProcessingRecorder();
+		config = new TextureProcessingConfig {
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&RecordRgb24),
+			PostProcessingArgument = recorder
+		};
+
+		Assert.Throws<InvalidOperationException>(() => TextureUtils.ProcessTexture(new TexelRgba32[1].AsSpan(), (1, 1), config));
+		Assert.AreEqual(0, recorder.InvocationCount);
 	}
 
 	[Test]

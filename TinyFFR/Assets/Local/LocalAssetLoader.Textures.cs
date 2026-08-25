@@ -37,33 +37,6 @@ unsafe partial class LocalAssetLoader {
 		public bool IsLinearColorspace { get; set; } = false;
 		public bool AllowsDynamicWrites { get; set; } = false;
 		public TextureRenderingConfig RenderingConfig { get; set; } = new();
-		public bool ApplyRadialAngleAnisotropyConversion { get; set; } = false;
-		public Orientation2D AnisotropyZeroDirection { get; set; } = default;
-		public AnisotropyRadialAngleRange AnisotropyEncodedRange { get; set; } = default;
-		public bool AnisotropyEncodedAnticlockwise { get; set; } = false;
-		public ColorChannel? AnisotropyStrengthChannel { get; set; } = null;
-
-		public void ApplyAnisotropyConversionIfRequested() {
-			if (!ApplyRadialAngleAnisotropyConversion) return;
-			if (IsRgba) {
-				IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(WritableRgba32Texels, AnisotropyZeroDirection, AnisotropyEncodedRange, AnisotropyEncodedAnticlockwise, AnisotropyStrengthChannel);
-			}
-			else {
-				IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(WritableRgb24Texels, AnisotropyZeroDirection, AnisotropyEncodedRange, AnisotropyEncodedAnticlockwise, AnisotropyStrengthChannel);
-			}
-		}
-
-		Span<TexelRgba32> WritableRgba32Texels => MemoryMarshal.Cast<byte, TexelRgba32>(WritableTexelBytes)[..Dimensions.Area];
-		Span<TexelRgb24> WritableRgb24Texels => MemoryMarshal.Cast<byte, TexelRgb24>(WritableTexelBytes)[..Dimensions.Area];
-
-		Span<byte> WritableTexelBytes {
-			get {
-				var texelSizeBytes = IsRgba ? sizeof(TexelRgba32) : sizeof(TexelRgb24);
-				if (OwnedTexelData is { } owned) return owned.Span;
-				if (OwnedStbTexelBufferPtr != IntPtr.Zero) return new Span<byte>((void*) OwnedStbTexelBufferPtr, Dimensions.Area * texelSizeBytes);
-				throw new InvalidOperationException("Texel data is not owned by this context and can not be modified (this is a bug in TinyFFR).");
-			}
-		}
 
 		public ReadOnlySpan<TexelRgba32> Rgba32Texels => MemoryMarshal.Cast<byte, TexelRgba32>(TexelBytes)[..Dimensions.Area];
 		public ReadOnlySpan<TexelRgb24> Rgb24Texels => MemoryMarshal.Cast<byte, TexelRgb24>(TexelBytes)[..Dimensions.Area];
@@ -92,11 +65,6 @@ unsafe partial class LocalAssetLoader {
 			IsLinearColorspace = false;
 			AllowsDynamicWrites = false;
 			RenderingConfig = new();
-			ApplyRadialAngleAnisotropyConversion = false;
-			AnisotropyZeroDirection = default;
-			AnisotropyEncodedRange = default;
-			AnisotropyEncodedAnticlockwise = false;
-			AnisotropyStrengthChannel = null;
 		}
 	}
 
@@ -251,7 +219,6 @@ unsafe partial class LocalAssetLoader {
 			throw new InvalidOperationException("No file path or built-in source set in context (this is a bug in TinyFFR).");
 		}
 
-		creationMetadata.ApplyAnisotropyConversionIfRequested();
 		return context.GenerateResourceOnPrimary(&CompleteTextureLoad);
 	}
 
@@ -261,7 +228,7 @@ unsafe partial class LocalAssetLoader {
 
 		var sourceIsRgba = context.BuiltInContainsAlpha;
 		var expandToRgba = forceAlpha && !sourceIsRgba;
-		var mustCopy = expandToRgba || processingConfig.RequiresProcessing || creationMetadata.ApplyRadialAngleAnisotropyConversion || context.BuiltInEmbeddedDataRef == null;
+		var mustCopy = expandToRgba || processingConfig.RequiresProcessing || context.BuiltInEmbeddedDataRef == null;
 
 		ReadOnlySpan<byte> sourceBytes;
 		if (context.BuiltInEmbeddedDataRef is { } dataRef) sourceBytes = dataRef.AsSpan;
@@ -758,7 +725,6 @@ unsafe partial class LocalAssetLoader {
 			TextureUtils.ProcessTexture(destSpan, destDimensions, creationConfig.ProcessingToApply);
 		}
 
-		data.ApplyAnisotropyConversionIfRequested();
 		return context.GenerateResourceOnPrimary(&CompleteTextureLoad);
 	}
 
@@ -866,96 +832,6 @@ unsafe partial class LocalAssetLoader {
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, dFilePath, in dProcessingConfig, dMetadata, combinationConfig, destinationBuffer);
 		TextureUtils.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
 		return destDimensions.Area;
-	}
-	#endregion
-
-	#region Radial-Angle Anisotropy Maps
-	TextureLoadConfig CreateAnisotropyLoadConfig(ReadOnlySpan<char> name) {
-		return new TextureLoadConfig {
-			CreationConfig = TextureCreationConfig.ForDataTexture(name),
-			ReadConfig = new TextureReadConfig()
-		};
-	}
-
-	void SetUpAnisotropyConversion(TextureCreationMetadata data, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel) {
-		data.ApplyRadialAngleAnisotropyConversion = true;
-		data.AnisotropyZeroDirection = zeroDirection;
-		data.AnisotropyEncodedRange = encodedRange;
-		data.AnisotropyEncodedAnticlockwise = encodedAnticlockwise;
-		data.AnisotropyStrengthChannel = strengthChannel;
-	}
-
-	public Texture LoadAnisotropyMapRadialAngleFormatted(ReadOnlySpan<char> filePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel) {
-		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		ThrowIfThisIsDisposed();
-
-		var contextWrapper = _textureLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpTextureLoadContext(contextWrapper.Context, filePath, Path.GetFileName(filePath));
-		SetUpAnisotropyConversion(contextWrapper.Context.CreationMetadata, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel);
-
-		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadTextureCore, CreateAnisotropyLoadConfig(Path.GetFileName(filePath)));
-	}
-
-	public TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> filePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel) {
-		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		ThrowIfThisIsDisposed();
-
-		var contextWrapper = _textureLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpTextureLoadContext(contextWrapper.Context, filePath, Path.GetFileName(filePath));
-		SetUpAnisotropyConversion(contextWrapper.Context.CreationMetadata, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel);
-
-		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadTextureCore, CreateAnisotropyLoadConfig(Path.GetFileName(filePath)));
-	}
-
-	static TextureCombinationConfig AnisotropyStrengthCombinationConfig => new(
-		TextureCombinationScalingStrategy.PixelUpscale,
-		new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-		new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
-		new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
-	);
-
-	TextureCombinedLoadConfig CreateAnisotropyCombinedLoadConfig(ReadOnlySpan<char> name) {
-		return new TextureCombinedLoadConfig {
-			CreationConfig = TextureCreationConfig.ForDataTexture(name),
-			CombinationConfig = AnisotropyStrengthCombinationConfig,
-			ProcessingConfigA = TextureProcessingConfig.None,
-			ProcessingConfigB = TextureProcessingConfig.None,
-			ProcessingConfigC = TextureProcessingConfig.None,
-			ProcessingConfigD = TextureProcessingConfig.None,
-			SourceCount = 2
-		};
-	}
-
-	public Texture LoadAnisotropyMapRadialAngleFormatted(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise) {
-		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		ThrowIfThisIsDisposed();
-
-		var a = Path.GetFileName(radialAngleFilePath);
-		var b = Path.GetFileName(strengthFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
-		SpanUtils.Concatenate(name, a, "+", b);
-
-		var contextWrapper = _combinedTextureLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpCombinedTextureLoadContext(contextWrapper.Context, radialAngleFilePath, strengthFilePath, default, default, 2, name);
-		SetUpAnisotropyConversion(contextWrapper.Context.CreationMetadata, zeroDirection, encodedRange, encodedAnticlockwise, ColorChannel.B);
-
-		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadCombinedTextureCore, CreateAnisotropyCombinedLoadConfig(name));
-	}
-
-	public TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise) {
-		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		ThrowIfThisIsDisposed();
-
-		var a = Path.GetFileName(radialAngleFilePath);
-		var b = Path.GetFileName(strengthFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
-		SpanUtils.Concatenate(name, a, "+", b);
-
-		var contextWrapper = _combinedTextureLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpCombinedTextureLoadContext(contextWrapper.Context, radialAngleFilePath, strengthFilePath, default, default, 2, name);
-		SetUpAnisotropyConversion(contextWrapper.Context.CreationMetadata, zeroDirection, encodedRange, encodedAnticlockwise, ColorChannel.B);
-
-		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadCombinedTextureCore, CreateAnisotropyCombinedLoadConfig(name));
 	}
 	#endregion
 

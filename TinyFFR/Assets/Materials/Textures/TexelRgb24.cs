@@ -81,6 +81,20 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 	TexelRgba32 IConversionSupplyingTexel<TexelRgb24, TexelRgba32>.Convert() => ToRgba32();
 	public static TexelRgb24 ConvertFrom(TexelRgba32 t) => t.ToRgb24();
 	public static TexelRgb24 ConvertFrom<T>(T v) where T : unmanaged, IThreeByteChannelTexel<T> => new(v[0], v[1], v[2]);
+	
+	public static bool TryCoerceSpan<TOther>(ReadOnlySpan<TexelRgb24> src, Span<TOther> dest) where TOther : unmanaged, ITexel<TOther> {
+		switch (TOther.BlitType) {
+			case TexelType.Rgb24:
+				src.CopyTo(MemoryMarshal.Cast<TOther, TexelRgb24>(dest));
+				return true;
+			case TexelType.Rgba32:
+				var castDest = MemoryMarshal.Cast<TOther, TexelRgba32>(dest);
+				for (var i = 0; i < src.Length; ++i) castDest[i] = src[i].ToRgba32();
+				return true;
+			default:
+				return false;
+		}
+	}
 
 	public TexelRgb24 WithInvertedChannelIfPresent(int channelIndex) {
 		return channelIndex switch {

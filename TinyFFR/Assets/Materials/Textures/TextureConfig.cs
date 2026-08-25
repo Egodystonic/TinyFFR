@@ -166,8 +166,48 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		/* no-op */
+		var converted = ConvertFromAllocatedHeapStorage(src);
+		var processingConfigSlice = src[(GetHeapStorageFormattedLength(in converted) - SerializationSizeOfSubConfig(converted.ProcessingToApply))..];
+		SerializationDisposeSubConfig<TextureProcessingConfig>(ref processingConfigSlice);
 	}
+}
+
+public readonly struct TexelProcessingFunction : IEquatable<TexelProcessingFunction> {
+	internal nint FunctionPtr { get; private init; }
+	internal nint TexelTypeHandle { get; private init; }
+
+	public static unsafe TexelProcessingFunction Create<TTexel>(delegate*<Span<TTexel>, object?, void> function) where TTexel : unmanaged, ITexel<TTexel> {
+		if (function == null) throw new ArgumentNullException(nameof(function));
+		return new TexelProcessingFunction {
+			FunctionPtr = (nint) function,
+			TexelTypeHandle = typeof(TTexel).TypeHandle.Value
+		};
+	}
+	
+	public bool ExpectsTexelType<TTexel>() => TexelTypeHandle == typeof(TTexel).TypeHandle.Value;
+
+	internal static TexelProcessingFunction FromSerializedValues(nint functionPtr, nint texelTypeHandle) {
+		return new TexelProcessingFunction {
+			FunctionPtr = functionPtr,
+			TexelTypeHandle = texelTypeHandle
+		};
+	}
+
+	internal unsafe void Invoke<TTexel>(Span<TTexel> texels, object? argument) where TTexel : unmanaged, ITexel<TTexel> {
+		if (!ExpectsTexelType<TTexel>()) {
+			throw new InvalidOperationException(
+				$"This {nameof(TexelProcessingFunction)} was created for a different texel type than {typeof(TTexel).Name}. " +
+				$"A function created via {nameof(TexelProcessingFunction)}.{nameof(Create)}<T>() may only be applied to textures whose texel type is exactly T."
+			);
+		}
+		((delegate*<Span<TTexel>, object?, void>) FunctionPtr)(texels, argument);
+	}
+
+	public bool Equals(TexelProcessingFunction other) => FunctionPtr == other.FunctionPtr && TexelTypeHandle == other.TexelTypeHandle;
+	public override bool Equals(object? obj) => obj is TexelProcessingFunction other && Equals(other);
+	public override int GetHashCode() => HashCode.Combine(FunctionPtr, TexelTypeHandle);
+	public static bool operator ==(TexelProcessingFunction left, TexelProcessingFunction right) => left.Equals(right);
+	public static bool operator !=(TexelProcessingFunction left, TexelProcessingFunction right) => !left.Equals(right);
 }
 
 public readonly record struct TextureProcessingConfig : IConfigStruct<TextureProcessingConfig> {
@@ -253,6 +293,15 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 		}
 	} = ColorChannel.A;
 	
+	public TexelProcessingFunction? PostProcessingFunction {
+		get;
+		init {
+			field = value;
+			RequiresProcessing = RequiresProcessing || value != null;
+		}
+	} = null;
+	public object? PostProcessingArgument { get; init; } = null;
+
 	internal bool RequiresProcessing { get; private init; } = false;
 
 	public TextureProcessingConfig() { }
@@ -285,7 +334,9 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 		};
 	}
 
-	internal void ThrowIfInvalid() { /* no-op */ }
+	internal void ThrowIfInvalid() {
+		/* no-op */
+	}
 
 	public static int GetHeapStorageFormattedLength(in TextureProcessingConfig src) {
 		return SerializationSizeOfBool() // FlipX
@@ -298,7 +349,10 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 			+ SerializationSizeOfInt() // XRedFinalOutputSource
 			+ SerializationSizeOfInt() // YGreenFinalOutputSource
 			+ SerializationSizeOfInt() // ZBlueFinalOutputSource
-			+ SerializationSizeOfInt(); // WAlphaFinalOutputSource
+			+ SerializationSizeOfInt() // WAlphaFinalOutputSource
+			+ SerializationSizeOfLong()
+			+ SerializationSizeOfLong()
+			+ SerializationSizeOfLong();
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureProcessingConfig src) {
 		SerializationWriteBool(ref dest, src.FlipX);
@@ -312,24 +366,46 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 		SerializationWriteInt(ref dest, (int) src.YGreenFinalOutputSource);
 		SerializationWriteInt(ref dest, (int) src.ZBlueFinalOutputSource);
 		SerializationWriteInt(ref dest, (int) src.WAlphaFinalOutputSource);
+		SerializationWriteLong(ref dest, src.PostProcessingFunction is { } function ? function.FunctionPtr : 0L);
+		SerializationWriteLong(ref dest, src.PostProcessingFunction is { } fn ? fn.TexelTypeHandle : 0L);
+		SerializationWriteLong(ref dest, src.PostProcessingArgument is { } argument ? GCHandle.ToIntPtr(GCHandle.Alloc(argument)) : 0L);
 	}
 	public static TextureProcessingConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		var flipX = SerializationReadBool(ref src);
+		var flipY = SerializationReadBool(ref src);
+		var invertXRedChannel = SerializationReadBool(ref src);
+		var invertYGreenChannel = SerializationReadBool(ref src);
+		var invertZBlueChannel = SerializationReadBool(ref src);
+		var invertWAlphaChannel = SerializationReadBool(ref src);
+		var multiplyAlpha = SerializationReadBool(ref src);
+		var xRedFinalOutputSource = (ColorChannel) SerializationReadInt(ref src);
+		var yGreenFinalOutputSource = (ColorChannel) SerializationReadInt(ref src);
+		var zBlueFinalOutputSource = (ColorChannel) SerializationReadInt(ref src);
+		var wAlphaFinalOutputSource = (ColorChannel) SerializationReadInt(ref src);
+		var functionPtr = (nint) SerializationReadLong(ref src);
+		var texelTypeHandle = (nint) SerializationReadLong(ref src);
+		var argumentHandle = (nint) SerializationReadLong(ref src);
+
 		return new TextureProcessingConfig {
-			FlipX = SerializationReadBool(ref src),
-			FlipY = SerializationReadBool(ref src),
-			InvertXRedChannel = SerializationReadBool(ref src),
-			InvertYGreenChannel = SerializationReadBool(ref src),
-			InvertZBlueChannel = SerializationReadBool(ref src),
-			InvertWAlphaChannel = SerializationReadBool(ref src),
-			MultiplyAlpha = SerializationReadBool(ref src),
-			XRedFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
-			YGreenFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
-			ZBlueFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
-			WAlphaFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
+			FlipX = flipX,
+			FlipY = flipY,
+			InvertXRedChannel = invertXRedChannel,
+			InvertYGreenChannel = invertYGreenChannel,
+			InvertZBlueChannel = invertZBlueChannel,
+			InvertWAlphaChannel = invertWAlphaChannel,
+			MultiplyAlpha = multiplyAlpha,
+			XRedFinalOutputSource = xRedFinalOutputSource,
+			YGreenFinalOutputSource = yGreenFinalOutputSource,
+			ZBlueFinalOutputSource = zBlueFinalOutputSource,
+			WAlphaFinalOutputSource = wAlphaFinalOutputSource,
+			PostProcessingFunction = functionPtr != 0 ? TexelProcessingFunction.FromSerializedValues(functionPtr, texelTypeHandle) : null,
+			PostProcessingArgument = argumentHandle != 0 ? GCHandle.FromIntPtr(argumentHandle).Target : null
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		/* no-op */
+		var argumentSlice = src[^SerializationSizeOfLong()..];
+		var argumentHandle = (nint) SerializationReadLong(ref argumentSlice);
+		if (argumentHandle != 0) GCHandle.FromIntPtr(argumentHandle).Free();
 	}
 }
 
@@ -392,11 +468,8 @@ readonly ref struct TextureLoadConfig : IConfigStruct<TextureLoadConfig> {
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		var converted = ConvertFromAllocatedHeapStorage(src);
-		var creationConfigLength = SerializationSizeOfSubConfig(converted.CreationConfig);
-		var readConfigLength = SerializationSizeOfSubConfig(converted.ReadConfig);
-		TextureCreationConfig.DisposeAllocatedHeapStorage(src[..creationConfigLength]);
-		TextureReadConfig.DisposeAllocatedHeapStorage(src[creationConfigLength..][..readConfigLength]);
+		SerializationDisposeSubConfig<TextureCreationConfig>(ref src);
+		SerializationDisposeSubConfig<TextureReadConfig>(ref src);
 	}
 }
 
@@ -450,7 +523,11 @@ readonly ref struct TextureCombinedLoadConfig : IConfigStruct<TextureCombinedLoa
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		var converted = ConvertFromAllocatedHeapStorage(src);
-		TextureCreationConfig.DisposeAllocatedHeapStorage(src[..SerializationSizeOfSubConfig(converted.CreationConfig)]);
+		SerializationDisposeSubConfig<TextureCreationConfig>(ref src);
+		SerializationDisposeSubConfig<TextureCombinationConfig>(ref src);
+		SerializationDisposeSubConfig<TextureProcessingConfig>(ref src);
+		SerializationDisposeSubConfig<TextureProcessingConfig>(ref src);
+		SerializationDisposeSubConfig<TextureProcessingConfig>(ref src);
+		SerializationDisposeSubConfig<TextureProcessingConfig>(ref src);
 	}
 }

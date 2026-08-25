@@ -63,13 +63,8 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		var converted = ConvertFromAllocatedHeapStorage(src);
-		var meshConfigLength = SerializationSizeOfSubConfig(converted.MeshConfig);
-		var textureConfigLength = SerializationSizeOfSubConfig(converted.TextureConfig);
-		var meshConfigSubSpan = src[..meshConfigLength];
-		var textureConfigSubSpan = src[meshConfigLength..][..textureConfigLength];
-		MeshReadConfig.DisposeAllocatedHeapStorage(meshConfigSubSpan);
-		TextureReadConfig.DisposeAllocatedHeapStorage(textureConfigSubSpan);
+		SerializationDisposeSubConfig<MeshReadConfig>(ref src);
+		SerializationDisposeSubConfig<TextureReadConfig>(ref src);
 	}
 }
 
@@ -103,12 +98,7 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		var converted = ConvertFromAllocatedHeapStorage(src);
-		var meshConfigLength = SerializationSizeOfSubConfig(converted.MeshConfig);
-		var textureConfigLength = SerializationSizeOfSubConfig(converted.TextureConfig);
-		var meshConfigSubSpan = src[..meshConfigLength];
-		var textureConfigSubSpan = src[meshConfigLength..][..textureConfigLength];
-		MeshCreationConfig.DisposeAllocatedHeapStorage(meshConfigSubSpan);
-		TextureCreationConfig.DisposeAllocatedHeapStorage(textureConfigSubSpan);
+		SerializationDisposeSubConfig<MeshCreationConfig>(ref src);
+		SerializationDisposeSubConfig<TextureCreationConfig>(ref src);
 	}
 }

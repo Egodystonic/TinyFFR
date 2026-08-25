@@ -1,9 +1,14 @@
 ﻿// Created on 2025-11-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System.Threading;
+using Egodystonic.TinyFFR.Resources.Memory;
+
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static partial class TextureUtils {
+	static readonly HeapPool _postProcessCoercionPool = new(); 
+	
 	public static void FlipTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, bool aroundVerticalCentre, bool aroundHorizontalCentre) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Flip(aroundVerticalCentre, aroundHorizontalCentre));
 	}
@@ -17,7 +22,7 @@ public static partial class TextureUtils {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.PremultiplyAlpha());
 	}
 
-	public static void ProcessTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+	public static unsafe void ProcessTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		const int MaxTextureWidthForStackRowSwap = 65_536;
 		config.ThrowIfInvalid();
 		if (!config.RequiresProcessing) return;
@@ -59,23 +64,76 @@ public static partial class TextureUtils {
 						|| config.ZBlueFinalOutputSource != ColorChannel.B
 						|| config.WAlphaFinalOutputSource != ColorChannel.A;
 		var requiresSwizzleOrInversionOrAlphaPremultiply = config.MultiplyAlpha || config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel || shouldSwizzle;
-		if (!requiresSwizzleOrInversionOrAlphaPremultiply) return;
-		
-		for (var i = 0; i < texelCount; ++i) {
-			if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
-			if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
-			if (config.InvertZBlueChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(2);
-			if (config.InvertWAlphaChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(3);
-			if (shouldSwizzle) {
-				buffer[i] = buffer[i].SwizzlePresentChannels(
-					config.XRedFinalOutputSource,
-					config.YGreenFinalOutputSource,
-					config.ZBlueFinalOutputSource,
-					config.WAlphaFinalOutputSource
-				);
+
+		if (requiresSwizzleOrInversionOrAlphaPremultiply) {
+			for (var i = 0; i < texelCount; ++i) {
+				if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
+				if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
+				if (config.InvertZBlueChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(2);
+				if (config.InvertWAlphaChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(3);
+				if (shouldSwizzle) {
+					buffer[i] = buffer[i].SwizzlePresentChannels(
+						config.XRedFinalOutputSource,
+						config.YGreenFinalOutputSource,
+						config.ZBlueFinalOutputSource,
+						config.WAlphaFinalOutputSource
+					);
+				}
+				if (config.MultiplyAlpha) {
+					buffer[i] = buffer[i].WithPremultipliedAlpha();
+				}
 			}
-			if (config.MultiplyAlpha) {
-				buffer[i] = buffer[i].WithPremultipliedAlpha();
+		}
+
+		if (config.PostProcessingFunction is not { } postProcessingFunction) return;
+		
+		static InvalidOperationException GetUnusableTexelTypeException(IntPtr typeHandle) {
+			return new InvalidOperationException($"Can not post-process data as the post-processing function requires a texel type " +
+				$"({Type.GetTypeFromHandle(RuntimeTypeHandle.FromIntPtr(typeHandle))?.Name}) that can neither be blitted-to " +
+				$"or coerced-to from {typeof(TTexel).Name}.");
+		}
+			
+		var targetBuffer = buffer[..texelCount];
+		var arg = config.PostProcessingArgument;
+			
+		if (postProcessingFunction.ExpectsTexelType<TTexel>()) {
+			postProcessingFunction.Invoke(targetBuffer, arg);
+			return;
+		}
+			
+		if (postProcessingFunction.ExpectsTexelType<TexelRgb24>()) {
+			if (TTexel.BlitType == TexelType.Rgb24) {
+				postProcessingFunction.Invoke(MemoryMarshal.Cast<TTexel, TexelRgb24>(targetBuffer), arg);
+				return;
+			}
+				
+			using (var coercionBuffer = _postProcessCoercionPool.ThreadSafeWrapper.Borrow<TexelRgb24>(targetBuffer.Length)) {
+				if (!TTexel.TryCoerceSpan(targetBuffer, coercionBuffer.Span)) {
+					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
+				}
+				postProcessingFunction.Invoke(coercionBuffer.Span, arg);
+				if (!TexelRgb24.TryCoerceSpan(coercionBuffer.Span, targetBuffer)) {
+					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
+				}
+				return;
+			}
+		}
+
+		if (postProcessingFunction.ExpectsTexelType<TexelRgba32>()) {
+			if (TTexel.BlitType == TexelType.Rgba32) {
+				postProcessingFunction.Invoke(MemoryMarshal.Cast<TTexel, TexelRgba32>(targetBuffer), arg);
+				return;
+			}
+				
+			using (var coercionBuffer = _postProcessCoercionPool.ThreadSafeWrapper.Borrow<TexelRgba32>(targetBuffer.Length)) {
+				if (!TTexel.TryCoerceSpan(targetBuffer, coercionBuffer.Span)) {
+					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
+				}
+				postProcessingFunction.Invoke(coercionBuffer.Span, arg);
+				if (!TexelRgba32.TryCoerceSpan(coercionBuffer.Span, targetBuffer)) {
+					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
+				}
+				return;
 			}
 		}
 	}

@@ -149,6 +149,12 @@ public interface IConfigStruct {
 		src = src[cfgEnd..];
 		return result;
 	}
+	protected static void SerializationDisposeSubConfig<T>(scoped ref ReadOnlySpan<byte> src) where T : struct, IConfigStruct<T>, allows ref struct {
+		var byteCount = BinaryPrimitives.ReadInt32LittleEndian(src);
+		var cfgEnd = sizeof(int) + byteCount;
+		T.DisposeAllocatedHeapStorage(src[sizeof(int)..cfgEnd]);
+		src = src[cfgEnd..];
+	}
 	protected static T SerializationReadResource<T>(scoped ref ReadOnlySpan<byte> src) where T : IResource<T> {
 		var result = T.CreateFromHandleAndImpl(
 			IResource.ReadHandleFromSerializedResource(src),

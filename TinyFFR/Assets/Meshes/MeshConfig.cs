@@ -173,12 +173,7 @@ readonly ref struct MeshLoadConfig : IConfigStruct<MeshLoadConfig> {
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		var converted = ConvertFromAllocatedHeapStorage(src);
-		var creationConfigLength = SerializationSizeOfSubConfig(converted.CreationConfig);
-		var readConfigLength = SerializationSizeOfSubConfig(converted.ReadConfig);
-		var creationConfigSubSpan = src[..creationConfigLength];
-		var readConfigSubSpan = src[creationConfigLength..][..readConfigLength];
-		MeshCreationConfig.DisposeAllocatedHeapStorage(creationConfigSubSpan);
-		MeshReadConfig.DisposeAllocatedHeapStorage(readConfigSubSpan);
+		SerializationDisposeSubConfig<MeshCreationConfig>(ref src);
+		SerializationDisposeSubConfig<MeshReadConfig>(ref src);
 	}
 }

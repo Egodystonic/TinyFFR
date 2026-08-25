@@ -7,12 +7,14 @@ using static Egodystonic.TinyFFR.ConfigStructTestUtils;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
-class TextureConfigTest {
+unsafe class TextureConfigTest {
 	[SetUp]
 	public void SetUpTest() { }
 
 	[TearDown]
 	public void TearDownTest() { }
+	
+	static void NoOpPostProcessingRgb24(Span<TexelRgb24> texels, object? argument) { }
 
 	[Test]
 	public void ProcessingConfigShouldCorrectlySetRequiresProcessingFlag() {
@@ -102,6 +104,8 @@ class TextureConfigTest {
 		Assert.AreEqual(true, new TextureProcessingConfig { ZBlueFinalOutputSource = ColorChannel.A, WAlphaFinalOutputSource = ColorChannel.R }.RequiresProcessing);
 		Assert.AreEqual(true, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.R, ZBlueFinalOutputSource = ColorChannel.B }.RequiresProcessing);
 		Assert.AreEqual(true, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.R, ZBlueFinalOutputSource = ColorChannel.A }.RequiresProcessing);
+		
+		Assert.AreEqual(true, new TextureProcessingConfig { PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&NoOpPostProcessingRgb24) }.RequiresProcessing);
 	}
 
 	[Test]
@@ -162,6 +166,9 @@ class TextureConfigTest {
 			.Int((int) ColorChannel.G)
 			.Int((int) ColorChannel.B)
 			.Int((int) ColorChannel.A)
+			.Long(0L)
+			.Long(0L)
+			.Long(0L)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<TextureProcessingConfig>()
@@ -176,6 +183,9 @@ class TextureConfigTest {
 			.Int((int) ColorChannel.B)
 			.Int((int) ColorChannel.A)
 			.Int((int) ColorChannel.R)
+			.Long(0L)
+			.Long(0L)
+			.Long(0L)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<TextureProcessingConfig>()
@@ -190,7 +200,54 @@ class TextureConfigTest {
 			.Including(nameof(TextureProcessingConfig.YGreenFinalOutputSource))
 			.Including(nameof(TextureProcessingConfig.ZBlueFinalOutputSource))
 			.Including(nameof(TextureProcessingConfig.WAlphaFinalOutputSource))
+			.Including(nameof(TextureProcessingConfig.PostProcessingFunction))
+			.Including(nameof(TextureProcessingConfig.PostProcessingArgument))
 			.End();
+		
+		var argument = new object();
+		var config = new TextureProcessingConfig {
+			FlipY = true,
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&NoOpPostProcessingRgb24),
+			PostProcessingArgument = argument
+		};
+
+		var buffer = new byte[TextureProcessingConfig.GetHeapStorageFormattedLength(in config)];
+		TextureProcessingConfig.AllocateAndConvertToHeapStorage(buffer, in config);
+		try {
+			var roundTripped = TextureProcessingConfig.ConvertFromAllocatedHeapStorage(buffer);
+			Assert.AreEqual(config.PostProcessingFunction, roundTripped.PostProcessingFunction);
+			Assert.That(roundTripped.PostProcessingArgument, Is.SameAs(argument));
+			Assert.AreEqual(true, roundTripped.FlipY);
+			Assert.AreEqual(true, roundTripped.RequiresProcessing);
+		}
+		finally {
+			TextureProcessingConfig.DisposeAllocatedHeapStorage(buffer);
+		}
+	}
+
+	[Test]
+	public void CreationConfigShouldDisposeItsNestedProcessingConfigHeapStorage() {
+		static (byte[] Buffer, WeakReference ArgumentRef) AllocateStorage() {
+			var argument = new object();
+			var config = TextureCreationConfig.ForDataTexture("nested") with {
+				ProcessingToApply = new TextureProcessingConfig {
+					PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&NoOpPostProcessingRgb24),
+					PostProcessingArgument = argument
+				}
+			};
+			var buffer = new byte[TextureCreationConfig.GetHeapStorageFormattedLength(in config)];
+			TextureCreationConfig.AllocateAndConvertToHeapStorage(buffer, in config);
+			return (buffer, new WeakReference(argument));
+		}
+
+		var (buffer, argumentRef) = AllocateStorage();
+		TextureCreationConfig.DisposeAllocatedHeapStorage(buffer);
+
+		GC.Collect();
+		GC.WaitForPendingFinalizers();
+		GC.Collect();
+
+		Assert.AreEqual(false, argumentRef.IsAlive, "TextureCreationConfig did not dispose the heap storage of its nested ProcessingToApply.");
 	}
 
 	[Test]

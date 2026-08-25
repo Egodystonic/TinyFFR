@@ -18,6 +18,7 @@ class LocalAsyncLoadingTest {
 	static string CrateColorFile => CommonTestAssets.FindAsset("ELCrate.png");
 	static string CrateNormalFile => CommonTestAssets.FindAsset("ELCrate_Normal.png");
 	static string CrateOrmFile => CommonTestAssets.FindAsset("ELCrate_Specular.png");
+	static string AlphaLogoFile => CommonTestAssets.FindAsset("egdLogo.png");
 	static string CrateFile => CommonTestAssets.FindAsset("ELCrate.obj");
 	static string RiggedFile => CommonTestAssets.FindAsset("models/RiggedSimple.glb");
 	static string CesiumManFile => CommonTestAssets.FindAsset("models/CesiumMan.glb");
@@ -45,9 +46,22 @@ class LocalAsyncLoadingTest {
 	void RunAllAutomatedTests() {
 		SyncAndAsyncShouldProduceEquivalentTextures();
 		SyncAndAsyncShouldApplyProcessingIdentically();
+		SyncAndAsyncShouldProduceEquivalentCombinedTextures();
+		CanvasTextureShouldKeepZeroAnisotropyThroughBothPaths();
+		BuiltInTexturesShouldLoadThroughBothPaths();
+		MapLoadersShouldWorkThroughBothPaths();
+		ConcurrentAsyncTextureLoadsShouldAllSucceed();
+		RepeatedAlternatingLoadsShouldRemainConsistent();
+		SyncAndAsyncShouldProduceIdenticalNonSkeletalMeshes();
+		SyncAndAsyncShouldApplyCreationConfigTransformsIdentically();
+		SyncAndAsyncShouldProduceIdenticalSkeletalMeshes();
+		ConcurrentAsyncMeshLoadsShouldAllSucceed();
+		RepeatedLoadsShouldNotLeakOrCorrupt();
+		LoadAllShouldStillWorkAfterModelsRework();
+		ReadMeshShouldStillPopulateCallerBuffers();
 	}
 
-	public void SyncAndAsyncShouldProduceEquivalentTextures() {
+	void SyncAndAsyncShouldProduceEquivalentTextures() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -63,7 +77,7 @@ class LocalAsyncLoadingTest {
 		Assert.AreEqual("tex-async", asyncTex.GetNameAsNewStringObject());
 	}
 
-	public void SyncAndAsyncShouldApplyProcessingIdentically() {
+	void SyncAndAsyncShouldApplyProcessingIdentically() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -83,8 +97,7 @@ class LocalAsyncLoadingTest {
 		AssertTexturesEquivalent(syncTex, asyncTex, "processed load");
 	}
 
-	[Test]
-	public void SyncAndAsyncShouldProduceEquivalentCombinedTextures() {
+	void SyncAndAsyncShouldProduceEquivalentCombinedTextures() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -119,8 +132,7 @@ class LocalAsyncLoadingTest {
 		Assert.AreEqual(TexelType.Rgb24, sync3.TexelType, "A combine without an alpha source should produce an Rgb24 texture.");
 	}
 
-	[Test]
-	public void CanvasTextureShouldKeepZeroAnisotropyThroughBothPaths() {
+	void CanvasTextureShouldKeepZeroAnisotropyThroughBothPaths() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -133,8 +145,7 @@ class LocalAsyncLoadingTest {
 		AssertTexturesEquivalent(syncTex, asyncTex, "canvas texture");
 	}
 
-	[Test]
-	public void BuiltInTexturesShouldLoadThroughBothPaths() {
+	void BuiltInTexturesShouldLoadThroughBothPaths() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -147,8 +158,7 @@ class LocalAsyncLoadingTest {
 		AssertTexturesEquivalent(syncEmbedded, asyncEmbedded, "built-in embedded resource");
 	}
 
-	[Test]
-	public void MapLoadersShouldWorkThroughBothPaths() {
+	void MapLoadersShouldWorkThroughBothPaths() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -167,14 +177,31 @@ class LocalAsyncLoadingTest {
 		using var syncAniso = loader.LoadAnisotropyMapRadialAngleFormatted(CrateOrmFile, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, R);
 		using var asyncAniso = AwaitLoad(loader.LoadAnisotropyMapRadialAngleFormattedAsync(CrateOrmFile, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, R));
 		AssertTexturesEquivalent(syncAniso, asyncAniso, "radial-angle anisotropy map");
+		AssertRadialAngleAnisotropyTexelType(loader, CrateOrmFile, syncAniso);
+
+		Assert.IsTrue(loader.ReadTextureMetadata(AlphaLogoFile).IncludesAlphaChannel, "Expected an alpha-bearing asset; the Rgba32 anisotropy branch would otherwise go untested.");
+		using var syncAnisoAlpha = loader.LoadAnisotropyMapRadialAngleFormatted(AlphaLogoFile, Orientation2D.Up, AnisotropyRadialAngleRange.ZeroTo180, false, A);
+		using var asyncAnisoAlpha = AwaitLoad(loader.LoadAnisotropyMapRadialAngleFormattedAsync(AlphaLogoFile, Orientation2D.Up, AnisotropyRadialAngleRange.ZeroTo180, false, A));
+		AssertTexturesEquivalent(syncAnisoAlpha, asyncAnisoAlpha, "radial-angle anisotropy map (alpha strength channel)");
+		AssertRadialAngleAnisotropyTexelType(loader, AlphaLogoFile, syncAnisoAlpha);
 
 		using var syncAniso2 = loader.LoadAnisotropyMapRadialAngleFormatted(CrateOrmFile, CrateColorFile, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo180, false);
 		using var asyncAniso2 = AwaitLoad(loader.LoadAnisotropyMapRadialAngleFormattedAsync(CrateOrmFile, CrateColorFile, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo180, false));
 		AssertTexturesEquivalent(syncAniso2, asyncAniso2, "radial-angle anisotropy map (two-source)");
+		Assert.AreEqual(TexelType.Rgb24, syncAniso2.TexelType, "A two-source radial-angle anisotropy map has no alpha source and must always be Rgb24.");
 	}
 
-	[Test]
-	public void ConcurrentAsyncLoadsShouldAllSucceed() {
+	static void AssertRadialAngleAnisotropyTexelType(IAssetLoader loader, string filePath, Texture texture) {
+		var expected = loader.ReadTextureMetadata(filePath).IncludesAlphaChannel ? TexelType.Rgba32 : TexelType.Rgb24;
+		Assert.AreEqual(
+			expected,
+			texture.TexelType,
+			$"Radial-angle anisotropy load of '{Path.GetFileName(filePath)}' produced the wrong texel type; " +
+			"the metadata probe and the pinned read config must agree with the texel type the conversion callback was created for."
+		);
+	}
+
+	void ConcurrentAsyncTextureLoadsShouldAllSucceed() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -193,8 +220,7 @@ class LocalAsyncLoadingTest {
 		foreach (var texture in textures) texture.Dispose();
 	}
 
-	[Test]
-	public void RepeatedAlternatingLoadsShouldRemainConsistent() {
+	void RepeatedAlternatingLoadsShouldRemainConsistent() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -213,8 +239,7 @@ class LocalAsyncLoadingTest {
 		Console.WriteLine($"  {label}: name='{mesh.GetNameAsNewStringObject()}' bounds={mesh.BoundingBox} animations={mesh.Animations.Count()} nodes={mesh.Skeleton.Nodes.Count()}");
 	}
 
-	[Test]
-	public void SyncAndAsyncShouldProduceIdenticalNonSkeletalMeshes() {
+	void SyncAndAsyncShouldProduceIdenticalNonSkeletalMeshes() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -234,8 +259,7 @@ class LocalAsyncLoadingTest {
 		Assert.AreEqual("crate-async", asyncMesh.GetNameAsNewStringObject());
 	}
 
-	[Test]
-	public void SyncAndAsyncShouldApplyCreationConfigTransformsIdentically() {
+	void SyncAndAsyncShouldApplyCreationConfigTransformsIdentically() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -261,8 +285,7 @@ class LocalAsyncLoadingTest {
 		Assert.AreNotEqual(plainMesh.BoundingBox, syncMesh.BoundingBox, "Transform config had no effect at all; test is vacuous.");
 	}
 
-	[Test]
-	public void SyncAndAsyncShouldProduceIdenticalSkeletalMeshes() {
+	void SyncAndAsyncShouldProduceIdenticalSkeletalMeshes() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -290,8 +313,7 @@ class LocalAsyncLoadingTest {
 		}
 	}
 
-	[Test]
-	public void ConcurrentAsyncLoadsShouldAllSucceed() {
+	void ConcurrentAsyncMeshLoadsShouldAllSucceed() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -310,8 +332,7 @@ class LocalAsyncLoadingTest {
 		foreach (var mesh in meshes) mesh.Dispose();
 	}
 
-	[Test]
-	public void RepeatedLoadsShouldNotLeakOrCorrupt() {
+	void RepeatedLoadsShouldNotLeakOrCorrupt() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -326,8 +347,7 @@ class LocalAsyncLoadingTest {
 		Console.WriteLine($"  12 alternating sync/async loads all produced bounds {expectedBounds}");
 	}
 
-	[Test]
-	public void LoadAllShouldStillWorkAfterModelsRework() {
+	void LoadAllShouldStillWorkAfterModelsRework() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
@@ -339,8 +359,7 @@ class LocalAsyncLoadingTest {
 		}
 	}
 
-	[Test]
-	public void ReadMeshShouldStillPopulateCallerBuffers() {
+	void ReadMeshShouldStillPopulateCallerBuffers() {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
