@@ -13,6 +13,9 @@ public static partial class TextureUtils {
 	public static void SwizzleTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, ColorChannel redSource = ColorChannel.R, ColorChannel greenSource = ColorChannel.G, ColorChannel blueSource = ColorChannel.B, ColorChannel alphaSource = ColorChannel.A) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Swizzle(redSource, greenSource, blueSource, alphaSource));
 	}
+	public static void PremultiplyAlphaForTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions) where TTexel : unmanaged, ITexel<TTexel> {
+		ProcessTexture(buffer, dimensions, TextureProcessingConfig.PremultiplyAlpha());
+	}
 
 	public static void ProcessTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		const int MaxTextureWidthForStackRowSwap = 65_536;

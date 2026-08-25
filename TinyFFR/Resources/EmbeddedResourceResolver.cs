@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using System.IO.Compression;
+using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -14,9 +15,14 @@ static unsafe class EmbeddedResourceResolver {
 		public Span<byte> AsSpan => new((void*) DataPtr, DataLenBytes);
 	}
 
+	static readonly Lock _loadedResourcesLock = new();
 	static readonly ArrayPoolBackedMap<string, ResourceDataRef> _loadedResources = new();
 
 	public static ResourceDataRef GetResource(string resourceName) {
+		lock (_loadedResourcesLock) return GetResourceWhileLocked(resourceName);
+	}
+
+	static ResourceDataRef GetResourceWhileLocked(string resourceName) {
 		if (_loadedResources.TryGetValue(resourceName, out var cachedResource)) return cachedResource;
 
 		using var stream = typeof(EmbeddedResourceResolver).Assembly.GetManifestResourceStream(RootResourceNamespace + resourceName)

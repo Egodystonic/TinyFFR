@@ -1017,16 +1017,17 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		var meshNameWriteStartIndex = SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix);
 		
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				readConfig.MeshConfig.FixCommonExportErrors,
 				readConfig.MeshConfig.OptimizeForGpu,
 				out var assetHandle
 			).ThrowIfFailure();
 			
-			_assetFilePathBuffer.ConvertFromUtf16(Path.GetDirectoryName(filePath));
+			pathBuffer.ConvertFromUtf16(Path.GetDirectoryName(filePath));
 
 			try {
 				GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure(); 
@@ -1078,7 +1079,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 							resourceGroupName,
 							config.TextureConfig,
 							in readConfig,
-							in _assetFilePathBuffer.AsRef
+							in pathBuffer.AsRef
 						);
 						result.Add(mat);
 						materialToGroupAddOrderMap[matIndex] = result.Materials.Count;

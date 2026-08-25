@@ -130,6 +130,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 			+	SerializationSizeOfBool() // SamplingConfig.DisableTextureRepeat
 			+	SerializationSizeOfBool() // SamplingConfig.DisableTexelBlending
 			+	SerializationSizeOfInt() // SamplingConfig.AnisotropicFilteringQuality
+			+	SerializationSizeOfFloat() // SamplingConfig.AnisotropyLevel
 			+	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOfSubConfig(src.ProcessingToApply);
 	}
@@ -140,15 +141,26 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTextureRepeat);
 		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTexelBlending);
 		SerializationWriteInt(ref dest, (int) src.RenderingConfig.AnisotropicFilteringQuality);
+		SerializationWriteFloat(ref dest, src.RenderingConfig.AnisotropyLevel);
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteSubConfig(ref dest, src.ProcessingToApply);
 	}
 	public static TextureCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		var generateMipMaps = SerializationReadBool(ref src);
+		var isLinearColorspace = SerializationReadBool(ref src);
+		var allowsDynamicWrites = SerializationReadBool(ref src);
+		var disableTextureRepeat = SerializationReadBool(ref src);
+		var disableTexelBlending = SerializationReadBool(ref src);
+		var anisotropicFilteringQuality = (Quality) SerializationReadInt(ref src);
+		var anisotropyLevel = SerializationReadFloat(ref src);
+
 		return new TextureCreationConfig {
-			GenerateMipMaps = SerializationReadBool(ref src),
-			IsLinearColorspace = SerializationReadBool(ref src),
-			AllowsDynamicWrites = SerializationReadBool(ref src),
-			RenderingConfig = new(SerializationReadBool(ref src), SerializationReadBool(ref src), (Quality) SerializationReadInt(ref src)),
+			GenerateMipMaps = generateMipMaps,
+			IsLinearColorspace = isLinearColorspace,
+			AllowsDynamicWrites = allowsDynamicWrites,
+			RenderingConfig = new TextureRenderingConfig(disableTextureRepeat, disableTexelBlending, anisotropicFilteringQuality) {
+				AnisotropyLevel = anisotropyLevel
+			},
 			Name = SerializationReadString(ref src),
 			ProcessingToApply = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
 		};
@@ -352,5 +364,93 @@ public readonly ref struct TextureGenerationConfig : IConfigStruct<TextureGenera
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		/* no-op */
+	}
+}
+readonly ref struct TextureLoadConfig : IConfigStruct<TextureLoadConfig> {
+	public TextureCreationConfig CreationConfig { get; init; }
+	public TextureReadConfig ReadConfig { get; init; }
+
+	public TextureLoadConfig() { }
+
+	internal void ThrowIfInvalid() {
+		CreationConfig.ThrowIfInvalid();
+		ReadConfig.ThrowIfInvalid();
+	}
+
+	public static int GetHeapStorageFormattedLength(in TextureLoadConfig src) {
+		return	SerializationSizeOfSubConfig(src.CreationConfig) // CreationConfig
+			+	SerializationSizeOfSubConfig(src.ReadConfig); // ReadConfig
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureLoadConfig src) {
+		SerializationWriteSubConfig(ref dest, src.CreationConfig);
+		SerializationWriteSubConfig(ref dest, src.ReadConfig);
+	}
+	public static TextureLoadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new TextureLoadConfig {
+			CreationConfig = SerializationReadSubConfig<TextureCreationConfig>(ref src),
+			ReadConfig = SerializationReadSubConfig<TextureReadConfig>(ref src)
+		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		var converted = ConvertFromAllocatedHeapStorage(src);
+		var creationConfigLength = SerializationSizeOfSubConfig(converted.CreationConfig);
+		var readConfigLength = SerializationSizeOfSubConfig(converted.ReadConfig);
+		TextureCreationConfig.DisposeAllocatedHeapStorage(src[..creationConfigLength]);
+		TextureReadConfig.DisposeAllocatedHeapStorage(src[creationConfigLength..][..readConfigLength]);
+	}
+}
+
+readonly ref struct TextureCombinedLoadConfig : IConfigStruct<TextureCombinedLoadConfig> {
+	public TextureCreationConfig CreationConfig { get; init; }
+	public TextureCombinationConfig CombinationConfig { get; init; }
+	public TextureProcessingConfig ProcessingConfigA { get; init; }
+	public TextureProcessingConfig ProcessingConfigB { get; init; }
+	public TextureProcessingConfig ProcessingConfigC { get; init; }
+	public TextureProcessingConfig ProcessingConfigD { get; init; }
+	public int SourceCount { get; init; }
+
+	public TextureCombinedLoadConfig() { }
+
+	internal void ThrowIfInvalid() {
+		CreationConfig.ThrowIfInvalid();
+		CombinationConfig.ThrowIfInvalid(SourceCount);
+		ProcessingConfigA.ThrowIfInvalid();
+		ProcessingConfigB.ThrowIfInvalid();
+		ProcessingConfigC.ThrowIfInvalid();
+		ProcessingConfigD.ThrowIfInvalid();
+	}
+
+	public static int GetHeapStorageFormattedLength(in TextureCombinedLoadConfig src) {
+		return	SerializationSizeOfSubConfig(src.CreationConfig) // CreationConfig
+			+	SerializationSizeOfSubConfig(src.CombinationConfig) // CombinationConfig
+			+	SerializationSizeOfSubConfig(src.ProcessingConfigA) // ProcessingConfigA
+			+	SerializationSizeOfSubConfig(src.ProcessingConfigB) // ProcessingConfigB
+			+	SerializationSizeOfSubConfig(src.ProcessingConfigC) // ProcessingConfigC
+			+	SerializationSizeOfSubConfig(src.ProcessingConfigD) // ProcessingConfigD
+			+	SerializationSizeOfInt(); // SourceCount
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCombinedLoadConfig src) {
+		SerializationWriteSubConfig(ref dest, src.CreationConfig);
+		SerializationWriteSubConfig(ref dest, src.CombinationConfig);
+		SerializationWriteSubConfig(ref dest, src.ProcessingConfigA);
+		SerializationWriteSubConfig(ref dest, src.ProcessingConfigB);
+		SerializationWriteSubConfig(ref dest, src.ProcessingConfigC);
+		SerializationWriteSubConfig(ref dest, src.ProcessingConfigD);
+		SerializationWriteInt(ref dest, src.SourceCount);
+	}
+	public static TextureCombinedLoadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new TextureCombinedLoadConfig {
+			CreationConfig = SerializationReadSubConfig<TextureCreationConfig>(ref src),
+			CombinationConfig = SerializationReadSubConfig<TextureCombinationConfig>(ref src),
+			ProcessingConfigA = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
+			ProcessingConfigB = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
+			ProcessingConfigC = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
+			ProcessingConfigD = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
+			SourceCount = SerializationReadInt(ref src)
+		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		var converted = ConvertFromAllocatedHeapStorage(src);
+		TextureCreationConfig.DisposeAllocatedHeapStorage(src[..SerializationSizeOfSubConfig(converted.CreationConfig)]);
 	}
 }

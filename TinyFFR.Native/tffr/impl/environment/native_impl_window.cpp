@@ -41,7 +41,7 @@ void native_impl_window::set_window_icon(WindowHandle handle, const char* iconFi
 	ThrowIfNull(iconFilePath, "File path pointer was null.");
 
 	int width, height, channelCount;
-	stbi_set_flip_vertically_on_load(false);
+	stbi_set_flip_vertically_on_load_thread(false);
 	auto imageData = stbi_load(iconFilePath, &width, &height, &channelCount, 4);
 	ThrowIfNull(imageData, "Could not load icon '", iconFilePath, "': ", stbi_failure_reason());
 
@@ -73,7 +73,7 @@ StartExportedFunc(set_window_icon_from_memory, WindowHandle handle, stbi_uc* dat
 	ThrowIfNull(data, "Data pointer was null.");
 
 	int width, height, channelCount;
-	stbi_set_flip_vertically_on_load(false);
+	stbi_set_flip_vertically_on_load_thread(false);
 	auto imageData = stbi_load_from_memory(data, sizeBytes, &width, &height, &channelCount, 4);
 	ThrowIfNull(imageData, "Could not load icon: ", stbi_failure_reason());
 

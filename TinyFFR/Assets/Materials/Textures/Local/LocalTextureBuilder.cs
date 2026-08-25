@@ -53,6 +53,18 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		}
 		TextureUtils.ProcessTexture(preallocatedBuffer.Span, generationConfig.Dimensions, config.ProcessingToApply);
 
+		return CreateTextureAndDisposePreallocatedBuffer(
+			preallocatedBuffer,
+			generationConfig.Dimensions,
+			config.GenerateMipMaps,
+			config.IsLinearColorspace,
+			config.AllowsDynamicWrites,
+			config.RenderingConfig,
+			config.Name
+		);
+	}
+
+	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, XYPair<int> dimensions, bool generateMipMaps, bool isLinearColorspace, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Span));
 		var dataLength = preallocatedBuffer.Span.Length * sizeof(TTexel);
 
@@ -63,10 +75,10 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 					preallocatedBuffer.BufferId,
 					(TexelRgb24*) dataPointer,
 					dataLength,
-					(uint) generationConfig.Dimensions.X,
-					(uint) generationConfig.Dimensions.Y,
-					config.GenerateMipMaps,
-					config.IsLinearColorspace,
+					(uint) dimensions.X,
+					(uint) dimensions.Y,
+					generateMipMaps,
+					isLinearColorspace,
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -75,10 +87,10 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 					preallocatedBuffer.BufferId,
 					(TexelRgba32*) dataPointer,
 					dataLength,
-					(uint) generationConfig.Dimensions.X,
-					(uint) generationConfig.Dimensions.Y,
-					config.GenerateMipMaps,
-					config.IsLinearColorspace,
+					(uint) dimensions.X,
+					(uint) dimensions.Y,
+					generateMipMaps,
+					isLinearColorspace,
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -87,8 +99,8 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		}
 
 		var handle = (ResourceHandle<Texture>) outHandle;
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(generationConfig.Dimensions, TTexel.BlitType, config.AllowsDynamicWrites, config.GenerateMipMaps, config.RenderingConfig));
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
+		_loadedTextures.Add(handle, new(dimensions, TTexel.BlitType, allowsDynamicWrites, generateMipMaps, renderingConfig));
 		return HandleToInstance(handle);
 	}
 
@@ -123,7 +135,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
 
-	internal Texture CreateTextureWithAddedOpaqueAlpha(ReadOnlySpan<TexelRgb24> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) {
+	public Texture CreateTextureWithAddedOpaqueAlpha(ReadOnlySpan<TexelRgb24> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		generationConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
@@ -143,6 +155,22 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var buffer = PreallocateBuffer<TexelRgba32>(texelCount);
 		TextureUtils.Convert(texels, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
+	}
+	
+	public Texture CreateTextureWithoutProcessing<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool generateMipMaps, bool isLinearColorspace, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
+		ThrowIfThisIsDisposed();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		if (dimensions.Area > texels.Length) {
+			throw new ArgumentException(
+				$"Texture dimensions are {dimensions.X}x{dimensions.Y}, requiring a texel span of length {dimensions.Area} or greater, " +
+				$"but actual span length was {texels.Length}."
+			);
+		}
+
+		var texelCount = dimensions.Area;
+		var buffer = PreallocateBuffer<TTexel>(texelCount);
+		texels[..texelCount].CopyTo(buffer.Span);
+		return CreateTextureAndDisposePreallocatedBuffer(buffer, dimensions, generateMipMaps, isLinearColorspace, allowsDynamicWrites, renderingConfig, name);
 	}
 	#endregion
 

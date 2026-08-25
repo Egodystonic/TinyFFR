@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -19,8 +20,10 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 	internal const int MaxAssetBufferSizeBytes = 1 << 30;
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly InteropStringBuffer _assetFilePathBuffer;
+	readonly ThreadLocal<InteropStringBuffer> _assetFilePathBufferStore;
 	bool _isDisposed = false;
+
+	InteropStringBuffer AssetFilePathBuffer => _assetFilePathBufferStore.Value;
 
 	public IMeshBuilder MeshBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _meshBuilder;
 	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _textureBuilder;
@@ -37,13 +40,16 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_textureBuilder = new LocalTextureBuilder(globals, config);
 		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder, _testMaterialTextures);
 		_fontLoader = new LocalFontLoader(globals, config, _meshBuilder, _textureBuilder, _materialBuilder);
-		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
+		var maxAssetFilePathLengthChars = config.MaxAssetFilePathLengthChars;
+		_assetFilePathBufferStore = new(() => new InteropStringBuffer(maxAssetFilePathLengthChars, addOneForNullTerminator: true), trackAllValues: true);
 		_animationAndNodeNameBuffer = new InteropStringBuffer(config.MaxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
 		_maxAnimationAndNodeNameLengthChars = config.MaxAnimationAndNodeNameLengthChars;
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
 		_backdropTextureImplProvider = new LocalBackdropTextureImplProvider(this);
 		_backdropLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 		_meshLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
+		_textureLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
+		_combinedTextureLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 
 		if (OperatingSystem.IsWindows()) {
 			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameWin);
@@ -77,9 +83,12 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 			foreach (var backdropTex in _loadedBackdropTextures.Keys) Dispose(backdropTex, removeFromCollection: false);
 			_backdropLoadWorkerSyncHelper.Dispose();
 			_meshLoadWorkerSyncHelper.Dispose();
+			_textureLoadWorkerSyncHelper.Dispose();
+			_combinedTextureLoadWorkerSyncHelper.Dispose();
 			_primaryThreadGatherBuffers.Dispose();
 			_animationAndNodeNameBuffer.Dispose();
-			_assetFilePathBuffer.Dispose();
+			foreach (var pathBuffer in _assetFilePathBufferStore.Values) pathBuffer.Dispose();
+			_assetFilePathBufferStore.Dispose();
 			_fontLoader.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();

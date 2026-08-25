@@ -244,7 +244,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOpe
 		readonly ManualResetEventSlim _completionIndicator = new(false);
 		IPrimaryThreadDispatcher? _primaryThreadDispatcher = null;
 		Action? _continuations = null;
-		ulong _version;
+		ulong _version; // This should only ever increase, otherwise owning TinyFfrAsyncOperation structs could "resurrect" if their version suddenly matches again
 		T _result = default!;
 		Exception? _exception = null;
 

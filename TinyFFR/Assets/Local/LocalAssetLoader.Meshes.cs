@@ -88,7 +88,6 @@ unsafe partial class LocalAssetLoader {
 		public PooledHeapMemory<char>? FilePath { get; set; } = null;
 
 		// Worker thread owned
-		public InteropStringBuffer? PathBuffer { get; set; } = null;
 		public InteropStringBuffer? NameBuffer { get; set; } = null;
 		public UIntPtr AssetHandle { get; set; } = UIntPtr.Zero;
 		public PooledHeapMemory<byte>? VertexData { get; set; } = null;
@@ -113,8 +112,6 @@ unsafe partial class LocalAssetLoader {
 				AssetHandle = UIntPtr.Zero;
 			}
 			GatherBuffers.DisposeUntransferredBuffersAndReset();
-			PathBuffer?.Dispose();
-			PathBuffer = null;
 			NameBuffer?.Dispose();
 			NameBuffer = null;
 			VertexData?.Dispose();
@@ -236,8 +233,7 @@ unsafe partial class LocalAssetLoader {
 	}
 
 	static UIntPtr OpenAssetFileOnWorker(MeshLoadContext context, ReadOnlySpan<char> filePath, in MeshReadConfig readConfig) {
-		var pathBuffer = new InteropStringBuffer(context.Self._assetFilePathBuffer.Length, addOneForNullTerminator: false);
-		context.PathBuffer = pathBuffer;
+		var pathBuffer = context.Self.AssetFilePathBuffer;
 		pathBuffer.ConvertFromUtf16(filePath);
 
 		LoadAssetFileInToMemory(
@@ -399,9 +395,10 @@ unsafe partial class LocalAssetLoader {
 		readConfig.ThrowIfInvalid();
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
 				readConfig.OptimizeForGpu,
 				out var assetHandle
@@ -451,9 +448,10 @@ unsafe partial class LocalAssetLoader {
 		readConfig.ThrowIfInvalid();
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
 				readConfig.OptimizeForGpu,
 				out var assetHandle

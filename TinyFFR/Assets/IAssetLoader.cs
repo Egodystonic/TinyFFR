@@ -41,6 +41,18 @@ public interface IAssetLoader {
 	}
 	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTexture(filePath, in config, new TextureReadConfig());
 	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig);
+	
+	TinyFfrAsyncOperation<Texture> LoadTextureAsync(ReadOnlySpan<char> filePath, bool isLinearColorspace, ReadOnlySpan<char> name = default) {
+		return LoadTextureAsync(
+			filePath, 
+			new TextureCreationConfig {
+				IsLinearColorspace = isLinearColorspace,
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	TinyFfrAsyncOperation<Texture> LoadTextureAsync(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTextureAsync(filePath, in config, new TextureReadConfig());
+	TinyFfrAsyncOperation<Texture> LoadTextureAsync(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig);
 
 	TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath);
 	int ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(filePath, TextureProcessingConfig.None, destinationBuffer);
@@ -53,9 +65,7 @@ public interface IAssetLoader {
 
 	Texture LoadColorMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
 
-	Texture LoadCanvasTexture(ReadOnlySpan<char> filePath) {
-		return LoadTexture(filePath, TextureCreationConfig.ForCanvasTexture(Path.GetFileName(filePath)));
-	}
+	Texture LoadCanvasTexture(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForCanvasTexture(Path.GetFileName(filePath)));
 
 	Texture LoadNormalMap(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
 		if (!isDirectXFormat) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
@@ -305,6 +315,194 @@ public interface IAssetLoader {
 			TextureCreationConfig.ForDataTexture(name)
 		);
 	}
+
+	TinyFfrAsyncOperation<Texture> LoadColorMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+
+	TinyFfrAsyncOperation<Texture> LoadCanvasTextureAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForCanvasTexture(Path.GetFileName(filePath)));
+
+	TinyFfrAsyncOperation<Texture> LoadNormalMapAsync(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
+		if (!isDirectXFormat) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+		return LoadTextureAsync(
+			filePath,
+			TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)) with {
+				ProcessingToApply = new TextureProcessingConfig { InvertYGreenChannel = true }
+			}
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicMapAsync(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath) {
+		var a = Path.GetFileName(occlusionFilePath);
+		var b = Path.GetFileName(roughnessFilePath);
+		var c = Path.GetFileName(metallicFilePath);
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b, "+", c)];
+		SpanUtils.Concatenate(name, a, "+", b, "+", c);
+
+		return LoadCombinedTextureAsync(
+			occlusionFilePath,
+			roughnessFilePath,
+			metallicFilePath,
+			new TextureCombinationConfig {
+				OutputTextureXRedChannelSource = new(TextureA, R),
+				OutputTextureYGreenChannelSource = new(TextureB, R),
+				OutputTextureZBlueChannelSource = new(TextureC, R)
+			},
+			TextureCreationConfig.ForDataTexture(name)
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> filePath) {
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+		else return LoadOcclusionRoughnessMetallicReflectanceMapAsync(filePath, BuiltInTexturePaths.DefaultReflectanceMap);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> occlusionRoughnessMetallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
+		var a = Path.GetFileName(occlusionRoughnessMetallicFilePath);
+		var b = Path.GetFileName(reflectanceFilePath);
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
+		SpanUtils.Concatenate(name, a, "+", b);
+
+		return LoadCombinedTextureAsync(
+			occlusionRoughnessMetallicFilePath,
+			reflectanceFilePath,
+			new TextureCombinationConfig {
+				OutputTextureXRedChannelSource = new(TextureA, R),
+				OutputTextureYGreenChannelSource = new(TextureA, G),
+				OutputTextureZBlueChannelSource = new(TextureA, B),
+				OutputTextureWAlphaChannelSource = new(TextureB, R),
+			},
+			TextureCreationConfig.ForDataTexture(name)
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
+		var a = Path.GetFileName(occlusionFilePath);
+		var b = Path.GetFileName(roughnessFilePath);
+		var c = Path.GetFileName(metallicFilePath);
+		var d = Path.GetFileName(reflectanceFilePath);
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b, "+", c, "+", d)];
+		SpanUtils.Concatenate(name, a, "+", b, "+", c, "+", d);
+
+		return LoadCombinedTextureAsync(
+			occlusionFilePath,
+			roughnessFilePath,
+			metallicFilePath,
+			reflectanceFilePath,
+			new TextureCombinationConfig {
+				OutputTextureXRedChannelSource = new(TextureA, R),
+				OutputTextureYGreenChannelSource = new(TextureB, R),
+				OutputTextureZBlueChannelSource = new(TextureC, R),
+				OutputTextureWAlphaChannelSource = new(TextureD, R),
+			},
+			TextureCreationConfig.ForDataTexture(name)
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadAbsorptionTransmissionMapAsync(ReadOnlySpan<char> filePath, bool invertAbsorption = false) {
+		var includesTransmission = ReadTextureMetadata(filePath).IncludesAlphaChannel;
+		if (!includesTransmission) return LoadAbsorptionTransmissionMapAsync(filePath, BuiltInTexturePaths.DefaultTransmissionMap, invertAbsorption);
+		if (!invertAbsorption) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+
+		return LoadTextureAsync(
+			filePath,
+			TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)) with {
+				ProcessingToApply = TextureProcessingConfig.Invert(includeAlphaChannel: false)
+			}
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadAbsorptionTransmissionMapAsync(ReadOnlySpan<char> absorptionFilePath, ReadOnlySpan<char> transmissionFilePath, bool invertAbsorption = false) {
+		var a = Path.GetFileName(absorptionFilePath);
+		var b = Path.GetFileName(transmissionFilePath);
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
+		SpanUtils.Concatenate(name, a, "+", b);
+
+		return LoadCombinedTextureAsync(
+			absorptionFilePath, invertAbsorption ? TextureProcessingConfig.Invert(includeAlphaChannel: false) : TextureProcessingConfig.None,
+			transmissionFilePath, TextureProcessingConfig.None,
+			new TextureCombinationConfig {
+				OutputTextureXRedChannelSource = new(TextureA, R),
+				OutputTextureYGreenChannelSource = new(TextureA, G),
+				OutputTextureZBlueChannelSource = new(TextureA, B),
+				OutputTextureWAlphaChannelSource = new(TextureB, R)
+			},
+			TextureCreationConfig.ForColorTexture(name)
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadEmissiveMapAsync(ReadOnlySpan<char> filePath) {
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+		else return LoadEmissiveMapAsync(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityMap);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadEmissiveMapAsync(ReadOnlySpan<char> emissiveColorFilePath, ReadOnlySpan<char> emissiveIntensityFilePath) {
+		var a = Path.GetFileName(emissiveColorFilePath);
+		var b = Path.GetFileName(emissiveIntensityFilePath);
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
+		SpanUtils.Concatenate(name, a, "+", b);
+
+		return LoadCombinedTextureAsync(
+			emissiveColorFilePath,
+			emissiveIntensityFilePath,
+			new TextureCombinationConfig {
+				OutputTextureXRedChannelSource = new(TextureA, R),
+				OutputTextureYGreenChannelSource = new(TextureA, G),
+				OutputTextureZBlueChannelSource = new(TextureA, B),
+				OutputTextureWAlphaChannelSource = new(TextureB, R),
+			},
+			TextureCreationConfig.ForColorTexture(name)
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapVectorFormattedAsync(ReadOnlySpan<char> filePath, ColorChannel? strengthChannel) {
+		return strengthChannel switch {
+			B => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath))),
+			A => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
+			_ => LoadAnisotropyMapVectorFormattedAsync(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap)
+		};
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapVectorFormattedAsync(ReadOnlySpan<char> vectorFilePath, ReadOnlySpan<char> strengthFilePath) {
+		var a = Path.GetFileName(vectorFilePath);
+		var b = Path.GetFileName(strengthFilePath);
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
+		SpanUtils.Concatenate(name, a, "+", b);
+
+		return LoadCombinedTextureAsync(
+			vectorFilePath,
+			strengthFilePath,
+			new TextureCombinationConfig {
+				OutputTextureXRedChannelSource = new(TextureA, R),
+				OutputTextureYGreenChannelSource = new(TextureA, G),
+				OutputTextureZBlueChannelSource = new(TextureB, R),
+			},
+			TextureCreationConfig.ForDataTexture(name)
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+
+	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath) {
+		var a = Path.GetFileName(thicknessFilePath);
+		var b = Path.GetFileName(roughnessFilePath);
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
+		SpanUtils.Concatenate(name, a, "+", b);
+
+		return LoadCombinedTextureAsync(
+			thicknessFilePath,
+			roughnessFilePath,
+			new TextureCombinationConfig {
+				OutputTextureXRedChannelSource = new(TextureA, R),
+				OutputTextureYGreenChannelSource = new(TextureB, R),
+				OutputTextureZBlueChannelSource = new(TextureA, B)
+			},
+			TextureCreationConfig.ForDataTexture(name)
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> filePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel);
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise);
 	#endregion
 
 	#region Load / Read Combined Texture
@@ -338,6 +536,43 @@ public interface IAssetLoader {
 		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
 	) => LoadCombinedTexture(aFilePath, TextureProcessingConfig.None, bFilePath, TextureProcessingConfig.None, cFilePath, TextureProcessingConfig.None, dFilePath, TextureProcessingConfig.None, combinationConfig, in finalOutputConfig);
 	Texture LoadCombinedTexture(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	);
+	
+	TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath,
+		ReadOnlySpan<char> bFilePath,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	) => LoadCombinedTextureAsync(aFilePath, TextureProcessingConfig.None, bFilePath, TextureProcessingConfig.None, combinationConfig, in finalOutputConfig);
+	TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	);
+	TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath,
+		ReadOnlySpan<char> bFilePath,
+		ReadOnlySpan<char> cFilePath,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	) => LoadCombinedTextureAsync(aFilePath, TextureProcessingConfig.None, bFilePath, TextureProcessingConfig.None, cFilePath, TextureProcessingConfig.None, combinationConfig, in finalOutputConfig);
+	TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	);
+	TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath,
+		ReadOnlySpan<char> bFilePath,
+		ReadOnlySpan<char> cFilePath,
+		ReadOnlySpan<char> dFilePath,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	) => LoadCombinedTextureAsync(aFilePath, TextureProcessingConfig.None, bFilePath, TextureProcessingConfig.None, cFilePath, TextureProcessingConfig.None, dFilePath, TextureProcessingConfig.None, combinationConfig, in finalOutputConfig);
+	TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,

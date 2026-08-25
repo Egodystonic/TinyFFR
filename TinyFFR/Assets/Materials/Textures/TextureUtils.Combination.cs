@@ -3,6 +3,7 @@
 
 using static Egodystonic.TinyFFR.Assets.Materials.TextureCombinationSourceTexture;
 using static Egodystonic.TinyFFR.ColorChannel;
+using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
@@ -37,7 +38,7 @@ public readonly record struct TextureCombinationSource(TextureCombinationSourceT
 		}
 	}
 }
-public readonly record struct TextureCombinationConfig(TextureCombinationScalingStrategy ScalingStrategy, TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null) {
+public readonly record struct TextureCombinationConfig(TextureCombinationScalingStrategy ScalingStrategy, TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null) : IConfigStruct<TextureCombinationConfig> {
 	public static readonly TextureCombinationScalingStrategy DefaultScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale;
 	
 	public TextureCombinationConfig(TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null)
@@ -100,6 +101,53 @@ public readonly record struct TextureCombinationConfig(TextureCombinationScaling
 		OutputTextureYGreenChannelSource.ThrowIfInvalid(numTexturesBeingCombined);
 		OutputTextureZBlueChannelSource.ThrowIfInvalid(numTexturesBeingCombined);
 		OutputTextureWAlphaChannelSource?.ThrowIfInvalid(numTexturesBeingCombined);
+	}
+
+	static int SerializationSizeOfSource() => SerializationSizeOfInt() * 2;
+	static void SerializationWriteSource(scoped ref Span<byte> dest, TextureCombinationSource src) {
+		SerializationWriteInt(ref dest, (int) src.SourceTexture);
+		SerializationWriteInt(ref dest, (int) src.SourceChannel);
+	}
+	static TextureCombinationSource SerializationReadSource(scoped ref ReadOnlySpan<byte> src) {
+		var sourceTexture = (TextureCombinationSourceTexture) SerializationReadInt(ref src);
+		var sourceChannel = (ColorChannel) SerializationReadInt(ref src);
+		return new TextureCombinationSource(sourceTexture, sourceChannel);
+	}
+
+	public static int GetHeapStorageFormattedLength(in TextureCombinationConfig src) {
+		return	SerializationSizeOfInt() // ScalingStrategy
+			+	SerializationSizeOfSource() // OutputTextureXRedChannelSource
+			+	SerializationSizeOfSource() // OutputTextureYGreenChannelSource
+			+	SerializationSizeOfSource() // OutputTextureZBlueChannelSource
+			+	SerializationSizeOfBool() // OutputTextureWAlphaChannelSource.HasValue
+			+	SerializationSizeOfSource(); // OutputTextureWAlphaChannelSource
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCombinationConfig src) {
+		SerializationWriteInt(ref dest, (int) src.ScalingStrategy);
+		SerializationWriteSource(ref dest, src.OutputTextureXRedChannelSource);
+		SerializationWriteSource(ref dest, src.OutputTextureYGreenChannelSource);
+		SerializationWriteSource(ref dest, src.OutputTextureZBlueChannelSource);
+		SerializationWriteBool(ref dest, src.OutputTextureWAlphaChannelSource.HasValue);
+		SerializationWriteSource(ref dest, src.OutputTextureWAlphaChannelSource ?? default);
+	}
+	public static TextureCombinationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		var scalingStrategy = (TextureCombinationScalingStrategy) SerializationReadInt(ref src);
+		var xRedSource = SerializationReadSource(ref src);
+		var yGreenSource = SerializationReadSource(ref src);
+		var zBlueSource = SerializationReadSource(ref src);
+		var wAlphaSourcePresent = SerializationReadBool(ref src);
+		var wAlphaSource = SerializationReadSource(ref src);
+
+		return new TextureCombinationConfig(
+			scalingStrategy,
+			xRedSource,
+			yGreenSource,
+			zBlueSource,
+			wAlphaSourcePresent ? wAlphaSource : null
+		);
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		/* no-op */
 	}
 }
 
