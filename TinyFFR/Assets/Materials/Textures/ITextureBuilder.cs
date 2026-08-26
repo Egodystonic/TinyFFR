@@ -22,52 +22,36 @@ public unsafe interface ITextureBuilder {
 	protected Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 	protected PreallocatedBuffer<TTexel> PreallocateBuffer<TTexel>(int texelCount) where TTexel : unmanaged, ITexel<TTexel>;
 
-	static TextureCreationConfig GetTextureCreationConfig(XYPair<int> dimensions, bool isLinearColorspace, bool? generateMipMaps = null, ReadOnlySpan<char> name = default) {
-		return new TextureCreationConfig {
-			IsLinearColorspace = isLinearColorspace,
-			GenerateMipMaps = generateMipMaps ?? dimensions.Area > 1,
-			Name = name,
-			ProcessingToApply = TextureProcessingConfig.None
-		};
-	}
-
-	static void PrepareTexelsForCreation<TTexel>(Span<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		generationConfig.ThrowIfInvalid();
-		config.ThrowIfInvalid();
-
-		if (generationConfig.Dimensions.Area > texels.Length) {
-			throw new ArgumentException(
-				$"Given config width/height require a buffer of {generationConfig.Dimensions.X}x{generationConfig.Dimensions.Y}={generationConfig.Dimensions.Area} texels, " +
-				$"but supplied texel buffer only has {texels.Length} texels.",
-				nameof(config)
-			);
-		}
-
-		TextureUtils.ProcessTexture(texels, generationConfig.Dimensions, config.ProcessingToApply);
-	}
-
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool isLinearColorspace, bool? generateMipMaps = null, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
 		return CreateTexture(
 			texels,
 			new TextureGenerationConfig {Dimensions = dimensions},
-			GetTextureCreationConfig(dimensions, isLinearColorspace, generateMipMaps, name)
+				new TextureCreationConfig {
+				IsLinearColorspace = isLinearColorspace,
+				GenerateMipMaps = generateMipMaps ?? dimensions.Area > 1,
+				Name = name,
+				ProcessingToApply = TextureProcessingConfig.None
+			}
 		);
 	}
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 	#endregion
 
 	#region Generic Patterns
-	static void PrintTexture<TTexel>(in TexturePattern<TTexel> pattern, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => _ = PrintPattern(pattern, destinationBuffer);
-
 	Texture CreateTexture<TTexel>(in TexturePattern<TTexel> pattern, bool isLinearColorspace, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
 		return CreateTexture(
 			pattern,
-			GetTextureCreationConfig(pattern.Dimensions, isLinearColorspace, pattern.Dimensions.Area != 1, name)
+			new TextureCreationConfig {
+				IsLinearColorspace = isLinearColorspace,
+				GenerateMipMaps = pattern.Dimensions.Area != 1,
+				Name = name,
+				ProcessingToApply = TextureProcessingConfig.None
+			}
 		);
 	}
 	Texture CreateTexture<TTexel>(in TexturePattern<TTexel> pattern, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		var buffer = PreallocateBuffer<TTexel>(pattern.Dimensions.Area);
-		PrintTexture(pattern, buffer.Span);
+		_ = PrintPattern(pattern, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = pattern.Dimensions }, in config);
 	}
 

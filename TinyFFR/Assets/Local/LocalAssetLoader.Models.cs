@@ -37,12 +37,15 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		return HandleToInstance(handle);
 	}
 	
-	sealed class SubMeshGatherBuffers : IDisposable {
+	sealed class ModelLoadSubMeshData : IDisposable {
 		public PooledHeapMemory<byte>? VertexData { get; set; } = null;
 		public PooledHeapMemory<byte>? TriangleData { get; set; } = null;
 		public PooledHeapMemory<byte>? InternalNodeData { get; set; } = null;
 		public PooledHeapMemory<SkeletalAnimationNode>? SkeletalNodes { get; set; } = null;
-		public MeshSkeletalGatherBuffers GatherBuffers { get; } = new();
+		public MeshSkeletalGatherBuffers SkeletalDataRegistry { get; } = new();
+		public ModelLoadMaterialTextureRegistry TextureRegistry { get; } = new();
+		public GatheredMaterialData? GatheredMaterial { get; set; } = null;
+		public int MaterialAssetIndex { get; set; } = -1;
 		public int VertexCount { get; set; } = 0;
 		public int TriangleCount { get; set; } = 0;
 		public int NodeCount { get; set; } = 0;
@@ -56,11 +59,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		public NameSlice Name { get; set; } = default;
 
 		public void DisposeBuffersAndReset() {
-			GatherBuffers.DisposeUntransferredBuffersAndReset();
+			SkeletalDataRegistry.DisposeUntransferredBuffersAndReset();
+			TextureRegistry.DisposeBuffersAndReset();
 			VertexData?.Dispose();
 			VertexData = null;
 			TriangleData?.Dispose();
 			TriangleData = null;
+			GatheredMaterial = null;
+			MaterialAssetIndex = -1;
 			InternalNodeData?.Dispose();
 			InternalNodeData = null;
 			SkeletalNodes?.Dispose();
@@ -80,40 +86,33 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 
 		public void Dispose() {
 			DisposeBuffersAndReset();
-			GatherBuffers.Dispose();
+			SkeletalDataRegistry.Dispose();
 		}
 	}
 
 	sealed class ModelLoadContext : WorkerJobSyncHelper<LocalAssetLoader, ModelLoadContext, ModelLoadConfig>.WorkerJobSyncHelperContext {
 		// Primary thread owned
 		public PooledHeapMemory<char>? FilePath { get; set; } = null;
+		public int TotalResourceCountHint { get; set; } = 0;
 
 		// Worker thread owned
 		public InteropStringBuffer? NameBuffer { get; set; } = null;
 		public UIntPtr AssetHandle { get; set; } = UIntPtr.Zero;
-		public SubMeshGatherBuffers SubMesh { get; } = new();
-		public PendingMaterialTextures PendingTextures { get; } = new();
-		public ArrayPoolBackedMap<int, Material> MaterialsByAssetIndex { get; } = new();
+		public ModelLoadSubMeshData CurrentSubMeshData { get; } = new();
+		public ArrayPoolBackedMap<int, Material> AssetIndexToMaterialMap { get; } = new();
 
 		// Handed across each primary thread hop
 		public ResourceGroup? Group { get; set; } = null;
-		public bool GroupCompleted { get; set; } = false;
-		public GatheredMaterial GatheredMaterial { get; set; } = default;
-		public bool MaterialIsNewlyGathered { get; set; } = false;
-		public int MaterialAssetIndex { get; set; } = -1;
-		public int TotalResourceCountHint { get; set; } = 0;
 
 		public override void TearDown() {
 			if (AssetHandle != UIntPtr.Zero) {
 				UnloadAssetFileFromMemory(AssetHandle).ThrowIfFailure();
 				AssetHandle = UIntPtr.Zero;
 			}
-			if (!GroupCompleted && Group is { } incompleteGroup) incompleteGroup.Dispose(disposeContainedResources: true);
+			if (Group is { IsSealed: false } incompleteGroup) incompleteGroup.Dispose(disposeContainedResources: true);
 			Group = null;
-			GroupCompleted = false;
-			SubMesh.DisposeBuffersAndReset();
-			PendingTextures.DisposeBuffersAndReset();
-			MaterialsByAssetIndex.Clear();
+			CurrentSubMeshData.DisposeBuffersAndReset();
+			AssetIndexToMaterialMap.Clear();
 			NameBuffer?.Dispose();
 			NameBuffer = null;
 			if (HeapPoolSerializedConfig is { } config) {
@@ -123,9 +122,6 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			}
 			FilePath?.Dispose();
 			FilePath = null;
-			GatheredMaterial = default;
-			MaterialIsNewlyGathered = false;
-			MaterialAssetIndex = -1;
 			TotalResourceCountHint = 0;
 			HeapPool = null!;
 			Self = null!;
@@ -207,31 +203,30 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				GetLoadedAssetMeshMaterialIndex(assetHandle, i, out var matIndex).ThrowIfFailure();
 				if (matIndex < 0 || matIndex >= materialCount) throw new InvalidOperationException($"Mesh at index '{i}' references material at index '{matIndex}' but asset only contains {materialCount} materials.");
 
-				context.MaterialAssetIndex = matIndex;
-				context.MaterialIsNewlyGathered = !context.MaterialsByAssetIndex.ContainsKey(matIndex);
-				if (context.MaterialIsNewlyGathered) {
-					context.GatheredMaterial = self.GatherAssetMaterial(
+				context.CurrentSubMeshData.MaterialAssetIndex = matIndex;
+				var isNewMaterial = !context.AssetIndexToMaterialMap.ContainsKey(matIndex);
+				if (isNewMaterial) {
+					context.CurrentSubMeshData.GatheredMaterial = self.GatherAssetMaterial(
 						assetHandle,
 						matIndex,
 						resourceGroupName,
 						creationConfig.TextureConfig,
 						in readConfig,
 						in pathBuffer.AsRef,
-						context.PendingTextures,
+						context.CurrentSubMeshData.TextureRegistry,
 						context.HeapPool
 					);
 				}
 
-				context.DispatchOnPrimary(&CreateSubMeshResourcesOnPrimary);
+				context.DispatchOnPrimaryAndWait(&CreateSubMeshResourcesOnPrimary);
 
-				context.SubMesh.DisposeBuffersAndReset();
-				context.PendingTextures.DisposeBuffersAndReset();
+				context.CurrentSubMeshData.DisposeBuffersAndReset();
 			}
 
 			UnloadAssetFileFromMemory(context.AssetHandle).ThrowIfFailure();
 			context.AssetHandle = UIntPtr.Zero;
 
-			return context.GenerateResourceOnPrimary(&CompleteModelLoad);
+			return context.GenerateResourceOnPrimaryAndWait(&CompleteModelLoad);
 		}
 		catch (Exception e) {
 			if (!File.Exists(new String(filePath.Span))) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
@@ -255,17 +250,17 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		var self = context.Self;
 		var group = GetOrCreateGroupOnPrimary(context);
 
-		var mesh = self.CreateSubMeshOnPrimary(context.SubMesh);
+		var mesh = self.CreateSubMeshOnPrimary(context.CurrentSubMeshData);
 		group.Add(mesh);
 
 		Material material;
-		if (context.MaterialIsNewlyGathered) {
-			material = self.MaterializeAssetMaterial(context.GatheredMaterial, context.PendingTextures, group);
+		if (context.CurrentSubMeshData.GatheredMaterial is { } gatheredMaterial) {
+			material = self.MaterializeAssetMaterial(gatheredMaterial, context.CurrentSubMeshData.TextureRegistry, group);
 			group.Add(material);
-			context.MaterialsByAssetIndex[context.MaterialAssetIndex] = material;
+			context.AssetIndexToMaterialMap[context.CurrentSubMeshData.MaterialAssetIndex] = material;
 		}
 		else {
-			material = context.MaterialsByAssetIndex[context.MaterialAssetIndex];
+			material = context.AssetIndexToMaterialMap[context.CurrentSubMeshData.MaterialAssetIndex];
 		}
 
 		group.Add(self.CreateModel(mesh, material, default));
@@ -275,16 +270,15 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		var group = GetOrCreateGroupOnPrimary(context);
 		group.Seal();
-		context.GroupCompleted = true;
 		return group;
 	}
 
 	void GatherSubMeshOnWorker(ModelLoadContext context, UIntPtr assetHandle, int subMeshIndex, in ModelReadConfig readConfig, in MeshCreationConfig meshConfig, bool loadSkeletalAnimationData) {
-		var buffers = context.SubMesh;
+		var buffers = context.CurrentSubMeshData;
 		buffers.IsSkeletal = loadSkeletalAnimationData;
 		buffers.OriginTranslation = meshConfig.OriginTranslation;
 		buffers.LinearRescalingFactor = meshConfig.LinearRescalingFactor;
-		buffers.Name = buffers.GatherBuffers.AppendName(meshConfig.Name);
+		buffers.Name = buffers.SkeletalDataRegistry.AppendName(meshConfig.Name);
 
 		if (loadSkeletalAnimationData) {
 			GatherSubMeshVertexDataOnWorker<MeshVertexSkeletal>(assetHandle, subMeshIndex, readConfig.MeshConfig.CorrectFlippedOrientation, in meshConfig, buffers, context.HeapPool);
@@ -295,7 +289,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 
-	static void GatherSubMeshVertexDataOnWorker<TVertex>(UIntPtr assetHandle, int subMeshIndex, bool correctFlippedOrientation, in MeshCreationConfig meshConfig, SubMeshGatherBuffers buffers, ThreadSafeHeapPoolWrapper heapPool) where TVertex : unmanaged, IMeshVertex {
+	static void GatherSubMeshVertexDataOnWorker<TVertex>(UIntPtr assetHandle, int subMeshIndex, bool correctFlippedOrientation, in MeshCreationConfig meshConfig, ModelLoadSubMeshData buffers, ThreadSafeHeapPoolWrapper heapPool) where TVertex : unmanaged, IMeshVertex {
 		GetLoadedAssetMeshVertexCount(assetHandle, subMeshIndex, out var vertexCount).ThrowIfFailure();
 		GetLoadedAssetMeshTriangleCount(assetHandle, subMeshIndex, out var triangleCount).ThrowIfFailure();
 		ThrowIfAssetBufferSizeExceedsMaximum((long) vertexCount * sizeof(TVertex), $"mesh vertex data ({vertexCount} vertices)");
@@ -328,7 +322,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	}
 
 	static void GatherSubMeshSkeletalDataOnWorker(ModelLoadContext context, UIntPtr assetHandle, int subMeshIndex, in ModelReadConfig readConfig) {
-		var buffers = context.SubMesh;
+		var buffers = context.CurrentSubMeshData;
 		GetLoadedAssetMeshSkeletalNodeCount(assetHandle, subMeshIndex, out var nodeCount).ThrowIfFailure();
 		ThrowIfAssetBufferSizeExceedsMaximum((long) nodeCount * sizeof(NodeHandle), $"mesh skeletal node data ({nodeCount} nodes)");
 
@@ -375,18 +369,18 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 
 			buffers.BoneCount = LocalMeshBuilder.CalculateAndValidateBoneCount(translatedNodeBuffer.Span);
 
-			GatherMeshAnimations(assetHandle, nodeHandles, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, nameBuffer, context.HeapPool, buffers.GatherBuffers);
-			GatherNodeNames(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), maxNodeNameLength, nameBuffer, context.HeapPool, buffers.GatherBuffers);
+			GatherMeshAnimations(assetHandle, nodeHandles, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, nameBuffer, context.HeapPool, buffers.SkeletalDataRegistry);
+			GatherNodeNames(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), maxNodeNameLength, nameBuffer, context.HeapPool, buffers.SkeletalDataRegistry);
 		}
 	}
 
-	Mesh CreateSubMeshOnPrimary(SubMeshGatherBuffers buffers) {
+	Mesh CreateSubMeshOnPrimary(ModelLoadSubMeshData buffers) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		if (buffers.VertexData is not { } vertexData || buffers.TriangleData is not { } triangleData) {
 			throw new InvalidOperationException("Mesh vertex and/or triangle data was null (this is a bug in TinyFFR).");
 		}
 
-		var name = buffers.GatherBuffers.GetName(buffers.Name);
+		var name = buffers.SkeletalDataRegistry.GetName(buffers.Name);
 		var triangles = MemoryMarshal.Cast<byte, VertexTriangle>(triangleData.Span)[..buffers.TriangleCount];
 
 		if (!buffers.IsSkeletal) {
@@ -424,8 +418,8 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			_meshBuilder.AttachSkeletonToMesh(mesh, boneCount, skeletalNodes.Span[..buffers.NodeCount], buffers.OriginTranslation, buffers.LinearRescalingFactor);
 		}
 
-		AttachGatheredMeshAnimations(_meshBuilder, mesh, buffers.GatherBuffers);
-		ApplyGatheredNodeNames(_meshBuilder, mesh, buffers.GatherBuffers);
+		AttachGatheredMeshAnimations(_meshBuilder, mesh, buffers.SkeletalDataRegistry);
+		ApplyGatheredNodeNames(_meshBuilder, mesh, buffers.SkeletalDataRegistry);
 		return mesh;
 	}
 

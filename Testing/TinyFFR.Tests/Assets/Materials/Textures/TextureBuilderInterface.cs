@@ -443,22 +443,6 @@ unsafe class TextureBuilderInterfaceTest {
 		var realPatternC = TexturePattern.Lines<Real>(0.3f, 0.7f, horizontal: true, numRepeats: 3);
 		var realPatternD = TexturePattern.Lines<Real>(0.4f, 0.6f, horizontal: false, numRepeats: 3);
 
-		// == Generic pattern
-
-		{
-			var texelPattern = TexturePattern.Lines(new TexelRgb24(1, 2, 3), new TexelRgb24(4, 5, 6), horizontal: true, numRepeats: 2);
-			var dimensions = texelPattern.Dimensions;
-			var mirrorTexels = new TexelRgb24[dimensions.Area];
-			ITextureBuilder.PrintTexture(texelPattern, mirrorTexels);
-
-			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
-				Assert.AreEqual(dimensions, gc.Dimensions);
-				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
-				AssertConfigsEquivalent(ITextureBuilder.GetTextureCreationConfig(dimensions, isLinearColorspace: true, dimensions.Area != 1, "generic"), cc);
-			});
-			_tb.CreateTexture(texelPattern, isLinearColorspace: true, name: "generic");
-		}
-
 		// == Color map (both texel widths)
 
 		{
@@ -621,29 +605,5 @@ unsafe class TextureBuilderInterfaceTest {
 			});
 			_tb.CreateClearCoatMap(realPatternA, realPatternB, name: "clearcoat");
 		}
-	}
-
-	[Test]
-	public void ShouldCorrectlyPrepareTexelsForCreation() {
-		var dimensions = new XYPair<int>(2, 1);
-		var generationConfig = new TextureGenerationConfig { Dimensions = dimensions };
-		var creationConfig = ITextureBuilder.GetColorMapCreationConfig(dimensions, includeAlpha: true);
-
-		var prepared = new[] { new TexelRgba32(200, 100, 50, 128), new TexelRgba32(10, 20, 30, 255) };
-		var expected = prepared.ToArray();
-		TextureUtils.ProcessTexture(expected.AsSpan(), dimensions, creationConfig.ProcessingToApply);
-
-		ITextureBuilder.PrepareTexelsForCreation(prepared.AsSpan(), in generationConfig, in creationConfig);
-		Assert.That(prepared, Is.EqualTo(expected), "PrepareTexelsForCreation should apply the config's processing.");
-		Assert.AreNotEqual(new TexelRgba32(200, 100, 50, 128), prepared[0], "Premultiplication should have altered the first texel.");
-
-		Assert.Throws<ArgumentException>(() => {
-			var tooSmall = new TexelRgba32[1];
-			ITextureBuilder.PrepareTexelsForCreation(
-				tooSmall.AsSpan(),
-				new TextureGenerationConfig { Dimensions = new XYPair<int>(2, 1) },
-				ITextureBuilder.GetColorMapCreationConfig(new XYPair<int>(2, 1), includeAlpha: true)
-			);
-		}, "PrepareTexelsForCreation should reject a buffer smaller than the configured dimensions.");
 	}
 }

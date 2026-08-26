@@ -311,7 +311,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			throw new InvalidOperationException("Error occured when reading and/or loading skybox or IBL file.", e);
 		}
 
-		return context.GenerateResourceOnPrimary(&CompleteBackdropTextureCreation);
+		return context.GenerateResourceOnPrimaryAndWait(&CompleteBackdropTextureCreation);
 	}
 
 	static PooledHeapMemory<byte> ReadKtxFile(BackdropLoadContext context, string filePath) {

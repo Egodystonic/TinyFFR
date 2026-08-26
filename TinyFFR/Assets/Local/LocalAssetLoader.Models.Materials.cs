@@ -89,13 +89,13 @@ unsafe partial class LocalAssetLoader {
 		public readonly float GltfEmissiveStrengthScalar;
 		public readonly float EmissiveStrengthCap;
 		public readonly TextureCombinationScalingStrategy TextureCombinationStrategy;
-		public readonly PendingMaterialTextures Pending;
+		public readonly ModelLoadMaterialTextureRegistry TextureRegistry;
 		public readonly ThreadSafeHeapPoolWrapper HeapPool;
 
-		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, Span<char> subResourceNameBuffer, int matNameLength, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy, PendingMaterialTextures pending, ThreadSafeHeapPoolWrapper heapPool) {
+		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, Span<char> subResourceNameBuffer, int matNameLength, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy, ModelLoadMaterialTextureRegistry textureRegistry, ThreadSafeHeapPoolWrapper heapPool) {
 			AssetHandle = assetHandle;
 			MaterialIndex = materialIndex;
-			Pending = pending;
+			TextureRegistry = textureRegistry;
 			HeapPool = heapPool;
 			_subResourceNameBuffer = subResourceNameBuffer;
 			TexNameSuffix.CopyTo(_subResourceNameBuffer[matNameLength..]);
@@ -114,7 +114,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	readonly record struct GatheredMaterial(
+	readonly record struct GatheredMaterialData(
 		int ColorMapSlot,
 		int AbsorptionTransmissionMapSlot,
 		int NormalMapSlot,
@@ -127,7 +127,7 @@ unsafe partial class LocalAssetLoader {
 		NameSlice Name
 	);
 
-	sealed class PendingMaterialTextures : IDisposable {
+	sealed class ModelLoadMaterialTextureRegistry : IDisposable {
 		readonly ArrayPoolBackedVector<TextureCreationMetadata> _entries = new();
 		readonly ArrayPoolBackedVector<NameSlice> _names = new();
 		readonly ArrayPoolBackedVector<char> _nameChars = new();
@@ -155,7 +155,7 @@ unsafe partial class LocalAssetLoader {
 			texels[..dimensions.Area].CopyTo(destination);
 
 			var generationConfig = new TextureGenerationConfig { Dimensions = dimensions };
-			ITextureBuilder.PrepareTexelsForCreation(destination, in generationConfig, in config);
+			LocalTextureBuilder.CheckConfigValidityAndProcessTexture(destination, in generationConfig, in config);
 
 			metadata.Dimensions = dimensions;
 			metadata.IsRgba = TTexel.BlitType == TexelType.Rgba32;
@@ -380,7 +380,7 @@ unsafe partial class LocalAssetLoader {
 		const string TextureTypeName = "color";
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
-				return creationParams.Pending.Add(
+				return creationParams.TextureRegistry.Add(
 					new TexelRgba32(paramPtr->ToColorVect()),
 					creationParams.Config with {
 						Name = creationParams.CreateTextureName(TextureTypeName),
@@ -391,7 +391,7 @@ unsafe partial class LocalAssetLoader {
 			
 			case AssetMaterialParamDataFormat.TextureMap:
 				using (var embeddedTex = LoadAssetTexture(creationParams.AssetHandle, creationParams.MaterialIndex, paramPtr->TextureMapIndex, in creationParams.AssetRootDirStrRef, creationParams.UriUnescapeEmbeddedResourceStrings, creationParams.HeapPool)) {
-					return creationParams.Pending.Add(
+					return creationParams.TextureRegistry.Add(
 						embeddedTex.TexelSpan,
 						embeddedTex.Dimensions,
 						creationParams.Config with {
@@ -403,7 +403,7 @@ unsafe partial class LocalAssetLoader {
 				}
 				
 			default:
-				return creationParams.Pending.Add(
+				return creationParams.TextureRegistry.Add(
 					new TexelRgb24(ITextureBuilder.DefaultColor),
 					ITextureBuilder.GetColorMapCreationConfig(XYPair<int>.One, includeAlpha: false, creationParams.CreateTextureName(TextureTypeName)),
 					creationParams.HeapPool
@@ -425,7 +425,7 @@ unsafe partial class LocalAssetLoader {
 				creationParams.UriUnescapeEmbeddedResourceStrings,
 				creationParams.HeapPool
 			);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				embeddedTex.TexelSpan,
 				embeddedTex.Dimensions,
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false },
@@ -474,7 +474,7 @@ unsafe partial class LocalAssetLoader {
 				),
 				destinationBuffer.Span
 			);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				destinationBuffer.Span,
 				destDim,
 				creationParams.Config with {
@@ -494,7 +494,7 @@ unsafe partial class LocalAssetLoader {
 		const string TextureTypeName = "norm";
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
-				return creationParams.Pending.Add(
+				return creationParams.TextureRegistry.Add(
 					paramPtr->ToTexel().ToRgb24(),
 					creationParams.Config with {
 						Name = creationParams.CreateTextureName(TextureTypeName),
@@ -507,7 +507,7 @@ unsafe partial class LocalAssetLoader {
 				using (var embeddedTex = LoadAssetTexture(creationParams.AssetHandle, creationParams.MaterialIndex, paramPtr->TextureMapIndex, in creationParams.AssetRootDirStrRef, creationParams.UriUnescapeEmbeddedResourceStrings, creationParams.HeapPool)) {
 					using var rgbTexelBuffer = creationParams.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
 					TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
-					return creationParams.Pending.Add(
+					return creationParams.TextureRegistry.Add(
 						rgbTexelBuffer.Span,
 						embeddedTex.Dimensions,
 						creationParams.Config with {
@@ -553,7 +553,7 @@ unsafe partial class LocalAssetLoader {
 				creationParams.UriUnescapeEmbeddedResourceStrings,
 				creationParams.HeapPool
 			);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				embeddedTex.TexelSpan,
 				embeddedTex.Dimensions,
 				creationParams.Config with {
@@ -632,7 +632,7 @@ unsafe partial class LocalAssetLoader {
 					),
 					destinationBuffer.Span
 				);
-				return creationParams.Pending.Add(
+				return creationParams.TextureRegistry.Add(
 					destinationBuffer.Span,
 					destDim,
 					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName + "r"), IsLinearColorspace = true },
@@ -653,7 +653,7 @@ unsafe partial class LocalAssetLoader {
 					),
 					destinationBuffer.Span
 				);
-				return creationParams.Pending.Add(
+				return creationParams.TextureRegistry.Add(
 					destinationBuffer.Span,
 					destDim,
 					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
@@ -685,7 +685,7 @@ unsafe partial class LocalAssetLoader {
 			);
 			using var rgbTexelBuffer = creationParams.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
 			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				rgbTexelBuffer.Span,
 				embeddedTex.Dimensions,
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
@@ -735,7 +735,7 @@ unsafe partial class LocalAssetLoader {
 			);
 			// After combining the disparate textures we need to convert them from angle/strength to tangent-space vector + strength
 			IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(destinationBuffer.Span, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, ColorChannel.B);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				destinationBuffer.Span,
 				destDim,
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
@@ -778,7 +778,7 @@ unsafe partial class LocalAssetLoader {
 				creationParams.HeapPool
 			);
 			ScaleAndCapEmissiveIntensity(embeddedTex.TexelSpan, true, creationParams.GltfEmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				embeddedTex.TexelSpan,
 				embeddedTex.Dimensions,
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false },
@@ -836,7 +836,7 @@ unsafe partial class LocalAssetLoader {
 				),
 				destinationBuffer.Span
 			);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				destinationBuffer.Span,
 				destDim,
 				creationParams.Config with {
@@ -869,7 +869,7 @@ unsafe partial class LocalAssetLoader {
 			);
 			using var rgbTexelBuffer = creationParams.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
 			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				rgbTexelBuffer.Span,
 				embeddedTex.Dimensions,
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
@@ -917,7 +917,7 @@ unsafe partial class LocalAssetLoader {
 				),
 				destinationBuffer.Span
 			);
-			return creationParams.Pending.Add(
+			return creationParams.TextureRegistry.Add(
 				destinationBuffer.Span,
 				destDim,
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
@@ -930,7 +930,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	GatheredMaterial GatherAssetMaterial(UIntPtr assetHandle, int materialIndex, ReadOnlySpan<char> assetName, in TextureCreationConfig config, in ModelReadConfig readConfig, ref readonly byte assetRootDirStrRef, PendingMaterialTextures pending, ThreadSafeHeapPoolWrapper heapPool) {
+	GatheredMaterialData GatherAssetMaterial(UIntPtr assetHandle, int materialIndex, ReadOnlySpan<char> assetName, in TextureCreationConfig config, in ModelReadConfig readConfig, ref readonly byte assetRootDirStrRef, ModelLoadMaterialTextureRegistry textureRegistry, ThreadSafeHeapPoolWrapper heapPool) {
 		var matParamsBuffer = stackalloc AssetMaterialParam[15];
 		var matParams = new AssetMaterialParamGroup(
 			matParamsBuffer + 0,
@@ -963,7 +963,7 @@ unsafe partial class LocalAssetLoader {
 		SpanUtils.Concatenate(subResourceNameBuffer, assetName, MatNameSuffix);
 		_ = materialIndex.TryFormat(subResourceNameBuffer[matNamePlusSuffixConcatLength..], out var indexCharsCount, provider: CultureInfo.InvariantCulture);
 		var matName = subResourceNameBuffer[..(matNamePlusSuffixConcatLength + indexCharsCount)];
-		var matNameSlice = pending.AppendName(matName);
+		var matNameSlice = textureRegistry.AppendName(matName);
 
 		var assetMaterialCreationParams = new AssetMaterialCreationParameters(
 			assetHandle,
@@ -976,7 +976,7 @@ unsafe partial class LocalAssetLoader {
 			readConfig.GltfEmissiveStrengthScalar,
 			readConfig.EmissiveStrengthCap,
 			readConfig.EmbeddedTextureMapScalingStrategy,
-			pending,
+			textureRegistry,
 			heapPool
 		);
 		var colorMapSlot = GatherAssetColorMap(matParams.ColorParamsPtr, assetMaterialCreationParams);
@@ -987,7 +987,7 @@ unsafe partial class LocalAssetLoader {
 		var emissiveMapSlot = GatherAssetEmissiveMap(matParams.EmissiveColorParamsPtr, matParams.EmissiveIntensityParamsPtr, assetMaterialCreationParams);
 		var clearCoatMapSlot = atMapSlot >= 0 ? -1 : GatherAssetClearCoatMap(matParams.ClearCoatStrengthParamsPtr, matParams.ClearCoatRoughnessParamsPtr, assetMaterialCreationParams);
 
-		return new GatheredMaterial(
+		return new GatheredMaterialData(
 			colorMapSlot,
 			atMapSlot,
 			normalMapSlot,
@@ -1001,7 +1001,7 @@ unsafe partial class LocalAssetLoader {
 		);
 	}
 
-	Material MaterializeAssetMaterial(in GatheredMaterial gathered, PendingMaterialTextures pending, ResourceGroup assetResources) {
+	Material MaterializeAssetMaterial(in GatheredMaterialData gathered, ModelLoadMaterialTextureRegistry pending, ResourceGroup assetResources) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		var colorMap = pending.Materialize(this, gathered.ColorMapSlot);

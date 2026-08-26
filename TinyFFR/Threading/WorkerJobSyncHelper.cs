@@ -21,7 +21,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 		readonly byte[] _generatedResourceData = new byte[IResource.SerializedLengthBytes];
 		Exception? _dispatchException = null;
 		void* _dispatchWorkPtr = null;
-		public TResource GenerateResourceOnPrimary<TResource>(delegate* managed<TContext, TResource> work) where TResource : IResource<TResource> {
+		public TResource GenerateResourceOnPrimaryAndWait<TResource>(delegate* managed<TContext, TResource> work) where TResource : IResource<TResource> {
 			Array.Clear(_generatedResourceData);
 			_dispatchException = null;
 			_dispatchWorkPtr = work;
@@ -43,7 +43,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 			return TResource.CreateFromSerializedAndFreeAllocatedGcHandle(_generatedResourceData);
 		}
 		
-		public void DispatchOnPrimary(delegate* managed<TContext, void> work) {
+		public void DispatchOnPrimaryAndWait(delegate* managed<TContext, void> work) {
 			_dispatchException = null;
 			_dispatchWorkPtr = work;
 			

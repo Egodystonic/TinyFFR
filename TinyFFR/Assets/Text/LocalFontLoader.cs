@@ -433,7 +433,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				return ctx.Self.HandleToInstance(handle);
 			}
 			
-			return context.GenerateResourceOnPrimary(&Complete);
+			return context.GenerateResourceOnPrimaryAndWait(&Complete);
 		}
 		finally {
 			ttfFixedFileDataHandle?.Free();

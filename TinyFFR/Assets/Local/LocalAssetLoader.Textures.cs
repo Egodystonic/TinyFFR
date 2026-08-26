@@ -219,7 +219,7 @@ unsafe partial class LocalAssetLoader {
 			throw new InvalidOperationException("No file path or built-in source set in context (this is a bug in TinyFFR).");
 		}
 
-		return context.GenerateResourceOnPrimary(&CompleteTextureLoad);
+		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}
 
 	static void LoadBuiltInTextureCore(TextureLoadContext context, bool forceAlpha, in TextureProcessingConfig processingConfig) {
@@ -725,7 +725,7 @@ unsafe partial class LocalAssetLoader {
 			TextureUtils.ProcessTexture(destSpan, destDimensions, creationConfig.ProcessingToApply);
 		}
 
-		return context.GenerateResourceOnPrimary(&CompleteTextureLoad);
+		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}
 
 	static void CombineSourcesOnWorker<TTexel>(CombinedTextureLoadContext context, in TextureCombinedLoadConfig config, TextureReadMetadata aMetadata, TextureReadMetadata bMetadata, TextureReadMetadata cMetadata, TextureReadMetadata dMetadata, Span<TTexel> destinationBuffer) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32> {

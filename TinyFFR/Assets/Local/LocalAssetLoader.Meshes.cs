@@ -222,7 +222,7 @@ unsafe partial class LocalAssetLoader {
 			UnloadAssetFileFromMemory(context.AssetHandle).ThrowIfFailure();
 			context.AssetHandle = UIntPtr.Zero;
 
-			return context.GenerateResourceOnPrimary(&CompleteMeshLoad);
+			return context.GenerateResourceOnPrimaryAndWait(&CompleteMeshLoad);
 		}
 		catch (Exception e) {
 			if (!File.Exists(new String(filePath.Span))) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
