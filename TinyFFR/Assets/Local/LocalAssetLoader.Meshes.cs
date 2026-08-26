@@ -77,10 +77,8 @@ unsafe partial class LocalAssetLoader {
 	}
 
 	readonly LocalMeshBuilder _meshBuilder;
-	readonly InteropStringBuffer _animationAndNodeNameBuffer;
 	readonly int _maxAnimationAndNodeNameLengthChars;
 	readonly WorkerJobSyncHelper<LocalAssetLoader, MeshLoadContext, MeshLoadConfig> _meshLoadWorkerSyncHelper;
-	readonly MeshSkeletalGatherBuffers _primaryThreadGatherBuffers = new();
 
 	#region Creation
 	sealed class MeshLoadContext : WorkerJobSyncHelper<LocalAssetLoader, MeshLoadContext, MeshLoadConfig>.WorkerJobSyncHelperContext {
@@ -551,7 +549,7 @@ unsafe partial class LocalAssetLoader {
 	#endregion
 
 	#region Skeletal Gather / Apply
-	static void GatherNodeNames(ReadOnlySpan<NodeHandle> nodeHandles, int maxNodeNameLength, InteropStringBuffer nameBuffer, IHeapPool heapPool, MeshSkeletalGatherBuffers destination) {
+	static void GatherNodeNames(ReadOnlySpan<NodeHandle> nodeHandles, int maxNodeNameLength, InteropStringBuffer nameBuffer, ThreadSafeHeapPoolWrapper heapPool, MeshSkeletalGatherBuffers destination) {
 		const string FallbackNodeNamePrefix = "node_";
 		Span<char> stackNameBuffer = stackalloc char[MaxNameLengthForStackAlloc];
 
@@ -595,7 +593,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 
-	static void GatherMeshAnimations(UIntPtr assetHandle, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, float? animTicksPerSecOverride, InteropStringBuffer nameBuffer, IHeapPool heapPool, MeshSkeletalGatherBuffers destination) {
+	static void GatherMeshAnimations(UIntPtr assetHandle, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, float? animTicksPerSecOverride, InteropStringBuffer nameBuffer, ThreadSafeHeapPoolWrapper heapPool, MeshSkeletalGatherBuffers destination) {
 		GetLoadedAssetMeshSkeletalAnimationCount(
 			assetHandle,
 			out var animationCount

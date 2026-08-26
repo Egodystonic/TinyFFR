@@ -102,3 +102,34 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 		SerializationDisposeSubConfig<TextureCreationConfig>(ref src);
 	}
 }
+
+readonly ref struct ModelLoadConfig : IConfigStruct<ModelLoadConfig> {
+	public ModelCreationConfig CreationConfig { get; init; } = new();
+	public ModelReadConfig ReadConfig { get; init; } = new();
+
+	public ModelLoadConfig() { }
+
+	internal void ThrowIfInvalid() {
+		CreationConfig.ThrowIfInvalid();
+		ReadConfig.ThrowIfInvalid();
+	}
+
+	public static int GetHeapStorageFormattedLength(in ModelLoadConfig src) {
+		return	SerializationSizeOfSubConfig(src.CreationConfig) // CreationConfig
+			+	SerializationSizeOfSubConfig(src.ReadConfig); // ReadConfig
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelLoadConfig src) {
+		SerializationWriteSubConfig(ref dest, src.CreationConfig);
+		SerializationWriteSubConfig(ref dest, src.ReadConfig);
+	}
+	public static ModelLoadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new ModelLoadConfig {
+			CreationConfig = SerializationReadSubConfig<ModelCreationConfig>(ref src),
+			ReadConfig = SerializationReadSubConfig<ModelReadConfig>(ref src)
+		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		SerializationDisposeSubConfig<ModelCreationConfig>(ref src);
+		SerializationDisposeSubConfig<ModelReadConfig>(ref src);
+	}
+}

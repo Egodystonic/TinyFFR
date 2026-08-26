@@ -39,19 +39,10 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	// Maintainer's note: The buffer is disposed on the native side when it's asynchronously loaded on to the GPU
 	Texture ITextureBuilder.CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) => CreateTextureAndDisposePreallocatedBuffer(preallocatedBuffer, in generationConfig, in config);
 	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		generationConfig.ThrowIfInvalid();
-		config.ThrowIfInvalid();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		if (preallocatedBuffer.Span.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(ITextureBuilder.PreallocatedBuffer<TTexel>));
-		if (generationConfig.Dimensions.Area > preallocatedBuffer.Span.Length) {
-			throw new ArgumentException(
-				$"Given config width/height require a buffer of {generationConfig.Dimensions.X}x{generationConfig.Dimensions.Y}={generationConfig.Dimensions.Area} texels, " +
-				$"but supplied texel buffer only has {preallocatedBuffer.Span.Length} texels.",
-				nameof(config)
-			);
-		}
-		TextureUtils.ProcessTexture(preallocatedBuffer.Span, generationConfig.Dimensions, config.ProcessingToApply);
+		ITextureBuilder.PrepareTexelsForCreation(preallocatedBuffer.Span, in generationConfig, in config);
 
 		return CreateTextureAndDisposePreallocatedBuffer(
 			preallocatedBuffer,

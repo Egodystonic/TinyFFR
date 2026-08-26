@@ -425,4 +425,225 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateClearCoatMap(0.1f, 0.5f, name: "abc");
 	}
+
+	void AssertConfigsEquivalent(in TextureCreationConfig expected, in TextureCreationConfig actual) {
+		Assert.AreEqual(expected.GenerateMipMaps, actual.GenerateMipMaps, "GenerateMipMaps differed between the mirror config and the one the create method used.");
+		Assert.AreEqual(expected.IsLinearColorspace, actual.IsLinearColorspace, "IsLinearColorspace differed between the mirror config and the one the create method used.");
+		Assert.AreEqual(expected.AllowsDynamicWrites, actual.AllowsDynamicWrites, "AllowsDynamicWrites differed between the mirror config and the one the create method used.");
+		Assert.AreEqual(expected.RenderingConfig, actual.RenderingConfig, "RenderingConfig differed between the mirror config and the one the create method used.");
+		Assert.AreEqual(expected.ProcessingToApply, actual.ProcessingToApply, "ProcessingToApply differed between the mirror config and the one the create method used.");
+		Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString(), "Name differed between the mirror config and the one the create method used.");
+	}
+
+	[Test]
+	public void ShouldProduceIdenticalTexelsAndConfigViaPrintMirrors() {
+		var colorPattern = TexturePattern.Lines(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), new ColorVect(0.5f, 0.6f, 0.7f, 0.8f), horizontal: true, numRepeats: 2);
+		var realPatternA = TexturePattern.Lines<Real>(0.1f, 0.9f, horizontal: true, numRepeats: 2);
+		var realPatternB = TexturePattern.Lines<Real>(0.2f, 0.8f, horizontal: false, numRepeats: 2);
+		var realPatternC = TexturePattern.Lines<Real>(0.3f, 0.7f, horizontal: true, numRepeats: 3);
+		var realPatternD = TexturePattern.Lines<Real>(0.4f, 0.6f, horizontal: false, numRepeats: 3);
+
+		// == Generic pattern
+
+		{
+			var texelPattern = TexturePattern.Lines(new TexelRgb24(1, 2, 3), new TexelRgb24(4, 5, 6), horizontal: true, numRepeats: 2);
+			var dimensions = texelPattern.Dimensions;
+			var mirrorTexels = new TexelRgb24[dimensions.Area];
+			ITextureBuilder.PrintTexture(texelPattern, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetTextureCreationConfig(dimensions, isLinearColorspace: true, dimensions.Area != 1, "generic"), cc);
+			});
+			_tb.CreateTexture(texelPattern, isLinearColorspace: true, name: "generic");
+		}
+
+		// == Color map (both texel widths)
+
+		{
+			var dimensions = colorPattern.Dimensions;
+			var mirrorTexels = new TexelRgba32[dimensions.Area];
+			ITextureBuilder.PrintColorMap(colorPattern, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgba32>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetColorMapCreationConfig(dimensions, includeAlpha: true, "color"), cc);
+			});
+			_tb.CreateColorMap(colorPattern, includeAlpha: true, name: "color");
+		}
+
+		{
+			var dimensions = colorPattern.Dimensions;
+			var mirrorTexels = new TexelRgb24[dimensions.Area];
+			ITextureBuilder.PrintColorMap(colorPattern, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetColorMapCreationConfig(dimensions, includeAlpha: false, "color"), cc);
+			});
+			_tb.CreateColorMap(colorPattern, includeAlpha: false, name: "color");
+		}
+
+		// == Canvas texture (both texel widths)
+
+		{
+			var dimensions = colorPattern.Dimensions;
+			var mirrorTexels = new TexelRgba32[dimensions.Area];
+			ITextureBuilder.PrintCanvasTexture(colorPattern, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgba32>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetCanvasTextureCreationConfig(dimensions, includeAlpha: true, "canvas"), cc);
+			});
+			_tb.CreateCanvasTexture(colorPattern, includeAlpha: true, name: "canvas");
+		}
+
+		{
+			var dimensions = colorPattern.Dimensions;
+			var mirrorTexels = new TexelRgb24[dimensions.Area];
+			ITextureBuilder.PrintCanvasTexture(colorPattern, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetCanvasTextureCreationConfig(dimensions, includeAlpha: false, "canvas"), cc);
+			});
+			_tb.CreateCanvasTexture(colorPattern, includeAlpha: false, name: "canvas");
+		}
+
+		// == Normal map
+
+		{
+			var normalPattern = TexturePattern.Lines(SphericalTranslation.ZeroZero, new SphericalTranslation(Orientation2D.Right.ToPolarAngle()!.Value, 45f), horizontal: true, numRepeats: 2);
+			var dimensions = normalPattern.Dimensions;
+			var mirrorTexels = new TexelRgb24[dimensions.Area];
+			ITextureBuilder.PrintNormalMap(normalPattern, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetNormalMapCreationConfig(dimensions, "normal"), cc);
+			});
+			_tb.CreateNormalMap(normalPattern, name: "normal");
+		}
+
+		// == Orm map
+
+		{
+			var dimensions = TexturePatternPrinter.GetCompositePatternDimensions(realPatternA, realPatternB, realPatternC);
+			var mirrorTexels = new TexelRgb24[dimensions.Area];
+			ITextureBuilder.PrintOcclusionRoughnessMetallicMap(realPatternA, realPatternB, realPatternC, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetOcclusionRoughnessMetallicMapCreationConfig(dimensions, "orm"), cc);
+			});
+			_tb.CreateOcclusionRoughnessMetallicMap(realPatternA, realPatternB, realPatternC, name: "orm");
+		}
+
+		// == Ormr map
+
+		{
+			var dimensions = TexturePatternPrinter.GetCompositePatternDimensions(realPatternA, realPatternB, realPatternC, realPatternD);
+			var mirrorTexels = new TexelRgba32[dimensions.Area];
+			ITextureBuilder.PrintOcclusionRoughnessMetallicReflectanceMap(realPatternA, realPatternB, realPatternC, realPatternD, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgba32>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetOcclusionRoughnessMetallicReflectanceMapCreationConfig(dimensions, "ormr"), cc);
+			});
+			_tb.CreateOcclusionRoughnessMetallicReflectanceMap(realPatternA, realPatternB, realPatternC, realPatternD, name: "ormr");
+		}
+
+		// == Absorption/transmission map
+
+		{
+			var dimensions = TexturePatternPrinter.GetCompositePatternDimensions(colorPattern, realPatternA);
+			var mirrorTexels = new TexelRgba32[dimensions.Area];
+			ITextureBuilder.PrintAbsorptionTransmissionMap(colorPattern, realPatternA, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgba32>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetAbsorptionTransmissionMapCreationConfig(dimensions, "at"), cc);
+			});
+			_tb.CreateAbsorptionTransmissionMap(colorPattern, realPatternA, name: "at");
+		}
+
+		// == Emissive map
+
+		{
+			var dimensions = TexturePatternPrinter.GetCompositePatternDimensions(colorPattern, realPatternA);
+			var mirrorTexels = new TexelRgba32[dimensions.Area];
+			ITextureBuilder.PrintEmissiveMap(colorPattern, realPatternA, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgba32>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetEmissiveMapCreationConfig(dimensions, "emissive"), cc);
+			});
+			_tb.CreateEmissiveMap(colorPattern, realPatternA, name: "emissive");
+		}
+
+		// == Anisotropy map
+
+		{
+			var anglePattern = TexturePattern.Lines<Angle>(0f, 90f, horizontal: true, numRepeats: 2);
+			var dimensions = TexturePatternPrinter.GetCompositePatternDimensions(anglePattern, realPatternA);
+			var mirrorTexels = new TexelRgb24[dimensions.Area];
+			ITextureBuilder.PrintAnisotropyMap(anglePattern, realPatternA, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetAnisotropyMapCreationConfig(dimensions, "aniso"), cc);
+			});
+			_tb.CreateAnisotropyMap(anglePattern, realPatternA, name: "aniso");
+		}
+
+		// == ClearCoat map
+
+		{
+			var dimensions = TexturePatternPrinter.GetCompositePatternDimensions(realPatternA, realPatternB);
+			var mirrorTexels = new TexelRgb24[dimensions.Area];
+			ITextureBuilder.PrintClearCoatMap(realPatternA, realPatternB, mirrorTexels);
+
+			AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
+				Assert.AreEqual(dimensions, gc.Dimensions);
+				Assert.That(texels.ToArray(), Is.EqualTo(mirrorTexels));
+				AssertConfigsEquivalent(ITextureBuilder.GetClearCoatMapCreationConfig(dimensions, "clearcoat"), cc);
+			});
+			_tb.CreateClearCoatMap(realPatternA, realPatternB, name: "clearcoat");
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyPrepareTexelsForCreation() {
+		var dimensions = new XYPair<int>(2, 1);
+		var generationConfig = new TextureGenerationConfig { Dimensions = dimensions };
+		var creationConfig = ITextureBuilder.GetColorMapCreationConfig(dimensions, includeAlpha: true);
+
+		var prepared = new[] { new TexelRgba32(200, 100, 50, 128), new TexelRgba32(10, 20, 30, 255) };
+		var expected = prepared.ToArray();
+		TextureUtils.ProcessTexture(expected.AsSpan(), dimensions, creationConfig.ProcessingToApply);
+
+		ITextureBuilder.PrepareTexelsForCreation(prepared.AsSpan(), in generationConfig, in creationConfig);
+		Assert.That(prepared, Is.EqualTo(expected), "PrepareTexelsForCreation should apply the config's processing.");
+		Assert.AreNotEqual(new TexelRgba32(200, 100, 50, 128), prepared[0], "Premultiplication should have altered the first texel.");
+
+		Assert.Throws<ArgumentException>(() => {
+			var tooSmall = new TexelRgba32[1];
+			ITextureBuilder.PrepareTexelsForCreation(
+				tooSmall.AsSpan(),
+				new TextureGenerationConfig { Dimensions = new XYPair<int>(2, 1) },
+				ITextureBuilder.GetColorMapCreationConfig(new XYPair<int>(2, 1), includeAlpha: true)
+			);
+		}, "PrepareTexelsForCreation should reject a buffer smaller than the configured dimensions.");
+	}
 }

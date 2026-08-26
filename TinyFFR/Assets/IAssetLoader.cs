@@ -256,5 +256,16 @@ public partial interface IAssetLoader {
 	}
 	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadAll(filePath, in config, new ModelReadConfig());
 	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
+
+	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadAllAsync(
+			filePath,
+			new ModelCreationConfig {
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadAllAsync(filePath, in config, new ModelReadConfig());
+	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
 	#endregion
 }

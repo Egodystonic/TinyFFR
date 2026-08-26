@@ -4,6 +4,7 @@ using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.Threading;
 using static Egodystonic.TinyFFR.Assets.Materials.TextureCombinationSourceTexture;
@@ -12,7 +13,7 @@ using static Egodystonic.TinyFFR.ColorChannel;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalAsyncLoadingTest {
+unsafe class LocalAsyncLoadingTest {
 	static readonly TimeSpan AsyncTimeout = TimeSpan.FromSeconds(60d);
 
 	static string CrateColorFile => CommonTestAssets.FindAsset("ELCrate.png");
@@ -22,6 +23,8 @@ class LocalAsyncLoadingTest {
 	static string CrateFile => CommonTestAssets.FindAsset("ELCrate.obj");
 	static string RiggedFile => CommonTestAssets.FindAsset("models/RiggedSimple.glb");
 	static string CesiumManFile => CommonTestAssets.FindAsset("models/CesiumMan.glb");
+	static string HelmetFile => CommonTestAssets.FindAsset("models/DamagedHelmet.glb");
+	static string CarConceptFile => CommonTestAssets.FindAsset("models/showcase_CarConcept.glb");
 
 	static T AwaitLoad<T>(TinyFfrAsyncOperation<T> op) {
 		Assert.IsTrue(op.WaitForCompletion(AsyncTimeout), "Async load timed out.");
@@ -58,6 +61,10 @@ class LocalAsyncLoadingTest {
 		ConcurrentAsyncMeshLoadsShouldAllSucceed();
 		RepeatedLoadsShouldNotLeakOrCorrupt();
 		LoadAllShouldStillWorkAfterModelsRework();
+		SyncAndAsyncShouldProduceEquivalentModelGroups();
+		AssetMapSlotsShouldBeWiredToTheCorrectMapTypes();
+		ConcurrentAsyncModelLoadsShouldAllSucceed();
+		FailedModelLoadShouldNotLeakPartialResources();
 		ReadMeshShouldStillPopulateCallerBuffers();
 	}
 
@@ -357,6 +364,140 @@ class LocalAsyncLoadingTest {
 			Assert.Greater(group.Meshes.Count, 0, $"{file}: LoadAll produced no meshes.");
 			Assert.Greater(group.Materials.Count, 0, $"{file}: LoadAll produced no materials.");
 		}
+	}
+
+	static void AssertGroupsEquivalent(ResourceGroup expected, ResourceGroup actual, string label) {
+		Assert.AreEqual(expected.Meshes.Count, actual.Meshes.Count, $"{label}: mesh count differs.");
+		Assert.AreEqual(expected.Materials.Count, actual.Materials.Count, $"{label}: material count differs.");
+		Assert.AreEqual(expected.Textures.Count, actual.Textures.Count, $"{label}: texture count differs.");
+		Assert.AreEqual(expected.Models.Count, actual.Models.Count, $"{label}: model count differs.");
+		Assert.AreEqual(expected.ResourceCount, actual.ResourceCount, $"{label}: total resource count differs.");
+
+		for (var i = 0; i < expected.Meshes.Count; ++i) {
+			Assert.AreEqual(expected.Meshes[i].BoundingBox, actual.Meshes[i].BoundingBox, $"{label}: mesh {i} bounding box differs.");
+			Assert.AreEqual(expected.Meshes[i].GetNameAsNewStringObject(), actual.Meshes[i].GetNameAsNewStringObject(), $"{label}: mesh {i} name differs.");
+			Assert.AreEqual(expected.Meshes[i].Animations.Count(), actual.Meshes[i].Animations.Count(), $"{label}: mesh {i} animation count differs.");
+			Assert.AreEqual(expected.Meshes[i].Skeleton.Nodes.Count(), actual.Meshes[i].Skeleton.Nodes.Count(), $"{label}: mesh {i} skeleton node count differs.");
+		}
+		for (var i = 0; i < expected.Textures.Count; ++i) {
+			AssertTexturesEquivalent(expected.Textures[i], actual.Textures[i], $"{label} texture {i}");
+		}
+	}
+
+	void SyncAndAsyncShouldProduceEquivalentModelGroups() {
+		using var factory = new LocalTinyFfrFactory();
+		var loader = factory.AssetLoader;
+
+		foreach (var file in new[] { CesiumManFile, HelmetFile, CarConceptFile }) {
+			var label = Path.GetFileName(file);
+			using var syncGroup = loader.LoadAll(file, "grp");
+			using var asyncGroup = AwaitLoad(loader.LoadAllAsync(file, "grp"));
+
+			Assert.Greater(syncGroup.Meshes.Count, 0, $"{label}: LoadAll produced no meshes.");
+			Assert.Greater(syncGroup.Materials.Count, 0, $"{label}: LoadAll produced no materials.");
+			Console.WriteLine($"  {label}: {syncGroup.Meshes.Count} meshes / {syncGroup.Materials.Count} materials / {syncGroup.Textures.Count} textures / {syncGroup.Models.Count} models");
+
+			AssertGroupsEquivalent(syncGroup, asyncGroup, label);
+		}
+	}
+
+	void AssetMapSlotsShouldBeWiredToTheCorrectMapTypes() {
+		using var factory = new LocalTinyFfrFactory();
+		var loader = factory.AssetLoader;
+
+		static void AssertMapTypes(ResourceGroup group, string label, params string[] expectedSuffixes) {
+			var actual = group.Textures.Select(t => t.GetNameAsNewStringObject()).ToArray();
+			Assert.AreEqual(expectedSuffixes.Length, actual.Length, $"{label}: expected {expectedSuffixes.Length} textures but got {actual.Length} ({String.Join(", ", actual)}).");
+			for (var i = 0; i < expectedSuffixes.Length; ++i) {
+				Assert.IsTrue(
+					actual[i].EndsWith(expectedSuffixes[i], StringComparison.Ordinal),
+					$"{label}: texture {i} is '{actual[i]}' but should be a '{expectedSuffixes[i]}' map. Full set: {String.Join(", ", actual)}"
+				);
+			}
+			Console.WriteLine($"  {label}: {String.Join(", ", actual)}");
+		}
+
+		using (var cesiumGroup = loader.LoadAll(CesiumManFile, "grp")) {
+			AssertMapTypes(cesiumGroup, "CesiumMan", "texture map_color", "texture map_orm");
+		}
+		using (var helmetGroup = AwaitLoad(loader.LoadAllAsync(HelmetFile, "grp"))) {
+			AssertMapTypes(helmetGroup, "DamagedHelmet", "texture map_color", "texture map_norm", "texture map_orm", "texture map_emissive");
+		}
+	}
+
+	void ConcurrentAsyncModelLoadsShouldAllSucceed() {
+		using var factory = new LocalTinyFfrFactory();
+		var loader = factory.AssetLoader;
+
+		var expectedMeshCounts = new List<int>();
+		foreach (var file in new[] { CesiumManFile, HelmetFile, CarConceptFile }) {
+			using var syncGroup = loader.LoadAll(file, "expected");
+			expectedMeshCounts.Add(syncGroup.Meshes.Count);
+		}
+
+		var operations = new[] {
+			loader.LoadAllAsync(CesiumManFile, "concurrent0"),
+			loader.LoadAllAsync(HelmetFile, "concurrent1"),
+			loader.LoadAllAsync(CarConceptFile, "concurrent2")
+		};
+
+		var groups = operations.Select(AwaitLoad).ToArray();
+		try {
+			for (var i = 0; i < groups.Length; ++i) {
+				Assert.AreEqual(expectedMeshCounts[i], groups[i].Meshes.Count, $"Concurrent load {i} produced a different mesh count.");
+			}
+			Console.WriteLine($"  3 concurrent LoadAllAsync operations produced mesh counts {String.Join(", ", groups.Select(g => g.Meshes.Count))}");
+		}
+		finally {
+			foreach (var group in groups) group.Dispose();
+		}
+	}
+
+	static int _postProcessInvocationsBeforeFailure;
+
+	static void ThrowAfterFirstInvocation(Span<TexelRgba32> texels, object? argument) {
+		if (_postProcessInvocationsBeforeFailure-- <= 0) throw new InvalidOperationException("Deliberate failure raised by the test's post-processing hook.");
+	}
+
+	void FailedModelLoadShouldNotLeakPartialResources() {
+		using var factory = new LocalTinyFfrFactory();
+		var loader = factory.AssetLoader;
+		var directory = factory.ResourceDirectory;
+
+		var baselineMeshes = directory.GetAllActiveInstances<Mesh>().Count;
+		var baselineTextures = directory.GetAllActiveInstances<Texture>().Count;
+		var baselineMaterials = directory.GetAllActiveInstances<Material>().Count;
+		var baselineModels = directory.GetAllActiveInstances<Model>().Count;
+
+		for (var allowedInvocations = 0; allowedInvocations < 4; ++allowedInvocations) {
+			_postProcessInvocationsBeforeFailure = allowedInvocations;
+
+			Assert.Catch(() => {
+				using var _ = loader.LoadAll(
+					CarConceptFile,
+					new ModelCreationConfig {
+						Name = "doomed",
+						TextureConfig = new TextureCreationConfig {
+							IsLinearColorspace = true,
+							ProcessingToApply = new TextureProcessingConfig {
+								PostProcessingFunction = TexelProcessingFunction.Create<TexelRgba32>(&ThrowAfterFirstInvocation)
+							}
+						}
+					}
+				);
+			}, $"Expected the deliberate post-processing failure to propagate (allowedInvocations={allowedInvocations}).");
+
+			Assert.AreEqual(baselineMeshes, directory.GetAllActiveInstances<Mesh>().Count, $"A failed load leaked meshes (allowedInvocations={allowedInvocations}).");
+			Assert.AreEqual(baselineTextures, directory.GetAllActiveInstances<Texture>().Count, $"A failed load leaked textures (allowedInvocations={allowedInvocations}).");
+			Assert.AreEqual(baselineMaterials, directory.GetAllActiveInstances<Material>().Count, $"A failed load leaked materials (allowedInvocations={allowedInvocations}).");
+			Assert.AreEqual(baselineModels, directory.GetAllActiveInstances<Model>().Count, $"A failed load leaked models (allowedInvocations={allowedInvocations}).");
+		}
+
+		Console.WriteLine("  4 deliberately-failed loads left no orphaned meshes, textures, materials or models");
+
+		using var recoveryGroup = loader.LoadAll(CarConceptFile, "recovered");
+		Assert.Greater(recoveryGroup.Meshes.Count, 0, "The loader did not recover after a failed load.");
+		Console.WriteLine($"  a subsequent load still produced {recoveryGroup.Meshes.Count} meshes");
 	}
 
 	void ReadMeshShouldStillPopulateCallerBuffers() {

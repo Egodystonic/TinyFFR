@@ -42,7 +42,6 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_fontLoader = new LocalFontLoader(globals, config, _meshBuilder, _textureBuilder, _materialBuilder);
 		var maxAssetFilePathLengthChars = config.MaxAssetFilePathLengthChars;
 		_assetFilePathBufferStore = new(() => new InteropStringBuffer(maxAssetFilePathLengthChars, addOneForNullTerminator: true), trackAllValues: true);
-		_animationAndNodeNameBuffer = new InteropStringBuffer(config.MaxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
 		_maxAnimationAndNodeNameLengthChars = config.MaxAnimationAndNodeNameLengthChars;
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
 		_backdropTextureImplProvider = new LocalBackdropTextureImplProvider(this);
@@ -50,6 +49,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_meshLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 		_textureLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 		_combinedTextureLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
+		_modelLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 
 		if (OperatingSystem.IsWindows()) {
 			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameWin);
@@ -85,8 +85,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 			_meshLoadWorkerSyncHelper.Dispose();
 			_textureLoadWorkerSyncHelper.Dispose();
 			_combinedTextureLoadWorkerSyncHelper.Dispose();
-			_primaryThreadGatherBuffers.Dispose();
-			_animationAndNodeNameBuffer.Dispose();
+			_modelLoadWorkerSyncHelper.Dispose();
 			foreach (var pathBuffer in _assetFilePathBufferStore.Values) pathBuffer.Dispose();
 			_assetFilePathBufferStore.Dispose();
 			_fontLoader.Dispose();
