@@ -140,6 +140,10 @@ unsafe partial class LocalAssetLoader {
 			HeapPool = null!;
 			Self = null!;
 		}
+
+		public override void Dispose() {
+			GatherBuffers.Dispose();
+		}
 	}
 
 	public Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {

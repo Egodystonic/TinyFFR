@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Threading;
 
 sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable where TContext : WorkerJobSyncHelper<TSelf, TContext, TConfig>.WorkerJobSyncHelperContext, new() where TConfig : struct, IConfigStruct<TConfig>, allows ref struct {
-	public abstract class WorkerJobSyncHelperContext {
+	public abstract class WorkerJobSyncHelperContext : IDisposable {
 		public TSelf Self { get; set; } = default!;
 		public IPrimaryThreadDispatcher PrimaryThreadDispatcher { get; set; } = null!;
 		public ThreadSafeHeapPoolWrapper HeapPool { get; set; } = null!;
@@ -17,11 +17,13 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 		public PooledHeapMemory<char>? HeapPoolName { get; set; } = null;
 		public ReadOnlySpan<char> Name => HeapPoolName.HasValue ? HeapPoolName.Value.Span : default;
 		public abstract void TearDown();
+
+		public abstract void Dispose();
 		
 		readonly byte[] _generatedResourceData = new byte[IResource.SerializedLengthBytes];
 		Exception? _dispatchException = null;
 		void* _dispatchWorkPtr = null;
-		public TResource GenerateResourceOnPrimary<TResource>(delegate* managed<TContext, TResource> work) where TResource : IResource<TResource> {
+		public TResource GenerateResourceOnPrimaryAndWait<TResource>(delegate* managed<TContext, TResource> work) where TResource : IResource<TResource> {
 			Array.Clear(_generatedResourceData);
 			_dispatchException = null;
 			_dispatchWorkPtr = work;
@@ -82,10 +84,17 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 		}
 	}
 	
-	public sealed class WorkerJobSyncContextWrapper {
+	public sealed class WorkerJobSyncContextWrapper : IDisposable {
 		public TContext Context { get; }
-		WorkerJobSyncHelper<TSelf, TContext, TConfig> OwningHelper { get; } 
+		WorkerJobSyncHelper<TSelf, TContext, TConfig> OwningHelper { get; }
 		void* WorkPtr { get; set; } = null;
+		bool _isDisposed = false;
+
+		public void Dispose() {
+			if (_isDisposed) return;
+			_isDisposed = true;
+			Context.Dispose();
+		}
 
 		public WorkerJobSyncContextWrapper(TContext context, WorkerJobSyncHelper<TSelf, TContext, TConfig> owningHelper) {
 			Context = context;

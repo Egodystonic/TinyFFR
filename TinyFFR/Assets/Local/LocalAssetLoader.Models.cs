@@ -127,6 +127,11 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			HeapPool = null!;
 			Self = null!;
 		}
+
+		public override void Dispose() {
+			CurrentSubMeshData.Dispose();
+			AssetIndexToMaterialMap.Dispose();
+		}
 	}
 
 	public ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {

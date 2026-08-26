@@ -97,6 +97,8 @@ unsafe partial class LocalAssetLoader {
 			HeapPool = null!;
 			Self = null!;
 		}
+		
+		public override void Dispose() { /* no-op */ }
 	}
 
 	sealed unsafe class CombinedTextureLoadContext : WorkerJobSyncHelper<LocalAssetLoader, CombinedTextureLoadContext, TextureCombinedLoadConfig>.WorkerJobSyncHelperContext {
@@ -131,6 +133,8 @@ unsafe partial class LocalAssetLoader {
 			HeapPool = null!;
 			Self = null!;
 		}
+		
+		public override void Dispose() { /* no-op */ }
 	}
 
 	void SetUpTextureLoadContext(TextureLoadContext context, ReadOnlySpan<char> filePath, ReadOnlySpan<char> name) {

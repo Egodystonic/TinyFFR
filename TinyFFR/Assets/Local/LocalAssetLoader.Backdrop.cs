@@ -83,6 +83,8 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			HeapPool = null!;
 			Self = null!;
 		}
+		
+		public override void Dispose() { /* no-op */ }
 	}
 
 	void ExtractHdrPreprocessorIfNecessary() {

@@ -108,6 +108,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			FontLoadRuneToGlyphMap = null!;
 			Self = null!;
 		}
+
+		public override void Dispose() { /* no-op */ }
 	}
 	
 	EmbeddedResourceResolver.ResourceDataRef GetResourceDataRefForBuiltInFont(BuiltInFont font) {
