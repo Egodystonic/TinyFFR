@@ -1,12 +1,18 @@
 using System.IO;
 using System.Linq;
 using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
+using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.Threading;
+using Egodystonic.TinyFFR.World;
 using static Egodystonic.TinyFFR.Assets.Materials.TextureCombinationSourceTexture;
 using static Egodystonic.TinyFFR.ColorChannel;
 
@@ -25,6 +31,52 @@ unsafe class LocalAsyncLoadingTest {
 	static string CesiumManFile => CommonTestAssets.FindAsset("models/CesiumMan.glb");
 	static string HelmetFile => CommonTestAssets.FindAsset("models/DamagedHelmet.glb");
 	static string CarConceptFile => CommonTestAssets.FindAsset("models/showcase_CarConcept.glb");
+	
+	static readonly (string Filename, float ScalingFactor)[] InteractiveTestFiles = {
+		("BoxTextured.gltf", 1f),
+		("BoxTextured.glb", 1f),
+		("BoxTexturedSelfContained.gltf", 1f),
+		("BoxTexturedNonPowerOfTwo.glb", 1f),
+		("Box With Spaces.gltf", 1f),
+		("NormalTangentMirrorTest.glb", 1f),
+		("NegativeScaleTest.glb", 1f),
+		("TextureCoordinateTest.glb", 1f),
+		("CompareNormal.glb", 1f),
+		("CompareRoughness.glb", 1f),
+		("CompareMetallic.glb", 1f),
+		("MetalRoughSpheres.glb", 1f),
+		("CompareAmbientOcclusion.glb", 1f),
+		("AnisotropyStrengthTest.glb", 1f),
+		("AnisotropyDiscTest.glb", 1f),
+		("EmissiveStrengthTest.glb", 1f),
+		("TransmissionTest.glb", 1f),
+		("CompareTransmission.glb", 1f),
+		("TransmissionRoughnessTest.glb", 1f),
+		("AttenuationTest.glb", 1f),
+		("CompareIor.glb", 1f),
+		("ClearCoatTest.glb", 1f),
+		("BarramundiFish.glb", 1f),
+		("Avocado.glb", 1f),
+		("DamagedHelmet.glb", 1f),
+		("showcase_ABeautifulGame.glb", 1f),
+		("showcase_GlassHurricaneCandleHolder.glb", 1f),
+		("showcase_MaterialsVariantsShoe.glb", 1f),
+		("showcase_MosquitoInAmber.glb", 1f),
+		("showcase_PotOfCoals.glb", 1f),
+		("showcase_ToyCar.glb", 1f),
+		("showcase_AnisotropyBarnLamp.glb", 1f),
+		("showcase_CarConcept.glb", 1f),
+		("showcase_ChronographWatch.glb", 1f),
+		("showcase_CommercialRefrigerator.glb", 1f),
+		("NodePerformanceTest.glb", 1f),
+		("SimpleSkin.gltf", 1f),
+		("RiggedSimple.glb", 0.25f),
+		("RiggedFigure.glb", 1f),
+		("CesiumMan.glb", 1f),
+		("BrainStem.glb", 0.8f),
+		("Fox.glb", 0.01f),
+		("Mixamo.fbx", 0.01f),
+	};
 
 	static T AwaitLoad<T>(TinyFfrAsyncOperation<T> op) {
 		Assert.IsTrue(op.WaitForCompletion(AsyncTimeout), "Async load timed out.");
@@ -43,9 +95,227 @@ unsafe class LocalAsyncLoadingTest {
 	[Test]
 	public void Execute() {
 		RunAllAutomatedTests();
-		// TODO
+		RunInteractiveTest();
 	}
-	
+
+	static string FormatProgressBar(int completed, int total) {
+		// const int BarWidth = 24;
+		// var filled = total <= 0 ? 0 : (int) MathF.Round(BarWidth * (completed / (float) total));
+		// return "[" + new String('#', filled) + new String('-', BarWidth - filled) + "]";
+		return "[" + PercentageUtils.ConvertFractionToPercentageString(completed / (float) total, "N0") + "]";
+	}
+
+	void RunInteractiveTest() {
+		using var factory = new LocalTinyFfrFactory();
+		var display = factory.DisplayDiscoverer.Primary!.Value;
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Async Model Viewer | SPACE = next loaded model | A = cycle anim | S = play/stop anim | L = camera light | ESC = quit");
+		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), cameraRange: CameraPlaneConfiguration.CloseRange);
+		using var cameraController = camera.CreateController<InspectorCameraController>();
+		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true, brightness: 0f);
+		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
+		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
+		using var scene = factory.SceneBuilder.CreateScene(backdrop);
+		using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+		sceneRenderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.Lowest));
+		scene.Add(light);
+		scene.Add(sunlight);
+
+		using var canvas = factory.SceneBuilder.CreateCanvasScene();
+		using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvas, window);
+		using var compositor = factory.RendererBuilder.CreateCompositor(window);
+		compositor.Add(sceneRenderer, RenderCompositionType.Standard);
+		compositor.Add(canvasRenderer, RenderCompositionType.RetainPreviousScenes);
+
+		using var font = factory.AssetLoader.LoadFont(BuiltInFont.Monospace);
+		using var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
+		using var progressText = canvas.Add("Dispatching loads...", pen, TextJustification.Left);
+		using var inFlightText = canvas.Add("", pen, TextJustification.Left);
+		using var modelText = canvas.Add("", pen, TextJustification.Left);
+		progressText.SetPlacementFraction(Orientation2D.UpLeft, (0.012f, 0.015f), 0.032f);
+		inFlightText.SetPlacementFraction(Orientation2D.UpLeft, (0.012f, 0.065f), 0.022f);
+		modelText.SetPlacementFraction(Orientation2D.DownLeft, (0.012f, 0.015f), 0.024f);
+
+		var fileCount = InteractiveTestFiles.Length;
+		var ops = new TinyFfrAsyncOperation<ResourceGroup>?[fileCount];
+		var groups = new ResourceGroup?[fileCount];
+		var failures = new string?[fileCount];
+		var loadDurations = new TimeSpan[fileCount];
+		var loadedCount = 0;
+		var failedCount = 0;
+
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
+
+		// Everything is dispatched up front; the point of the test is that the loop below stays
+		// responsive while all of it streams in on worker threads.
+		for (var i = 0; i < fileCount; ++i) {
+			ops[i] = factory.AssetLoader.LoadAllAsync(
+				CommonTestAssets.FindAsset("models/" + InteractiveTestFiles[i].Filename),
+				new ModelCreationConfig {
+					MeshConfig = new() { LinearRescalingFactor = InteractiveTestFiles[i].ScalingFactor }
+				},
+				new ModelReadConfig {
+					MeshConfig = new() { CorrectFlippedOrientation = true },
+					HandleUriEscapedStrings = true
+				}
+			);
+		}
+		Console.WriteLine($"Dispatched {fileCount} asynchronous model loads.");
+
+		var currentIndex = -1;
+		var curAnimIndex = 0;
+		var playingAnim = false;
+		var lightBrightnessStage = 0;
+		var textRefreshTimer = 0f;
+		ModelInstanceGroup? modelInstances = null;
+
+		void UpdateModelText() {
+			if (currentIndex < 0 || groups[currentIndex] is not { } g) {
+				modelText.SetText("No model displayed yet - waiting for the first load to complete.", TextJustification.Left);
+				return;
+			}
+			var animCount = modelInstances is { } mig && mig.Count > 0 ? mig.Max(m => m.Mesh.Animations.All.Count) : 0;
+			modelText.SetText(
+				$"{InteractiveTestFiles[currentIndex].Filename}  ({currentIndex + 1} of {fileCount})\n" +
+				$"{g.Models.Count} models / {g.Meshes.Count} meshes / {g.Materials.Count} materials / {g.Textures.Count} textures\n" +
+				$"loaded in {loadDurations[currentIndex].TotalSeconds:N1}s  |  " +
+				(animCount > 0 ? $"anim {curAnimIndex + 1} of {animCount} [{(playingAnim ? "playing" : "stopped")}]" : "no animations"),
+				TextJustification.Left
+			);
+		}
+
+		void ShowModel(int index) {
+			if (modelInstances is { } previous) {
+				scene.Remove(previous);
+				previous.Dispose();
+				modelInstances = null;
+			}
+			if (index < 0 || groups[index] is not { } g) return;
+
+			currentIndex = index;
+			curAnimIndex = 0;
+			playingAnim = false;
+			modelInstances = factory.ObjectBuilder.CreateModelInstances(g.Models);
+			scene.Add(modelInstances.Value);
+			cameraController.SetParametersFromBoundingBox(g.Models.CalculateCombinedBoundingBox());
+			UpdateModelText();
+		}
+
+		int NextLoadedIndex(int from) {
+			for (var n = 1; n <= fileCount; ++n) {
+				var idx = (from + n) % fileCount;
+				if (groups[idx].HasValue) return idx;
+			}
+			return -1;
+		}
+
+		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			var somethingCompleted = false;
+
+			for (var i = 0; i < fileCount; ++i) {
+				if (ops[i] is not { } op || !op.IsCompleted) continue;
+				ops[i] = null;
+				somethingCompleted = true;
+				loadDurations[i] = loop.TotalIteratedTime;
+				try {
+					groups[i] = op.GetResultAndDisposeOperation();
+					++loadedCount;
+				}
+#pragma warning disable CA1031 // A single bad asset must not take down the viewer; it's reported on the canvas instead
+				catch (Exception e) {
+#pragma warning restore CA1031
+					failures[i] = e.InnerException?.Message ?? e.Message;
+					++failedCount;
+					Console.WriteLine($"FAILED to load '{InteractiveTestFiles[i].Filename}': {failures[i]}");
+				}
+				if (currentIndex < 0 && groups[i].HasValue) ShowModel(i);
+			}
+
+			textRefreshTimer -= deltaTime;
+			if (somethingCompleted || textRefreshTimer <= 0f) {
+				textRefreshTimer = 0.25f;
+				var doneCount = loadedCount + failedCount;
+				progressText.SetText(
+					$"{FormatProgressBar(doneCount, fileCount)}  {doneCount} / {fileCount} loaded" +
+					(failedCount > 0 ? $"  ({failedCount} failed)" : "") +
+					$"  |  {loop.FramesPerSecondRecentAverage:N0} FPS",
+					TextJustification.Left
+				);
+
+				var inFlightDescription = "";
+				var shown = 0;
+				for (var i = 0; i < fileCount && shown < 8; ++i) {
+					if (ops[i] == null) continue;
+					inFlightDescription += (shown > 0 ? "\n" : "") + "loading  " + InteractiveTestFiles[i].Filename;
+					++shown;
+				}
+				var stillPending = fileCount - loadedCount - failedCount;
+				if (stillPending > shown) inFlightDescription += $"\n...and {stillPending - shown} more";
+				inFlightText.SetText(inFlightDescription, TextJustification.Left);
+			}
+
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				var next = NextLoadedIndex(currentIndex);
+				if (next >= 0) ShowModel(next);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstances is { } animCycleGroup) {
+				var animCount = animCycleGroup.Count > 0 ? animCycleGroup.Max(m => m.Mesh.Animations.All.Count) : 0;
+				if (animCount > 0) {
+					curAnimIndex = (curAnimIndex + 1) % animCount;
+					UpdateModelText();
+				}
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S) && modelInstances.HasValue) {
+				playingAnim = !playingAnim;
+				UpdateModelText();
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
+				lightBrightnessStage = (lightBrightnessStage + 1) % 4;
+				light.SetBrightness(lightBrightnessStage switch {
+					0 => 0f,
+					1 => 0.33f,
+					2 => 0.66f,
+					_ => 1f
+				});
+			}
+
+			if (playingAnim && modelInstances is { } playingGroup) {
+				foreach (var instance in playingGroup) {
+					if (curAnimIndex >= instance.Mesh.Animations.All.Count) continue;
+					instance.GetAnimationPlayer(instance.Animations[curAnimIndex])
+						.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
+				}
+			}
+
+			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, cameraController, deltaTime, window);
+			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, deltaTime);
+			DefaultCameraInputHandler.Progress(cameraController, deltaTime);
+
+			light.Position = camera.Position;
+			light.ConeDirection = camera.ViewDirection;
+
+			compositor.RenderAll();
+		}
+
+		if (modelInstances is { } finalGroup) {
+			scene.Remove(finalGroup);
+			finalGroup.Dispose();
+		}
+		// Anything still in flight has to be settled before the factory (and the loader behind it) goes away.
+		for (var i = 0; i < fileCount; ++i) {
+			if (ops[i] is not { } op) continue;
+			try {
+				groups[i] = op.GetResultAndDisposeOperation();
+			}
+#pragma warning disable CA1031 // Shutting down; a load that failed on the way out is not interesting
+			catch (Exception e) {
+#pragma warning restore CA1031
+				Console.WriteLine($"Load of '{InteractiveTestFiles[i].Filename}' faulted during shutdown: {e.Message}");
+			}
+		}
+		foreach (var group in groups) group?.Dispose();
+	}
+
 	void RunAllAutomatedTests() {
 		SyncAndAsyncShouldProduceEquivalentTextures();
 		SyncAndAsyncShouldApplyProcessingIdentically();

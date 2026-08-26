@@ -28,7 +28,7 @@ public sealed record LocalApplicationLoopBuilderConfig {
 	//TODO xmldoc     actually completes everything in the fastest total time).
 	//TODO xmldoc   0f: exactly one pending task is executed per iteration, so pending work still progresses rather than starving
 	//TODO xmldoc     entirely, but never occupies more than a single task's worth of any given frame.
-	//TODO xmldoc   Any positive value (the default is 0.25f): that fraction of the measured iteration interval is used as the
+	//TODO xmldoc   Any positive value (the default): that fraction of the measured iteration interval is used as the
 	//TODO xmldoc     per-iteration budget. Because the budget scales with the observed frame time it adapts automatically to the
 	//TODO xmldoc     display's refresh rate, including when frame pacing comes from vsync rather than from FrameRateCapHz.
 	//TODO xmldoc The most useful way to think about a positive value is its effect on frame rate: while there is pending work, the
