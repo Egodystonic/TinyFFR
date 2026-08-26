@@ -26,7 +26,7 @@ public unsafe interface ITextureBuilder {
 		return CreateTexture(
 			texels,
 			new TextureGenerationConfig {Dimensions = dimensions},
-				new TextureCreationConfig {
+			new TextureCreationConfig {
 				IsLinearColorspace = isLinearColorspace,
 				GenerateMipMaps = generateMipMaps ?? dimensions.Area > 1,
 				Name = name,

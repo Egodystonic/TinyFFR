@@ -87,13 +87,13 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		public void Dispose() {
 			DisposeBuffersAndReset();
 			SkeletalDataRegistry.Dispose();
+			TextureRegistry.Dispose();
 		}
 	}
 
 	sealed class ModelLoadContext : WorkerJobSyncHelper<LocalAssetLoader, ModelLoadContext, ModelLoadConfig>.WorkerJobSyncHelperContext {
 		// Primary thread owned
 		public PooledHeapMemory<char>? FilePath { get; set; } = null;
-		public int TotalResourceCountHint { get; set; } = 0;
 
 		// Worker thread owned
 		public InteropStringBuffer? NameBuffer { get; set; } = null;
@@ -103,13 +103,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 
 		// Handed across each primary thread hop
 		public ResourceGroup? Group { get; set; } = null;
+		public int TotalResourceCountHint { get; set; } = 0;
 
 		public override void TearDown() {
 			if (AssetHandle != UIntPtr.Zero) {
 				UnloadAssetFileFromMemory(AssetHandle).ThrowIfFailure();
 				AssetHandle = UIntPtr.Zero;
 			}
-			if (Group is { IsSealed: false } incompleteGroup) incompleteGroup.Dispose(disposeContainedResources: true);
+			Group?.Dispose(disposeContainedResources: true);
 			Group = null;
 			CurrentSubMeshData.DisposeBuffersAndReset();
 			AssetIndexToMaterialMap.Clear();
@@ -270,6 +271,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		var group = GetOrCreateGroupOnPrimary(context);
 		group.Seal();
+		context.Group = null;
 		return group;
 	}
 

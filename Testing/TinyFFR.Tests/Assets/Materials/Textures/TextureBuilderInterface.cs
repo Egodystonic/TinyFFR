@@ -1,6 +1,8 @@
 ﻿// Created on 2025-11-23 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using Egodystonic.TinyFFR.Assets.Materials.Local;
+
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
@@ -605,5 +607,34 @@ unsafe class TextureBuilderInterfaceTest {
 			});
 			_tb.CreateClearCoatMap(realPatternA, realPatternB, name: "clearcoat");
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCheckConfigValidityAndProcessTexture() {
+		var dimensions = new XYPair<int>(2, 1);
+		var generationConfig = new TextureGenerationConfig { Dimensions = dimensions };
+		var creationConfig = ITextureBuilder.GetColorMapCreationConfig(dimensions, includeAlpha: true);
+
+		var processed = new[] { new TexelRgba32(200, 100, 50, 128), new TexelRgba32(10, 20, 30, 255) };
+		var expected = processed.ToArray();
+		TextureUtils.ProcessTexture(expected.AsSpan(), dimensions, creationConfig.ProcessingToApply);
+
+		LocalTextureBuilder.CheckConfigValidityAndProcessTexture(processed.AsSpan(), in generationConfig, in creationConfig);
+		Assert.That(processed, Is.EqualTo(expected), "CheckConfigValidityAndProcessTexture should apply the config's processing.");
+		Assert.AreNotEqual(new TexelRgba32(200, 100, 50, 128), processed[0], "Premultiplication should have altered the first texel.");
+
+		// A config with no processing to apply makes ProcessTexture return before its own length check,
+		// so this pins the length check in CheckConfigValidityAndProcessTexture itself rather than the one behind it.
+		var unprocessedConfig = ITextureBuilder.GetColorMapCreationConfig(dimensions, includeAlpha: false);
+		Assert.IsFalse(unprocessedConfig.ProcessingToApply.RequiresProcessing, "Test premise: this config should require no processing.");
+
+		Assert.Throws<ArgumentException>(() => {
+			var tooSmall = new TexelRgb24[1];
+			LocalTextureBuilder.CheckConfigValidityAndProcessTexture(
+				tooSmall.AsSpan(),
+				new TextureGenerationConfig { Dimensions = new XYPair<int>(2, 1) },
+				ITextureBuilder.GetColorMapCreationConfig(new XYPair<int>(2, 1), includeAlpha: false)
+			);
+		}, "CheckConfigValidityAndProcessTexture should reject a buffer smaller than the configured dimensions.");
 	}
 }
