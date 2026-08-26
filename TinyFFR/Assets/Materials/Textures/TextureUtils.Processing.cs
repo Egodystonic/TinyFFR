@@ -112,7 +112,7 @@ public static partial class TextureUtils {
 					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
 				}
 				postProcessingFunction.Invoke(coercionBuffer.Span, arg);
-				if (!TexelRgb24.TryCoerceSpan(coercionBuffer.Span, targetBuffer)) {
+				if (!TTexel.TryCoerceSpanFrom(coercionBuffer.Span, targetBuffer, mergeWithExistingDestinationData: true)) {
 					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
 				}
 				return;
@@ -130,12 +130,14 @@ public static partial class TextureUtils {
 					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
 				}
 				postProcessingFunction.Invoke(coercionBuffer.Span, arg);
-				if (!TexelRgba32.TryCoerceSpan(coercionBuffer.Span, targetBuffer)) {
+				if (!TTexel.TryCoerceSpanFrom(coercionBuffer.Span, targetBuffer, mergeWithExistingDestinationData: true)) {
 					throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
 				}
 				return;
 			}
 		}
+
+		throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
 	}
 	
 	public static void Convert<TTexelIn, TTexelOut>(ReadOnlySpan<TTexelIn> inputBuffer, Span<TTexelOut> outputBuffer) where TTexelIn : unmanaged, IConversionSupplyingTexel<TTexelIn, TTexelOut> {

@@ -302,13 +302,13 @@ class LocalAsyncLoadingTest {
 			var syncAnims = syncMesh.Animations.Select(a => a.GetNameAsNewStringObject()).ToList();
 			var asyncAnims = asyncMesh.Animations.Select(a => a.GetNameAsNewStringObject()).ToList();
 			Console.WriteLine($"  animations sync={String.Join(",", syncAnims)} async={String.Join(",", asyncAnims)}");
-			CollectionAssert.AreEqual(syncAnims, asyncAnims, $"{file}: animation names differ.");
+            Assert.That(asyncAnims, Is.EqualTo(syncAnims).AsCollection, $"{file}: animation names differ.");
 
 			var syncNodes = syncMesh.Skeleton.Nodes.Select(n => n.GetNameAsNewStringObject()).ToList();
 			var asyncNodes = asyncMesh.Skeleton.Nodes.Select(n => n.GetNameAsNewStringObject()).ToList();
 			Console.WriteLine($"  node names sync=[{String.Join(",", syncNodes)}]");
 			Console.WriteLine($"  node names async=[{String.Join(",", asyncNodes)}]");
-			CollectionAssert.AreEqual(syncNodes, asyncNodes, $"{file}: skeleton node names differ.");
+            Assert.That(asyncNodes, Is.EqualTo(syncNodes).AsCollection, $"{file}: skeleton node names differ.");
 			Assert.Greater(syncNodes.Count, 0, $"{file}: expected skeletal nodes but found none; test is vacuous.");
 		}
 	}

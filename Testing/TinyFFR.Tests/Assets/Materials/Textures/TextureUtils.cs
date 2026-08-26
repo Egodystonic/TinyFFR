@@ -1,6 +1,8 @@
 ﻿// Created on 2025-11-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System.Runtime.InteropServices;
+
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
@@ -9,6 +11,34 @@ class TextureUtilsTest {
 		public int InvocationCount { get; set; }
 		public TexelRgba32[] SeenRgba32 { get; set; } = Array.Empty<TexelRgba32>();
 		public TexelRgb24[] SeenRgb24 { get; set; } = Array.Empty<TexelRgb24>();
+	}
+
+	readonly record struct BgrTestTexel(byte B, byte G, byte R) : ITexel<BgrTestTexel> {
+		public static TexelType BlitType => TexelType.Other;
+		public static int ChannelCount => 3;
+		public static int SerializationByteSpanLength => 3;
+
+		public BgrTestTexel WithInvertedChannelIfPresent(int channelIndex) => this;
+		public BgrTestTexel SwizzlePresentChannels(ColorChannel redSource, ColorChannel greenSource, ColorChannel blueSource, ColorChannel alphaSource) => this;
+		public BgrTestTexel WithPremultipliedAlpha() => this;
+
+		public static BgrTestTexel Blend(BgrTestTexel start, BgrTestTexel end, float distance) => distance < 0.5f ? start : end;
+		public static void SerializeToBytes(Span<byte> dest, BgrTestTexel src) => (dest[0], dest[1], dest[2]) = (src.B, src.G, src.R);
+		public static BgrTestTexel DeserializeFromBytes(ReadOnlySpan<byte> src) => new(src[0], src[1], src[2]);
+
+		public static bool TryCoerceSpan<TOther>(ReadOnlySpan<BgrTestTexel> src, Span<TOther> dest) where TOther : unmanaged, ITexel<TOther> {
+			if (TOther.BlitType != TexelType.Rgb24) return false;
+			var castDest = MemoryMarshal.Cast<TOther, TexelRgb24>(dest);
+			for (var i = 0; i < src.Length; ++i) castDest[i] = new TexelRgb24(src[i].R, src[i].G, src[i].B);
+			return true;
+		}
+
+		public static bool TryCoerceSpanFrom<TOther>(ReadOnlySpan<TOther> src, Span<BgrTestTexel> dest, bool mergeWithExistingDestinationData = false) where TOther : unmanaged, ITexel<TOther> {
+			if (TOther.BlitType != TexelType.Rgb24) return false;
+			var castSrc = MemoryMarshal.Cast<TOther, TexelRgb24>(src);
+			for (var i = 0; i < castSrc.Length; ++i) dest[i] = new BgrTestTexel(castSrc[i].B, castSrc[i].G, castSrc[i].R);
+			return true;
+		}
 	}
 	
 	[SetUp]
@@ -99,6 +129,16 @@ class TextureUtilsTest {
 			recorder.InvocationCount++;
 			recorder.SeenRgb24 = texels.ToArray();
 		}
+
+		static void OverwriteRgb24(Span<TexelRgb24> texels, object? argument) {
+			RecordRgb24(texels, argument);
+			for (var i = 0; i < texels.Length; ++i) texels[i] = new TexelRgb24(99, 88, 77);
+		}
+
+		static void OverwriteRgba32(Span<TexelRgba32> texels, object? argument) {
+			RecordRgba32(texels, argument);
+			for (var i = 0; i < texels.Length; ++i) texels[i] = new TexelRgba32(11, 22, 33, 44);
+		}
 		
 		var recorder = new PostProcessingRecorder();
 		var texture32 = new TexelRgba32[] { new(10, 20, 30, 40), new(50, 60, 70, 80) };
@@ -138,9 +178,56 @@ class TextureUtilsTest {
 
 		Assert.AreEqual(4, recorder.SeenRgb24.Length, "Post-processing function was given the whole buffer rather than only the texture's texels.");
 
+		// == Post-processing texel type coercion
+
+		recorder = new PostProcessingRecorder();
+		var narrowingTexture = new TexelRgba32[] { new(10, 20, 30, 40), new(50, 60, 70, 80) };
+		config = new TextureProcessingConfig {
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&OverwriteRgb24),
+			PostProcessingArgument = recorder
+		};
+
+		TextureUtils.ProcessTexture(narrowingTexture.AsSpan(), (2, 1), config);
+
+		Assert.AreEqual(1, recorder.InvocationCount);
+		Assert.AreEqual(new TexelRgb24(10, 20, 30), recorder.SeenRgb24[0], "Narrowing coercion should present the source's RGB channels.");
+		Assert.AreEqual(new TexelRgb24(50, 60, 70), recorder.SeenRgb24[1]);
+		Assert.AreEqual(new TexelRgba32(99, 88, 77, 40), narrowingTexture[0], "Narrowing coercion should write the function's output back and preserve the original alpha.");
+		Assert.AreEqual(new TexelRgba32(99, 88, 77, 80), narrowingTexture[1], "Narrowing coercion should write the function's output back and preserve the original alpha.");
+
+		recorder = new PostProcessingRecorder();
+		var wideningTexture = new TexelRgb24[] { new(1, 2, 3) };
+		config = new TextureProcessingConfig {
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgba32>(&OverwriteRgba32),
+			PostProcessingArgument = recorder
+		};
+
+		TextureUtils.ProcessTexture(wideningTexture.AsSpan(), (1, 1), config);
+
+		Assert.AreEqual(1, recorder.InvocationCount);
+		Assert.AreEqual(new TexelRgba32(1, 2, 3, Byte.MaxValue), recorder.SeenRgba32[0], "Widening coercion should present an opaque alpha channel.");
+		Assert.AreEqual(new TexelRgb24(11, 22, 33), wideningTexture[0], "Widening coercion should write the function's RGB output back.");
+
+		recorder = new PostProcessingRecorder();
+		var customTexture = new BgrTestTexel[] { new(30, 20, 10), new(70, 60, 50) };
+		config = new TextureProcessingConfig {
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&OverwriteRgb24),
+			PostProcessingArgument = recorder
+		};
+
+		TextureUtils.ProcessTexture(customTexture.AsSpan(), (2, 1), config);
+
+		Assert.AreEqual(1, recorder.InvocationCount);
+		Assert.AreEqual(new TexelRgb24(10, 20, 30), recorder.SeenRgb24[0], "A custom texel type's own coercion should have been used on the way in.");
+		Assert.AreEqual(new BgrTestTexel(77, 88, 99), customTexture[0], "A custom texel type's own coercion should have been used on the way back.");
+		Assert.AreEqual(new BgrTestTexel(77, 88, 99), customTexture[1]);
+
 		recorder = new PostProcessingRecorder();
 		config = new TextureProcessingConfig {
-			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&RecordRgb24),
+			PostProcessingFunction = TexelProcessingFunction.FromSerializedValues(
+				(nint) (delegate*<Span<TexelRgb24>, object?, void>) &RecordRgb24,
+				typeof(int).TypeHandle.Value
+			),
 			PostProcessingArgument = recorder
 		};
 

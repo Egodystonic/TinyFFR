@@ -100,6 +100,25 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 		}
 	}
 
+	public static bool TryCoerceSpanFrom<TOther>(ReadOnlySpan<TOther> src, Span<TexelRgba32> dest, bool mergeWithExistingDestinationData = false) where TOther : unmanaged, ITexel<TOther> {
+		switch (TOther.BlitType) {
+			case TexelType.Rgba32:
+				MemoryMarshal.Cast<TOther, TexelRgba32>(src).CopyTo(dest);
+				return true;
+			case TexelType.Rgb24:
+				var castSrc = MemoryMarshal.Cast<TOther, TexelRgb24>(src);
+				if (mergeWithExistingDestinationData) {
+					for (var i = 0; i < castSrc.Length; ++i) dest[i] = castSrc[i].ToRgba32(dest[i].A);
+				}
+				else {
+					for (var i = 0; i < castSrc.Length; ++i) dest[i] = castSrc[i].ToRgba32();
+				}
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	public TexelRgba32 WithInvertedChannelIfPresent(int channelIndex) {
 		return channelIndex switch {
 			0 => this with { R = (byte) (Byte.MaxValue - R) },

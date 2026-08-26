@@ -96,6 +96,20 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 		}
 	}
 
+	public static bool TryCoerceSpanFrom<TOther>(ReadOnlySpan<TOther> src, Span<TexelRgb24> dest, bool mergeWithExistingDestinationData = false) where TOther : unmanaged, ITexel<TOther> {
+		switch (TOther.BlitType) {
+			case TexelType.Rgb24:
+				MemoryMarshal.Cast<TOther, TexelRgb24>(src).CopyTo(dest);
+				return true;
+			case TexelType.Rgba32:
+				var castSrc = MemoryMarshal.Cast<TOther, TexelRgba32>(src);
+				for (var i = 0; i < castSrc.Length; ++i) dest[i] = castSrc[i].ToRgb24();
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	public TexelRgb24 WithInvertedChannelIfPresent(int channelIndex) {
 		return channelIndex switch {
 			0 => this with { R = (byte) (Byte.MaxValue - R) },
