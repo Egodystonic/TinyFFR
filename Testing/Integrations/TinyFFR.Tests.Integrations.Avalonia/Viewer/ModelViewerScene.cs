@@ -292,11 +292,7 @@ sealed class ModelViewerScene : IDisposable {
 		_overlayMaterial = overlayMaterial;
 		_overlayInstance = overlayInstance;
 		_overlayLight = overlayLight;
-		var overlayRenderer = _factory.RendererBuilder.CreateBindableRenderer(overlayScene, overlayCamera, _factory.ResourceAllocator);
-		overlayRenderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.High) {
-			AntiAliasingMode = AntiAliasingMode.Fxaa
-		});
-		_overlayRenderer = overlayRenderer;
+		_overlayRenderer = _factory.RendererBuilder.CreateBindableRenderer(overlayScene, overlayCamera, _factory.ResourceAllocator);
 	}
 
 	public void Tick(float deltaTime, ILatestKeyboardAndMouseInputRetriever input) {

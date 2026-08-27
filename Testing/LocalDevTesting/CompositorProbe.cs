@@ -4,6 +4,7 @@
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Testing;
@@ -86,11 +87,21 @@ static class CompositorProbe {
 		mainRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
 		var overlayRenderer = factory.RendererBuilder.CreateRenderer(overlayScene, overlayCamera, buffer);
 
+		var hudScene = factory.SceneBuilder.CreateCanvasScene();
+		var hudRenderer = factory.RendererBuilder.CreateRenderer(hudScene, buffer);
+		var font = factory.AssetLoader.LoadFont();
+		var fontPen = font.CreatePen(BuiltInFontPenStyle.Default);
+		var hudText = hudScene.Add("probe hud", fontPen);
+		hudText.SetPlacementFraction(Orientation2D.UpLeft, (0.02f, 0.02f), 0.05f);
+
 		var compositor = factory.RendererBuilder.CreateCompositor(buffer);
 		compositor.Add(mainRenderer, RenderCompositionType.Standard);
 		compositor.Add(overlayRenderer, RenderCompositionType.RetainPreviousScenes);
+		compositor.Add(hudRenderer, RenderCompositionType.RetainPreviousScenes);
+		compositor.SetEnabledState(hudRenderer, false);
 
-		double RunPass(string label, AntiAliasingMode overlayAaMode) {
+		double RunPass(string label, AntiAliasingMode overlayAaMode, bool trailingCanvasLayer = false) {
+			compositor.SetEnabledState(hudRenderer, trailingCanvasLayer);
 			overlayRenderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.High) {
 				AntiAliasingMode = overlayAaMode
 			});
@@ -124,7 +135,7 @@ static class CompositorProbe {
 			// A dip is a frame materially below the running mean
 			var dips = settled.Count(v => v < mean * 0.85d);
 
-			Console.WriteLine($"--- {label} (overlay AA = {overlayAaMode}) ---");
+			Console.WriteLine($"--- {label} (overlay AA = {overlayAaMode}, overlay is {(trailingCanvasLayer ? "MIDDLE" : "LAST")} layer) ---");
 			Console.WriteLine($"  frames captured : {lumas.Count} ({settled.Count} after warm-up)");
 			Console.WriteLine($"  mean luma       : {mean,7:N2}");
 			Console.WriteLine($"  min / max       : {min,7:N2} / {max,7:N2}");
@@ -137,17 +148,29 @@ static class CompositorProbe {
 			return swingPct;
 		}
 
-		var taaSwing = RunPass("PASS 1: default overlay quality", AntiAliasingMode.TaaBalanced);
-		var fxaaSwing = RunPass("PASS 2: overlay without temporal AA", AntiAliasingMode.Fxaa);
+		var taaLastSwing = RunPass("PASS 1: TAA overlay, frame-ending", AntiAliasingMode.TaaBalanced);
+		var fxaaLastSwing = RunPass("PASS 2: FXAA overlay, frame-ending", AntiAliasingMode.Fxaa);
+		var taaMiddleSwing = RunPass("PASS 3: TAA overlay, NOT frame-ending", AntiAliasingMode.TaaBalanced, trailingCanvasLayer: true);
 
 		Console.WriteLine("=== RESULT ===");
-		Console.WriteLine($"TAA overlay  swing: {taaSwing,6:N1}% of mean");
-		Console.WriteLine($"FXAA overlay swing: {fxaaSwing,6:N1}% of mean");
-		Console.WriteLine(taaSwing > fxaaSwing * 2d && taaSwing > 5d
-			? "CONFIRMED: temporal AA on the translucent overlay layer causes the brightness excursions."
-			: "NOT CONFIRMED: TAA is not the differentiator here. Do not ship the AA change on this evidence.");
+		Console.WriteLine($"TAA  requested, frame-ending    : {taaLastSwing,6:N1}% of mean");
+		Console.WriteLine($"FXAA requested, frame-ending    : {fxaaLastSwing,6:N1}% of mean");
+		Console.WriteLine($"TAA  requested, NOT frame-ending: {taaMiddleSwing,6:N1}% of mean");
+		Console.WriteLine();
+		Console.WriteLine("Passes 1 and 3 request temporal AA on a RetainPreviousScenes layer, so the library");
+		Console.WriteLine("should silently downgrade them to FXAA and all three series should be flat.");
+		Console.WriteLine();
+		var worstSwing = Math.Max(taaLastSwing, Math.Max(fxaaLastSwing, taaMiddleSwing));
+		Console.WriteLine(worstSwing < 15d
+			? $"PASS: worst swing {worstSwing:N1}% - the TAA downgrade for translucent layers is in effect."
+			: $"FAIL: worst swing {worstSwing:N1}% - a translucent layer is still running temporal AA.");
 
 		compositor.Dispose();
+		hudText.Dispose();
+		fontPen.Dispose();
+		font.Dispose();
+		hudRenderer.Dispose();
+		hudScene.Dispose();
 		overlayRenderer.Dispose();
 		mainRenderer.Dispose();
 		buffer.Dispose();
