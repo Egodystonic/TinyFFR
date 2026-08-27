@@ -25,6 +25,16 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		_controllerPool.Return(this);
 	}
 	#endregion
+	
+	public static readonly Location TargetDefault = Location.Origin;
+	public static readonly Direction TargetForwardDefault = Direction.Forward;
+	public static readonly Direction TargetUpDefault = Direction.Up;
+	public static readonly float FollowDistanceDefault = 0.6f;
+	public static readonly float FollowHeightDefault = 0.3f;
+	public static readonly float FollowLateralOffsetDefault = 0.4f;
+	public static readonly float LookaheadDistanceDefault = 2.4f;
+	public static readonly float HeightViewShiftMultiplierDefault = 0.44f;
+	public static readonly float LateralOffsetViewShiftMultiplierDefault = 0.28f;
 
 	readonly Spring3DBasedCameraSetpoint _positionRelativeSetpoint = new();
 	readonly CameraEffectStrengthMap _positionSmoothingStrengthMap = new(
@@ -144,16 +154,36 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		TrackingSmoothingStrength = newSmoothingStrength;
 	}
 
+	public void Progress(float deltaTime, Location target, Direction targetForward, Direction targetUp) {
+		Target = target;
+		TargetForward = targetForward;
+		TargetUp = targetUp;
+		Progress(deltaTime);
+	}
+	public void Progress(float deltaTime, Location target, Direction targetForward, Direction targetUp, float followDistance, float followHeight, float followLateralOffset) {
+		Target = target;
+		TargetForward = targetForward;
+		TargetUp = targetUp;
+		FollowDistance = followDistance;
+		FollowHeight = followHeight;
+		FollowLateralOffset = followLateralOffset;
+		Progress(deltaTime);
+	}
+	public void SetConstraints(float lookaheadDistance, float heightViewShiftMultiplier, float lateralOffsetViewShiftMultiplier) {
+		LookaheadDistance = lookaheadDistance;
+		HeightViewShiftMultiplier = heightViewShiftMultiplier;
+		LateralOffsetViewShiftMultiplier = lateralOffsetViewShiftMultiplier;
+	}
 	public void ResetParametersToDefault() {
-		LateralOffsetViewShiftMultiplier = 0.28f;
-		HeightViewShiftMultiplier = 0.44f;
-		LookaheadDistance = 2.4f;
-		Target = Location.Origin;
-		TargetForward = Direction.Forward;
-		TargetUp = Direction.Up;
-		FollowDistance = 0.6f;
-		FollowHeight = 0.3f;
-		FollowLateralOffset = 0.4f;
+		LateralOffsetViewShiftMultiplier = LateralOffsetViewShiftMultiplierDefault;
+		HeightViewShiftMultiplier = HeightViewShiftMultiplierDefault;
+		LookaheadDistance = LookaheadDistanceDefault;
+		Target = TargetDefault;
+		TargetForward = TargetForwardDefault;
+		TargetUp = TargetUpDefault;
+		FollowDistance = FollowDistanceDefault;
+		FollowHeight = FollowHeightDefault;
+		FollowLateralOffset = FollowLateralOffsetDefault;
 		_positionRelativeSetpoint.Reset(_positionRelativeSetpoint.TargetValue);
 		_lookRelativeSetpoint.Reset(_lookRelativeSetpoint.TargetValue);
 		SetGlobalSmoothing(Strength.VeryMild);

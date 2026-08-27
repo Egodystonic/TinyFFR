@@ -16,7 +16,7 @@ The `InspectorCameraController` orbits a camera around a `Target` location on a 
 // One time setup:
 var controller = camera.CreateController<InspectorCameraController>(); // (1)!
 controller.WorldUp = Direction.Up; // (2)!
-controller.SetParametersFromBoundingBox(myMesh.BoundingBox); // (3)!
+controller.SetConstraints(myMesh.BoundingBox); // (3)!
 
 // Per-frame:
 controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime); // (4)!
@@ -111,7 +111,7 @@ controller.Progress(deltaTime); // (6)!
 
 ----
 
-<span class="def-icon">:material-code-block-parentheses:</span> `SetParametersFromBoundingBox(...)`
+<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(...)`
 
 :   A convenience method for inspecting a single object or set of models: sets `Target`, `MinDistance`, `MaxDistance`, and `Distance` together from the supplied `boundingBox`.
 
@@ -370,7 +370,7 @@ As camera controllers are often meant to be affected by user input, there are so
 
 These methods are direct counterparts to the `AdjustDistance...` family above, but each adjustment is interpreted as a fraction of the current `MaxDistance - MinDistance` range rather than as an absolute world-units delta.
 
-This is generally preferable when inspecting an object whose size is not known up-front (e.g. after calling `SetParametersFromBoundingBox(...)`) — the controls feel consistent regardless of how large or small the framed object is.
+This is generally preferable when inspecting an object whose size is not known up-front (e.g. after calling `SetConstraints(...)`) — the controls feel consistent regardless of how large or small the framed object is.
 
 If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to adding the adjustment directly (i.e. they degenerate to using the same units as the equivalent `AdjustDistance...` methods).
 

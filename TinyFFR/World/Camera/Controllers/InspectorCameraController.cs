@@ -26,8 +26,15 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	}
 	#endregion
 
-	public const float DefaultDistanceMax = 2f;
-	public const float DefaultDistanceMin = 0.6f;
+	public static readonly float MinDistanceDefault = 0.6f;
+	public static readonly float MaxDistanceDefault = 2f;
+	public static readonly float DistanceDefault = MinDistanceDefault;
+	public static readonly Angle YawDefault = Angle.Zero;
+	public static readonly Angle PitchDefault = Angle.Zero;
+	public static readonly Direction WorldUpDefault = Direction.Up;
+	public static readonly Location TargetDefault = Location.Origin;
+	public static readonly bool AllowUpsideDownFlipDefault = false;
+	
 	readonly SpringAngleBasedCameraSetpoint _yawSetpoint = new();
 	readonly SpringAngleBasedCameraSetpoint _pitchSetpoint = new();
 	readonly CameraEffectStrengthMap _rotationSmoothingStrengthMap = new(
@@ -119,9 +126,24 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	}
 	public Location Target { get; set; }
 	
-	public void SetParametersFromBoundingBox(PositionedCuboid boundingBox) {
+	public void Progress(float deltaTime, Angle yaw, Angle pitch, float distance) {
+		Yaw = yaw;
+		Pitch = pitch;
+		Distance = distance;
+		Progress(deltaTime);
+	}
+	public void SetConstraints(Location target, Direction worldUp, bool allowUpsideDownFlip, float? minDistance, float? maxDistance) {
+		Target = target;
+		WorldUp = worldUp;
+		AllowUpsideDownFlip = allowUpsideDownFlip;
+		MinDistance = minDistance;
+		MaxDistance = maxDistance;
+	}
+	public void SetConstraints(PositionedCuboid boundingBox) => SetConstraints(boundingBox, WorldUp);
+	public void SetConstraints(PositionedCuboid boundingBox, Direction worldUp) {
 		var enclosingSphere = boundingBox.SmallestEnclosingSphere;
 		Target = enclosingSphere.Position;
+		WorldUp = worldUp;
 		MinDistance = Single.Min(enclosingSphere.Radius * 1f, boundingBox.SmallestHalfExtent);
 		MaxDistance = enclosingSphere.Radius * 3f;
 		Distance = enclosingSphere.Radius * 1.5f;
@@ -140,14 +162,14 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	}
 
 	public void ResetParametersToDefault() {
-		MinDistance = DefaultDistanceMin;
-		MaxDistance = DefaultDistanceMax;
-		WorldUp = Direction.Up;
-		AllowUpsideDownFlip = false;
-		Target = Location.Origin;
-		_yawSetpoint.Reset(Angle.Zero);
-		_pitchSetpoint.Reset(Angle.Zero);
-		_distanceSetpoint.Reset(DefaultDistanceMin);
+		MinDistance = MinDistanceDefault;
+		MaxDistance = MaxDistanceDefault;
+		WorldUp = WorldUpDefault;
+		AllowUpsideDownFlip = AllowUpsideDownFlipDefault;
+		Target = TargetDefault;
+		_yawSetpoint.Reset(YawDefault);
+		_pitchSetpoint.Reset(PitchDefault);
+		_distanceSetpoint.Reset(DistanceDefault);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 

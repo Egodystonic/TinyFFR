@@ -43,7 +43,7 @@ class LocalRenderQualityTest {
 		);
 		using var modelInstances = factory.ObjectBuilder.CreateModelInstances(loadedResources.Models);
 		scene.Add(modelInstances);
-		cameraController.SetParametersFromBoundingBox(loadedResources.Models.CalculateCombinedBoundingBox());
+		cameraController.SetConstraints(loadedResources.Models.CalculateCombinedBoundingBox());
 
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 

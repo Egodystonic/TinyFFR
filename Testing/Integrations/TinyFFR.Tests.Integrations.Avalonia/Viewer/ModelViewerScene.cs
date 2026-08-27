@@ -137,7 +137,7 @@ sealed class ModelViewerScene : IDisposable {
 		_displayed = model;
 		_scene.Add(model.Instances);
 
-		_cameraController.SetParametersFromBoundingBox(model.Resources.Models.CalculateCombinedBoundingBox());
+		_cameraController.SetConstraints(model.Resources.Models.CalculateCombinedBoundingBox());
 
 		ApplyShadingStyle(ColorVect.RandomOpaque());
 

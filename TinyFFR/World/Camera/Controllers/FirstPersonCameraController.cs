@@ -25,6 +25,11 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		_controllerPool.Return(this);
 	}
 	#endregion
+	
+	public static readonly Direction WorldUpDefault = Direction.Up;
+	public static readonly Location PositionDefault = Location.Origin;
+	public static readonly Angle YawDefault = Angle.Zero;
+	public static readonly Angle PitchDefault = Angle.Zero;
 
 	readonly Spring3DBasedCameraSetpoint _positionSetpoint = new();
 	readonly CameraEffectStrengthMap _positionSmoothingStrengthMap = new(
@@ -102,11 +107,20 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		RotationSmoothingStrength = newSmoothingStrength;
 	}
 
+	public void Progress(float deltaTime, Location position, Angle yaw, Angle pitch) {
+		Position = position;
+		Yaw = yaw;
+		Pitch = pitch;
+		Progress(deltaTime);
+	}
+	public void SetConstraints(Direction worldUp) {
+		WorldUp = worldUp;
+	}
 	public void ResetParametersToDefault() {
-		WorldUp = Direction.Up;
-		_positionSetpoint.Reset(Vect.Zero);
-		_yawSetpoint.Reset(Angle.Zero);
-		_pitchSetpoint.Reset(Angle.Zero);
+		WorldUp = WorldUpDefault;
+		_positionSetpoint.Reset(PositionDefault.AsVect());
+		_yawSetpoint.Reset(YawDefault);
+		_pitchSetpoint.Reset(PitchDefault);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 

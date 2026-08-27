@@ -292,15 +292,15 @@ class LocalCameraControllerTest {
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
-				_controller.PanRange = CycleValue(_controller.PanRange, PanTiltZoomCameraController.DefaultPanRangeDegrees, 90f, 20f, null);
+				_controller.PanRange = CycleValue(_controller.PanRange, PanTiltZoomCameraController.PanRangeDefault, 90f, 20f, null);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
-				_controller.MaxTiltDown = CycleValue<Angle>(_controller.MaxTiltDown, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 2f)!.Value;
-				_controller.MaxTiltUp = CycleValue<Angle>(_controller.MaxTiltUp, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 2f)!.Value;
+				_controller.MaxTiltDown = CycleValue<Angle>(_controller.MaxTiltDown, PanTiltZoomCameraController.MaxTiltDownDefault, PanTiltZoomCameraController.MaxTiltDownDefault * 0.5f, PanTiltZoomCameraController.MaxTiltDownDefault * 2f)!.Value;
+				_controller.MaxTiltUp = CycleValue<Angle>(_controller.MaxTiltUp, PanTiltZoomCameraController.MaxTiltUpDefault, PanTiltZoomCameraController.MaxTiltUpDefault * 0.5f, PanTiltZoomCameraController.MaxTiltUpDefault * 2f)!.Value;
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
-				_controller.MaxZoomInFov = CycleValue<Angle>(_controller.MaxZoomInFov, PanTiltZoomCameraController.DefaultMaxZoomInFov, PanTiltZoomCameraController.DefaultMaxZoomInFov * 0.5f, PanTiltZoomCameraController.DefaultMaxZoomInFov * 1.3f)!.Value;
-				_controller.MaxZoomOutFov = CycleValue<Angle>(_controller.MaxZoomOutFov, PanTiltZoomCameraController.DefaultMaxZoomOutFov, PanTiltZoomCameraController.DefaultMaxZoomOutFov * 0.5f, PanTiltZoomCameraController.DefaultMaxZoomOutFov * 1.3f)!.Value;
+				_controller.MaxZoomInFov = CycleValue<Angle>(_controller.MaxZoomInFov, PanTiltZoomCameraController.MaxZoomInFovDefault, PanTiltZoomCameraController.MaxZoomInFovDefault * 0.5f, PanTiltZoomCameraController.MaxZoomInFovDefault * 1.3f)!.Value;
+				_controller.MaxZoomOutFov = CycleValue<Angle>(_controller.MaxZoomOutFov, PanTiltZoomCameraController.MaxZoomOutFovDefault, PanTiltZoomCameraController.MaxZoomOutFovDefault * 0.5f, PanTiltZoomCameraController.MaxZoomOutFovDefault * 1.3f)!.Value;
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
 				CycleSmoothing();
@@ -369,12 +369,12 @@ class LocalCameraControllerTest {
 				_controller.AngleRange = CycleValue(_controller.AngleRange, null, 180f, 90f, 20f);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
-				_controller.MinHeight = CycleValue<Real>(_controller.MinHeight, OrbitalCameraController.DefaultHeightMin, OrbitalCameraController.DefaultHeightMin * 2f, OrbitalCameraController.DefaultHeightMin * 0.2f, null);
-				_controller.MaxHeight = CycleValue<Real>(_controller.MaxHeight, OrbitalCameraController.DefaultHeightMax, OrbitalCameraController.DefaultHeightMax * 2f, OrbitalCameraController.DefaultHeightMax * 0.2f, null);
+				_controller.MinHeight = CycleValue<Real>(_controller.MinHeight, OrbitalCameraController.MinHeightDefault, OrbitalCameraController.MinHeightDefault * 2f, OrbitalCameraController.MinHeightDefault * 0.2f, null);
+				_controller.MaxHeight = CycleValue<Real>(_controller.MaxHeight, OrbitalCameraController.MaxHeightDefault, OrbitalCameraController.MaxHeightDefault * 2f, OrbitalCameraController.MaxHeightDefault * 0.2f, null);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
-				_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, OrbitalCameraController.DefaultDistanceMin, OrbitalCameraController.DefaultDistanceMin * 2f, OrbitalCameraController.DefaultDistanceMin * 0.2f, null);
-				_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, OrbitalCameraController.DefaultDistanceMax, OrbitalCameraController.DefaultDistanceMax * 2f, OrbitalCameraController.DefaultDistanceMax * 0.2f, null);
+				_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, OrbitalCameraController.MinDistanceDefault, OrbitalCameraController.MinDistanceDefault * 2f, OrbitalCameraController.MinDistanceDefault * 0.2f, null);
+				_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, OrbitalCameraController.MaxDistanceDefault, OrbitalCameraController.MaxDistanceDefault * 2f, OrbitalCameraController.MaxDistanceDefault * 0.2f, null);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
 				CycleSmoothing();
@@ -446,8 +446,8 @@ class LocalCameraControllerTest {
 				_controller.AllowUpsideDownFlip = !_controller.AllowUpsideDownFlip;
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
-				_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, InspectorCameraController.DefaultDistanceMin, InspectorCameraController.DefaultDistanceMin * 2f, InspectorCameraController.DefaultDistanceMin * 0.2f, null);
-				_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, InspectorCameraController.DefaultDistanceMax, InspectorCameraController.DefaultDistanceMax * 2f, InspectorCameraController.DefaultDistanceMax * 0.2f, null);
+				_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, InspectorCameraController.MinDistanceDefault, InspectorCameraController.MinDistanceDefault * 2f, InspectorCameraController.MinDistanceDefault * 0.2f, null);
+				_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, InspectorCameraController.MaxDistanceDefault, InspectorCameraController.MaxDistanceDefault * 2f, InspectorCameraController.MaxDistanceDefault * 0.2f, null);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
 				CycleSmoothing();

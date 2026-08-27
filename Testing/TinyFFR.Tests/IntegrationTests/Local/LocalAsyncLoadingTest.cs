@@ -196,7 +196,7 @@ unsafe class LocalAsyncLoadingTest {
 			playingAnim = false;
 			modelInstances = factory.ObjectBuilder.CreateModelInstances(g.Models);
 			scene.Add(modelInstances.Value);
-			cameraController.SetParametersFromBoundingBox(g.Models.CalculateCombinedBoundingBox());
+			cameraController.SetConstraints(g.Models.CalculateCombinedBoundingBox());
 			UpdateModelText();
 		}
 

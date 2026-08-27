@@ -146,7 +146,7 @@ class LocalModelLoadingTest {
 				}
 				Console.WriteLine();
 
-				cameraController.SetParametersFromBoundingBox(loadedResources.Value.Models.CalculateCombinedBoundingBox());
+				cameraController.SetConstraints(loadedResources.Value.Models.CalculateCombinedBoundingBox());
 				modelInstances = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
 				scene.Add(modelInstances.Value);
 				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({loadedResources.Value.Models.Count} models / {loadedResources.Value.Meshes.Count} meshes / {loadedResources.Value.Materials.Count} materials / {loadedResources.Value.Textures.Count} textures)");

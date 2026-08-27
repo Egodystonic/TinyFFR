@@ -26,11 +26,18 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	#endregion
 
-	public const float DefaultPanRangeDegrees = 160f;
-	public const float DefaultMaxTiltUpDegrees = 35f;
-	public const float DefaultMaxTiltDownDegrees = 55f;
-	public const float DefaultMaxZoomInFov = 15f;
-	public const float DefaultMaxZoomOutFov = 90f;
+	public static readonly Angle PanDefault = Angle.Zero;
+	public static readonly Angle TiltDefault = Angle.Zero;
+	public static readonly float ZoomDefault = 0.5f;
+	public static readonly Location PositionDefault = Location.Origin;
+	public static readonly Direction UpDirectionDefault = Direction.Up;
+	public static readonly Direction ZeroPanTiltDirectionDefault = Direction.Forward;
+	public static readonly Angle? PanRangeDefault = 160f;
+	public static readonly Angle MaxTiltUpDefault = 35f;
+	public static readonly Angle MaxTiltDownDefault = 55f;
+	public static readonly Angle MaxZoomInFovDefault = 15f;
+	public static readonly Angle MaxZoomOutFovDefault = 90f;
+	
 	readonly SpringAngleBasedCameraSetpoint _panSetpoint = new();
 	readonly CameraEffectStrengthMap _panSmoothingStrengthMap = new(
 		None: 0f,
@@ -193,18 +200,34 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		TiltSmoothingStrength = newSmoothingStrength;
 	}
 
+	public void Progress(float deltaTime, Angle pan, Angle tilt, float zoom) {
+		Pan = pan;
+		Tilt = tilt;
+		Zoom = zoom;
+		Progress(deltaTime);
+	}
+	public void SetConstraints(Location position, Direction upDirection, Direction zeroPanTiltDirection, Angle? panRange, Angle maxTiltUp, Angle maxTiltDown, Angle maxZoomInFov, Angle maxZoomOutFov) {
+		Position = position;
+		UpDirection = upDirection;
+		ZeroPanTiltDirection = zeroPanTiltDirection;
+		PanRange = panRange;
+		MaxTiltUp = maxTiltUp;
+		MaxTiltDown = maxTiltDown;
+		MaxZoomInFov = maxZoomInFov;
+		MaxZoomOutFov = maxZoomOutFov;
+	}
 	public void ResetParametersToDefault() {
-		PanRange = DefaultPanRangeDegrees;
-		MaxTiltUp = DefaultMaxTiltUpDegrees;
-		MaxTiltDown = DefaultMaxTiltDownDegrees;
-		MaxZoomInFov = DefaultMaxZoomInFov;
-		MaxZoomOutFov = DefaultMaxZoomOutFov;
-		ZeroPanTiltDirection = Direction.Forward;
-		UpDirection = Direction.Up;
-		Position = Location.Origin;
-		_panSetpoint.Reset(Angle.Zero);
-		_tiltSetpoint.Reset(Angle.Zero);
-		_zoomSetpoint.Reset((DefaultMaxZoomOutFov - DefaultMaxZoomInFov) * 0.5f + DefaultMaxZoomInFov);
+		PanRange = PanRangeDefault;
+		MaxTiltUp = MaxTiltUpDefault;
+		MaxTiltDown = MaxTiltDownDefault;
+		MaxZoomInFov = MaxZoomInFovDefault;
+		MaxZoomOutFov = MaxZoomOutFovDefault;
+		ZeroPanTiltDirection = ZeroPanTiltDirectionDefault;
+		UpDirection = UpDirectionDefault;
+		Position = PositionDefault;
+		_panSetpoint.Reset(PanDefault);
+		_tiltSetpoint.Reset(TiltDefault);
+		_zoomSetpoint.Reset((MaxZoomOutFovDefault - MaxZoomInFovDefault) * ZoomDefault + MaxZoomInFovDefault);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 

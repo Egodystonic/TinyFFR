@@ -25,6 +25,13 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		_controllerPool.Return(this);
 	}
 	#endregion
+	
+	public static readonly Location PositionDefault = Location.Origin;
+	public static readonly Angle YawDefault = Angle.Zero;
+	public static readonly Angle PitchDefault = Angle.Zero;
+	public static readonly Direction WorldUpDefault = Direction.Up;
+	public static readonly Direction WorldForwardDefault = Direction.Forward;
+	public static readonly bool AllowUpsideDownFlipDefault = false;
 
 	readonly Spring3DBasedCameraSetpoint _positionSetpoint = new();
 	readonly CameraEffectStrengthMap _positionSmoothingStrengthMap = new(
@@ -111,13 +118,24 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		RotationSmoothingStrength = newSmoothingStrength;
 	}
 
+	public void Progress(float deltaTime, Location position, Angle yaw, Angle pitch) {
+		Position = position;
+		Yaw = yaw;
+		Pitch = pitch;
+		Progress(deltaTime);
+	}
+	public void SetConstraints(Direction worldForward, Direction worldUp, bool allowUpsideDownFlip) {
+		WorldForward = worldForward;
+		WorldUp = worldUp;
+		AllowUpsideDownFlip = allowUpsideDownFlip;
+	}
 	public void ResetParametersToDefault() {
-		WorldForward = Direction.Forward;
-		WorldUp = Direction.Up;
-		AllowUpsideDownFlip = false;
-		_positionSetpoint.Reset(Vect.Zero);
-		_yawSetpoint.Reset(Angle.Zero);
-		_pitchSetpoint.Reset(Angle.Zero);
+		WorldForward = WorldForwardDefault;
+		WorldUp = WorldUpDefault;
+		AllowUpsideDownFlip = AllowUpsideDownFlipDefault;
+		_positionSetpoint.Reset(PositionDefault.AsVect());
+		_yawSetpoint.Reset(YawDefault);
+		_pitchSetpoint.Reset(PitchDefault);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 

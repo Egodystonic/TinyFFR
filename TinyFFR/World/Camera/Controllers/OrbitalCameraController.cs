@@ -26,10 +26,16 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 	#endregion
 
-	public const float DefaultHeightMax = 0.5f;
-	public const float DefaultHeightMin = 0.1f;
-	public const float DefaultDistanceMax = 2f;
-	public const float DefaultDistanceMin = 0.6f;
+	public static readonly Angle AngleDefault = Angle.Zero;
+	public static readonly Location TargetDefault = Location.Origin;
+	public static readonly Direction UpDirectionDefault = Direction.Up;
+	public static readonly Direction ZeroAngleDirectionDefault = Direction.None;
+	public static readonly Angle? AngleRangeDefault = null;
+	public static readonly float MaxHeightDefault = 0.5f;
+	public static readonly float MinHeightDefault = 0.1f;
+	public static readonly float MaxDistanceDefault = 2f;
+	public static readonly float MinDistanceDefault = 0.6f;
+	
 	readonly SpringAngleBasedCameraSetpoint _angleSetpoint = new();
 	readonly CameraEffectStrengthMap _angleSmoothingStrengthMap = new(
 		None: 0f,
@@ -201,18 +207,34 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		DistanceSmoothingStrength = newSmoothingStrength;
 	}
 
+	public void Progress(float deltaTime, Angle angle, float height, float distance) {
+		Angle = angle;
+		Height = height;
+		Distance = distance;
+		Progress(deltaTime);
+	}
+	public void SetConstraints(Location target, Direction upDirection, Direction zeroAngleDirection, Angle? angleRange, float? minHeight, float? maxHeight, float? minDistance, float? maxDistance) {
+		Target = target;
+		UpDirection = upDirection;
+		ZeroAngleDirection = zeroAngleDirection;
+		AngleRange = angleRange;
+		MinHeight = minHeight;
+		MaxHeight = maxHeight;
+		MinDistance = minDistance;
+		MaxDistance = maxDistance;
+	}
 	public void ResetParametersToDefault() {
-		AngleRange = null;
-		MinHeight = DefaultHeightMin;
-		MaxHeight = DefaultHeightMax;
-		MinDistance = DefaultDistanceMin;
-		MaxDistance = DefaultDistanceMax;
-		UpDirection = Direction.Up;
-		ZeroAngleDirection = Direction.None;
-		Target = Location.Origin;
-		_angleSetpoint.Reset(Angle.Zero);
-		_heightSetpoint.Reset(DefaultHeightMin);
-		_distanceSetpoint.Reset(DefaultDistanceMin);
+		AngleRange = AngleRangeDefault;
+		MinHeight = MinHeightDefault;
+		MaxHeight = MaxHeightDefault;
+		MinDistance = MinDistanceDefault;
+		MaxDistance = MaxDistanceDefault;
+		UpDirection = UpDirectionDefault;
+		ZeroAngleDirection = ZeroAngleDirectionDefault;
+		Target = TargetDefault;
+		_angleSetpoint.Reset(AngleDefault);
+		_heightSetpoint.Reset(MinHeightDefault);
+		_distanceSetpoint.Reset(MinDistanceDefault);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 
