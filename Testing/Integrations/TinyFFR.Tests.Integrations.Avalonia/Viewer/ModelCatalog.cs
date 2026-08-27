@@ -103,10 +103,6 @@ public static class ModelCatalog {
 			"showcase_ChronographWatch.glb",
 			"showcase_CommercialRefrigerator.glb"
 		);
-		AddCategory(
-			"Stress test",
-			"NodePerformanceTest.glb"
-		);
 
 		return result.ToArray();
 	}

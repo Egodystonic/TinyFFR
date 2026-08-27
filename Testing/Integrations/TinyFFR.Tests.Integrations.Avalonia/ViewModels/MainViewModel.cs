@@ -191,10 +191,10 @@ public partial class MainViewModel : ViewModelBase {
 			await viewer.LoadBackdropAsync();
 			if (!ReferenceEquals(_viewer, viewer)) return;
 
-			await viewer.SetCompositeModeAsync(UseCompositor);
-			if (!ReferenceEquals(_viewer, viewer)) return;
-			Renderer = viewer.ActiveRenderer;
-			Compositor = viewer.ActiveCompositor;
+			if (UseCompositor) {
+				await ApplyCompositorAsync(true);
+				if (!ReferenceEquals(_viewer, viewer)) return;
+			}
 
 			foreach (var entry in entries) {
 				if (entry.FileName == null) continue;
