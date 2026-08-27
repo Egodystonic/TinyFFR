@@ -1,4 +1,4 @@
-// Created on 2026-06-29 by Ben Bowen
+﻿// Created on 2026-06-29 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.IO;
@@ -261,16 +261,12 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				ttfFileStreamLengthBytes = dataRef.DataLenBytes;
 			}
 			else if (context.HeapPoolFilePath is { } filePath) {
+				var filePathString = filePath.Span.ToString();
 				try {
-					using var fontFileDataStream = new FileStream(filePath.Span.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
-					var streamLengthBytes = checked((int) fontFileDataStream.Length);
-					ttfFileData = context.HeapPool.Borrow<byte>(streamLengthBytes);
-					fontFileDataStream.ReadExactly(ttfFileData.Value.Span);
+					ttfFileData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, filePathString, "font file");
 				}
 				catch (Exception e) {
-					ttfFileData?.Dispose();
-					ttfFileData = null;
-					if (!File.Exists(filePath.Span.ToString())) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
+					if (!File.Exists(filePathString)) throw new InvalidOperationException($"File '{filePathString}' does not exist.", e);
 					throw new InvalidOperationException("Error occured when reading and/or loading font file.", e);
 				}
 				

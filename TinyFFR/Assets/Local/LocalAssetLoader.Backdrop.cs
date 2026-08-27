@@ -304,8 +304,8 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 
 	static BackdropTexture ReadKtxFilesAndCreateBackdropTexture(BackdropLoadContext context, string skyboxKtxFilePath, string iblKtxFilePath) {
 		try {
-			context.SkyboxFileData = ReadKtxFile(context, skyboxKtxFilePath);
-			context.IblFileData = ReadKtxFile(context, iblKtxFilePath);
+			context.SkyboxFileData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, skyboxKtxFilePath, "KTX file");
+			context.IblFileData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, iblKtxFilePath, "KTX file");
 		}
 		catch (Exception e) {
 			if (!File.Exists(skyboxKtxFilePath)) throw new InvalidOperationException($"File '{skyboxKtxFilePath}' does not exist.", e);
@@ -314,22 +314,6 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		}
 
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteBackdropTextureCreation);
-	}
-
-	static PooledHeapMemory<byte> ReadKtxFile(BackdropLoadContext context, string filePath) {
-		using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-		var fileLengthBytes = checked((int) fileStream.Length);
-		ThrowIfAssetBufferSizeExceedsMaximum(fileLengthBytes, $"KTX file '{filePath}'");
-
-		var result = context.HeapPool.Borrow<byte>(fileLengthBytes);
-		try {
-			fileStream.ReadExactly(result.Span);
-		}
-		catch {
-			result.Dispose();
-			throw;
-		}
-		return result;
 	}
 
 	static void RunHdrPreprocessor(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, string destinationDirectoryPath) {
