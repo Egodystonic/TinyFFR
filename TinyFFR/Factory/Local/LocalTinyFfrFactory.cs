@@ -86,6 +86,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			[typeof(Font)] = AssetLoader,
 			[typeof(MeshAnimation)] = MeshBuilder,
 			[typeof(MeshNode)] = MeshBuilder,
+			[typeof(DynamicVertexBuffer)] = MeshBuilder,
 			[typeof(ResourceGroup)] = _resourceGroupProvider,
 		});
 	}

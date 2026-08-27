@@ -743,8 +743,8 @@ sealed partial class LocalSceneBuilder {
 				_ => 0.5f
 			},
 			anchor.GetVerticalComponent() switch {
-				VerticalOrientation2D.Up => 0f,
-				VerticalOrientation2D.Down => 1f,
+				VerticalOrientation2D.Up => 1f,
+				VerticalOrientation2D.Down => 0f,
 				_ => 0.5f
 			}
 		);
@@ -758,7 +758,7 @@ sealed partial class LocalSceneBuilder {
 		var effectiveExtent = data.UvExtent.ScaledBy(dock.FillFraction);
 		var effectiveOffset = data.UvOffset + CalculateCanvasAnchorUvFactor(dock.EffectiveObjectAnchor).ScaledBy(XYPair<float>.One - effectiveExtent);
 
-		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(effectiveOffset, Angle.Zero, effectiveExtent.Reciprocal ?? XYPair<float>.Zero));
+		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(-effectiveOffset, Angle.Zero, effectiveExtent.Reciprocal ?? XYPair<float>.Zero));
 		if (data.BlendTexture is { } blendTexture) {
 			_objectBuilder.SetMaterialEffectBlendTexture(instanceHandle, MaterialEffectMapType.Color, blendTexture);
 		}

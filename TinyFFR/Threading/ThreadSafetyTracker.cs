@@ -35,10 +35,18 @@ static class ThreadSafetyTracker {
 	public static void AssertCurrentThreadIsPrimary() {
 		lock (_staticMutationLock) {
 			if (_primaryThread != Thread.CurrentThread) {
-				throw new InvalidOperationException(
-					$"TinyFFR: The requested operation can not be executed from the current thread (\"{Thread.CurrentThread}\"), only the primary thread (\"{_primaryThread}\"). " +
-					$"The primary thread is set as the thread used to create the active {nameof(ITinyFfrFactory)}."
-				);
+				if (_primaryThread == null) {
+					throw new ObjectDisposedException(
+						$"TinyFFR: The requested operation can not be executed from the current thread (\"{Thread.CurrentThread.Name}\"), this is most likely because the " +
+						$"factory has been disposed (or was never successfully created) (the primary thread is unset)."
+					);	
+				}
+				else {
+					throw new InvalidOperationException(
+						$"TinyFFR: The requested operation can not be executed from the current thread (\"{Thread.CurrentThread.Name}\"), only the primary thread (\"{_primaryThread.Name}\"). " +
+						$"The primary thread is set as the thread used to create the active {nameof(ITinyFfrFactory)}."
+					);	
+				}
 			}
 		}
 	}

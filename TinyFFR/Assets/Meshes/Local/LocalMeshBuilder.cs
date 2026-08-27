@@ -20,7 +20,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<MeshAnimation>, IResourceDirectory<MeshNode>, IDisposable {
+sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<MeshAnimation>, IResourceDirectory<MeshNode>, IResourceDirectory<DynamicVertexBuffer>, IDisposable {
 	readonly record struct MeshData(MeshBufferData BufferData, PositionedCuboid BoundingBox);
 	
 	readonly record struct DynamicVertexBufferData(
@@ -1023,6 +1023,30 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return allowPartialMatch
 			? nameBuffer.Span.Contains(name, comparisonType)
 			: nameBuffer.Span.Equals(name, comparisonType);
+	}
+	IndirectEnumerable<object, DynamicVertexBuffer> IResourceDirectory<DynamicVertexBuffer>.AllActiveInstances {
+		get {
+			static LocalMeshBuilder CastSelf(object self) => self as LocalMeshBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._activeDynamicVertexBuffers.Count;
+			static int GetVersion(object self) => CastSelf(self)._activeDynamicVertexBuffers.Version;
+			static DynamicVertexBuffer GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._activeDynamicVertexBuffers.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(DynamicVertexBuffer resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultDynamicVertexBufferName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultDynamicVertexBufferName).Equals(name, comparisonType);
 	}
 	#endregion
 

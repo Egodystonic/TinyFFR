@@ -707,8 +707,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
 	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
-		if (handle == DefaultMaterial.Handle) return; // Never dispose/evict the default-material
 		if (IsDisposed(handle)) return;
+		if (handle == DefaultMaterial.GetHandleWithoutDisposeCheck()) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeMaterial);
