@@ -161,4 +161,68 @@ class ModelConfigTest {
 			.Including(nameof(ModelCreationConfig.Name))
 			.End();
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertLoadConfigToAndFromHeapStorageFormat() {
+		var testConfig = new ModelLoadConfig {
+			CreationConfig = new ModelCreationConfig {
+				MeshConfig = new() {
+					FlipTriangles = true,
+					LinearRescalingFactor = 3.5f,
+					OriginTranslation = new Vect(1f, 2f, 3f)
+				},
+				TextureConfig = new() {
+					IsLinearColorspace = true,
+					GenerateMipMaps = false,
+					ProcessingToApply = TextureProcessingConfig.Invert(includeAlphaChannel: true)
+				},
+				Name = "load config model"
+			},
+			ReadConfig = new ModelReadConfig {
+				MeshConfig = new() {
+					FixCommonExportErrors = false,
+					OptimizeForGpu = true,
+					SubMeshIndex = 4
+				},
+				TextureConfig = new() {
+					IncludeWAlphaChannel = true,
+					ForceWAlphaChannelPresence = true
+				},
+				HandleUriEscapedStrings = true,
+				GltfEmissiveStrengthScalar = 0.25f,
+				EmissiveStrengthCap = 0.75f,
+				EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
+			}
+		};
+
+		AssertRoundTripHeapStorage(testConfig, static (expected, actual) => {
+			Assert.AreEqual(expected.CreationConfig.Name.ToString(), actual.CreationConfig.Name.ToString());
+			Assert.AreEqual(expected.CreationConfig.MeshConfig.FlipTriangles, actual.CreationConfig.MeshConfig.FlipTriangles);
+			Assert.AreEqual(expected.CreationConfig.MeshConfig.LinearRescalingFactor, actual.CreationConfig.MeshConfig.LinearRescalingFactor);
+			Assert.AreEqual(expected.CreationConfig.MeshConfig.OriginTranslation, actual.CreationConfig.MeshConfig.OriginTranslation);
+			Assert.AreEqual(expected.CreationConfig.TextureConfig.IsLinearColorspace, actual.CreationConfig.TextureConfig.IsLinearColorspace);
+			Assert.AreEqual(expected.CreationConfig.TextureConfig.GenerateMipMaps, actual.CreationConfig.TextureConfig.GenerateMipMaps);
+			Assert.AreEqual(expected.CreationConfig.TextureConfig.RenderingConfig, actual.CreationConfig.TextureConfig.RenderingConfig);
+			Assert.AreEqual(expected.CreationConfig.TextureConfig.ProcessingToApply, actual.CreationConfig.TextureConfig.ProcessingToApply);
+			Assert.AreEqual(expected.ReadConfig.MeshConfig.FixCommonExportErrors, actual.ReadConfig.MeshConfig.FixCommonExportErrors);
+			Assert.AreEqual(expected.ReadConfig.MeshConfig.OptimizeForGpu, actual.ReadConfig.MeshConfig.OptimizeForGpu);
+			Assert.AreEqual(expected.ReadConfig.MeshConfig.SubMeshIndex, actual.ReadConfig.MeshConfig.SubMeshIndex);
+			Assert.AreEqual(expected.ReadConfig.TextureConfig.IncludeWAlphaChannel, actual.ReadConfig.TextureConfig.IncludeWAlphaChannel);
+			Assert.AreEqual(expected.ReadConfig.TextureConfig.ForceWAlphaChannelPresence, actual.ReadConfig.TextureConfig.ForceWAlphaChannelPresence);
+			Assert.AreEqual(expected.ReadConfig.HandleUriEscapedStrings, actual.ReadConfig.HandleUriEscapedStrings);
+			Assert.AreEqual(expected.ReadConfig.GltfEmissiveStrengthScalar, actual.ReadConfig.GltfEmissiveStrengthScalar);
+			Assert.AreEqual(expected.ReadConfig.EmissiveStrengthCap, actual.ReadConfig.EmissiveStrengthCap);
+			Assert.AreEqual(expected.ReadConfig.EmbeddedTextureMapScalingStrategy, actual.ReadConfig.EmbeddedTextureMapScalingStrategy);
+		});
+
+		AssertHeapSerializationWithObjects<ModelLoadConfig>()
+			.SubConfig(testConfig.CreationConfig)
+			.SubConfig(testConfig.ReadConfig)
+			.For(testConfig);
+
+		AssertPropertiesAccountedFor<ModelLoadConfig>()
+			.Including(nameof(ModelLoadConfig.CreationConfig))
+			.Including(nameof(ModelLoadConfig.ReadConfig))
+			.End();
+	}
 }

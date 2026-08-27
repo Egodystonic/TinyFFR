@@ -86,6 +86,39 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 	public static TexelRgba32 ConvertFrom(TexelRgb24 t) => t.ToRgba32();
 	public static TexelRgba32 ConvertFrom<T>(T v) where T : unmanaged, IFourByteChannelTexel<T> => new(v[0], v[1], v[2], v[3]);
 
+	public static bool TryCoerceSpan<TOther>(ReadOnlySpan<TexelRgba32> src, Span<TOther> dest) where TOther : unmanaged, ITexel<TOther> {
+		switch (TOther.BlitType) {
+			case TexelType.Rgba32:
+				src.CopyTo(MemoryMarshal.Cast<TOther, TexelRgba32>(dest));
+				return true;
+			case TexelType.Rgb24:
+				var castDest = MemoryMarshal.Cast<TOther, TexelRgb24>(dest);
+				for (var i = 0; i < src.Length; ++i) castDest[i] = src[i].ToRgb24();
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	public static bool TryCoerceSpanFrom<TOther>(ReadOnlySpan<TOther> src, Span<TexelRgba32> dest, bool mergeWithExistingDestinationData = false) where TOther : unmanaged, ITexel<TOther> {
+		switch (TOther.BlitType) {
+			case TexelType.Rgba32:
+				MemoryMarshal.Cast<TOther, TexelRgba32>(src).CopyTo(dest);
+				return true;
+			case TexelType.Rgb24:
+				var castSrc = MemoryMarshal.Cast<TOther, TexelRgb24>(src);
+				if (mergeWithExistingDestinationData) {
+					for (var i = 0; i < castSrc.Length; ++i) dest[i] = castSrc[i].ToRgba32(dest[i].A);
+				}
+				else {
+					for (var i = 0; i < castSrc.Length; ++i) dest[i] = castSrc[i].ToRgba32();
+				}
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	public TexelRgba32 WithInvertedChannelIfPresent(int channelIndex) {
 		return channelIndex switch {
 			0 => this with { R = (byte) (Byte.MaxValue - R) },

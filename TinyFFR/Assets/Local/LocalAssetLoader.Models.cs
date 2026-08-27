@@ -13,108 +13,16 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	const int ResourceNameIndexSpaceMax = 20;
 	const string MeshNameSuffix = " mesh ";
-	const string MatNameSuffix = " material ";
-	const string TexNameSuffix = " texture map_";
-	const int TexNameTypeSpaceMax = 20;
-	
-	enum AssetMaterialParamDataFormat : int { NotIncluded = 0, Numerical = 1, TextureMap = 2 }
-	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)] 
-	readonly record struct AssetMaterialParam(AssetMaterialParamDataFormat Format, int TextureMapIndex, float NumericalValueR, float NumericalValueG, float NumericalValueB, float NumericalValueA) {
-		public TexelRgba32 ToTexel() => TexelRgba32.FromNormalizedFloats(NumericalValueR, NumericalValueG, NumericalValueB, NumericalValueA);
-		public ColorVect ToColorVect() => new(NumericalValueR, NumericalValueG, NumericalValueB, NumericalValueA);
-	}
-	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8 * 15)] 
-	readonly struct AssetMaterialParamGroup {
-		public readonly AssetMaterialParam* ColorParamsPtr;
-		public readonly AssetMaterialParam* NormalParamsPtr;
-		public readonly AssetMaterialParam* AmbientOcclusionParamsPtr;
-		public readonly AssetMaterialParam* RoughnessParamsPtr;
-		public readonly AssetMaterialParam* GlossinessParamsPtr;
-		public readonly AssetMaterialParam* MetallicParamsPtr;
-		public readonly AssetMaterialParam* IoRParamsPtr;
-		public readonly AssetMaterialParam* AbsorptionParamsPtr;
-		public readonly AssetMaterialParam* TransmissionParamsPtr;
-		public readonly AssetMaterialParam* EmissiveColorParamsPtr;
-		public readonly AssetMaterialParam* EmissiveIntensityParamsPtr;
-		public readonly AssetMaterialParam* AnisotropyAngleParamsPtr;
-		public readonly AssetMaterialParam* AnisotropyStrengthParamsPtr;
-		public readonly AssetMaterialParam* ClearCoatStrengthParamsPtr;
-		public readonly AssetMaterialParam* ClearCoatRoughnessParamsPtr;
-
-		public AssetMaterialParamGroup(AssetMaterialParam* colorParamsPtr, AssetMaterialParam* normalParamsPtr, AssetMaterialParam* ambientOcclusionParamsPtr, AssetMaterialParam* roughnessParamsPtr, AssetMaterialParam* glossinessParamsPtr, AssetMaterialParam* metallicParamsPtr, AssetMaterialParam* ioRParamsPtr, AssetMaterialParam* absorptionParamsPtr, AssetMaterialParam* transmissionParamsPtr, AssetMaterialParam* emissiveColorParamsPtr, AssetMaterialParam* emissiveIntensityParamsPtr, AssetMaterialParam* anisotropyAngleParamsPtr, AssetMaterialParam* anisotropyStrengthParamsPtr, AssetMaterialParam* clearCoatStrengthParamsPtr, AssetMaterialParam* clearCoatRoughnessParamsPtr) {
-			ColorParamsPtr = colorParamsPtr;
-			NormalParamsPtr = normalParamsPtr;
-			AmbientOcclusionParamsPtr = ambientOcclusionParamsPtr;
-			RoughnessParamsPtr = roughnessParamsPtr;
-			GlossinessParamsPtr = glossinessParamsPtr;
-			MetallicParamsPtr = metallicParamsPtr;
-			IoRParamsPtr = ioRParamsPtr;
-			AbsorptionParamsPtr = absorptionParamsPtr;
-			TransmissionParamsPtr = transmissionParamsPtr;
-			EmissiveColorParamsPtr = emissiveColorParamsPtr;
-			EmissiveIntensityParamsPtr = emissiveIntensityParamsPtr;
-			AnisotropyAngleParamsPtr = anisotropyAngleParamsPtr;
-			AnisotropyStrengthParamsPtr = anisotropyStrengthParamsPtr;
-			ClearCoatStrengthParamsPtr = clearCoatStrengthParamsPtr;
-			ClearCoatRoughnessParamsPtr = clearCoatRoughnessParamsPtr;
-		}
-	};
-	readonly struct EmbeddedTextureData : IDisposable {
-		readonly FixedByteBufferPool _owningPool;
-		readonly FixedByteBufferPool.FixedByteBuffer _rentedBuffer;
-		public readonly XYPair<int> Dimensions;
-		
-		public Span<TexelRgba32> TexelSpan => _rentedBuffer.AsSpan<TexelRgba32>(Dimensions.Area);
-
-		public EmbeddedTextureData(FixedByteBufferPool owningPool, FixedByteBufferPool.FixedByteBuffer rentedBuffer, XYPair<int> dimensions) {
-			_owningPool = owningPool;
-			_rentedBuffer = rentedBuffer;
-			Dimensions = dimensions;
-		}
-
-		public void Dispose() => _owningPool.Return(_rentedBuffer);
-	}
-	readonly ref struct AssetMaterialCreationParameters {
-		readonly Span<char> _subResourceNameBuffer;
-		readonly int _subResourceNameTexTypeStartIndex;
-		public readonly UIntPtr AssetHandle;
-		public readonly int MaterialIndex;
-		public readonly TextureCreationConfig Config;
-		public readonly ref readonly byte AssetRootDirStrRef;
-		public readonly bool UriUnescapeEmbeddedResourceStrings;
-		public readonly float GltfEmissiveStrengthScalar;
-		public readonly float EmissiveStrengthCap;
-		public readonly TextureCombinationScalingStrategy TextureCombinationStrategy;
-
-		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, Span<char> subResourceNameBuffer, int matNameLength, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy) {
-			AssetHandle = assetHandle;
-			MaterialIndex = materialIndex;
-			_subResourceNameBuffer = subResourceNameBuffer;
-			TexNameSuffix.CopyTo(_subResourceNameBuffer[matNameLength..]);
-			_subResourceNameTexTypeStartIndex = matNameLength + TexNameSuffix.Length;
-			Config = config;
-			AssetRootDirStrRef = ref assetRootDirStrRef;
-			UriUnescapeEmbeddedResourceStrings = uriUnescapeEmbeddedResourceStrings;
-			GltfEmissiveStrengthScalar = gltfEmissiveStrengthScalar;
-			EmissiveStrengthCap = emissiveStrengthCap;
-			TextureCombinationStrategy = textureCombinationStrategy;
-		}
-		
-		public ReadOnlySpan<char> CreateTextureName(ReadOnlySpan<char> textureTypeName) {
-			textureTypeName.CopyTo(_subResourceNameBuffer[_subResourceNameTexTypeStartIndex..]);
-			return _subResourceNameBuffer[..(_subResourceNameTexTypeStartIndex + textureTypeName.Length)];
-		}
-	}
 	
 	const string DefaultModelName = "Unnamed Model";
-	const int MaxExternalAssetFilePathLength = 2048;
-	readonly FixedByteBufferPool _embeddedAssetTextureBufferPool;
+	readonly WorkerJobSyncHelper<LocalAssetLoader, ModelLoadContext, ModelLoadConfig> _modelLoadWorkerSyncHelper;
 	readonly ArrayPoolBackedMap<ResourceHandle<Model>, (Mesh Mesh, Material Material)> _loadedModels = new();
 	nuint _prevModelHandle = 0;
 	
@@ -129,960 +37,397 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		return HandleToInstance(handle);
 	}
 	
-	EmbeddedTextureData LoadAssetTexture(UIntPtr assetHandle, int materialIndex, int textureIndex, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings) {
-		if (textureIndex < 0) {
-			GetLoadedAssetTextureExternalPathLength(
-				assetHandle,
-				materialIndex,
-				textureIndex,
-				in assetRootDirStrRef,
-				out var strLenLessNullTerminator
-			).ThrowIfFailure();
-			
-			if (strLenLessNullTerminator <= 0 || strLenLessNullTerminator >= MaxExternalAssetFilePathLength) {
-				throw new InvalidOperationException($"Can not load embedded texture at index '{textureIndex}' as its external path length is '{strLenLessNullTerminator}' bytes.");
-			}
-			
-			var strBuffer = stackalloc byte[strLenLessNullTerminator + 1];
-			
-			GetLoadedAssetTextureExternalPath(
-				assetHandle,
-				materialIndex,
-				textureIndex,
-				in assetRootDirStrRef,
-				strBuffer,
-				strLenLessNullTerminator + 1
-			).ThrowIfFailure();
-			
-			if (uriUnescapeEmbeddedResourceStrings) {
-				var strBufferSpan = new Span<byte>(strBuffer, strLenLessNullTerminator + 1);
-				var escapedStr = Encoding.UTF8.GetString(strBufferSpan[..^1]);
-				var unescapedStr = Uri.UnescapeDataString(escapedStr);
-				var byteCount = Encoding.UTF8.GetByteCount(unescapedStr);
-				if (byteCount > strLenLessNullTerminator) throw new InvalidOperationException($"Escaped resource string '{escapedStr}' was longer than unescaped string '{unescapedStr}'!");
-				strBufferSpan.Clear(); // This makes sure the unwritten portion of the buffer will be null terminator(s)
-				Encoding.UTF8.GetBytes(unescapedStr, strBufferSpan[..^1]);
-			}
+	sealed class ModelLoadSubMeshData : IDisposable {
+		public PooledHeapMemory<byte>? VertexData { get; set; } = null;
+		public PooledHeapMemory<byte>? TriangleData { get; set; } = null;
+		public PooledHeapMemory<byte>? InternalNodeData { get; set; } = null;
+		public PooledHeapMemory<SkeletalAnimationNode>? SkeletalNodes { get; set; } = null;
+		public MeshSkeletalGatherBuffers SkeletalDataRegistry { get; } = new();
+		public ModelLoadMaterialTextureRegistry TextureRegistry { get; } = new();
+		public GatheredMaterialData? GatheredMaterial { get; set; } = null;
+		public int MaterialAssetIndex { get; set; } = -1;
+		public int VertexCount { get; set; } = 0;
+		public int TriangleCount { get; set; } = 0;
+		public int NodeCount { get; set; } = 0;
+		public int BoneCount { get; set; } = 0;
+		public bool IsSkeletal { get; set; } = false;
+		public bool AllowsPerInstanceVertexMutation { get; set; } = false;
+		public bool GenerateWireframeData { get; set; } = false;
+		public PositionedCuboid BoundingBox { get; set; } = default;
+		public Vect OriginTranslation { get; set; } = Vect.Zero;
+		public float LinearRescalingFactor { get; set; } = 1f;
+		public NameSlice Name { get; set; } = default;
 
-			var loadResult = LoadTextureFileInToMemory(
-				in Unsafe.AsRef<byte>(strBuffer),
-				true,
-				out var width,
-				out var height,
-				out var texBuf
-			);
-			if (!loadResult) {
-				try {
-					loadResult.ThrowIfFailure();
-				}
-				catch (Exception e) {
-					if (uriUnescapeEmbeddedResourceStrings) throw;
-					else {
-						throw new InvalidOperationException($"Failure to load embedded model texture; " +
-							$"if this resource name is an escaped URI string consider setting {nameof(ModelReadConfig.HandleUriEscapedStrings)} to true.", e);
-					}
-				}
-			}
-
-			try {
-				if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
-				var texelCount = width * height;
-
-				var resultBuffer = _embeddedAssetTextureBufferPool.Rent<TexelRgba32>(checked(width * height));
-				new ReadOnlySpan<TexelRgba32>(texBuf, texelCount).CopyTo(resultBuffer.AsSpan<TexelRgba32>(texelCount));
-				return new(_embeddedAssetTextureBufferPool, resultBuffer, new XYPair<int>(width, height));
-			}
-			finally {
-				UnloadTextureFileFromMemory(texBuf).ThrowIfFailure();
-			}
-		}
-		
-		GetLoadedAssetTextureSize(
-			assetHandle, 
-			textureIndex,
-			in assetRootDirStrRef,
-			out var outWidth,
-			out var outHeight
-		).ThrowIfFailure();
-		
-		if (outWidth < 0 || outHeight < 0) throw new InvalidOperationException($"Width or height for asset texture at index '{textureIndex}' was malformed.");
-		
-		var texelBuffer = _embeddedAssetTextureBufferPool.Rent<TexelRgba32>(checked(outWidth * outHeight));
-		
-		GetLoadedAssetTextureData(
-			assetHandle,
-			textureIndex,
-			in assetRootDirStrRef,
-			(void*) texelBuffer.StartPtr,
-			texelBuffer.SizeBytes,
-			out outWidth,
-			out outHeight
-		).ThrowIfFailure();
-		
-		return new(_embeddedAssetTextureBufferPool, texelBuffer, new XYPair<int>(outWidth, outHeight));
-	}
-	
-	Span<TexelRgba32> AbstractTexelSpanFromParamPtr(AssetMaterialParam* paramPtr, UIntPtr assetHandle, int materialIndex, bool uriUnescapeEmbeddedResourceStrings, ref readonly byte assetRootDirStrRef, ref TexelRgba32 stackTexelWithDefaultValue, out EmbeddedTextureData? outEmbeddedTex) {
-		switch (paramPtr->Format) {
-			case AssetMaterialParamDataFormat.Numerical:
-				stackTexelWithDefaultValue = paramPtr->ToTexel();
-				outEmbeddedTex = null;
-				return new Span<TexelRgba32>(ref stackTexelWithDefaultValue);
-		
-			case AssetMaterialParamDataFormat.TextureMap:
-				outEmbeddedTex = LoadAssetTexture(
-					assetHandle,
-					materialIndex,
-					paramPtr->TextureMapIndex,
-					in assetRootDirStrRef,
-					uriUnescapeEmbeddedResourceStrings
-				);
-				// ReSharper disable CompareOfFloatsByEqualityOperator -- expected that the native side will explicitly set these to exactly -1f/0f/1f/etc
-				if (paramPtr->NumericalValueR == -1f && paramPtr->NumericalValueG == -1f && paramPtr->NumericalValueB == -1f && paramPtr->NumericalValueA != 1f) {
-					if (paramPtr->NumericalValueA == 0f) {
-						// Shortcut out for a 0 value
-						outEmbeddedTex.Value.TexelSpan.Clear();
-					}
-					else {
-						for (var i = 0; i < outEmbeddedTex.Value.TexelSpan.Length; ++i) {
-							var beforeMult = outEmbeddedTex.Value.TexelSpan[i];
-							outEmbeddedTex.Value.TexelSpan[i] = new TexelRgba32(
-								(byte) (beforeMult.R * paramPtr->NumericalValueA),
-								(byte) (beforeMult.G * paramPtr->NumericalValueA),
-								(byte) (beforeMult.B * paramPtr->NumericalValueA),
-								(byte) (beforeMult.A * paramPtr->NumericalValueA)
-							);
-						}	
-					}
-				}
-				// ReSharper restore CompareOfFloatsByEqualityOperator
-				return outEmbeddedTex.Value.TexelSpan;
-			
-			default: 
-				outEmbeddedTex = null;
-				return new Span<TexelRgba32>(ref stackTexelWithDefaultValue);
-		}
-	}
-	
-	static bool ParamPtrsRepresentIdenticalTextures(UIntPtr assetHandle, int materialIndex, ref readonly byte assetRootDirStrRef, AssetMaterialParam* paramPtrA, AssetMaterialParam* paramPtrB) {
-		if (paramPtrA->Format != AssetMaterialParamDataFormat.TextureMap || paramPtrB->Format != AssetMaterialParamDataFormat.TextureMap) return false;
-		if (paramPtrA->TextureMapIndex == paramPtrB->TextureMapIndex) return true;
-		if (paramPtrA->TextureMapIndex >= 0 || paramPtrB->TextureMapIndex >= 0) return false;
-		
-		GetLoadedAssetTextureExternalPathLength(
-			assetHandle,
-			materialIndex,
-			paramPtrA->TextureMapIndex,
-			in assetRootDirStrRef,
-			out var aStrLenLessNullTerminator
-		).ThrowIfFailure();
-		
-		GetLoadedAssetTextureExternalPathLength(
-			assetHandle,
-			materialIndex,
-			paramPtrB->TextureMapIndex,
-			in assetRootDirStrRef,
-			out var bStrLenLessNullTerminator
-		).ThrowIfFailure();
-		
-		var aInvalid = aStrLenLessNullTerminator is <= 0 or >= MaxExternalAssetFilePathLength;
-		var bInvalid = bStrLenLessNullTerminator is <= 0 or >= MaxExternalAssetFilePathLength;
-		
-		if (aInvalid || bInvalid || aStrLenLessNullTerminator != bStrLenLessNullTerminator) return false;
-		
-		var aStrBuffer = stackalloc byte[aStrLenLessNullTerminator + 1];
-		var bStrBuffer = stackalloc byte[bStrLenLessNullTerminator + 1];
-		
-		GetLoadedAssetTextureExternalPath(
-			assetHandle,
-			materialIndex,
-			paramPtrA->TextureMapIndex,
-			in assetRootDirStrRef,
-			aStrBuffer,
-			aStrLenLessNullTerminator + 1
-		).ThrowIfFailure();
-		
-		GetLoadedAssetTextureExternalPath(
-			assetHandle,
-			materialIndex,
-			paramPtrB->TextureMapIndex,
-			in assetRootDirStrRef,
-			bStrBuffer,
-			bStrLenLessNullTerminator + 1
-		).ThrowIfFailure();
-		
-		var aSpan = new ReadOnlySpan<byte>(aStrBuffer, aStrLenLessNullTerminator);
-		var bSpan = new ReadOnlySpan<byte>(bStrBuffer, bStrLenLessNullTerminator);
-		return aSpan.SequenceEqual(bSpan);
-	}
-	
-	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, in AssetMaterialCreationParameters creationParams) {
-		const string TextureTypeName = "color";
-		switch (paramPtr->Format) {
-			case AssetMaterialParamDataFormat.Numerical:
-				return TextureBuilder.CreateColorMap(
-					paramPtr->ToColorVect(),
-					includeAlpha: true,
-					creationParams.Config with {
-						Name = creationParams.CreateTextureName(TextureTypeName),
-						IsLinearColorspace = true // Numerical outputs are in linear space
-					}
-				);
-			
-			case AssetMaterialParamDataFormat.TextureMap:
-				using (var embeddedTex = LoadAssetTexture(creationParams.AssetHandle, creationParams.MaterialIndex, paramPtr->TextureMapIndex, in creationParams.AssetRootDirStrRef, creationParams.UriUnescapeEmbeddedResourceStrings)) {
-					return TextureBuilder.CreateTexture(
-						embeddedTex.TexelSpan,
-						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-						creationParams.Config with {
-							Name = creationParams.CreateTextureName(TextureTypeName),
-							IsLinearColorspace = false
-						}
-					);
-				}
-				
-			default: return TextureBuilder.CreateColorMap(name: creationParams.CreateTextureName(TextureTypeName));
-		}
-	}
-	
-	Texture? CreateAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, in AssetMaterialCreationParameters creationParams) {
-		const string TextureTypeName = "at";
-		if (absorptionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && transmissionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
-		
-		// All in one texture, just load the whole thing once and return it, no combination required
-		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, absorptionParamPtr, transmissionParamPtr)) {
-			using var embeddedTex = LoadAssetTexture(
-				creationParams.AssetHandle,
-				creationParams.MaterialIndex,
-				absorptionParamPtr->TextureMapIndex,
-				in creationParams.AssetRootDirStrRef,
-				creationParams.UriUnescapeEmbeddedResourceStrings
-			);
-			return TextureBuilder.CreateTexture(
-				embeddedTex.TexelSpan,
-				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false }
-			);
-		}
-		
-		var defaultAbsorptionTexel = new TexelRgba32(ITextureBuilder.DefaultAbsorption);
-		var defaultTransmissionTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultTransmission, Real.Zero, Real.Zero, Real.Zero);
-		
-		var absorptionTexels = AbstractTexelSpanFromParamPtr(
-			absorptionParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultAbsorptionTexel,
-			out var absorptionEmbeddedTex
-		);
-		var transmissionTexels = AbstractTexelSpanFromParamPtr(
-			transmissionParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultTransmissionTexel,
-			out var transmissionEmbeddedTex
-		);
-
-		try {
-			var aDim = absorptionEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var bDim = transmissionEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
-			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
-			TextureUtils.CombineTextures(
-				absorptionTexels, aDim,	
-				transmissionTexels, bDim,
-				new TextureCombinationConfig(
-					creationParams.TextureCombinationStrategy,
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
-				),
-				destinationBuffer.Span
-			);
-			return TextureBuilder.CreateTexture(
-				destinationBuffer.Span,
-				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with {
-					Name = creationParams.CreateTextureName(TextureTypeName),
-					IsLinearColorspace = !absorptionEmbeddedTex.HasValue // Numerical values are linear, textures assumed sRGB
-				}
-			);
-		}
-		finally {
-			absorptionEmbeddedTex?.Dispose();
-			transmissionEmbeddedTex?.Dispose();
-		}
-	}
-	
-	Texture? CreateAssetNormalMap(AssetMaterialParam* paramPtr, in AssetMaterialCreationParameters creationParams) {
-		const string TextureTypeName = "norm";
-		switch (paramPtr->Format) {
-			case AssetMaterialParamDataFormat.Numerical:
-				return TextureBuilder.CreateTexture(
-					paramPtr->ToTexel().ToRgb24(),
-					creationParams.Config with {
-						Name = creationParams.CreateTextureName(TextureTypeName),
-						IsLinearColorspace = true
-					}
-				);
-			
-			case AssetMaterialParamDataFormat.TextureMap:
-				using (var embeddedTex = LoadAssetTexture(creationParams.AssetHandle, creationParams.MaterialIndex, paramPtr->TextureMapIndex, in creationParams.AssetRootDirStrRef, creationParams.UriUnescapeEmbeddedResourceStrings)) {
-					using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
-					TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
-					return TextureBuilder.CreateTexture(
-						rgbTexelBuffer.Span,
-						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-						creationParams.Config with {
-							Name = creationParams.CreateTextureName(TextureTypeName), 
-							IsLinearColorspace = true
-						}
-					);
-				}
-				
-			default: return null;
-		}
-	}
-	
-	Texture? CreateAssetOrmrMap(AssetMaterialParam* occlusionParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialParam* glossinessParamPtr, AssetMaterialParam* metallicParamPtr, AssetMaterialParam* iorParamPtr, bool reflectanceRequired, in AssetMaterialCreationParameters creationParams) {
-		const string TextureTypeName = "orm";
-		
-		// Maintainer's note:
-		// Reflectance can not be stored in a texture map, because it's actually exposed as IoR from assimp and there's no industry-normalized range mapping [0-1] to any known IoR range
-		// So either we don't specify it at all or if there's a numerical value it's considered to be IoR and must be converted
-		if (occlusionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded 
-			&& roughnessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded 
-			&& glossinessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded
-			&& metallicParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded
-			&& iorParamPtr->Format != AssetMaterialParamDataFormat.Numerical) {
-			return null;
-		}
-		
-		var reflectanceValue = iorParamPtr->Format == AssetMaterialParamDataFormat.Numerical
-			? MathF.Pow((iorParamPtr->NumericalValueR - 1f) / (iorParamPtr->NumericalValueR + 1f), 2f) // Conversion from IoR to reflectance
-			: (float?) null;
-		if (reflectanceRequired) reflectanceValue ??= ITextureBuilder.DefaultReflectance;
-		
-		var occlusionRoughnessAreSameTexture = ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, occlusionParamPtr, roughnessParamPtr);
-		var roughnessMetallicAreSameTexture = ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, roughnessParamPtr, metallicParamPtr);
-		// No reflectance and the rest are a singular ORM map, just load it and be done
-		if (reflectanceValue == null && occlusionRoughnessAreSameTexture && roughnessMetallicAreSameTexture) {
-			using var embeddedTex = LoadAssetTexture(
-				creationParams.AssetHandle,
-				creationParams.MaterialIndex,
-				occlusionParamPtr->TextureMapIndex,
-				in creationParams.AssetRootDirStrRef,
-				creationParams.UriUnescapeEmbeddedResourceStrings
-			);
-			return TextureBuilder.CreateTexture(
-				embeddedTex.TexelSpan,
-				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with {
-					Name = creationParams.CreateTextureName(TextureTypeName),
-					IsLinearColorspace = true
-				}
-			);
-		}
-		
-		var defaultOcclusionTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion);
-		var defaultRoughnessTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness);
-		var defaultMetallicTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic);
-		
-		var glossinessSpecifiedOverRoughness = roughnessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && glossinessParamPtr->Format != AssetMaterialParamDataFormat.NotIncluded;
-		
-		var occlusionTexels = AbstractTexelSpanFromParamPtr(
-			occlusionParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultOcclusionTexel,
-			out var occlusionEmbeddedTex
-		);
-		var roughnessTexels = AbstractTexelSpanFromParamPtr(
-			glossinessSpecifiedOverRoughness ? glossinessParamPtr : roughnessParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultRoughnessTexel,
-			out var roughnessEmbeddedTex
-		);
-		var metallicTexels = AbstractTexelSpanFromParamPtr(
-			metallicParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultMetallicTexel,
-			out var metallicEmbeddedTex
-		);
-		
-		try {
-			var aDim = occlusionEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var bDim = roughnessEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var cDim = metallicEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim, cDim);
-			if (glossinessSpecifiedOverRoughness) TextureUtils.NegateTexture(roughnessTexels, bDim);
-			
-			/*	Maintainer's note:
-			 *	I originally had logic here to select the roughness/metallic channel for combination below depending on which textures were detected as "combined".
-			 *	The thinking was that if e.g. the metallic texture was a separate texture file, we should select its R channel rather than the canonical B channel,
-			 *	as it could in theory have data only in Red. However, this proved more problematic than useful, and more often than not was just plain wrong.
-			 *	In fact, if we have a separate metallic texture I think we can assume it's monochromatic but with all RGB channels set to the same value. Ditto roughness.
-			 */
-
-			if (reflectanceValue.HasValue) {
-				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
-				var reflectanceTexel = TexelRgba32.FromNormalizedFloats(reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value);
-				TextureUtils.CombineTextures(
-					occlusionTexels, aDim,	
-					roughnessTexels, bDim,
-					metallicTexels, cDim,
-					new ReadOnlySpan<TexelRgba32>(in reflectanceTexel), XYPair<int>.One,
-					new TextureCombinationConfig(
-						creationParams.TextureCombinationStrategy,
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.A)
-					),
-					destinationBuffer.Span
-				);
-				return TextureBuilder.CreateTexture(
-					destinationBuffer.Span,
-					new TextureGenerationConfig { Dimensions = destDim },
-					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName + "r"), IsLinearColorspace = true }
-				);
-			}
-			else {
-				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
-				TextureUtils.CombineTextures(
-					occlusionTexels, aDim,	
-					roughnessTexels, bDim,
-					metallicTexels, cDim,
-					new TextureCombinationConfig(
-						creationParams.TextureCombinationStrategy,
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B)
-					),
-					destinationBuffer.Span
-				);
-				return TextureBuilder.CreateTexture(
-					destinationBuffer.Span,
-					new TextureGenerationConfig { Dimensions = destDim },
-					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
-				);
-			}
-		}
-		finally {
-			occlusionEmbeddedTex?.Dispose();
-			roughnessEmbeddedTex?.Dispose();
-			metallicEmbeddedTex?.Dispose();
-		}
-	}
-	
-	Texture? CreateAssetAnisotropyMap(AssetMaterialParam* angleParamPtr, AssetMaterialParam* strengthParamPtr, in AssetMaterialCreationParameters creationParams) {
-		const string TextureTypeName = "aniso";
-		if (angleParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
-		
-		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_anisotropy/README.md
-		// So we assume this format is the one being used, which matches what TinyFFR already expects thankfully
-		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, angleParamPtr, strengthParamPtr)) {
-			using var embeddedTex = LoadAssetTexture(
-				creationParams.AssetHandle,
-				creationParams.MaterialIndex,
-				angleParamPtr->TextureMapIndex,
-				in creationParams.AssetRootDirStrRef,
-				creationParams.UriUnescapeEmbeddedResourceStrings
-			);
-			using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
-			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
-			return TextureBuilder.CreateTexture(
-				rgbTexelBuffer.Span,
-				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
-			);
-		}
-		
-		var defaultAngleTexel = new TexelRgba32(0, 0, 0, 0);
-		var defaultStrengthTexel = new TexelRgba32(255, 255, 255, 255);
-		
-		var angleTexels = AbstractTexelSpanFromParamPtr(
-			angleParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultAngleTexel,
-			out var angleEmbeddedTex
-		);
-		var strengthTexels = AbstractTexelSpanFromParamPtr(
-			strengthParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultStrengthTexel,
-			out var strengthEmbeddedTex
-		);
-
-		try {
-			var aDim = angleEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var bDim = strengthEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
-			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
-			TextureUtils.CombineTextures(
-				angleTexels, aDim,	
-				strengthTexels, bDim,
-				new TextureCombinationConfig(
-					creationParams.TextureCombinationStrategy,
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
-				),
-				destinationBuffer.Span
-			);
-			// After combining the disparate textures we need to convert them from angle/strength to tangent-space vector + strength
-			IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(destinationBuffer.Span, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, ColorChannel.B);
-			return TextureBuilder.CreateTexture(
-				destinationBuffer.Span,
-				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
-			);
-		}
-		finally {
-			angleEmbeddedTex?.Dispose();
-			strengthEmbeddedTex?.Dispose();
-		}
-	}
-	
-	Texture? CreateAssetEmissiveMap(AssetMaterialParam* colorParamPtr, AssetMaterialParam* intensityParamPtr, in AssetMaterialCreationParameters creationParams) {
-		const string TextureTypeName = "emissive";
-		if (colorParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && intensityParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
-		
-		static void ScaleAndCapEmissiveIntensity(Span<TexelRgba32> texels, bool targetAlphaChannel, float scalar, byte cap) {
-			if (targetAlphaChannel) {
-				for (var i = 0; i < texels.Length; ++i) {
-					var scaled = (byte) MathF.Round(Single.Clamp(texels[i].A * scalar, 0f, cap));
-					texels[i] = texels[i] with { A = scaled };
-				}
-			}
-			else {
-				for (var i = 0; i < texels.Length; ++i) {
-					var scaled = (byte) MathF.Round(Single.Clamp(texels[i].R * scalar, 0f, cap));
-					texels[i] = texels[i] with { R = scaled };
-				}
-			}
-		}
-		
-		// All in one texture, just load the whole thing once and return it, no combination required
-		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, colorParamPtr, intensityParamPtr)) {
-			using var embeddedTex = LoadAssetTexture(
-				creationParams.AssetHandle,
-				creationParams.MaterialIndex,
-				colorParamPtr->TextureMapIndex,
-				in creationParams.AssetRootDirStrRef,
-				creationParams.UriUnescapeEmbeddedResourceStrings
-			);
-			ScaleAndCapEmissiveIntensity(embeddedTex.TexelSpan, true, creationParams.GltfEmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
-			return TextureBuilder.CreateTexture(
-				embeddedTex.TexelSpan,
-				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false }
-			);
-		}
-		
-		var defaultColorTexel = new TexelRgba32(ITextureBuilder.DefaultEmissiveColor);
-		var defaultIntensityTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity);
-		
-		var colorTexels = AbstractTexelSpanFromParamPtr(
-			colorParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultColorTexel,
-			out var colorEmbeddedTex
-		);
-		var modifiedIntensityParam = (*intensityParamPtr) with {
-			NumericalValueR = Single.Clamp(intensityParamPtr->NumericalValueR * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
-			NumericalValueG = Single.Clamp(intensityParamPtr->NumericalValueG * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
-			NumericalValueB = Single.Clamp(intensityParamPtr->NumericalValueB * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
-			NumericalValueA = Single.Clamp(intensityParamPtr->NumericalValueA * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap)
-		};
-		var intensityTexels = AbstractTexelSpanFromParamPtr(
-			&modifiedIntensityParam,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultIntensityTexel,
-			out var intensityEmbeddedTex
-		);
-		if (intensityParamPtr->Format == AssetMaterialParamDataFormat.TextureMap) {
-			ScaleAndCapEmissiveIntensity(intensityTexels, false, creationParams.GltfEmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
+		public void DisposeBuffersAndReset() {
+			SkeletalDataRegistry.DisposeUntransferredBuffersAndReset();
+			TextureRegistry.DisposeBuffersAndReset();
+			VertexData?.Dispose();
+			VertexData = null;
+			TriangleData?.Dispose();
+			TriangleData = null;
+			GatheredMaterial = null;
+			MaterialAssetIndex = -1;
+			InternalNodeData?.Dispose();
+			InternalNodeData = null;
+			SkeletalNodes?.Dispose();
+			SkeletalNodes = null;
+			VertexCount = 0;
+			TriangleCount = 0;
+			NodeCount = 0;
+			BoneCount = 0;
+			IsSkeletal = false;
+			AllowsPerInstanceVertexMutation = false;
+			GenerateWireframeData = false;
+			BoundingBox = default;
+			OriginTranslation = Vect.Zero;
+			LinearRescalingFactor = 1f;
+			Name = default;
 		}
 
-		try {
-			var aDim = colorEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var bDim = intensityEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
-			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
-			TextureUtils.CombineTextures(
-				colorTexels, aDim,	
-				intensityTexels, bDim,
-				new TextureCombinationConfig(
-					creationParams.TextureCombinationStrategy,
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
-				),
-				destinationBuffer.Span
-			);
-			return TextureBuilder.CreateTexture(
-				destinationBuffer.Span,
-				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with {
-					Name = creationParams.CreateTextureName(TextureTypeName), 
-					IsLinearColorspace = !colorEmbeddedTex.HasValue // Numerical values are linear, textures assumed sRGB
-				}
-			);
-		}
-		finally {
-			colorEmbeddedTex?.Dispose();
-			intensityEmbeddedTex?.Dispose();
+		public void Dispose() {
+			DisposeBuffersAndReset();
+			SkeletalDataRegistry.Dispose();
+			TextureRegistry.Dispose();
 		}
 	}
-	
-	Texture? CreateAssetClearCoatMap(AssetMaterialParam* strengthParamPtr, AssetMaterialParam* roughnessParamPtr, in AssetMaterialCreationParameters creationParams) {
-		const string TextureTypeName = "clearcoat";
-		if (strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && roughnessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
-		
-		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
-		// So we assume this format is the one being used, which matches what TinyFFR already expects thankfully
-		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, strengthParamPtr, roughnessParamPtr)) {
-			using var embeddedTex = LoadAssetTexture(
-				creationParams.AssetHandle,
-				creationParams.MaterialIndex,
-				strengthParamPtr->TextureMapIndex,
-				in creationParams.AssetRootDirStrRef,
-				creationParams.UriUnescapeEmbeddedResourceStrings
-			);
-			using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
-			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
-			return TextureBuilder.CreateTexture(
-				rgbTexelBuffer.Span,
-				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
-			);
-		}
-		
-		var defaultStrengthTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness);
-		var defaultRoughnessTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultClearCoatRoughness, ITextureBuilder.DefaultClearCoatRoughness, ITextureBuilder.DefaultClearCoatRoughness, ITextureBuilder.DefaultClearCoatRoughness);
-		
-		var strengthTexels = AbstractTexelSpanFromParamPtr(
-			strengthParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultStrengthTexel,
-			out var strengthEmbeddedTex
-		);
-		var roughnessTexels = AbstractTexelSpanFromParamPtr(
-			roughnessParamPtr,
-			creationParams.AssetHandle,
-			creationParams.MaterialIndex,
-			creationParams.UriUnescapeEmbeddedResourceStrings,
-			in creationParams.AssetRootDirStrRef,
-			ref defaultRoughnessTexel,
-			out var roughnessEmbeddedTex
-		);
 
-		try {
-			var aDim = strengthEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var bDim = roughnessEmbeddedTex?.Dimensions ?? XYPair<int>.One;
-			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
-			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
-			TextureUtils.CombineTextures(
-				strengthTexels, aDim,	
-				roughnessTexels, bDim,
-				new TextureCombinationConfig(
-					creationParams.TextureCombinationStrategy,
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R)
-				),
-				destinationBuffer.Span
-			);
-			return TextureBuilder.CreateTexture(
-				destinationBuffer.Span,
-				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
-			);
-		}
-		finally {
-			strengthEmbeddedTex?.Dispose();
-			roughnessEmbeddedTex?.Dispose();
-		}
-	}
-	
-	Material CreateAssetMaterial(UIntPtr assetHandle, int materialIndex, ResourceGroup assetResources, ReadOnlySpan<char> assetName, in TextureCreationConfig config, in ModelReadConfig readConfig, ref readonly byte assetRootDirStrRef) {
-		var matParamsBuffer = stackalloc AssetMaterialParam[15];
-		var matParams = new AssetMaterialParamGroup(
-			matParamsBuffer + 0,
-			matParamsBuffer + 1,
-			matParamsBuffer + 2,
-			matParamsBuffer + 3,
-			matParamsBuffer + 4,
-			matParamsBuffer + 5,
-			matParamsBuffer + 6,
-			matParamsBuffer + 7,
-			matParamsBuffer + 8,
-			matParamsBuffer + 9,
-			matParamsBuffer + 10,
-			matParamsBuffer + 11,
-			matParamsBuffer + 12,
-			matParamsBuffer + 13,
-			matParamsBuffer + 14
-		);
-		
-		GetLoadedAssetMaterialData(
-			assetHandle,
-			materialIndex,
-			&matParams,
-			out var alphaFormat,
-			out var refractionThickness
-		).ThrowIfFailure();
-		
-		var matNamePlusSuffixConcatLength = SpanUtils.GetConcatenatedLength(assetName, MatNameSuffix);
-		Span<char> subResourceNameBuffer = stackalloc char[matNamePlusSuffixConcatLength + ResourceNameIndexSpaceMax + TexNameSuffix.Length + TexNameTypeSpaceMax];
-		SpanUtils.Concatenate(subResourceNameBuffer, assetName, MatNameSuffix);
-		_ = materialIndex.TryFormat(subResourceNameBuffer[matNamePlusSuffixConcatLength..], out var indexCharsCount, provider: CultureInfo.InvariantCulture);
-		var matName = subResourceNameBuffer[..(matNamePlusSuffixConcatLength + indexCharsCount)];
-		
-		var assetMaterialCreationParams = new AssetMaterialCreationParameters(
-			assetHandle, 
-			materialIndex, 
-			subResourceNameBuffer,
-			matName.Length,
-			config, 
-			in assetRootDirStrRef, 
-			readConfig.HandleUriEscapedStrings, 
-			readConfig.GltfEmissiveStrengthScalar, 
-			readConfig.EmissiveStrengthCap, 
-			readConfig.EmbeddedTextureMapScalingStrategy
-		);
-		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetMaterialCreationParams);
-		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetMaterialCreationParams);
-		var normalMap = CreateAssetNormalMap(matParams.NormalParamsPtr, assetMaterialCreationParams);
-		var ormMap = CreateAssetOrmrMap(matParams.AmbientOcclusionParamsPtr, matParams.RoughnessParamsPtr, matParams.GlossinessParamsPtr, matParams.MetallicParamsPtr, matParams.IoRParamsPtr, atMap.HasValue, assetMaterialCreationParams);
-		var anisotropyMap = CreateAssetAnisotropyMap(matParams.AnisotropyAngleParamsPtr, matParams.AnisotropyStrengthParamsPtr, assetMaterialCreationParams);
-		var emissiveMap = CreateAssetEmissiveMap(matParams.EmissiveColorParamsPtr, matParams.EmissiveIntensityParamsPtr, assetMaterialCreationParams);
-		var clearCoatMap = atMap.HasValue ? null : CreateAssetClearCoatMap(matParams.ClearCoatStrengthParamsPtr, matParams.ClearCoatRoughnessParamsPtr, assetMaterialCreationParams);
+	sealed class ModelLoadContext : WorkerJobSyncHelper<LocalAssetLoader, ModelLoadContext, ModelLoadConfig>.WorkerJobSyncHelperContext {
+		// Primary thread owned
+		public PooledHeapMemory<char>? FilePath { get; set; } = null;
 
-		assetResources.Add(colorMap);
-		if (atMap != null) assetResources.Add(atMap.Value);
-		if (normalMap != null) assetResources.Add(normalMap.Value);
-		if (ormMap != null) assetResources.Add(ormMap.Value);
-		if (anisotropyMap != null) assetResources.Add(anisotropyMap.Value);
-		if (emissiveMap != null) assetResources.Add(emissiveMap.Value);
-		if (clearCoatMap != null) assetResources.Add(clearCoatMap.Value);
-	
-		if (atMap.HasValue) {
-			return MaterialBuilder.CreateTransmissiveMaterial(new TransmissiveMaterialCreationConfig {
-				AlphaMode = alphaFormat switch { 2 => TransmissiveMaterialAlphaMode.FullBlending, _ => TransmissiveMaterialAlphaMode.MaskOnly },
-				AbsorptionTransmissionMap = atMap.Value,
-				AnisotropyMap = anisotropyMap,
-				ColorMap = colorMap,
-				EmissiveMap = emissiveMap,
-				NormalMap = normalMap,
-				OcclusionRoughnessMetallicReflectanceMap = ormMap,
-				RefractionThickness = refractionThickness.IsPositiveAndFinite() ? refractionThickness : TransmissiveMaterialCreationConfig.DefaultRefractionThickness,
-				Name = matName
-			});
+		// Worker thread owned
+		public InteropStringBuffer? NameBuffer { get; set; } = null;
+		public UIntPtr AssetHandle { get; set; } = UIntPtr.Zero;
+		public ModelLoadSubMeshData CurrentSubMeshData { get; } = new();
+		public ArrayPoolBackedMap<int, Material> AssetIndexToMaterialMap { get; } = new();
+
+		// Handed across each primary thread hop
+		public ResourceGroup? Group { get; set; } = null;
+		public int TotalResourceCountHint { get; set; } = 0;
+
+		public override void TearDown() {
+			if (AssetHandle != UIntPtr.Zero) {
+				UnloadAssetFileFromMemory(AssetHandle).ThrowIfFailure();
+				AssetHandle = UIntPtr.Zero;
+			}
+			Group?.Dispose(disposeContainedResources: true);
+			Group = null;
+			CurrentSubMeshData.DisposeBuffersAndReset();
+			AssetIndexToMaterialMap.Clear();
+			NameBuffer?.Dispose();
+			NameBuffer = null;
+			if (HeapPoolSerializedConfig is { } config) {
+				ModelLoadConfig.DisposeAllocatedHeapStorage(config.Span);
+				config.Dispose();
+				HeapPoolSerializedConfig = null;
+			}
+			FilePath?.Dispose();
+			FilePath = null;
+			TotalResourceCountHint = 0;
+			HeapPool = null!;
+			Self = null!;
 		}
-		else {
-			return MaterialBuilder.CreateStandardMaterial(new StandardMaterialCreationConfig {
-				AlphaMode = alphaFormat switch { 2 => StandardMaterialAlphaMode.FullBlending, _ => StandardMaterialAlphaMode.MaskOnly },
-				AnisotropyMap = anisotropyMap,
-				ClearCoatMap = clearCoatMap,
-				ColorMap = colorMap,
-				EmissiveMap = emissiveMap,
-				NormalMap = normalMap,
-				OcclusionRoughnessMetallicMap = ormMap,
-				Name = matName
-			});
+
+		public override void Dispose() {
+			CurrentSubMeshData.Dispose();
+			AssetIndexToMaterialMap.Dispose();
 		}
 	}
-	
+
 	public ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
-		const int MaxIndicesOnStack = 1024;
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		readConfig.ThrowIfInvalid();
-		
-		var resourceGroupName = config.Name;
-		if (resourceGroupName.IsEmpty) resourceGroupName = Path.GetFileName(filePath);
-		Span<char> meshNameBuffer = stackalloc char[SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix) + ResourceNameIndexSpaceMax];
-		SpanUtils.Concatenate(meshNameBuffer, resourceGroupName, MeshNameSuffix);
-		var meshNameWriteStartIndex = SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix);
-		
+
+		var contextWrapper = _modelLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
+		contextWrapper.Context.SetName(config.Name.IsEmpty ? Path.GetFileName(filePath) : config.Name);
+
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadAllCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+	}
+
+	public TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		readConfig.ThrowIfInvalid();
+
+		var contextWrapper = _modelLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
+		contextWrapper.Context.SetName(config.Name.IsEmpty ? Path.GetFileName(filePath) : config.Name);
+
+		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadAllCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+	}
+
+	static ResourceGroup LoadAllCore(ModelLoadContext context, in ModelLoadConfig config) {
+		if (context.FilePath is not { } filePath) {
+			throw new InvalidOperationException("No file path set in context (this is a bug in TinyFFR).");
+		}
+
+		var self = context.Self;
+		var creationConfig = config.CreationConfig;
+		var readConfig = config.ReadConfig;
+
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
-			
+			var pathBuffer = self.AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath.Span);
+
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				readConfig.MeshConfig.FixCommonExportErrors,
 				readConfig.MeshConfig.OptimizeForGpu,
 				out var assetHandle
 			).ThrowIfFailure();
-			
-			_assetFilePathBuffer.ConvertFromUtf16(Path.GetDirectoryName(filePath));
+			context.AssetHandle = assetHandle;
 
-			try {
-				GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure(); 
-				GetLoadedAssetMaterialCount(assetHandle, out var materialCount).ThrowIfFailure(); 
-				GetLoadedAssetTextureCount(assetHandle, out var textureCount).ThrowIfFailure();
-				
-				var result = _globals.ResourceGroupProvider.CreateGroup(
-					disposeContainedResourcesWhenDisposed: true,
-					name: resourceGroupName,
-					meshCount + materialCount + textureCount
-				);
-				
-				var materialToGroupAddOrderMap = materialCount > MaxIndicesOnStack ? new int[materialCount] : stackalloc int[materialCount];
-				
-				for (var i = 0; i < meshCount; ++i) {
-					_ = i.TryFormat(meshNameBuffer[meshNameWriteStartIndex..], out var idxCharsCount, provider: CultureInfo.InvariantCulture);
-					var meshName = meshNameBuffer[..(meshNameWriteStartIndex + idxCharsCount)];
-					
-					GetLoadedAssetMeshSkeletalBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure();
-					var loadSkeletalAnimationData = boneCount > 0 && readConfig.MeshConfig.LoadSkeletalAnimationDataIfPresent;
-					if (loadSkeletalAnimationData && boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
-						Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' (sub-mesh {i}) as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
-						loadSkeletalAnimationData = false;
-					}
-					
-					var copyResult = loadSkeletalAnimationData
-						? CopySubMeshDataFromAsset<MeshVertexSkeletal>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i)
-						: CopySubMeshDataFromAsset<MeshVertex>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i);
+			pathBuffer.ConvertFromUtf16(Path.GetDirectoryName(filePath.Span));
 
-					Mesh mesh;
-					try {
-						if (loadSkeletalAnimationData) {
-							GetLoadedAssetMeshSkeletalNodeCount(assetHandle, i, out var nodeCount).ThrowIfFailure();
-							var internalNodeBuffer = _skeletalNodeBufferPool.Rent<NodeHandle>(nodeCount);
-							var translatedNodeBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNode>(nodeCount);
-							
-							try {
-								GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(
-									assetHandle,
-									i,
-									(NodeHandle*) internalNodeBuffer.StartPtr,
-									nodeCount
-								).ThrowIfFailure();
-								
-								var maxNodeNameLength = 0;
-								for (var n = 0; n < nodeCount; ++n) {
-									GetLoadedAssetMeshSkeletalNode(
-										(NodeHandle*) internalNodeBuffer.StartPtr,
-										nodeCount,
-										n,
-										out var inverseBindPoseMatrix,
-										out var defaultTransformMatrix,
-										out var parentNodeIndex,
-										out var boneIndex,
-										out var nameLength
-									).ThrowIfFailure();
-									
-									translatedNodeBuffer.Span[n] = new(
-										defaultTransformMatrix,
-										inverseBindPoseMatrix,
-										parentNodeIndex >= 0 ? parentNodeIndex : null,
-										boneIndex >= 0 ? boneIndex : null
-									);
-									maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
-								}
+			GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
+			GetLoadedAssetMaterialCount(assetHandle, out var materialCount).ThrowIfFailure();
+			GetLoadedAssetTextureCount(assetHandle, out var textureCount).ThrowIfFailure();
+			context.TotalResourceCountHint = meshCount + materialCount + textureCount;
 
-								mesh = _meshBuilder.CreateMesh(
-									copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
-									copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-									translatedNodeBuffer.Span,
-									config.MeshConfig with { Name = meshName }
-								);
+			var resourceGroupName = context.Name;
+			Span<char> meshNameBuffer = stackalloc char[SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix) + ResourceNameIndexSpaceMax];
+			SpanUtils.Concatenate(meshNameBuffer, resourceGroupName, MeshNameSuffix);
+			var meshNameWriteStartIndex = SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix);
 
-								LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, mesh);
-								LoadAndSetNodeNames(internalNodeBuffer.AsReadOnlySpan<NodeHandle>(nodeCount), maxNodeNameLength, mesh);
-							}
-							finally {
-								_skeletalNodeBufferPool.Return(internalNodeBuffer);
-								translatedNodeBuffer.Dispose();
-							}
-						}
-						else {
-							mesh = _meshBuilder.CreateMesh(
-								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertex>(copyResult.NumVerticesWritten),
-								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-								config.MeshConfig with { Name = meshName }
-							);
-						}
-					}
-					finally {
-						_vertexTriangleBufferPool.Return(copyResult.VertexBuffer);
-						_vertexTriangleBufferPool.Return(copyResult.TriangleBuffer);
-					}
+			for (var i = 0; i < meshCount; ++i) {
+				_ = i.TryFormat(meshNameBuffer[meshNameWriteStartIndex..], out var idxCharsCount, provider: CultureInfo.InvariantCulture);
+				var meshName = meshNameBuffer[..(meshNameWriteStartIndex + idxCharsCount)];
 
-					result.Add(mesh);
-				
-					GetLoadedAssetMeshMaterialIndex(
-						assetHandle, 
-						i, 
-						out var matIndex
-					).ThrowIfFailure();
-					
-					if (matIndex < 0 || matIndex >= materialCount) throw new InvalidOperationException($"Mesh at index '{i}' references material at index '{matIndex}' but asset only contains {materialCount} materials.");
-					
-					Material mat;
-					if (materialToGroupAddOrderMap[matIndex] > 0) {
-						mat = result.Materials[materialToGroupAddOrderMap[matIndex] - 1];
-					}
-					else {
-						mat = CreateAssetMaterial(
-							assetHandle,
-							matIndex,
-							result,
-							resourceGroupName,
-							config.TextureConfig,
-							in readConfig,
-							in _assetFilePathBuffer.AsRef
-						);
-						result.Add(mat);
-						materialToGroupAddOrderMap[matIndex] = result.Materials.Count;
-					}
-					
-					result.Add(CreateModel(mesh, mat, default));
+				GetLoadedAssetMeshSkeletalBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure();
+				var loadSkeletalAnimationData = boneCount > 0 && readConfig.MeshConfig.LoadSkeletalAnimationDataIfPresent;
+				if (loadSkeletalAnimationData && boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
+					Console.WriteLine($"Can not load skeletal animation data for file '{filePath.Span}' (sub-mesh {i}) as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
+					loadSkeletalAnimationData = false;
 				}
-				
-				result.Seal();
-				return result;
+
+				self.GatherSubMeshOnWorker(context, assetHandle, i, in readConfig, creationConfig.MeshConfig with { Name = meshName }, loadSkeletalAnimationData);
+
+				GetLoadedAssetMeshMaterialIndex(assetHandle, i, out var matIndex).ThrowIfFailure();
+				if (matIndex < 0 || matIndex >= materialCount) throw new InvalidOperationException($"Mesh at index '{i}' references material at index '{matIndex}' but asset only contains {materialCount} materials.");
+
+				context.CurrentSubMeshData.MaterialAssetIndex = matIndex;
+				var isNewMaterial = !context.AssetIndexToMaterialMap.ContainsKey(matIndex);
+				if (isNewMaterial) {
+					context.CurrentSubMeshData.GatheredMaterial = self.GatherAssetMaterial(
+						assetHandle,
+						matIndex,
+						resourceGroupName,
+						creationConfig.TextureConfig,
+						in readConfig,
+						in pathBuffer.AsRef,
+						context.CurrentSubMeshData.TextureRegistry,
+						context.HeapPool
+					);
+				}
+
+				context.DispatchOnPrimaryAndWait(&CreateSubMeshResourcesOnPrimary);
+
+				context.CurrentSubMeshData.DisposeBuffersAndReset();
 			}
-			finally {
-				UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
-			}
+
+			UnloadAssetFileFromMemory(context.AssetHandle).ThrowIfFailure();
+			context.AssetHandle = UIntPtr.Zero;
+
+			return context.GenerateResourceOnPrimaryAndWait(&CompleteModelLoad);
 		}
 		catch (Exception e) {
-			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
+			if (!File.Exists(new String(filePath.Span))) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
 			else throw;
 		}
+	}
+
+	static ResourceGroup GetOrCreateGroupOnPrimary(ModelLoadContext context) {
+		if (context.Group is { } existingGroup) return existingGroup;
+		var newGroup = context.Self._globals.ResourceGroupProvider.CreateGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: context.Name,
+			context.TotalResourceCountHint > 0 ? context.TotalResourceCountHint : LocalResourceGroupImplProvider.DefaultInitialCapacity
+		);
+		context.Group = newGroup;
+		return newGroup;
+	}
+
+	static void CreateSubMeshResourcesOnPrimary(ModelLoadContext context) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		var self = context.Self;
+		var group = GetOrCreateGroupOnPrimary(context);
+
+		var mesh = self.CreateSubMeshOnPrimary(context.CurrentSubMeshData);
+		group.Add(mesh);
+
+		Material material;
+		if (context.CurrentSubMeshData.GatheredMaterial is { } gatheredMaterial) {
+			material = self.MaterializeAssetMaterial(gatheredMaterial, context.CurrentSubMeshData.TextureRegistry, group);
+			group.Add(material);
+			context.AssetIndexToMaterialMap[context.CurrentSubMeshData.MaterialAssetIndex] = material;
+		}
+		else {
+			material = context.AssetIndexToMaterialMap[context.CurrentSubMeshData.MaterialAssetIndex];
+		}
+
+		group.Add(self.CreateModel(mesh, material, default));
+	}
+
+	static ResourceGroup CompleteModelLoad(ModelLoadContext context) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		var group = GetOrCreateGroupOnPrimary(context);
+		group.Seal();
+		context.Group = null;
+		return group;
+	}
+
+	void GatherSubMeshOnWorker(ModelLoadContext context, UIntPtr assetHandle, int subMeshIndex, in ModelReadConfig readConfig, in MeshCreationConfig meshConfig, bool loadSkeletalAnimationData) {
+		var buffers = context.CurrentSubMeshData;
+		buffers.IsSkeletal = loadSkeletalAnimationData;
+		buffers.OriginTranslation = meshConfig.OriginTranslation;
+		buffers.LinearRescalingFactor = meshConfig.LinearRescalingFactor;
+		buffers.Name = buffers.SkeletalDataRegistry.AppendName(meshConfig.Name);
+
+		if (loadSkeletalAnimationData) {
+			GatherSubMeshVertexDataOnWorker<MeshVertexSkeletal>(assetHandle, subMeshIndex, readConfig.MeshConfig.CorrectFlippedOrientation, in meshConfig, buffers, context.HeapPool);
+			GatherSubMeshSkeletalDataOnWorker(context, assetHandle, subMeshIndex, in readConfig);
+		}
+		else {
+			GatherSubMeshVertexDataOnWorker<MeshVertex>(assetHandle, subMeshIndex, readConfig.MeshConfig.CorrectFlippedOrientation, in meshConfig, buffers, context.HeapPool);
+		}
+	}
+
+	static void GatherSubMeshVertexDataOnWorker<TVertex>(UIntPtr assetHandle, int subMeshIndex, bool correctFlippedOrientation, in MeshCreationConfig meshConfig, ModelLoadSubMeshData buffers, ThreadSafeHeapPoolWrapper heapPool) where TVertex : unmanaged, IMeshVertex {
+		GetLoadedAssetMeshVertexCount(assetHandle, subMeshIndex, out var vertexCount).ThrowIfFailure();
+		GetLoadedAssetMeshTriangleCount(assetHandle, subMeshIndex, out var triangleCount).ThrowIfFailure();
+		ThrowIfAssetBufferSizeExceedsMaximum((long) vertexCount * sizeof(TVertex), $"mesh vertex data ({vertexCount} vertices)");
+		ThrowIfAssetBufferSizeExceedsMaximum((long) triangleCount * sizeof(VertexTriangle), $"mesh triangle data ({triangleCount} triangles)");
+
+		var vertexData = heapPool.Borrow<byte>(vertexCount * sizeof(TVertex));
+		buffers.VertexData = vertexData;
+		var triangleData = heapPool.Borrow<byte>(triangleCount * sizeof(VertexTriangle));
+		buffers.TriangleData = triangleData;
+		buffers.VertexCount = vertexCount;
+		buffers.TriangleCount = triangleCount;
+		buffers.AllowsPerInstanceVertexMutation = meshConfig.AllowsPerInstanceVertexMutation;
+		buffers.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<TVertex>(in meshConfig);
+
+		fixed (byte* vertexBufferPtr = vertexData.Span)
+		fixed (byte* triangleBufferPtr = triangleData.Span) {
+			var vertexPtr = (TVertex*) vertexBufferPtr;
+			var trianglePtr = (VertexTriangle*) triangleBufferPtr;
+
+			CopySubMeshDataFromAsset(assetHandle, correctFlippedOrientation, subMeshIndex, vertexPtr, vertexCount, trianglePtr, triangleCount);
+
+			var vertexSpan = new Span<TVertex>(vertexPtr, vertexCount);
+			var triangleSpan = new Span<VertexTriangle>(trianglePtr, triangleCount);
+
+			LocalMeshBuilder.ValidateMeshData<TVertex>(vertexSpan, triangleSpan, in meshConfig);
+			if (meshConfig.FlipTriangles) LocalMeshBuilder.FlipTriangleWindings(triangleSpan);
+			LocalMeshBuilder.ApplyVertexTransforms(vertexSpan, in meshConfig);
+			buffers.BoundingBox = LocalMeshBuilder.CalculateMeshBoundingBox<TVertex>(vertexSpan, in meshConfig);
+		}
+	}
+
+	static void GatherSubMeshSkeletalDataOnWorker(ModelLoadContext context, UIntPtr assetHandle, int subMeshIndex, in ModelReadConfig readConfig) {
+		var buffers = context.CurrentSubMeshData;
+		GetLoadedAssetMeshSkeletalNodeCount(assetHandle, subMeshIndex, out var nodeCount).ThrowIfFailure();
+		ThrowIfAssetBufferSizeExceedsMaximum((long) nodeCount * sizeof(NodeHandle), $"mesh skeletal node data ({nodeCount} nodes)");
+
+		var internalNodeData = context.HeapPool.Borrow<byte>(nodeCount * sizeof(NodeHandle));
+		buffers.InternalNodeData = internalNodeData;
+		var translatedNodeBuffer = context.HeapPool.Borrow<SkeletalAnimationNode>(nodeCount);
+		buffers.SkeletalNodes = translatedNodeBuffer;
+		buffers.NodeCount = nodeCount;
+
+		InteropStringBuffer nameBuffer;
+		if (context.NameBuffer is { } existingNameBuffer) {
+			nameBuffer = existingNameBuffer;
+		}
+		else {
+			nameBuffer = new InteropStringBuffer(context.Self._maxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
+			context.NameBuffer = nameBuffer;
+		}
+
+		fixed (byte* internalNodeBufferPtr = internalNodeData.Span) {
+			var nodeHandles = (NodeHandle*) internalNodeBufferPtr;
+			GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(assetHandle, subMeshIndex, nodeHandles, nodeCount).ThrowIfFailure();
+
+			var maxNodeNameLength = 0;
+			for (var n = 0; n < nodeCount; ++n) {
+				GetLoadedAssetMeshSkeletalNode(
+					nodeHandles,
+					nodeCount,
+					n,
+					out var inverseBindPoseMatrix,
+					out var defaultTransformMatrix,
+					out var parentNodeIndex,
+					out var boneIndex,
+					out var nameLength
+				).ThrowIfFailure();
+
+				translatedNodeBuffer.Span[n] = new(
+					defaultTransformMatrix,
+					inverseBindPoseMatrix,
+					parentNodeIndex >= 0 ? parentNodeIndex : null,
+					boneIndex >= 0 ? boneIndex : null
+				);
+				maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
+			}
+
+			buffers.BoneCount = LocalMeshBuilder.CalculateAndValidateBoneCount(translatedNodeBuffer.Span);
+
+			GatherMeshAnimations(assetHandle, nodeHandles, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, nameBuffer, context.HeapPool, buffers.SkeletalDataRegistry);
+			GatherNodeNames(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), maxNodeNameLength, nameBuffer, context.HeapPool, buffers.SkeletalDataRegistry);
+		}
+	}
+
+	Mesh CreateSubMeshOnPrimary(ModelLoadSubMeshData buffers) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		if (buffers.VertexData is not { } vertexData || buffers.TriangleData is not { } triangleData) {
+			throw new InvalidOperationException("Mesh vertex and/or triangle data was null (this is a bug in TinyFFR).");
+		}
+
+		var name = buffers.SkeletalDataRegistry.GetName(buffers.Name);
+		var triangles = MemoryMarshal.Cast<byte, VertexTriangle>(triangleData.Span)[..buffers.TriangleCount];
+
+		if (!buffers.IsSkeletal) {
+			return _meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+				MemoryMarshal.Cast<byte, MeshVertex>(vertexData.Span)[..buffers.VertexCount],
+				triangles,
+				buffers.BoundingBox,
+				buffers.AllowsPerInstanceVertexMutation,
+				buffers.GenerateWireframeData,
+				name,
+				0
+			);
+		}
+
+		if (buffers.SkeletalNodes is not { } skeletalNodes) {
+			throw new InvalidOperationException("Skeletal node data was null (this is a bug in TinyFFR).");
+		}
+
+		var boneCount = buffers.BoneCount;
+		var mesh = _meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+			MemoryMarshal.Cast<byte, MeshVertexSkeletal>(vertexData.Span)[..buffers.VertexCount],
+			triangles,
+			buffers.BoundingBox,
+			buffers.AllowsPerInstanceVertexMutation,
+			buffers.GenerateWireframeData,
+			name,
+			boneCount == 0 ? 1 : boneCount
+		);
+
+		if (boneCount == 0) {
+			var defaultNode = new SkeletalAnimationNode(Matrix4x4.Identity, Matrix4x4.Identity, null, 0);
+			_meshBuilder.AttachSkeletonToMesh(mesh, 1, new ReadOnlySpan<SkeletalAnimationNode>(in defaultNode), buffers.OriginTranslation, buffers.LinearRescalingFactor);
+		}
+		else {
+			_meshBuilder.AttachSkeletonToMesh(mesh, boneCount, skeletalNodes.Span[..buffers.NodeCount], buffers.OriginTranslation, buffers.LinearRescalingFactor);
+		}
+
+		AttachGatheredMeshAnimations(_meshBuilder, mesh, buffers.SkeletalDataRegistry);
+		ApplyGatheredNodeNames(_meshBuilder, mesh, buffers.SkeletalDataRegistry);
+		return mesh;
 	}
 
 	public Mesh GetMesh(ResourceHandle<Model> handle) {

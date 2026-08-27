@@ -11,6 +11,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering.Local;
@@ -135,7 +136,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions, bool SubAreaIsHandledDownstream = false);
-	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode);
+	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode, RenderCompositionType CompositionType = RenderCompositionType.Standard);
 	readonly unsafe struct OutputBufferCallbackData {
 		public static OutputBufferCallbackData None => new(false, null, null);
 
@@ -334,6 +335,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 	unsafe void RenderInternal(ResourceHandle<Renderer> handle, RenderOrdering ordering, RenderCompositionType compositionType, ResourceHandle<Renderer> fenceEmittingHandle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		SetUpSceneForRender(handle);
 		
@@ -493,23 +495,35 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		newConfig.ThrowIfInvalid();
 		_loadedRenderers[handle] = _loadedRenderers[handle] with { Quality = newConfig };
+		PushQualityConfigToView(handle, _loadedRenderers[handle].CompositionType);
+	}
+
+	internal void SetCompositionTypeAndRefreshQualityConfig(ResourceHandle<Renderer> handle, RenderCompositionType compositionType) {
+		if (_loadedRenderers[handle].CompositionType == compositionType) return;
+		_loadedRenderers[handle] = _loadedRenderers[handle] with { CompositionType = compositionType };
+		PushQualityConfigToView(handle, compositionType);
+	}
+
+	void PushQualityConfigToView(ResourceHandle<Renderer> handle, RenderCompositionType compositionType) {
+		var rendererData = _loadedRenderers[handle];
+		var effectiveConfig = rendererData.Quality.WithCompositingConstraintsApplied(compositionType);
 		SetViewQualityConfiguration(
-			_loadedRenderers[handle].Viewport.Handle,
-			(int) newConfig.ShadowQuality,
-			(int) newConfig.ScreenSpaceEffectsQuality,
-			(int) newConfig.AntiAliasingMode,
-			(int) newConfig.AmbientOcclusionQuality,
-			newConfig.AmbientOcclusionStrength,
-			newConfig.PostProcessingEnabled,
-			newConfig.InternalResolutionScalar,
-			(int) newConfig.HdrColorPrecision,
-			newConfig.ShadowsEnabled,
-			(int) newConfig.BloomQuality,
-			newConfig.BloomStrength,
-			(int) newConfig.DepthOfFieldQuality,
-			newConfig.DepthOfFieldStrength,
-			newConfig.DitheringEnabled,
-			newConfig.ScreenSpaceEffectsQuality == Quality.VeryHigh
+			rendererData.Viewport.Handle,
+			(int) effectiveConfig.ShadowQuality,
+			(int) effectiveConfig.ScreenSpaceEffectsQuality,
+			(int) effectiveConfig.AntiAliasingMode,
+			(int) effectiveConfig.AmbientOcclusionQuality,
+			effectiveConfig.AmbientOcclusionStrength,
+			effectiveConfig.PostProcessingEnabled,
+			effectiveConfig.InternalResolutionScalar,
+			(int) effectiveConfig.HdrColorPrecision,
+			effectiveConfig.ShadowsEnabled,
+			(int) effectiveConfig.BloomQuality,
+			effectiveConfig.BloomStrength,
+			(int) effectiveConfig.DepthOfFieldQuality,
+			effectiveConfig.DepthOfFieldStrength,
+			effectiveConfig.DitheringEnabled,
+			effectiveConfig.ScreenSpaceEffectsQuality == Quality.VeryHigh
 		).ThrowIfFailure();
 	}
 

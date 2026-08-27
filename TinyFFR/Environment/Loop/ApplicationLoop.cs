@@ -34,15 +34,36 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	public TimeSpan TargetIterationInterval {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTargetIterationInterval(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetTargetIterationInterval(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTargetIterationInterval(TimeSpan newValue) => TargetIterationInterval = newValue;
 	
 	public int? TargetFrameRate {
 		get {
 			var targetInterval = TargetIterationInterval;
-			if (targetInterval == TimeSpan.Zero) return null;
-			return (int) (TimeSpan.FromSeconds(1).Ticks / targetInterval.Ticks);
+			if (targetInterval <= TimeSpan.Zero) return null;
+			return (int) Math.Round(TimeSpan.FromSeconds(1d) / targetInterval, 0, MidpointRounding.AwayFromZero);
+		}
+		set {
+			if (value <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Target frame rate must be a positive value, or 'null' for no cap.");
+			}
+			TargetIterationInterval = value != null ? (TimeSpan.FromSeconds(1d) / value.Value) : TimeSpan.Zero;
 		}
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTargetFrameRate(int? newValue) => TargetFrameRate = newValue;
+	
+	public float? TargetPerFrameAsyncCooperativeTaskTimeFraction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetTargetPerFrameAsyncCooperativeTaskTimeFraction(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetTargetPerFrameAsyncCooperativeTaskTimeFraction(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTargetPerFrameAsyncCooperativeTaskTimeFraction(float? newValue) => TargetPerFrameAsyncCooperativeTaskTimeFraction = newValue;
 	
 	public float FramesPerSecondRecentAverage {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,10 +119,10 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear here and in TryIterateOnce that the DeltaTime returned is the time since the last iteration, not the time it took to iterate
-	public TimeSpan IterateOnce() => Implementation.IterateOnce(_handle);
+	public TimeSpan IterateOnce(bool executePendingPrimaryThreadCooperativeTasks = true) => Implementation.IterateOnce(_handle, executePendingPrimaryThreadCooperativeTasks);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryIterateOnce(out TimeSpan outDeltaTime) => Implementation.TryIterateOnce(_handle, out outDeltaTime);
+	public bool TryIterateOnce(out TimeSpan outDeltaTime, bool executePendingPrimaryThreadCooperativeTasks = true) => Implementation.TryIterateOnce(_handle, out outDeltaTime, executePendingPrimaryThreadCooperativeTasks);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ResetTotalIteratedTime() => TotalIteratedTime = TimeSpan.Zero;

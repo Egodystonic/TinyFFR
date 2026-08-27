@@ -153,4 +153,58 @@ class RenderQualityConfigTest {
 			.Including(nameof(RenderQualityConfig.DitheringEnabled))
 			.End();
 	}
+
+	static readonly AntiAliasingMode[] TemporalAntiAliasingModes = {
+		AntiAliasingMode.TaaBalanced,
+		AntiAliasingMode.TaaReducedGhosting,
+		AntiAliasingMode.TaaReducedFlickering,
+		AntiAliasingMode.TaaIncreasedSharpening
+	};
+
+	static readonly AntiAliasingMode[] NonTemporalAntiAliasingModes = {
+		AntiAliasingMode.None,
+		AntiAliasingMode.Fxaa
+	};
+
+	[Test]
+	public void ShouldDowngradeTemporalAntiAliasingOnRetainPreviousScenesLayers() {
+		foreach (var mode in TemporalAntiAliasingModes) {
+			var config = new RenderQualityConfig { AntiAliasingMode = mode };
+			var result = config.WithCompositingConstraintsApplied(RenderCompositionType.RetainPreviousScenes);
+			Assert.AreEqual(
+				AntiAliasingMode.Fxaa,
+				result.AntiAliasingMode,
+				$"{mode} should have been downgraded to Fxaa on a RetainPreviousScenes layer."
+			);
+		}
+	}
+
+	[Test]
+	public void ShouldNotAlterNonTemporalAntiAliasingOnRetainPreviousScenesLayers() {
+		foreach (var mode in NonTemporalAntiAliasingModes) {
+			var config = new RenderQualityConfig { AntiAliasingMode = mode };
+			var result = config.WithCompositingConstraintsApplied(RenderCompositionType.RetainPreviousScenes);
+			Assert.AreEqual(mode, result.AntiAliasingMode, $"{mode} is not temporal and should have been left alone.");
+		}
+	}
+
+	[Test]
+	public void ShouldNotAlterAnyAntiAliasingModeOnStandardLayers() {
+		foreach (var mode in TemporalAntiAliasingModes.Concat(NonTemporalAntiAliasingModes)) {
+			var config = new RenderQualityConfig { AntiAliasingMode = mode };
+			var result = config.WithCompositingConstraintsApplied(RenderCompositionType.Standard);
+			Assert.AreEqual(mode, result.AntiAliasingMode, $"{mode} should never be altered on a Standard layer.");
+		}
+	}
+
+	[Test]
+	public void ShouldNotAlterAnyOtherFieldWhenDowngradingAntiAliasing() {
+		var config = new RenderQualityConfig(BuiltInQualityConfiguration.Ultra);
+		Assert.AreEqual(AntiAliasingMode.TaaIncreasedSharpening, config.AntiAliasingMode, "Precondition: Ultra should use temporal anti-aliasing.");
+
+		var result = config.WithCompositingConstraintsApplied(RenderCompositionType.RetainPreviousScenes);
+
+		Assert.AreEqual(AntiAliasingMode.Fxaa, result.AntiAliasingMode);
+		Assert.AreEqual(config with { AntiAliasingMode = AntiAliasingMode.Fxaa }, result, "Only AntiAliasingMode should differ.");
+	}
 }

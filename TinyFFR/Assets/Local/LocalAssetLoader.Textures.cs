@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
@@ -22,100 +23,302 @@ unsafe partial class LocalAssetLoader {
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
 
 	#region Read / Load Texture
-	public Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig) {
-		ThrowIfThisIsDisposed();
-		config.ThrowIfInvalid();
-		readConfig.ThrowIfInvalid();
+	#region Async / Shared Loading Core
+	readonly WorkerJobSyncHelper<LocalAssetLoader, TextureLoadContext, TextureLoadConfig> _textureLoadWorkerSyncHelper;
+	readonly WorkerJobSyncHelper<LocalAssetLoader, CombinedTextureLoadContext, TextureCombinedLoadConfig> _combinedTextureLoadWorkerSyncHelper;
 
-		var forceAlpha = readConfig.ForceWAlphaChannelPresence;
+	sealed class TextureCreationMetadata {
+		public IntPtr OwnedStbTexelBufferPtr { get; set; } = 0;
+		public IntPtr BorrowedTexelBufferPtr { get; set; } = 0;
+		public PooledHeapMemory<byte>? OwnedTexelData { get; set; } = null;
+		public XYPair<int> Dimensions { get; set; } = default;
+		public bool IsRgba { get; set; } = false;
+		public bool GenerateMipMaps { get; set; } = false;
+		public bool IsLinearColorspace { get; set; } = false;
+		public bool AllowsDynamicWrites { get; set; } = false;
+		public TextureRenderingConfig RenderingConfig { get; set; } = new();
+
+		public ReadOnlySpan<TexelRgba32> Rgba32Texels => MemoryMarshal.Cast<byte, TexelRgba32>(TexelBytes)[..Dimensions.Area];
+		public ReadOnlySpan<TexelRgb24> Rgb24Texels => MemoryMarshal.Cast<byte, TexelRgb24>(TexelBytes)[..Dimensions.Area];
+
+		ReadOnlySpan<byte> TexelBytes {
+			get {
+				var texelSizeBytes = IsRgba ? sizeof(TexelRgba32) : sizeof(TexelRgb24);
+				if (OwnedTexelData is { } owned) return owned.Span;
+				var ptr = OwnedStbTexelBufferPtr != IntPtr.Zero ? OwnedStbTexelBufferPtr : BorrowedTexelBufferPtr;
+				if (ptr == IntPtr.Zero) throw new InvalidOperationException("No texel data set in context (this is a bug in TinyFFR).");
+				return new ReadOnlySpan<byte>((void*) ptr, Dimensions.Area * texelSizeBytes);
+			}
+		}
+
+		public void TearDown() {
+			if (OwnedStbTexelBufferPtr != 0) {
+				UnloadTextureFileFromMemory((void*) OwnedStbTexelBufferPtr).ThrowIfFailure();
+				OwnedStbTexelBufferPtr = 0;
+			}
+			BorrowedTexelBufferPtr = 0;
+			OwnedTexelData?.Dispose();
+			OwnedTexelData = null;
+			Dimensions = default;
+			IsRgba = false;
+			GenerateMipMaps = false;
+			IsLinearColorspace = false;
+			AllowsDynamicWrites = false;
+			RenderingConfig = new();
+		}
+	}
+
+	sealed unsafe class TextureLoadContext : WorkerJobSyncHelper<LocalAssetLoader, TextureLoadContext, TextureLoadConfig>.WorkerJobSyncHelperContext {
+		public TextureCreationMetadata CreationMetadata { get; } = new();
+
+		// Primary thread owned
+		public PooledHeapMemory<char>? FilePath { get; set; } = null;
+		public EmbeddedResourceResolver.ResourceDataRef? BuiltInEmbeddedDataRef { get; set; } = null;
+		public PooledHeapMemory<byte>? BuiltInTexelData { get; set; } = null;
+		public XYPair<int> BuiltInDimensions { get; set; } = default;
+		public bool BuiltInContainsAlpha { get; set; } = false;
+		public bool HasBuiltInSource { get; set; } = false;
+
+		public override void TearDown() {
+			CreationMetadata.TearDown();
+			BuiltInTexelData?.Dispose();
+			BuiltInTexelData = null;
+			BuiltInEmbeddedDataRef = null;
+			BuiltInDimensions = default;
+			BuiltInContainsAlpha = false;
+			HasBuiltInSource = false;
+			if (HeapPoolSerializedConfig is { } config) {
+				TextureLoadConfig.DisposeAllocatedHeapStorage(config.Span);
+				config.Dispose();
+				HeapPoolSerializedConfig = null;
+			}
+			FilePath?.Dispose();
+			FilePath = null;
+			HeapPool = null!;
+			Self = null!;
+		}
+		
+		public override void Dispose() { /* no-op */ }
+	}
+
+	sealed unsafe class CombinedTextureLoadContext : WorkerJobSyncHelper<LocalAssetLoader, CombinedTextureLoadContext, TextureCombinedLoadConfig>.WorkerJobSyncHelperContext {
+		public TextureCreationMetadata CreationMetadata { get; } = new();
+
+		// Primary thread owned
+		public PooledHeapMemory<char>? FilePathAMemory { get; set; } = null;
+		public PooledHeapMemory<char>? FilePathBMemory { get; set; } = null;
+		public PooledHeapMemory<char>? FilePathCMemory { get; set; } = null;
+		public PooledHeapMemory<char>? FilePathDMemory { get; set; } = null;
+		public ReadOnlySpan<char> FilePathA => FilePathAMemory is { } mem ? mem.Span : throw new InvalidOperationException("Expected file path A to exist (this is a bug in TinyFFR).");
+		public ReadOnlySpan<char> FilePathB => FilePathBMemory is { } mem ? mem.Span : throw new InvalidOperationException("Expected file path B to exist (this is a bug in TinyFFR).");
+		public ReadOnlySpan<char> FilePathC => FilePathCMemory is { } mem ? mem.Span : throw new InvalidOperationException("Expected file path C to exist (this is a bug in TinyFFR).");
+		public ReadOnlySpan<char> FilePathD => FilePathDMemory is { } mem ? mem.Span : throw new InvalidOperationException("Expected file path D to exist (this is a bug in TinyFFR).");
+		
+
+		public override void TearDown() {
+			CreationMetadata.TearDown();
+			if (HeapPoolSerializedConfig is { } config) {
+				TextureCombinedLoadConfig.DisposeAllocatedHeapStorage(config.Span);
+				config.Dispose();
+				HeapPoolSerializedConfig = null;
+			}
+			FilePathAMemory?.Dispose();
+			FilePathAMemory = null;
+			FilePathBMemory?.Dispose();
+			FilePathBMemory = null;
+			FilePathCMemory?.Dispose();
+			FilePathCMemory = null;
+			FilePathDMemory?.Dispose();
+			FilePathDMemory = null;
+			HeapPool = null!;
+			Self = null!;
+		}
+		
+		public override void Dispose() { /* no-op */ }
+	}
+
+	void SetUpTextureLoadContext(TextureLoadContext context, ReadOnlySpan<char> filePath, ReadOnlySpan<char> name) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		context.SetName(name);
 
 		switch (_builtInTextureLibrary.GetLikelyBuiltInTextureType(filePath)) {
 			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.Texel:
 				var builtInTexel = _builtInTextureLibrary.TryGetBuiltInTexel(filePath);
-				var builtInRgb = builtInTexel?.First;
-				var builtInRgba = builtInTexel?.Second;
-
-				if (builtInRgb is { } rgb) {
-					var builtInRgbSpan = new ReadOnlySpan<TexelRgb24>(in rgb);
-					return forceAlpha
-						? _textureBuilder.CreateTextureWithAddedOpaqueAlpha(builtInRgbSpan, new() { Dimensions = new(1, 1) }, config)
-						: _textureBuilder.CreateTexture(builtInRgbSpan, new() { Dimensions = new(1, 1) }, config);
+				if (builtInTexel?.First is { } rgb) {
+					var rgbBuffer = _globals.HeapPool.Borrow<byte>(sizeof(TexelRgb24));
+					context.BuiltInTexelData = rgbBuffer;
+					MemoryMarshal.Cast<byte, TexelRgb24>(rgbBuffer.Span)[0] = rgb;
+					context.BuiltInDimensions = new(1, 1);
+					context.BuiltInContainsAlpha = false;
+					context.HasBuiltInSource = true;
+					return;
 				}
-				else if (builtInRgba is { } rgba) {
-					return _textureBuilder.CreateTexture(
-						new ReadOnlySpan<TexelRgba32>(in rgba),
-						new() { Dimensions = new(1, 1) },
-						config
-					);
+				if (builtInTexel?.Second is { } rgba) {
+					var rgbaBuffer = _globals.HeapPool.Borrow<byte>(sizeof(TexelRgba32));
+					context.BuiltInTexelData = rgbaBuffer;
+					MemoryMarshal.Cast<byte, TexelRgba32>(rgbaBuffer.Span)[0] = rgba;
+					context.BuiltInDimensions = new(1, 1);
+					context.BuiltInContainsAlpha = true;
+					context.HasBuiltInSource = true;
+					return;
 				}
 				break;
 			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.EmbeddedResourceTexture:
 				var embeddedTextureAssetData = _builtInTextureLibrary.TryGetBuiltInEmbeddedResourceTexture(filePath);
 				if (embeddedTextureAssetData is { } tuple) {
-					if (tuple.ContainsAlpha) {
-						return _textureBuilder.CreateTexture(
-							MemoryMarshal.Cast<byte, TexelRgba32>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area],
-							new TextureGenerationConfig { Dimensions = tuple.Dimensions },
-							config
-						);
-					}
-					else {
-						var embeddedRgbSpan = MemoryMarshal.Cast<byte, TexelRgb24>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area];
-						return forceAlpha
-							? _textureBuilder.CreateTextureWithAddedOpaqueAlpha(embeddedRgbSpan, new TextureGenerationConfig { Dimensions = tuple.Dimensions }, config)
-							: _textureBuilder.CreateTexture(embeddedRgbSpan, new TextureGenerationConfig { Dimensions = tuple.Dimensions }, config);
-					}
+					context.BuiltInEmbeddedDataRef = tuple.DataRef;
+					context.BuiltInDimensions = tuple.Dimensions;
+					context.BuiltInContainsAlpha = tuple.ContainsAlpha;
+					context.HasBuiltInSource = true;
+					return;
 				}
 				break;
 		}
 
+		context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
+	}
+
+	public Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		readConfig.ThrowIfInvalid();
+
+		var contextWrapper = _textureLoadWorkerSyncHelper.CreateContextWrapper();
+		SetUpTextureLoadContext(contextWrapper.Context, filePath, config.Name);
+
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadTextureCore, new TextureLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+	}
+
+	public TinyFfrAsyncOperation<Texture> LoadTextureAsync(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		readConfig.ThrowIfInvalid();
+
+		var contextWrapper = _textureLoadWorkerSyncHelper.CreateContextWrapper();
+		SetUpTextureLoadContext(contextWrapper.Context, filePath, config.Name);
+
+		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadTextureCore, new TextureLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+	}
+
+	static Texture LoadTextureCore(TextureLoadContext context, in TextureLoadConfig config) {
+		var creationConfig = config.CreationConfig;
+		var readConfig = config.ReadConfig;
+		var processingConfig = creationConfig.ProcessingToApply;
+		var creationMetadata = context.CreationMetadata;
+
+		creationMetadata.GenerateMipMaps = creationConfig.GenerateMipMaps;
+		creationMetadata.IsLinearColorspace = creationConfig.IsLinearColorspace;
+		creationMetadata.AllowsDynamicWrites = creationConfig.AllowsDynamicWrites;
+		creationMetadata.RenderingConfig = creationConfig.RenderingConfig;
+
+		if (context.HasBuiltInSource) {
+			LoadBuiltInTextureCore(context, readConfig.ForceWAlphaChannelPresence, in processingConfig);
+		}
+		else if (context.FilePath is { } filePath) {
+			LoadFileTextureCore(context, filePath.Span, in readConfig, in processingConfig);
+		}
+		else {
+			throw new InvalidOperationException("No file path or built-in source set in context (this is a bug in TinyFFR).");
+		}
+
+		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
+	}
+
+	static void LoadBuiltInTextureCore(TextureLoadContext context, bool forceAlpha, in TextureProcessingConfig processingConfig) {
+		var creationMetadata = context.CreationMetadata;
+		creationMetadata.Dimensions = context.BuiltInDimensions;
+
+		var sourceIsRgba = context.BuiltInContainsAlpha;
+		var expandToRgba = forceAlpha && !sourceIsRgba;
+		var mustCopy = expandToRgba || processingConfig.RequiresProcessing || context.BuiltInEmbeddedDataRef == null;
+
+		ReadOnlySpan<byte> sourceBytes;
+		if (context.BuiltInEmbeddedDataRef is { } dataRef) sourceBytes = dataRef.AsSpan;
+		else if (context.BuiltInTexelData is { } builtInTexelData) sourceBytes = builtInTexelData.Span;
+		else throw new InvalidOperationException("No built-in texture data set in context (this is a bug in TinyFFR).");
+
+		var texelCount = creationMetadata.Dimensions.Area;
+
+		if (!mustCopy) {
+			creationMetadata.IsRgba = sourceIsRgba;
+			creationMetadata.BorrowedTexelBufferPtr = (nint) context.BuiltInEmbeddedDataRef!.Value.DataPtr;
+			return;
+		}
+
+		creationMetadata.IsRgba = sourceIsRgba || expandToRgba;
+		var destTexelSizeBytes = creationMetadata.IsRgba ? sizeof(TexelRgba32) : sizeof(TexelRgb24);
+		var destBuffer = context.HeapPool.Borrow<byte>(texelCount * destTexelSizeBytes);
+		creationMetadata.OwnedTexelData = destBuffer;
+
+		if (expandToRgba) {
+			TextureUtils.Convert(
+				MemoryMarshal.Cast<byte, TexelRgb24>(sourceBytes)[..texelCount],
+				MemoryMarshal.Cast<byte, TexelRgba32>(destBuffer.Span)
+			);
+		}
+		else {
+			sourceBytes[..(texelCount * destTexelSizeBytes)].CopyTo(destBuffer.Span);
+		}
+
+		if (!processingConfig.RequiresProcessing) return;
+		if (creationMetadata.IsRgba) TextureUtils.ProcessTexture(MemoryMarshal.Cast<byte, TexelRgba32>(destBuffer.Span), creationMetadata.Dimensions, in processingConfig);
+		else TextureUtils.ProcessTexture(MemoryMarshal.Cast<byte, TexelRgb24>(destBuffer.Span), creationMetadata.Dimensions, in processingConfig);
+	}
+
+	static void LoadFileTextureCore(TextureLoadContext context, ReadOnlySpan<char> filePath, in TextureReadConfig readConfig, in TextureProcessingConfig processingConfig) {
+		var creationMetadata = context.CreationMetadata;
+		var forceAlpha = readConfig.ForceWAlphaChannelPresence;
+		var includeWAlphaChannel = readConfig.IncludeWAlphaChannel;
+
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = context.Self.AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			GetTextureFileData(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				out _,
 				out _,
 				out var channelCount
 			).ThrowIfFailure();
 
-			var includeAlpha = readConfig.IncludeWAlphaChannel && (channelCount > 3 || forceAlpha);
+			var includeAlpha = includeWAlphaChannel && (channelCount > 3 || forceAlpha);
 
 			LoadTextureFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				includeWAlphaChannel: includeAlpha,
 				out var width,
 				out var height,
 				out var texelBuffer
 			).ThrowIfFailure();
+			creationMetadata.OwnedStbTexelBufferPtr = (nint) texelBuffer;
 
-			try {
-				if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
-				var texelCount = width * height;
+			if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
 
-				if (includeAlpha) {
-					return _textureBuilder.CreateTexture(
-						new ReadOnlySpan<TexelRgba32>(texelBuffer, texelCount),
-						new() { Dimensions = new(width, height) },
-						config
-					);
-				}
-				else {
-					return _textureBuilder.CreateTexture(
-						new ReadOnlySpan<TexelRgb24>(texelBuffer, texelCount),
-						new() { Dimensions = new(width, height) },
-						config
-					);
-				}
-			}
-			finally {
-				UnloadTextureFileFromMemory(texelBuffer).ThrowIfFailure();
-			}
+			creationMetadata.Dimensions = new(width, height);
+			creationMetadata.IsRgba = includeAlpha;
+
+			if (!processingConfig.RequiresProcessing) return;
+			var texelCount = width * height;
+			if (includeAlpha) TextureUtils.ProcessTexture(new Span<TexelRgba32>(texelBuffer, texelCount), creationMetadata.Dimensions, in processingConfig);
+			else TextureUtils.ProcessTexture(new Span<TexelRgb24>(texelBuffer, texelCount), creationMetadata.Dimensions, in processingConfig);
 		}
 		catch (Exception e) {
-			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
+			if (!File.Exists(new String(filePath))) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
 			else throw;
 		}
 	}
+
+	static Texture CompleteTextureLoad(TextureLoadContext context) => CompleteTextureLoad(context.Self, context.CreationMetadata, context.Name);
+
+	static Texture CompleteTextureLoad(LocalAssetLoader self, TextureCreationMetadata data, ReadOnlySpan<char> name) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		return data.IsRgba
+			? self._textureBuilder.CreateTextureWithoutProcessing(data.Rgba32Texels, data.Dimensions, data.GenerateMipMaps, data.IsLinearColorspace, data.AllowsDynamicWrites, data.RenderingConfig, name)
+			: self._textureBuilder.CreateTextureWithoutProcessing(data.Rgb24Texels, data.Dimensions, data.GenerateMipMaps, data.IsLinearColorspace, data.AllowsDynamicWrites, data.RenderingConfig, name);
+	}
+	#endregion
+
 	public TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath) {
 		ThrowIfThisIsDisposed();
 
@@ -131,9 +334,10 @@ unsafe partial class LocalAssetLoader {
 		}
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			GetTextureFileData(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				out var width,
 				out var height,
 				out var channelCount
@@ -203,6 +407,7 @@ unsafe partial class LocalAssetLoader {
 							}
 							default: throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
 						}
+						TextureUtils.ProcessTexture(destinationBuffer[..texelData.Length], tuple.Dimensions, in processingConfig);
 						return texelData.Length;
 					}
 					else {
@@ -221,6 +426,7 @@ unsafe partial class LocalAssetLoader {
 							}
 							default: throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
 						}
+						TextureUtils.ProcessTexture(destinationBuffer[..texelData.Length], tuple.Dimensions, in processingConfig);
 						return texelData.Length;
 					}
 				}
@@ -235,9 +441,10 @@ unsafe partial class LocalAssetLoader {
 		};
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			LoadTextureFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				includeWChannel,
 				out var width,
 				out var height,
@@ -278,7 +485,7 @@ unsafe partial class LocalAssetLoader {
 	#region Read / Load Combined Texture
 	PooledHeapMemory<TexelRgba32> ReadTextureForCombination(ReadOnlySpan<char> filePath, TextureReadMetadata metadata, in TextureProcessingConfig processingConfig) {
 		processingConfig.ThrowIfInvalid();
-		var result = _globals.HeapPool.Borrow<TexelRgba32>(metadata.Dimensions.Area);
+		var result = _globals.HeapPool.ThreadSafeWrapper.Borrow<TexelRgba32>(metadata.Dimensions.Area);
 		ReadTexture(filePath, in processingConfig, result.Span);
 		return result;
 	}
@@ -308,7 +515,7 @@ unsafe partial class LocalAssetLoader {
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
+			using var destPool = _globals.HeapPool.ThreadSafeWrapper.Borrow<TexelRgba32>(destDimensions.Area);
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, combinationConfig, destPool.Span);
 			for (var i = 0; i < destDimensions.Area; ++i) destinationBuffer[i] = TTexel.ConvertFrom(destPool.Span[i]);
 		}
@@ -341,7 +548,7 @@ unsafe partial class LocalAssetLoader {
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
+			using var destPool = _globals.HeapPool.ThreadSafeWrapper.Borrow<TexelRgba32>(destDimensions.Area);
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, combinationConfig, destPool.Span);
 			for (var i = 0; i < destDimensions.Area; ++i) destinationBuffer[i] = TTexel.ConvertFrom(destPool.Span[i]);
 		}
@@ -377,78 +584,185 @@ unsafe partial class LocalAssetLoader {
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, dBuffer, dMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
+			using var destPool = _globals.HeapPool.ThreadSafeWrapper.Borrow<TexelRgba32>(destDimensions.Area);
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, dBuffer, dMetadata.Dimensions, combinationConfig, destPool.Span);
 			for (var i = 0; i < destDimensions.Area; ++i) destinationBuffer[i] = TTexel.ConvertFrom(destPool.Span[i]);
 		}
 	}
 
+	void SetUpCombinedTextureLoadContext(CombinedTextureLoadContext context, ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath, ReadOnlySpan<char> cFilePath, ReadOnlySpan<char> dFilePath, int sourceCount, ReadOnlySpan<char> name) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		context.SetName(name);
+		context.FilePathAMemory = _globals.HeapPool.BorrowAndCopy(aFilePath);
+		context.FilePathBMemory = _globals.HeapPool.BorrowAndCopy(bFilePath);
+		if (sourceCount > 2) context.FilePathCMemory = _globals.HeapPool.BorrowAndCopy(cFilePath);
+		if (sourceCount > 3) context.FilePathDMemory = _globals.HeapPool.BorrowAndCopy(dFilePath);
+	}
+
+	Texture DispatchSynchronousCombinedLoad(ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig, ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig, ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig, ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig, int sourceCount, TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		finalOutputConfig.ThrowIfInvalid();
+		combinationConfig.ThrowIfInvalid(sourceCount);
+
+		var contextWrapper = _combinedTextureLoadWorkerSyncHelper.CreateContextWrapper();
+		SetUpCombinedTextureLoadContext(contextWrapper.Context, aFilePath, bFilePath, cFilePath, dFilePath, sourceCount, finalOutputConfig.Name);
+
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(
+			&LoadCombinedTextureCore,
+			new TextureCombinedLoadConfig {
+				CreationConfig = finalOutputConfig,
+				CombinationConfig = combinationConfig,
+				ProcessingConfigA = aProcessingConfig,
+				ProcessingConfigB = bProcessingConfig,
+				ProcessingConfigC = cProcessingConfig,
+				ProcessingConfigD = dProcessingConfig,
+				SourceCount = sourceCount
+			}
+		);
+	}
+
+	TinyFfrAsyncOperation<Texture> DispatchAsynchronousCombinedLoad(ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig, ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig, ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig, ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig, int sourceCount, TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		finalOutputConfig.ThrowIfInvalid();
+		combinationConfig.ThrowIfInvalid(sourceCount);
+
+		var contextWrapper = _combinedTextureLoadWorkerSyncHelper.CreateContextWrapper();
+		SetUpCombinedTextureLoadContext(contextWrapper.Context, aFilePath, bFilePath, cFilePath, dFilePath, sourceCount, finalOutputConfig.Name);
+
+		return contextWrapper.DispatchResourceReturningAsynchronousOperation(
+			&LoadCombinedTextureCore,
+			new TextureCombinedLoadConfig {
+				CreationConfig = finalOutputConfig,
+				CombinationConfig = combinationConfig,
+				ProcessingConfigA = aProcessingConfig,
+				ProcessingConfigB = bProcessingConfig,
+				ProcessingConfigC = cProcessingConfig,
+				ProcessingConfigD = dProcessingConfig,
+				SourceCount = sourceCount
+			}
+		);
+	}
+
 	public Texture LoadCombinedTexture(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
-	) {
-		var aMetadata = ReadTextureMetadata(aFilePath);
-		var bMetadata = ReadTextureMetadata(bFilePath);
-		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions);
+	) => DispatchSynchronousCombinedLoad(aFilePath, in aProcessingConfig, bFilePath, in bProcessingConfig, default, TextureProcessingConfig.None, default, TextureProcessingConfig.None, 2, combinationConfig, in finalOutputConfig);
 
-		if (combinationConfig.OutputTextureWAlphaChannelSource == null) {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgb24>(destDimensions.Area);
-			CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, combinationConfig, destPool.Span);
-			return _textureBuilder.CreateTexture(destPool.Span, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputConfig);
-		}
-		else {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
-			CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, combinationConfig, destPool.Span);
-			return _textureBuilder.CreateTexture(destPool.Span, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputConfig);
-		}
-	}
 	public Texture LoadCombinedTexture(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
 		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
-	) {
-		var aMetadata = ReadTextureMetadata(aFilePath);
-		var bMetadata = ReadTextureMetadata(bFilePath);
-		var cMetadata = ReadTextureMetadata(cFilePath);
-		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions);
+	) => DispatchSynchronousCombinedLoad(aFilePath, in aProcessingConfig, bFilePath, in bProcessingConfig, cFilePath, in cProcessingConfig, default, TextureProcessingConfig.None, 3, combinationConfig, in finalOutputConfig);
 
-		if (combinationConfig.OutputTextureWAlphaChannelSource == null) {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgb24>(destDimensions.Area);
-			CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, combinationConfig, destPool.Span);
-			return _textureBuilder.CreateTexture(destPool.Span, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputConfig);
-		}
-		else {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
-			CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, combinationConfig, destPool.Span);
-			return _textureBuilder.CreateTexture(destPool.Span, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputConfig);
-		}
-	}
 	public Texture LoadCombinedTexture(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
 		ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig,
 		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
-	) {
-		var aMetadata = ReadTextureMetadata(aFilePath);
-		var bMetadata = ReadTextureMetadata(bFilePath);
-		var cMetadata = ReadTextureMetadata(cFilePath);
-		var dMetadata = ReadTextureMetadata(dFilePath);
-		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions);
+	) => DispatchSynchronousCombinedLoad(aFilePath, in aProcessingConfig, bFilePath, in bProcessingConfig, cFilePath, in cProcessingConfig, dFilePath, in dProcessingConfig, 4, combinationConfig, in finalOutputConfig);
 
-		if (combinationConfig.OutputTextureWAlphaChannelSource == null) {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgb24>(destDimensions.Area);
-			CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, dFilePath, in dProcessingConfig, dMetadata, combinationConfig, destPool.Span);
-			return _textureBuilder.CreateTexture(destPool.Span, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputConfig);
+	public TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	) => DispatchAsynchronousCombinedLoad(aFilePath, in aProcessingConfig, bFilePath, in bProcessingConfig, default, TextureProcessingConfig.None, default, TextureProcessingConfig.None, 2, combinationConfig, in finalOutputConfig);
+
+	public TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	) => DispatchAsynchronousCombinedLoad(aFilePath, in aProcessingConfig, bFilePath, in bProcessingConfig, cFilePath, in cProcessingConfig, default, TextureProcessingConfig.None, 3, combinationConfig, in finalOutputConfig);
+
+	public TinyFfrAsyncOperation<Texture> LoadCombinedTextureAsync(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
+	) => DispatchAsynchronousCombinedLoad(aFilePath, in aProcessingConfig, bFilePath, in bProcessingConfig, cFilePath, in cProcessingConfig, dFilePath, in dProcessingConfig, 4, combinationConfig, in finalOutputConfig);
+
+	static Texture LoadCombinedTextureCore(CombinedTextureLoadContext context, in TextureCombinedLoadConfig config) {
+		var self = context.Self;
+		var creationConfig = config.CreationConfig;
+		var combinationConfig = config.CombinationConfig;
+		var sourceCount = config.SourceCount;
+		var data = context.CreationMetadata;
+
+		data.GenerateMipMaps = creationConfig.GenerateMipMaps;
+		data.IsLinearColorspace = creationConfig.IsLinearColorspace;
+		data.AllowsDynamicWrites = creationConfig.AllowsDynamicWrites;
+		data.RenderingConfig = creationConfig.RenderingConfig;
+
+		var aMetadata = self.ReadTextureMetadata(context.FilePathA);
+		var bMetadata = self.ReadTextureMetadata(context.FilePathB);
+		var cMetadata = sourceCount > 2 ? self.ReadTextureMetadata(context.FilePathC) : default;
+		var dMetadata = sourceCount > 3 ? self.ReadTextureMetadata(context.FilePathD) : default;
+
+		var destDimensions = sourceCount switch {
+			2 => TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions),
+			3 => TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions),
+			_ => TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions)
+		};
+
+		data.Dimensions = destDimensions;
+		data.IsRgba = combinationConfig.OutputTextureWAlphaChannelSource != null;
+
+		var destTexelSizeBytes = data.IsRgba ? sizeof(TexelRgba32) : sizeof(TexelRgb24);
+		ThrowIfAssetBufferSizeExceedsMaximum((long) destDimensions.Area * destTexelSizeBytes, $"combined texture ({destDimensions.X}x{destDimensions.Y})");
+		var destBuffer = context.HeapPool.Borrow<byte>(destDimensions.Area * destTexelSizeBytes);
+		data.OwnedTexelData = destBuffer;
+
+		if (data.IsRgba) {
+			var destSpan = MemoryMarshal.Cast<byte, TexelRgba32>(destBuffer.Span);
+			CombineSourcesOnWorker(context, in config, aMetadata, bMetadata, cMetadata, dMetadata, destSpan);
+			TextureUtils.ProcessTexture(destSpan, destDimensions, creationConfig.ProcessingToApply);
 		}
 		else {
-			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
-			CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, dFilePath, in dProcessingConfig, dMetadata, combinationConfig, destPool.Span);
-			return _textureBuilder.CreateTexture(destPool.Span, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputConfig);
+			var destSpan = MemoryMarshal.Cast<byte, TexelRgb24>(destBuffer.Span);
+			CombineSourcesOnWorker(context, in config, aMetadata, bMetadata, cMetadata, dMetadata, destSpan);
+			TextureUtils.ProcessTexture(destSpan, destDimensions, creationConfig.ProcessingToApply);
+		}
+
+		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
+	}
+
+	static void CombineSourcesOnWorker<TTexel>(CombinedTextureLoadContext context, in TextureCombinedLoadConfig config, TextureReadMetadata aMetadata, TextureReadMetadata bMetadata, TextureReadMetadata cMetadata, TextureReadMetadata dMetadata, Span<TTexel> destinationBuffer) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		var self = context.Self;
+		switch (config.SourceCount) {
+			case 2:
+				self.CombineTextures(
+					context.FilePathA, config.ProcessingConfigA, aMetadata,
+					context.FilePathB, config.ProcessingConfigB, bMetadata,
+					config.CombinationConfig, destinationBuffer
+				);
+				break;
+			case 3:
+				self.CombineTextures(
+					context.FilePathA, config.ProcessingConfigA, aMetadata,
+					context.FilePathB, config.ProcessingConfigB, bMetadata,
+					context.FilePathC, config.ProcessingConfigC, cMetadata,
+					config.CombinationConfig, destinationBuffer
+				);
+				break;
+			default:
+				self.CombineTextures(
+					context.FilePathA, config.ProcessingConfigA, aMetadata,
+					context.FilePathB, config.ProcessingConfigB, bMetadata,
+					context.FilePathC, config.ProcessingConfigC, cMetadata,
+					context.FilePathD, config.ProcessingConfigD, dMetadata,
+					config.CombinationConfig, destinationBuffer
+				);
+				break;
 		}
 	}
+
+	static Texture CompleteTextureLoad(CombinedTextureLoadContext context) => CompleteTextureLoad(context.Self, context.CreationMetadata, context.Name);
 
 	public TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath) {
 		var aMetadata = ReadTextureMetadata(aFilePath);

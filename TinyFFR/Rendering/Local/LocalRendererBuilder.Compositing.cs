@@ -103,6 +103,7 @@ sealed partial class LocalRendererBuilder {
 		compositorData.AddedRenderers.Add(new(renderer, compositionType, true));
 		RecalculateCompositorCounts(handle);
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), renderer);
+		SetCompositionTypeAndRefreshQualityConfig(renderer.Handle, compositionType);
 	}
 	
 	public void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState) {
@@ -442,6 +443,7 @@ sealed partial class LocalRendererBuilder {
 			}
 			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), addedRenderer.Renderer);
 			if (disposeContainedRenderers) Dispose(addedRenderer.Renderer.GetHandleWithoutDisposeCheck());
+			else SetCompositionTypeAndRefreshQualityConfig(addedRenderer.Renderer.Handle, RenderCompositionType.Standard);
 		}
 
 		if (data.RenderTarget.IsWindow) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsWindow);

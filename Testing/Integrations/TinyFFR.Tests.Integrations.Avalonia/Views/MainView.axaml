@@ -49,13 +49,22 @@
                 </ComboBox>
 
                 <TextBlock Classes="section" Text="Model" />
+                <TextBlock FontSize="11" Text="{Binding LoadProgressText}" TextWrapping="Wrap" />
+                <ProgressBar
+                    Maximum="{Binding TotalModelCount}"
+                    Minimum="0"
+                    Value="{Binding LoadedModelCount}" />
                 <ListBox
                     ItemsSource="{Binding CatalogItems}"
-                    IsEnabled="{Binding !IsLoading}"
                     SelectedItem="{Binding SelectedModel}">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem" x:DataType="viewer:ModelListEntry">
+                            <Setter Property="IsEnabled" Value="{Binding IsSelectable}" />
+                        </Style>
+                    </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="viewer:ModelListEntry">
-                            <TextBlock Classes.category="{Binding IsHeader}" Text="{Binding DisplayName}" />
+                            <TextBlock Classes.category="{Binding IsHeader}" Text="{Binding DisplayText}" />
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -112,12 +121,12 @@
                 FallbackBrush="LightGray"
                 InternalRenderResolution="{Binding InternalRenderResolution}"
                 Renderer="{Binding Renderer}" />
-            <Border Background="#B0000000" IsHitTestVisible="False" IsVisible="{Binding IsLoading}">
+            <Border Background="#B0000000" IsHitTestVisible="False" IsVisible="{Binding IsAwaitingFirstModel}">
                 <TextBlock
                     FontSize="20"
                     Foreground="White"
                     HorizontalAlignment="Center"
-                    Text="Loading..."
+                    Text="Waiting for the first model to finish loading..."
                     VerticalAlignment="Center" />
             </Border>
             <Border

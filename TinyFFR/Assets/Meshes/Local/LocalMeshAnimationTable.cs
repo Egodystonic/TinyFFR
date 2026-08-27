@@ -500,6 +500,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	
 	void WriteAnimationNodeTransformsToWorkspaceAndSetBoneTransforms(ModelInstance targetInstance, StartingAnimationData startAnimData, EndingAnimationData? endAnimData) {
 		ThrowIfThisIsDisposed();
+		
 		var skeleton = GetSkeletonOrThrow();
 		if (targetInstance.Mesh != skeleton.OwningMesh) {
 			throw new InvalidOperationException(

@@ -30,7 +30,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 	
 	public Quality ShadowQuality { get; init; } = Quality.Standard;
 	public Quality ScreenSpaceEffectsQuality { get; init; } = Quality.Standard;
-	public AntiAliasingMode AntiAliasingMode { get; init; } = AntiAliasingMode.Fxaa;
+	public AntiAliasingMode AntiAliasingMode { get; init; } = AntiAliasingMode.Fxaa; // TODO xmldoc that TAA is disabled automatically (downgraded to FXAA) for composed scenes whose composition type is RenderCompositionType.RetainPreviousScenes
 	public Quality AmbientOcclusionQuality { get; init; } = Quality.Standard;
 	public float AmbientOcclusionStrength { get; init; } = 1f;
 	public bool PostProcessingEnabled { get; init; } = true;
@@ -137,6 +137,16 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 				break;
 			}
 		}
+	}
+	
+	internal RenderQualityConfig WithCompositingConstraintsApplied(RenderCompositionType compositionType) {
+		if (compositionType != RenderCompositionType.RetainPreviousScenes) return this;
+		return AntiAliasingMode switch {
+			AntiAliasingMode.TaaBalanced or AntiAliasingMode.TaaReducedGhosting
+				or AntiAliasingMode.TaaReducedFlickering or AntiAliasingMode.TaaIncreasedSharpening
+				=> this with { AntiAliasingMode = AntiAliasingMode.Fxaa },
+			_ => this
+		};
 	}
 	
 	internal void ThrowIfInvalid() {

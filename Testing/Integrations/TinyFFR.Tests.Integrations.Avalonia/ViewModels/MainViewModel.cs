@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Input;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Egodystonic.TinyFFR;
@@ -22,15 +22,17 @@ public partial class MainViewModel : ViewModelBase {
 	ModelViewerScene? _viewer;
 	IDisposable? _loop;
 	InputElement? _inputSource;
+	bool _startInFlight;
+	bool _compositorSwitchInFlight;
+	bool _hasDisplayedAModel;
 
 	// Set by the view; the UI loop needs an element to source TinyFFR's input abstraction from.
 	// Rendering can only start once we have it, so this doubles as the trigger for the initial start.
 	public void SetInputSource(InputElement inputSource) {
 		_inputSource = inputSource;
-		if (_viewer == null) StartRendering();
+		if (_viewer == null) _ = StartRenderingAsync();
 	}
 
-	public IReadOnlyList<ModelListEntry> CatalogItems { get; } = ModelCatalog.Items;
 	public IReadOnlyList<ViewerShadingStyle> ShadingStyles { get; } = Enum.GetValues<ViewerShadingStyle>();
 	public IReadOnlyList<ViewerBackdropMode> BackdropModes { get; } = Enum.GetValues<ViewerBackdropMode>();
 	public IReadOnlyList<BuiltInQualityConfiguration> QualityPresets { get; } = Enum.GetValues<BuiltInQualityConfiguration>();
@@ -40,6 +42,9 @@ public partial class MainViewModel : ViewModelBase {
 		new ResolutionOption("640 x 360", new Size(640d, 360d)),
 		new ResolutionOption("1280 x 720", new Size(1280d, 720d))
 	};
+
+	[ObservableProperty]
+	public partial IReadOnlyList<ModelListEntry> CatalogItems { get; set; } = ModelCatalog.Build();
 
 	[ObservableProperty]
 	public partial Renderer? Renderer { get; set; }
@@ -54,7 +59,19 @@ public partial class MainViewModel : ViewModelBase {
 	public partial bool IsRendering { get; set; }
 
 	[ObservableProperty]
-	public partial bool IsLoading { get; set; }
+	public partial bool IsAwaitingFirstModel { get; set; }
+
+	[ObservableProperty]
+	public partial int LoadedModelCount { get; set; }
+
+	[ObservableProperty]
+	public partial int FailedModelCount { get; set; }
+
+	[ObservableProperty]
+	public partial int TotalModelCount { get; set; }
+
+	[ObservableProperty]
+	public partial string LoadProgressText { get; set; } = "";
 
 	[ObservableProperty]
 	public partial string StatusText { get; set; } = "Not rendering.";
@@ -123,7 +140,7 @@ public partial class MainViewModel : ViewModelBase {
 
 	[RelayCommand]
 	void ToggleRendering() {
-		if (_viewer == null) StartRendering();
+		if (_viewer == null) _ = StartRenderingAsync();
 		else Shutdown();
 	}
 
@@ -138,25 +155,98 @@ public partial class MainViewModel : ViewModelBase {
 	[RelayCommand(CanExecute = nameof(IsRendering))]
 	void ShiftLightHue() => _viewer?.ShiftLightHue();
 
-	void StartRendering() {
-		var viewer = new ModelViewerScene();
-		_viewer = viewer;
+	async Task StartRenderingAsync() {
+		if (_startInFlight || _viewer != null) return;
+		if (_inputSource is not { } inputSource) return;
 
-		PushAllSettings();
+		_startInFlight = true;
+		try {
+			var entries = ModelCatalog.Build();
+			var selectableCount = 0;
+			foreach (var entry in entries) {
+				if (entry.FileName != null) ++selectableCount;
+			}
 
-		Renderer = viewer.ActiveRenderer;
-		Compositor = viewer.ActiveCompositor;
-		IsRendering = true;
-		StatusText = "Rendering. Select a model to load.";
+			CatalogItems = entries;
+			SelectedModel = null;
+			LoadedModelCount = 0;
+			FailedModelCount = 0;
+			TotalModelCount = selectableCount;
+			_hasDisplayedAModel = false;
+			IsAwaitingFirstModel = true;
+			UpdateLoadProgress();
 
-		if (_inputSource is { } inputSource) _loop = viewer.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput);
+			var viewer = new ModelViewerScene();
+			_viewer = viewer;
 
-		if (SelectedModel?.FileName is { } fileName) BeginLoad(fileName);
-		else viewer.Render();
+			PushAllSettings();
+
+			Renderer = viewer.ActiveRenderer;
+			Compositor = viewer.ActiveCompositor;
+			IsRendering = true;
+			StatusText = "Rendering. Models are streaming in asynchronously.";
+
+			_loop = viewer.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput);
+
+			await viewer.LoadBackdropAsync();
+			if (!ReferenceEquals(_viewer, viewer)) return;
+
+			if (UseCompositor) {
+				await ApplyCompositorAsync(true);
+				if (!ReferenceEquals(_viewer, viewer)) return;
+			}
+
+			foreach (var entry in entries) {
+				if (entry.FileName == null) continue;
+				_ = LoadEntryAsync(viewer, entry);
+			}
+		}
+		catch (Exception e) {
+			StatusText = $"Failed to start rendering: {e.GetBaseException().Message}";
+		}
+		finally {
+			_startInFlight = false;
+		}
+	}
+
+	async Task LoadEntryAsync(ModelViewerScene viewer, ModelListEntry entry) {
+		try {
+			await viewer.LoadModelAsync(entry.FileName!);
+			if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+			entry.IsLoaded = true;
+			++LoadedModelCount;
+
+			if (!_hasDisplayedAModel) {
+				_hasDisplayedAModel = true;
+				IsAwaitingFirstModel = false;
+				SelectedModel = entry;
+			}
+
+			UpdateLoadProgress();
+		}
+		catch (Exception e) {
+			if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+			entry.LoadFailed = true;
+			++FailedModelCount;
+			UpdateLoadProgress();
+			StatusText = $"Failed to load {entry.FileName}: {e.GetBaseException().Message}";
+		}
+	}
+
+	void UpdateLoadProgress() {
+		var pending = TotalModelCount - LoadedModelCount - FailedModelCount;
+		if (pending <= 0 && FailedModelCount == 0) LoadProgressText = $"All {TotalModelCount} models loaded.";
+		else if (FailedModelCount > 0) LoadProgressText = $"Loaded {LoadedModelCount} of {TotalModelCount} ({FailedModelCount} failed, {pending} pending)";
+		else LoadProgressText = $"Loaded {LoadedModelCount} of {TotalModelCount} ({pending} pending)";
 	}
 
 	public void Shutdown() {
 		if (_viewer == null && _loop == null) return;
+
+		var viewer = _viewer;
+		_viewer = null;
 
 		_loop?.Dispose();
 		_loop = null;
@@ -164,13 +254,17 @@ public partial class MainViewModel : ViewModelBase {
 		Renderer = null;
 		Compositor = null;
 
-		_viewer?.Dispose();
-		_viewer = null;
+		viewer?.Dispose();
 
 		IsRendering = false;
-		IsLoading = false;
+		IsAwaitingFirstModel = false;
+		LoadedModelCount = 0;
+		FailedModelCount = 0;
+		LoadProgressText = "";
 		ResourceListing = "";
 		StatusText = "Not rendering.";
+		_hasDisplayedAModel = false;
+		SelectedModel = null;
 	}
 
 	void PushAllSettings() {
@@ -186,7 +280,6 @@ public partial class MainViewModel : ViewModelBase {
 		viewer.SetBackdropIntensity(BackdropIntensity);
 		viewer.SetQuality(Quality);
 		viewer.SetOverlayEnabled(OverlayEnabled);
-		viewer.SetCompositeMode(UseCompositor);
 	}
 
 	void TickWithInput(TimeSpan deltaTime, ILatestInputRetriever input) {
@@ -195,37 +288,17 @@ public partial class MainViewModel : ViewModelBase {
 		if (Animate) viewer.Render();
 	}
 
-	void BeginLoad(string fileName) {
-		IsLoading = true;
-		StatusText = $"Loading {fileName}...";
-
-		// Posted at background priority so the pending layout/render pass showing the loading state completes before the (synchronous) load blocks the dispatcher
-		Dispatcher.UIThread.Post(
-			() => {
-				try {
-					if (_viewer is not { } viewer) return;
-					StatusText = viewer.LoadModel(fileName);
-					ResourceListing = viewer.ResourceListing;
-					viewer.Render();
-				}
-				catch (Exception e) {
-					StatusText = $"Failed to load {fileName}: {e.Message}";
-				}
-				finally {
-					IsLoading = false;
-				}
-			},
-			DispatcherPriority.Background
-		);
-	}
-
 	partial void OnSelectedModelChanged(ModelListEntry? value) {
 		if (value is { IsHeader: true }) {
 			SelectedModel = null;
 			return;
 		}
-		if (value?.FileName is not { } fileName || _viewer == null || IsLoading) return;
-		BeginLoad(fileName);
+		if (value?.FileName is not { } fileName || _viewer is not { } viewer) return;
+		if (!viewer.IsModelLoaded(fileName)) return;
+
+		StatusText = viewer.DisplayModel(fileName);
+		ResourceListing = viewer.ResourceListing;
+		viewer.Render();
 	}
 
 	partial void OnSpinXChanged(bool value) => _viewer?.SetSpin(SpinX, SpinY, SpinZ);
@@ -242,15 +315,29 @@ public partial class MainViewModel : ViewModelBase {
 	partial void OnOverlayEnabledChanged(bool value) => _viewer?.SetOverlayEnabled(value);
 	partial void OnSelectedResolutionChanged(ResolutionOption? value) => InternalRenderResolution = value?.Value;
 
-	partial void OnUseCompositorChanged(bool value) {
-		if (_viewer is not { } viewer) return;
+	partial void OnUseCompositorChanged(bool value) => _ = ApplyCompositorAsync(value);
 
-		// Both must be unbound before the switch: the scene view rejects having Renderer and Compositor set simultaneously,
-		// and a renderer that is still supplying frames cannot be attached to a compositor
-		Renderer = null;
-		Compositor = null;
-		viewer.SetCompositeMode(value);
-		Renderer = viewer.ActiveRenderer;
-		Compositor = viewer.ActiveCompositor;
+	async Task ApplyCompositorAsync(bool value) {
+		if (_viewer is not { } viewer || _compositorSwitchInFlight) return;
+
+		_compositorSwitchInFlight = true;
+		try {
+			// Both must be unbound before the switch: the scene view rejects having Renderer and Compositor set simultaneously,
+			// and a renderer that is still supplying frames cannot be attached to a compositor
+			Renderer = null;
+			Compositor = null;
+
+			await viewer.SetCompositeModeAsync(value);
+			if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+			Renderer = viewer.ActiveRenderer;
+			Compositor = viewer.ActiveCompositor;
+		}
+		catch (Exception e) {
+			StatusText = $"Failed to change compositor mode: {e.GetBaseException().Message}";
+		}
+		finally {
+			_compositorSwitchInFlight = false;
+		}
 	}
 }

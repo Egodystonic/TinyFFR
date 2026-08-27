@@ -151,7 +151,7 @@ class LocalFogAndShadowingTest {
 		RenderQualityConfig BuildConfig() => new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) {
 			ShadowQuality = shadowQuality,
 			DepthOfFieldStrength = dofStrength,
-			BloomStrength = bloomStrength
+			BloomStrength = bloomStrength,
 		};
 		static Quality CycleQuality(Quality q) => q >= Quality.VeryHigh ? Quality.VeryLow : (Quality) ((int) q + 1);
 		renderer.SetQuality(BuildConfig());

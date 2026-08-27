@@ -1,4 +1,4 @@
-﻿// Created on 2024-08-19 by Ben Bowen
+// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Diagnostics;
@@ -14,153 +14,393 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 unsafe partial class LocalAssetLoader {
-	readonly record struct MeshDataCopyResult(FixedByteBufferPool.FixedByteBuffer VertexBuffer, int NumVerticesWritten, FixedByteBufferPool.FixedByteBuffer TriangleBuffer, int NumTrianglesWritten);
+	const int MaxNameLengthForStackAlloc = 2048;
+
 	[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 3 * 8)]
 	readonly struct NodeHandle {
 		[FieldOffset(0)] readonly UIntPtr _node;
 		[FieldOffset(8)] readonly UIntPtr _bone;
 		[FieldOffset(16)] readonly int _boneIndex;
 		[FieldOffset(20)] readonly int _;
-	} 
-	
+	}
+
+	readonly record struct NameSlice(int StartIndex, int Length);
+
+	readonly record struct GatheredAnimation(
+		PooledHeapMemory<SkeletalAnimationScalingKeyframe> ScalingKeyframes,
+		PooledHeapMemory<SkeletalAnimationRotationKeyframe> RotationKeyframes,
+		PooledHeapMemory<SkeletalAnimationTranslationKeyframe> TranslationKeyframes,
+		PooledHeapMemory<SkeletalAnimationNodeMutationDescriptor> Mutations,
+		float DurationSeconds,
+		NameSlice Name
+	);
+
+	sealed class MeshSkeletalGatherBuffers : IDisposable {
+		public ArrayPoolBackedVector<GatheredAnimation> Animations { get; } = new();
+		public ArrayPoolBackedVector<char> NameChars { get; } = new();
+		public ArrayPoolBackedVector<NameSlice> NodeNameSlices { get; } = new();
+		public int NumAnimationsWithTransferredOwnership { get; set; } = 0;
+
+		public NameSlice AppendName(ReadOnlySpan<char> name) {
+			var startIndex = NameChars.Count;
+			for (var i = 0; i < name.Length; ++i) NameChars.Add(name[i]);
+			return new NameSlice(startIndex, name.Length);
+		}
+
+		public ReadOnlySpan<char> GetName(NameSlice slice) => NameChars.AsSpan.Slice(slice.StartIndex, slice.Length);
+
+		public void DisposeUntransferredBuffersAndReset() {
+			for (var i = NumAnimationsWithTransferredOwnership; i < Animations.Count; ++i) {
+				var animation = Animations[i];
+				animation.ScalingKeyframes.Dispose();
+				animation.RotationKeyframes.Dispose();
+				animation.TranslationKeyframes.Dispose();
+				animation.Mutations.Dispose();
+			}
+			NumAnimationsWithTransferredOwnership = 0;
+			Animations.Clear();
+			NameChars.ClearWithoutZeroingMemory();
+			NodeNameSlices.ClearWithoutZeroingMemory();
+		}
+
+		public void Dispose() {
+			DisposeUntransferredBuffersAndReset();
+			Animations.Dispose();
+			NameChars.Dispose();
+			NodeNameSlices.Dispose();
+		}
+	}
+
 	readonly LocalMeshBuilder _meshBuilder;
-	readonly FixedByteBufferPool _vertexTriangleBufferPool;
-	readonly InteropStringBuffer _animationAndNodeNameBuffer;
-	readonly FixedByteBufferPool _skeletalAnimationKeyframeDataPool;
-	readonly FixedByteBufferPool _skeletalNodeBufferPool;
-	
+	readonly int _maxAnimationAndNodeNameLengthChars;
+	readonly WorkerJobSyncHelper<LocalAssetLoader, MeshLoadContext, MeshLoadConfig> _meshLoadWorkerSyncHelper;
+
+	#region Creation
+	sealed class MeshLoadContext : WorkerJobSyncHelper<LocalAssetLoader, MeshLoadContext, MeshLoadConfig>.WorkerJobSyncHelperContext {
+		// Primary thread owned
+		public PooledHeapMemory<char>? FilePath { get; set; } = null;
+
+		// Worker thread owned
+		public InteropStringBuffer? NameBuffer { get; set; } = null;
+		public UIntPtr AssetHandle { get; set; } = UIntPtr.Zero;
+		public PooledHeapMemory<byte>? VertexData { get; set; } = null;
+		public PooledHeapMemory<byte>? TriangleData { get; set; } = null;
+		public PooledHeapMemory<byte>? InternalNodeData { get; set; } = null;
+		public PooledHeapMemory<SkeletalAnimationNode>? SkeletalNodes { get; set; } = null;
+		public MeshSkeletalGatherBuffers GatherBuffers { get; } = new();
+		public int VertexCount { get; set; } = 0;
+		public int TriangleCount { get; set; } = 0;
+		public int NodeCount { get; set; } = 0;
+		public int BoneCount { get; set; } = 0;
+		public bool IsSkeletal { get; set; } = false;
+		public bool AllowsPerInstanceVertexMutation { get; set; } = false;
+		public bool GenerateWireframeData { get; set; } = false;
+		public PositionedCuboid BoundingBox { get; set; } = default;
+		public Vect OriginTranslation { get; set; } = Vect.Zero;
+		public float LinearRescalingFactor { get; set; } = 1f;
+
+		public override void TearDown() {
+			if (AssetHandle != UIntPtr.Zero) {
+				UnloadAssetFileFromMemory(AssetHandle).ThrowIfFailure();
+				AssetHandle = UIntPtr.Zero;
+			}
+			GatherBuffers.DisposeUntransferredBuffersAndReset();
+			NameBuffer?.Dispose();
+			NameBuffer = null;
+			VertexData?.Dispose();
+			VertexData = null;
+			TriangleData?.Dispose();
+			TriangleData = null;
+			InternalNodeData?.Dispose();
+			InternalNodeData = null;
+			SkeletalNodes?.Dispose();
+			SkeletalNodes = null;
+			if (HeapPoolSerializedConfig is { } config) {
+				MeshLoadConfig.DisposeAllocatedHeapStorage(config.Span);
+				config.Dispose();
+				HeapPoolSerializedConfig = null;
+			}
+			FilePath?.Dispose();
+			FilePath = null;
+			VertexCount = 0;
+			TriangleCount = 0;
+			NodeCount = 0;
+			BoneCount = 0;
+			IsSkeletal = false;
+			AllowsPerInstanceVertexMutation = false;
+			GenerateWireframeData = false;
+			BoundingBox = default;
+			OriginTranslation = Vect.Zero;
+			LinearRescalingFactor = 1f;
+			HeapPool = null!;
+			Self = null!;
+		}
+
+		public override void Dispose() {
+			GatherBuffers.Dispose();
+		}
+	}
+
 	public Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
 
+		var contextWrapper = _meshLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
+		contextWrapper.Context.SetName(config.Name);
+
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadMeshCore, new MeshLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+	}
+
+	public TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+		config.ThrowIfInvalid();
+
+		var contextWrapper = _meshLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
+		contextWrapper.Context.SetName(config.Name);
+
+		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadMeshCore, new MeshLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+	}
+
+	static Mesh LoadMeshCore(MeshLoadContext context, in MeshLoadConfig config) {
+		if (context.FilePath is not { } filePath) {
+			throw new InvalidOperationException("No file path set in context (this is a bug in TinyFFR).");
+		}
+
+		var readConfig = config.ReadConfig;
+		var creationConfig = config.CreationConfig;
+
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
-			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
-				readConfig.FixCommonExportErrors,
-				readConfig.OptimizeForGpu,
-				out var assetHandle
-			).ThrowIfFailure();
+			var assetHandle = OpenAssetFileOnWorker(context, filePath.Span, in readConfig);
 
-			try {
-				var metadata = GetAmalgamatedMeshMetadataFromOpenedFile(assetHandle);
-				if (metadata.SubMeshCount <= 0) throw new ArgumentException($"Given file '{filePath}' does not contain any mesh data.");
-				
-				var loadSkeletalAnimationData = readConfig.LoadSkeletalAnimationDataIfPresent;
-				var skeletalSubMeshIndex = readConfig.SubMeshIndex ?? 0;
-				if (loadSkeletalAnimationData) {
-					if (metadata.SubMeshCount != 1 && readConfig.SubMeshIndex == null) {
-						Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' as it contains multiple sub-meshes and no {nameof(MeshReadConfig.SubMeshIndex)} was given " +
-										  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(LoadAll)}(...) instead).");
+			var metadata = GetAmalgamatedMeshMetadataFromOpenedFile(assetHandle);
+			if (metadata.SubMeshCount <= 0) throw new ArgumentException($"Given file '{filePath.Span}' does not contain any mesh data.");
+
+			var loadSkeletalAnimationData = readConfig.LoadSkeletalAnimationDataIfPresent;
+			var skeletalSubMeshIndex = readConfig.SubMeshIndex ?? 0;
+			if (loadSkeletalAnimationData) {
+				if (metadata.SubMeshCount != 1 && readConfig.SubMeshIndex == null) {
+					Console.WriteLine($"Can not load skeletal animation data for file '{filePath.Span}' as it contains multiple sub-meshes and no {nameof(MeshReadConfig.SubMeshIndex)} was given " +
+									  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(LoadAll)}(...) instead).");
+					loadSkeletalAnimationData = false;
+				}
+			}
+			if (loadSkeletalAnimationData) {
+				GetLoadedAssetMeshSkeletalBoneCount(assetHandle, skeletalSubMeshIndex, out var boneCount).ThrowIfFailure();
+				switch (boneCount) {
+					case <= 0:
 						loadSkeletalAnimationData = false;
-					}
-				}
-				if (loadSkeletalAnimationData) {
-					GetLoadedAssetMeshSkeletalBoneCount(assetHandle, skeletalSubMeshIndex, out var boneCount).ThrowIfFailure();
-					switch (boneCount) {
-						case <= 0:
-							loadSkeletalAnimationData = false;
-							break;
-						case > IMeshBuilder.MaxSkeletalBoneCount:
-							Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
-							loadSkeletalAnimationData = false;
-							break;
-					}
-				}
-				
-				var copyResult = loadSkeletalAnimationData
-					? CopyMeshDataFromAsset<MeshVertexSkeletal>(assetHandle, metadata, in readConfig)
-					: CopyMeshDataFromAsset<MeshVertex>(assetHandle, metadata, in readConfig);
-
-				try {
-					if (loadSkeletalAnimationData) {
-						GetLoadedAssetMeshSkeletalNodeCount(assetHandle, skeletalSubMeshIndex, out var nodeCount).ThrowIfFailure();
-						
-						var internalNodeBuffer = _skeletalNodeBufferPool.Rent<NodeHandle>(nodeCount);
-						var translatedNodeBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNode>(nodeCount);
-						
-						try {
-							GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(
-								assetHandle,
-								skeletalSubMeshIndex,
-								(NodeHandle*) internalNodeBuffer.StartPtr,
-								nodeCount
-							).ThrowIfFailure();
-							
-							var maxNodeNameLength = 0;
-							for (var n = 0; n < nodeCount; ++n) {
-								GetLoadedAssetMeshSkeletalNode(
-									(NodeHandle*) internalNodeBuffer.StartPtr,
-									nodeCount,
-									n,
-									out var inverseBindPoseMatrix,
-									out var defaultTransformMatrix,
-									out var parentNodeIndex,
-									out var boneIndex,
-									out var nameLength
-								).ThrowIfFailure();
-								
-								translatedNodeBuffer.Span[n] = new(
-									defaultTransformMatrix,
-									inverseBindPoseMatrix,
-									parentNodeIndex >= 0 ? parentNodeIndex : null,
-									boneIndex >= 0 ? boneIndex : null
-								);
-								maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
-							}
-
-							var result = _meshBuilder.CreateMesh(
-								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
-								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-								translatedNodeBuffer.Span,
-								config
-							);
-						
-							LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, readConfig.AnimationTicksPerSecondOverride, result);
-							LoadAndSetNodeNames(internalNodeBuffer.AsReadOnlySpan<NodeHandle>(nodeCount), maxNodeNameLength, result);
-							return result;
-						}
-						finally {
-							_skeletalNodeBufferPool.Return(internalNodeBuffer);
-							translatedNodeBuffer.Dispose();
-						}
-					}
-					else {
-						return _meshBuilder.CreateMesh(
-							copyResult.VertexBuffer.AsReadOnlySpan<MeshVertex>(copyResult.NumVerticesWritten),
-							copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-							config
-						);
-					}
-				}
-				finally {
-					_vertexTriangleBufferPool.Return(copyResult.VertexBuffer);
-					_vertexTriangleBufferPool.Return(copyResult.TriangleBuffer);
+						break;
+					case > IMeshBuilder.MaxSkeletalBoneCount:
+						Console.WriteLine($"Can not load skeletal animation data for file '{filePath.Span}' as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
+						loadSkeletalAnimationData = false;
+						break;
 				}
 			}
-			finally {
-				UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
+
+			context.IsSkeletal = loadSkeletalAnimationData;
+			context.AllowsPerInstanceVertexMutation = creationConfig.AllowsPerInstanceVertexMutation;
+			context.OriginTranslation = creationConfig.OriginTranslation;
+			context.LinearRescalingFactor = creationConfig.LinearRescalingFactor;
+
+			if (loadSkeletalAnimationData) {
+				context.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<MeshVertexSkeletal>(in creationConfig);
+				GatherMeshDataOnWorker<MeshVertexSkeletal>(context, assetHandle, metadata, in readConfig, in creationConfig);
+				GatherSkeletalDataOnWorker(context, assetHandle, skeletalSubMeshIndex, in readConfig);
 			}
+			else {
+				context.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<MeshVertex>(in creationConfig);
+				GatherMeshDataOnWorker<MeshVertex>(context, assetHandle, metadata, in readConfig, in creationConfig);
+			}
+
+			UnloadAssetFileFromMemory(context.AssetHandle).ThrowIfFailure();
+			context.AssetHandle = UIntPtr.Zero;
+
+			return context.GenerateResourceOnPrimaryAndWait(&CompleteMeshLoad);
 		}
 		catch (Exception e) {
-			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
+			if (!File.Exists(new String(filePath.Span))) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
 			else throw;
 		}
 	}
-	
+
+	static UIntPtr OpenAssetFileOnWorker(MeshLoadContext context, ReadOnlySpan<char> filePath, in MeshReadConfig readConfig) {
+		var pathBuffer = context.Self.AssetFilePathBuffer;
+		pathBuffer.ConvertFromUtf16(filePath);
+
+		LoadAssetFileInToMemory(
+			in pathBuffer.AsRef,
+			readConfig.FixCommonExportErrors,
+			readConfig.OptimizeForGpu,
+			out var assetHandle
+		).ThrowIfFailure();
+		context.AssetHandle = assetHandle;
+		return assetHandle;
+	}
+
+	static void GatherMeshDataOnWorker<TVertex>(MeshLoadContext context, UIntPtr assetHandle, MeshReadMetadata metadata, in MeshReadConfig readConfig, in MeshCreationConfig creationConfig) where TVertex : unmanaged, IMeshVertex {
+		int vertexCount;
+		int triangleCount;
+		if (readConfig.SubMeshIndex is { } subMeshIndex) {
+			GetLoadedAssetMeshVertexCount(assetHandle, subMeshIndex, out vertexCount).ThrowIfFailure();
+			GetLoadedAssetMeshTriangleCount(assetHandle, subMeshIndex, out triangleCount).ThrowIfFailure();
+		}
+		else {
+			vertexCount = metadata.TotalVertexCount;
+			triangleCount = metadata.TotalTriangleCount;
+		}
+
+		var vertexBufferSizeBytes = (long) vertexCount * sizeof(TVertex);
+		var triangleBufferSizeBytes = (long) triangleCount * sizeof(VertexTriangle);
+		ThrowIfAssetBufferSizeExceedsMaximum(vertexBufferSizeBytes, $"mesh vertex data ({vertexCount} vertices)");
+		ThrowIfAssetBufferSizeExceedsMaximum(triangleBufferSizeBytes, $"mesh triangle data ({triangleCount} triangles)");
+
+		var vertexData = context.HeapPool.Borrow<byte>((int) vertexBufferSizeBytes);
+		context.VertexData = vertexData;
+		var triangleData = context.HeapPool.Borrow<byte>((int) triangleBufferSizeBytes);
+		context.TriangleData = triangleData;
+		context.VertexCount = vertexCount;
+		context.TriangleCount = triangleCount;
+
+		fixed (byte* vertexBufferPtr = vertexData.Span)
+		fixed (byte* triangleBufferPtr = triangleData.Span) {
+			var vertexPtr = (TVertex*) vertexBufferPtr;
+			var trianglePtr = (VertexTriangle*) triangleBufferPtr;
+
+			if (readConfig.SubMeshIndex is { } copySubMeshIndex) {
+				CopySubMeshDataFromAsset(assetHandle, readConfig.CorrectFlippedOrientation, copySubMeshIndex, vertexPtr, vertexCount, trianglePtr, triangleCount);
+			}
+			else {
+				CopyAllMeshDataFromAsset(assetHandle, metadata, readConfig.CorrectFlippedOrientation, vertexPtr, vertexCount, trianglePtr, triangleCount);
+			}
+
+			var vertexSpan = new Span<TVertex>(vertexPtr, vertexCount);
+			var triangleSpan = new Span<VertexTriangle>(trianglePtr, triangleCount);
+
+			LocalMeshBuilder.ValidateMeshData<TVertex>(vertexSpan, triangleSpan, in creationConfig);
+			if (creationConfig.FlipTriangles) LocalMeshBuilder.FlipTriangleWindings(triangleSpan);
+			LocalMeshBuilder.ApplyVertexTransforms(vertexSpan, in creationConfig);
+			context.BoundingBox = LocalMeshBuilder.CalculateMeshBoundingBox<TVertex>(vertexSpan, in creationConfig);
+		}
+	}
+
+	static void GatherSkeletalDataOnWorker(MeshLoadContext context, UIntPtr assetHandle, int subMeshIndex, in MeshReadConfig readConfig) {
+		GetLoadedAssetMeshSkeletalNodeCount(assetHandle, subMeshIndex, out var nodeCount).ThrowIfFailure();
+		ThrowIfAssetBufferSizeExceedsMaximum((long) nodeCount * sizeof(NodeHandle), $"mesh skeletal node data ({nodeCount} nodes)");
+
+		var internalNodeData = context.HeapPool.Borrow<byte>(nodeCount * sizeof(NodeHandle));
+		context.InternalNodeData = internalNodeData;
+		var translatedNodeBuffer = context.HeapPool.Borrow<SkeletalAnimationNode>(nodeCount);
+		context.SkeletalNodes = translatedNodeBuffer;
+		context.NodeCount = nodeCount;
+
+		var nameBuffer = new InteropStringBuffer(context.Self._maxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
+		context.NameBuffer = nameBuffer;
+
+		fixed (byte* internalNodeBufferPtr = internalNodeData.Span) {
+			var nodeHandles = (NodeHandle*) internalNodeBufferPtr;
+			GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(assetHandle, subMeshIndex, nodeHandles, nodeCount).ThrowIfFailure();
+
+			var maxNodeNameLength = 0;
+			for (var n = 0; n < nodeCount; ++n) {
+				GetLoadedAssetMeshSkeletalNode(
+					nodeHandles,
+					nodeCount,
+					n,
+					out var inverseBindPoseMatrix,
+					out var defaultTransformMatrix,
+					out var parentNodeIndex,
+					out var boneIndex,
+					out var nameLength
+				).ThrowIfFailure();
+
+				translatedNodeBuffer.Span[n] = new(
+					defaultTransformMatrix,
+					inverseBindPoseMatrix,
+					parentNodeIndex >= 0 ? parentNodeIndex : null,
+					boneIndex >= 0 ? boneIndex : null
+				);
+				maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
+			}
+
+			context.BoneCount = LocalMeshBuilder.CalculateAndValidateBoneCount(translatedNodeBuffer.Span);
+
+			GatherMeshAnimations(assetHandle, nodeHandles, nodeCount, readConfig.AnimationTicksPerSecondOverride, nameBuffer, context.HeapPool, context.GatherBuffers);
+			GatherNodeNames(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), maxNodeNameLength, nameBuffer, context.HeapPool, context.GatherBuffers);
+		}
+	}
+
+	static Mesh CompleteMeshLoad(MeshLoadContext context) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		if (context.VertexData is not { } vertexData || context.TriangleData is not { } triangleData) {
+			throw new InvalidOperationException("Mesh vertex and/or triangle data was null (this is a bug in TinyFFR).");
+		}
+
+		var meshBuilder = context.Self._meshBuilder;
+		var triangles = MemoryMarshal.Cast<byte, VertexTriangle>(triangleData.Span)[..context.TriangleCount];
+
+		if (!context.IsSkeletal) {
+			return meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+				MemoryMarshal.Cast<byte, MeshVertex>(vertexData.Span)[..context.VertexCount],
+				triangles,
+				context.BoundingBox,
+				context.AllowsPerInstanceVertexMutation,
+				context.GenerateWireframeData,
+				context.Name,
+				0
+			);
+		}
+
+		if (context.SkeletalNodes is not { } skeletalNodes) {
+			throw new InvalidOperationException("Skeletal node data was null (this is a bug in TinyFFR).");
+		}
+
+		var boneCount = context.BoneCount;
+		var mesh = meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+			MemoryMarshal.Cast<byte, MeshVertexSkeletal>(vertexData.Span)[..context.VertexCount],
+			triangles,
+			context.BoundingBox,
+			context.AllowsPerInstanceVertexMutation,
+			context.GenerateWireframeData,
+			context.Name,
+			boneCount == 0 ? 1 : boneCount
+		);
+
+		if (boneCount == 0) {
+			var defaultNode = new SkeletalAnimationNode(Matrix4x4.Identity, Matrix4x4.Identity, null, 0);
+			meshBuilder.AttachSkeletonToMesh(mesh, 1, new ReadOnlySpan<SkeletalAnimationNode>(in defaultNode), context.OriginTranslation, context.LinearRescalingFactor);
+		}
+		else {
+			meshBuilder.AttachSkeletonToMesh(mesh, boneCount, skeletalNodes.Span[..context.NodeCount], context.OriginTranslation, context.LinearRescalingFactor);
+		}
+
+		AttachGatheredMeshAnimations(meshBuilder, mesh, context.GatherBuffers);
+		ApplyGatheredNodeNames(meshBuilder, mesh, context.GatherBuffers);
+		return mesh;
+	}
+	#endregion
+
+	#region Reading
 	public MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath, in MeshReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
 				readConfig.OptimizeForGpu,
 				out var assetHandle
@@ -178,7 +418,7 @@ unsafe partial class LocalAssetLoader {
 			else throw;
 		}
 	}
-	
+
 	static MeshReadMetadata GetAmalgamatedMeshMetadataFromOpenedFile(UIntPtr assetHandle) {
 		GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
 
@@ -205,31 +445,53 @@ unsafe partial class LocalAssetLoader {
 	}
 
 	MeshReadCountData ReadMesh<TVertex>(ReadOnlySpan<char> filePath, Span<TVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer, in MeshReadConfig readConfig) where TVertex : unmanaged, IMeshVertex {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			var pathBuffer = AssetFilePathBuffer;
+			pathBuffer.ConvertFromUtf16(filePath);
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.AsRef,
+				in pathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
 				readConfig.OptimizeForGpu,
 				out var assetHandle
 			).ThrowIfFailure();
-			
-			var metadata = GetAmalgamatedMeshMetadataFromOpenedFile(assetHandle);
 
 			try {
-				var copyResult = CopyMeshDataFromAsset<TVertex>(assetHandle, metadata, in readConfig);
-				try {
-					copyResult.VertexBuffer.AsReadOnlySpan<TVertex>(copyResult.NumVerticesWritten).CopyTo(vertexBuffer);
-					copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten).CopyTo(triangleBuffer);
-					return new(copyResult.NumVerticesWritten, copyResult.NumTrianglesWritten);
+				var metadata = GetAmalgamatedMeshMetadataFromOpenedFile(assetHandle);
+
+				int vertexCount;
+				int triangleCount;
+				if (readConfig.SubMeshIndex is { } subMeshIndex) {
+					GetLoadedAssetMeshVertexCount(assetHandle, subMeshIndex, out vertexCount).ThrowIfFailure();
+					GetLoadedAssetMeshTriangleCount(assetHandle, subMeshIndex, out triangleCount).ThrowIfFailure();
 				}
-				finally {
-					_vertexTriangleBufferPool.Return(copyResult.VertexBuffer);
-					_vertexTriangleBufferPool.Return(copyResult.TriangleBuffer);
+				else {
+					vertexCount = metadata.TotalVertexCount;
+					triangleCount = metadata.TotalTriangleCount;
 				}
+
+				ThrowIfAssetBufferSizeExceedsMaximum((long) vertexCount * sizeof(TVertex), $"mesh vertex data ({vertexCount} vertices)");
+				ThrowIfAssetBufferSizeExceedsMaximum((long) triangleCount * sizeof(VertexTriangle), $"mesh triangle data ({triangleCount} triangles)");
+
+				using var vertexData = _globals.HeapPool.Borrow<TVertex>(vertexCount);
+				using var triangleData = _globals.HeapPool.Borrow<VertexTriangle>(triangleCount);
+
+				fixed (TVertex* vertexPtr = vertexData.Span)
+				fixed (VertexTriangle* trianglePtr = triangleData.Span) {
+					if (readConfig.SubMeshIndex is { } copySubMeshIndex) {
+						CopySubMeshDataFromAsset(assetHandle, readConfig.CorrectFlippedOrientation, copySubMeshIndex, vertexPtr, vertexCount, trianglePtr, triangleCount);
+					}
+					else {
+						CopyAllMeshDataFromAsset(assetHandle, metadata, readConfig.CorrectFlippedOrientation, vertexPtr, vertexCount, trianglePtr, triangleCount);
+					}
+				}
+
+				vertexData.Span[..vertexCount].CopyTo(vertexBuffer);
+				triangleData.Span[..triangleCount].CopyTo(triangleBuffer);
+				return new(vertexCount, triangleCount);
 			}
 			finally {
 				UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
@@ -240,39 +502,31 @@ unsafe partial class LocalAssetLoader {
 			else throw;
 		}
 	}
-	
-	MeshDataCopyResult CopyMeshDataFromAsset<TVertex>(UIntPtr assetHandle, MeshReadMetadata metadata, in MeshReadConfig readConfig) where TVertex : unmanaged, IMeshVertex {
-		if (readConfig.SubMeshIndex is { } subMeshIndex) return CopySubMeshDataFromAsset<TVertex>(assetHandle, readConfig.CorrectFlippedOrientation, subMeshIndex);
-		else return CopyAllMeshDataFromAsset<TVertex>(assetHandle, metadata, readConfig.CorrectFlippedOrientation);
-	}
-	
-	MeshDataCopyResult CopyAllMeshDataFromAsset<TVertex>(UIntPtr assetHandle, MeshReadMetadata metadata, bool correctFlippedOrientation) where TVertex : unmanaged, IMeshVertex {
-		var vertexBuffer = _vertexTriangleBufferPool.Rent<TVertex>(metadata.TotalVertexCount);
-		var triangleBuffer = _vertexTriangleBufferPool.Rent<VertexTriangle>(metadata.TotalTriangleCount);
-	
-		var tBufferPtr = (VertexTriangle*) triangleBuffer.StartPtr;
+
+	static void CopyAllMeshDataFromAsset<TVertex>(UIntPtr assetHandle, MeshReadMetadata metadata, bool correctFlippedOrientation, TVertex* vertexBufferPtr, int vertexBufferCount, VertexTriangle* triangleBufferPtr, int triangleBufferCount) where TVertex : unmanaged, IMeshVertex {
+		var tBufferPtr = triangleBufferPtr;
 
 		checked {
 			if (typeof(TVertex) == typeof(MeshVertex)) {
-				var vBufferPtr = (MeshVertex*) vertexBuffer.StartPtr;
-		
+				var vBufferPtr = (MeshVertex*) vertexBufferPtr;
+
 				for (var i = 0; i < metadata.SubMeshCount; ++i) {
 					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-					CopyLoadedAssetMeshVertices(assetHandle, i, (int) (vertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) vertexBuffer.StartPtr)), vBufferPtr);
-					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) triangleBuffer.StartPtr)), tBufferPtr);
+					CopyLoadedAssetMeshVertices(assetHandle, i, (int) (vertexBufferCount - (vBufferPtr - (MeshVertex*) vertexBufferPtr)), vBufferPtr).ThrowIfFailure();
+					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBufferCount - (tBufferPtr - triangleBufferPtr)), tBufferPtr).ThrowIfFailure();
 					vBufferPtr += vCount;
 					tBufferPtr += tCount;
 				}
 			}
 			else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
-				var vBufferPtr = (MeshVertexSkeletal*) vertexBuffer.StartPtr;
-		
+				var vBufferPtr = (MeshVertexSkeletal*) vertexBufferPtr;
+
 				for (var i = 0; i < metadata.SubMeshCount; ++i) {
 					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-					CopyLoadedAssetMeshSkeletalVertices(assetHandle, i, (int) (vertexBuffer.Size<MeshVertexSkeletal>() - (vBufferPtr - (MeshVertexSkeletal*) vertexBuffer.StartPtr)), vBufferPtr);
-					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) triangleBuffer.StartPtr)), tBufferPtr);
+					CopyLoadedAssetMeshSkeletalVertices(assetHandle, i, (int) (vertexBufferCount - (vBufferPtr - (MeshVertexSkeletal*) vertexBufferPtr)), vBufferPtr).ThrowIfFailure();
+					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBufferCount - (tBufferPtr - triangleBufferPtr)), tBufferPtr).ThrowIfFailure();
 					vBufferPtr += vCount;
 					tBufferPtr += tCount;
 				}
@@ -281,105 +535,101 @@ unsafe partial class LocalAssetLoader {
 				throw new InvalidOperationException($"Unknown vertex type '{typeof(TVertex)}'.");
 			}
 		}
-		
-		return new(vertexBuffer, metadata.TotalVertexCount, triangleBuffer, metadata.TotalTriangleCount);
 	}
-	
-	MeshDataCopyResult CopySubMeshDataFromAsset<TVertex>(UIntPtr assetHandle, bool correctFlippedOrientation, int subMeshIndex) where TVertex : unmanaged, IMeshVertex {	
-		GetLoadedAssetMeshVertexCount(assetHandle, subMeshIndex, out var subMeshVertexCount).ThrowIfFailure();
-		GetLoadedAssetMeshTriangleCount(assetHandle, subMeshIndex, out var subMeshTriangleCount).ThrowIfFailure();
-		
-		var vertexBuffer = _vertexTriangleBufferPool.Rent<TVertex>(subMeshVertexCount);
-		var triangleBuffer = _vertexTriangleBufferPool.Rent<VertexTriangle>(subMeshTriangleCount);
-	
-		CopyLoadedAssetMeshTriangles(assetHandle, subMeshIndex, correctFlippedOrientation, triangleBuffer.Size<VertexTriangle>(), (VertexTriangle*) triangleBuffer.StartPtr);
-			
+
+	static void CopySubMeshDataFromAsset<TVertex>(UIntPtr assetHandle, bool correctFlippedOrientation, int subMeshIndex, TVertex* vertexBufferPtr, int vertexBufferCount, VertexTriangle* triangleBufferPtr, int triangleBufferCount) where TVertex : unmanaged, IMeshVertex {
+		CopyLoadedAssetMeshTriangles(assetHandle, subMeshIndex, correctFlippedOrientation, triangleBufferCount, triangleBufferPtr).ThrowIfFailure();
+
 		if (typeof(TVertex) == typeof(MeshVertex)) {
-			CopyLoadedAssetMeshVertices(assetHandle, subMeshIndex, vertexBuffer.Size<MeshVertex>(), (MeshVertex*) vertexBuffer.StartPtr);
+			CopyLoadedAssetMeshVertices(assetHandle, subMeshIndex, vertexBufferCount, (MeshVertex*) vertexBufferPtr).ThrowIfFailure();
 		}
 		else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
-			CopyLoadedAssetMeshSkeletalVertices(assetHandle, subMeshIndex, vertexBuffer.Size<MeshVertexSkeletal>(), (MeshVertexSkeletal*) vertexBuffer.StartPtr);
+			CopyLoadedAssetMeshSkeletalVertices(assetHandle, subMeshIndex, vertexBufferCount, (MeshVertexSkeletal*) vertexBufferPtr).ThrowIfFailure();
 		}
 		else {
 			throw new InvalidOperationException($"Unknown vertex type '{typeof(TVertex)}'.");
 		}
-		
-		return new(vertexBuffer, subMeshVertexCount, triangleBuffer, subMeshTriangleCount);
 	}
-	
-	void LoadAndSetNodeNames(ReadOnlySpan<NodeHandle> nodeHandles, int maxNodeNameLength, Mesh mesh) {
-		const int MaxNameLengthForStackAlloc = 2048;
+	#endregion
+
+	#region Skeletal Gather / Apply
+	static void GatherNodeNames(ReadOnlySpan<NodeHandle> nodeHandles, int maxNodeNameLength, InteropStringBuffer nameBuffer, ThreadSafeHeapPoolWrapper heapPool, MeshSkeletalGatherBuffers destination) {
+		const string FallbackNodeNamePrefix = "node_";
 		Span<char> stackNameBuffer = stackalloc char[MaxNameLengthForStackAlloc];
-		
-		if (maxNodeNameLength > _animationAndNodeNameBuffer.Length) {
+
+		if (maxNodeNameLength > nameBuffer.Length) {
 			throw new InvalidOperationException($"Node name length too long; increase {nameof(LocalAssetLoaderConfig.MaxAnimationAndNodeNameLengthChars)} in {nameof(LocalAssetLoaderConfig)}!");
 		}
-		
+
 		for (var i = 0; i < nodeHandles.Length; ++i) {
 			CopyLoadedAssetSkeletalNodeName(
 				nodeHandles[i],
-				_animationAndNodeNameBuffer.AsPointer,
-				_animationAndNodeNameBuffer.Length
+				nameBuffer.AsPointer,
+				nameBuffer.Length
 			).ThrowIfFailure();
-			
-			var nodeNameUtf16Length = _animationAndNodeNameBuffer.GetUtf16Length();
-			
+
+			var nodeNameUtf16Length = nameBuffer.GetUtf16Length();
+
 			if (nodeNameUtf16Length == 0) {
-				const string FallbackNodeNamePrefix = "node_";
 				var nodeNameBuffer = stackNameBuffer;
 				FallbackNodeNamePrefix.CopyTo(nodeNameBuffer);
 				if (i.TryFormat(nodeNameBuffer[FallbackNodeNamePrefix.Length..], out var additionalCharsWritten, default, null)) {
 					nodeNameUtf16Length = FallbackNodeNamePrefix.Length + additionalCharsWritten;
 				}
 				else nodeNameUtf16Length = FallbackNodeNamePrefix.Length;
-				_meshBuilder.SetSkeletonNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
+				destination.NodeNameSlices.Add(destination.AppendName(nodeNameBuffer[..nodeNameUtf16Length]));
 			}
 			else {
 				using var nodeNameHeapBuffer = nodeNameUtf16Length > MaxNameLengthForStackAlloc
-					? _globals.HeapPool.Borrow<char>(nodeNameUtf16Length)
+					? heapPool.Borrow<char>(nodeNameUtf16Length)
 					: (PooledHeapMemory<char>?) null;
 				var nodeNameBuffer = nodeNameHeapBuffer.HasValue ? nodeNameHeapBuffer.Value.Span : stackNameBuffer;
-				_animationAndNodeNameBuffer.ConvertToUtf16(nodeNameBuffer);
-				_meshBuilder.SetSkeletonNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
+				nameBuffer.ConvertToUtf16(nodeNameBuffer);
+				destination.NodeNameSlices.Add(destination.AppendName(nodeNameBuffer[..nodeNameUtf16Length]));
 			}
 		}
 	}
 
-	void LoadAndAttachMeshAnimations(UIntPtr assetHandle, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, float? animTicksPerSecOverride, Mesh mesh) {
-		const int MaxNameLengthForStackAlloc = 2048;
-		
+	static void ApplyGatheredNodeNames(LocalMeshBuilder meshBuilder, Mesh mesh, MeshSkeletalGatherBuffers buffers) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		for (var i = 0; i < buffers.NodeNameSlices.Count; ++i) {
+			meshBuilder.SetSkeletonNodeName(mesh, i, buffers.GetName(buffers.NodeNameSlices[i]));
+		}
+	}
+
+	static void GatherMeshAnimations(UIntPtr assetHandle, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, float? animTicksPerSecOverride, InteropStringBuffer nameBuffer, ThreadSafeHeapPoolWrapper heapPool, MeshSkeletalGatherBuffers destination) {
 		GetLoadedAssetMeshSkeletalAnimationCount(
-			assetHandle, 
+			assetHandle,
 			out var animationCount
 		).ThrowIfFailure();
-		
+
 		if (animationCount <= 0) return;
-		
-		Span<char> stackNameBuffer = stackalloc char[MaxNameLengthForStackAlloc]; 
+
+		Span<char> stackNameBuffer = stackalloc char[MaxNameLengthForStackAlloc];
 
 		for (var a = 0; a < animationCount; ++a) {
 			GetLoadedAssetSkeletalAnimationMetadata(
-				assetHandle, 
+				assetHandle,
 				a,
 				animTicksPerSecOverride ?? 0f,
 				out var nameLenBytes,
-				out var animationDurationSeconds, 
+				out var animationDurationSeconds,
 				out var animationChannelCount
 			).ThrowIfFailure();
 
-			if (nameLenBytes > _animationAndNodeNameBuffer.Length) {
+			if (nameLenBytes > nameBuffer.Length) {
 				throw new InvalidOperationException($"Animation name length too long; increase {nameof(LocalAssetLoaderConfig.MaxAnimationAndNodeNameLengthChars)} in {nameof(LocalAssetLoaderConfig)}!");
 			}
 			CopyLoadedAssetSkeletalAnimationName(
 				assetHandle,
 				a,
-				_animationAndNodeNameBuffer.AsPointer,
-				_animationAndNodeNameBuffer.Length
+				nameBuffer.AsPointer,
+				nameBuffer.Length
 			).ThrowIfFailure();
-			
-			var animNameUtf16Length = _animationAndNodeNameBuffer.GetUtf16Length();
+
+			var animNameUtf16Length = nameBuffer.GetUtf16Length();
 			using var animNameHeapBuffer = animNameUtf16Length > MaxNameLengthForStackAlloc
-				? _globals.HeapPool.Borrow<char>(animNameUtf16Length)
+				? heapPool.Borrow<char>(animNameUtf16Length)
 				: (PooledHeapMemory<char>?) null;
 			var animNameBuffer = animNameHeapBuffer.HasValue ? animNameHeapBuffer.Value.Span : stackNameBuffer;
 			if (animNameUtf16Length == 0) {
@@ -390,7 +640,7 @@ unsafe partial class LocalAssetLoader {
 				}
 				else animNameUtf16Length = FallbackAnimationNamePrefix.Length;
 			}
-			else _animationAndNodeNameBuffer.ConvertToUtf16(animNameBuffer);
+			else nameBuffer.ConvertToUtf16(animNameBuffer);
 
 			var totalTranslationKeyframes = 0;
 			var totalRotationKeyframes = 0;
@@ -398,20 +648,20 @@ unsafe partial class LocalAssetLoader {
 			var highestSingleChannelScalingKeyframeCount = 0;
 			var highestSingleChannelRotationKeyframeCount = 0;
 			var highestSingleChannelTranslationKeyframeCount = 0;
-			var mutations = _globals.HeapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(animationChannelCount);
-			var channelsToInclude = _globals.HeapPool.Borrow<int>(animationChannelCount);
+			var mutations = heapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(animationChannelCount);
+			var channelsToInclude = heapPool.Borrow<int>(animationChannelCount);
 			var numChannelsIncluded = 0;
-			
+
 			for (var c = 0; c < animationChannelCount; ++c) {
 				var getMetadataResult = GetLoadedAssetSkeletalAnimationChannelMetadata(
-					assetHandle,  
-					a, 
+					assetHandle,
+					a,
 					c,
 					nodeHandleBuffer,
 					nodeHandleBufferCount,
 					out var nodeIndex,
-					out var numScalingKeyframes, 
-					out var numRotationKeyframes, 
+					out var numScalingKeyframes,
+					out var numRotationKeyframes,
 					out var numTranslationKeyframes
 				);
 				if (!getMetadataResult) {
@@ -421,7 +671,7 @@ unsafe partial class LocalAssetLoader {
 					throw new InvalidOperationException();
 				}
 				if (nodeIndex < 0 || nodeIndex >= nodeHandleBufferCount) continue;
-				
+
 				channelsToInclude.Span[numChannelsIncluded] = c;
 				mutations.Span[numChannelsIncluded] = new SkeletalAnimationNodeMutationDescriptor(
 					nodeIndex,
@@ -438,71 +688,77 @@ unsafe partial class LocalAssetLoader {
 				numChannelsIncluded++;
 			}
 
-			var scalingKeyframes = _globals.HeapPool.Borrow<SkeletalAnimationScalingKeyframe>(totalScalingKeyframes);
-			var rotationKeyframes = _globals.HeapPool.Borrow<SkeletalAnimationRotationKeyframe>(totalRotationKeyframes);
-			var translationKeyframes = _globals.HeapPool.Borrow<SkeletalAnimationTranslationKeyframe>(totalTranslationKeyframes);
-			var scalingVectorBuffer = _skeletalAnimationKeyframeDataPool.Rent<Vector3>(highestSingleChannelScalingKeyframeCount);
-			var scalingTimeCodeBuffer = _skeletalAnimationKeyframeDataPool.Rent<float>(highestSingleChannelScalingKeyframeCount);
-			var rotationQuaternionBuffer = _skeletalAnimationKeyframeDataPool.Rent<Quaternion>(highestSingleChannelRotationKeyframeCount);
-			var rotationTimeCodeBuffer = _skeletalAnimationKeyframeDataPool.Rent<float>(highestSingleChannelRotationKeyframeCount);
-			var translationVectorBuffer = _skeletalAnimationKeyframeDataPool.Rent<Vector3>(highestSingleChannelTranslationKeyframeCount);
-			var translationTimeCodeBuffer = _skeletalAnimationKeyframeDataPool.Rent<float>(highestSingleChannelTranslationKeyframeCount);
+			var scalingKeyframes = heapPool.Borrow<SkeletalAnimationScalingKeyframe>(totalScalingKeyframes);
+			var rotationKeyframes = heapPool.Borrow<SkeletalAnimationRotationKeyframe>(totalRotationKeyframes);
+			var translationKeyframes = heapPool.Borrow<SkeletalAnimationTranslationKeyframe>(totalTranslationKeyframes);
+			using var scalingVectorBuffer = heapPool.Borrow<Vector3>(highestSingleChannelScalingKeyframeCount);
+			using var scalingTimeCodeBuffer = heapPool.Borrow<float>(highestSingleChannelScalingKeyframeCount);
+			using var rotationQuaternionBuffer = heapPool.Borrow<Quaternion>(highestSingleChannelRotationKeyframeCount);
+			using var rotationTimeCodeBuffer = heapPool.Borrow<float>(highestSingleChannelRotationKeyframeCount);
+			using var translationVectorBuffer = heapPool.Borrow<Vector3>(highestSingleChannelTranslationKeyframeCount);
+			using var translationTimeCodeBuffer = heapPool.Borrow<float>(highestSingleChannelTranslationKeyframeCount);
 
 			try {
-				for (var i = 0; i < numChannelsIncluded; ++i) {
-					var c = channelsToInclude.Span[i];
-					CopyLoadedAssetSkeletalAnimationChannelData(
-						assetHandle,
-						a, 
-						c,
-						animTicksPerSecOverride ?? 0f,
-						(Vector3*) scalingVectorBuffer.StartPtr,
-						(float*) scalingTimeCodeBuffer.StartPtr,
-						highestSingleChannelScalingKeyframeCount,
-						(Quaternion*) rotationQuaternionBuffer.StartPtr,
-						(float*) rotationTimeCodeBuffer.StartPtr,
-						highestSingleChannelRotationKeyframeCount,
-						(Vector3*) translationVectorBuffer.StartPtr,
-						(float*) translationTimeCodeBuffer.StartPtr,
-						highestSingleChannelTranslationKeyframeCount
-					).ThrowIfFailure();
+				fixed (Vector3* scalingVectorPtr = scalingVectorBuffer.Span)
+				fixed (float* scalingTimeCodePtr = scalingTimeCodeBuffer.Span)
+				fixed (Quaternion* rotationQuaternionPtr = rotationQuaternionBuffer.Span)
+				fixed (float* rotationTimeCodePtr = rotationTimeCodeBuffer.Span)
+				fixed (Vector3* translationVectorPtr = translationVectorBuffer.Span)
+				fixed (float* translationTimeCodePtr = translationTimeCodeBuffer.Span) {
+					for (var i = 0; i < numChannelsIncluded; ++i) {
+						var c = channelsToInclude.Span[i];
+						CopyLoadedAssetSkeletalAnimationChannelData(
+							assetHandle,
+							a,
+							c,
+							animTicksPerSecOverride ?? 0f,
+							scalingVectorPtr,
+							scalingTimeCodePtr,
+							highestSingleChannelScalingKeyframeCount,
+							rotationQuaternionPtr,
+							rotationTimeCodePtr,
+							highestSingleChannelRotationKeyframeCount,
+							translationVectorPtr,
+							translationTimeCodePtr,
+							highestSingleChannelTranslationKeyframeCount
+						).ThrowIfFailure();
 
-					for (var s = 0; s < mutations.Span[i].ScalingKeyframeCount; ++s) {
-						scalingKeyframes.Span[mutations.Span[i].ScalingKeyframeStartIndex + s] = new SkeletalAnimationScalingKeyframe(
-							scalingTimeCodeBuffer.AsReadOnlySpan<float>()[s],
-							Vect.FromVector3(scalingVectorBuffer.AsReadOnlySpan<Vector3>()[s])
-						);
-					}
-					for (var r = 0; r < mutations.Span[i].RotationKeyframeCount; ++r) {
-						rotationKeyframes.Span[mutations.Span[i].RotationKeyframeStartIndex + r] = new SkeletalAnimationRotationKeyframe(
-							rotationTimeCodeBuffer.AsReadOnlySpan<float>()[r],
-							rotationQuaternionBuffer.AsReadOnlySpan<Quaternion>()[r]
-						);
-					}
-					for (var t = 0; t < mutations.Span[i].TranslationKeyframeCount; ++t) {
-						translationKeyframes.Span[mutations.Span[i].TranslationKeyframeStartIndex + t] = new SkeletalAnimationTranslationKeyframe(
-							translationTimeCodeBuffer.AsReadOnlySpan<float>()[t],
-							Vect.FromVector3(translationVectorBuffer.AsReadOnlySpan<Vector3>()[t])
-						);
+						for (var s = 0; s < mutations.Span[i].ScalingKeyframeCount; ++s) {
+							scalingKeyframes.Span[mutations.Span[i].ScalingKeyframeStartIndex + s] = new SkeletalAnimationScalingKeyframe(
+								scalingTimeCodeBuffer.Span[s],
+								Vect.FromVector3(scalingVectorBuffer.Span[s])
+							);
+						}
+						for (var r = 0; r < mutations.Span[i].RotationKeyframeCount; ++r) {
+							rotationKeyframes.Span[mutations.Span[i].RotationKeyframeStartIndex + r] = new SkeletalAnimationRotationKeyframe(
+								rotationTimeCodeBuffer.Span[r],
+								rotationQuaternionBuffer.Span[r]
+							);
+						}
+						for (var t = 0; t < mutations.Span[i].TranslationKeyframeCount; ++t) {
+							translationKeyframes.Span[mutations.Span[i].TranslationKeyframeStartIndex + t] = new SkeletalAnimationTranslationKeyframe(
+								translationTimeCodeBuffer.Span[t],
+								Vect.FromVector3(translationVectorBuffer.Span[t])
+							);
+						}
 					}
 				}
-				
+
 				if (numChannelsIncluded != animationChannelCount) {
-					var newMutationsBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(numChannelsIncluded);
+					var newMutationsBuffer = heapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(numChannelsIncluded);
 					mutations.Span[..numChannelsIncluded].CopyTo(newMutationsBuffer.Span);
 					mutations.Dispose();
 					mutations = newMutationsBuffer;
 				}
 
-				_meshBuilder.AttachAnimationAndTransferBufferOwnership(
-					mesh,
+				destination.Animations.Add(new GatheredAnimation(
 					scalingKeyframes,
 					rotationKeyframes,
 					translationKeyframes,
 					mutations,
 					animationDurationSeconds,
-					animNameBuffer[..animNameUtf16Length]
-				);
+					destination.AppendName(animNameBuffer[..animNameUtf16Length])
+				));
 			}
 			catch {
 				scalingKeyframes.Dispose();
@@ -513,15 +769,27 @@ unsafe partial class LocalAssetLoader {
 			}
 			finally {
 				channelsToInclude.Dispose();
-				_skeletalAnimationKeyframeDataPool.Return(scalingVectorBuffer);
-				_skeletalAnimationKeyframeDataPool.Return(scalingTimeCodeBuffer);
-				_skeletalAnimationKeyframeDataPool.Return(rotationQuaternionBuffer);
-				_skeletalAnimationKeyframeDataPool.Return(rotationTimeCodeBuffer);
-				_skeletalAnimationKeyframeDataPool.Return(translationVectorBuffer);
-				_skeletalAnimationKeyframeDataPool.Return(translationTimeCodeBuffer);
 			}
 		}
 	}
+
+	static void AttachGatheredMeshAnimations(LocalMeshBuilder meshBuilder, Mesh mesh, MeshSkeletalGatherBuffers buffers) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		for (var i = 0; i < buffers.Animations.Count; ++i) {
+			var animation = buffers.Animations[i];
+			meshBuilder.AttachAnimationAndTransferBufferOwnership(
+				mesh,
+				animation.ScalingKeyframes,
+				animation.RotationKeyframes,
+				animation.TranslationKeyframes,
+				animation.Mutations,
+				animation.DurationSeconds,
+				buffers.GetName(animation.Name)
+			);
+			buffers.NumAnimationsWithTransferredOwnership = i + 1;
+		}
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_count")]
@@ -529,7 +797,7 @@ unsafe partial class LocalAssetLoader {
 		UIntPtr assetHandle,
 		out int outMeshCount
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_vertex_count")]
 	static extern InteropResult GetLoadedAssetMeshVertexCount(
 		UIntPtr assetHandle,
@@ -543,7 +811,7 @@ unsafe partial class LocalAssetLoader {
 		int meshIndex,
 		out int outTriangleCount
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_triangles")]
 	static extern InteropResult CopyLoadedAssetMeshTriangles(
 		UIntPtr assetHandle,
@@ -552,7 +820,7 @@ unsafe partial class LocalAssetLoader {
 		int bufferSizeTriangles,
 		VertexTriangle* triangleBufferPtr
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_vertices")]
 	static extern InteropResult CopyLoadedAssetMeshVertices(
 		UIntPtr assetHandle,
@@ -568,21 +836,21 @@ unsafe partial class LocalAssetLoader {
 		int bufferSizeVertices,
 		MeshVertexSkeletal* vertexBufferPtr
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_bone_count")]
 	static extern InteropResult GetLoadedAssetMeshSkeletalBoneCount(
 		UIntPtr assetHandle,
 		int meshIndex,
 		out int boneCount
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_node_count")]
 	static extern InteropResult GetLoadedAssetMeshSkeletalNodeCount(
 		UIntPtr assetHandle,
 		int meshIndex,
 		out int nodeCount
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "generate_loaded_asset_mesh_skeletal_node_flat_buffer")]
 	static extern InteropResult GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(
 		UIntPtr assetHandle,
@@ -590,7 +858,7 @@ unsafe partial class LocalAssetLoader {
 		NodeHandle* nodeHandleBuffer,
 		int nodeHandleBufferCount
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_node")]
 	static extern InteropResult GetLoadedAssetMeshSkeletalNode(
 		NodeHandle* nodeHandleBuffer,
@@ -602,7 +870,7 @@ unsafe partial class LocalAssetLoader {
 		out int outBoneIndex,
 		out int nameLengthBytes
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_animation_count")]
 	static extern InteropResult GetLoadedAssetMeshSkeletalAnimationCount(
 		UIntPtr assetHandle,
@@ -611,22 +879,22 @@ unsafe partial class LocalAssetLoader {
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_animation_metadata")]
 	static extern InteropResult GetLoadedAssetSkeletalAnimationMetadata(
-		UIntPtr assetHandle, 
+		UIntPtr assetHandle,
 		int animationIndex,
 		float ticksPerSecondOverride,
-		out int outNameLengthBytes, 
-		out float outDurationSeconds, 
+		out int outNameLengthBytes,
+		out float outDurationSeconds,
 		out int outChannelCount
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_skeletal_animation_name")]
 	static extern InteropResult CopyLoadedAssetSkeletalAnimationName(
-		UIntPtr assetHandle, 
+		UIntPtr assetHandle,
 		int animationIndex,
-		byte* utf8NameBuffer, 
+		byte* utf8NameBuffer,
 		int bufferLengthBytes
 	);
-	
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_skeletal_node_name")]
 	static extern InteropResult CopyLoadedAssetSkeletalNodeName(
 		NodeHandle nodeHandle,
@@ -649,8 +917,8 @@ unsafe partial class LocalAssetLoader {
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_skeletal_animation_channel_data")]
 	static extern InteropResult CopyLoadedAssetSkeletalAnimationChannelData(
-		UIntPtr assetHandle, 
-		int animationIndex, 
+		UIntPtr assetHandle,
+		int animationIndex,
 		int channelIndex,
 		float ticksPerSecondOverride,
 		Vector3* scalingVectorBuffer,
@@ -662,6 +930,6 @@ unsafe partial class LocalAssetLoader {
 		Vector3* translationVectorBuffer,
 		float* translationTimeCodeBuffer,
 		int translationBufferCount
-	);	
+	);
 	#endregion
 }

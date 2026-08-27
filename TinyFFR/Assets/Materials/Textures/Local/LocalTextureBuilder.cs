@@ -17,6 +17,7 @@ using System.Resources;
 using System.Security;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
+using Egodystonic.TinyFFR.Threading;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -35,22 +36,41 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	}
 
 	#region Buffer Allocation
-	// Maintainer's note: The buffer is disposed on the native side when it's asynchronously loaded on to the GPU
-	Texture ITextureBuilder.CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) => CreateTextureAndDisposePreallocatedBuffer(preallocatedBuffer, in generationConfig, in config);
-	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+	public static void CheckConfigValidityAndProcessTexture<TTexel>(Span<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		generationConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
 
-		if (preallocatedBuffer.Span.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(ITextureBuilder.PreallocatedBuffer<TTexel>));
-		if (generationConfig.Dimensions.Area > preallocatedBuffer.Span.Length) {
+		if (generationConfig.Dimensions.Area > texels.Length) {
 			throw new ArgumentException(
 				$"Given config width/height require a buffer of {generationConfig.Dimensions.X}x{generationConfig.Dimensions.Y}={generationConfig.Dimensions.Area} texels, " +
-				$"but supplied texel buffer only has {preallocatedBuffer.Span.Length} texels.",
+				$"but supplied texel buffer only has {texels.Length} texels.",
 				nameof(config)
 			);
 		}
-		TextureUtils.ProcessTexture(preallocatedBuffer.Span, generationConfig.Dimensions, config.ProcessingToApply);
 
+		TextureUtils.ProcessTexture(texels, generationConfig.Dimensions, config.ProcessingToApply);
+	}
+	
+	// Maintainer's note: The buffer is disposed on the native side when it's asynchronously loaded on to the GPU
+	Texture ITextureBuilder.CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) => CreateTextureAndDisposePreallocatedBuffer(preallocatedBuffer, in generationConfig, in config);
+	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+		if (preallocatedBuffer.Span.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(ITextureBuilder.PreallocatedBuffer<TTexel>));
+		CheckConfigValidityAndProcessTexture(preallocatedBuffer.Span, in generationConfig, in config);
+
+		return CreateTextureAndDisposePreallocatedBuffer(
+			preallocatedBuffer,
+			generationConfig.Dimensions,
+			config.GenerateMipMaps,
+			config.IsLinearColorspace,
+			config.AllowsDynamicWrites,
+			config.RenderingConfig,
+			config.Name
+		);
+	}
+
+	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, XYPair<int> dimensions, bool generateMipMaps, bool isLinearColorspace, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Span));
 		var dataLength = preallocatedBuffer.Span.Length * sizeof(TTexel);
 
@@ -61,10 +81,10 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 					preallocatedBuffer.BufferId,
 					(TexelRgb24*) dataPointer,
 					dataLength,
-					(uint) generationConfig.Dimensions.X,
-					(uint) generationConfig.Dimensions.Y,
-					config.GenerateMipMaps,
-					config.IsLinearColorspace,
+					(uint) dimensions.X,
+					(uint) dimensions.Y,
+					generateMipMaps,
+					isLinearColorspace,
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -73,10 +93,10 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 					preallocatedBuffer.BufferId,
 					(TexelRgba32*) dataPointer,
 					dataLength,
-					(uint) generationConfig.Dimensions.X,
-					(uint) generationConfig.Dimensions.Y,
-					config.GenerateMipMaps,
-					config.IsLinearColorspace,
+					(uint) dimensions.X,
+					(uint) dimensions.Y,
+					generateMipMaps,
+					isLinearColorspace,
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -85,8 +105,8 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		}
 
 		var handle = (ResourceHandle<Texture>) outHandle;
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(generationConfig.Dimensions, TTexel.BlitType, config.AllowsDynamicWrites, config.GenerateMipMaps, config.RenderingConfig));
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
+		_loadedTextures.Add(handle, new(dimensions, TTexel.BlitType, allowsDynamicWrites, generateMipMaps, renderingConfig));
 		return HandleToInstance(handle);
 	}
 
@@ -121,7 +141,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
 
-	internal Texture CreateTextureWithAddedOpaqueAlpha(ReadOnlySpan<TexelRgb24> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) {
+	public Texture CreateTextureWithAddedOpaqueAlpha(ReadOnlySpan<TexelRgb24> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		generationConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
@@ -141,6 +161,22 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var buffer = PreallocateBuffer<TexelRgba32>(texelCount);
 		TextureUtils.Convert(texels, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
+	}
+	
+	public Texture CreateTextureWithoutProcessing<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool generateMipMaps, bool isLinearColorspace, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
+		ThrowIfThisIsDisposed();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		if (dimensions.Area > texels.Length) {
+			throw new ArgumentException(
+				$"Texture dimensions are {dimensions.X}x{dimensions.Y}, requiring a texel span of length {dimensions.Area} or greater, " +
+				$"but actual span length was {texels.Length}."
+			);
+		}
+
+		var texelCount = dimensions.Area;
+		var buffer = PreallocateBuffer<TTexel>(texelCount);
+		texels[..texelCount].CopyTo(buffer.Span);
+		return CreateTextureAndDisposePreallocatedBuffer(buffer, dimensions, generateMipMaps, isLinearColorspace, allowsDynamicWrites, renderingConfig, name);
 	}
 	#endregion
 

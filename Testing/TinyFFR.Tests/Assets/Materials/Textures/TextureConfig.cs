@@ -7,12 +7,14 @@ using static Egodystonic.TinyFFR.ConfigStructTestUtils;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
-class TextureConfigTest {
+unsafe class TextureConfigTest {
 	[SetUp]
 	public void SetUpTest() { }
 
 	[TearDown]
 	public void TearDownTest() { }
+	
+	static void NoOpPostProcessingRgb24(Span<TexelRgb24> texels, object? argument) { }
 
 	[Test]
 	public void ProcessingConfigShouldCorrectlySetRequiresProcessingFlag() {
@@ -102,6 +104,8 @@ class TextureConfigTest {
 		Assert.AreEqual(true, new TextureProcessingConfig { ZBlueFinalOutputSource = ColorChannel.A, WAlphaFinalOutputSource = ColorChannel.R }.RequiresProcessing);
 		Assert.AreEqual(true, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.R, ZBlueFinalOutputSource = ColorChannel.B }.RequiresProcessing);
 		Assert.AreEqual(true, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.R, ZBlueFinalOutputSource = ColorChannel.A }.RequiresProcessing);
+		
+		Assert.AreEqual(true, new TextureProcessingConfig { PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&NoOpPostProcessingRgb24) }.RequiresProcessing);
 	}
 
 	[Test]
@@ -162,6 +166,9 @@ class TextureConfigTest {
 			.Int((int) ColorChannel.G)
 			.Int((int) ColorChannel.B)
 			.Int((int) ColorChannel.A)
+			.Long(0L)
+			.Long(0L)
+			.Long(0L)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<TextureProcessingConfig>()
@@ -176,6 +183,9 @@ class TextureConfigTest {
 			.Int((int) ColorChannel.B)
 			.Int((int) ColorChannel.A)
 			.Int((int) ColorChannel.R)
+			.Long(0L)
+			.Long(0L)
+			.Long(0L)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<TextureProcessingConfig>()
@@ -190,7 +200,54 @@ class TextureConfigTest {
 			.Including(nameof(TextureProcessingConfig.YGreenFinalOutputSource))
 			.Including(nameof(TextureProcessingConfig.ZBlueFinalOutputSource))
 			.Including(nameof(TextureProcessingConfig.WAlphaFinalOutputSource))
+			.Including(nameof(TextureProcessingConfig.PostProcessingFunction))
+			.Including(nameof(TextureProcessingConfig.PostProcessingArgument))
 			.End();
+		
+		var argument = new object();
+		var config = new TextureProcessingConfig {
+			FlipY = true,
+			PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&NoOpPostProcessingRgb24),
+			PostProcessingArgument = argument
+		};
+
+		var buffer = new byte[TextureProcessingConfig.GetHeapStorageFormattedLength(in config)];
+		TextureProcessingConfig.AllocateAndConvertToHeapStorage(buffer, in config);
+		try {
+			var roundTripped = TextureProcessingConfig.ConvertFromAllocatedHeapStorage(buffer);
+			Assert.AreEqual(config.PostProcessingFunction, roundTripped.PostProcessingFunction);
+			Assert.That(roundTripped.PostProcessingArgument, Is.SameAs(argument));
+			Assert.AreEqual(true, roundTripped.FlipY);
+			Assert.AreEqual(true, roundTripped.RequiresProcessing);
+		}
+		finally {
+			TextureProcessingConfig.DisposeAllocatedHeapStorage(buffer);
+		}
+	}
+
+	[Test]
+	public void CreationConfigShouldDisposeItsNestedProcessingConfigHeapStorage() {
+		static (byte[] Buffer, WeakReference ArgumentRef) AllocateStorage() {
+			var argument = new object();
+			var config = TextureCreationConfig.ForDataTexture("nested") with {
+				ProcessingToApply = new TextureProcessingConfig {
+					PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&NoOpPostProcessingRgb24),
+					PostProcessingArgument = argument
+				}
+			};
+			var buffer = new byte[TextureCreationConfig.GetHeapStorageFormattedLength(in config)];
+			TextureCreationConfig.AllocateAndConvertToHeapStorage(buffer, in config);
+			return (buffer, new WeakReference(argument));
+		}
+
+		var (buffer, argumentRef) = AllocateStorage();
+		TextureCreationConfig.DisposeAllocatedHeapStorage(buffer);
+
+		GC.Collect();
+		GC.WaitForPendingFinalizers();
+		GC.Collect();
+
+		Assert.AreEqual(false, argumentRef.IsAlive, "TextureCreationConfig did not dispose the heap storage of its nested ProcessingToApply.");
 	}
 
 	[Test]
@@ -327,6 +384,7 @@ class TextureConfigTest {
 			.Bool(true)
 			.Bool(true)
 			.Int(1)
+			.Float(testConfigA.RenderingConfig.AnisotropyLevel)
 			.String("Aa Aa")
 			.SubConfig(testConfigA.ProcessingToApply)
 			.For(testConfigA);
@@ -338,6 +396,7 @@ class TextureConfigTest {
 			.Bool(false)
 			.Bool(false)
 			.Int(-1)
+			.Float(testConfigB.RenderingConfig.AnisotropyLevel)
 			.String("BBBbbb")
 			.SubConfig(testConfigB.ProcessingToApply)
 			.For(testConfigB);
@@ -349,6 +408,124 @@ class TextureConfigTest {
 			.Including(nameof(TextureCreationConfig.RenderingConfig))
 			.Including(nameof(TextureCreationConfig.Name))
 			.Including(nameof(TextureCreationConfig.ProcessingToApply))
+			.End();
+	}
+
+	// Specific test for a specific hole/bug that I found
+	[Test]
+	public void CanvasTextureConfigShouldPreserveAnisotropyLevelAcrossHeapStorageRoundTrip() {
+		var config = TextureCreationConfig.ForCanvasTexture("canvas");
+		Assert.AreEqual(0f, config.RenderingConfig.AnisotropyLevel, "Precondition: ForCanvasTexture is expected to explicitly set AnisotropyLevel to 0.");
+
+		AssertRoundTripHeapStorage(config, static (expected, actual) => {
+			Assert.AreEqual(expected.RenderingConfig.AnisotropyLevel, actual.RenderingConfig.AnisotropyLevel);
+			Assert.AreEqual(expected.RenderingConfig, actual.RenderingConfig);
+		});
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertCombinationConfigToAndFromHeapStorageFormat() {
+		var testConfigA = new TextureCombinationConfig(
+			TextureCombinationScalingStrategy.ExtendEdges,
+			new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
+			new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B),
+			new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.A),
+			new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R)
+		);
+		var testConfigB = new TextureCombinationConfig(
+			TextureCombinationScalingStrategy.PixelUpscale,
+			new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+			new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
+			new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.B)
+		);
+
+		void AssertConfigsMatch(TextureCombinationConfig expected, TextureCombinationConfig actual) {
+			Assert.AreEqual(expected.ScalingStrategy, actual.ScalingStrategy);
+			Assert.AreEqual(expected.OutputTextureXRedChannelSource, actual.OutputTextureXRedChannelSource);
+			Assert.AreEqual(expected.OutputTextureYGreenChannelSource, actual.OutputTextureYGreenChannelSource);
+			Assert.AreEqual(expected.OutputTextureZBlueChannelSource, actual.OutputTextureZBlueChannelSource);
+			Assert.AreEqual(expected.OutputTextureWAlphaChannelSource, actual.OutputTextureWAlphaChannelSource);
+		}
+
+		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
+		AssertRoundTripHeapStorage(testConfigB, AssertConfigsMatch);
+		Assert.IsNull(TextureCombinationConfig.ConvertFromAllocatedHeapStorage(SerializeToBytes(testConfigB)).OutputTextureWAlphaChannelSource);
+
+		AssertPropertiesAccountedFor<TextureCombinationConfig>()
+			.Including(nameof(TextureCombinationConfig.ScalingStrategy))
+			.Including(nameof(TextureCombinationConfig.OutputTextureXRedChannelSource))
+			.Including(nameof(TextureCombinationConfig.OutputTextureYGreenChannelSource))
+			.Including(nameof(TextureCombinationConfig.OutputTextureZBlueChannelSource))
+			.Including(nameof(TextureCombinationConfig.OutputTextureWAlphaChannelSource))
+			.End();
+	}
+
+	static byte[] SerializeToBytes<T>(scoped in T config) where T : struct, IConfigStruct<T>, allows ref struct {
+		var result = new byte[T.GetHeapStorageFormattedLength(in config)];
+		T.AllocateAndConvertToHeapStorage(result, in config);
+		return result;
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertLoadConfigToAndFromHeapStorageFormat() {
+		var testConfig = new TextureLoadConfig {
+			CreationConfig = TextureCreationConfig.ForCanvasTexture("canvas load"),
+			ReadConfig = new TextureReadConfig { IncludeWAlphaChannel = true, ForceWAlphaChannelPresence = true }
+		};
+
+		AssertRoundTripHeapStorage(testConfig, static (expected, actual) => {
+			Assert.AreEqual(expected.CreationConfig.IsLinearColorspace, actual.CreationConfig.IsLinearColorspace);
+			Assert.AreEqual(expected.CreationConfig.GenerateMipMaps, actual.CreationConfig.GenerateMipMaps);
+			Assert.AreEqual(expected.CreationConfig.RenderingConfig, actual.CreationConfig.RenderingConfig);
+			Assert.AreEqual(expected.CreationConfig.Name.ToString(), actual.CreationConfig.Name.ToString());
+			Assert.AreEqual(expected.CreationConfig.ProcessingToApply, actual.CreationConfig.ProcessingToApply);
+			Assert.AreEqual(expected.ReadConfig.IncludeWAlphaChannel, actual.ReadConfig.IncludeWAlphaChannel);
+			Assert.AreEqual(expected.ReadConfig.ForceWAlphaChannelPresence, actual.ReadConfig.ForceWAlphaChannelPresence);
+		});
+
+		AssertPropertiesAccountedFor<TextureLoadConfig>()
+			.Including(nameof(TextureLoadConfig.CreationConfig))
+			.Including(nameof(TextureLoadConfig.ReadConfig))
+			.End();
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertCombinedLoadConfigToAndFromHeapStorageFormat() {
+		var testConfig = new TextureCombinedLoadConfig {
+			CreationConfig = TextureCreationConfig.ForDataTexture("combined load"),
+			CombinationConfig = new TextureCombinationConfig(
+				TextureCombinationScalingStrategy.PixelUpscale,
+				new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+				new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
+				new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.R),
+				new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.R)
+			),
+			ProcessingConfigA = TextureProcessingConfig.Invert(includeAlphaChannel: false),
+			ProcessingConfigB = TextureProcessingConfig.Flip(true, false),
+			ProcessingConfigC = TextureProcessingConfig.Swizzle(blueSource: ColorChannel.A),
+			ProcessingConfigD = TextureProcessingConfig.None,
+			SourceCount = 4
+		};
+
+		AssertRoundTripHeapStorage(testConfig, static (expected, actual) => {
+			Assert.AreEqual(expected.CreationConfig.Name.ToString(), actual.CreationConfig.Name.ToString());
+			Assert.AreEqual(expected.CreationConfig.RenderingConfig, actual.CreationConfig.RenderingConfig);
+			Assert.AreEqual(expected.CombinationConfig, actual.CombinationConfig);
+			Assert.AreEqual(expected.ProcessingConfigA, actual.ProcessingConfigA);
+			Assert.AreEqual(expected.ProcessingConfigB, actual.ProcessingConfigB);
+			Assert.AreEqual(expected.ProcessingConfigC, actual.ProcessingConfigC);
+			Assert.AreEqual(expected.ProcessingConfigD, actual.ProcessingConfigD);
+			Assert.AreEqual(expected.SourceCount, actual.SourceCount);
+		});
+
+		AssertPropertiesAccountedFor<TextureCombinedLoadConfig>()
+			.Including(nameof(TextureCombinedLoadConfig.CreationConfig))
+			.Including(nameof(TextureCombinedLoadConfig.CombinationConfig))
+			.Including(nameof(TextureCombinedLoadConfig.ProcessingConfigA))
+			.Including(nameof(TextureCombinedLoadConfig.ProcessingConfigB))
+			.Including(nameof(TextureCombinedLoadConfig.ProcessingConfigC))
+			.Including(nameof(TextureCombinedLoadConfig.ProcessingConfigD))
+			.Including(nameof(TextureCombinedLoadConfig.SourceCount))
 			.End();
 	}
 }

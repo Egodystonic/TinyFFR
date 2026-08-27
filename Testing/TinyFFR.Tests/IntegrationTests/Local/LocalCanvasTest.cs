@@ -53,7 +53,18 @@ class LocalCanvasTest {
 		canvasTex.SetBlendTexture(blendTex);
 		var layerStates = new[] { -1, 0, 1, -100, 100, -1000, 1000 };
 		var blendDistanceStates = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
-		var fillStates = new[] { 1f, 0.75f, 0.5f, 0.25f, 0f };
+		var fillStates = new[] {
+			new XYPair<float>(1f, 1f),
+			new XYPair<float>(0.75f, 1f),
+			new XYPair<float>(0.5f, 1f),
+			new XYPair<float>(0.25f, 1f),
+			new XYPair<float>(0f, 1f),
+			new XYPair<float>(1f, 0.75f),
+			new XYPair<float>(1f, 0.5f),
+			new XYPair<float>(1f, 0.25f),
+			new XYPair<float>(1f, 0f),
+			new XYPair<float>(0.5f, 0.5f)
+		};
 		var opacityStates = new[] { 1f, 0.75f, 0.5f, 0.25f, 0f };
 		const int MaxTextureCropStep = 8;
 		const float TextureCropStepSize = 0.05f;
@@ -81,7 +92,7 @@ class LocalCanvasTest {
 			canvasTex.SetBlendTextureDistance(blendDistanceStates[blendDistanceStateIdx]);
 		}
 		void ApplyFillFraction() {
-			canvasTex.FillFraction = new XYPair<float>(fillStates[fillStateIdx], 1f);
+			canvasTex.FillFraction = fillStates[fillStateIdx];
 		}
 		void ApplyOpacity() {
 			canvasTex.Opacity = opacityStates[opacityStateIdx];

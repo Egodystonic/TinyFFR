@@ -28,6 +28,11 @@ class LocalResourceGroupTest {
 
 	[Test]
 	public void Execute() {
+		SpecializedResourcesShouldRoundTrip();
+		SpecializedResourcesShouldBeDisposedWithGroup();
+		SealedGroupShouldRejectSpecializedAdds();
+		GroupShouldTrackDependencyOnSpecializationAdditionalResourceRef();
+		
 		using var factory = new LocalTinyFfrFactory();
 
 		var meshes = new Mesh[6];
@@ -179,7 +184,6 @@ class LocalResourceGroupTest {
 
 	ResourceStub ToStub<TResource>(TResource r) where TResource : IResource => r.AsStub;
 
-	[Test]
 	public void SpecializedResourcesShouldRoundTrip() {
 		using var factory = new LocalTinyFfrFactory();
 
@@ -306,7 +310,6 @@ class LocalResourceGroupTest {
 		Assert.Catch<InvalidOperationException>(() => _ = canvasTextIterator.Count);
 	}
 
-	[Test]
 	public void SpecializedResourcesShouldBeDisposedWithGroup() {
 		using var factory = new LocalTinyFfrFactory();
 
@@ -369,7 +372,6 @@ class LocalResourceGroupTest {
 		font.Dispose();
 	}
 
-	[Test]
 	public void SealedGroupShouldRejectSpecializedAdds() {
 		using var factory = new LocalTinyFfrFactory();
 
@@ -395,7 +397,6 @@ class LocalResourceGroupTest {
 		Assert.AreEqual(0, group.QuadMeshes.Count);
 	}
 
-	[Test]
 	public void GroupShouldTrackDependencyOnSpecializationAdditionalResourceRef() {
 		using var factory = new LocalTinyFfrFactory();
 

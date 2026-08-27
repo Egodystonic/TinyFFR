@@ -55,6 +55,7 @@ class LocalResourceDirectoryTest {
 		}
 		TestDirectoryRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
 		TestDirectoryRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
+		TestDirectoryRetrieval(n => factory.MeshBuilder.CreateDynamicVertexBuffer(3, 3, name: n));
 		TestDirectoryRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
 			var displayName = primaryDisplay.GetNameAsNewStringObject();

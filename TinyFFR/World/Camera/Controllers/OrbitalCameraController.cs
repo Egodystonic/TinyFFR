@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.World;
 
 public sealed class OrbitalCameraController : ICameraController<OrbitalCameraController> {
 	#region Creation / Pooling
-	static readonly unsafe ObjectPool<OrbitalCameraController> _controllerPool = new(&New);
+	static readonly unsafe ArrayPoolBackedObjectPool<OrbitalCameraController> _controllerPool = new(&New);
 	static OrbitalCameraController New() => new();
 	static OrbitalCameraController ICameraController<OrbitalCameraController>.RentAndTetherToCamera(Camera camera) {
 		var result = _controllerPool.Rent();

@@ -22,6 +22,8 @@ public interface ITexel<TSelf> : ITexel, IBlendable<TSelf>, IFixedLengthByteSpan
 	TSelf WithInvertedChannelIfPresent(int channelIndex);
 	TSelf SwizzlePresentChannels(ColorChannel redSource, ColorChannel greenSource, ColorChannel blueSource, ColorChannel alphaSource);
 	TSelf WithPremultipliedAlpha();
+	static abstract bool TryCoerceSpan<TOther>(ReadOnlySpan<TSelf> src, Span<TOther> dest) where TOther : unmanaged, ITexel<TOther>;
+	static abstract bool TryCoerceSpanFrom<TOther>(ReadOnlySpan<TOther> src, Span<TSelf> dest, bool mergeWithExistingDestinationData = false) where TOther : unmanaged, ITexel<TOther>;
 }
 public interface IConversionSupplyingTexel<TSelf, TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
 	static abstract TSelf ConvertFrom(TOther o);

@@ -7,7 +7,7 @@
 
 typedef void* BufferIdentity;
 typedef void(*deallocate_asset_buffer_delegate)(BufferIdentity bufferIdentity);
-typedef void(*log_notify_delegate)();
+typedef void(*log_notify_delegate)(const char* msg);
 
 class native_impl_init {
 public:
@@ -18,7 +18,7 @@ public:
 	static void exec_once_only_initialization();
 	static void set_buffer_deallocation_delegate(deallocate_asset_buffer_delegate deallocationDelegate);
 	static void set_log_notify_delegate(log_notify_delegate logNotifyDelegate);
-	static void notify_of_log_msg();
+	static void notify_of_log_msg(const char* msg);
 
 	static void on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex, filament::backend::swapchain_recreation_notify_delegate swapchainRecreationHintCallback);
 	static void on_factory_teardown();

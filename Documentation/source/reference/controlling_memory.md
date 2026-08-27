@@ -25,20 +25,13 @@ By default, TinyFFR uses more RAM to increase performance of your application. H
 
 ## Further Actions
 
-You can further reduce memory usage by lowering the maximum asset size permitted by the asset loader: 
-
 ```csharp
 var factory = new LocalTinyFfrFactory(
 	factoryConfig: new LocalTinyFfrFactoryConfig {  
-		MemoryUsageRubric = MemoryUsageRubric.UseLessMemory
-	},
-	// The following halves the max asset size of various assets, reducing RAM allocated to internal buffers. 
-	// Note that trying to load any assets with sizes greater than these new limits will result in an exception being thrown.
-	// It's recommended to tailor these values to your specific application's needs.
-	assetLoaderConfig: new LocalAssetLoaderConfig {
-		MaxAssetVertexIndexBufferSizeBytes = LocalAssetLoaderConfig.DefaultMaxAssetVertexIndexBufferSizeBytes / 2,
-		MaxKtxFileBufferSizeBytes = LocalAssetLoaderConfig.DefaultMaxKtxFileBufferSizeBytes / 2,
-		MaxEmbeddedAssetTextureFileSizeBytes = LocalAssetLoaderConfig.DefaultMaxEmbeddedAssetTextureFileSizeBytes / 2
-	},
+		MemoryUsageRubric = MemoryUsageRubric.UseLessMemory,
+		// Halves the largest single asset that can be uploaded to the GPU, reducing the RAM held for staging.
+		// Note that trying to load any asset larger than this new limit will result in an exception being thrown.
+		MaxCpuToGpuAssetTransferSizeBytes = LocalTinyFfrFactoryConfig.DefaultMaxCpuToGpuAssetTransferSizeBytes / 2
+	}
 );
 ```

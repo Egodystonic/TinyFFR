@@ -13,6 +13,7 @@ using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Testing;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering;
@@ -278,6 +279,8 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	public IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>() => throw new NotSupportedException();
 	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache) => throw new NotSupportedException();
 	public unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => throw new NotSupportedException();
+	public TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class => throw new NotSupportedException();
+	public unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, delegate*<TContext?, TResult?> work) where TContext : class where TResult : class => throw new NotSupportedException();
 }
 
 sealed class FakeSceneImplProvider : ISceneImplProvider {

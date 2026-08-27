@@ -45,9 +45,9 @@ StartExportedFunc(set_log_notify_delegate, log_notify_delegate logNotifyDelegate
 	EndExportedFunc
 }
 
-void native_impl_init::notify_of_log_msg() {
+void native_impl_init::notify_of_log_msg(const char* msg) {
 	if (log_delegate == nullptr) return;
-	log_delegate();
+	log_delegate(msg == nullptr ? "" : msg);
 }
 
 void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex, filament::backend::swapchain_recreation_notify_delegate swapchainRecreationHintCallback) {

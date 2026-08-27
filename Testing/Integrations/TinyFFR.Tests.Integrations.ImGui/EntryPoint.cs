@@ -178,7 +178,7 @@ while (!loop.Input.UserQuitRequested) {
 	imgui.EndFrame();
 
 	secondsSinceLastReport += (float) deltaTime.TotalSeconds;
-	if (modeChanged || secondsSinceLastReport >= 1f) {
+	if (modeChanged || secondsSinceLastReport >= 30f) {
 		secondsSinceLastReport = 0f;
 		Console.WriteLine(
 			$"[{subAreaModes[subAreaMode].Name}] " +

@@ -7,6 +7,7 @@ using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory;
@@ -25,4 +26,10 @@ public interface IResourceAllocator {
 	IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>();
 	IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache);
 	unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null);
+	
+	// TODO xmldoc make it clear that these two are a way of sharing TinyFFR's worker thread pool, NOT a way of making
+	// TODO xmldoc currently-non-async library functionality suddenly async .. everything that can be made async in TinyFFR
+	// TODO xmldoc already is
+	TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class;
+	unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, delegate* managed<TContext?, TResult?> work) where TContext : class where TResult : class;
 }

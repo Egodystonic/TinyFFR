@@ -46,6 +46,7 @@ class LocalResourceNamingTest {
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
+		TestNameStorageAndRetrieval(n => factory.MeshBuilder.CreateDynamicVertexBuffer(3, 3, name: n));
 		TestNameStorageAndRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
 			TestNameStorageAndRetrieval(n => factory.WindowBuilder.CreateWindow(primaryDisplay, title: n));

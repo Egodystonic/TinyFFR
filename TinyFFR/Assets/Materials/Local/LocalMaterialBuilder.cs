@@ -18,6 +18,7 @@ using System.Resources;
 using System.Security;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
+using Egodystonic.TinyFFR.Threading;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -309,6 +310,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	Material InstantiateMaterial(string shaderResourceName, ReadOnlySpan<char> resourceName, IShaderPackageConstants packageConstants) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderResourceName);
 
 		CreateMaterial(
@@ -705,8 +707,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
 	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
-		if (handle == DefaultMaterial.Handle) return; // Never dispose/evict the default-material
 		if (IsDisposed(handle)) return;
+		if (handle == DefaultMaterial.GetHandleWithoutDisposeCheck()) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeMaterial);

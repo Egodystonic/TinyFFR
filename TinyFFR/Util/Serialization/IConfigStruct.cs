@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR;
@@ -22,6 +23,7 @@ public interface IConfigStruct {
 	protected static int SerializationSizeOfString(ReadOnlySpan<char> v) => SerializationFieldCountSizeBytes + v.Length * sizeof(char);
 	protected static int SerializationSizeOfSubConfig<T>(scoped in T v) where T : struct, IConfigStruct<T>, allows ref struct => SerializationFieldCountSizeBytes + T.GetHeapStorageFormattedLength(v);
 	protected static int SerializationSizeOfResource() => IResource.SerializedLengthBytes;
+	protected static int SerializationSizeOfSpan<T>(ReadOnlySpan<T> v) where T : unmanaged => SerializationFieldCountSizeBytes + MemoryMarshal.AsBytes(v).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected static int SerializationSizeOfNullableFloat() => sizeof(bool) + sizeof(float);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,6 +71,12 @@ public interface IConfigStruct {
 	protected static void SerializationWriteAndAllocateResource<T>(scoped ref Span<byte> dest, T v) where T : IResource<T> {
 		v.AllocateGcHandleAndSerializeResource(dest);
 		dest = dest[SerializationSizeOfResource()..];
+	}
+	protected static void SerializationWriteSpan<T>(scoped ref Span<byte> dest, ReadOnlySpan<T> v) where T : unmanaged {
+		var byteSpan = MemoryMarshal.AsBytes(v);
+		SerializationWriteInt(ref dest, byteSpan.Length);
+		byteSpan.CopyTo(dest);
+		dest = dest[byteSpan.Length..];
 	}
 	protected static void SerializationWriteNullableFloat(scoped ref Span<byte> dest, float? v) {
 		SerializationWriteBool(ref dest, v.HasValue);
@@ -141,12 +149,25 @@ public interface IConfigStruct {
 		src = src[cfgEnd..];
 		return result;
 	}
+	protected static void SerializationDisposeSubConfig<T>(scoped ref ReadOnlySpan<byte> src) where T : struct, IConfigStruct<T>, allows ref struct {
+		var byteCount = BinaryPrimitives.ReadInt32LittleEndian(src);
+		var cfgEnd = sizeof(int) + byteCount;
+		T.DisposeAllocatedHeapStorage(src[sizeof(int)..cfgEnd]);
+		src = src[cfgEnd..];
+	}
 	protected static T SerializationReadResource<T>(scoped ref ReadOnlySpan<byte> src) where T : IResource<T> {
 		var result = T.CreateFromHandleAndImpl(
 			IResource.ReadHandleFromSerializedResource(src),
 			(IResourceImplProvider) IResource.ReadGcHandleFromSerializedResource(src).Target!
 		);
 		src = src[SerializationSizeOfResource()..];
+		return result;
+	}
+	protected static ReadOnlySpan<T> SerializationReadSpan<T>(scoped ref ReadOnlySpan<byte> src) where T : unmanaged {
+		var length = SerializationReadInt(ref src);
+		Debug.Assert(length % Unsafe.SizeOf<T>() == 0, $"Serialized span byte length {length} is not a whole multiple of sizeof({typeof(T).Name}) ({Unsafe.SizeOf<T>()}); MemoryMarshal.Cast would silently drop the ragged tail.");
+		var result = MemoryMarshal.Cast<byte, T>(src[..length]);
+		src = src[length..];
 		return result;
 	}
 	protected static void SerializationDisposeResourceHandle(ReadOnlySpan<byte> resourceData) {

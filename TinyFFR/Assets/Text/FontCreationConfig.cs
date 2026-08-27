@@ -27,17 +27,20 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 	}
 
 	public static int GetHeapStorageFormattedLength(in FontCreationConfig src) {
-		return SerializationSizeOfInt() // LineBreakRune
+		return SerializationSizeOfSpan(src.SupportedRunes) // SupportedRunes
+			+ SerializationSizeOfInt() // LineBreakRune
 			+ SerializationSizeOfFloat() // LineSpacingMultiplier
 			+ SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in FontCreationConfig src) {
+		SerializationWriteSpan(ref dest, src.SupportedRunes);
 		SerializationWriteInt(ref dest, src.LineBreakRune.Value);
 		SerializationWriteFloat(ref dest, src.LineSpacingMultiplier);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static FontCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new FontCreationConfig {
+			SupportedRunes = SerializationReadSpan<Rune>(ref src),
 			LineBreakRune = new Rune(SerializationReadInt(ref src)),
 			LineSpacingMultiplier = SerializationReadFloat(ref src),
 			Name = SerializationReadString(ref src)

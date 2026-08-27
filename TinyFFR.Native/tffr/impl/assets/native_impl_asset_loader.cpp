@@ -387,7 +387,7 @@ void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHa
 	if (texture->mHeight == 0U) { 
 		ThrowIf(texture->mWidth > 0x7FFFFFF, "Embedded texture '", texture->mFilename.C_Str(), "' is too large.");
 		int width, height, channelCount;
-		stbi_set_flip_vertically_on_load(true);
+		stbi_set_flip_vertically_on_load_thread(true);
 		auto imageData = stbi_load_from_memory(reinterpret_cast<stbi_uc const*>(texture->pcData), static_cast<int>(texture->mWidth), &width, &height, &channelCount, 4);
 		ThrowIfNull(imageData, "Could not load embedded texture '", texture->mFilename.C_Str(), "': ", stbi_failure_reason());
 		if (width > MaxEmbeddedTextureDimension || height > MaxEmbeddedTextureDimension || width <= 0 || height <= 0) {
@@ -976,7 +976,7 @@ void native_impl_asset_loader::load_texture_file_in_to_memory(const char* filePa
 	ThrowIfNull(outHeight, "Out height pointer was null.");
 	ThrowIfNull(outTextureData, "Out texture data pointer was null.");
 	int width, height, channelCount;
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load_thread(true);
 	auto imageData = stbi_load(filePath, &width, &height, &channelCount, includeWAlphaChannel ? 4 : 3);
 	ThrowIfNull(imageData, "Could not load texture '", filePath, "': ", stbi_failure_reason());
 	*outTextureData = imageData;

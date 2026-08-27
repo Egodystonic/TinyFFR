@@ -147,3 +147,33 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 		/* no-op */
 	}
 }
+readonly ref struct MeshLoadConfig : IConfigStruct<MeshLoadConfig> {
+	public MeshCreationConfig CreationConfig { get; init; } = new();
+	public MeshReadConfig ReadConfig { get; init; } = new();
+
+	public MeshLoadConfig() { }
+
+	internal void ThrowIfInvalid() {
+		CreationConfig.ThrowIfInvalid();
+		ReadConfig.ThrowIfInvalid();
+	}
+
+	public static int GetHeapStorageFormattedLength(in MeshLoadConfig src) {
+		return	SerializationSizeOfSubConfig(src.CreationConfig) // CreationConfig
+			+	SerializationSizeOfSubConfig(src.ReadConfig); // ReadConfig
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshLoadConfig src) {
+		SerializationWriteSubConfig(ref dest, src.CreationConfig);
+		SerializationWriteSubConfig(ref dest, src.ReadConfig);
+	}
+	public static MeshLoadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new MeshLoadConfig {
+			CreationConfig = SerializationReadSubConfig<MeshCreationConfig>(ref src),
+			ReadConfig = SerializationReadSubConfig<MeshReadConfig>(ref src)
+		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		SerializationDisposeSubConfig<MeshCreationConfig>(ref src);
+		SerializationDisposeSubConfig<MeshReadConfig>(ref src);
+	}
+}
