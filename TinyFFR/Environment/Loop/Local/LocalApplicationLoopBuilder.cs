@@ -27,7 +27,8 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		TimeSpan CooperativeTaskTimeSinceLastIteration,
 		TimeSpan BaselineIterationInterval,
 		bool ShouldIterateInput,
-		bool ShouldTranscribeText
+		bool ShouldTranscribeText,
+		float? CooperativeTaskTimeFraction
 	);
 	readonly record struct IterationTimingData(
 		PooledHeapMemory<TimeSpan> TimingBuffer,
@@ -47,7 +48,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	readonly int _iterationTimingBufferMask;
 #pragma warning restore CA2213
 	nuint _prevHandleId = 0;
-	readonly float? _cooperativeTaskTimeFractionPerIteration;
+	readonly float? _defaultCooperativeTaskTimeFractionPerIteration;
 	bool _isDisposed = false;
 
 	public LocalApplicationLoopBuilder(LocalApplicationLoopBuilderConfig config, LocalFactoryGlobalObjectGroup globals) {
@@ -56,7 +57,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_globals = globals;
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 		_iterationTimingBufferMask = (1 << config.FrameRateBufferSizeLog2) - 1;
-		_cooperativeTaskTimeFractionPerIteration = config.TargetPerFrameAsyncCooperativeTaskTimeFraction;
+		_defaultCooperativeTaskTimeFractionPerIteration = config.TargetPerFrameAsyncCooperativeTaskTimeFraction;
 	}
 
 	public ApplicationLoop CreateLoop(in LocalApplicationLoopCreationConfig config) {
@@ -65,7 +66,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) (++_prevHandleId);
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates, false));
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates, false, _defaultCooperativeTaskTimeFractionPerIteration));
 		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		return new(handle, this);
@@ -91,7 +92,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
 	}
 	TimeSpan? GetCooperativeTaskBudget(ResourceHandle<ApplicationLoop> handle) {
-		if (_cooperativeTaskTimeFractionPerIteration is not { } configuredFraction) return null;
+		if (_handleDataMap[handle].CooperativeTaskTimeFraction is not { } configuredFraction) return null;
 		if (configuredFraction <= 0f) return TimeSpan.Zero;
 		var baselineInterval = _handleDataMap[handle].BaselineIterationInterval;
 		if (baselineInterval <= TimeSpan.Zero) return TimeSpan.Zero;
@@ -192,6 +193,27 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_handleDataMap[handle] = _handleDataMap[handle] with { TotalIteratedTime = newValue };
 	}
+	public void SetTargetIterationInterval(ResourceHandle<ApplicationLoop> handle, TimeSpan newValue) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (newValue < TimeSpan.Zero) {
+			throw new ArgumentOutOfRangeException(nameof(newValue), newValue, "Target iteration interval must be positive or zero (use zero for no cap).");
+		}
+		_handleDataMap[handle] = _handleDataMap[handle] with { FrameInterval = newValue };
+	}
+
+	public float? GetTargetPerFrameAsyncCooperativeTaskTimeFraction(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _handleDataMap[handle].CooperativeTaskTimeFraction;
+	}
+
+	public void SetTargetPerFrameAsyncCooperativeTaskTimeFraction(ResourceHandle<ApplicationLoop> handle, float? newValue) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (newValue is { } v && !v.IsNonNegativeAndFinite()) {
+			throw new ArgumentOutOfRangeException(nameof(newValue), newValue, "Must be a finite, non-negative value (use null for no limit).");
+		}
+		_handleDataMap[handle] = _handleDataMap[handle] with { CooperativeTaskTimeFraction = newValue };
+	}
+
 	public TimeSpan GetTargetIterationInterval(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _handleDataMap[handle].FrameInterval;

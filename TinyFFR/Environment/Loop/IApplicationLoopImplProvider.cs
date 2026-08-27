@@ -11,6 +11,9 @@ public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<
 	bool GetEnableInputTextTranscription(ResourceHandle<ApplicationLoop> handle);
 	void SetEnableInputTextTranscription(ResourceHandle<ApplicationLoop> handle, bool enable);
 	TimeSpan GetTargetIterationInterval(ResourceHandle<ApplicationLoop> handle);
+	void SetTargetIterationInterval(ResourceHandle<ApplicationLoop> handle, TimeSpan newValue);
+	float? GetTargetPerFrameAsyncCooperativeTaskTimeFraction(ResourceHandle<ApplicationLoop> handle);
+	void SetTargetPerFrameAsyncCooperativeTaskTimeFraction(ResourceHandle<ApplicationLoop> handle, float? newValue);
 	float GetFramesPerSecondRecentAverage(ResourceHandle<ApplicationLoop> handle);
 	float GetFramesPerSecondLatest(ResourceHandle<ApplicationLoop> handle);
 	float GetFramesPerSecondRecentMin(ResourceHandle<ApplicationLoop> handle);
