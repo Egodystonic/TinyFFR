@@ -2,18 +2,41 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TinyFFR.Tests.Integrations.Avalonia.Viewer;
 
-public sealed record ModelListEntry(string DisplayName, string? FileName) {
+public sealed partial class ModelListEntry : ObservableObject {
+	public string DisplayName { get; }
+	public string? FileName { get; }
+
 	public bool IsHeader => FileName is null;
-	public bool IsSelectable => FileName is not null;
+	public bool IsSelectable => FileName is not null && IsLoaded;
+
+	[ObservableProperty]
+	[NotifyPropertyChangedFor(nameof(IsSelectable))]
+	[NotifyPropertyChangedFor(nameof(DisplayText))]
+	public partial bool IsLoaded { get; set; }
+
+	[ObservableProperty]
+	[NotifyPropertyChangedFor(nameof(DisplayText))]
+	public partial bool LoadFailed { get; set; }
+
+	public string DisplayText {
+		get {
+			if (IsHeader || IsLoaded) return DisplayName;
+			return LoadFailed ? DisplayName + "   (failed)" : DisplayName + "   (loading...)";
+		}
+	}
+
+	public ModelListEntry(string displayName, string? fileName) {
+		DisplayName = displayName;
+		FileName = fileName;
+	}
 }
 
 public static class ModelCatalog {
-	public static IReadOnlyList<ModelListEntry> Items { get; } = Build();
-
-	static ModelListEntry[] Build() {
+	public static ModelListEntry[] Build() {
 		var result = new List<ModelListEntry>();
 
 		void AddCategory(string categoryName, params string[] fileNames) {

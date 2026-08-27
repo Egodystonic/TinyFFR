@@ -9,6 +9,7 @@ namespace Egodystonic.TinyFFR.Threading;
 
 sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadDispatcher, IDisposable {
 	static readonly TimeSpan ShutdownDrainPollInterval = TimeSpan.FromMilliseconds(10d);
+	static readonly SendOrPostCallback HostPumpCallback = static state => ((CooperativeThreadPool) state!).ExecuteHostRequestedPump();
 
 	readonly ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> _primaryJobQueue;
 	readonly ArrayPoolBackedConcurrentBlockingQueue<ThreadJob> _workerJobQueue;
@@ -18,7 +19,12 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 	readonly JobCompletionRegistrar _completionRegistrar;
 	// ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable Reference kept to avoid GC collect
 	readonly ThreadStart _workerThreadEntryRef;
+	readonly SynchronizationContext? _pumpableHostSyncContext;
+	readonly Lock _hostPumpLock = new();
 	int _liveWorkerThreadCount;
+	bool _hostPumpRequestOutstanding;
+	bool _hasLoggedForeignThreadPump;
+	bool _hasLoggedFailedPost;
 	volatile bool _isDisposing;
 	volatile bool _isDisposed;
 
@@ -28,6 +34,9 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		ArgumentNullException.ThrowIfNull(config);
 
 		_config = config;
+		if (config.WakeHostMessageLoopForPrimaryThreadWork && SynchronizationContext.Current is { } hostSyncContext and not TinyFfrSynchronizationContext) {
+			_pumpableHostSyncContext = hostSyncContext;
+		}
 		_primaryJobQueue = new ArrayPoolBackedConcurrentBlockingQueue<ThreadJob>();
 		_workerJobQueue = new ArrayPoolBackedConcurrentBlockingQueue<ThreadJob>();
 		_completionRegistrar = new();
@@ -82,6 +91,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 
 		EnqueueOrCancel(_primaryJobQueue, job);
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+		RequestHostPumpIfPossible();
 	}
 
 	public void AddPrimaryThreadJobAndWait(ThreadJob job) {
@@ -94,6 +104,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		_completionRegistrar.RegisterInterest(job.JobId);
 		EnqueueOrCancel(_primaryJobQueue, job);
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+		RequestHostPumpIfPossible();
 
 		if (!_completionRegistrar.WaitForCompletion(job.JobId, Timeout.InfiniteTimeSpan, CancellationToken.None)) {
 			throw new ObjectDisposedException(ToString(), $"{nameof(CooperativeThreadPool)} was disposed while waiting for a primary thread job to complete.");
@@ -148,7 +159,57 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 			return ThreadSafetyTracker.CurrentThreadIsPrimary();
 		}
 		NotifyPrimaryThreadOfEventIfCurrentlyBlocked();
+		RequestHostPumpIfPossible();
 		return true;
+	}
+
+	void RequestHostPumpIfPossible() {
+		if (_pumpableHostSyncContext == null) return;
+
+		lock (_hostPumpLock) { // This ensures we don't accidentally get in to a loop
+			if (_hostPumpRequestOutstanding) return;
+			_hostPumpRequestOutstanding = true;
+		}
+
+		try {
+			_pumpableHostSyncContext.Post(HostPumpCallback, this);
+		}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- A failed host post must not propagate in to unrelated job scheduling
+		catch (Exception e) {
+#pragma warning restore CA1031
+			lock (_hostPumpLock) {
+				_hostPumpRequestOutstanding = false;
+				if (_hasLoggedFailedPost) return;
+				_hasLoggedFailedPost = true;
+			}
+			Console.WriteLine(
+				$"Could not post primary thread work to the host synchronization context: {e.GetAllMessages()}. " +
+				$"Pending primary thread work will only be executed by an application loop iteration. This message is only shown once."
+			);
+		}
+	}
+
+	void ExecuteHostRequestedPump() {
+		lock (_hostPumpLock) _hostPumpRequestOutstanding = false;
+		if (_isDisposed) return;
+
+		if (!ThreadSafetyTracker.CurrentThreadIsPrimary()) {
+			LogForeignThreadPumpOnce();
+			return;
+		}
+
+		ExecutePendingCooperativeJobs(_config.HostPumpTimeCap);
+	}
+
+	void LogForeignThreadPumpOnce() {
+		lock (_hostPumpLock) {
+			if (_hasLoggedForeignThreadPump) return;
+			_hasLoggedForeignThreadPump = true;
+		}
+		Console.WriteLine(
+			$"Host synchronization context did not dispatch a primary thread work pump to the primary thread. " +
+			$"Pending primary thread work will only be executed by an application loop iteration. This message is only shown once."
+		);
 	}
 
 	static bool InvokeContinuationOnPrimaryThreadOrDiscard(Action continuation) {

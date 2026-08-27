@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -23,15 +24,25 @@ sealed class ModelViewerScene : IDisposable {
 	const float OverlayYawDegreesPerSec = -130f;
 	const float OverlayPitchDegreesPerSec = -80f;
 
+	sealed class LoadedModel {
+		public required ResourceGroup Resources { get; init; }
+		public required ModelInstanceGroup Instances { get; init; }
+		public required Material[] OriginalMaterials { get; init; }
+		public required string Summary { get; init; }
+		public required string ResourceListing { get; init; }
+	}
+
 	readonly LocalTinyFfrFactory _factory;
 	readonly Camera _camera;
 	readonly InspectorCameraController _cameraController;
 	readonly SpotLight _cameraLight;
 	readonly DirectionalLight _sunlight;
-	readonly BackdropTexture _backdrop;
 	readonly Scene _scene;
 	readonly Renderer _mainRenderer;
-	readonly List<Material> _originalMaterials = new();
+	readonly Dictionary<string, LoadedModel> _loadedModels = new();
+
+	BackdropTexture? _backdrop;
+	LoadedModel? _displayed;
 
 	Camera? _overlayCamera;
 	Scene? _overlayScene;
@@ -43,9 +54,6 @@ sealed class ModelViewerScene : IDisposable {
 	Renderer? _overlayRenderer;
 	RendererCompositor? _compositor;
 
-	ResourceGroup? _loadedResources;
-	ModelInstanceGroup? _modelInstances;
-
 	bool _spinX;
 	bool _spinY;
 	bool _spinZ;
@@ -55,10 +63,11 @@ sealed class ModelViewerScene : IDisposable {
 	ViewerBackdropMode _backdropMode = ViewerBackdropMode.Texture;
 	float _backdropIntensity = 1f;
 
+	public bool IsDisposed { get; private set; }
 	public Renderer? ActiveRenderer { get; private set; }
 	public RendererCompositor? ActiveCompositor { get; private set; }
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => _factory.ApplicationLoopBuilder;
-	public string ResourceListing { get; private set; } = "";
+	public string ResourceListing => _displayed?.ResourceListing ?? "";
 
 	public ModelViewerScene() {
 		_factory = new LocalTinyFfrFactory();
@@ -66,11 +75,7 @@ sealed class ModelViewerScene : IDisposable {
 		_cameraController = _camera.CreateController<InspectorCameraController>();
 		_cameraLight = _factory.LightBuilder.CreateSpotLight(position: _camera.Position, coneDirection: _camera.ViewDirection, highQuality: true, brightness: 0f);
 		_sunlight = _factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
-		_backdrop = _factory.AssetLoader.LoadPreprocessedBackdropTexture(
-			CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx),
-			CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx)
-		);
-		_scene = _factory.SceneBuilder.CreateScene(_backdrop);
+		_scene = _factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.None);
 		_mainRenderer = _factory.RendererBuilder.CreateBindableRenderer(_scene, _camera, _factory.ResourceAllocator);
 		_mainRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
 
@@ -80,44 +85,63 @@ sealed class ModelViewerScene : IDisposable {
 		ActiveRenderer = _mainRenderer;
 	}
 
-	public string LoadModel(string fileName) {
-		UnloadModel();
+	public async Task LoadBackdropAsync() {
+		var backdrop = await _factory.AssetLoader.LoadPreprocessedBackdropTextureAsync(
+			CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx),
+			CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx)
+		);
 
-		var resources = _factory.AssetLoader.LoadAll(
+		if (IsDisposed) {
+			backdrop.Dispose();
+			return;
+		}
+
+		_backdrop = backdrop;
+		ApplyBackdrop();
+	}
+
+	public async Task LoadModelAsync(string fileName) {
+		var resources = await _factory.AssetLoader.LoadAllAsync(
 			CommonTestAssets.FindAsset("models/" + fileName),
 			new ModelCreationConfig { MeshConfig = new() { GenerateWireframeData = true } },
 			new ModelReadConfig { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }
 		);
-		_loadedResources = resources;
 
-		_cameraController.SetParametersFromBoundingBox(resources.Models.CalculateCombinedBoundingBox());
+		if (IsDisposed || _loadedModels.ContainsKey(fileName)) {
+			resources.Dispose();
+			return;
+		}
 
 		var instances = _factory.ObjectBuilder.CreateModelInstances(resources.Models);
-		_modelInstances = instances;
 
 		// SetDefaultMaterialShadingStyle swaps each instance on to the default material, so the originals must be captured before any style is applied
-		foreach (var instance in instances.Instances) _originalMaterials.Add(instance.Material);
+		var originalMaterials = new Material[instances.Count];
+		for (var i = 0; i < instances.Count; ++i) originalMaterials[i] = instances[i].Material;
 
-		_scene.Add(instances);
-
-		if (_shadingStyle != ViewerShadingStyle.Textured) ApplyShadingStyle(ColorVect.RandomOpaque());
-
-		ResourceListing = BuildResourceListing(resources);
-		return $"{fileName}: {resources.Models.Count} models / {resources.Meshes.Count} meshes / {resources.Materials.Count} materials / {resources.Textures.Count} textures";
+		_loadedModels.Add(fileName, new LoadedModel {
+			Resources = resources,
+			Instances = instances,
+			OriginalMaterials = originalMaterials,
+			Summary = $"{fileName}: {resources.Models.Count} models / {resources.Meshes.Count} meshes / {resources.Materials.Count} materials / {resources.Textures.Count} textures",
+			ResourceListing = BuildResourceListing(resources)
+		});
 	}
 
-	public void UnloadModel() {
-		if (_modelInstances is { } instances) {
-			_scene.Remove(instances);
-			instances.Dispose();
-			_modelInstances = null;
-		}
-		if (_loadedResources is { } resources) {
-			resources.Dispose();
-			_loadedResources = null;
-		}
-		_originalMaterials.Clear();
-		ResourceListing = "";
+	public bool IsModelLoaded(string fileName) => _loadedModels.ContainsKey(fileName);
+
+	public string DisplayModel(string fileName) {
+		if (!_loadedModels.TryGetValue(fileName, out var model)) return $"{fileName} has not finished loading.";
+		if (ReferenceEquals(model, _displayed)) return model.Summary;
+
+		if (_displayed is { } previous) _scene.Remove(previous.Instances);
+		_displayed = model;
+		_scene.Add(model.Instances);
+
+		_cameraController.SetParametersFromBoundingBox(model.Resources.Models.CalculateCombinedBoundingBox());
+
+		ApplyShadingStyle(ColorVect.RandomOpaque());
+
+		return model.Summary;
 	}
 
 	static string BuildResourceListing(ResourceGroup resources) {
@@ -148,12 +172,13 @@ sealed class ModelViewerScene : IDisposable {
 	}
 
 	void ApplyShadingStyle(ColorVect color) {
-		if (_modelInstances is not { } instances) return;
+		if (_displayed is not { } model) return;
 
+		var instances = model.Instances;
 		for (var i = 0; i < instances.Count; ++i) {
 			var instance = instances[i];
 			if (_shadingStyle == ViewerShadingStyle.Textured) {
-				instance.SetMaterial(_originalMaterials[i]);
+				instance.SetMaterial(model.OriginalMaterials[i]);
 				continue;
 			}
 
@@ -193,7 +218,8 @@ sealed class ModelViewerScene : IDisposable {
 	void ApplyBackdrop() {
 		switch (_backdropMode) {
 			case ViewerBackdropMode.Texture:
-				_scene.SetBackdrop(_backdrop, _backdropIntensity);
+				if (_backdrop is { } backdrop) _scene.SetBackdrop(backdrop, _backdropIntensity);
+				else _scene.RemoveBackdrop();
 				break;
 			case ViewerBackdropMode.Color:
 				_scene.SetBackdrop(StandardColor.LightingSunMidday, _backdropIntensity);
@@ -206,11 +232,13 @@ sealed class ModelViewerScene : IDisposable {
 
 	public void SetQuality(BuiltInQualityConfiguration quality) => _mainRenderer.SetQuality(quality);
 
-	public void SetCompositeMode(bool enabled) {
+	public async Task SetCompositeModeAsync(bool enabled) {
 		if (enabled == (_compositor != null)) return;
 
 		if (enabled) {
-			EnsureOverlayResourcesExist();
+			await EnsureOverlayResourcesExistAsync();
+			if (IsDisposed || _compositor != null) return;
+
 			var compositor = _factory.RendererBuilder.CreateBindableCompositor();
 			compositor.Add(_mainRenderer, RenderCompositionType.Standard);
 			compositor.Add(_overlayRenderer!.Value, RenderCompositionType.RetainPreviousScenes);
@@ -233,13 +261,19 @@ sealed class ModelViewerScene : IDisposable {
 		if (_compositor is { } compositor && _overlayRenderer is { } overlayRenderer) compositor.SetEnabledState(overlayRenderer, enabled);
 	}
 
-	void EnsureOverlayResourcesExist() {
+	async Task EnsureOverlayResourcesExistAsync() {
 		if (_overlayScene != null) return;
+
+		var overlayTexture = await _factory.AssetLoader.LoadColorMapAsync(_factory.AssetLoader.BuiltInTexturePaths.White);
+
+		if (IsDisposed || _overlayScene != null) {
+			overlayTexture.Dispose();
+			return;
+		}
 
 		var overlayCamera = _factory.CameraBuilder.CreateCamera(Location.Origin);
 		var overlayScene = _factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.None);
 		var overlayMesh = _factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-		var overlayTexture = _factory.AssetLoader.LoadColorMap(_factory.AssetLoader.BuiltInTexturePaths.White);
 		var overlayMaterial = _factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(overlayTexture);
 		var overlayInstance = _factory.ObjectBuilder.CreateModelInstance(
 			overlayMesh,
@@ -273,10 +307,10 @@ sealed class ModelViewerScene : IDisposable {
 		_cameraLight.Position = _camera.Position;
 		_cameraLight.ConeDirection = _camera.ViewDirection;
 
-		if (_modelInstances is { } instances) {
-			if (_spinX) instances.RotateBy((SpinDegreesPerSec * deltaTime) % Direction.Left);
-			if (_spinY) instances.RotateBy((SpinDegreesPerSec * deltaTime) % Direction.Up);
-			if (_spinZ) instances.RotateBy((SpinDegreesPerSec * deltaTime) % Direction.Forward);
+		if (_displayed is { } model) {
+			if (_spinX) model.Instances.RotateBy((SpinDegreesPerSec * deltaTime) % Direction.Left);
+			if (_spinY) model.Instances.RotateBy((SpinDegreesPerSec * deltaTime) % Direction.Up);
+			if (_spinZ) model.Instances.RotateBy((SpinDegreesPerSec * deltaTime) % Direction.Forward);
 		}
 
 		if (_compositor != null && _overlayInstance is { } overlayInstance) {
@@ -291,6 +325,9 @@ sealed class ModelViewerScene : IDisposable {
 	}
 
 	public void Dispose() {
+		if (IsDisposed) return;
+		IsDisposed = true;
+
 		try {
 			if (_compositor is { } compositor) {
 				compositor.Dispose();
@@ -315,7 +352,13 @@ sealed class ModelViewerScene : IDisposable {
 			ActiveRenderer = null;
 			_cameraController.Dispose();
 
-			UnloadModel();
+			if (_displayed is { } displayed) _scene.Remove(displayed.Instances);
+			_displayed = null;
+			foreach (var model in _loadedModels.Values) {
+				model.Instances.Dispose();
+				model.Resources.Dispose();
+			}
+			_loadedModels.Clear();
 
 			// Scene.Dispose would do both of these itself, but doing them explicitly means a dependency tracking regression surfaces here rather than being masked
 			_scene.RemoveBackdrop();
@@ -323,7 +366,7 @@ sealed class ModelViewerScene : IDisposable {
 			_scene.Remove(_cameraLight);
 			_scene.Dispose();
 
-			_backdrop.Dispose();
+			_backdrop?.Dispose();
 			_sunlight.Dispose();
 			_cameraLight.Dispose();
 			_camera.Dispose();

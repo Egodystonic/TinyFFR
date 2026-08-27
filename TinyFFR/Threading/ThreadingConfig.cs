@@ -6,6 +6,7 @@ namespace Egodystonic.TinyFFR.Threading;
 public sealed class ThreadingConfig {
 	public static readonly TimeSpan DefaultMaxShutdownWaitTime = TimeSpan.FromSeconds(10d);
 	public static readonly TimeSpan MaxMaxShutdownWaitTime = TimeSpan.FromMilliseconds(Int32.MaxValue); // From Thread.Join constraint
+	public static readonly TimeSpan DefaultHostPumpTimeCap = TimeSpan.FromMilliseconds(2d);
 	
 	public int? WorkerThreadCount {
 		get;
@@ -26,4 +27,16 @@ public sealed class ThreadingConfig {
 			field = value;
 		}
 	} = DefaultMaxShutdownWaitTime;
+
+	public bool WakeHostMessageLoopForPrimaryThreadWork { get; init; } = true;
+
+	public TimeSpan HostPumpTimeCap {
+		get;
+		init {
+			if (value <= TimeSpan.Zero) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Host pump time cap must be greater than zero.");
+			}
+			field = value;
+		}
+	} = DefaultHostPumpTimeCap;
 }
