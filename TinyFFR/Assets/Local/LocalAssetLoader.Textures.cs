@@ -27,7 +27,7 @@ unsafe partial class LocalAssetLoader {
 	readonly WorkerJobSyncHelper<LocalAssetLoader, TextureLoadContext, TextureLoadConfig> _textureLoadWorkerSyncHelper;
 	readonly WorkerJobSyncHelper<LocalAssetLoader, CombinedTextureLoadContext, TextureCombinedLoadConfig> _combinedTextureLoadWorkerSyncHelper;
 
-	sealed class TextureCreationMetadata {
+	internal sealed class TextureCreationMetadata {
 		public IntPtr OwnedStbTexelBufferPtr { get; set; } = 0;
 		public IntPtr BorrowedTexelBufferPtr { get; set; } = 0;
 		public PooledHeapMemory<byte>? OwnedTexelData { get; set; } = null;
@@ -217,11 +217,7 @@ unsafe partial class LocalAssetLoader {
 		var processingConfig = creationConfig.ProcessingToApply;
 		var creationMetadata = context.CreationMetadata;
 
-		creationMetadata.GenerateMipMaps = creationConfig.GenerateMipMaps;
-		creationMetadata.AllowsDynamicWrites = creationConfig.AllowsDynamicWrites;
-		creationMetadata.RenderingConfig = creationConfig.RenderingConfig;
-		creationMetadata.CompressionQuality = creationConfig.CompressionQuality;
-		creationMetadata.DataType = creationConfig.DataType;
+		ApplyCreationConfigToMetadata(creationMetadata, in creationConfig);
 
 		if (context.HasBuiltInSource) {
 			LoadBuiltInTextureCore(context, readConfig.ForceWAlphaChannelPresence, in processingConfig);
@@ -238,7 +234,15 @@ unsafe partial class LocalAssetLoader {
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}
 
-	static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
+	internal static void ApplyCreationConfigToMetadata(TextureCreationMetadata data, in TextureCreationConfig config) {
+		data.GenerateMipMaps = config.GenerateMipMaps;
+		data.AllowsDynamicWrites = config.AllowsDynamicWrites;
+		data.RenderingConfig = config.RenderingConfig;
+		data.CompressionQuality = config.CompressionQuality;
+		data.DataType = config.DataType;
+	}
+
+	internal static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
 		var sourceTexelType = data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24;
 		var format = TextureCompressor.GetRecommendedFormat(
 			data.Dimensions,
@@ -373,8 +377,8 @@ unsafe partial class LocalAssetLoader {
 		}
 
 		return data.IsRgba
-			? self._textureBuilder.CreateTextureWithoutProcessing(data.Rgba32Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, data.DataType, name)
-			: self._textureBuilder.CreateTextureWithoutProcessing(data.Rgb24Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, data.DataType, name);
+			? self._textureBuilder.CreateTextureWithoutProcessing(data.Rgba32Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, null, data.DataType, name)
+			: self._textureBuilder.CreateTextureWithoutProcessing(data.Rgb24Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, null, data.DataType, name);
 	}
 	#endregion
 
@@ -753,10 +757,7 @@ unsafe partial class LocalAssetLoader {
 		var sourceCount = config.SourceCount;
 		var data = context.CreationMetadata;
 
-		data.GenerateMipMaps = creationConfig.GenerateMipMaps;
-		data.DataType = creationConfig.DataType;
-		data.AllowsDynamicWrites = creationConfig.AllowsDynamicWrites;
-		data.RenderingConfig = creationConfig.RenderingConfig;
+		ApplyCreationConfigToMetadata(data, in creationConfig);
 
 		var aMetadata = self.ReadTextureMetadata(context.FilePathA);
 		var bMetadata = self.ReadTextureMetadata(context.FilePathB);
@@ -787,6 +788,8 @@ unsafe partial class LocalAssetLoader {
 			CombineSourcesOnWorker(context, in config, aMetadata, bMetadata, cMetadata, dMetadata, destSpan);
 			TextureUtils.ProcessTexture(destSpan, destDimensions, creationConfig.ProcessingToApply);
 		}
+
+		CompressTextureIfRequested(data, context.HeapPool);
 
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}

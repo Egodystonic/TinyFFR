@@ -251,10 +251,6 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
 	
-	public Texture CreateTextureWithoutProcessing<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool generateMipMaps, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, TextureDataType dataType, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
-		return CreateTextureWithoutProcessing(texels, dimensions, generateMipMaps, allowsDynamicWrites, renderingConfig, null, dataType, name);
-	}
-
 	public Texture CreateTextureWithoutProcessing<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool generateMipMaps, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, Quality? compressionQuality, TextureDataType dataTextureType, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();

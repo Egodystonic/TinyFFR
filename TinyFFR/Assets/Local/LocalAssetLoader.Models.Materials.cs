@@ -159,10 +159,10 @@ unsafe partial class LocalAssetLoader {
 
 			metadata.Dimensions = dimensions;
 			metadata.IsRgba = TTexel.BlitType == TexelType.Rgba32;
-			metadata.GenerateMipMaps = config.GenerateMipMaps;
-			metadata.DataType = config.DataType;
-			metadata.AllowsDynamicWrites = config.AllowsDynamicWrites;
-			metadata.RenderingConfig = config.RenderingConfig;
+			ApplyCreationConfigToMetadata(metadata, in config);
+
+			CompressTextureIfRequested(metadata, heapPool);
+
 			_names.Add(AppendName(config.Name));
 			return _count++;
 		}

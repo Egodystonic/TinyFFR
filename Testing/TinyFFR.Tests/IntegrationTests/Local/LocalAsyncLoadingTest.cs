@@ -111,7 +111,7 @@ unsafe class LocalAsyncLoadingTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Async Model Viewer | SPACE = next loaded model | A = cycle anim | S = play/stop anim | L = camera light | ESC = quit");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), cameraRange: CameraPlaneConfiguration.CloseRange);
 		using var cameraController = camera.CreateController<InspectorCameraController>();
-		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true, castsShadows: true, brightness: 0f);
+		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true, brightness: 0f);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
@@ -152,7 +152,10 @@ unsafe class LocalAsyncLoadingTest {
 				CommonTestAssets.FindAsset("models/" + InteractiveTestFiles[i].Filename),
 				new ModelCreationConfig {
 					MeshConfig = new() { LinearRescalingFactor = InteractiveTestFiles[i].ScalingFactor },
-					TextureConfig = new() { DataType = TextureDataType.ColorSrgb, CompressionQuality = Quality.VeryHigh }
+					TextureConfig = new() { 
+						DataType = TextureDataType.ColorSrgb, 
+						CompressionQuality = InteractiveTestFiles[i].Filename.Equals("NodePerformanceTest.glb", StringComparison.Ordinal) ? null : Quality.VeryHigh
+					}
 				},
 				new ModelReadConfig {
 					MeshConfig = new() { CorrectFlippedOrientation = true },
