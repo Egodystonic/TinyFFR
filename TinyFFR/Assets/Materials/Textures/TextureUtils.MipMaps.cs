@@ -1,4 +1,4 @@
-// Created on 2026-08-28 by Ben Bowen
+﻿// Created on 2026-08-28 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -52,13 +52,14 @@ public static partial class TextureUtils {
 		}
 		
 		switch (dataType) {
-			case TextureDataType.Linear:
-				GenerateNextMipLevelSrgb(source, sourceDimensions, destDimensions, destination);
-				return;
-			case TextureDataType.StandardRgb:
+			case TextureDataType.LinearData:
+			case TextureDataType.LinearDataTwoChannelMax:
 				GenerateNextMipLevelLinear(source, sourceDimensions, destDimensions, destination);
 				return;
-			case TextureDataType.LinearUnitVector:
+			case TextureDataType.ColorSrgb:
+				GenerateNextMipLevelSrgb(source, sourceDimensions, destDimensions, destination);
+				return;
+			case TextureDataType.LinearDataUnitVector:
 				GenerateNextMipLevelVector(source, sourceDimensions, destDimensions, destination);
 				return;
 			default:

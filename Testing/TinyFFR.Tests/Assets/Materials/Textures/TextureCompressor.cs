@@ -1,13 +1,49 @@
 // Created on 2026-08-28 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using Egodystonic.TinyFFR.Assets.Materials.Local;
-
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
 class TextureCompressorTest {
 	const int TestDimension = 64;
+	
+	readonly ref struct CompressedTextureData {
+		public ReadOnlySpan<byte> Blocks { get; }
+		public TextureCompressionFormat Format { get; }
+		public XYPair<int> Dimensions { get; }
+		public int MipLevelCount { get; }
+
+		public CompressedTextureData(ReadOnlySpan<byte> blocks, TextureCompressionFormat format, XYPair<int> dimensions, int mipLevelCount) {
+			if (format == TextureCompressionFormat.None) {
+				throw new ArgumentOutOfRangeException(nameof(format), format, "Compressed texture data can not use an uncompressed format.");
+			}
+			if (mipLevelCount < 1) {
+				throw new ArgumentOutOfRangeException(nameof(mipLevelCount), mipLevelCount, "Mip level count must be positive.");
+			}
+
+			Blocks = blocks;
+			Format = format;
+			Dimensions = dimensions;
+			MipLevelCount = mipLevelCount;
+		}
+
+		public void GetLevelExtent(int level, out int offset, out int length) {
+			if (level < 0 || level >= MipLevelCount) {
+				throw new ArgumentOutOfRangeException(nameof(level), level, $"Level must be in range 0 - {MipLevelCount - 1}.");
+			}
+
+			offset = 0;
+			for (var i = 0; i < level; ++i) {
+				offset += TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(Dimensions, i), Format);
+			}
+			length = TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(Dimensions, level), Format);
+		}
+
+		public ReadOnlySpan<byte> GetLevel(int level) {
+			GetLevelExtent(level, out var offset, out var length);
+			return Blocks.Slice(offset, length);
+		}
+	}
 
 	static TexelRgba32[] CreateTestImage() {
 		var result = new TexelRgba32[TestDimension * TestDimension];
@@ -28,10 +64,10 @@ class TextureCompressorTest {
 		var dimensions = new XYPair<int>(TestDimension, TestDimension);
 
 		var compressed = new byte[TextureCompressor.GetCompressedSizeBytes(dimensions, format, includeMipChain: false)];
-		LocalTextureCompressor.CompressWithMipChain<TexelRgba32>(original, dimensions, format, quality, isLinearColorspace: true, levelCount: 1, compressed);
+		TextureCompressor.Compress<TexelRgba32>(original, dimensions, format, quality, TextureDataType.LinearData, includeMipMapGeneration: false, compressed);
 
 		var decoded = new TexelRgba32[original.Length];
-		LocalTextureCompressor.DecompressSingleLevel(compressed, dimensions, format, decoded);
+		TextureCompressor.Decompress<TexelRgba32>(compressed, dimensions, format, decoded);
 
 		return CalculateTexturePeakSnr(original, decoded, includeBlue, includeAlpha);
 	}
@@ -81,13 +117,13 @@ class TextureCompressorTest {
 		var levelCount = TextureUtils.GetMipLevelCount(dimensions);
 		var compressed = new byte[TextureCompressor.GetCompressedSizeBytes(dimensions, Format, includeMipChain: true)];
 
-		LocalTextureCompressor.CompressWithMipChain<TexelRgba32>(original, dimensions, Format, Quality.Standard, isLinearColorspace: true, levelCount, compressed);
+		TextureCompressor.Compress<TexelRgba32>(original, dimensions, Format, Quality.Standard, TextureDataType.LinearData, includeMipMapGeneration: true, compressed);
 
 		var data = new CompressedTextureData(compressed, Format, dimensions, levelCount);
 		for (var level = 0; level < levelCount; ++level) {
 			var levelDimensions = TextureUtils.GetMipLevelDimensions(dimensions, level);
 			var decoded = new TexelRgba32[levelDimensions.Area];
-			LocalTextureCompressor.DecompressSingleLevel(data.GetLevel(level), levelDimensions, Format, decoded);
+			TextureCompressor.Decompress<TexelRgba32>(data.GetLevel(level), levelDimensions, Format, decoded);
 
 			var allZero = true;
 			foreach (var texel in decoded) {
@@ -107,10 +143,10 @@ class TextureCompressorTest {
 			for (var i = 0; i < texels.Length; ++i) texels[i] = new TexelRgba32((byte) (i * 7), (byte) (i * 3), 100, 255);
 
 			var compressed = new byte[TextureCompressor.GetCompressedSizeBytes(dimensions, TextureCompressionFormat.Bc7Linear, includeMipChain: false)];
-			Assert.DoesNotThrow(() => LocalTextureCompressor.CompressWithMipChain<TexelRgba32>(texels, dimensions, TextureCompressionFormat.Bc7Linear, Quality.Standard, true, 1, compressed));
+			Assert.DoesNotThrow(() => TextureCompressor.Compress<TexelRgba32>(texels, dimensions, TextureCompressionFormat.Bc7Linear, Quality.Standard, TextureDataType.LinearData, false, compressed));
 
 			var decoded = new TexelRgba32[dimensions.Area];
-			Assert.DoesNotThrow(() => LocalTextureCompressor.DecompressSingleLevel(compressed, dimensions, TextureCompressionFormat.Bc7Linear, decoded));
+			Assert.DoesNotThrow(() => TextureCompressor.Decompress<TexelRgba32>(compressed, dimensions, TextureCompressionFormat.Bc7Linear, decoded));
 		}
 	}
 
@@ -121,10 +157,10 @@ class TextureCompressorTest {
 		for (var i = 0; i < texels.Length; ++i) texels[i] = new TexelRgb24((byte) (i % 256), (byte) ((i * 3) % 256), 90);
 
 		var compressed = new byte[TextureCompressor.GetCompressedSizeBytes(dimensions, TextureCompressionFormat.Bc7Linear, includeMipChain: false)];
-		Assert.DoesNotThrow(() => LocalTextureCompressor.CompressWithMipChain<TexelRgb24>(texels, dimensions, TextureCompressionFormat.Bc7Linear, Quality.Standard, true, 1, compressed));
+		Assert.DoesNotThrow(() => TextureCompressor.Compress<TexelRgb24>(texels, dimensions, TextureCompressionFormat.Bc7Linear, Quality.Standard, TextureDataType.LinearData, false, compressed));
 
-		var decoded = new TexelRgba32[dimensions.Area];
-		LocalTextureCompressor.DecompressSingleLevel(compressed, dimensions, TextureCompressionFormat.Bc7Linear, decoded);
+		var decoded = new TexelRgb24[dimensions.Area];
+		TextureCompressor.Decompress<TexelRgb24>(compressed, dimensions, TextureCompressionFormat.Bc7Linear, decoded);
 
 		var sumSquaredError = 0d;
 		for (var i = 0; i < texels.Length; ++i) {
@@ -136,7 +172,17 @@ class TextureCompressorTest {
 		var psnr = meanSquaredError <= 0d ? Double.PositiveInfinity : 10d * Math.Log10(255d * 255d / meanSquaredError);
 		Assert.IsTrue(psnr > 30d, $"RGB24 source round trip PSNR was only {psnr:N2} dB.");
 	}
-	
+
+	[Test]
+	public void ShouldRejectUncompressedFormatWhenCompressingOrDecompressing() {
+		var dimensions = new XYPair<int>(4, 4);
+		var texels = new TexelRgba32[dimensions.Area];
+		var buffer = new byte[64];
+
+		Assert.Throws<ArgumentOutOfRangeException>(() => TextureCompressor.Compress<TexelRgba32>(texels, dimensions, TextureCompressionFormat.None, Quality.Standard, TextureDataType.LinearData, false, buffer));
+		Assert.Throws<ArgumentOutOfRangeException>(() => TextureCompressor.Decompress<TexelRgba32>(buffer, dimensions, TextureCompressionFormat.None, texels));
+	}
+
 	[Test]
 	public void ShouldCorrectlyCalculateMipLevelCounts() {
 		Assert.AreEqual(1, TextureUtils.GetMipLevelCount(new(1, 1)));
@@ -178,14 +224,17 @@ class TextureCompressorTest {
 		Assert.AreEqual(6, TextureCompressor.GetBlockCount(new(9, 7)));
 		Assert.AreEqual(64 * 64, TextureCompressor.GetBlockCount(new(256, 256)));
 
-		Assert.AreEqual(8, TextureCompressor.GetBlockSizeBytes(TextureCompressionFormat.Bc1Srgb));
-		Assert.AreEqual(16, TextureCompressor.GetBlockSizeBytes(TextureCompressionFormat.Bc3Srgb));
-		Assert.AreEqual(16, TextureCompressor.GetBlockSizeBytes(TextureCompressionFormat.Bc5));
-		Assert.AreEqual(16, TextureCompressor.GetBlockSizeBytes(TextureCompressionFormat.Bc7Srgb));
-		Assert.AreEqual(16, TextureCompressor.GetBlockSizeBytes(TextureCompressionFormat.Bc7Linear));
+		Assert.Throws<ArgumentOutOfRangeException>(() => TextureCompressor.GetBlockCount(new(0, 4)));
+		Assert.Throws<ArgumentOutOfRangeException>(() => TextureCompressor.GetBlockCount(new(4, -1)));
 
-		Assert.AreEqual(64 * 64 * 16, TextureCompressor.GetLevelSizeBytes(new(256, 256), TextureCompressionFormat.Bc7Srgb));
-		Assert.AreEqual(64 * 64 * 8, TextureCompressor.GetLevelSizeBytes(new(256, 256), TextureCompressionFormat.Bc1Srgb));
+		Assert.AreEqual(8, TextureCompressor.GetFormatBlockSizeBytes(TextureCompressionFormat.Bc1Srgb));
+		Assert.AreEqual(16, TextureCompressor.GetFormatBlockSizeBytes(TextureCompressionFormat.Bc3Srgb));
+		Assert.AreEqual(16, TextureCompressor.GetFormatBlockSizeBytes(TextureCompressionFormat.Bc5));
+		Assert.AreEqual(16, TextureCompressor.GetFormatBlockSizeBytes(TextureCompressionFormat.Bc7Srgb));
+		Assert.AreEqual(16, TextureCompressor.GetFormatBlockSizeBytes(TextureCompressionFormat.Bc7Linear));
+
+		Assert.AreEqual(64 * 64 * 16, TextureCompressor.GetMipLevelSizeBytes(new(256, 256), TextureCompressionFormat.Bc7Srgb));
+		Assert.AreEqual(64 * 64 * 8, TextureCompressor.GetMipLevelSizeBytes(new(256, 256), TextureCompressionFormat.Bc1Srgb));
 	}
 
 	[Test]
@@ -194,7 +243,7 @@ class TextureCompressorTest {
 
 		var expected = 0;
 		for (var level = 0; level < TextureUtils.GetMipLevelCount(new(256, 256)); ++level) {
-			expected += TextureCompressor.GetLevelSizeBytes(TextureUtils.GetMipLevelDimensions(new(256, 256), level), TextureCompressionFormat.Bc7Srgb);
+			expected += TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(new(256, 256), level), TextureCompressionFormat.Bc7Srgb);
 		}
 		Assert.AreEqual(expected, TextureCompressor.GetCompressedSizeBytes(new(256, 256), TextureCompressionFormat.Bc7Srgb, includeMipChain: true));
 
@@ -218,7 +267,7 @@ class TextureCompressorTest {
 		for (var level = 0; level < levelCount; ++level) {
 			data.GetLevelExtent(level, out var offset, out var length);
 			Assert.AreEqual(runningOffset, offset);
-			Assert.AreEqual(TextureCompressor.GetLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, level), Format), length);
+			Assert.AreEqual(TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, level), Format), length);
 			Assert.AreEqual(length, data.GetLevel(level).Length);
 			runningOffset += length;
 		}
@@ -233,7 +282,7 @@ class TextureCompressorTest {
 		Array.Fill(source, new TexelRgba32(MidGrey, MidGrey, MidGrey, 200));
 		var destination = new TexelRgba32[2 * 2];
 
-		TextureUtils.GenerateNextMipLevel(source, new(4, 4), destination, TextureMipMapGenerationType.Srgb);
+		TextureUtils.GenerateNextMipLevel(source, new(4, 4), destination, TextureDataType.ColorSrgb);
 
 		foreach (var texel in destination) {
 			Assert.AreEqual(MidGrey, texel.R, 1d);
@@ -252,16 +301,31 @@ class TextureCompressorTest {
 		source[3] = new TexelRgba32(255, 255, 255, 255);
 		var destination = new TexelRgba32[1];
 
-		TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, TextureMipMapGenerationType.Srgb);
+		TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, TextureDataType.ColorSrgb);
 
 		var expectedSrgb = ColorVect.LinearToSrgb(0.5f) * 255f;
 		Assert.AreEqual(expectedSrgb, destination[0].R, 1.5d);
 		Assert.IsTrue(destination[0].R > 180, $"Expected sRGB-correct average well above the naive 128, but was {destination[0].R}.");
 
 		Assert.AreEqual(128, destination[0].A, 1d);
+	}
 
-		TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, TextureMipMapGenerationType.Linear);
-		Assert.AreEqual(128, destination[0].R, 1d);
+	[Test]
+	public void ShouldDispatchMipMapFilteringAccordingToDataType() {
+		var source = new TexelRgba32[2 * 2];
+		source[0] = new TexelRgba32(0, 0, 0, 0);
+		source[1] = new TexelRgba32(255, 255, 255, 255);
+		source[2] = new TexelRgba32(0, 0, 0, 0);
+		source[3] = new TexelRgba32(255, 255, 255, 255);
+		var destination = new TexelRgba32[1];
+
+		foreach (var linearDataType in new[] { TextureDataType.LinearData, TextureDataType.LinearDataTwoChannelMax }) {
+			TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, linearDataType);
+			Assert.AreEqual(128, destination[0].R, 1d, $"{linearDataType} must average arithmetically, not through the sRGB transfer function.");
+		}
+
+		TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, TextureDataType.ColorSrgb);
+		Assert.IsTrue(destination[0].R > 180, "StandardRgb must decode to linear before averaging, otherwise mip levels darken.");
 	}
 
 	[Test]
@@ -282,7 +346,7 @@ class TextureCompressorTest {
 		source[3] = Encode(0f, -0.6f, 0.8f);
 		var destination = new TexelRgba32[1];
 
-		TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, TextureMipMapGenerationType.Vector);
+		TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, TextureDataType.LinearDataUnitVector);
 
 		var x = destination[0].R / 255f * 2f - 1f;
 		var y = destination[0].G / 255f * 2f - 1f;
@@ -296,53 +360,62 @@ class TextureCompressorTest {
 	}
 
 	[Test]
+	public void ShouldNotRenormalizeTwoChannelDataWhenGeneratingMipLevels() {
+		var source = new TexelRgba32[2 * 2];
+		source[0] = new TexelRgba32(100, 200, 0, 255);
+		source[1] = new TexelRgba32(100, 200, 0, 255);
+		source[2] = new TexelRgba32(100, 200, 0, 255);
+		source[3] = new TexelRgba32(100, 200, 0, 255);
+		var destination = new TexelRgba32[1];
+
+		TextureUtils.GenerateNextMipLevel(source, new(2, 2), destination, TextureDataType.LinearDataTwoChannelMax);
+
+		Assert.AreEqual(100, destination[0].R, 1d, "Two-channel data must be averaged as scalars; renormalising it corrupts clear coat maps.");
+		Assert.AreEqual(200, destination[0].G, 1d);
+	}
+
+	[Test]
 	public void ShouldClampToEdgeWhenGeneratingMipLevelsForOddDimensions() {
 		var source = new TexelRgba32[3 * 3];
 		for (var i = 0; i < source.Length; ++i) source[i] = new TexelRgba32((byte) (i * 10), 0, 0, 255);
 		var destination = new TexelRgba32[1];
 
-		Assert.DoesNotThrow(() => TextureUtils.GenerateNextMipLevel(source, new(3, 3), destination, TextureMipMapGenerationType.Linear));
+		Assert.DoesNotThrow(() => TextureUtils.GenerateNextMipLevel(source, new(3, 3), destination, TextureDataType.LinearData));
+	}
+
+	static TextureCompressionFormat RecommendIgnoringSupport(TexelType texelType, TextureDataType dataType, Quality quality) {
+		return TextureCompressor.GetRecommendedFormat(
+			new XYPair<int>(256, 256),
+			texelType,
+			dataType,
+			quality,
+			textureAllowsDynamicWrites: false,
+			includesMipMapGeneration: true,
+			includeUnsupportedFormats: true
+		);
 	}
 
 	[Test]
 	public void ShouldSelectAppropriateCompressionFormatsPerTextureSemantic() {
-		Assert.AreEqual(
-			TextureCompressionFormat.Bc1Srgb,
-			TextureCompressor.GetRecommendedFormat(TexelType.Rgb24, isLinearColorspace: false, TextureDataType.Other, Quality.VeryLow)
-		);
-		Assert.AreEqual(
-			TextureCompressionFormat.Bc3Srgb,
-			TextureCompressor.GetRecommendedFormat(TexelType.Rgba32, isLinearColorspace: false, TextureDataType.Other, Quality.VeryLow)
-		);
+		Assert.AreEqual(TextureCompressionFormat.Bc1Srgb, RecommendIgnoringSupport(TexelType.Rgb24, TextureDataType.ColorSrgb, Quality.VeryLow));
+		Assert.AreEqual(TextureCompressionFormat.Bc3Srgb, RecommendIgnoringSupport(TexelType.Rgba32, TextureDataType.ColorSrgb, Quality.VeryLow));
 
 		foreach (var quality in new[] { Quality.Low, Quality.Standard, Quality.High, Quality.VeryHigh }) {
-			Assert.AreEqual(
-				TextureCompressionFormat.Bc7Srgb,
-				TextureCompressor.GetRecommendedFormat(TexelType.Rgb24, isLinearColorspace: false, TextureDataType.Other, quality)
-			);
-			Assert.AreEqual(
-				TextureCompressionFormat.Bc7Srgb,
-				TextureCompressor.GetRecommendedFormat(TexelType.Rgba32, isLinearColorspace: false, TextureDataType.Other, quality)
-			);
+			Assert.AreEqual(TextureCompressionFormat.Bc7Srgb, RecommendIgnoringSupport(TexelType.Rgb24, TextureDataType.ColorSrgb, quality));
+			Assert.AreEqual(TextureCompressionFormat.Bc7Srgb, RecommendIgnoringSupport(TexelType.Rgba32, TextureDataType.ColorSrgb, quality));
 		}
 
-		foreach (var quality in new[] { Quality.VeryLow, Quality.Low, Quality.Standard, Quality.High, Quality.VeryHigh }) {
-			Assert.AreEqual(
-				TextureCompressionFormat.Bc7Linear,
-				TextureCompressor.GetRecommendedFormat(TexelType.Rgb24, isLinearColorspace: true, TextureDataType.Other, quality)
-			);
-			Assert.AreEqual(
-				TextureCompressionFormat.Bc5,
-				TextureCompressor.GetRecommendedFormat(TexelType.Rgb24, isLinearColorspace: true, TextureDataType.LinearUnitVector, quality)
-			);
+		foreach (var quality in Enum.GetValues<Quality>()) {
+			Assert.AreEqual(TextureCompressionFormat.Bc7Linear, RecommendIgnoringSupport(TexelType.Rgb24, TextureDataType.LinearData, quality));
+			Assert.AreEqual(TextureCompressionFormat.Bc5, RecommendIgnoringSupport(TexelType.Rgb24, TextureDataType.LinearDataUnitVector, quality));
+			Assert.AreEqual(TextureCompressionFormat.Bc5, RecommendIgnoringSupport(TexelType.Rgb24, TextureDataType.LinearDataTwoChannelMax, quality));
 		}
 	}
 
 	[Test]
 	public void ShouldNeverSelectBc1ForTexturesCarryingAlpha() {
 		foreach (var quality in Enum.GetValues<Quality>()) {
-			var format = TextureCompressor.GetRecommendedFormat(TexelType.Rgba32, isLinearColorspace: false, TextureDataType.Other, quality);
-			Assert.AreNotEqual(TextureCompressionFormat.Bc1Srgb, format);
+			Assert.AreNotEqual(TextureCompressionFormat.Bc1Srgb, RecommendIgnoringSupport(TexelType.Rgba32, TextureDataType.ColorSrgb, quality));
 		}
 	}
 
@@ -350,8 +423,9 @@ class TextureCompressorTest {
 	public void ShouldNeverSelectS3tcFormatsForLinearDataTextures() {
 		foreach (var quality in Enum.GetValues<Quality>()) {
 			foreach (var dataType in Enum.GetValues<TextureDataType>()) {
+				if (dataType == TextureDataType.ColorSrgb) continue;
 				foreach (var texelType in new[] { TexelType.Rgb24, TexelType.Rgba32 }) {
-					var format = TextureCompressor.GetRecommendedFormat(texelType, isLinearColorspace: true, dataType, quality);
+					var format = RecommendIgnoringSupport(texelType, dataType, quality);
 					Assert.AreNotEqual(TextureCompressionFormat.Bc1Srgb, format);
 					Assert.AreNotEqual(TextureCompressionFormat.Bc3Srgb, format);
 				}
@@ -360,71 +434,32 @@ class TextureCompressorTest {
 	}
 
 	[Test]
-	public void ShouldFallBackWhenBackendDoesNotSupportDesiredFormat() {
-		const TextureCompressionSupport NoBptc = TextureCompressionSupport.Bc1Srgb | TextureCompressionSupport.Bc3Srgb | TextureCompressionSupport.Bc5;
-
-		Assert.AreEqual(
-			TextureCompressionFormat.Bc1Srgb,
-			TextureCompressor.ApplySupportFallback(TextureCompressionFormat.Bc7Srgb, TexelType.Rgb24, NoBptc)
-		);
-		Assert.AreEqual(
-			TextureCompressionFormat.Bc3Srgb,
-			TextureCompressor.ApplySupportFallback(TextureCompressionFormat.Bc7Srgb, TexelType.Rgba32, NoBptc)
-		);
-		Assert.AreEqual(
-			TextureCompressionFormat.Bc5,
-			TextureCompressor.ApplySupportFallback(TextureCompressionFormat.Bc5, TexelType.Rgb24, NoBptc)
-		);
-
-		Assert.AreEqual(
-			TextureCompressionFormat.Bc7Linear,
-			TextureCompressor.ApplySupportFallback(TextureCompressionFormat.Bc5, TexelType.Rgb24, TextureCompressionSupport.Bc7Linear)
-		);
-		Assert.AreEqual(
-			TextureCompressionFormat.None,
-			TextureCompressor.ApplySupportFallback(TextureCompressionFormat.Bc7Srgb, TexelType.Rgb24, TextureCompressionSupport.None)
-		);
-		Assert.AreEqual(
-			TextureCompressionFormat.None,
-			TextureCompressor.ApplySupportFallback(TextureCompressionFormat.Bc5, TexelType.Rgb24, TextureCompressionSupport.None)
-		);
-	}
-
-	[Test]
-	public void ShouldNotCompressWhenCompressionWouldNotReduceSize() {
-		Assert.AreEqual(
-			TextureCompressionFormat.None,
-			TextureCompressor.SelectFormatWithFallback(TexelType.Rgba32, false, TextureDataType.Other, Quality.Standard, false, new(1, 1), false, TextureCompressionSupport.All)
-		);
-		Assert.AreEqual(
-			TextureCompressionFormat.None,
-			TextureCompressor.SelectFormatWithFallback(TexelType.Rgba32, false, TextureDataType.Other, Quality.Standard, false, new(2, 2), false, TextureCompressionSupport.All)
-		);
-
-		Assert.AreEqual(
-			TextureCompressionFormat.Bc7Srgb,
-			TextureCompressor.SelectFormatWithFallback(TexelType.Rgba32, false, TextureDataType.Other, Quality.Standard, false, new(256, 256), true, TextureCompressionSupport.All)
-		);
+	public void ShouldReportUncompressedFormatAsAlwaysSupported() {
+		Assert.IsTrue(TextureCompressor.FormatIsSupported(TextureCompressionFormat.None));
+		Assert.Throws<ArgumentOutOfRangeException>(() => TextureCompressor.FormatIsSupported((TextureCompressionFormat) 99));
 	}
 
 	[Test]
 	public void ShouldNotCompressWhenDisabledOrDynamicallyWritable() {
 		Assert.AreEqual(
 			TextureCompressionFormat.None,
-			TextureCompressor.SelectFormatWithFallback(TexelType.Rgba32, false, TextureDataType.Other, null, false, new(256, 256), true, TextureCompressionSupport.All)
+			TextureCompressor.GetRecommendedFormat(new(256, 256), TexelType.Rgba32, TextureDataType.ColorSrgb, null, false, true, includeUnsupportedFormats: true)
 		);
 		Assert.AreEqual(
 			TextureCompressionFormat.None,
-			TextureCompressor.SelectFormatWithFallback(TexelType.Rgba32, false, TextureDataType.Other, Quality.Standard, true, new(256, 256), true, TextureCompressionSupport.All)
+			TextureCompressor.GetRecommendedFormat(new(256, 256), TexelType.Rgba32, TextureDataType.ColorSrgb, Quality.Standard, true, true, includeUnsupportedFormats: true)
 		);
 	}
 
 	[Test]
 	public void ShouldMapQualityLevelsOntoMonotonicEffortLevels() {
-		var previous = -1;
+		var previous = Int32.MinValue;
 		foreach (var quality in new[] { Quality.VeryLow, Quality.Low, Quality.Standard, Quality.High, Quality.VeryHigh }) {
-			var effort = TextureCompressor.GetEffortLevel(quality);
-			Assert.IsTrue(effort >= TextureCompressor.MinEffortLevel && effort <= TextureCompressor.MaxEffortLevel);
+			var effort = TextureCompressor.ConvertCompressionQualityToEffortInteger(quality);
+			Assert.IsTrue(
+				effort >= TextureCompressor.MinEffortLevel && effort <= TextureCompressor.MaxEffortLevel,
+				$"Effort for {quality} ({effort}) fell outside the range the native encoder accepts."
+			);
 			Assert.IsTrue(effort >= previous, $"Effort for {quality} ({effort}) regressed below the previous level ({previous}).");
 			previous = effort;
 		}

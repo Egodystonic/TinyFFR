@@ -1,4 +1,4 @@
-// Created on 2026-08-11 by Ben Bowen
+﻿// Created on 2026-08-11 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -87,7 +87,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 			stackalloc TexelRgba32[] { new TexelRgba32(255, 255, 255, 255) },
 			new TextureGenerationConfig { Dimensions = new(1, 1) },
 			new TextureCreationConfig {
-				IsLinearColorspace = true,
+				DataType = TextureDataType.LinearData,
 				GenerateMipMaps = false,
 				Name = "ImGui Parking Texture"
 			}
@@ -297,7 +297,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 			texels,
 			new TextureGenerationConfig { Dimensions = new(texData.Width, texData.Height) },
 			new TextureCreationConfig {
-				IsLinearColorspace = true,
+				DataType = TextureDataType.LinearData,
 				GenerateMipMaps = false,
 				AllowsDynamicWrites = true,
 				RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),

@@ -26,11 +26,11 @@ public partial interface IAssetLoader {
 	IBuiltInTexturePathLibrary BuiltInTexturePaths { get; }
 
 	#region Load / Read Texture
-	Texture LoadTexture(ReadOnlySpan<char> filePath, bool isLinearColorspace, ReadOnlySpan<char> name = default) {
+	Texture LoadTexture(ReadOnlySpan<char> filePath, TextureDataType dataType, ReadOnlySpan<char> name = default) {
 		return LoadTexture(
 			filePath, 
 			new TextureCreationConfig {
-				IsLinearColorspace = isLinearColorspace,
+				DataType = dataType,
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
 			}
 		);
@@ -38,11 +38,11 @@ public partial interface IAssetLoader {
 	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTexture(filePath, in config, new TextureReadConfig());
 	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig);
 	
-	TinyFfrAsyncOperation<Texture> LoadTextureAsync(ReadOnlySpan<char> filePath, bool isLinearColorspace, ReadOnlySpan<char> name = default) {
+	TinyFfrAsyncOperation<Texture> LoadTextureAsync(ReadOnlySpan<char> filePath, TextureDataType dataType, ReadOnlySpan<char> name = default) {
 		return LoadTextureAsync(
 			filePath, 
 			new TextureCreationConfig {
-				IsLinearColorspace = isLinearColorspace,
+				DataType = dataType,
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
 			}
 		);

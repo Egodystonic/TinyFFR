@@ -22,12 +22,12 @@ public unsafe interface ITextureBuilder {
 	protected Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 	protected PreallocatedBuffer<TTexel> PreallocateBuffer<TTexel>(int texelCount) where TTexel : unmanaged, ITexel<TTexel>;
 
-	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool isLinearColorspace, bool? generateMipMaps = null, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
+	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, TextureDataType dataType, bool? generateMipMaps = null, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
 		return CreateTexture(
 			texels,
 			new TextureGenerationConfig {Dimensions = dimensions},
 			new TextureCreationConfig {
-				IsLinearColorspace = isLinearColorspace,
+				DataType = dataType,
 				GenerateMipMaps = generateMipMaps ?? dimensions.Area > 1,
 				Name = name,
 				ProcessingToApply = TextureProcessingConfig.None
@@ -38,11 +38,11 @@ public unsafe interface ITextureBuilder {
 	#endregion
 
 	#region Generic Patterns
-	Texture CreateTexture<TTexel>(in TexturePattern<TTexel> pattern, bool isLinearColorspace, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
+	Texture CreateTexture<TTexel>(in TexturePattern<TTexel> pattern, TextureDataType dataType, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
 		return CreateTexture(
 			pattern,
 			new TextureCreationConfig {
-				IsLinearColorspace = isLinearColorspace,
+				DataType = dataType,
 				GenerateMipMaps = pattern.Dimensions.Area != 1,
 				Name = name,
 				ProcessingToApply = TextureProcessingConfig.None
@@ -55,11 +55,11 @@ public unsafe interface ITextureBuilder {
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = pattern.Dimensions }, in config);
 	}
 
-	Texture CreateTexture<TTexel>(TTexel plainFill, bool isLinearColorspace, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
+	Texture CreateTexture<TTexel>(TTexel plainFill, TextureDataType dataType, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
 		return CreateTexture(
 			new ReadOnlySpan<TTexel>(in plainFill),
 			XYPair<int>.One,
-			isLinearColorspace,
+			dataType,
 			generateMipMaps: false,
 			name
 		);
@@ -161,7 +161,7 @@ public unsafe interface ITextureBuilder {
 	}
 
 	static TextureCreationConfig GetNormalMapCreationConfig(XYPair<int> dimensions, ReadOnlySpan<char> name = default) {
-		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, name) with {
+		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, name) with {
 			GenerateMipMaps = dimensions.Area != 1
 		};
 	}
@@ -193,7 +193,7 @@ public unsafe interface ITextureBuilder {
 	static TexelRgba32 CreateOcclusionRoughnessMetallicReflectanceTexel(Real occlusion, Real roughness, Real metallic, Real reflectance) => TexelRgba32.FromNormalizedFloats(occlusion, roughness, metallic, reflectance);
 
 	static TextureCreationConfig GetOcclusionRoughnessMetallicMapCreationConfig(XYPair<int> dimensions, ReadOnlySpan<char> name = default) {
-		return TextureCreationConfig.ForDataTexture(name) with {
+		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name) with {
 			GenerateMipMaps = dimensions.Area != 1
 		};
 	}
@@ -202,7 +202,7 @@ public unsafe interface ITextureBuilder {
 	}
 
 	static TextureCreationConfig GetOcclusionRoughnessMetallicReflectanceMapCreationConfig(XYPair<int> dimensions, ReadOnlySpan<char> name = default) {
-		return TextureCreationConfig.ForDataTexture(name) with {
+		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name) with {
 			GenerateMipMaps = dimensions.Area != 1
 		};
 	}
@@ -361,7 +361,7 @@ public unsafe interface ITextureBuilder {
 	}
 
 	static TextureCreationConfig GetAnisotropyMapCreationConfig(XYPair<int> dimensions, ReadOnlySpan<char> name = default) {
-		return TextureCreationConfig.ForDataTexture(name) with {
+		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name) with {
 			GenerateMipMaps = dimensions.Area != 1
 		};
 	}
@@ -401,7 +401,7 @@ public unsafe interface ITextureBuilder {
 	static TexelRgb24 CreateClearCoatTexel(Real thickness, Real roughness) => TexelRgb24.FromNormalizedFloats(thickness, roughness, Real.Zero);
 
 	static TextureCreationConfig GetClearCoatMapCreationConfig(XYPair<int> dimensions, ReadOnlySpan<char> name = default) {
-		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, name) with {
+		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, name) with {
 			GenerateMipMaps = dimensions.Area != 1
 		};
 	}

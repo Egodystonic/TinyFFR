@@ -401,7 +401,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 						Dimensions = new(ctx.AtlasDimension, ctx.AtlasDimension)
 					},
 					new TextureCreationConfig {
-						IsLinearColorspace = true,
+						DataType = TextureDataType.LinearData,
 						GenerateMipMaps = false,
 						RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),
 						Name = ctx.Name

@@ -1,4 +1,4 @@
-// Created on 2026-08-28 by Ben Bowen
+﻿// Created on 2026-08-28 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -17,50 +17,8 @@ public enum TextureCompressionFormat {
 	Bc7Linear = 5
 }
 
-public readonly ref struct CompressedTextureData {
-	public ReadOnlySpan<byte> Blocks { get; }
-	public TextureCompressionFormat Format { get; }
-	public XYPair<int> Dimensions { get; }
-	public int MipLevelCount { get; }
-
-	public CompressedTextureData(ReadOnlySpan<byte> blocks, TextureCompressionFormat format, XYPair<int> dimensions, int mipLevelCount) {
-		if (format == TextureCompressionFormat.None) {
-			throw new ArgumentOutOfRangeException(nameof(format), format, "Compressed texture data can not use an uncompressed format.");
-		}
-		if (mipLevelCount < 1) {
-			throw new ArgumentOutOfRangeException(nameof(mipLevelCount), mipLevelCount, "Mip level count must be positive.");
-		}
-
-		Blocks = blocks;
-		Format = format;
-		Dimensions = dimensions;
-		MipLevelCount = mipLevelCount;
-	}
-
-	public void GetLevelExtent(int level, out int offset, out int length) {
-		if (level < 0 || level >= MipLevelCount) {
-			throw new ArgumentOutOfRangeException(nameof(level), level, $"Level must be in range 0 - {MipLevelCount - 1}.");
-		}
-
-		offset = 0;
-		for (var i = 0; i < level; ++i) {
-			offset += TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(Dimensions, i), Format);
-		}
-		length = TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(Dimensions, level), Format);
-	}
-
-	public ReadOnlySpan<byte> GetLevel(int level) {
-		GetLevelExtent(level, out var offset, out var length);
-		return Blocks.Slice(offset, length);
-	}
-}
-
-
 public static unsafe class TextureCompressor {
-	public const int BlockDimension = 4;
-	public const int MinEffortLevel = 0;
-	public const int MaxEffortLevel = 5;
-	
+	#region Format Selection
 	static readonly TextureCompressionFormat[] _allCompressionFormatEnumValues = Enum.GetValues<TextureCompressionFormat>();
 	static readonly HeapPool _compressionPool = new();
 	static uint _supportFlags = 0;
@@ -76,50 +34,10 @@ public static unsafe class TextureCompressor {
 		_supportFlags = result;
 	}
 	
-	#region Metrics
-	static int GetFormatBlockSizeBytes(TextureCompressionFormat format) => format switch {
-		TextureCompressionFormat.None => 0,
-		TextureCompressionFormat.Bc1Srgb => 8,
-		TextureCompressionFormat.Bc3Srgb => 16,
-		TextureCompressionFormat.Bc5 => 16,
-		TextureCompressionFormat.Bc7Srgb => 16,
-		TextureCompressionFormat.Bc7Linear => 16,
-		_ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown compression format.")
-	};
-
-	static int GetBlockCount(XYPair<int> dimensions) {
-		var blocksWide = (dimensions.X + BlockDimension - 1) / BlockDimension;
-		var blocksHigh = (dimensions.Y + BlockDimension - 1) / BlockDimension;
-		return blocksWide * blocksHigh;
-	}
-	
-	internal static int GetMipLevelSizeBytes(XYPair<int> dimensions, TextureCompressionFormat format) => GetBlockCount(dimensions) * GetFormatBlockSizeBytes(format);
-
-	static int GetNonCompressedSizeBytes(XYPair<int> dimensions, int texelSizeBytes, bool includeMipChain) {
-		var levelCount = includeMipChain ? TextureUtils.GetMipLevelCount(dimensions) : 1;
-		var result = 0;
-		for (var i = 0; i < levelCount; ++i) {
-			result += TextureUtils.GetMipLevelDimensions(dimensions, i).Area * texelSizeBytes;
-		}
-		return result;
-	}
-	
-	public static int GetCompressedSizeBytes(XYPair<int> dimensions, TextureCompressionFormat format, bool includeMipChain) {
-		if (format == TextureCompressionFormat.None) {
-			throw new ArgumentOutOfRangeException(nameof(format), format, "Can not calculate compressed size for an uncompressed format.");
-		}
-		var numMipLevels = includeMipChain ? TextureUtils.GetMipLevelCount(dimensions) : 1;
-		var result = 0;
-		for (var i = 0; i < numMipLevels; ++i) {
-			result += GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, i), format);
-		}
-		return result;
-	}
-	#endregion
-	
-	#region Format Selection
 	public static bool FormatIsSupported(TextureCompressionFormat format) {
-		var flag = 1U << (((int) format) -1);
+		if (format == TextureCompressionFormat.None) return true;
+		if (!Enum.IsDefined(format)) throw new ArgumentOutOfRangeException(nameof(format), format, null);
+		var flag = 1U << (((int) format) - 1);
 		return (flag & _supportFlags) == flag;
 	}
 	
@@ -127,11 +45,13 @@ public static unsafe class TextureCompressor {
 		if (textureAllowsDynamicWrites || compressionQuality is not { } cq) return TextureCompressionFormat.None;
 		
 		var result = (dataTextureType: dataType, cq, sourceTexelType: texelType) switch {
-			(TextureDataType.LinearUnitVector, _, _) => TextureCompressionFormat.Bc5,
-			(TextureDataType.Linear, _, _) => TextureCompressionFormat.Bc7Linear,
-			(_, Quality.VeryLow, TexelType.Rgb24) => TextureCompressionFormat.Bc1Srgb,
-			(_, Quality.VeryLow, _) => TextureCompressionFormat.Bc3Srgb,
-			_ => TextureCompressionFormat.Bc7Srgb
+			(TextureDataType.LinearDataUnitVector, _, _) => TextureCompressionFormat.Bc5,
+			(TextureDataType.LinearDataTwoChannelMax, _, _) => TextureCompressionFormat.Bc5,
+			(TextureDataType.LinearData, _, _) => TextureCompressionFormat.Bc7Linear,
+			(TextureDataType.ColorSrgb, Quality.VeryLow, TexelType.Rgb24) => TextureCompressionFormat.Bc1Srgb,
+			(TextureDataType.ColorSrgb, Quality.VeryLow, _) => TextureCompressionFormat.Bc3Srgb,
+			(TextureDataType.ColorSrgb, _, _) => TextureCompressionFormat.Bc7Srgb,
+			_ => throw new ArgumentOutOfRangeException(nameof(dataType), dataType, null)
 		};
 		
 		if (!includeUnsupportedFormats && !FormatIsSupported(result)) {
@@ -156,13 +76,61 @@ public static unsafe class TextureCompressor {
 		return compressedSize < uncompressedSize ? result : TextureCompressionFormat.None;
 	}
 	#endregion
+	
+	#region Metrics
+	public const int BlockDimension = 4;
+	public const int MinEffortLevel = 1;
+	public const int MaxEffortLevel = 5;
+	
+	internal static int GetFormatBlockSizeBytes(TextureCompressionFormat format) => format switch {
+		TextureCompressionFormat.None => 0,
+		TextureCompressionFormat.Bc1Srgb => 8,
+		TextureCompressionFormat.Bc3Srgb => 16,
+		TextureCompressionFormat.Bc5 => 16,
+		TextureCompressionFormat.Bc7Srgb => 16,
+		TextureCompressionFormat.Bc7Linear => 16,
+		_ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown compression format.")
+	};
+
+	internal static int GetBlockCount(XYPair<int> dimensions) {
+		if (dimensions.X < 1 || dimensions.Y < 1) {
+			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, "Dimensions X and Y must both be positive.");
+		}
+		var blocksWide = (dimensions.X + BlockDimension - 1) / BlockDimension;
+		var blocksHigh = (dimensions.Y + BlockDimension - 1) / BlockDimension;
+		return blocksWide * blocksHigh;
+	}
+	
+	internal static int GetMipLevelSizeBytes(XYPair<int> dimensions, TextureCompressionFormat format) => GetBlockCount(dimensions) * GetFormatBlockSizeBytes(format);
+
+	internal static int GetNonCompressedSizeBytes(XYPair<int> dimensions, int texelSizeBytes, bool includeMipChain) {
+		var levelCount = includeMipChain ? TextureUtils.GetMipLevelCount(dimensions) : 1;
+		var result = 0;
+		for (var i = 0; i < levelCount; ++i) {
+			result += TextureUtils.GetMipLevelDimensions(dimensions, i).Area * texelSizeBytes;
+		}
+		return result;
+	}
+	
+	public static int GetCompressedSizeBytes(XYPair<int> dimensions, TextureCompressionFormat format, bool includeMipChain) {
+		if (format == TextureCompressionFormat.None) {
+			throw new ArgumentOutOfRangeException(nameof(format), format, "Can not calculate compressed size for an uncompressed format.");
+		}
+		var numMipLevels = includeMipChain ? TextureUtils.GetMipLevelCount(dimensions) : 1;
+		var result = 0;
+		for (var i = 0; i < numMipLevels; ++i) {
+			result += GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, i), format);
+		}
+		return result;
+	}
+	#endregion
 
 	#region Compression
-	static int ConvertCompressionQualityToEffortInteger(Quality compressionQuality) => ((int) compressionQuality) + 3;
+	internal static int ConvertCompressionQualityToEffortInteger(Quality compressionQuality) => ((int) compressionQuality) + 3;
 	
 	public static void Compress<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, TextureCompressionFormat format, Quality quality, TextureDataType dataType, bool includeMipMapGeneration, Span<byte> destination) where TTexel : unmanaged, ITexel<TTexel> {
 		if (dimensions.X <= 0 || dimensions.Y <= 0) throw new ArgumentException($"Both X and Y must be positive (was {dimensions}).", nameof(dimensions));
-		if (!Enum.IsDefined(format)) throw new ArgumentOutOfRangeException(nameof(format), format, null);
+		if (!Enum.IsDefined(format) || format == TextureCompressionFormat.None) throw new ArgumentOutOfRangeException(nameof(format), format, null);
 		if (!Enum.IsDefined(quality)) throw new ArgumentOutOfRangeException(nameof(quality), quality, null);
 
 		var baseTexelCount = dimensions.Area;
@@ -221,6 +189,41 @@ public static unsafe class TextureCompressor {
 				destinationPtr,
 				destination.Length
 			).ThrowIfFailure();
+		}
+	}
+
+	public static void Decompress<TTexel>(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat format, Span<TTexel> destination) where TTexel : unmanaged, ITexel<TTexel> {
+		if (dimensions.X <= 0 || dimensions.Y <= 0) throw new ArgumentException($"Both X and Y must be positive (was {dimensions}).", nameof(dimensions));
+		if (!Enum.IsDefined(format) || format == TextureCompressionFormat.None) throw new ArgumentOutOfRangeException(nameof(format), format, null);
+
+		var texelCount = dimensions.Area;
+		if (destination.Length < texelCount) {
+			throw new ArgumentException(
+				$"Texture dimensions are {dimensions.X}x{dimensions.Y}, requiring a texel span of length {texelCount} or greater, " +
+				$"but actual span length was {destination.Length}.",
+				nameof(destination)
+			);
+		}
+
+		var requiredBlockBytes = GetMipLevelSizeBytes(dimensions, format);
+		if (blocks.Length < requiredBlockBytes) {
+			throw new ArgumentException(
+				$"Decompressing a {dimensions.X}x{dimensions.Y} {format} texture requires {requiredBlockBytes} bytes of block data, " +
+				$"but only {blocks.Length} were supplied.",
+				nameof(blocks)
+			);
+		}
+
+		if (TTexel.BlitType == TexelType.Rgba32) {
+			DecompressSingleLevel(blocks, dimensions, format, MemoryMarshal.Cast<TTexel, TexelRgba32>(destination[..texelCount]));
+			return;
+		}
+
+		using var scratchBuffer = _compressionPool.ThreadSafeWrapper.Borrow<TexelRgba32>(texelCount);
+		var scratchSpan = scratchBuffer.Span[..texelCount];
+		DecompressSingleLevel(blocks, dimensions, format, scratchSpan);
+		if (!TTexel.TryCoerceSpanFrom(scratchSpan, destination[..texelCount], mergeWithExistingDestinationData: false)) {
+			throw new InvalidOperationException($"Texel type '{typeof(TTexel).Name}' must be coercible from {nameof(TexelRgba32)} for decompression.");
 		}
 	}
 

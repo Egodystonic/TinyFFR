@@ -57,6 +57,7 @@ void native_impl_texture_compression::compress_texture_level(const void* srcRgba
 	ThrowIfNegative(destLen, "Destination length was negative.");
 	ThrowIf(width == 0U || height == 0U, "Texture level dimensions must both be positive.");
 	ThrowIf(effortLevel < 0 || effortLevel > 5, "Effort level was out of range.");
+	initialize_encoders();
 
 	const uint32_t blocksWide = (width + BlockDimension - 1U) / BlockDimension;
 	const uint32_t blocksHigh = (height + BlockDimension - 1U) / BlockDimension;
@@ -113,6 +114,7 @@ void native_impl_texture_compression::decompress_texture_level(const void* srcBl
 	ThrowIfNegative(srcLen, "Source length was negative.");
 	ThrowIfNegative(destLen, "Destination length was negative.");
 	ThrowIf(width == 0U || height == 0U, "Texture level dimensions must both be positive.");
+	initialize_encoders();
 
 	const uint32_t blocksWide = (width + BlockDimension - 1u) / BlockDimension;
 	const uint32_t blocksHigh = (height + BlockDimension - 1u) / BlockDimension;

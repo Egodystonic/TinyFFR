@@ -138,11 +138,11 @@ class LocalMaterialsTest {
 			);
 			var normals = factory.AssetLoader.LoadTexture(
 				CommonTestAssets.FindAsset(KnownTestAsset.BrickNormalTex),
-				TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, "brick normals") with { CompressionQuality = compressionQuality }
+				TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, "brick normals") with { CompressionQuality = compressionQuality }
 			);
 			var orm = factory.AssetLoader.LoadTexture(
 				CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex),
-				TextureCreationConfig.ForDataTexture(TextureDataType.Other, "brick orm") with { CompressionQuality = compressionQuality }
+				TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "brick orm") with { CompressionQuality = compressionQuality }
 			);
 			group.Add(albedo);
 			group.Add(normals);

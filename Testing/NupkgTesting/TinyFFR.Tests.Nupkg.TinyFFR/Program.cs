@@ -53,7 +53,7 @@ using var orm = factory.AssetLoader.LoadCombinedTexture(
 		new(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
 		new(TextureCombinationSourceTexture.TextureC, ColorChannel.R)
 	),
-	finalOutputConfig: new TextureCreationConfig { IsLinearColorspace = true, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
+	finalOutputConfig: new TextureCreationConfig { DataType = TextureDataType.Linear, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
 );
 using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(albedo, normal, orm);
 using var mesh = factory.AssetLoader.LoadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() });

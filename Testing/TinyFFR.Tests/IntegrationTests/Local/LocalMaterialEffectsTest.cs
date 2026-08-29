@@ -90,11 +90,11 @@ class LocalMaterialEffectsTest {
 		var uvTexDataSpan = new TexelRgb24[uvTexMetadata.Dimensions.Area];
 		_ = factory.AssetLoader.ReadTexture(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture, uvTexDataSpan);
 
-		using var colorMap = factory.TextureBuilder.CreateTexture(uvTexDataSpan.Select(t => t.ToRgba32()).ToArray(), uvTexMetadata.Dimensions, isLinearColorspace: false);
+		using var colorMap = factory.TextureBuilder.CreateTexture(uvTexDataSpan.Select(t => t.ToRgba32()).ToArray(), uvTexMetadata.Dimensions, dataType: TextureDataType.ColorSrgb);
 		using var colorMapBlend = factory.TextureBuilder.CreateTexture(
 			uvTexDataSpan.Select(texel => texel.R <= texel.G ? texel.ToRgba32() : new TexelRgba32(0, 0, 0, 0)).ToArray(), 
 			new TextureGenerationConfig { Dimensions = uvTexMetadata.Dimensions }, 
-			new TextureCreationConfig { IsLinearColorspace = false, ProcessingToApply = TextureProcessingConfig.None }
+			new TextureCreationConfig { DataType = TextureDataType.ColorSrgb, ProcessingToApply = TextureProcessingConfig.None }
 		);
 		using var emissiveMap = factory.TextureBuilder.CreateEmissiveMap(
 			TexturePattern.Rectangles(

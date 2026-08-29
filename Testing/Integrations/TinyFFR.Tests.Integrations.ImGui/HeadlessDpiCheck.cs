@@ -1,4 +1,4 @@
-// Created on 2026-08-12 by Ben Bowen
+﻿// Created on 2026-08-12 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -574,7 +574,7 @@ static class HeadlessDpiCheck {
 		var splitTexture = factory.TextureBuilder.CreateTexture(
 			splitTexels,
 			new TextureGenerationConfig { Dimensions = new(FixtureDim, FixtureDim) },
-			new TextureCreationConfig { IsLinearColorspace = true, GenerateMipMaps = false, Name = "Split Test Texture" }
+			new TextureCreationConfig { DataType = TextureDataType.LinearData, GenerateMipMaps = false, Name = "Split Test Texture" }
 		);
 
 		var splitId = imgui.RegisterTexture(splitTexture);

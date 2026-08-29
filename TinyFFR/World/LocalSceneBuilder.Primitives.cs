@@ -1,4 +1,4 @@
-// Created on 2026-07-23 by Ben Bowen
+﻿// Created on 2026-07-23 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -194,7 +194,7 @@ sealed partial class LocalSceneBuilder {
 			TexturePattern.Circles(ColorVect.RedOpaque, ColorVect.GreenOpaque, ColorVect.BlackTransparent, interiorRadius: 128, borderSize: 48, repetitions: (1, 1)),
 			includeAlpha: true,
 			new TextureCreationConfig {
-				IsLinearColorspace = true,
+				DataType = TextureDataType.LinearData,
 				GenerateMipMaps = true,
 				Name = "Primitive Point Texture",
 				RenderingConfig = new() {
@@ -346,7 +346,7 @@ sealed partial class LocalSceneBuilder {
 					cellResolution: 48
 				),
 				includeAlpha: false,
-				new TextureCreationConfig { IsLinearColorspace = true, Name = "Primitive Plane Texture" }
+				new TextureCreationConfig { DataType = TextureDataType.LinearData, Name = "Primitive Plane Texture" }
 			);
 			var mat = _assetLoader.MaterialBuilder.CreateColorKeyedMaterial(tex, true, "Primitive Plane Material");
 			
@@ -391,7 +391,7 @@ sealed partial class LocalSceneBuilder {
 				minorLineThickness: 1
 			),
 			includeAlpha: false,
-			new TextureCreationConfig { IsLinearColorspace = true, GenerateMipMaps = false, Name = "Primitive Grid Texture" }
+			new TextureCreationConfig { DataType = TextureDataType.LinearData, GenerateMipMaps = false, Name = "Primitive Grid Texture" }
 		);
 		var mat = _assetLoader.MaterialBuilder.CreateColorKeyedMaterial(tex, false, "Primitive Grid Material");
 
@@ -430,7 +430,7 @@ sealed partial class LocalSceneBuilder {
 			),
 			includeAlpha: true,
 			new TextureCreationConfig {
-				IsLinearColorspace = true,
+				DataType = TextureDataType.LinearData,
 				GenerateMipMaps = false,
 				Name = "Primitive Line Texture",
 				RenderingConfig = new() {

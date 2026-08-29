@@ -70,7 +70,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 
 public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConfig> {
 	public MeshCreationConfig MeshConfig { get; init; } = new();
-	public TextureCreationConfig TextureConfig { get; init; } = new() { IsLinearColorspace = true };
+	public TextureCreationConfig TextureConfig { get; init; } = new() { DataType = TextureDataType.LinearData };
 	public ReadOnlySpan<char> Name { get; init; }
 	
 	public ModelCreationConfig() { }

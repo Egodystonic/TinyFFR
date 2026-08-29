@@ -195,33 +195,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 			_globals.ReleaseGpuHoldingBufferWithoutGpuSubmission(preallocatedBuffer.BufferId);
 		}
 
-		var levelOffsets = stackalloc uint[levelCount];
-		var levelSizes = stackalloc uint[levelCount];
-		var runningOffset = 0;
-		for (var level = 0; level < levelCount; ++level) {
-			var levelSizeBytes = TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, level), compressionFormat);
-			levelOffsets[level] = (uint) runningOffset;
-			levelSizes[level] = (uint) levelSizeBytes;
-			runningOffset += levelSizeBytes;
-		}
-
-		LoadTextureCompressed(
-			compressedBuffer.BufferIdentity,
-			(void*) compressedBuffer.DataPtr,
-			compressedBuffer.DataLengthBytes,
-			(uint) dimensions.X,
-			(uint) dimensions.Y,
-			(int) compressionFormat,
-			(uint) levelCount,
-			levelOffsets,
-			levelSizes,
-			out var outHandle
-		).ThrowIfFailure();
-
-		var handle = (ResourceHandle<Texture>) outHandle;
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(dimensions, TTexel.BlitType, false, generateMipMaps, renderingConfig, compressionFormat));
-		return HandleToInstance(handle);
+		return UploadCompressedBlocksAndStoreTextureData(compressedBuffer, dimensions, compressionFormat, levelCount, TTexel.BlitType, generateMipMaps, renderingConfig, name);
 	}
 
 	ITextureBuilder.PreallocatedBuffer<TTexel> ITextureBuilder.PreallocateBuffer<TTexel>(int texelCount) => PreallocateBuffer<TTexel>(texelCount);

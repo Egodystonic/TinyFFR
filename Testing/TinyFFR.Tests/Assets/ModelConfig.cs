@@ -100,7 +100,7 @@ class ModelConfigTest {
 			},
 			TextureConfig = new() {
 				GenerateMipMaps = true,
-				IsLinearColorspace = false,
+				DataType = TextureDataType.ColorSrgb,
 				ProcessingToApply = TextureProcessingConfig.Flip(true, false),
 				Name = "Texture Aa Aa"
 			},
@@ -117,7 +117,7 @@ class ModelConfigTest {
 			},
 			TextureConfig = new() {
 				GenerateMipMaps = false,
-				IsLinearColorspace = true,
+				DataType = TextureDataType.LinearData,
 				ProcessingToApply = TextureProcessingConfig.Invert(),
 				Name = "Texture BBBbbb"
 			},
@@ -133,7 +133,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.MeshConfig.Name.ToString(), actual.MeshConfig.Name.ToString());
 			
 			Assert.AreEqual(expected.TextureConfig.GenerateMipMaps, actual.TextureConfig.GenerateMipMaps);
-			Assert.AreEqual(expected.TextureConfig.IsLinearColorspace, actual.TextureConfig.IsLinearColorspace);
+			Assert.AreEqual(expected.TextureConfig.DataType, actual.TextureConfig.DataType);
 			Assert.AreEqual(expected.TextureConfig.Name.ToString(), actual.TextureConfig.Name.ToString());
 			Assert.AreEqual(expected.TextureConfig.ProcessingToApply, actual.TextureConfig.ProcessingToApply);
 			
@@ -172,7 +172,7 @@ class ModelConfigTest {
 					OriginTranslation = new Vect(1f, 2f, 3f)
 				},
 				TextureConfig = new() {
-					IsLinearColorspace = true,
+					DataType = TextureDataType.LinearData,
 					GenerateMipMaps = false,
 					ProcessingToApply = TextureProcessingConfig.Invert(includeAlphaChannel: true)
 				},
@@ -200,7 +200,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.CreationConfig.MeshConfig.FlipTriangles, actual.CreationConfig.MeshConfig.FlipTriangles);
 			Assert.AreEqual(expected.CreationConfig.MeshConfig.LinearRescalingFactor, actual.CreationConfig.MeshConfig.LinearRescalingFactor);
 			Assert.AreEqual(expected.CreationConfig.MeshConfig.OriginTranslation, actual.CreationConfig.MeshConfig.OriginTranslation);
-			Assert.AreEqual(expected.CreationConfig.TextureConfig.IsLinearColorspace, actual.CreationConfig.TextureConfig.IsLinearColorspace);
+			Assert.AreEqual(expected.CreationConfig.TextureConfig.DataType, actual.CreationConfig.TextureConfig.DataType);
 			Assert.AreEqual(expected.CreationConfig.TextureConfig.GenerateMipMaps, actual.CreationConfig.TextureConfig.GenerateMipMaps);
 			Assert.AreEqual(expected.CreationConfig.TextureConfig.RenderingConfig, actual.CreationConfig.TextureConfig.RenderingConfig);
 			Assert.AreEqual(expected.CreationConfig.TextureConfig.ProcessingToApply, actual.CreationConfig.TextureConfig.ProcessingToApply);

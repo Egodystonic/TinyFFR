@@ -31,12 +31,12 @@ class LocalColorspaceTest {
 
 		using var linearWallAlbedo = factory.AssetLoader.LoadTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
-			isLinearColorspace: true,
+			dataType: TextureDataType.LinearData,
 			name: "linearWallTex"
 		);
 		using var srgbWallAlbedo = factory.AssetLoader.LoadTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
-			isLinearColorspace: false,
+			dataType: TextureDataType.ColorSrgb,
 			name: "srgbWallTex"
 		);
 		using var wallNormals = factory.AssetLoader.LoadNormalMap(

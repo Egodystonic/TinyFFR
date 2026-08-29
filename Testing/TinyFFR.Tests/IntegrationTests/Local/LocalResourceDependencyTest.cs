@@ -141,10 +141,10 @@ class LocalResourceDependencyTest {
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCompWindow, factory.RendererBuilder.CreateCompositor(tempCompWindow));
 
 			void CheckEffectsMaterial(Func<Texture, Material> matCreationFunc, Action<Texture, MaterialEffectController> assignBlendDestTexAction) {
-				using var map = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
+				using var map = factory.TextureBuilder.CreateTexture(new TexelRgba32(), dataType: TextureDataType.LinearData);
 				using var m = matCreationFunc(map);
 				using var cube = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
-				var blendMap = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
+				var blendMap = factory.TextureBuilder.CreateTexture(new TexelRgba32(), dataType: TextureDataType.LinearData);
 				var obj = factory.ObjectBuilder.CreateModelInstance(cube, m);
 				assignBlendDestTexAction(blendMap, obj.MaterialEffects!.Value);
 				AssertDependency(blendMap, obj);
@@ -161,8 +161,8 @@ class LocalResourceDependencyTest {
 			// ReSharper restore AccessToDisposedClosure
 
 			var localMaterialBuilder = (LocalMaterialBuilder) factory.MaterialBuilder;
-			var imguiTexA = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
-			var imguiTexB = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
+			var imguiTexA = factory.TextureBuilder.CreateTexture(new TexelRgba32(), dataType: TextureDataType.LinearData);
+			var imguiTexB = factory.TextureBuilder.CreateTexture(new TexelRgba32(), dataType: TextureDataType.LinearData);
 			var imguiMat = localMaterialBuilder.AllocateImGuiMaterialInstance(imguiTexA, "Rebind Test Material");
 			Assert.Catch<ResourceDependencyException>(imguiTexA.Dispose);
 			localMaterialBuilder.SetImGuiMaterialColorMap(imguiMat, imguiTexB);

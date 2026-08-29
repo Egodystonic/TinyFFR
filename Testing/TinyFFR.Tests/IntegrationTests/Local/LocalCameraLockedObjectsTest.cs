@@ -1,4 +1,4 @@
-// Created on 2026-07-18 by Ben Bowen
+﻿// Created on 2026-07-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Assets.Local;
@@ -51,7 +51,7 @@ class LocalCameraLockedObjectsTest {
 		using var quadTex = factory.TextureBuilder.CreateColorMap(
 			TexturePattern.GradientVertical(ColorVect.WhiteOpaque, ColorVect.BlackTransparent),
 			includeAlpha: true,
-			config: new TextureCreationConfig { IsLinearColorspace = false, RenderingConfig = new() { DisableTextureRepeat = true }}
+			config: new TextureCreationConfig { DataType = TextureDataType.ColorSrgb, RenderingConfig = new() { DisableTextureRepeat = true }}
 		);
 		using var quadMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(quadTex);
 		var lockedQuads = Enumerable.Range(0, QuadCount).Select(

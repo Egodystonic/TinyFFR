@@ -229,7 +229,7 @@ unsafe class TextureConfigTest {
 	public void CreationConfigShouldDisposeItsNestedProcessingConfigHeapStorage() {
 		static (byte[] Buffer, WeakReference ArgumentRef) AllocateStorage() {
 			var argument = new object();
-			var config = TextureCreationConfig.ForDataTexture("nested") with {
+			var config = TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "nested") with {
 				ProcessingToApply = new TextureProcessingConfig {
 					PostProcessingFunction = TexelProcessingFunction.Create<TexelRgb24>(&NoOpPostProcessingRgb24),
 					PostProcessingArgument = argument
@@ -328,10 +328,9 @@ unsafe class TextureConfigTest {
 	public void ShouldCorrectlyConvertCreationConfigToAndFromHeapStorageFormat() {
 		var testConfigA = new TextureCreationConfig {
 			GenerateMipMaps = true,
-			IsLinearColorspace = true,
 			AllowsDynamicWrites = false,
 			CompressionQuality = Quality.High,
-			DataTextureType = TextureDataType.LinearUnitVector,
+			DataType = TextureDataType.LinearDataUnitVector,
 			RenderingConfig = new(true, true, Quality.High),
 			Name = "Aa Aa",
 			ProcessingToApply = new TextureProcessingConfig {
@@ -349,10 +348,9 @@ unsafe class TextureConfigTest {
 		};
 		var testConfigB = new TextureCreationConfig {
 			GenerateMipMaps = false,
-			IsLinearColorspace = false,
 			AllowsDynamicWrites = true,
 			CompressionQuality = null,
-			DataTextureType = TextureDataType.Other,
+			DataType = TextureDataType.ColorSrgb,
 			RenderingConfig = new(false, false, Quality.Low),
 			Name = "BBBbbb",
 			ProcessingToApply = new TextureProcessingConfig {
@@ -371,10 +369,9 @@ unsafe class TextureConfigTest {
 
 		void AssertConfigsMatch(TextureCreationConfig expected, TextureCreationConfig actual) {
 			Assert.AreEqual(expected.GenerateMipMaps, actual.GenerateMipMaps);
-			Assert.AreEqual(expected.IsLinearColorspace, actual.IsLinearColorspace);
 			Assert.AreEqual(expected.AllowsDynamicWrites, actual.AllowsDynamicWrites);
 			Assert.AreEqual(expected.CompressionQuality, actual.CompressionQuality);
-			Assert.AreEqual(expected.DataTextureType, actual.DataTextureType);
+			Assert.AreEqual(expected.DataType, actual.DataType);
 			Assert.AreEqual(expected.RenderingConfig, actual.RenderingConfig);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 			Assert.AreEqual(expected.ProcessingToApply, actual.ProcessingToApply);
@@ -385,11 +382,10 @@ unsafe class TextureConfigTest {
 
 		AssertHeapSerializationWithObjects<TextureCreationConfig>()
 			.Bool(true)
-			.Bool(true)
 			.Bool(false)
 			.Bool(true)
 			.Int((int) Quality.High)
-			.Int((int) TextureDataType.LinearUnitVector)
+			.Int((int) TextureDataType.LinearDataUnitVector)
 			.Bool(true)
 			.Bool(true)
 			.Int(1)
@@ -400,11 +396,10 @@ unsafe class TextureConfigTest {
 
 		AssertHeapSerializationWithObjects<TextureCreationConfig>()
 			.Bool(false)
-			.Bool(false)
 			.Bool(true)
 			.Bool(false)
 			.Int(0)
-			.Int((int) TextureDataType.Other)
+			.Int((int) TextureDataType.ColorSrgb)
 			.Bool(false)
 			.Bool(false)
 			.Int(-1)
@@ -415,10 +410,9 @@ unsafe class TextureConfigTest {
 
 		AssertPropertiesAccountedFor<TextureCreationConfig>()
 			.Including(nameof(TextureCreationConfig.GenerateMipMaps))
-			.Including(nameof(TextureCreationConfig.IsLinearColorspace))
 			.Including(nameof(TextureCreationConfig.AllowsDynamicWrites))
 			.Including(nameof(TextureCreationConfig.CompressionQuality))
-			.Including(nameof(TextureCreationConfig.DataTextureType))
+			.Including(nameof(TextureCreationConfig.DataType))
 			.Including(nameof(TextureCreationConfig.RenderingConfig))
 			.Including(nameof(TextureCreationConfig.Name))
 			.Including(nameof(TextureCreationConfig.ProcessingToApply))
@@ -488,7 +482,7 @@ unsafe class TextureConfigTest {
 		};
 
 		AssertRoundTripHeapStorage(testConfig, static (expected, actual) => {
-			Assert.AreEqual(expected.CreationConfig.IsLinearColorspace, actual.CreationConfig.IsLinearColorspace);
+			Assert.AreEqual(expected.CreationConfig.DataType, actual.CreationConfig.DataType);
 			Assert.AreEqual(expected.CreationConfig.GenerateMipMaps, actual.CreationConfig.GenerateMipMaps);
 			Assert.AreEqual(expected.CreationConfig.RenderingConfig, actual.CreationConfig.RenderingConfig);
 			Assert.AreEqual(expected.CreationConfig.Name.ToString(), actual.CreationConfig.Name.ToString());
@@ -506,7 +500,7 @@ unsafe class TextureConfigTest {
 	[Test]
 	public void ShouldCorrectlyConvertCombinedLoadConfigToAndFromHeapStorageFormat() {
 		var testConfig = new TextureCombinedLoadConfig {
-			CreationConfig = TextureCreationConfig.ForDataTexture("combined load"),
+			CreationConfig = TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "combined load"),
 			CombinationConfig = new TextureCombinationConfig(
 				TextureCombinationScalingStrategy.PixelUpscale,
 				new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),

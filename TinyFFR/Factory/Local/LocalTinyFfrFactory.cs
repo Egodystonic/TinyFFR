@@ -117,6 +117,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 				&LocalRendererBuilder.RenewSwapchains
 			).ThrowIfFailure();
 
+			TextureCompressor.AscertainCompressionSupport();
+
 			_threadPool = new CooperativeThreadPool(factoryConfig.ThreadingConfig);
 			if (SynchronizationContext.Current == null && factoryConfig.InstallTinyFfrSynchronizationContextIfNonePreExisting) {
 				SynchronizationContext.SetSynchronizationContext(new TinyFfrSynchronizationContext(_threadPool));

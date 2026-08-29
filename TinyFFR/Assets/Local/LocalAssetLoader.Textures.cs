@@ -37,7 +37,7 @@ unsafe partial class LocalAssetLoader {
 		public bool AllowsDynamicWrites { get; set; } = false;
 		public TextureRenderingConfig RenderingConfig { get; set; } = new();
 		public Quality? CompressionQuality { get; set; } = null;
-		public TextureDataType DataType { get; set; } = TextureDataType.Linear;
+		public TextureDataType DataType { get; set; } = TextureDataType.LinearData;
 		public PooledHeapMemory<byte>? CompressedData { get; set; } = null;
 		public TextureCompressionFormat CompressionFormat { get; set; } = TextureCompressionFormat.None;
 		public int CompressedLevelCount { get; set; } = 0;
@@ -68,7 +68,7 @@ unsafe partial class LocalAssetLoader {
 			CompressionFormat = TextureCompressionFormat.None;
 			CompressedLevelCount = 0;
 			CompressionQuality = null;
-			DataType = TextureDataType.Linear;
+			DataType = TextureDataType.LinearData;
 			Dimensions = default;
 			IsRgba = false;
 			GenerateMipMaps = false;
@@ -906,7 +906,7 @@ unsafe partial class LocalAssetLoader {
 
 		result.Add(LoadTexture(
 			_builtInTextureLibrary.UvTestingTexture,
-			new TextureCreationConfig { GenerateMipMaps = true, DataType = TextureDataType.StandardRgb, Name = LocalMaterialBuilder.TestMaterialName + " Color Map", ProcessingToApply = TextureProcessingConfig.None },
+			new TextureCreationConfig { GenerateMipMaps = true, DataType = TextureDataType.ColorSrgb, Name = LocalMaterialBuilder.TestMaterialName + " Color Map", ProcessingToApply = TextureProcessingConfig.None },
 			new TextureReadConfig { IncludeWAlphaChannel = false }
 		));
 

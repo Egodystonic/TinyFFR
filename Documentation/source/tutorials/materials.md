@@ -427,13 +427,16 @@ Many method overloads on the `AssetLoader` and `TextureBuilder` take a `TextureC
 
 	You may also wish to disable mipmap generation to reduce video RAM consumption in constrained scenarios.
 	
-<span class="def-icon">:material-card-bulleted-outline:</span> `IsLinearColorspace`
+<span class="def-icon">:material-card-bulleted-outline:</span> `DataType`
 
 :	This property has no default value (it is required to be specified).
 
-	If `true`, the texture data is interpreted as being in a linear colourspace, otherwise the texture data is interpreted in sRGB.
-	
-	As a rule of thumb, data-oriented texture maps (such as normal maps, ORM maps, anisotropy maps, and clearcoat maps) are typically in linear colourspace; whereas texture maps that contain colour data (such as color maps, absorption-transmission maps, and emissive maps) are typically in sRGB colourspace.
+	This is a `TextureDataType` that indicates how the texture's texels should be interpreted. It determines the colourspace the data is read in, how mipmap levels are filtered, and which compressed format (if any) the texture is uploaded in.
+
+	* `StandardRgb` -- the texels are colour data in sRGB colourspace. Use this for colour maps, absorption-transmission maps, and emissive maps.
+	* `Linear` -- the texels are data in a linear colourspace. Use this for ORM maps and anisotropy maps.
+	* `LinearUnitVector` -- the texels are linear data encoding unit vectors, such as a normal map. Mipmap levels are re-normalized rather than simply averaged.
+	* `LinearTwoChannelMax` -- the texels are linear data that only uses the red and green channels, such as a clearcoat map.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `ProcessingToApply`
 

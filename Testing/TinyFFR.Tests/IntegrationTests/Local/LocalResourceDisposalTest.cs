@@ -388,7 +388,7 @@ class LocalResourceDisposalTest {
 			v => _ = v.MeshBuilder,
 			v => _ = v.MaterialBuilder,
 			v => _ = v.TextureBuilder,
-			v => _ = v.LoadTexture("", false),
+			v => _ = v.LoadTexture("", TextureDataType.ColorSrgb),
 			v => _ = v.LoadMesh(""),
 			v => _ = v.LoadFont()
 		);

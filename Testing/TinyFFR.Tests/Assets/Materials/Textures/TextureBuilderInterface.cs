@@ -79,12 +79,12 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
 			Assert.AreEqual(10, texels.Length);
 			Assert.AreEqual(new XYPair<int>(3, 4), gc.Dimensions);
-			Assert.AreEqual(false, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.ColorSrgb, cc.DataType);
 			Assert.AreEqual(true, cc.GenerateMipMaps);
 			Assert.AreEqual("abc", cc.Name.ToString());
 		});
 
-		_tb.CreateTexture(new TexelRgb24[10], dimensions: (3, 4), isLinearColorspace: false, generateMipMaps: true, name: "abc");
+		_tb.CreateTexture(new TexelRgb24[10], dimensions: (3, 4), dataType: TextureDataType.ColorSrgb, generateMipMaps: true, name: "abc");
 	}
 
 	[Test]
@@ -93,42 +93,42 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(new TexelRgb24(1, 2, 3), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), isLinearColorspace: true);
+		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), dataType: TextureDataType.LinearData);
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateTexture(new TexelRgb24(1, 2, 3), isLinearColorspace: true);
+		_tb.CreateTexture(new TexelRgb24(1, 2, 3), dataType: TextureDataType.LinearData);
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateTexture(new TexelRgb24(1, 2, 3), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateTexture(new TexelRgb24(1, 2, 3), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 
 		AssertCreateTextureCall<TexelRgb24>((_, _, cc) => {
 			Assert.AreEqual("abc", cc.Name.ToString());
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 		});
-		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), isLinearColorspace: true, name: "abc");
+		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), dataType: TextureDataType.LinearData, name: "abc");
 		AssertCreateTextureCall<TexelRgb24>((_, _, cc) => {
 			Assert.AreEqual("abc", cc.Name.ToString());
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 		});
-		_tb.CreateTexture(new TexelRgb24(1, 2, 3), isLinearColorspace: true, name: "abc");
+		_tb.CreateTexture(new TexelRgb24(1, 2, 3), dataType: TextureDataType.LinearData, name: "abc");
 
 		AssertCreateTextureCall<TexelRgb24>((_, _, cc) => {
 			Assert.AreEqual("abc", cc.Name.ToString());
-			Assert.AreEqual(false, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.ColorSrgb, cc.DataType);
 		});
-		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), isLinearColorspace: false, name: "abc");
+		_tb.CreateTexture(TexturePattern.PlainFill(new TexelRgb24(1, 2, 3)), dataType: TextureDataType.ColorSrgb, name: "abc");
 		AssertCreateTextureCall<TexelRgb24>((_, _, cc) => {
 			Assert.AreEqual("abc", cc.Name.ToString());
-			Assert.AreEqual(false, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.ColorSrgb, cc.DataType);
 		});
-		_tb.CreateTexture(new TexelRgb24(1, 2, 3), isLinearColorspace: false, name: "abc");
+		_tb.CreateTexture(new TexelRgb24(1, 2, 3), dataType: TextureDataType.ColorSrgb, name: "abc");
 	}
 
 	[Test]
@@ -137,7 +137,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(TexelRgb24.ConvertFrom(new ColorVect(0.1f, 0.2f, 0.3f)), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(false, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.ColorSrgb, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -147,7 +147,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(TexelRgba32.ConvertFrom(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(false, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.ColorSrgb, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.PremultiplyAlpha(), cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -156,11 +156,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
 		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false);
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
-		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb });
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
 		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false);
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
-		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, name: "abc");
@@ -170,11 +170,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()  });
+		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha()  });
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() });
+		_tb.CreateColorMap(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha() });
 
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: true, name: "abc");
@@ -188,7 +188,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(TexelRgb24.ConvertFrom(new ColorVect(0.1f, 0.2f, 0.3f)), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(Quality.VeryLow, cc.RenderingConfig.AnisotropicFilteringQuality);
 			Assert.AreEqual(0f, cc.RenderingConfig.AnisotropyLevel);
@@ -201,7 +201,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(TexelRgba32.ConvertFrom(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(Quality.VeryLow, cc.RenderingConfig.AnisotropicFilteringQuality);
 			Assert.AreEqual(0f, cc.RenderingConfig.AnisotropyLevel);
@@ -213,11 +213,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false);
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
-		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
 		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false);
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
-		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f), includeAlpha: false, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData, RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: false, name: "abc");
@@ -227,11 +227,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha(), RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
+		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f)), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha(), RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
 		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true);
 		AssertCreateTextureCall<TexelRgba32>(AssertRgbaInvocation);
-		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha(), RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
+		_tb.CreateCanvasTexture(new ColorVect(0.1f, 0.2f, 0.3f, 0.4f), includeAlpha: true, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData, ProcessingToApply = TextureProcessingConfig.PremultiplyAlpha(), RenderingConfig = new() { AnisotropicFilteringQuality= Quality.VeryLow, AnisotropyLevel = 0f, DisableTextureRepeat = true } });
 
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateCanvasTexture(TexturePattern.PlainFill(new ColorVect(0.1f, 0.2f, 0.3f)), includeAlpha: true, name: "abc");
@@ -245,7 +245,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(new TexelRgb24(127, 255, 127), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearDataUnitVector, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -254,11 +254,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateNormalMap(TexturePattern.PlainFill(new SphericalTranslation(90f, 90f)));
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateNormalMap(TexturePattern.PlainFill(new SphericalTranslation(90f, 90f)), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateNormalMap(TexturePattern.PlainFill(new SphericalTranslation(90f, 90f)), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearDataUnitVector });
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateNormalMap(new SphericalTranslation(90f, 90f));
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateNormalMap(new SphericalTranslation(90f, 90f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateNormalMap(new SphericalTranslation(90f, 90f), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearDataUnitVector });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateNormalMap(TexturePattern.PlainFill(new SphericalTranslation(90f, 90f)), name: "abc");
@@ -272,7 +272,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(TexelRgb24.FromNormalizedFloats(0.2f, 0.4f, 0.6f), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -281,11 +281,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateOcclusionRoughnessMetallicMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f));
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateOcclusionRoughnessMetallicMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateOcclusionRoughnessMetallicMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateOcclusionRoughnessMetallicMap(0.2f, 0.4f, 0.6f);
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateOcclusionRoughnessMetallicMap(0.2f, 0.4f, 0.6f, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateOcclusionRoughnessMetallicMap(0.2f, 0.4f, 0.6f, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateOcclusionRoughnessMetallicMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f), name: "abc");
@@ -299,7 +299,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(TexelRgba32.FromNormalizedFloats(0.2f, 0.4f, 0.6f, 0.8f), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -308,11 +308,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
 		_tb.CreateOcclusionRoughnessMetallicReflectanceMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f), TexturePattern.PlainFill<Real>(0.8f));
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
-		_tb.CreateOcclusionRoughnessMetallicReflectanceMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f), TexturePattern.PlainFill<Real>(0.8f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateOcclusionRoughnessMetallicReflectanceMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f), TexturePattern.PlainFill<Real>(0.8f), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
 		_tb.CreateOcclusionRoughnessMetallicReflectanceMap(0.2f, 0.4f, 0.6f, 0.8f);
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
-		_tb.CreateOcclusionRoughnessMetallicReflectanceMap(0.2f, 0.4f, 0.6f, 0.8f, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateOcclusionRoughnessMetallicReflectanceMap(0.2f, 0.4f, 0.6f, 0.8f, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateOcclusionRoughnessMetallicReflectanceMap(TexturePattern.PlainFill<Real>(0.2f), TexturePattern.PlainFill<Real>(0.4f), TexturePattern.PlainFill<Real>(0.6f), TexturePattern.PlainFill<Real>(0.8f), name: "abc");
@@ -326,7 +326,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(new TexelRgba32(TexelRgb24.ConvertFrom(new ColorVect(0.2f, 0.4f, 0.6f)), 127), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(false, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.ColorSrgb, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -335,11 +335,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
 		_tb.CreateAbsorptionTransmissionMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f));
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
-		_tb.CreateAbsorptionTransmissionMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateAbsorptionTransmissionMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb });
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
 		_tb.CreateAbsorptionTransmissionMap(new ColorVect(0.2f, 0.4f, 0.6f), 0.5f);
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
-		_tb.CreateAbsorptionTransmissionMap(new ColorVect(0.2f, 0.4f, 0.6f), 0.5f, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateAbsorptionTransmissionMap(new ColorVect(0.2f, 0.4f, 0.6f), 0.5f, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb });
 
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateAbsorptionTransmissionMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f), name: "abc");
@@ -353,7 +353,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(new TexelRgba32(TexelRgb24.ConvertFrom(new ColorVect(0.2f, 0.4f, 0.6f)), 127), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(false, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.ColorSrgb, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -362,11 +362,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
 		_tb.CreateEmissiveMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f));
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
-		_tb.CreateEmissiveMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateEmissiveMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb });
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
 		_tb.CreateEmissiveMap(new ColorVect(0.2f, 0.4f, 0.6f), 0.5f);
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
-		_tb.CreateEmissiveMap(new ColorVect(0.2f, 0.4f, 0.6f), 0.5f, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = false });
+		_tb.CreateEmissiveMap(new ColorVect(0.2f, 0.4f, 0.6f), 0.5f, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.ColorSrgb });
 
 		AssertCreateTextureName<TexelRgba32>("abc");
 		_tb.CreateEmissiveMap(TexturePattern.PlainFill<ColorVect>(new(0.2f, 0.4f, 0.6f)), TexturePattern.PlainFill<Real>(0.5f), name: "abc");
@@ -380,7 +380,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(new TexelRgb24(0, 127, 25), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearData, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -389,11 +389,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateAnisotropyMap(TexturePattern.PlainFill<Angle>(180f), TexturePattern.PlainFill<Real>(0.1f));
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateAnisotropyMap(TexturePattern.PlainFill<Angle>(180f), TexturePattern.PlainFill<Real>(0.1f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateAnisotropyMap(TexturePattern.PlainFill<Angle>(180f), TexturePattern.PlainFill<Real>(0.1f), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateAnisotropyMap(new Angle(180f), 0.1f);
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateAnisotropyMap(new Angle(180f), 0.1f, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateAnisotropyMap(new Angle(180f), 0.1f, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearData });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateAnisotropyMap(TexturePattern.PlainFill<Angle>(180f), TexturePattern.PlainFill<Real>(0.1f), name: "abc");
@@ -407,7 +407,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(1, texels.Length);
 			Assert.AreEqual(new TexelRgb24(25, 127, 0), texels[0]);
 			Assert.AreEqual(new XYPair<int>(1, 1), gc.Dimensions);
-			Assert.AreEqual(true, cc.IsLinearColorspace);
+			Assert.AreEqual(TextureDataType.LinearDataTwoChannelMax, cc.DataType);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
 			Assert.IsTrue(cc.Name.IsEmpty);
@@ -416,11 +416,11 @@ unsafe class TextureBuilderInterfaceTest {
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateClearCoatMap(TexturePattern.PlainFill<Real>(0.1f), TexturePattern.PlainFill<Real>(0.5f));
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateClearCoatMap(TexturePattern.PlainFill<Real>(0.1f), TexturePattern.PlainFill<Real>(0.5f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateClearCoatMap(TexturePattern.PlainFill<Real>(0.1f), TexturePattern.PlainFill<Real>(0.5f), new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearDataTwoChannelMax });
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
 		_tb.CreateClearCoatMap(0.1f, 0.5f);
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateClearCoatMap(0.1f, 0.5f, new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateClearCoatMap(0.1f, 0.5f, new TextureCreationConfig { GenerateMipMaps = false, DataType = TextureDataType.LinearDataTwoChannelMax });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
 		_tb.CreateClearCoatMap(TexturePattern.PlainFill<Real>(0.1f), TexturePattern.PlainFill<Real>(0.5f), name: "abc");
@@ -430,7 +430,7 @@ unsafe class TextureBuilderInterfaceTest {
 
 	void AssertConfigsEquivalent(in TextureCreationConfig expected, in TextureCreationConfig actual) {
 		Assert.AreEqual(expected.GenerateMipMaps, actual.GenerateMipMaps, "GenerateMipMaps differed between the mirror config and the one the create method used.");
-		Assert.AreEqual(expected.IsLinearColorspace, actual.IsLinearColorspace, "IsLinearColorspace differed between the mirror config and the one the create method used.");
+		Assert.AreEqual(expected.DataType, actual.DataType, "DataType differed between the mirror config and the one the create method used.");
 		Assert.AreEqual(expected.AllowsDynamicWrites, actual.AllowsDynamicWrites, "AllowsDynamicWrites differed between the mirror config and the one the create method used.");
 		Assert.AreEqual(expected.RenderingConfig, actual.RenderingConfig, "RenderingConfig differed between the mirror config and the one the create method used.");
 		Assert.AreEqual(expected.ProcessingToApply, actual.ProcessingToApply, "ProcessingToApply differed between the mirror config and the one the create method used.");

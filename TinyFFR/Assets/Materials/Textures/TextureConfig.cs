@@ -74,13 +74,14 @@ public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> 
 }
 
 public enum TextureDataType {
-	Linear = 0,
-	LinearUnitVector = 1,
-	StandardRgb = 2,
+	LinearData = 0,
+	LinearDataUnitVector = 1,
+	LinearDataTwoChannelMax = 2,
+	ColorSrgb = 3,
 }
 
 public static class TextureDataTypeExtensions {
-	public static bool UsesLinearColorspace(this TextureDataType @this) => @this != TextureDataType.StandardRgb;
+	public static bool UsesLinearColorspace(this TextureDataType @this) => @this != TextureDataType.ColorSrgb;
 }
 
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
@@ -89,7 +90,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 	public static TextureCreationConfig ForColorTexture(ReadOnlySpan<char> name = default) => ForColorTexture(DefaultCompressionQuality, name);
 	public static TextureCreationConfig ForColorTexture(Quality? compressionQuality, ReadOnlySpan<char> name = default) => new() {
 		GenerateMipMaps = true,
-		DataType = TextureDataType.StandardRgb,
+		DataType = TextureDataType.ColorSrgb,
 		RenderingConfig = new(),
 		ProcessingToApply = TextureProcessingConfig.None,
 		CompressionQuality = compressionQuality,
@@ -97,7 +98,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 	};
 	public static TextureCreationConfig ForCanvasTexture(ReadOnlySpan<char> name = default) => new() {
 		GenerateMipMaps = true,
-		DataType = TextureDataType.Linear, // Because canvas scenes have postprocessing disabled which includes the srgb/linear conversion pipeline
+		DataType = TextureDataType.LinearData, // Because canvas scenes have postprocessing disabled which includes the srgb/linear conversion pipeline
 		RenderingConfig = new() {
 			AnisotropicFilteringQuality	= Quality.VeryLow,
 			AnisotropyLevel = 0f,
@@ -107,10 +108,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		CompressionQuality = null,
 		Name = name
 	};
-	public static TextureCreationConfig ForDataTexture(bool texelsAreUnitVectors, ReadOnlySpan<char> name = default) => ForDataTexture(texelsAreUnitVectors, DefaultCompressionQuality, name);
-	public static TextureCreationConfig ForDataTexture(bool texelsAreUnitVectors, Quality? compressionQuality, ReadOnlySpan<char> name = default) => new() {
+	public static TextureCreationConfig ForDataTexture(TextureDataType dataType, ReadOnlySpan<char> name = default) => ForDataTexture(dataType, DefaultCompressionQuality, name);
+	public static TextureCreationConfig ForDataTexture(TextureDataType dataType, Quality? compressionQuality, ReadOnlySpan<char> name = default) => new() {
 		GenerateMipMaps = true,
-		DataType = texelsAreUnitVectors ? TextureDataType.LinearUnitVector : TextureDataType.Linear,
+		DataType = dataType,
 		RenderingConfig = new(),
 		ProcessingToApply = TextureProcessingConfig.None,
 		CompressionQuality = compressionQuality,
@@ -146,7 +147,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 			+	SerializationSizeOfBool() // AllowsDynamicWrites
 			+	SerializationSizeOfBool() // CompressionQuality.HasValue
 			+	SerializationSizeOfInt() // CompressionQuality
-			+	SerializationSizeOfInt() // DataTextureType
+			+	SerializationSizeOfInt() // DataType
 			+	SerializationSizeOfBool() // SamplingConfig.DisableTextureRepeat
 			+	SerializationSizeOfBool() // SamplingConfig.DisableTexelBlending
 			+	SerializationSizeOfInt() // SamplingConfig.AnisotropicFilteringQuality

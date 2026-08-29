@@ -33,7 +33,7 @@ class LocalMipmappingTest {
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
 			new TextureCreationConfig {
 				GenerateMipMaps = true,
-				IsLinearColorspace = false,
+				DataType = TextureDataType.ColorSrgb,
 				CompressionQuality = Quality.Standard
 			}
 		);
@@ -41,7 +41,7 @@ class LocalMipmappingTest {
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
 			new TextureCreationConfig {
 				GenerateMipMaps = false,
-				IsLinearColorspace = false,
+				DataType = TextureDataType.ColorSrgb,
 				CompressionQuality = Quality.Standard
 			}
 		);

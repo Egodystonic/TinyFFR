@@ -1,4 +1,4 @@
-// Created on 2026-08-26 by Ben Bowen
+﻿// Created on 2026-08-26 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Diagnostics;
@@ -160,7 +160,7 @@ unsafe partial class LocalAssetLoader {
 			metadata.Dimensions = dimensions;
 			metadata.IsRgba = TTexel.BlitType == TexelType.Rgba32;
 			metadata.GenerateMipMaps = config.GenerateMipMaps;
-			metadata.IsLinearColorspace = config.IsLinearColorspace;
+			metadata.DataType = config.DataType;
 			metadata.AllowsDynamicWrites = config.AllowsDynamicWrites;
 			metadata.RenderingConfig = config.RenderingConfig;
 			_names.Add(AppendName(config.Name));
@@ -384,7 +384,7 @@ unsafe partial class LocalAssetLoader {
 					new TexelRgba32(paramPtr->ToColorVect()),
 					creationParams.Config with {
 						Name = creationParams.CreateTextureName(TextureTypeName),
-						IsLinearColorspace = true // Numerical outputs are in linear space
+						DataType = TextureDataType.LinearData // Numerical outputs are in linear space
 					},
 					creationParams.HeapPool
 				);
@@ -396,7 +396,7 @@ unsafe partial class LocalAssetLoader {
 						embeddedTex.Dimensions,
 						creationParams.Config with {
 							Name = creationParams.CreateTextureName(TextureTypeName),
-							IsLinearColorspace = false
+							DataType = TextureDataType.ColorSrgb
 						},
 						creationParams.HeapPool
 					);
@@ -428,7 +428,7 @@ unsafe partial class LocalAssetLoader {
 			return creationParams.TextureRegistry.Add(
 				embeddedTex.TexelSpan,
 				embeddedTex.Dimensions,
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false },
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), DataType = TextureDataType.ColorSrgb },
 				creationParams.HeapPool
 			);
 		}
@@ -479,7 +479,7 @@ unsafe partial class LocalAssetLoader {
 				destDim,
 				creationParams.Config with {
 					Name = creationParams.CreateTextureName(TextureTypeName),
-					IsLinearColorspace = !absorptionEmbeddedTex.HasValue // Numerical values are linear, textures assumed sRGB
+					DataType = absorptionEmbeddedTex.HasValue ? TextureDataType.ColorSrgb : TextureDataType.LinearData // Numerical values are linear, textures assumed sRGB
 				},
 				creationParams.HeapPool
 			);
@@ -498,7 +498,7 @@ unsafe partial class LocalAssetLoader {
 					paramPtr->ToTexel().ToRgb24(),
 					creationParams.Config with {
 						Name = creationParams.CreateTextureName(TextureTypeName),
-						IsLinearColorspace = true
+						DataType = TextureDataType.LinearDataUnitVector
 					},
 					creationParams.HeapPool
 				);
@@ -512,7 +512,7 @@ unsafe partial class LocalAssetLoader {
 						embeddedTex.Dimensions,
 						creationParams.Config with {
 							Name = creationParams.CreateTextureName(TextureTypeName), 
-							IsLinearColorspace = true
+							DataType = TextureDataType.LinearDataUnitVector
 						},
 						creationParams.HeapPool
 					);
@@ -558,7 +558,7 @@ unsafe partial class LocalAssetLoader {
 				embeddedTex.Dimensions,
 				creationParams.Config with {
 					Name = creationParams.CreateTextureName(TextureTypeName),
-					IsLinearColorspace = true
+					DataType = TextureDataType.LinearData
 				},
 				creationParams.HeapPool
 			);
@@ -635,7 +635,7 @@ unsafe partial class LocalAssetLoader {
 				return creationParams.TextureRegistry.Add(
 					destinationBuffer.Span,
 					destDim,
-					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName + "r"), IsLinearColorspace = true },
+					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName + "r"), DataType = TextureDataType.LinearData },
 					creationParams.HeapPool
 				);
 			}
@@ -656,7 +656,7 @@ unsafe partial class LocalAssetLoader {
 				return creationParams.TextureRegistry.Add(
 					destinationBuffer.Span,
 					destDim,
-					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
+					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), DataType = TextureDataType.LinearData },
 					creationParams.HeapPool
 				);
 			}
@@ -688,7 +688,7 @@ unsafe partial class LocalAssetLoader {
 			return creationParams.TextureRegistry.Add(
 				rgbTexelBuffer.Span,
 				embeddedTex.Dimensions,
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), DataType = TextureDataType.LinearData },
 				creationParams.HeapPool
 			);
 		}
@@ -738,7 +738,7 @@ unsafe partial class LocalAssetLoader {
 			return creationParams.TextureRegistry.Add(
 				destinationBuffer.Span,
 				destDim,
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), DataType = TextureDataType.LinearData },
 				creationParams.HeapPool
 			);
 		}
@@ -781,7 +781,7 @@ unsafe partial class LocalAssetLoader {
 			return creationParams.TextureRegistry.Add(
 				embeddedTex.TexelSpan,
 				embeddedTex.Dimensions,
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false },
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), DataType = TextureDataType.ColorSrgb },
 				creationParams.HeapPool
 			);
 		}
@@ -841,7 +841,7 @@ unsafe partial class LocalAssetLoader {
 				destDim,
 				creationParams.Config with {
 					Name = creationParams.CreateTextureName(TextureTypeName), 
-					IsLinearColorspace = !colorEmbeddedTex.HasValue // Numerical values are linear, textures assumed sRGB
+					DataType = colorEmbeddedTex.HasValue ? TextureDataType.ColorSrgb : TextureDataType.LinearData // Numerical values are linear, textures assumed sRGB
 				},
 				creationParams.HeapPool
 			);
@@ -872,7 +872,7 @@ unsafe partial class LocalAssetLoader {
 			return creationParams.TextureRegistry.Add(
 				rgbTexelBuffer.Span,
 				embeddedTex.Dimensions,
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), DataType = TextureDataType.LinearDataTwoChannelMax },
 				creationParams.HeapPool
 			);
 		}
@@ -920,7 +920,7 @@ unsafe partial class LocalAssetLoader {
 			return creationParams.TextureRegistry.Add(
 				destinationBuffer.Span,
 				destDim,
-				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true },
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), DataType = TextureDataType.LinearDataTwoChannelMax },
 				creationParams.HeapPool
 			);
 		}

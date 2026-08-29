@@ -64,7 +64,6 @@ static unsafe class LocalNativeUtils {
 		SetLogNotifyDelegate(&HandleLogMessage);
 		ExecOnceOnlyInitialization().ThrowIfFailure();
 		SetBufferDeallocationDelegate(&DeallocateRentedBufferFromNativeCaller).ThrowIfFailure();
-		TextureCompressor.AscertainCompressionSupport();
 		_nativeLibInitialized = true;
 	}
 

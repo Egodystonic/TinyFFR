@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
@@ -111,12 +111,12 @@ unsafe class LocalAsyncLoadingTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Async Model Viewer | SPACE = next loaded model | A = cycle anim | S = play/stop anim | L = camera light | ESC = quit");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), cameraRange: CameraPlaneConfiguration.CloseRange);
 		using var cameraController = camera.CreateController<InspectorCameraController>();
-		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true, brightness: 0f);
+		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true, castsShadows: true, brightness: 0f);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
 		using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-		sceneRenderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.Lowest));
+		sceneRenderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.Ultra));
 		scene.Add(light);
 		scene.Add(sunlight);
 
@@ -151,7 +151,8 @@ unsafe class LocalAsyncLoadingTest {
 			ops[i] = factory.AssetLoader.LoadAllAsync(
 				CommonTestAssets.FindAsset("models/" + InteractiveTestFiles[i].Filename),
 				new ModelCreationConfig {
-					MeshConfig = new() { LinearRescalingFactor = InteractiveTestFiles[i].ScalingFactor }
+					MeshConfig = new() { LinearRescalingFactor = InteractiveTestFiles[i].ScalingFactor },
+					TextureConfig = new() { DataType = TextureDataType.ColorSrgb, CompressionQuality = Quality.VeryHigh }
 				},
 				new ModelReadConfig {
 					MeshConfig = new() { CorrectFlippedOrientation = true },
@@ -345,8 +346,8 @@ unsafe class LocalAsyncLoadingTest {
 		var metadata = loader.ReadTextureMetadata(CrateColorFile);
 		Console.WriteLine($"ELCrate.png: {metadata.Dimensions}, alpha={metadata.IncludesAlphaChannel}");
 
-		using var syncTex = loader.LoadTexture(CrateColorFile, isLinearColorspace: false, "tex-sync");
-		using var asyncTex = AwaitLoad(loader.LoadTextureAsync(CrateColorFile, isLinearColorspace: false, "tex-async"));
+		using var syncTex = loader.LoadTexture(CrateColorFile, dataType: TextureDataType.ColorSrgb, "tex-sync");
+		using var asyncTex = AwaitLoad(loader.LoadTextureAsync(CrateColorFile, dataType: TextureDataType.ColorSrgb, "tex-async"));
 
 		AssertTexturesEquivalent(syncTex, asyncTex, "plain load");
 		Assert.AreEqual(metadata.Dimensions, syncTex.Dimensions);
@@ -359,7 +360,7 @@ unsafe class LocalAsyncLoadingTest {
 		var loader = factory.AssetLoader;
 
 		var config = new TextureCreationConfig {
-			IsLinearColorspace = true,
+			DataType = TextureDataType.LinearData,
 			Name = "processed",
 			ProcessingToApply = new TextureProcessingConfig {
 				FlipX = true,
@@ -383,8 +384,8 @@ unsafe class LocalAsyncLoadingTest {
 			OutputTextureYGreenChannelSource = new(TextureA, G),
 			OutputTextureZBlueChannelSource = new(TextureB, R)
 		};
-		using var sync2 = loader.LoadCombinedTexture(CrateColorFile, CrateNormalFile, twoSource, TextureCreationConfig.ForDataTexture("combine2"));
-		using var async2 = AwaitLoad(loader.LoadCombinedTextureAsync(CrateColorFile, CrateNormalFile, twoSource, TextureCreationConfig.ForDataTexture("combine2")));
+		using var sync2 = loader.LoadCombinedTexture(CrateColorFile, CrateNormalFile, twoSource, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "combine2"));
+		using var async2 = AwaitLoad(loader.LoadCombinedTextureAsync(CrateColorFile, CrateNormalFile, twoSource, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "combine2")));
 		AssertTexturesEquivalent(sync2, async2, "2-source combine");
 
 		var threeSource = new TextureCombinationConfig {
@@ -392,8 +393,8 @@ unsafe class LocalAsyncLoadingTest {
 			OutputTextureYGreenChannelSource = new(TextureB, R),
 			OutputTextureZBlueChannelSource = new(TextureC, R)
 		};
-		using var sync3 = loader.LoadCombinedTexture(CrateColorFile, CrateNormalFile, CrateOrmFile, threeSource, TextureCreationConfig.ForDataTexture("combine3"));
-		using var async3 = AwaitLoad(loader.LoadCombinedTextureAsync(CrateColorFile, CrateNormalFile, CrateOrmFile, threeSource, TextureCreationConfig.ForDataTexture("combine3")));
+		using var sync3 = loader.LoadCombinedTexture(CrateColorFile, CrateNormalFile, CrateOrmFile, threeSource, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "combine3"));
+		using var async3 = AwaitLoad(loader.LoadCombinedTextureAsync(CrateColorFile, CrateNormalFile, CrateOrmFile, threeSource, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "combine3")));
 		AssertTexturesEquivalent(sync3, async3, "3-source combine");
 
 		var fourSource = new TextureCombinationConfig {
@@ -402,8 +403,8 @@ unsafe class LocalAsyncLoadingTest {
 			OutputTextureZBlueChannelSource = new(TextureC, R),
 			OutputTextureWAlphaChannelSource = new(TextureD, R)
 		};
-		using var sync4 = loader.LoadCombinedTexture(CrateColorFile, CrateNormalFile, CrateOrmFile, CrateColorFile, fourSource, TextureCreationConfig.ForDataTexture("combine4"));
-		using var async4 = AwaitLoad(loader.LoadCombinedTextureAsync(CrateColorFile, CrateNormalFile, CrateOrmFile, CrateColorFile, fourSource, TextureCreationConfig.ForDataTexture("combine4")));
+		using var sync4 = loader.LoadCombinedTexture(CrateColorFile, CrateNormalFile, CrateOrmFile, CrateColorFile, fourSource, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "combine4"));
+		using var async4 = AwaitLoad(loader.LoadCombinedTextureAsync(CrateColorFile, CrateNormalFile, CrateOrmFile, CrateColorFile, fourSource, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, "combine4")));
 		AssertTexturesEquivalent(sync4, async4, "4-source combine");
 		Assert.AreEqual(TexelType.Rgba32, sync4.TexelType, "A combine with an alpha source should produce an Rgba32 texture.");
 		Assert.AreEqual(TexelType.Rgb24, sync3.TexelType, "A combine without an alpha source should produce an Rgb24 texture.");
@@ -426,12 +427,12 @@ unsafe class LocalAsyncLoadingTest {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
-		using var syncTex = loader.LoadTexture(loader.BuiltInTexturePaths.DefaultReflectanceMap, isLinearColorspace: true, "builtin-sync");
-		using var asyncTex = AwaitLoad(loader.LoadTextureAsync(loader.BuiltInTexturePaths.DefaultReflectanceMap, isLinearColorspace: true, "builtin-async"));
+		using var syncTex = loader.LoadTexture(loader.BuiltInTexturePaths.DefaultReflectanceMap, dataType: TextureDataType.LinearData, "builtin-sync");
+		using var asyncTex = AwaitLoad(loader.LoadTextureAsync(loader.BuiltInTexturePaths.DefaultReflectanceMap, dataType: TextureDataType.LinearData, "builtin-async"));
 		AssertTexturesEquivalent(syncTex, asyncTex, "built-in texel");
 
-		using var syncEmbedded = loader.LoadTexture(loader.BuiltInTexturePaths.UvTestingTexture, isLinearColorspace: false, "embedded-sync");
-		using var asyncEmbedded = AwaitLoad(loader.LoadTextureAsync(loader.BuiltInTexturePaths.UvTestingTexture, isLinearColorspace: false, "embedded-async"));
+		using var syncEmbedded = loader.LoadTexture(loader.BuiltInTexturePaths.UvTestingTexture, dataType: TextureDataType.ColorSrgb, "embedded-sync");
+		using var asyncEmbedded = AwaitLoad(loader.LoadTextureAsync(loader.BuiltInTexturePaths.UvTestingTexture, dataType: TextureDataType.ColorSrgb, "embedded-async"));
 		AssertTexturesEquivalent(syncEmbedded, asyncEmbedded, "built-in embedded resource");
 	}
 
@@ -483,10 +484,10 @@ unsafe class LocalAsyncLoadingTest {
 		var loader = factory.AssetLoader;
 
 		var ops = new[] {
-			loader.LoadTextureAsync(CrateColorFile, false, "c0"),
-			loader.LoadTextureAsync(CrateNormalFile, true, "c1"),
-			loader.LoadTextureAsync(CrateOrmFile, true, "c2"),
-			loader.LoadTextureAsync(CrateColorFile, false, "c3")
+			loader.LoadTextureAsync(CrateColorFile, TextureDataType.ColorSrgb, "c0"),
+			loader.LoadTextureAsync(CrateNormalFile, TextureDataType.LinearDataUnitVector, "c1"),
+			loader.LoadTextureAsync(CrateOrmFile, TextureDataType.LinearData, "c2"),
+			loader.LoadTextureAsync(CrateColorFile, TextureDataType.ColorSrgb, "c3")
 		};
 
 		var textures = ops.Select(AwaitLoad).ToList();
@@ -504,8 +505,8 @@ unsafe class LocalAsyncLoadingTest {
 		XYPair<int>? expectedDimensions = null;
 		for (var i = 0; i < 12; ++i) {
 			using var texture = (i % 2 == 0)
-				? loader.LoadTexture(CrateColorFile, isLinearColorspace: false, "repeat")
-				: AwaitLoad(loader.LoadTextureAsync(CrateColorFile, isLinearColorspace: false, "repeat"));
+				? loader.LoadTexture(CrateColorFile, dataType: TextureDataType.ColorSrgb, "repeat")
+				: AwaitLoad(loader.LoadTextureAsync(CrateColorFile, dataType: TextureDataType.ColorSrgb, "repeat"));
 			expectedDimensions ??= texture.Dimensions;
 			Assert.AreEqual(expectedDimensions.Value, texture.Dimensions, $"Iteration {i} produced different dimensions.");
 		}
@@ -748,7 +749,7 @@ unsafe class LocalAsyncLoadingTest {
 					new ModelCreationConfig {
 						Name = "doomed",
 						TextureConfig = new TextureCreationConfig {
-							IsLinearColorspace = true,
+							DataType = TextureDataType.LinearData,
 							ProcessingToApply = new TextureProcessingConfig {
 								PostProcessingFunction = TexelProcessingFunction.Create<TexelRgba32>(&ThrowAfterFirstInvocation)
 							}
