@@ -813,4 +813,53 @@ class ColorVectTest {
 		AssertColor(StandardColor.Teal, new(0f, 0.5f, 0.5f, 1f));
 		AssertColor(StandardColor.Purple, new(0.5f, 0f, 0.5f, 1f));
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertBetweenSrgbAndLinear() {
+		Assert.AreEqual(0f, ColorVect.SrgbToLinear(0f), 1E-6f);
+		Assert.AreEqual(1f, ColorVect.SrgbToLinear(1f), 1E-6f);
+		Assert.AreEqual(0f, ColorVect.LinearToSrgb(0f), 1E-6f);
+		Assert.AreEqual(1f, ColorVect.LinearToSrgb(1f), 1E-6f);
+
+		// From https://physicallybased.info/tools/
+		Assert.AreEqual(0.214f, ColorVect.SrgbToLinear(0.5f), TestTolerance);
+		Assert.AreEqual(0.735f, ColorVect.LinearToSrgb(0.5f), TestTolerance);
+
+		for (var i = 0; i <= 255; ++i) {
+			Assert.AreEqual(i / 255f, ColorVect.LinearToSrgb(ColorVect.SrgbToLinear(i / 255f)), 1E-5f);
+			Assert.AreEqual(i / 255f, ColorVect.SrgbToLinear(ColorVect.LinearToSrgb(i / 255f)), 1E-5f);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyHandleSrgbTransferFunctionKneePoints() {
+		const float SrgbKnee = 0.04045f;
+		const float LinearKnee = 0.0031308f;
+
+		Assert.AreEqual(SrgbKnee / 12.92f, ColorVect.SrgbToLinear(SrgbKnee), TestTolerance);
+		Assert.AreEqual(LinearKnee * 12.92f, ColorVect.LinearToSrgb(LinearKnee), TestTolerance);
+
+		var srgbKneeViaCurve = MathF.Pow((SrgbKnee + 0.055f) / 1.055f, 2.4f);
+		var linearKneeViaCurve = 1.055f * MathF.Pow(LinearKnee, 1f / 2.4f) - 0.055f;
+		Assert.AreEqual(ColorVect.SrgbToLinear(SrgbKnee), srgbKneeViaCurve, TestTolerance);
+		Assert.AreEqual(ColorVect.LinearToSrgb(LinearKnee), linearKneeViaCurve, TestTolerance);
+
+		Assert.IsTrue(ColorVect.SrgbToLinear(0.01f) < 0.01f);
+		Assert.IsTrue(ColorVect.LinearToSrgb(0.01f) > 0.01f);
+	}
+
+	[Test]
+	public void ShouldLeaveAlphaUntouchedWhenConvertingColourspaces() {
+		var srgb = new ColorVect(0.5f, 0.25f, 0.75f, 0.3f);
+		var linear = ColorVect.SrgbToLinear(srgb);
+
+		Assert.AreEqual(0.3f, linear.Alpha, TestTolerance);
+		Assert.AreEqual(ColorVect.SrgbToLinear(0.5f), linear.Red, TestTolerance);
+		Assert.AreEqual(ColorVect.SrgbToLinear(0.25f), linear.Green, TestTolerance);
+		Assert.AreEqual(ColorVect.SrgbToLinear(0.75f), linear.Blue, TestTolerance);
+
+		var roundTripped = ColorVect.LinearToSrgb(linear);
+		AssertToleranceEquals(srgb, roundTripped, TestTolerance);
+		Assert.AreEqual(0.3f, roundTripped.Alpha, TestTolerance);
+	}
 }

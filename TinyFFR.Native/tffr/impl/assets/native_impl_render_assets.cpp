@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "assets/native_impl_render_assets.h"
+#include "assets/native_impl_texture_compression.h"
 
 #include "native_impl_init.h"
 #include "utils_and_constants.h"
@@ -12,6 +13,8 @@
 static void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdentity identity) {
 	native_impl_init::deallocation_delegate(identity);
 }
+
+static void filament_callback_noop(void* _, size_t __, BufferIdentity ___) { }
 
 void native_impl_render_assets::allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
 	ThrowIfNull(vertices, "Vertices pointer was null.");
@@ -312,6 +315,101 @@ void native_impl_render_assets::update_texture_rgba_32(TextureHandle texture, Bu
 }
 StartExportedFunc(update_texture_rgba_32, TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
 	native_impl_render_assets::update_texture_rgba_32(texture, bufferIdentity, dataPtr, dataLen, xOffset, yOffset, width, height);
+	EndExportedFunc
+}
+
+static bool try_convert_tffr_compression_format_to_filament(int32_t formatId, Texture::InternalFormat* outInternalFormat, backend::CompressedPixelDataType* outPixelDataType) {
+	switch (formatId) {
+		case TFFR_COMPRESSION_FORMAT_BC1_SRGB:
+			*outInternalFormat = Texture::InternalFormat::DXT1_SRGB;
+			*outPixelDataType = backend::CompressedPixelDataType::DXT1_SRGB;
+			return true;
+		case TFFR_COMPRESSION_FORMAT_BC3_SRGB:
+			*outInternalFormat = Texture::InternalFormat::DXT5_SRGBA;
+			*outPixelDataType = backend::CompressedPixelDataType::DXT5_SRGBA;
+			return true;
+		case TFFR_COMPRESSION_FORMAT_BC5:
+			*outInternalFormat = Texture::InternalFormat::RED_GREEN_RGTC2;
+			*outPixelDataType = backend::CompressedPixelDataType::RED_GREEN_RGTC2;
+			return true;
+		case TFFR_COMPRESSION_FORMAT_BC7_SRGB:
+			*outInternalFormat = Texture::InternalFormat::SRGB_ALPHA_BPTC_UNORM;
+			*outPixelDataType = backend::CompressedPixelDataType::SRGB_ALPHA_BPTC_UNORM;
+			return true;
+		case TFFR_COMPRESSION_FORMAT_BC7_LINEAR:
+			*outInternalFormat = Texture::InternalFormat::RGBA_BPTC_UNORM;
+			*outPixelDataType = backend::CompressedPixelDataType::RGBA_BPTC_UNORM;
+			return true;
+		default:
+			return false;
+	}
+}
+
+void native_impl_render_assets::is_texture_compression_format_supported(int32_t formatId, interop_bool* outSupported) {
+	ThrowIfNull(outSupported, "Out supported pointer was null.");
+
+	Texture::InternalFormat internalFormat;
+	backend::CompressedPixelDataType pixelDataType;
+	if (!try_convert_tffr_compression_format_to_filament(formatId, &internalFormat, &pixelDataType)) {
+		*outSupported = false;
+		return;
+	}
+
+	*outSupported = Texture::isTextureFormatSupported(*filament_engine, internalFormat);
+}
+StartExportedFunc(is_texture_compression_format_supported, int32_t formatId, interop_bool* outSupported) {
+	native_impl_render_assets::is_texture_compression_format_supported(formatId, outSupported);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::load_texture_compressed(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, int32_t formatId, uint32_t levelCount, const uint32_t* levelOffsets, const uint32_t* levelSizes, TextureHandle* outTexture) {
+	ThrowIfNull(dataPtr, "Data pointer was null.");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+	ThrowIfNull(levelOffsets, "Level offsets pointer was null.");
+	ThrowIfNull(levelSizes, "Level sizes pointer was null.");
+	ThrowIfNull(outTexture, "Out texture pointer was null.");
+	ThrowIf(levelCount == 0U, "Level count must be positive.");
+
+	Texture::InternalFormat internalFormat;
+	backend::CompressedPixelDataType pixelDataType;
+	ThrowIf(!try_convert_tffr_compression_format_to_filament(formatId, &internalFormat, &pixelDataType), "Unknown texture compression format ID.");
+
+	for (uint32_t level = 0U; level < levelCount; ++level) {
+		const uint64_t levelEnd = static_cast<uint64_t>(levelOffsets[level]) + levelSizes[level];
+		ThrowIf(levelEnd > static_cast<uint64_t>(dataLen), "Compressed texture level extent exceeded the supplied data buffer.");
+	}
+
+	*outTexture = Texture::Builder()
+		.depth(1)
+		.format(internalFormat)
+		.height(height)
+		.levels(static_cast<uint8_t>(levelCount))
+		.sampler(Texture::Sampler::SAMPLER_2D)
+		.usage(Texture::Usage::DEFAULT)
+		.width(width)
+		.build(*filament_engine);
+	ThrowIfNull(*outTexture, "Could not load compressed texture.");
+
+	for (uint32_t level = 0U; level < levelCount; ++level) {
+		const bool isFinalLevel = level == levelCount - 1U;
+		void* levelPtr = static_cast<uint8_t*>(dataPtr) + levelOffsets[level];
+		const uint32_t levelWidth = std::max(1U, width >> level);
+		const uint32_t levelHeight = std::max(1U, height >> level);
+
+		auto levelBuffer = Texture::PixelBufferDescriptor{
+			levelPtr,
+			static_cast<size_t>(levelSizes[level]),
+			pixelDataType,
+			levelSizes[level],
+			isFinalLevel ? &handle_filament_buffer_copy_callback : &filament_callback_noop,
+			bufferIdentity
+		}; 
+
+		(*outTexture)->setImage(*filament_engine, level, 0, 0, 0, levelWidth, levelHeight, 1, std::move(levelBuffer));
+	}
+}
+StartExportedFunc(load_texture_compressed, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, int32_t formatId, uint32_t levelCount, const uint32_t* levelOffsets, const uint32_t* levelSizes, TextureHandle* outTexture) {
+	native_impl_render_assets::load_texture_compressed(bufferIdentity, dataPtr, dataLen, width, height, formatId, levelCount, levelOffsets, levelSizes, outTexture);
 	EndExportedFunc
 }
 

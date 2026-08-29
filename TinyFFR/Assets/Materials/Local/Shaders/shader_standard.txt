@@ -62,8 +62,9 @@ fragment {
 		vec2 uv0 = getUV0();
 
 #if Normals
-		material.normal = texture(materialParams_normal_map, uv0).xyz * 2.0 - 1.0;
+		material.normal.xy = texture(materialParams_normal_map, uv0).xy * 2.0 - 1.0;
 		material.normal.y = -material.normal.y;
+		material.normal.z = sqrt(max(0.0, 1.0 - dot(material.normal.xy, material.normal.xy)));
 #endif Normals
 
 		prepareMaterial(material);

@@ -24,20 +24,20 @@ public partial interface IAssetLoader {
 
 	#region Normal
 	Texture LoadNormalMap(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
-		if (!isDirectXFormat) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+		if (!isDirectXFormat) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, Path.GetFileName(filePath)));
 		return LoadTexture(
 			filePath,
-			TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)) with {
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, Path.GetFileName(filePath)) with {
 				ProcessingToApply = new TextureProcessingConfig { InvertYGreenChannel = true }
 			}
 		);
 	}
 
 	TinyFfrAsyncOperation<Texture> LoadNormalMapAsync(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
-		if (!isDirectXFormat) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+		if (!isDirectXFormat) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, Path.GetFileName(filePath)));
 		return LoadTextureAsync(
 			filePath,
-			TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)) with {
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, Path.GetFileName(filePath)) with {
 				ProcessingToApply = new TextureProcessingConfig { InvertYGreenChannel = true }
 			}
 		);
@@ -495,7 +495,7 @@ public partial interface IAssetLoader {
 	#endregion
 
 	#region Clearcoat
-	Texture LoadClearCoatMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+	Texture LoadClearCoatMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, Path.GetFileName(filePath)));
 	Texture LoadClearCoatMap(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath) {
 		var a = Path.GetFileName(thicknessFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
@@ -510,11 +510,11 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureA, B)
 			},
-			TextureCreationConfig.ForDataTexture(name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, name)
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(Path.GetFileName(filePath)));
+	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, Path.GetFileName(filePath)));
 	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath) {
 		var a = Path.GetFileName(thicknessFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
@@ -529,7 +529,7 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureA, B)
 			},
-			TextureCreationConfig.ForDataTexture(name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, name)
 		);
 	}
 	#endregion

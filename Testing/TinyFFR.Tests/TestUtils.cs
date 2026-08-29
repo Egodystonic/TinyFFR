@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory;
 
 namespace Egodystonic.TinyFFR;
@@ -374,5 +375,27 @@ fail:
 		return types
 			.Where(t => t.GetInterfaces().Contains(interfaceType))
 			.ToArray();
+	}
+	
+	public static double CalculateTexturePeakSnr(ReadOnlySpan<TexelRgba32> original, ReadOnlySpan<TexelRgba32> decoded, bool includeBlue, bool includeAlpha) {
+		var sumSquaredError = 0d;
+		var sampleCount = 0;
+		for (var i = 0; i < original.Length; ++i) {
+			sumSquaredError += Math.Pow(original[i].R - decoded[i].R, 2);
+			sumSquaredError += Math.Pow(original[i].G - decoded[i].G, 2);
+			sampleCount += 2;
+			if (includeBlue) {
+				sumSquaredError += Math.Pow(original[i].B - decoded[i].B, 2);
+				sampleCount += 1;
+			}
+			if (includeAlpha) {
+				sumSquaredError += Math.Pow(original[i].A - decoded[i].A, 2);
+				sampleCount += 1;
+			}
+		}
+
+		var meanSquaredError = sumSquaredError / sampleCount;
+		if (meanSquaredError <= 0d) return Double.PositiveInfinity;
+		return 10d * Math.Log10(255d * 255d / meanSquaredError);
 	}
 }

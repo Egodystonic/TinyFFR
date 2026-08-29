@@ -3,6 +3,7 @@
 
 using System;
 using System.Text;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -62,7 +63,8 @@ static unsafe class LocalNativeUtils {
 
 		SetLogNotifyDelegate(&HandleLogMessage);
 		ExecOnceOnlyInitialization().ThrowIfFailure();
-		SetBufferDeallocationDelegate(&DeallocateRentedBuffer).ThrowIfFailure();
+		SetBufferDeallocationDelegate(&DeallocateRentedBufferFromNativeCaller).ThrowIfFailure();
+		TextureCompressor.AscertainCompressionSupport();
 		_nativeLibInitialized = true;
 	}
 
@@ -77,7 +79,9 @@ static unsafe class LocalNativeUtils {
 	);
 
 	[UnmanagedCallersOnly]
-	static void DeallocateRentedBuffer(nuint bufferId) {
+	static void DeallocateRentedBufferFromNativeCaller(nuint bufferId) => DeallocateRentedBuffer(bufferId);
+
+	public static void DeallocateRentedBuffer(nuint bufferId) {
 		if (!_activeTemporaryBuffers.Remove(bufferId, out var tuple)) {
 			throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
 		}

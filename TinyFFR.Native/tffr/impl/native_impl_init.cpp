@@ -2,6 +2,7 @@
 #include "native_impl_init.h"
 
 #include "utils_and_constants.h"
+#include "assets/native_impl_texture_compression.h"
 #include "sdl/SDL.h"
 #include "filament/utils/Log.h"
 
@@ -76,6 +77,8 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 		.build();
 
 	ThrowIfNull(filament_engine_ptr, "Could not initialize filament.");
+
+	native_impl_texture_compression::initialize_encoders();
 }
 StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex, filament::backend::swapchain_recreation_notify_delegate swapchainRecreationHintCallback) {
 	native_impl_init::on_factory_build(enableVsync, commandBufferSizeMb, furtherReduceMemoryUsage, renderingApiIndex, swapchainRecreationHintCallback);

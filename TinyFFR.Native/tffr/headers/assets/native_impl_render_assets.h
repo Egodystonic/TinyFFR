@@ -77,6 +77,8 @@ public:
 	static void load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture);
 	static void update_texture_rgb_24(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height);
 	static void update_texture_rgba_32(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height);
+	static void is_texture_compression_format_supported(int32_t formatId, interop_bool* outSupported);
+	static void load_texture_compressed(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, int32_t formatId, uint32_t levelCount, const uint32_t* levelOffsets, const uint32_t* levelSizes, TextureHandle* outTexture);
 	static void dispose_texture(TextureHandle texture);
 
 	static void load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle);

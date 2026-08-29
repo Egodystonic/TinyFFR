@@ -330,6 +330,8 @@ unsafe class TextureConfigTest {
 			GenerateMipMaps = true,
 			IsLinearColorspace = true,
 			AllowsDynamicWrites = false,
+			CompressionQuality = Quality.High,
+			DataTextureType = TextureDataType.LinearUnitVector,
 			RenderingConfig = new(true, true, Quality.High),
 			Name = "Aa Aa",
 			ProcessingToApply = new TextureProcessingConfig {
@@ -349,6 +351,8 @@ unsafe class TextureConfigTest {
 			GenerateMipMaps = false,
 			IsLinearColorspace = false,
 			AllowsDynamicWrites = true,
+			CompressionQuality = null,
+			DataTextureType = TextureDataType.Other,
 			RenderingConfig = new(false, false, Quality.Low),
 			Name = "BBBbbb",
 			ProcessingToApply = new TextureProcessingConfig {
@@ -369,6 +373,8 @@ unsafe class TextureConfigTest {
 			Assert.AreEqual(expected.GenerateMipMaps, actual.GenerateMipMaps);
 			Assert.AreEqual(expected.IsLinearColorspace, actual.IsLinearColorspace);
 			Assert.AreEqual(expected.AllowsDynamicWrites, actual.AllowsDynamicWrites);
+			Assert.AreEqual(expected.CompressionQuality, actual.CompressionQuality);
+			Assert.AreEqual(expected.DataTextureType, actual.DataTextureType);
 			Assert.AreEqual(expected.RenderingConfig, actual.RenderingConfig);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 			Assert.AreEqual(expected.ProcessingToApply, actual.ProcessingToApply);
@@ -382,6 +388,9 @@ unsafe class TextureConfigTest {
 			.Bool(true)
 			.Bool(false)
 			.Bool(true)
+			.Int((int) Quality.High)
+			.Int((int) TextureDataType.LinearUnitVector)
+			.Bool(true)
 			.Bool(true)
 			.Int(1)
 			.Float(testConfigA.RenderingConfig.AnisotropyLevel)
@@ -394,6 +403,9 @@ unsafe class TextureConfigTest {
 			.Bool(false)
 			.Bool(true)
 			.Bool(false)
+			.Int(0)
+			.Int((int) TextureDataType.Other)
+			.Bool(false)
 			.Bool(false)
 			.Int(-1)
 			.Float(testConfigB.RenderingConfig.AnisotropyLevel)
@@ -405,6 +417,8 @@ unsafe class TextureConfigTest {
 			.Including(nameof(TextureCreationConfig.GenerateMipMaps))
 			.Including(nameof(TextureCreationConfig.IsLinearColorspace))
 			.Including(nameof(TextureCreationConfig.AllowsDynamicWrites))
+			.Including(nameof(TextureCreationConfig.CompressionQuality))
+			.Including(nameof(TextureCreationConfig.DataTextureType))
 			.Including(nameof(TextureCreationConfig.RenderingConfig))
 			.Including(nameof(TextureCreationConfig.Name))
 			.Including(nameof(TextureCreationConfig.ProcessingToApply))

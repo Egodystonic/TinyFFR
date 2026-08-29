@@ -73,35 +73,53 @@ public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> 
 	}
 }
 
+public enum TextureDataType {
+	Linear = 0,
+	LinearUnitVector = 1,
+	StandardRgb = 2,
+}
+
+public static class TextureDataTypeExtensions {
+	public static bool UsesLinearColorspace(this TextureDataType @this) => @this != TextureDataType.StandardRgb;
+}
+
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
-	public static TextureCreationConfig ForColorTexture(ReadOnlySpan<char> name = default) => new() {
+	public static readonly Quality? DefaultCompressionQuality = null;
+	
+	public static TextureCreationConfig ForColorTexture(ReadOnlySpan<char> name = default) => ForColorTexture(DefaultCompressionQuality, name);
+	public static TextureCreationConfig ForColorTexture(Quality? compressionQuality, ReadOnlySpan<char> name = default) => new() {
 		GenerateMipMaps = true,
-		IsLinearColorspace = false,
+		DataType = TextureDataType.StandardRgb,
 		RenderingConfig = new(),
 		ProcessingToApply = TextureProcessingConfig.None,
+		CompressionQuality = compressionQuality,
 		Name = name
 	};
 	public static TextureCreationConfig ForCanvasTexture(ReadOnlySpan<char> name = default) => new() {
 		GenerateMipMaps = true,
-		IsLinearColorspace = true,
+		DataType = TextureDataType.Linear, // Because canvas scenes have postprocessing disabled which includes the srgb/linear conversion pipeline
 		RenderingConfig = new() {
 			AnisotropicFilteringQuality	= Quality.VeryLow,
 			AnisotropyLevel = 0f,
 			DisableTextureRepeat = true
 		},
 		ProcessingToApply = TextureProcessingConfig.None,
+		CompressionQuality = null,
 		Name = name
 	};
-	public static TextureCreationConfig ForDataTexture(ReadOnlySpan<char> name = default) => new() {
+	public static TextureCreationConfig ForDataTexture(bool texelsAreUnitVectors, ReadOnlySpan<char> name = default) => ForDataTexture(texelsAreUnitVectors, DefaultCompressionQuality, name);
+	public static TextureCreationConfig ForDataTexture(bool texelsAreUnitVectors, Quality? compressionQuality, ReadOnlySpan<char> name = default) => new() {
 		GenerateMipMaps = true,
-		IsLinearColorspace = true,
+		DataType = texelsAreUnitVectors ? TextureDataType.LinearUnitVector : TextureDataType.Linear,
 		RenderingConfig = new(),
 		ProcessingToApply = TextureProcessingConfig.None,
+		CompressionQuality = compressionQuality,
 		Name = name
 	};
-	
+
 	public bool GenerateMipMaps { get; init; } = true;
-	public required bool IsLinearColorspace { get; init; }
+	public Quality? CompressionQuality { get; init; } = DefaultCompressionQuality;
+	public required TextureDataType DataType { get; init; }
 	public bool AllowsDynamicWrites {
 		get; 
 		init {
@@ -125,8 +143,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 
 	public static int GetHeapStorageFormattedLength(in TextureCreationConfig src) {
 		return	SerializationSizeOfBool() // GenerateMipMaps
-			+	SerializationSizeOfBool() // IsLinearColorspace
 			+	SerializationSizeOfBool() // AllowsDynamicWrites
+			+	SerializationSizeOfBool() // CompressionQuality.HasValue
+			+	SerializationSizeOfInt() // CompressionQuality
+			+	SerializationSizeOfInt() // DataTextureType
 			+	SerializationSizeOfBool() // SamplingConfig.DisableTextureRepeat
 			+	SerializationSizeOfBool() // SamplingConfig.DisableTexelBlending
 			+	SerializationSizeOfInt() // SamplingConfig.AnisotropicFilteringQuality
@@ -136,8 +156,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCreationConfig src) {
 		SerializationWriteBool(ref dest, src.GenerateMipMaps);
-		SerializationWriteBool(ref dest, src.IsLinearColorspace);
 		SerializationWriteBool(ref dest, src.AllowsDynamicWrites);
+		SerializationWriteBool(ref dest, src.CompressionQuality != null);
+		SerializationWriteInt(ref dest, (int) (src.CompressionQuality ?? default));
+		SerializationWriteInt(ref dest, (int) src.DataType);
 		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTextureRepeat);
 		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTexelBlending);
 		SerializationWriteInt(ref dest, (int) src.RenderingConfig.AnisotropicFilteringQuality);
@@ -147,8 +169,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 	}
 	public static TextureCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		var generateMipMaps = SerializationReadBool(ref src);
-		var isLinearColorspace = SerializationReadBool(ref src);
 		var allowsDynamicWrites = SerializationReadBool(ref src);
+		var hasCompressionQuality = SerializationReadBool(ref src);
+		var compressionQualityValue = (Quality) SerializationReadInt(ref src);
+		var dataType = (TextureDataType) SerializationReadInt(ref src);
 		var disableTextureRepeat = SerializationReadBool(ref src);
 		var disableTexelBlending = SerializationReadBool(ref src);
 		var anisotropicFilteringQuality = (Quality) SerializationReadInt(ref src);
@@ -156,8 +180,9 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 
 		return new TextureCreationConfig {
 			GenerateMipMaps = generateMipMaps,
-			IsLinearColorspace = isLinearColorspace,
 			AllowsDynamicWrites = allowsDynamicWrites,
+			CompressionQuality = hasCompressionQuality ? compressionQualityValue : null,
+			DataType = dataType,
 			RenderingConfig = new TextureRenderingConfig(disableTextureRepeat, disableTexelBlending, anisotropicFilteringQuality) {
 				AnisotropyLevel = anisotropyLevel
 			},

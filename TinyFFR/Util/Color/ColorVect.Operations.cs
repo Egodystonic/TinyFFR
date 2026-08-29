@@ -102,4 +102,41 @@ partial struct ColorVect :
 		);
 	}
 	#endregion
+
+	#region Colorspace Conversion
+	const float SrgbToLinearThreshold = 0.04045f;
+	const float LinearToSrgbThreshold = 0.0031308f;
+	const float SrgbLinearSegmentSlope = 12.92f;
+	const float SrgbCurveOffset = 0.055f;
+	const float SrgbCurveScale = 1.055f;
+	const float SrgbCurveExponent = 2.4f;
+
+	public static float SrgbToLinear(float srgbChannel) {
+		if (srgbChannel <= SrgbToLinearThreshold) return srgbChannel / SrgbLinearSegmentSlope;
+		return MathF.Pow((srgbChannel + SrgbCurveOffset) / SrgbCurveScale, SrgbCurveExponent);
+	}
+
+	public static float LinearToSrgb(float linearChannel) {
+		if (linearChannel <= LinearToSrgbThreshold) return linearChannel * SrgbLinearSegmentSlope;
+		return SrgbCurveScale * MathF.Pow(linearChannel, 1f / SrgbCurveExponent) - SrgbCurveOffset;
+	}
+
+	public static ColorVect SrgbToLinear(ColorVect srgb) {
+		return new(
+			SrgbToLinear(srgb.Red),
+			SrgbToLinear(srgb.Green),
+			SrgbToLinear(srgb.Blue),
+			srgb.Alpha
+		);
+	}
+
+	public static ColorVect LinearToSrgb(ColorVect linear) {
+		return new(
+			LinearToSrgb(linear.Red),
+			LinearToSrgb(linear.Green),
+			LinearToSrgb(linear.Blue),
+			linear.Alpha
+		);
+	}
+	#endregion
 }

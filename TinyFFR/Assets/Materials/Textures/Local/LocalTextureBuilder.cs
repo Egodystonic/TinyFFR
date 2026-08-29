@@ -24,7 +24,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable {
-	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType, bool AllowsDynamicWrites, bool ContainsMipMaps, TextureRenderingConfig RenderingConfig);
+	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType, bool AllowsDynamicWrites, bool ContainsMipMaps, TextureRenderingConfig RenderingConfig, TextureCompressionFormat CompressionFormat);
 	const string DefaultTextureName = "Unnamed Texture";
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -63,14 +63,28 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 			preallocatedBuffer,
 			generationConfig.Dimensions,
 			config.GenerateMipMaps,
-			config.IsLinearColorspace,
 			config.AllowsDynamicWrites,
 			config.RenderingConfig,
+			config.CompressionQuality,
+			config.DataType,
 			config.Name
 		);
 	}
 
-	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, XYPair<int> dimensions, bool generateMipMaps, bool isLinearColorspace, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
+	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, XYPair<int> dimensions, bool generateMipMaps, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, Quality? compressionQuality, TextureDataType dataType, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
+		var compressionFormat = TextureCompressor.GetRecommendedFormat(
+			dimensions,
+			TTexel.BlitType,
+			dataType,
+			compressionQuality,
+			allowsDynamicWrites,
+			generateMipMaps
+		);
+
+		if (compressionFormat != TextureCompressionFormat.None && compressionQuality is { } cq) {
+			return CreateCompressedTextureAndDisposePreallocatedBuffer(preallocatedBuffer, dimensions, generateMipMaps, renderingConfig, compressionFormat, cq, dataType, name);
+		}
+
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Span));
 		var dataLength = preallocatedBuffer.Span.Length * sizeof(TTexel);
 
@@ -84,7 +98,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 					(uint) dimensions.X,
 					(uint) dimensions.Y,
 					generateMipMaps,
-					isLinearColorspace,
+					dataType.UsesLinearColorspace(),
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -96,7 +110,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 					(uint) dimensions.X,
 					(uint) dimensions.Y,
 					generateMipMaps,
-					isLinearColorspace,
+					dataType.UsesLinearColorspace(),
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -106,7 +120,107 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(dimensions, TTexel.BlitType, allowsDynamicWrites, generateMipMaps, renderingConfig));
+		_loadedTextures.Add(handle, new(dimensions, TTexel.BlitType, allowsDynamicWrites, generateMipMaps, renderingConfig, TextureCompressionFormat.None));
+		return HandleToInstance(handle);
+	}
+
+	public Texture CreateTextureFromCompressedBlocks(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, bool generateMipMaps, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		if (compressionFormat == TextureCompressionFormat.None) {
+			throw new ArgumentOutOfRangeException(nameof(compressionFormat), compressionFormat, "Compression format must not be None.");
+		}
+
+		var expectedSizeBytes = TextureCompressor.GetCompressedSizeBytes(dimensions, compressionFormat, generateMipMaps);
+		if (blocks.Length < expectedSizeBytes) {
+			throw new ArgumentException(
+				$"Compressed block data for a {dimensions.X}x{dimensions.Y} {compressionFormat} texture requires {expectedSizeBytes} bytes, " +
+				$"but only {blocks.Length} were supplied.",
+				nameof(blocks)
+			);
+		}
+
+		var buffer = _globals.CreateGpuHoldingBuffer(expectedSizeBytes);
+		blocks[..expectedSizeBytes].CopyTo(buffer.AsSpan<byte>());
+		return UploadCompressedBlocksAndStoreTextureData(buffer, dimensions, compressionFormat, levelCount, sourceTexelType, generateMipMaps, renderingConfig, name);
+	}
+
+	Texture UploadCompressedBlocksAndStoreTextureData(TemporaryLoadSpaceBuffer buffer, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, bool generateMipMaps, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+		var levelOffsets = stackalloc uint[levelCount];
+		var levelSizes = stackalloc uint[levelCount];
+		var runningOffset = 0;
+		for (var level = 0; level < levelCount; ++level) {
+			var levelSizeBytes = TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, level), compressionFormat);
+			levelOffsets[level] = (uint) runningOffset;
+			levelSizes[level] = (uint) levelSizeBytes;
+			runningOffset += levelSizeBytes;
+		}
+
+		LoadTextureCompressed(
+			buffer.BufferIdentity,
+			(void*) buffer.DataPtr,
+			buffer.DataLengthBytes,
+			(uint) dimensions.X,
+			(uint) dimensions.Y,
+			(int) compressionFormat,
+			(uint) levelCount,
+			levelOffsets,
+			levelSizes,
+			out var outHandle
+		).ThrowIfFailure();
+
+		var handle = (ResourceHandle<Texture>) outHandle;
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
+		_loadedTextures.Add(handle, new(dimensions, sourceTexelType, false, generateMipMaps, renderingConfig, compressionFormat));
+		return HandleToInstance(handle);
+	}
+
+	Texture CreateCompressedTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, XYPair<int> dimensions, bool generateMipMaps, TextureRenderingConfig renderingConfig, TextureCompressionFormat compressionFormat, Quality compressionQuality, TextureDataType dataType, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
+		var levelCount = generateMipMaps ? TextureUtils.GetMipLevelCount(dimensions) : 1;
+		var totalSizeBytes = TextureCompressor.GetCompressedSizeBytes(dimensions, compressionFormat, generateMipMaps);
+		var compressedBuffer = _globals.CreateGpuHoldingBuffer(totalSizeBytes);
+
+		try {
+			TextureCompressor.Compress(
+				(ReadOnlySpan<TTexel>) preallocatedBuffer.Span,
+				dimensions,
+				compressionFormat,
+				compressionQuality,
+				dataType,
+				generateMipMaps,
+				compressedBuffer.AsSpan<byte>()
+			);
+		}
+		finally {
+			_globals.ReleaseGpuHoldingBufferWithoutGpuSubmission(preallocatedBuffer.BufferId);
+		}
+
+		var levelOffsets = stackalloc uint[levelCount];
+		var levelSizes = stackalloc uint[levelCount];
+		var runningOffset = 0;
+		for (var level = 0; level < levelCount; ++level) {
+			var levelSizeBytes = TextureCompressor.GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, level), compressionFormat);
+			levelOffsets[level] = (uint) runningOffset;
+			levelSizes[level] = (uint) levelSizeBytes;
+			runningOffset += levelSizeBytes;
+		}
+
+		LoadTextureCompressed(
+			compressedBuffer.BufferIdentity,
+			(void*) compressedBuffer.DataPtr,
+			compressedBuffer.DataLengthBytes,
+			(uint) dimensions.X,
+			(uint) dimensions.Y,
+			(int) compressionFormat,
+			(uint) levelCount,
+			levelOffsets,
+			levelSizes,
+			out var outHandle
+		).ThrowIfFailure();
+
+		var handle = (ResourceHandle<Texture>) outHandle;
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
+		_loadedTextures.Add(handle, new(dimensions, TTexel.BlitType, false, generateMipMaps, renderingConfig, compressionFormat));
 		return HandleToInstance(handle);
 	}
 
@@ -163,7 +277,11 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
 	
-	public Texture CreateTextureWithoutProcessing<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool generateMipMaps, bool isLinearColorspace, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
+	public Texture CreateTextureWithoutProcessing<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool generateMipMaps, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, TextureDataType dataType, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
+		return CreateTextureWithoutProcessing(texels, dimensions, generateMipMaps, allowsDynamicWrites, renderingConfig, null, dataType, name);
+	}
+
+	public Texture CreateTextureWithoutProcessing<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, bool generateMipMaps, bool allowsDynamicWrites, TextureRenderingConfig renderingConfig, Quality? compressionQuality, TextureDataType dataTextureType, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		if (dimensions.Area > texels.Length) {
@@ -176,7 +294,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var texelCount = dimensions.Area;
 		var buffer = PreallocateBuffer<TTexel>(texelCount);
 		texels[..texelCount].CopyTo(buffer.Span);
-		return CreateTextureAndDisposePreallocatedBuffer(buffer, dimensions, generateMipMaps, isLinearColorspace, allowsDynamicWrites, renderingConfig, name);
+		return CreateTextureAndDisposePreallocatedBuffer(buffer, dimensions, generateMipMaps, allowsDynamicWrites, renderingConfig, compressionQuality, dataTextureType, name);
 	}
 	#endregion
 
@@ -335,6 +453,9 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		uint width,
 		uint height
 	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_texture_compressed")]
+	static extern InteropResult LoadTextureCompressed(nuint bufferId, void* bufferPtr, int bufferLength, uint width, uint height, int formatId, uint levelCount, uint* levelOffsets, uint* levelSizes, out UIntPtr outTextureHandle);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_texture")]
 	static extern InteropResult DisposeTexture(

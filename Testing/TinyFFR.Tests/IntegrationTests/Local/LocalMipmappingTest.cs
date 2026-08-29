@@ -33,14 +33,16 @@ class LocalMipmappingTest {
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
 			new TextureCreationConfig {
 				GenerateMipMaps = true,
-				IsLinearColorspace = false
+				IsLinearColorspace = false,
+				CompressionQuality = Quality.Standard
 			}
 		);
 		using var nonMipmappedWallAlbedo = factory.AssetLoader.LoadTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
 			new TextureCreationConfig {
 				GenerateMipMaps = false,
-				IsLinearColorspace = false
+				IsLinearColorspace = false,
+				CompressionQuality = Quality.Standard
 			}
 		);
 		using var wallNormals = factory.AssetLoader.LoadNormalMap(

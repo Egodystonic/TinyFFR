@@ -31,8 +31,9 @@ class LocalMaterialsTest {
 	const KeyboardOrMouseKey MapClearCoatToggleKey = KeyboardOrMouseKey.C;
 	const KeyboardOrMouseKey MapThicknessToggleKey = KeyboardOrMouseKey.K;
 	const KeyboardOrMouseKey QualityToggleKey = KeyboardOrMouseKey.Q;
+	const KeyboardOrMouseKey CompressionToggleKey = KeyboardOrMouseKey.J;
 
-	const string WindowTitleStart = $"settings: B,R,Q shaders: 1-9 maps: A,E,N,O,T,C,K";
+	const string WindowTitleStart = $"settings: B,R,Q,J shaders: 1-9 maps: A,E,N,O,T,C,K";
 
 	sealed record UserOptions {
 		public int BackdropIntensity { get; set; } = 2;
@@ -48,12 +49,18 @@ class LocalMaterialsTest {
 
 		public int ShaderType { get; set; } = 8;
 		public int ShaderQualityType { get; set; } = 1;
+		public int CompressionLevel { get; set; } = 3;
+
+		public static readonly Quality?[] CompressionLevels = { null, Quality.VeryLow, Quality.Low, Quality.Standard, Quality.High, Quality.VeryHigh };
+		public Quality? CompressionQuality => CompressionLevels[CompressionLevel];
+		public string CompressionName => CompressionQuality is { } q ? q.ToString() : "off";
 
 		public string GetWindowTitleString() {
 			var mapsStr = "";
 			if (ShaderQualityType == 0) mapsStr += " qual=ultra";
 			if (ShaderQualityType == 1) mapsStr += " qual=high";
 			if (ShaderQualityType == 2) mapsStr += " qual=v_low";
+			mapsStr += " compr=" + CompressionName;
 			if (ShaderType < 4) {
 				if (MapAlphaType == 1) mapsStr += " alpha(mask)";
 				if (MapAlphaType == 2) mapsStr += " alpha(blend)";
@@ -123,17 +130,36 @@ class LocalMaterialsTest {
 		Assert.AreEqual(1, scene.ContainedLights.Count(l => l == rightLight));
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-		using var backMaterialAlbedo = factory.AssetLoader.LoadColorMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex));
-		using var backMaterialNormals = factory.AssetLoader.LoadNormalMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickNormalTex));
-		using var backMaterialOrm = factory.AssetLoader.LoadOcclusionRoughnessMetallicMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex));
-		using var backInstanceMaterial = factory.MaterialBuilder.CreateStandardMaterial(backMaterialAlbedo, backMaterialNormals, backMaterialOrm);
+		ResourceGroup LoadBackInstanceResources(Quality? compressionQuality) {
+			var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+			var albedo = factory.AssetLoader.LoadTexture(
+				CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
+				TextureCreationConfig.ForColorTexture("brick albedo") with { CompressionQuality = compressionQuality }
+			);
+			var normals = factory.AssetLoader.LoadTexture(
+				CommonTestAssets.FindAsset(KnownTestAsset.BrickNormalTex),
+				TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, "brick normals") with { CompressionQuality = compressionQuality }
+			);
+			var orm = factory.AssetLoader.LoadTexture(
+				CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex),
+				TextureCreationConfig.ForDataTexture(TextureDataType.Other, "brick orm") with { CompressionQuality = compressionQuality }
+			);
+			group.Add(albedo);
+			group.Add(normals);
+			group.Add(orm);
+			group.Add(factory.MaterialBuilder.CreateStandardMaterial(albedo, normals, orm));
+			group.Seal();
+			return group;
+		}
+
+		var backInstanceResources = LoadBackInstanceResources(curUserOptions.CompressionQuality);
 
 		var currentMaterialResources = CreateTestMaterial(factory.ResourceAllocator, factory.MaterialBuilder);
 
 		var cubeFrontInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, currentMaterialResources.Materials[0], new Location(1f, 0f, 2f));
 		var sphereFrontInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1f, 0f, 2f));
-		var cubeBackInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, backInstanceMaterial, new Location(1.8f, 0f, 3.5f));
-		var sphereBackInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, backInstanceMaterial, new Location(-1.8f, 0f, 3.5f));
+		var cubeBackInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, backInstanceResources.Materials[0], new Location(1.8f, 0f, 3.5f));
+		var sphereBackInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, backInstanceResources.Materials[0], new Location(-1.8f, 0f, 3.5f));
 		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
 		scene.Add(cubeFrontInstance);
 		scene.Add(sphereFrontInstance);
@@ -285,6 +311,18 @@ class LocalMaterialsTest {
 				if (curUserOptions.MapThicknessLevel > 3) curUserOptions.MapThicknessLevel = 0;
 				recreationNecessary = true;
 			}
+			if (kbm.KeyWasPressedThisIteration(CompressionToggleKey)) {
+				curUserOptions.CompressionLevel++;
+				if (curUserOptions.CompressionLevel >= UserOptions.CompressionLevels.Length) curUserOptions.CompressionLevel = 0;
+
+				var newBackInstanceResources = LoadBackInstanceResources(curUserOptions.CompressionQuality);
+				cubeBackInstance.Material = newBackInstanceResources.Materials[0];
+				sphereBackInstance.Material = newBackInstanceResources.Materials[0];
+				backInstanceResources.Dispose();
+				backInstanceResources = newBackInstanceResources;
+
+				window.SetTitle(WindowTitleStart + curUserOptions.GetWindowTitleString());
+			}
 			if (kbm.KeyWasPressedThisIteration(QualityToggleKey)) {
 				curUserOptions.ShaderQualityType++;
 				if (curUserOptions.ShaderQualityType > 2) curUserOptions.ShaderQualityType = 0;
@@ -352,6 +390,7 @@ class LocalMaterialsTest {
 			cubeBackInstance.Dispose();
 			sphereBackInstance.Dispose();
 			currentMaterialResources.Dispose();
+			backInstanceResources.Dispose();
 		}
 	}
 

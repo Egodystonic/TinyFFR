@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -108,6 +108,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <ClInclude Include="pch.h" />
     <ClInclude Include="tffr\headers\assets\native_impl_asset_loader.h" />
     <ClInclude Include="tffr\headers\assets\native_impl_render_assets.h" />
+    <ClInclude Include="tffr\headers\assets\native_impl_texture_compression.h" />
     <ClInclude Include="tffr\headers\environment\native_impl_display.h" />
     <ClInclude Include="tffr\headers\environment\native_impl_loop.h" />
     <ClInclude Include="tffr\headers\environment\native_impl_window.h" />
@@ -131,6 +132,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     </ClCompile>
     <ClCompile Include="tffr\impl\assets\native_impl_asset_loader.cpp" />
     <ClCompile Include="tffr\impl\assets\native_impl_render_assets.cpp" />
+    <ClCompile Include="tffr\impl\assets\native_impl_texture_compression.cpp" />
     <ClCompile Include="tffr\impl\environment\native_impl_display.cpp" />
     <ClCompile Include="tffr\impl\environment\native_impl_loop.cpp" />
     <ClCompile Include="tffr\impl\environment\native_impl_window.cpp" />

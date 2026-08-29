@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;

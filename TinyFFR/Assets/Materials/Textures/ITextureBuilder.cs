@@ -1,4 +1,4 @@
-// Created on 2025-11-17 by Ben Bowen
+﻿// Created on 2025-11-17 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
 using System.Xml.Linq;
@@ -161,7 +161,7 @@ public unsafe interface ITextureBuilder {
 	}
 
 	static TextureCreationConfig GetNormalMapCreationConfig(XYPair<int> dimensions, ReadOnlySpan<char> name = default) {
-		return TextureCreationConfig.ForDataTexture(name) with {
+		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, name) with {
 			GenerateMipMaps = dimensions.Area != 1
 		};
 	}
@@ -401,7 +401,7 @@ public unsafe interface ITextureBuilder {
 	static TexelRgb24 CreateClearCoatTexel(Real thickness, Real roughness) => TexelRgb24.FromNormalizedFloats(thickness, roughness, Real.Zero);
 
 	static TextureCreationConfig GetClearCoatMapCreationConfig(XYPair<int> dimensions, ReadOnlySpan<char> name = default) {
-		return TextureCreationConfig.ForDataTexture(name) with {
+		return TextureCreationConfig.ForDataTexture(TextureDataType.LinearUnitVector, name) with {
 			GenerateMipMaps = dimensions.Area != 1
 		};
 	}

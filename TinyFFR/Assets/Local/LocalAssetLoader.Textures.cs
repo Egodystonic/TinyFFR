@@ -34,9 +34,13 @@ unsafe partial class LocalAssetLoader {
 		public XYPair<int> Dimensions { get; set; } = default;
 		public bool IsRgba { get; set; } = false;
 		public bool GenerateMipMaps { get; set; } = false;
-		public bool IsLinearColorspace { get; set; } = false;
 		public bool AllowsDynamicWrites { get; set; } = false;
 		public TextureRenderingConfig RenderingConfig { get; set; } = new();
+		public Quality? CompressionQuality { get; set; } = null;
+		public TextureDataType DataType { get; set; } = TextureDataType.Linear;
+		public PooledHeapMemory<byte>? CompressedData { get; set; } = null;
+		public TextureCompressionFormat CompressionFormat { get; set; } = TextureCompressionFormat.None;
+		public int CompressedLevelCount { get; set; } = 0;
 
 		public ReadOnlySpan<TexelRgba32> Rgba32Texels => MemoryMarshal.Cast<byte, TexelRgba32>(TexelBytes)[..Dimensions.Area];
 		public ReadOnlySpan<TexelRgb24> Rgb24Texels => MemoryMarshal.Cast<byte, TexelRgb24>(TexelBytes)[..Dimensions.Area];
@@ -59,10 +63,15 @@ unsafe partial class LocalAssetLoader {
 			BorrowedTexelBufferPtr = 0;
 			OwnedTexelData?.Dispose();
 			OwnedTexelData = null;
+			CompressedData?.Dispose();
+			CompressedData = null;
+			CompressionFormat = TextureCompressionFormat.None;
+			CompressedLevelCount = 0;
+			CompressionQuality = null;
+			DataType = TextureDataType.Linear;
 			Dimensions = default;
 			IsRgba = false;
 			GenerateMipMaps = false;
-			IsLinearColorspace = false;
 			AllowsDynamicWrites = false;
 			RenderingConfig = new();
 		}
@@ -209,9 +218,10 @@ unsafe partial class LocalAssetLoader {
 		var creationMetadata = context.CreationMetadata;
 
 		creationMetadata.GenerateMipMaps = creationConfig.GenerateMipMaps;
-		creationMetadata.IsLinearColorspace = creationConfig.IsLinearColorspace;
 		creationMetadata.AllowsDynamicWrites = creationConfig.AllowsDynamicWrites;
 		creationMetadata.RenderingConfig = creationConfig.RenderingConfig;
+		creationMetadata.CompressionQuality = creationConfig.CompressionQuality;
+		creationMetadata.DataType = creationConfig.DataType;
 
 		if (context.HasBuiltInSource) {
 			LoadBuiltInTextureCore(context, readConfig.ForceWAlphaChannelPresence, in processingConfig);
@@ -223,7 +233,43 @@ unsafe partial class LocalAssetLoader {
 			throw new InvalidOperationException("No file path or built-in source set in context (this is a bug in TinyFFR).");
 		}
 
+		CompressTextureIfRequested(creationMetadata, context.HeapPool);
+
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
+	}
+
+	static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
+		var sourceTexelType = data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24;
+		var format = TextureCompressor.GetRecommendedFormat(
+			data.Dimensions,
+			sourceTexelType,
+			data.DataType,
+			data.CompressionQuality,
+			data.AllowsDynamicWrites,
+			data.GenerateMipMaps
+		);
+		if (format == TextureCompressionFormat.None) return;
+
+		var levelCount = data.GenerateMipMaps ? TextureUtils.GetMipLevelCount(data.Dimensions) : 1;
+		var totalSizeBytes = TextureCompressor.GetCompressedSizeBytes(data.Dimensions, format, data.GenerateMipMaps);
+		var destination = heapPool.Borrow<byte>(totalSizeBytes);
+
+		try {
+			if (data.IsRgba) {
+				TextureCompressor.Compress(data.Rgba32Texels, data.Dimensions, format, data.CompressionQuality!.Value, data.DataType, data.GenerateMipMaps, destination.Span);
+			}
+			else {
+				TextureCompressor.Compress(data.Rgb24Texels, data.Dimensions, format, data.CompressionQuality!.Value, data.DataType, data.GenerateMipMaps, destination.Span);
+			}
+		}
+		catch {
+			destination.Dispose();
+			throw;
+		}
+
+		data.CompressedData = destination;
+		data.CompressionFormat = format;
+		data.CompressedLevelCount = levelCount;
 	}
 
 	static void LoadBuiltInTextureCore(TextureLoadContext context, bool forceAlpha, in TextureProcessingConfig processingConfig) {
@@ -313,9 +359,22 @@ unsafe partial class LocalAssetLoader {
 
 	static Texture CompleteTextureLoad(LocalAssetLoader self, TextureCreationMetadata data, ReadOnlySpan<char> name) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		if (data.CompressionFormat != TextureCompressionFormat.None && data.CompressedData is { } compressedData) {
+			return self._textureBuilder.CreateTextureFromCompressedBlocks(
+				compressedData.Span,
+				data.Dimensions,
+				data.CompressionFormat,
+				data.CompressedLevelCount,
+				data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24,
+				data.GenerateMipMaps,
+				data.RenderingConfig,
+				name
+			);
+		}
+
 		return data.IsRgba
-			? self._textureBuilder.CreateTextureWithoutProcessing(data.Rgba32Texels, data.Dimensions, data.GenerateMipMaps, data.IsLinearColorspace, data.AllowsDynamicWrites, data.RenderingConfig, name)
-			: self._textureBuilder.CreateTextureWithoutProcessing(data.Rgb24Texels, data.Dimensions, data.GenerateMipMaps, data.IsLinearColorspace, data.AllowsDynamicWrites, data.RenderingConfig, name);
+			? self._textureBuilder.CreateTextureWithoutProcessing(data.Rgba32Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, data.DataType, name)
+			: self._textureBuilder.CreateTextureWithoutProcessing(data.Rgb24Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, data.DataType, name);
 	}
 	#endregion
 
@@ -695,7 +754,7 @@ unsafe partial class LocalAssetLoader {
 		var data = context.CreationMetadata;
 
 		data.GenerateMipMaps = creationConfig.GenerateMipMaps;
-		data.IsLinearColorspace = creationConfig.IsLinearColorspace;
+		data.DataType = creationConfig.DataType;
 		data.AllowsDynamicWrites = creationConfig.AllowsDynamicWrites;
 		data.RenderingConfig = creationConfig.RenderingConfig;
 
@@ -847,7 +906,7 @@ unsafe partial class LocalAssetLoader {
 
 		result.Add(LoadTexture(
 			_builtInTextureLibrary.UvTestingTexture,
-			new TextureCreationConfig { GenerateMipMaps = true, IsLinearColorspace = false, Name = LocalMaterialBuilder.TestMaterialName + " Color Map", ProcessingToApply = TextureProcessingConfig.None },
+			new TextureCreationConfig { GenerateMipMaps = true, DataType = TextureDataType.StandardRgb, Name = LocalMaterialBuilder.TestMaterialName + " Color Map", ProcessingToApply = TextureProcessingConfig.None },
 			new TextureReadConfig { IncludeWAlphaChannel = false }
 		));
 
