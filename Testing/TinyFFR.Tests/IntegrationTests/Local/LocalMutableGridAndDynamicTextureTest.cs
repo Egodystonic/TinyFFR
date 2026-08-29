@@ -46,8 +46,7 @@ class LocalMutableGridAndDynamicTextureTest {
 		using var texture = factory.TextureBuilder.CreateTexture(
 			texels, 
 			new TextureGenerationConfig { Dimensions = Dimensions }, 
-			// CompressionQuality flag is there to test that compression is disabled for dynamic textures even if requested
-			new TextureCreationConfig { RenderingConfig = new(true, false, Quality.Standard), AllowsDynamicWrites = true, CompressionQuality = Quality.Standard, DataType = TextureDataType.ColorSrgb }
+			new TextureCreationConfig { RenderingConfig = new(true, false, Quality.Standard), AllowsDynamicWrites = true, DataType = TextureDataType.ColorSrgb }
 		);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(texture);
 		using var testMat = factory.MaterialBuilder.CreateTestMaterial(ignoresLighting: true);

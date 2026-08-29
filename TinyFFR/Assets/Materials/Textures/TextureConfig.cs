@@ -124,7 +124,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 	public bool AllowsDynamicWrites {
 		get; 
 		init {
-			if (value) GenerateMipMaps = false;
+			if (value) {
+				GenerateMipMaps = false;
+				CompressionQuality = null;
+			}
 			field = value;
 		}
 	} = false;
@@ -138,6 +141,11 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		if (AllowsDynamicWrites && GenerateMipMaps) {
 			throw new InvalidOperationException(
 				$"It is not permitted for both {nameof(GenerateMipMaps)} and {nameof(AllowsDynamicWrites)} to be true simultaneously."
+			);
+		}
+		if (AllowsDynamicWrites && CompressionQuality != null) {
+			throw new InvalidOperationException(
+				$"It is not permitted for {nameof(CompressionQuality)} to be non-null and {nameof(AllowsDynamicWrites)} to be true simultaneously."
 			);
 		}
 	}
