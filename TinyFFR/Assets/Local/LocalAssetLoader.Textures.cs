@@ -96,11 +96,6 @@ unsafe partial class LocalAssetLoader {
 			BuiltInDimensions = default;
 			BuiltInContainsAlpha = false;
 			HasBuiltInSource = false;
-			if (HeapPoolSerializedConfig is { } config) {
-				TextureLoadConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			FilePath?.Dispose();
 			FilePath = null;
 			HeapPool = null!;
@@ -126,11 +121,6 @@ unsafe partial class LocalAssetLoader {
 
 		public override void TearDown() {
 			CreationMetadata.TearDown();
-			if (HeapPoolSerializedConfig is { } config) {
-				TextureCombinedLoadConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			FilePathAMemory?.Dispose();
 			FilePathAMemory = null;
 			FilePathBMemory?.Dispose();

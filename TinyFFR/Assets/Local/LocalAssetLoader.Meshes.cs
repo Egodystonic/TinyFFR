@@ -120,11 +120,6 @@ unsafe partial class LocalAssetLoader {
 			InternalNodeData = null;
 			SkeletalNodes?.Dispose();
 			SkeletalNodes = null;
-			if (HeapPoolSerializedConfig is { } config) {
-				MeshLoadConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			FilePath?.Dispose();
 			FilePath = null;
 			VertexCount = 0;

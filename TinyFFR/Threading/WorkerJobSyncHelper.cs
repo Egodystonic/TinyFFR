@@ -111,6 +111,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 				TConfig.DisposeAllocatedHeapStorage(hpsc.Span);
 				hpsc.Dispose();
 			}
+			wrapper.Context.HeapPoolSerializedConfig = null;
 			wrapper.Context.HeapPoolName?.Dispose();
 			wrapper.Context.HeapPoolName = null!;
 			wrapper.Context.HeapPool = null!;

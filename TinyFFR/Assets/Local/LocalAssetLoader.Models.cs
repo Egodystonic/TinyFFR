@@ -116,11 +116,6 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			AssetIndexToMaterialMap.Clear();
 			NameBuffer?.Dispose();
 			NameBuffer = null;
-			if (HeapPoolSerializedConfig is { } config) {
-				ModelLoadConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			FilePath?.Dispose();
 			FilePath = null;
 			TotalResourceCountHint = 0;

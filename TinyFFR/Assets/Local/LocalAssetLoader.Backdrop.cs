@@ -65,11 +65,6 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 #pragma warning restore CA1031
 				PerCallWorkspaceDirectory = null;
 			}
-			if (HeapPoolSerializedConfig is { } config) {
-				BackdropTextureCreationConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			SkyboxFilePath?.Dispose();
 			SkyboxFilePath = null;
 			IblFilePath?.Dispose();

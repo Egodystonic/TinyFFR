@@ -94,11 +94,6 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			if (FontLoadRuneToGlyphMap != null) Self._fontLoadRuneToGlyphMapMap.Return(FontLoadRuneToGlyphMap);
 			if (RuneMap != null) Self._runeMapPool.Return(RuneMap);
 			if (KerningMap != null) Self._kerningMapPool.Return(KerningMap);
-			if (HeapPoolSerializedConfig is { } config) {
-				FontCreationConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			HeapPoolFilePath?.Dispose();
 			HeapPoolFilePath = null;
 			HeapPool = null!;
