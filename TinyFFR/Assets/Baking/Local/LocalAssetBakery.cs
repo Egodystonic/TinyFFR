@@ -61,9 +61,11 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	
 	readonly record struct BakedData(PooledHeapMemory<byte> Buffer, int CursorPos);
 	public readonly struct AssetLoadConfig : IConfigStruct<AssetLoadConfig> {
-		public static int GetHeapStorageFormattedLength(in AssetLoadConfig src) => 0;
-		public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in AssetLoadConfig src) { }
-		public static AssetLoadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) => new();
+		public void* Callback { get; init; }
+		
+		public static int GetHeapStorageFormattedLength(in AssetLoadConfig src) => UIntPtr.Size;
+		public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in AssetLoadConfig src) { BinaryPrimitives.WriteUIntPtrLittleEndian(dest, (UIntPtr) src.Callback); }
+		public static AssetLoadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) => new() { Callback = (void*) BinaryPrimitives.ReadUIntPtrLittleEndian(src) };
 		public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) { }
 	}
 	
@@ -88,14 +90,26 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	}
 	
 	public sealed class AssetLoadContext : WorkerJobSyncHelper<LocalAssetBakery, AssetLoadContext, AssetLoadConfig>.WorkerJobSyncHelperContext {
+		public object This { get; set; } = null!;
+		public LoadedBakedAsset AssetData { get; set; } = null!;
+		public PooledHeapMemory<char>? AssetFilePath { get; set; } = null;
 		
+		public TThis Invoker<TThis>() where TThis : class => (TThis) This;
+		public ReadOnlySpan<char> StoredOrOverridingName {
+			get {
+				if (!Name.IsEmpty) return Name;
+				return AssetData.ExtractString(ResourceNameSectionName, Name);
+			}
+		}
 		
 		public override void TearDown() {
-			TODO_IMPLEMENT_ME();
+			AssetData.Dispose();
+			AssetFilePath?.Dispose();
+			This = null!;
 		}
 		
 		public override void Dispose() {
-			TODO_IMPLEMENT_ME();
+			/* no-op */
 		}
 	}
 
@@ -184,10 +198,11 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposedOrDisabled();
 		
-		var tuple = WriteSectionHeaderAndEnsureSpaceForData(resource.AsStub, sectionName, typeof(string), Encoding.Unicode.GetByteCount(str));
+		var asBytes = MemoryMarshal.AsBytes(str);
+		var tuple = WriteSectionHeaderAndEnsureSpaceForData(resource.AsStub, sectionName, typeof(string), asBytes.Length);
 		
-		var actualAdvance = Encoding.Unicode.GetBytes(str, tuple.Buffer.Span[tuple.CursorPos..]);
-		_inProgressResources[resource.AsStub] = tuple with { CursorPos = tuple.CursorPos + actualAdvance };
+		asBytes.CopyTo(tuple.Buffer.Span[tuple.CursorPos..]);
+		_inProgressResources[resource.AsStub] = tuple with { CursorPos = tuple.CursorPos + asBytes.Length };
 	}
 	
 	BakedData WriteSectionHeaderAndEnsureSpaceForData(ResourceStub stub, ReadOnlySpan<char> sectionName, Type type, int dataLengthBytes) {
@@ -371,15 +386,30 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		return result;
 	}
 	
-	public TResource Load<TResource>(ReadOnlySpan<char> basedAssetFilePath, delegate* managed<AssetLoadContext, in AssetLoadConfig, TResource> callback) where TResource : struct, IResource<TResource> {
+	public TResource Load<TResource, TThis>(TThis @this, ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> nameOverride, delegate* managed<AssetLoadContext, TResource> callback) where TResource : struct, IResource<TResource> where TThis : class {
+		static TResource Execute(AssetLoadContext ctx, in AssetLoadConfig cfg) {
+			ctx.AssetData = ctx.Self.Load<TResource>(ctx.AssetFilePath!.Value.Span);
+			return ((delegate* managed<AssetLoadContext, TResource>) cfg.Callback)(ctx); 
+		}
+		
 		var ctxWrapper = _loadSyncHelper.CreateContextWrapper();
-		ctxWrapper.Context.
-		ctxWrapper.DispatchArbitrarySynchronousOperation<LoadedBakedAsset>(
-		return ctxWrapper.DispatchResourceReturningSynchronousOperation(callback, new AssetLoadConfig());
+		ctxWrapper.Context.SetName(nameOverride);
+		ctxWrapper.Context.AssetFilePath = ctxWrapper.Context.HeapPool.BorrowAndCopy(bakedAssetFilePath);
+		ctxWrapper.Context.This = @this;
+		return ctxWrapper.DispatchResourceReturningSynchronousOperation(&Execute, new AssetLoadConfig { Callback = callback });
 	}
-	public TinyFfrAsyncOperation<TResource> LoadAsync<TResource>(ReadOnlySpan<char> basedAssetFilePath, delegate* managed<AssetLoadContext, in AssetLoadConfig, TResource> callback) where TResource : struct, IResource<TResource> {
+
+	public TinyFfrAsyncOperation<TResource> LoadAsync<TResource, TThis>(TThis @this, ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> nameOverride, delegate* managed<AssetLoadContext, TResource> callback) where TResource : struct, IResource<TResource> where TThis : class {
+		static TResource Execute(AssetLoadContext ctx, in AssetLoadConfig cfg) {
+			ctx.AssetData = ctx.Self.Load<TResource>(ctx.AssetFilePath!.Value.Span);
+			return ((delegate* managed<AssetLoadContext, TResource>) cfg.Callback)(ctx); 
+		}
+		
 		var ctxWrapper = _loadSyncHelper.CreateContextWrapper();
-		return ctxWrapper.DispatchResourceReturningAsynchronousOperation(callback, new AssetLoadConfig());
+		ctxWrapper.Context.SetName(nameOverride);
+		ctxWrapper.Context.AssetFilePath = ctxWrapper.Context.HeapPool.BorrowAndCopy(bakedAssetFilePath);
+		ctxWrapper.Context.This = @this;
+		return ctxWrapper.DispatchResourceReturningAsynchronousOperation(&Execute, new AssetLoadConfig { Callback = callback });
 	}
 	#endregion
 	
@@ -412,6 +442,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			lock (_loadedAssetPoolLock) {
 				_loadedAssetPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 			}
+			_loadSyncHelper.Dispose();
 		}
 		finally {
 			_isDisposed = true;

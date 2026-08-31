@@ -474,16 +474,45 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		bakery.CompleteResourceBake(resource);
 	}
 
-	public BackdropTexture LoadBakedBackdropTexture(ReadOnlySpan<char> bakedAssetFilePath) {
-		
+	public BackdropTexture LoadBakedBackdropTexture(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.Load(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
 	}
 	
-	public TinyFfrAsyncOperation<BackdropTexture> LoadBakedBackdropTextureAsync(ReadOnlySpan<char> bakedAssetFilePath) {
+	public TinyFfrAsyncOperation<BackdropTexture> LoadBakedBackdropTextureAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadAsync(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
+	}
+	
+	static BackdropTexture LoadBakedBackdropTextureCore(LocalAssetBakery.AssetLoadContext ctx) {
+		static BackdropTexture Finalize(LocalAssetBakery.AssetLoadContext ctx) {
+			var assetData = ctx.AssetData;
+			var skyboxData = assetData.ExtractSpan<byte>(BakerySectionBackdropTextureSkyboxData);
+			var iblData = assetData.ExtractSpan<byte>(BakerySectionBackdropTextureIblData);
+			fixed (byte* skyboxPin = skyboxData) {
+				fixed (byte* iblPin = iblData) {
+					LoadSkyboxFileInToMemory(
+						skyboxPin,
+						skyboxData.Length,
+						out var skyboxTextureHandle
+					).ThrowIfFailure();
 
-	}
-	
-	static BackdropTexture LoadBakedBackdropTextureCore(LocalAssetBakery.AssetLoadContext loadContext, ) {
+					try {
+						LoadIblFileInToMemory(
+							iblPin,
+							iblData.Length,
+							out var iblTextureHandle
+						).ThrowIfFailure();
+
+						return ctx.Invoker<LocalAssetLoader>().StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, ctx.StoredOrOverridingName);
+					}
+					catch {
+						UnloadSkyboxFileFromMemory(skyboxTextureHandle);
+						throw;
+					}
+				}	
+			}
+		}
 		
+		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
 	}
 	#endregion
 
