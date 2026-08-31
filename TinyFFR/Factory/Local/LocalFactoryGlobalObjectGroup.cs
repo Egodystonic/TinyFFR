@@ -8,6 +8,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Buffers;
 using System.Globalization;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
@@ -16,6 +17,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 	readonly SynchronousWorkExecutionFacade _synchronousWorkScheduler = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap;
 	readonly DeferredRef<LocalResourceGroupImplProvider> _resourceGroupProvider;
+	readonly DeferredRef<LocalAssetBakery> _bakery;
 	readonly LocalTinyFfrFactory _factory;
 	readonly CooperativeThreadPool _threadPool;
 
@@ -23,13 +25,14 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public ManagedStringPool StringPool { get; }
 	public HeapPool HeapPool { get; }
 	public LocalResourceGroupImplProvider ResourceGroupProvider => _resourceGroupProvider;
+	public LocalAssetBakery Bakery => _bakery;
 	public bool InEnhancedSecurityEnvironment { get; }
 	
 	public IJobExecutionFacade SynchronousWorkScheduler => _synchronousWorkScheduler;
 	public IJobExecutionFacade ThreadPoolWorkScheduler => _threadPool;
 	public IPrimaryThreadDispatcher PrimaryThreadDispatcher => _threadPool;
 
-	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, CooperativeThreadPool threadPool, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, bool inEnhancedSecurityEnvironment) {
+	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, CooperativeThreadPool threadPool, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, DeferredRef<LocalAssetBakery> bakeryRef, bool inEnhancedSecurityEnvironment) {
 		ArgumentNullException.ThrowIfNull(factory);
 		ArgumentNullException.ThrowIfNull(threadPool);
 		ArgumentNullException.ThrowIfNull(resourceNameMap);
@@ -45,6 +48,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 		StringPool = stringPool;
 		HeapPool = heapPool;
 		_resourceGroupProvider = resourceGroupProviderRef;
+		_bakery = bakeryRef;
 		InEnhancedSecurityEnvironment = inEnhancedSecurityEnvironment;
 	}
 

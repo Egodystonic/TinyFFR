@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -382,7 +383,9 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 						out var iblTextureHandle
 					).ThrowIfFailure();
 
-					return context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, context.Name);
+					var result = context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, context.Name);
+					context.Self.RegisterInBakery(result, skyboxFileData.Span, iblFileData.Span, context.Name);
+					return result;
 				}
 				finally {
 					iblPin.Free();
@@ -453,6 +456,34 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		return allowPartialMatch
 			? _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Contains(name, comparisonType)
 			: _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Equals(name, comparisonType);
+	}
+	#endregion
+	
+	#region Baking
+	const string BakerySectionBackdropTextureSkyboxData = "skybox";
+	const string BakerySectionBackdropTextureIblData = "ibl";
+	
+	void RegisterInBakery(BackdropTexture resource, ReadOnlySpan<byte> skyboxData, ReadOnlySpan<byte> iblData, ReadOnlySpan<char> name) {
+		var bakery = _globals.Bakery;
+		if (!bakery.Enabled) return;
+		
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, name);
+		bakery.AddResourceBakeValue(resource, BakerySectionBackdropTextureSkyboxData, skyboxData);
+		bakery.AddResourceBakeValue(resource, BakerySectionBackdropTextureIblData, iblData);
+		bakery.CompleteResourceBake(resource);
+	}
+
+	public BackdropTexture LoadBakedBackdropTexture(ReadOnlySpan<char> bakedAssetFilePath) {
+		
+	}
+	
+	public TinyFfrAsyncOperation<BackdropTexture> LoadBakedBackdropTextureAsync(ReadOnlySpan<char> bakedAssetFilePath) {
+
+	}
+	
+	static BackdropTexture LoadBakedBackdropTextureCore(LocalAssetBakery.AssetLoadContext loadContext, ) {
+		
 	}
 	#endregion
 

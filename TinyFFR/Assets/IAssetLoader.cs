@@ -190,6 +190,9 @@ public partial interface IAssetLoader {
 		);
 	}
 	TinyFfrAsyncOperation<BackdropTexture> LoadPreprocessedBackdropTextureAsync(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
+	
+	BackdropTexture LoadBakedBackdropTexture(ReadOnlySpan<char> bakedAssetFilePath);
+	TinyFfrAsyncOperation<BackdropTexture> LoadBakedBackdropTextureAsync(ReadOnlySpan<char> bakedAssetFilePath);
 	#endregion
 	
 	#region Load Font

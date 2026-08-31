@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -38,6 +39,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly LocalWindowBuilder _windowBuilder;
 	readonly LocalApplicationLoopBuilder _applicationLoopBuilder;
 	readonly LocalAssetLoader _assetLoader;
+	readonly LocalAssetBakery _assetBakery;
 	readonly LocalCameraBuilder _cameraBuilder;
 	readonly LocalLightBuilder _lightBuilder;
 	readonly LocalObjectBuilder _objectBuilder;
@@ -50,6 +52,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _applicationLoopBuilder;
 	public ILocalAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
+	public IAssetBakery AssetBakery => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetBakery;
 	public IMeshBuilder MeshBuilder => AssetLoader.MeshBuilder;
 	public IMaterialBuilder MaterialBuilder => AssetLoader.MaterialBuilder;
 	public ITextureBuilder TextureBuilder => AssetLoader.TextureBuilder;
@@ -91,7 +94,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		});
 	}
 
-	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
+	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null, AssetBakeryConfig? assetBakeryConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
 		ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
@@ -103,6 +106,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		assetLoaderConfig ??= new();
 		rendererBuilderConfig ??= new();
 		localLoopBuilderConfig ??= new();
+		assetBakeryConfig ??= new();
 
 		try {
 			OnFactoryBuild(
@@ -124,6 +128,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 				SynchronizationContext.SetSynchronizationContext(new TinyFfrSynchronizationContext(_threadPool));
 			}
 			var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
+			var bakeryRef = new DeferredRef<LocalAssetBakery>();
 			_gpuHoldingBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
 			var globals = new LocalFactoryGlobalObjectGroup(
 				this,
@@ -133,6 +138,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 				_stringPool,
 				_heapPool,
 				resourceGroupProviderRef,
+				bakeryRef,
 				factoryConfig.EnhanceSecurity
 			);
 			_resourceGroupProvider = new(globals);
@@ -142,6 +148,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig, rendererBuilderConfig.GetActualRenderingApi(), _displayDiscoverer.All.ToArray().AsMemory());
 			_applicationLoopBuilder = new LocalApplicationLoopBuilder(localLoopBuilderConfig, globals);
 			_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig);
+			_assetBakery = new LocalAssetBakery(globals, assetBakeryConfig);
+			bakeryRef.Resolve(_assetBakery);
 			_cameraBuilder = new LocalCameraBuilder(globals);
 			_lightBuilder = new LocalLightBuilder(globals);
 			_objectBuilder = new LocalObjectBuilder(globals, (LocalMaterialBuilder) _assetLoader.MaterialBuilder);
@@ -195,6 +203,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			DisposeObjectIfDisposable(_objectBuilder);
 			DisposeObjectIfDisposable(_lightBuilder);
 			DisposeObjectIfDisposable(_cameraBuilder);
+			DisposeObjectIfDisposable(_assetBakery);
 			DisposeObjectIfDisposable(_assetLoader);
 			DisposeObjectIfDisposable(_applicationLoopBuilder);
 			DisposeObjectIfDisposable(_windowBuilder);
