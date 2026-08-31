@@ -18,6 +18,10 @@ using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Baking;
 
+static class BakedValueTypeConverter<T> where T : unmanaged {
+	public static readonly Type Converted = typeof(T).IsEnum ? typeof(T).GetEnumUnderlyingType() : typeof(T);
+}
+
 sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	public const string ResourceNameSectionName = "resource_name";
 	const int InitialResourceMemoryAllocationSize = 1024;
@@ -103,8 +107,10 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		}
 		
 		public override void TearDown() {
-			AssetData.Dispose();
+			AssetData?.Dispose();
+			AssetData = null!;
 			AssetFilePath?.Dispose();
+			AssetFilePath = null;
 			This = null!;
 		}
 		
@@ -155,9 +161,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		ThrowIfThisIsDisposedOrDisabled();
 		
 		var dataLengthBytes = Unsafe.SizeOf<T>();
-		var type = typeof(T);
-		if (typeof(T).IsEnum) type = typeof(T).GetEnumUnderlyingType();
-		var tuple = WriteSectionHeaderAndEnsureSpaceForData(resource.AsStub, sectionName, type, dataLengthBytes);
+		var tuple = WriteSectionHeaderAndEnsureSpaceForData(resource.AsStub, sectionName, BakedValueTypeConverter<T>.Converted, dataLengthBytes);
 		
 		fixed (byte* bufPtr = tuple.Buffer.Span) {
 			Unsafe.WriteUnaligned(bufPtr + tuple.CursorPos, value);
@@ -206,6 +210,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	}
 	
 	BakedData WriteSectionHeaderAndEnsureSpaceForData(ResourceStub stub, ReadOnlySpan<char> sectionName, Type type, int dataLengthBytes) {
+		if (sectionName.IsEmpty) {
+			throw new ArgumentException("Section name may not be empty (this is a bug in TinyFFR).", nameof(sectionName));
+		}
 		if (!_typeToTypeIdMap.TryGetValue(type, out var typeId)) {
 			throw new InvalidOperationException($"Could not bake resource {stub.GetNameAsNewStringObject()} as sub-resource or value '{sectionName}' is of unsupported type {type.Name} (this is a bug in TinyFFR).");
 		}
@@ -262,13 +269,23 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	#region Load
 	static LoadedBakedAsset CreateNewLoadedAssetObject(LocalAssetBakery @this) => new(@this, &ReturnLoadedAssetObject);
 	static void ReturnLoadedAssetObject(LocalAssetBakery @this, LoadedBakedAsset asset) {
-		asset.Stream.Dispose();
+		if (!asset.IsRootAsset) return;
+		var stream = asset.Stream;
 		lock (@this._loadedAssetPoolLock) {
-			foreach (var sectionValue in asset.Sections.Values) {
-				if (sectionValue.SubAsset is { } subAsset) @this._loadedAssetPool.Return(subAsset);
-			}
-			@this._loadedAssetPool.Return(asset);
+			ReturnAssetTreeToPool(@this, asset);
 		}
+		stream.Dispose();
+	}
+	static void ReturnAssetTreeToPool(LocalAssetBakery @this, LoadedBakedAsset asset) {
+		Debug.Assert(@this._loadedAssetPoolLock.IsHeldByCurrentThread);
+		foreach (var sectionValue in asset.Sections.Values) {
+			if (sectionValue.SubAsset is { } subAsset) ReturnAssetTreeToPool(@this, subAsset);
+		}
+		asset.Sections.Clear();
+		asset.Type = null!;
+		asset.Stream = default;
+		asset.IsRootAsset = false;
+		@this._loadedAssetPool.Return(asset);
 	}
 	
 	LoadedBakedAsset RentLoadedBakedAsset() {
@@ -291,11 +308,13 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			if (_config.RequireStrictAssetBakeSchemaMatch && BinaryPrimitives.ReadInt32LittleEndian(span[(BakedAssetStreamStartString.Length + sizeof(int))..]) != BakedAssetSchemaVersionMinor) {
 				throw new AssetBakeException($"Baked asset was made with an incompatible TinyFFR library version (failed due to {nameof(AssetBakeryConfig.RequireStrictAssetBakeSchemaMatch)} being true).");
 			}
-			if (BinaryPrimitives.ReadInt32LittleEndian(span[(BakedAssetStreamStartString.Length + sizeof(int) * 2)..]) != typeId) {
-				throw new AssetBakeException($"Baked asset declares itself as being of type '{_typeIdToTypeMap[typeId].Name}' but was being loaded as a '{typeof(TResource).Name}'.");
+			var declaredTypeId = BinaryPrimitives.ReadInt32LittleEndian(span[(BakedAssetStreamStartString.Length + sizeof(int) * 2)..]);
+			if (declaredTypeId != typeId) {
+				var declaredTypeName = declaredTypeId >= 0 && declaredTypeId < _typeIdToTypeMap.Length ? _typeIdToTypeMap[declaredTypeId].Name : $"<unknown type ID {declaredTypeId}>";
+				throw new AssetBakeException($"Baked asset declares itself as being of type '{declaredTypeName}' but was being loaded as a '{typeof(TResource).Name}'.");
 			}
-			
-			return ReadAssetFromStream(typeof(TResource), stream, FileHeaderLengthBytes, stream.Span.Length);
+
+			return ReadAssetFromStream(typeof(TResource), stream, FileHeaderLengthBytes, stream.Span.Length, isRootAsset: true);
 		}
 		catch (Exception e) {
 			stream.Dispose();
@@ -303,12 +322,13 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		}
 	}
 	
-	LoadedBakedAsset ReadAssetFromStream(Type type, PooledHeapMemory<byte> stream, int cursor, int assetEndPoint) {
-		var span = stream.Span[cursor..];
-		
+	LoadedBakedAsset ReadAssetFromStream(Type type, PooledHeapMemory<byte> stream, int cursor, int assetEndPoint, bool isRootAsset) {
+		var span = stream.Span[cursor..assetEndPoint];
+
 		var result = RentLoadedBakedAsset();
 		result.Stream = stream;
 		result.Type = type;
+		result.IsRootAsset = isRootAsset;
 
 		try {
 			while (cursor < assetEndPoint) {
@@ -317,7 +337,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 					throw new AssetBakeException($"Corrupt file (incomplete section header at byte {cursor}).");
 				}
 				cursor += SectionStartString.Length;
-				span = stream.Span[cursor..];
+				span = stream.Span[cursor..assetEndPoint];
 			
 				// Section name length
 				if (span.Length < sizeof(int)) {
@@ -325,7 +345,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 				}
 				var expectedSectionNameLength = BinaryPrimitives.ReadInt32LittleEndian(span);
 				cursor += sizeof(int);
-				span = stream.Span[cursor..];
+				span = stream.Span[cursor..assetEndPoint];
 			
 				// Section name
 				if (expectedSectionNameLength <= 0 || expectedSectionNameLength > span.Length) {
@@ -335,7 +355,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 				using var utf16Buffer = _globals.HeapPool.ThreadSafeWrapper.Borrow<char>(utf16Length);
 				Encoding.UTF8.GetChars(span[..expectedSectionNameLength], utf16Buffer.Span);
 				cursor += expectedSectionNameLength;
-				span = stream.Span[cursor..];
+				span = stream.Span[cursor..assetEndPoint];
 			
 				// Type ID
 				if (span.Length < sizeof(int)) {
@@ -343,7 +363,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 				}
 				var typeId = BinaryPrimitives.ReadInt32LittleEndian(span);
 				cursor += sizeof(int);
-				span = stream.Span[cursor..];
+				span = stream.Span[cursor..assetEndPoint];
 				
 				// Data
 				if (span.Length < sizeof(int)) {
@@ -351,9 +371,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 				}
 				var dataLength = BinaryPrimitives.ReadInt32LittleEndian(span);
 				cursor += sizeof(int);
-				span = stream.Span[cursor..];
+				span = stream.Span[cursor..assetEndPoint];
 				
-				if (dataLength > span.Length) {
+				if (dataLength < 0 || dataLength > span.Length) {
 					throw new AssetBakeException($"Corrupt file (section header indicated data length ({dataLength}) longer than the remainder of the stream ({span.Length}) at byte {cursor}).");
 				}
 				
@@ -369,17 +389,19 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 					var sectionType = _typeIdToTypeMap[typeId];
 					LoadedBakedAsset? subAsset = null; 
 					if (sectionType.IsAssignableTo(typeof(IResource))) {
-						subAsset = ReadAssetFromStream(sectionType, stream, cursor, cursor + dataLength);
+						subAsset = ReadAssetFromStream(sectionType, stream, cursor, cursor + dataLength, isRootAsset: false);
 					}
 					result.Sections.Add(utf16Buffer.Span, new BakedAssetStreamSection(sectionType, cursor, dataLength, subAsset));
 				}
 				
 				cursor += dataLength;
-				span = stream.Span[cursor..];
+				span = stream.Span[cursor..assetEndPoint];
 			}
 		}
 		catch {
-			result.Dispose();
+			lock (_loadedAssetPoolLock) {
+				ReturnAssetTreeToPool(this, result);
+			}
 			throw;
 		}
 		

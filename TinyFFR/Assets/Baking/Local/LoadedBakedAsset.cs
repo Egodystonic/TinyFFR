@@ -17,6 +17,7 @@ sealed unsafe class LoadedBakedAsset : IDisposable {
 	public Type Type { get; set; } = null!;
 	public ArrayPoolBackedStringKeyMap<BakedAssetStreamSection> Sections { get; } = new();
 	public PooledHeapMemory<byte> Stream { get; set; } = default;
+	public bool IsRootAsset { get; set; } = false;
 
 	public LoadedBakedAsset(LocalAssetBakery owningBakery, delegate*<LocalAssetBakery, LoadedBakedAsset, void> disposalFunc) {
 		_owningBakery = owningBakery;
@@ -25,7 +26,8 @@ sealed unsafe class LoadedBakedAsset : IDisposable {
 	
 	public T Extract<T>(ReadOnlySpan<char> sectionTitle) where T : unmanaged {
 		if (!Sections.TryGetValue(sectionTitle, out var section)) throw new AssetBakeException($"Missing required section title '{sectionTitle}'.");
-		if (section.Type != typeof(T)) throw new AssetBakeException($"Section '{sectionTitle}' was required to represent a value of type '{typeof(T).Name}' but instead represented a value of type '{section.Type.Name}'.");
+		if (section.Type != BakedValueTypeConverter<T>.Converted) throw new AssetBakeException($"Section '{sectionTitle}' was required to represent a value of type '{typeof(T).Name}' but instead represented a value of type '{section.Type.Name}'.");
+		if (section.DataLength < Unsafe.SizeOf<T>()) throw new AssetBakeException($"Required section '{sectionTitle}' was required to represent a value of type '{typeof(T).Name}' (length {Unsafe.SizeOf<T>()} bytes) but declared a data length of {section.DataLength} bytes.");
 		try {
 			return MemoryMarshal.Cast<byte, T>(Stream.Span[section.DataStartIndex..(section.DataStartIndex + section.DataLength)])[0];
 		}
@@ -34,11 +36,12 @@ sealed unsafe class LoadedBakedAsset : IDisposable {
 		}
 	}
 	public T Extract<T>(ReadOnlySpan<char> sectionTitle, T fallback) where T : unmanaged {
-		if (!Sections.TryGetValue(sectionTitle, out var section) || section.Type != typeof(T)) return fallback;
+		if (!Sections.TryGetValue(sectionTitle, out var section) || section.Type != BakedValueTypeConverter<T>.Converted) return fallback;
+		if (section.DataLength < Unsafe.SizeOf<T>()) return fallback;
 		try {
 			return MemoryMarshal.Cast<byte, T>(Stream.Span[section.DataStartIndex..(section.DataStartIndex + section.DataLength)])[0];
 		}
-		catch (Exception e) when (e is ArgumentException or OverflowException) {
+		catch (Exception e) when (e is ArgumentException or OverflowException or IndexOutOfRangeException) {
 			return fallback;
 		}
 	}
