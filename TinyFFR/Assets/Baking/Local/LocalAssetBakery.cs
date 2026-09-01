@@ -62,6 +62,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 #pragma warning restore CA1859
 	
 	readonly record struct BakedData(PooledHeapMemory<byte> Buffer, int CursorPos);
+	readonly record struct PendingFinalizer(object Invoker, UIntPtr Func);
 	public readonly struct AssetLoadConfig : IConfigStruct<AssetLoadConfig> {
 		public void* Callback { get; init; }
 		
@@ -74,6 +75,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly AssetBakeryConfig _config;
 	readonly ArrayPoolBackedMap<ResourceStub, BakedData> _inProgressResources = new();
+	readonly ArrayPoolBackedMap<ResourceStub, PendingFinalizer> _pendingFinalizers = new();
 	readonly ArrayPoolBackedLruCache<ResourceStub, BakedData> _resourcesReadyForBaking;
 	readonly ArrayPoolBackedObjectPool<LoadedBakedAsset, LocalAssetBakery> _loadedAssetPool;
 	readonly WorkerJobSyncHelper<LocalAssetBakery, AssetLoadContext, AssetLoadConfig> _loadSyncHelper;
@@ -242,6 +244,12 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		_resourcesReadyForBaking.AddOrSet(resource.AsStub, tuple);
 	}
 
+	public void CompleteResourceBakePendingFinalization<TResource>(TResource resource, object invoker, delegate* managed<object, LocalAssetBakery, TResource, void> finalizer) where TResource : IResource {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		CompleteResourceBake(resource);
+		_pendingFinalizers[resource.AsStub] = new PendingFinalizer(invoker, (UIntPtr) finalizer);
+	}
+
 	public void Bake(BackdropTexture resource, ReadOnlySpan<char> filePath) => Bake<BackdropTexture>(resource, filePath);
 	public void Bake(Font resource, ReadOnlySpan<char> filePath) => Bake<Font>(resource, filePath);
 	public void Bake(Material resource, ReadOnlySpan<char> filePath) => Bake<Material>(resource, filePath);
@@ -259,8 +267,23 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 				$"{nameof(AssetBakeryConfig)}.{nameof(AssetBakeryConfig.MaxResourcesInBakeryMemory)})."
 			);
 		}
-		
-		File.WriteAllBytes(filePath.ToString(), bakeData.Buffer.Span[..bakeData.CursorPos]);
+
+		if (!_pendingFinalizers.TryGetValue(resource.AsStub, out var finalizer)) {
+			File.WriteAllBytes(filePath.ToString(), bakeData.Buffer.Span[..bakeData.CursorPos]);
+			return;
+		}
+
+		var workingBuffer = _globals.HeapPool.Borrow(bakeData.CursorPos);
+		bakeData.Buffer.Span[..bakeData.CursorPos].CopyTo(workingBuffer.Span);
+		_inProgressResources.Add(resource.AsStub, new BakedData(workingBuffer, bakeData.CursorPos));
+		try {
+			((delegate* managed<object, LocalAssetBakery, TResource, void>) finalizer.Func.ToPointer())(finalizer.Invoker, this, resource);
+			var finalizedData = _inProgressResources[resource.AsStub];
+			File.WriteAllBytes(filePath.ToString(), finalizedData.Buffer.Span[..finalizedData.CursorPos]);
+		}
+		finally {
+			if (_inProgressResources.Remove(resource.AsStub, out var finalData)) finalData.Buffer.Dispose();
+		}
 	}
 	#endregion
 	
@@ -439,6 +462,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 
 	static void CacheEvictionCallback(object? @this, ResourceStub key, BakedData value) {
 		value.Buffer.Dispose();
+		((LocalAssetBakery) @this!)._pendingFinalizers.Remove(key);
 	}
 	
 	void ThrowIfThisIsDisposedOrDisabled() {
@@ -459,6 +483,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			}
 			_inProgressResources.Dispose();
 			_resourcesReadyForBaking.Dispose(invokeCacheEvictionCallbackOnAllContainedValues: true);
+			_pendingFinalizers.Dispose();
 			lock (_loadedAssetPoolLock) {
 				_loadedAssetPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 			}

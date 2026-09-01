@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -15,6 +16,7 @@ using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
@@ -782,6 +784,116 @@ unsafe partial class LocalAssetLoader {
 				buffers.GetName(animation.Name)
 			);
 			buffers.NumAnimationsWithTransferredOwnership = i + 1;
+		}
+	}
+	#endregion
+	
+	#region Baking
+	public Mesh LoadBakedMesh(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.Load<Mesh, Mesh, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedMeshCore);
+	}
+
+	public TinyFfrAsyncOperation<Mesh> LoadBakedMeshAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadAsync<Mesh, Mesh, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedMeshCore);
+	}
+
+	static Mesh LoadBakedMeshCore(LocalAssetBakery.AssetLoadContext ctx) {
+		static Mesh Finalize(LocalAssetBakery.AssetLoadContext ctx) {
+			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+			var assetData = ctx.AssetData;
+			var self = ctx.Invoker<LocalAssetLoader>();
+			var name = ctx.StoredOrOverridingName;
+
+			var isSkeletal = assetData.Extract<bool>(MeshBakingSchema.IsSkeletal);
+			var vertexCount = assetData.Extract<int>(MeshBakingSchema.VertexCount);
+			var triangleCount = assetData.Extract<int>(MeshBakingSchema.TriangleCount);
+			var boundingBox = assetData.ExtractSpan<PositionedCuboid>(MeshBakingSchema.BoundingBox)[0];
+			var boneCount = assetData.Extract<int>(MeshBakingSchema.BoneCount);
+			var allowsPerInstanceVertexMutation = assetData.Extract<bool>(MeshBakingSchema.AllowsPerInstanceVertexMutation);
+			var generateWireframeData = assetData.Extract<bool>(MeshBakingSchema.GeneratesWireframeData);
+			var triangles = assetData.ExtractSpan<VertexTriangle>(MeshBakingSchema.IndexData)[..triangleCount];
+
+			Mesh result;
+			if (isSkeletal) {
+				result = self._meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+					assetData.ExtractSpan<MeshVertexSkeletal>(MeshBakingSchema.VertexData)[..vertexCount],
+					triangles,
+					boundingBox,
+					allowsPerInstanceVertexMutation,
+					generateWireframeData,
+					name,
+					boneCount
+				);
+			}
+			else {
+				result = self._meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+					assetData.ExtractSpan<MeshVertex>(MeshBakingSchema.VertexData)[..vertexCount],
+					triangles,
+					boundingBox,
+					allowsPerInstanceVertexMutation,
+					generateWireframeData,
+					name,
+					boneCount
+				);
+			}
+
+			if (!isSkeletal) return result;
+
+			try {
+				RestoreSkeletalData(self, result, assetData);
+			}
+			catch {
+				result.Dispose();
+				throw;
+			}
+
+			return result;
+		}
+
+		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static void RestoreSkeletalData(LocalAssetLoader self, Mesh mesh, LoadedBakedAsset assetData) {
+		var nodeCount = assetData.Extract<int>(MeshBakingSchema.SkeletonNodeCount);
+		var boneCount = assetData.Extract<int>(MeshBakingSchema.BoneCount);
+
+		self._meshBuilder.RestoreBakedSkeleton(
+			mesh,
+			nodeCount,
+			boneCount,
+			assetData.Extract<int>(MeshBakingSchema.SkeletonFirstParentedNodeIndex),
+			assetData.ExtractSpan<Matrix4x4>(MeshBakingSchema.SkeletonModelImportTransform)[0],
+			assetData.ExtractSpan<Matrix4x4>(MeshBakingSchema.SkeletonDefaultLocalTransforms)[..nodeCount],
+			assetData.ExtractSpan<Matrix4x4>(MeshBakingSchema.SkeletonBindPoseInversions)[..boneCount],
+			assetData.ExtractSpan<int>(MeshBakingSchema.SkeletonParentIndices)[..nodeCount],
+			assetData.ExtractSpan<int>(MeshBakingSchema.SkeletonBoneToNodeMap)[..boneCount],
+			assetData.ExtractSpan<int>(MeshBakingSchema.SkeletonMutationTargetIndexMap)[..nodeCount]
+		);
+
+		var animationEntries = assetData.ExtractSpan<MeshBakingSchema.BakedAnimationEntry>(MeshBakingSchema.AnimationTable);
+		var scaling = assetData.ExtractSpan<SkeletalAnimationScalingKeyframe>(MeshBakingSchema.AnimationScalingKeyframes);
+		var rotation = assetData.ExtractSpan<SkeletalAnimationRotationKeyframe>(MeshBakingSchema.AnimationRotationKeyframes);
+		var translation = assetData.ExtractSpan<SkeletalAnimationTranslationKeyframe>(MeshBakingSchema.AnimationTranslationKeyframes);
+		var mutations = assetData.ExtractSpan<SkeletalAnimationNodeMutationDescriptor>(MeshBakingSchema.AnimationMutationDescriptors);
+		var animationNameChars = assetData.ExtractString(MeshBakingSchema.AnimationNameChars);
+
+		foreach (var entry in animationEntries) {
+			self._meshBuilder.RestoreBakedAnimation(
+				mesh,
+				scaling.Slice(entry.ScalingStart, entry.ScalingCount),
+				rotation.Slice(entry.RotationStart, entry.RotationCount),
+				translation.Slice(entry.TranslationStart, entry.TranslationCount),
+				mutations.Slice(entry.MutationStart, entry.MutationCount),
+				entry.DefaultCompletionTimeSeconds,
+				animationNameChars.Slice(entry.NameStart, entry.NameLength)
+			);
+		}
+
+		var nodeNameEntries = assetData.ExtractSpan<MeshBakingSchema.BakedNodeNameEntry>(MeshBakingSchema.NodeNameTable);
+		var nodeNameChars = assetData.ExtractString(MeshBakingSchema.NodeNameChars);
+		foreach (var entry in nodeNameEntries) {
+			self._meshBuilder.RestoreBakedNodeName(mesh, entry.NodeIndex, nodeNameChars.Slice(entry.NameStart, entry.NameLength));
 		}
 	}
 	#endregion

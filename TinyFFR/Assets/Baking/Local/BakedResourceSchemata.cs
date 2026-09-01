@@ -77,4 +77,48 @@ static class BakedResourceSchemata {
 		public const string RuneMap = "rune_map";
 		public const string KerningMap = "kerning_map";
 	}
+
+	public static class MeshBakingSchema {
+		[StructLayout(LayoutKind.Sequential, Pack = 1)]
+		public readonly record struct BakedAnimationEntry(
+			int ScalingStart, int ScalingCount,
+			int RotationStart, int RotationCount,
+			int TranslationStart, int TranslationCount,
+			int MutationStart, int MutationCount,
+			int NameStart, int NameLength,
+			float DefaultCompletionTimeSeconds
+		);
+
+		[StructLayout(LayoutKind.Sequential, Pack = 1)]
+		public readonly record struct BakedNodeNameEntry(int NodeIndex, int NameStart, int NameLength);
+
+		public const string IsSkeletal = "is_skeletal";
+		public const string VertexData = "vertex_data";
+		public const string IndexData = "index_data";
+		public const string VertexCount = "vertex_count";
+		public const string TriangleCount = "triangle_count";
+		public const string BoundingBox = "bounding_box";
+		public const string BoneCount = "bone_count";
+		public const string AllowsPerInstanceVertexMutation = "allows_per_instance_vertex_mutation";
+		public const string GeneratesWireframeData = "generates_wireframe_data";
+
+		public const string SkeletonNodeCount = "skeleton_node_count";
+		public const string SkeletonFirstParentedNodeIndex = "skeleton_first_parented_node_index";
+		public const string SkeletonModelImportTransform = "skeleton_model_import_transform";
+		public const string SkeletonDefaultLocalTransforms = "skeleton_default_local_transforms";
+		public const string SkeletonBindPoseInversions = "skeleton_bind_pose_inversions";
+		public const string SkeletonParentIndices = "skeleton_parent_indices";
+		public const string SkeletonBoneToNodeMap = "skeleton_bone_to_node_map";
+		public const string SkeletonMutationTargetIndexMap = "skeleton_mutation_target_index_map";
+
+		public const string AnimationTable = "animation_table";
+		public const string AnimationScalingKeyframes = "animation_scaling_keyframes";
+		public const string AnimationRotationKeyframes = "animation_rotation_keyframes";
+		public const string AnimationTranslationKeyframes = "animation_translation_keyframes";
+		public const string AnimationMutationDescriptors = "animation_mutation_descriptors";
+		public const string AnimationNameChars = "animation_name_chars";
+
+		public const string NodeNameTable = "node_name_table";
+		public const string NodeNameChars = "node_name_chars";
+	}
 }

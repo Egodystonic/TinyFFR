@@ -38,6 +38,7 @@ class LocalAssetBakingTest {
 		public abstract void BakeToFile(LocalTinyFfrFactory factory, string filePath);
 		public abstract void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas);
 		public abstract void RemoveFromScene(Scene scene, CanvasScene canvas);
+		public virtual void Update(float totalSeconds) { }
 		public abstract void Dispose();
 	}
 
@@ -387,13 +388,103 @@ class LocalAssetBakingTest {
 		}
 	}
 
+	sealed class MeshEntry : BakedAssetEntry {
+		const float MeshScaling = 0.016f;
+
+		Mesh? _mesh;
+		Material? _material;
+		ModelInstance? _instance;
+		ResourceGroup? _loadedGroup;
+		TinyFfrAsyncOperation<ResourceGroup>? _pendingSourceOperation;
+		TinyFfrAsyncOperation<Mesh>? _pendingBakedOperation;
+
+		public override string DisplayName => "Skeletal Mesh";
+		public override string BakedFileName => "mesh.tinyffr";
+
+		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
+			if (_pendingSourceOperation is { } sourceOp) dest.Add(sourceOp);
+			if (_pendingBakedOperation is { } bakedOp) dest.Add(bakedOp);
+		}
+
+		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
+			_pendingSourceOperation = factory.AssetLoader.LoadAllAsync(CommonTestAssets.FindAsset("models/Fox.glb"));
+		}
+
+		public override void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath) {
+			_pendingBakedOperation = factory.AssetLoader.LoadBakedMeshAsync(filePath);
+		}
+
+		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
+			if (_pendingSourceOperation is { } sourceOp) {
+				var group = sourceOp.GetResultAndDisposeOperation();
+				_pendingSourceOperation = null;
+				_loadedGroup = group;
+				_mesh = group.Meshes[0];
+			}
+			else if (_pendingBakedOperation is { } bakedOp) {
+				_mesh = bakedOp.GetResultAndDisposeOperation();
+				_pendingBakedOperation = null;
+			}
+			else throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
+
+			_material = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
+		}
+
+		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {
+			factory.AssetBakery.Bake(_mesh!.Value, filePath);
+		}
+
+		public override void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas) {
+			var instance = factory.ObjectBuilder.CreateModelInstance(
+				_mesh!.Value,
+				_material!.Value,
+				new Location(0f, -1.1f, 2.4f),
+				Direction.Up % new Angle(180f),
+				new Vect(MeshScaling, MeshScaling, MeshScaling),
+				"Baked Mesh Instance"
+			);
+			scene.Add(instance);
+			_instance = instance;
+		}
+
+		public override void RemoveFromScene(Scene scene, CanvasScene canvas) {
+			if (_instance is { } instance) {
+				scene.Remove(instance);
+				instance.Dispose();
+			}
+			_instance = null;
+		}
+
+		public override void Update(float totalSeconds) {
+			if (_instance is not { } instance || _mesh is not { } mesh) return;
+			if (mesh.Animations.Count == 0) return;
+			instance.GetAnimationPlayer(mesh.Animations[0]).SetTimePoint(totalSeconds, AnimationWrapStyle.Loop);
+		}
+
+		public override void Dispose() {
+			_instance?.Dispose();
+			_instance = null;
+			_material?.Dispose();
+			_material = null;
+
+			if (_loadedGroup is { } group) {
+				group.Dispose();
+				_loadedGroup = null;
+			}
+			else _mesh?.Dispose();
+
+			_mesh = null;
+		}
+	}
+
 	static BakedAssetEntry[] CreateEntries() => new BakedAssetEntry[] {
 		new BackdropTextureEntry(),
 		new FileTextureEntry(),
 		new BuiltInTextureEntry(),
 		new AnisotropyMapEntry(),
 		new MaterialEntry(),
-		new FontEntry()
+		new FontEntry(),
+		new MeshEntry()
 	};
 
 	[SetUp]
@@ -532,6 +623,10 @@ class LocalAssetBakingTest {
 					Direction.Forward.RotatedBy(Direction.Up % (12f * (float) loop.TotalIteratedTime.TotalSeconds)),
 					Direction.Up
 				);
+				if (!loadInProgress) {
+					foreach (var entry in entries) entry.Update((float) loop.TotalIteratedTime.TotalSeconds);
+				}
+
 				compositor.RenderAll();
 			}
 		}

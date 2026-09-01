@@ -4,6 +4,7 @@
 using System;
 using System.Reflection.Metadata;
 using System.Security;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
@@ -16,6 +17,7 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
@@ -274,6 +276,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			GenerateAndStoreWireframeBuffers(handle, tempVertexBuffer.AsSpan<MeshVertex>(), tempIndexBuffer.AsSpan<VertexTriangle>());
 		}
 
+		var bakeryVertexBufferCopy = GetBakeryBufferCopyIfEnabled(MemoryMarshal.AsBytes(tempVertexBuffer.AsSpan<TVertex>()[..vertexCount]));
+		var bakeryIndexBufferCopy = GetBakeryBufferCopyIfEnabled(MemoryMarshal.AsBytes(tempIndexBuffer.AsSpan<VertexTriangle>()[..triangleCount]));
+
 		UIntPtr vbHandle;
 		if (typeof(TVertex) == typeof(MeshVertex)) {
 			AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertexCount, out vbHandle).ThrowIfFailure();
@@ -294,7 +299,97 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		_indexBufferRefCounts.Add(ibHandle, 1);
 		_activeMeshes.Add(handle, new(new MeshBufferData(vbHandle, ibHandle, 0, indexBufferCount, boneCount), boundingBox));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultMeshName);
-		return new Mesh(handle, this);
+		var result = new Mesh(handle, this);
+
+		if (bakeryVertexBufferCopy is { } bvbc && bakeryIndexBufferCopy is { } bibc) {
+			try {
+				RegisterInBakery<TVertex>(result, bvbc.Span, bibc.Span, vertexCount, triangleCount, boundingBox, boneCount, allowsPerInstanceVertexMutation, generateWireframeData, name);
+			}
+			finally {
+				bvbc.Dispose();
+				bibc.Dispose();
+			}
+		}
+
+		return result;
+	}
+
+	PooledHeapMemory<byte>? GetBakeryBufferCopyIfEnabled(ReadOnlySpan<byte> data) {
+		if (!_globals.BakeryIsEnabled) return null;
+		var result = _globals.HeapPool.Borrow(data.Length);
+		data.CopyTo(result.Span);
+		return result;
+	}
+
+	void RegisterInBakery<TVertex>(Mesh resource, ReadOnlySpan<byte> vertexData, ReadOnlySpan<byte> indexData, int vertexCount, int triangleCount, PositionedCuboid boundingBox, int boneCount, bool allowsPerInstanceVertexMutation, bool generateWireframeData, ReadOnlySpan<char> name) where TVertex : unmanaged, IMeshVertex {
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, name);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.IsSkeletal, typeof(TVertex) == typeof(MeshVertexSkeletal));
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.VertexCount, vertexCount);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.TriangleCount, triangleCount);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoundingBox, MemoryMarshal.AsBytes(new ReadOnlySpan<PositionedCuboid>(in boundingBox)));
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoneCount, boneCount);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.AllowsPerInstanceVertexMutation, allowsPerInstanceVertexMutation);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.GeneratesWireframeData, generateWireframeData);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.VertexData, vertexData);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.IndexData, indexData);
+		bakery.CompleteResourceBakePendingFinalization(resource, this, &FinalizeBake);
+	}
+
+	static void FinalizeBake(object invoker, LocalAssetBakery bakery, Mesh resource) {
+		var self = (LocalMeshBuilder) invoker;
+		if (!self._activeMeshAnimationTables.TryGetValue(resource.GetHandleWithoutDisposeCheck(), out var animTable)) return;
+		if (!animTable.SkeletonIsSet) return;
+		animTable.WriteBakeData(bakery, resource);
+	}
+
+	internal void RestoreBakedSkeleton(
+		Mesh mesh,
+		int nodeCount,
+		int boneCount,
+		int firstParentedNodeIndex,
+		Matrix4x4 modelImportTransformMatrix,
+		ReadOnlySpan<Matrix4x4> defaultLocalTransforms,
+		ReadOnlySpan<Matrix4x4> bindPoseInversions,
+		ReadOnlySpan<int> parentIndices,
+		ReadOnlySpan<int> boneToNodeMap,
+		ReadOnlySpan<int> mutationTargetIndexMap
+	) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		var animTable = _meshAnimationTablePool.Rent();
+		animTable.SetSkeletonFromBakedData(
+			mesh,
+			nodeCount,
+			boneCount,
+			firstParentedNodeIndex,
+			modelImportTransformMatrix,
+			defaultLocalTransforms,
+			bindPoseInversions,
+			parentIndices,
+			boneToNodeMap,
+			mutationTargetIndexMap
+		);
+		_activeMeshAnimationTables.Add(mesh.Handle, animTable);
+	}
+
+	internal void RestoreBakedAnimation(
+		Mesh mesh,
+		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes,
+		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes,
+		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes,
+		ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor> nodeMutations,
+		float defaultCompletionTimeSeconds,
+		ReadOnlySpan<char> name
+	) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		_activeMeshAnimationTables[mesh.Handle].AddPreProcessedAnimation(scalingKeyframes, rotationKeyframes, translationKeyframes, nodeMutations, defaultCompletionTimeSeconds, name);
+	}
+
+	internal void RestoreBakedNodeName(Mesh mesh, int nodeIndex, ReadOnlySpan<char> name) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		_activeMeshAnimationTables[mesh.Handle].SetNodeNameFromBakedData(nodeIndex, name);
 	}
 
 	public MeshBufferData GetBufferData(ResourceHandle<Mesh> handle) {
