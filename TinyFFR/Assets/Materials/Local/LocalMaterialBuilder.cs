@@ -1,6 +1,7 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
@@ -19,6 +20,7 @@ using System.Security;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Threading;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -166,11 +168,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		if (config.EnablePerInstanceEffects) {
 			var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend;
-			
+
 			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 		}
 
+		RegisterInBakery(result, in config);
 		return result;
 	}
 
@@ -193,6 +196,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, new Vector4(0f, 0f, 1f, 0f), shaderConstants.ParamZChannelColor);
 		ApplyMaterialParam(result, new Vector4(0f, 0f, 0f, 1f), shaderConstants.ParamWChannelColor);
 
+		RegisterInBakery(result, in config);
 		return result;
 	}
 
@@ -242,6 +246,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 		}
 
+		RegisterInBakery(result, in config);
 		return result;
 	}
 
@@ -296,8 +301,78 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 		}
 
+		RegisterInBakery(result, in config);
 		return result;
 	}
+
+	#region Baking
+	void RegisterInBakery(Material resource, in LightingIgnoringMaterialCreationConfig config) {
+		if (!_globals.BakeryIsEnabled) return;
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, config.Name);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.Kind, MaterialBakingSchema.BakedMaterialKind.LightingIgnoring);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.EnablePerInstanceEffects, config.EnablePerInstanceEffects);
+		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.ColorMap, config.ColorMap);
+		bakery.CompleteResourceBake(resource);
+	}
+
+	void RegisterInBakery(Material resource, in ColorKeyedMaterialCreationConfig config) {
+		if (!_globals.BakeryIsEnabled) return;
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, config.Name);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.Kind, MaterialBakingSchema.BakedMaterialKind.ColorKeyed);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.BlendOutputAlphaWithScene, config.BlendOutputAlphaWithScene);
+		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.KeyMap, config.KeyMap);
+		bakery.CompleteResourceBake(resource);
+	}
+
+	void RegisterInBakery(Material resource, in StandardMaterialCreationConfig config) {
+		if (!_globals.BakeryIsEnabled) return;
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, config.Name);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.Kind, MaterialBakingSchema.BakedMaterialKind.Standard);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.EnablePerInstanceEffects, config.EnablePerInstanceEffects);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.AlphaMode, config.AlphaMode);
+		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.ColorMap, config.ColorMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.NormalMap, config.NormalMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.OrmrMap, config.OcclusionRoughnessMetallicReflectanceMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.AnisotropyMap, config.AnisotropyMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.EmissiveMap, config.EmissiveMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.ClearCoatMap, config.ClearCoatMap);
+		bakery.CompleteResourceBake(resource);
+	}
+
+	void RegisterInBakery(Material resource, in TransmissiveMaterialCreationConfig config) {
+		if (!_globals.BakeryIsEnabled) return;
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, config.Name);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.Kind, MaterialBakingSchema.BakedMaterialKind.Transmissive);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.EnablePerInstanceEffects, config.EnablePerInstanceEffects);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.AlphaMode, config.AlphaMode);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.RefractionThickness, config.RefractionThickness);
+		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.TransmissiveQuality, config.Quality);
+		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.ColorMap, config.ColorMap);
+		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.AbsorptionTransmissionMap, config.AbsorptionTransmissionMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.NormalMap, config.NormalMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.OrmrMap, config.OcclusionRoughnessMetallicReflectanceMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.AnisotropyMap, config.AnisotropyMap);
+		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.EmissiveMap, config.EmissiveMap);
+		bakery.CompleteResourceBake(resource);
+	}
+
+	static void AddOptionalMapToBake(LocalAssetBakery bakery, Material resource, ReadOnlySpan<char> sectionName, Texture? map) {
+		if (map is not { } actualMap) return;
+		bakery.AddResourceBakeSubResource(resource, sectionName, actualMap);
+	}
+	#endregion
 
 	void SetUpDefaultEffectsParameters(Material mat, IShaderPackageConstants packageConstants, SupportedEffectsFlags supportedEffects) {
 		if ((supportedEffects & SupportedEffectsFlags.UvTransform) != 0) {

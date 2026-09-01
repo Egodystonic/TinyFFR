@@ -118,6 +118,40 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		Name = name
 	};
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForColorMap(ReadOnlySpan<char> name = default) => ForColorTexture(name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForNormalMap(ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearDataUnitVector, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForOrmMap(ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearData, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForOrmrMap(ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearData, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForAbsorptionTransmissionMap(ReadOnlySpan<char> name = default) => ForColorTexture(name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForEmissiveMap(ReadOnlySpan<char> name = default) => ForColorTexture(name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForAnisotropyMap(ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearData, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForClearCoatMap(ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearDataTwoChannelMax, name);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForColorMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForColorTexture(compressionQuality, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForNormalMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearDataUnitVector, compressionQuality, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForOrmMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearData, compressionQuality, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForOrmrMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearData, compressionQuality, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForAbsorptionTransmissionMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForColorTexture(compressionQuality, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForEmissiveMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForColorTexture(compressionQuality, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForAnisotropyMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearData, compressionQuality, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TextureCreationConfig ForClearCoatMap(Quality? compressionQuality, ReadOnlySpan<char> name = default) => ForDataTexture(TextureDataType.LinearDataTwoChannelMax, compressionQuality, name);
+
 	public bool GenerateMipMaps { get; init; } = true;
 	public Quality? CompressionQuality { get; init; } = DefaultCompressionQuality;
 	public required TextureDataType DataType { get; init; }

@@ -13,6 +13,7 @@ using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
@@ -455,8 +456,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	#endregion
 	
 	#region Baking
-	const string BakerySectionBackdropTextureSkyboxData = "skybox";
-	const string BakerySectionBackdropTextureIblData = "ibl";
+	
 	
 	void RegisterInBakery(BackdropTexture resource, ReadOnlySpan<byte> skyboxData, ReadOnlySpan<byte> iblData, ReadOnlySpan<char> name) {
 		var bakery = _globals.Bakery;
@@ -464,24 +464,24 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		
 		bakery.StartResourceBake(resource);
 		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, name);
-		bakery.AddResourceBakeValue(resource, BakerySectionBackdropTextureSkyboxData, skyboxData);
-		bakery.AddResourceBakeValue(resource, BakerySectionBackdropTextureIblData, iblData);
+		bakery.AddResourceBakeValue(resource, BackdropTextureBakingSchema.SkyboxData, skyboxData);
+		bakery.AddResourceBakeValue(resource, BackdropTextureBakingSchema.IblData, iblData);
 		bakery.CompleteResourceBake(resource);
 	}
 
 	public BackdropTexture LoadBakedBackdropTexture(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
-		return _globals.Bakery.Load(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
+		return _globals.Bakery.Load<BackdropTexture, BackdropTexture, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
 	}
 	
 	public TinyFfrAsyncOperation<BackdropTexture> LoadBakedBackdropTextureAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
-		return _globals.Bakery.LoadAsync(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
+		return _globals.Bakery.LoadAsync<BackdropTexture, BackdropTexture, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
 	}
 	
 	static BackdropTexture LoadBakedBackdropTextureCore(LocalAssetBakery.AssetLoadContext ctx) {
 		static BackdropTexture Finalize(LocalAssetBakery.AssetLoadContext ctx) {
 			var assetData = ctx.AssetData;
-			var skyboxData = assetData.ExtractSpan<byte>(BakerySectionBackdropTextureSkyboxData);
-			var iblData = assetData.ExtractSpan<byte>(BakerySectionBackdropTextureIblData);
+			var skyboxData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.SkyboxData);
+			var iblData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.IblData);
 			fixed (byte* skyboxPin = skyboxData) {
 				fixed (byte* iblPin = iblData) {
 					LoadSkyboxFileInToMemory(

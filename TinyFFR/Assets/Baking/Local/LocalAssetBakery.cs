@@ -27,8 +27,6 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	const int InitialResourceMemoryAllocationSize = 1024;
 	
 	static ReadOnlySpan<byte> BakedAssetStreamStartString => "_TinyFFR"u8; // 8 bytes long for alignment
-	const int BakedAssetSchemaVersionMajor = 1;
-	const int BakedAssetSchemaVersionMinor = 0;
 	const int FileHeaderLengthBytes = 20; // BakedAssetStreamStartString.Length + two version numbers + type ID
 	static ReadOnlySpan<byte> SectionStartString => "SectionStart"u8;
 	
@@ -140,10 +138,10 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		BakedAssetStreamStartString.CopyTo(buffer.Span);
 		cursor += BakedAssetStreamStartString.Length;
 		
-		BinaryPrimitives.WriteInt32LittleEndian(buffer.Span[cursor..], BakedAssetSchemaVersionMajor);
+		BinaryPrimitives.WriteInt32LittleEndian(buffer.Span[cursor..], BakedResourceSchemata.VersionMajor);
 		cursor += sizeof(int);
 		
-		BinaryPrimitives.WriteInt32LittleEndian(buffer.Span[cursor..], BakedAssetSchemaVersionMinor);
+		BinaryPrimitives.WriteInt32LittleEndian(buffer.Span[cursor..], BakedResourceSchemata.VersionMinor);
 		cursor += sizeof(int);
 		
 		if (!_typeToTypeIdMap.TryGetValue(typeof(TResource), out var typeId)) {
@@ -304,8 +302,8 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			var span = stream.Span;
 			if (span.Length < FileHeaderLengthBytes) throw new AssetBakeException("Stream length shorter than expected file header length.");
 			if (!span[..BakedAssetStreamStartString.Length].SequenceEqual(BakedAssetStreamStartString)) throw new AssetBakeException("File header corrupt or not a TinyFFR baked asset.");
-			if (BinaryPrimitives.ReadInt32LittleEndian(span[BakedAssetStreamStartString.Length..]) != BakedAssetSchemaVersionMajor) throw new AssetBakeException("Baked asset was made with an incompatible TinyFFR library version.");
-			if (_config.RequireStrictAssetBakeSchemaMatch && BinaryPrimitives.ReadInt32LittleEndian(span[(BakedAssetStreamStartString.Length + sizeof(int))..]) != BakedAssetSchemaVersionMinor) {
+			if (BinaryPrimitives.ReadInt32LittleEndian(span[BakedAssetStreamStartString.Length..]) != BakedResourceSchemata.VersionMajor) throw new AssetBakeException("Baked asset was made with an incompatible TinyFFR library version.");
+			if (_config.RequireStrictAssetBakeSchemaMatch && BinaryPrimitives.ReadInt32LittleEndian(span[(BakedAssetStreamStartString.Length + sizeof(int))..]) != BakedResourceSchemata.VersionMinor) {
 				throw new AssetBakeException($"Baked asset was made with an incompatible TinyFFR library version (failed due to {nameof(AssetBakeryConfig.RequireStrictAssetBakeSchemaMatch)} being true).");
 			}
 			var declaredTypeId = BinaryPrimitives.ReadInt32LittleEndian(span[(BakedAssetStreamStartString.Length + sizeof(int) * 2)..]);
@@ -408,10 +406,10 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		return result;
 	}
 	
-	public TResource Load<TResource, TThis>(TThis @this, ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> nameOverride, delegate* managed<AssetLoadContext, TResource> callback) where TResource : struct, IResource<TResource> where TThis : class {
-		static TResource Execute(AssetLoadContext ctx, in AssetLoadConfig cfg) {
-			ctx.AssetData = ctx.Self.Load<TResource>(ctx.AssetFilePath!.Value.Span);
-			return ((delegate* managed<AssetLoadContext, TResource>) cfg.Callback)(ctx); 
+	public TResult Load<TAsset, TResult, TThis>(TThis @this, ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> nameOverride, delegate* managed<AssetLoadContext, TResult> callback) where TAsset : IResource where TResult : struct, IResource<TResult> where TThis : class {
+		static TResult Execute(AssetLoadContext ctx, in AssetLoadConfig cfg) {
+			ctx.AssetData = ctx.Self.Load<TAsset>(ctx.AssetFilePath!.Value.Span);
+			return ((delegate* managed<AssetLoadContext, TResult>) cfg.Callback)(ctx);
 		}
 		
 		var ctxWrapper = _loadSyncHelper.CreateContextWrapper();
@@ -421,10 +419,10 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		return ctxWrapper.DispatchResourceReturningSynchronousOperation(&Execute, new AssetLoadConfig { Callback = callback });
 	}
 
-	public TinyFfrAsyncOperation<TResource> LoadAsync<TResource, TThis>(TThis @this, ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> nameOverride, delegate* managed<AssetLoadContext, TResource> callback) where TResource : struct, IResource<TResource> where TThis : class {
-		static TResource Execute(AssetLoadContext ctx, in AssetLoadConfig cfg) {
-			ctx.AssetData = ctx.Self.Load<TResource>(ctx.AssetFilePath!.Value.Span);
-			return ((delegate* managed<AssetLoadContext, TResource>) cfg.Callback)(ctx); 
+	public TinyFfrAsyncOperation<TResult> LoadAsync<TAsset, TResult, TThis>(TThis @this, ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> nameOverride, delegate* managed<AssetLoadContext, TResult> callback) where TAsset : IResource where TResult : struct, IResource<TResult> where TThis : class {
+		static TResult Execute(AssetLoadContext ctx, in AssetLoadConfig cfg) {
+			ctx.AssetData = ctx.Self.Load<TAsset>(ctx.AssetFilePath!.Value.Span);
+			return ((delegate* managed<AssetLoadContext, TResult>) cfg.Callback)(ctx);
 		}
 		
 		var ctxWrapper = _loadSyncHelper.CreateContextWrapper();

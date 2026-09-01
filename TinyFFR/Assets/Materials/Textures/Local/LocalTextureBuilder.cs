@@ -1,6 +1,7 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
@@ -88,6 +89,8 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Span));
 		var dataLength = preallocatedBuffer.Span.Length * sizeof(TTexel);
 
+		var bakeryBufferCopy = GetBakeryTexelBufferCopyIfEnabled(MemoryMarshal.AsBytes(preallocatedBuffer.Span[..dimensions.Area]));
+
 		UIntPtr outHandle;
 		switch (TTexel.BlitType) {
 			case TexelType.Rgb24:
@@ -121,10 +124,21 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
 		_loadedTextures.Add(handle, new(dimensions, TTexel.BlitType, allowsDynamicWrites, generateMipMaps, renderingConfig, TextureCompressionFormat.None));
-		return HandleToInstance(handle);
+		var result = HandleToInstance(handle);
+
+		if (bakeryBufferCopy is { } bbc) {
+			try {
+				RegisterInBakery(result, dimensions, TTexel.BlitType == TexelType.Rgba32, generateMipMaps, allowsDynamicWrites, dataType, renderingConfig, TextureCompressionFormat.None, 0, bbc.Span, name);
+			}
+			finally {
+				bbc.Dispose();
+			}
+		}
+
+		return result;
 	}
 
-	public Texture CreateTextureFromCompressedBlocks(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+	public Texture CreateTextureFromCompressedBlocks(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		if (compressionFormat == TextureCompressionFormat.None) {
@@ -151,10 +165,10 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 
 		var buffer = _globals.CreateGpuHoldingBuffer(expectedSizeBytes);
 		blocks[..expectedSizeBytes].CopyTo(buffer.AsSpan<byte>());
-		return UploadCompressedBlocksAndStoreTextureData(buffer, dimensions, compressionFormat, levelCount, sourceTexelType, renderingConfig, name);
+		return UploadCompressedBlocksAndStoreTextureData(buffer, dimensions, compressionFormat, levelCount, sourceTexelType, dataType, renderingConfig, name);
 	}
 
-	Texture UploadCompressedBlocksAndStoreTextureData(TemporaryLoadSpaceBuffer buffer, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+	Texture UploadCompressedBlocksAndStoreTextureData(TemporaryLoadSpaceBuffer buffer, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
 		var levelOffsets = stackalloc uint[levelCount];
 		var levelSizes = stackalloc uint[levelCount];
 		var runningOffset = 0;
@@ -164,6 +178,8 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 			levelSizes[level] = (uint) levelSizeBytes;
 			runningOffset += levelSizeBytes;
 		}
+
+		var bakeryBufferCopy = GetBakeryTexelBufferCopyIfEnabled(buffer.AsSpan<byte>());
 
 		LoadTextureCompressed(
 			buffer.BufferIdentity,
@@ -181,7 +197,18 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
 		_loadedTextures.Add(handle, new(dimensions, sourceTexelType, false, levelCount > 1, renderingConfig, compressionFormat));
-		return HandleToInstance(handle);
+		var result = HandleToInstance(handle);
+
+		if (bakeryBufferCopy is { } bbc) {
+			try {
+				RegisterInBakery(result, dimensions, sourceTexelType == TexelType.Rgba32, levelCount > 1, false, dataType, renderingConfig, compressionFormat, levelCount, bbc.Span, name);
+			}
+			finally {
+				bbc.Dispose();
+			}
+		}
+
+		return result;
 	}
 
 	Texture CreateCompressedTextureAndDisposePreallocatedBuffer<TTexel>(ITextureBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, XYPair<int> dimensions, bool generateMipMaps, TextureRenderingConfig renderingConfig, TextureCompressionFormat compressionFormat, Quality compressionQuality, TextureDataType dataType, ReadOnlySpan<char> name) where TTexel : unmanaged, ITexel<TTexel> {
@@ -204,7 +231,34 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 			_globals.ReleaseGpuHoldingBufferWithoutGpuSubmission(preallocatedBuffer.BufferId);
 		}
 
-		return UploadCompressedBlocksAndStoreTextureData(compressedBuffer, dimensions, compressionFormat, levelCount, TTexel.BlitType, renderingConfig, name);
+		return UploadCompressedBlocksAndStoreTextureData(compressedBuffer, dimensions, compressionFormat, levelCount, TTexel.BlitType, dataType, renderingConfig, name);
+	}
+
+	PooledHeapMemory<byte>? GetBakeryTexelBufferCopyIfEnabled(ReadOnlySpan<byte> data) {
+		if (!_globals.BakeryIsEnabled) return null;
+		var result = _globals.HeapPool.BorrowAndCopy(data);
+		return result;
+	}
+
+	void RegisterInBakery(Texture resource, XYPair<int> dimensions, bool isRgba, bool mipMapsEnabled, bool allowsDynamicWrites, TextureDataType dataType, TextureRenderingConfig renderingConfig, TextureCompressionFormat compressionFormat, int compressedLevelCount, ReadOnlySpan<byte> texelData, ReadOnlySpan<char> name) {
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, name);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.DimensionsX, dimensions.X);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.DimensionsY, dimensions.Y);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.IsRgba, isRgba);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.MipMapsEnabled, mipMapsEnabled);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.AllowsDynamicWrites, allowsDynamicWrites);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.DataType, dataType);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.CompressionFormat, compressionFormat);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.CompressedLevelCount, compressedLevelCount);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.DisableTextureRepeat, renderingConfig.DisableTextureRepeat);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.DisableTexelBlending, renderingConfig.DisableTexelBlending);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.AnisotropicFilteringQuality, renderingConfig.AnisotropicFilteringQuality);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.AnisotropyLevel, renderingConfig.AnisotropyLevel);
+		bakery.AddResourceBakeValue(resource, BakedResourceSchemata.TextureBakingSchema.TexelData, texelData);
+		bakery.CompleteResourceBake(resource);
 	}
 
 	ITextureBuilder.PreallocatedBuffer<TTexel> ITextureBuilder.PreallocateBuffer<TTexel>(int texelCount) => PreallocateBuffer<TTexel>(texelCount);

@@ -8,7 +8,9 @@ using System.Text;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -29,12 +31,12 @@ class LocalAssetBakingTest {
 	abstract class BakedAssetEntry : IDisposable {
 		public abstract string DisplayName { get; }
 		public abstract string BakedFileName { get; }
-		public abstract TinyFfrAsyncOperation? PendingOperation { get; }
+		public abstract void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest);
 		public abstract void BeginLoadFromSource(LocalTinyFfrFactory factory);
 		public abstract void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath);
-		public abstract void CompletePendingLoad();
+		public abstract void CompletePendingLoad(LocalTinyFfrFactory factory);
 		public abstract void BakeToFile(LocalTinyFfrFactory factory, string filePath);
-		public abstract void AddToScene(Scene scene, CanvasScene canvas);
+		public abstract void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas);
 		public abstract void RemoveFromScene(Scene scene, CanvasScene canvas);
 		public abstract void Dispose();
 	}
@@ -45,7 +47,10 @@ class LocalAssetBakingTest {
 
 		public override string DisplayName => "Backdrop Texture";
 		public override string BakedFileName => "backdrop_texture.tinyffr";
-		public override TinyFfrAsyncOperation? PendingOperation => _pendingOperation is { } op ? (TinyFfrAsyncOperation) op : null;
+
+		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
+			if (_pendingOperation is { } op) dest.Add(op);
+		}
 
 		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
 			_pendingOperation = factory.AssetLoader.LoadBackdropTextureAsync(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
@@ -55,7 +60,7 @@ class LocalAssetBakingTest {
 			_pendingOperation = factory.AssetLoader.LoadBakedBackdropTextureAsync(filePath);
 		}
 
-		public override void CompletePendingLoad() {
+		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
 			if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
 			_texture = op.GetResultAndDisposeOperation();
 			_pendingOperation = null;
@@ -65,7 +70,7 @@ class LocalAssetBakingTest {
 			factory.AssetBakery.Bake(_texture!.Value, filePath);
 		}
 
-		public override void AddToScene(Scene scene, CanvasScene canvas) => scene.SetBackdrop(_texture!.Value, 1f);
+		public override void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas) => scene.SetBackdrop(_texture!.Value, 1f);
 
 		public override void RemoveFromScene(Scene scene, CanvasScene canvas) => scene.RemoveBackdrop();
 
@@ -83,7 +88,9 @@ class LocalAssetBakingTest {
 		protected abstract XYPair<float> CanvasPosition { get; }
 		protected abstract TinyFfrAsyncOperation<Texture> DispatchSourceLoad(LocalTinyFfrFactory factory);
 
-		public override TinyFfrAsyncOperation? PendingOperation => _pendingOperation is { } op ? (TinyFfrAsyncOperation) op : null;
+		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
+			if (_pendingOperation is { } op) dest.Add(op);
+		}
 
 		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
 			_pendingOperation = DispatchSourceLoad(factory);
@@ -93,7 +100,7 @@ class LocalAssetBakingTest {
 			_pendingOperation = factory.AssetLoader.LoadBakedTextureAsync(filePath);
 		}
 
-		public override void CompletePendingLoad() {
+		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
 			if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
 			_texture = op.GetResultAndDisposeOperation();
 			_pendingOperation = null;
@@ -103,7 +110,7 @@ class LocalAssetBakingTest {
 			factory.AssetBakery.Bake(_texture!.Value, filePath);
 		}
 
-		public override void AddToScene(Scene scene, CanvasScene canvas) {
+		public override void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas) {
 			var canvasObject = canvas.Add(_texture!.Value);
 			canvasObject.SetPlacementFraction(Orientation2D.UpLeft, CanvasPosition, (0.16f, 0.16f));
 			_canvasObject = canvasObject;
@@ -158,11 +165,179 @@ class LocalAssetBakingTest {
 		}
 	}
 
+	sealed class MaterialEntry : BakedAssetEntry {
+		const int CubeCount = 7;
+		const float CubeRingRadius = 3.6f;
+		const float CubeSize = 1.3f;
+
+		Material? _material;
+		Mesh? _mesh;
+		ResourceGroup? _loadedGroup;
+		readonly List<Texture> _ownedTextures = new();
+		readonly List<ModelInstance> _instances = new();
+		TinyFfrAsyncOperation<Texture>? _pendingColorMap;
+		TinyFfrAsyncOperation<Texture>? _pendingNormalMap;
+		TinyFfrAsyncOperation<Texture>? _pendingOrmrMap;
+		TinyFfrAsyncOperation<ResourceGroup>? _pendingBakedOperation;
+
+		public override string DisplayName => "Material (6 maps)";
+		public override string BakedFileName => "material.tinyffr";
+
+		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
+			if (_pendingColorMap is { } colorOp) dest.Add(colorOp);
+			if (_pendingNormalMap is { } normalOp) dest.Add(normalOp);
+			if (_pendingOrmrMap is { } ormrOp) dest.Add(ormrOp);
+			if (_pendingBakedOperation is { } bakedOp) dest.Add(bakedOp);
+		}
+
+		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
+			_pendingColorMap = factory.AssetLoader.LoadTextureAsync(CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex), TextureCreationConfig.ForColorMap(Quality.VeryLow));
+			_pendingNormalMap = factory.AssetLoader.LoadTextureAsync(CommonTestAssets.FindAsset(KnownTestAsset.BrickNormalTex), TextureCreationConfig.ForNormalMap(Quality.VeryLow));
+			_pendingOrmrMap = factory.AssetLoader.LoadTextureAsync(CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex), TextureCreationConfig.ForOrmrMap(Quality.VeryLow));
+		}
+
+		public override void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath) {
+			_pendingBakedOperation = factory.AssetLoader.LoadBakedMaterialAsync(filePath);
+		}
+
+		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
+			if (_pendingBakedOperation is { } bakedOp) {
+				var group = bakedOp.GetResultAndDisposeOperation();
+				_pendingBakedOperation = null;
+				_loadedGroup = group;
+				foreach (var material in group.Materials) {
+					_material = material;
+					break;
+				}
+			}
+			else if (_pendingColorMap is { } colorOp && _pendingNormalMap is { } normalOp && _pendingOrmrMap is { } ormrOp) {
+				var colorMap = colorOp.GetResultAndDisposeOperation();
+				var normalMap = normalOp.GetResultAndDisposeOperation();
+				var ormrMap = ormrOp.GetResultAndDisposeOperation();
+				_pendingColorMap = null;
+				_pendingNormalMap = null;
+				_pendingOrmrMap = null;
+				_ownedTextures.Add(colorMap);
+				_ownedTextures.Add(normalMap);
+				_ownedTextures.Add(ormrMap);
+
+				var texBuilder = factory.AssetLoader.MaterialBuilder.TextureBuilder;
+
+				var anisotropyMap = texBuilder.CreateAnisotropyMap(
+					TexturePattern.Lines(
+						Angle.From2DPolarAngle(Orientation2D.Right)!.Value,
+						Angle.From2DPolarAngle(Orientation2D.Up)!.Value,
+						Angle.From2DPolarAngle(Orientation2D.UpLeft)!.Value,
+						Angle.From2DPolarAngle(Orientation2D.DownLeft)!.Value,
+						horizontal: false,
+						numRepeats: 4
+					),
+					TexturePattern.Lines<Real>(1f, 1f, 0f, 0f, horizontal: false, numRepeats: 2),
+					TextureCreationConfig.ForAnisotropyMap(Quality.VeryLow)
+				);
+				_ownedTextures.Add(anisotropyMap);
+
+				var emissiveMap = texBuilder.CreateEmissiveMap(
+					TexturePattern.Rectangles(
+						interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
+						borderSize: new XYPair<int>(16, 16),
+						paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
+						interiorValue: ColorVect.BlackOpaque,
+						borderRightValue: new ColorVect(1f, 0f, 0f),
+						borderTopValue: new ColorVect(1f, 1f, 0f),
+						borderLeftValue: new ColorVect(0f, 1f, 0f),
+						borderBottomValue: new ColorVect(0f, 0f, 1f),
+						paddingValue: ColorVect.BlackOpaque,
+						repetitions: (2, 2)
+					),
+					TexturePattern.Rectangles<Real>(
+						interiorValue: 0f,
+						borderValue: 1f,
+						paddingValue: 0f,
+						repetitions: (2, 2),
+						borderSize: (16, 16)
+					),
+					TextureCreationConfig.ForEmissiveMap(Quality.VeryLow)
+				);
+				_ownedTextures.Add(emissiveMap);
+
+				var clearCoatMap = texBuilder.CreateClearCoatMap(
+					TexturePattern.Chequerboard<Real>(0.9f, 0.1f, repetitionCount: (4, 4)),
+					TexturePattern.Chequerboard<Real>(0.05f, 0.6f, repetitionCount: (4, 4)),
+					TextureCreationConfig.ForClearCoatMap(Quality.VeryLow)
+				);
+				_ownedTextures.Add(clearCoatMap);
+
+				_material = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(new StandardMaterialCreationConfig {
+					ColorMap = colorMap,
+					NormalMap = normalMap,
+					OcclusionRoughnessMetallicReflectanceMap = ormrMap,
+					AnisotropyMap = anisotropyMap,
+					EmissiveMap = emissiveMap,
+					ClearCoatMap = clearCoatMap,
+					Name = "Baked Test Material"
+				});
+			}
+			else throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
+
+			_mesh = factory.MeshBuilder.CreateMesh(new Cuboid(CubeSize), name: "Baked Material Cuboid");
+		}
+
+		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {
+			factory.AssetBakery.Bake(_material!.Value, filePath);
+		}
+
+		public override void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas) {
+			for (var i = 0; i < CubeCount; ++i) {
+				var angle = new Angle(360f * i / CubeCount);
+				var offset = Direction.Forward.RotatedBy(Direction.Up % angle) * CubeRingRadius;
+				var instance = factory.ObjectBuilder.CreateModelInstance(
+					_mesh!.Value,
+					_material!.Value,
+					Location.Origin + offset,
+					Direction.Up % new Angle(37f * i),
+					name: "Baked Material Instance " + i.ToString(CultureInfo.InvariantCulture)
+				);
+				scene.Add(instance);
+				_instances.Add(instance);
+			}
+		}
+
+		public override void RemoveFromScene(Scene scene, CanvasScene canvas) {
+			foreach (var instance in _instances) {
+				scene.Remove(instance);
+				instance.Dispose();
+			}
+			_instances.Clear();
+		}
+
+		public override void Dispose() {
+			foreach (var instance in _instances) instance.Dispose();
+			_instances.Clear();
+
+			_mesh?.Dispose();
+			_mesh = null;
+
+			if (_loadedGroup is { } group) {
+				group.Dispose();
+				_loadedGroup = null;
+			}
+			else {
+				_material?.Dispose();
+				foreach (var texture in _ownedTextures) texture.Dispose();
+			}
+
+			_ownedTextures.Clear();
+			_material = null;
+		}
+	}
+
 	static BakedAssetEntry[] CreateEntries() => new BakedAssetEntry[] {
 		new BackdropTextureEntry(),
 		new FileTextureEntry(),
 		new BuiltInTextureEntry(),
-		new AnisotropyMapEntry()
+		new AnisotropyMapEntry(),
+		new MaterialEntry()
 	};
 
 	[SetUp]
@@ -182,7 +357,8 @@ class LocalAssetBakingTest {
 		var bakedFileSizes = new long[entries.Length];
 		for (var i = 0; i < entries.Length; ++i) bakedFileSizes[i] = -1L;
 
-		var pendingOperations = new TinyFfrAsyncOperation[entries.Length];
+		var allPendingOperations = new List<TinyFfrAsyncOperation>();
+		var entryPendingOperations = new List<TinyFfrAsyncOperation>();
 		var entryHasCompleted = new bool[entries.Length];
 		var entryElapsedMilliseconds = new double[entries.Length];
 
@@ -229,7 +405,9 @@ class LocalAssetBakingTest {
 
 		void FinishPhaseLoad() {
 			for (var i = 0; i < entries.Length; ++i) {
-				entries[i].CompletePendingLoad();
+				var completionStartTimestamp = Stopwatch.GetTimestamp();
+				entries[i].CompletePendingLoad(factory);
+				entryElapsedMilliseconds[i] += Stopwatch.GetElapsedTime(completionStartTimestamp).TotalMilliseconds;
 
 				var filePath = Path.Combine(bakedDir, entries[i].BakedFileName);
 				if (currentPhase == LoadPhase.Normal) {
@@ -240,7 +418,7 @@ class LocalAssetBakingTest {
 
 				bakedFileSizes[i] = File.Exists(filePath) ? new FileInfo(filePath).Length : -1L;
 			}
-			foreach (var entry in entries) entry.AddToScene(scene, canvas);
+			foreach (var entry in entries) entry.AddToScene(factory, scene, canvas);
 			loadInProgress = false;
 			RefreshMetrics();
 		}
@@ -254,14 +432,26 @@ class LocalAssetBakingTest {
 				_ = loop.IterateOnce();
 
 				if (loadInProgress) {
+					allPendingOperations.Clear();
 					for (var i = 0; i < entries.Length; ++i) {
-						pendingOperations[i] = entries[i].PendingOperation!.Value;
-						if (entryHasCompleted[i] || !pendingOperations[i].IsCompleted) continue;
+						entryPendingOperations.Clear();
+						entries[i].AddPendingOperationsTo(entryPendingOperations);
+						allPendingOperations.AddRange(entryPendingOperations);
+
+						if (entryHasCompleted[i]) continue;
+						var entryIsComplete = true;
+						foreach (var op in entryPendingOperations) {
+							if (op.IsCompleted) continue;
+							entryIsComplete = false;
+							break;
+						}
+						if (!entryIsComplete) continue;
+
 						entryHasCompleted[i] = true;
 						entryElapsedMilliseconds[i] = Stopwatch.GetElapsedTime(loadStartTimestamp).TotalMilliseconds;
 					}
 
-					var stats = TinyFfrAsyncOperation.GetCompletionStats(pendingOperations);
+					var stats = TinyFfrAsyncOperation.GetCompletionStats(allPendingOperations);
 					statusDisplay.SetText(
 						$"Loading {DescribePhase(currentPhase)}: {stats.CompletedCount} of {stats.OperationCount} complete " +
 						$"[{PercentageUtils.ConvertFractionToPercentageString(stats.CompletedFraction, "N0")}]",
