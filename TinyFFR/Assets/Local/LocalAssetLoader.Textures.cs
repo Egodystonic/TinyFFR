@@ -363,7 +363,6 @@ unsafe partial class LocalAssetLoader {
 				data.CompressionFormat,
 				data.CompressedLevelCount,
 				data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24,
-				data.GenerateMipMaps,
 				data.RenderingConfig,
 				name
 			);
@@ -933,7 +932,7 @@ unsafe partial class LocalAssetLoader {
 	const string BakerySectionTextureDimensionsX = "dimensions_x";
 	const string BakerySectionTextureDimensionsY = "dimensions_y";
 	const string BakerySectionTextureIsRgba = "is_rgba";
-	const string BakerySectionTextureGenerateMipMaps = "generate_mipmaps";
+	const string BakerySectionTextureMipMapsEnabled = "mipmaps_enabled";
 	const string BakerySectionTextureAllowsDynamicWrites = "allows_dynamic_writes";
 	const string BakerySectionTextureDataType = "data_type";
 	const string BakerySectionTextureCompressionFormat = "compression_format";
@@ -955,7 +954,7 @@ unsafe partial class LocalAssetLoader {
 		bakery.AddResourceBakeValue(resource, BakerySectionTextureDimensionsX, data.Dimensions.X);
 		bakery.AddResourceBakeValue(resource, BakerySectionTextureDimensionsY, data.Dimensions.Y);
 		bakery.AddResourceBakeValue(resource, BakerySectionTextureIsRgba, data.IsRgba);
-		bakery.AddResourceBakeValue(resource, BakerySectionTextureGenerateMipMaps, data.GenerateMipMaps);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureMipMapsEnabled, data.GenerateMipMaps);
 		bakery.AddResourceBakeValue(resource, BakerySectionTextureAllowsDynamicWrites, data.AllowsDynamicWrites);
 		bakery.AddResourceBakeValue(resource, BakerySectionTextureDataType, data.DataType);
 		bakery.AddResourceBakeValue(resource, BakerySectionTextureCompressionFormat, isCompressed ? data.CompressionFormat : TextureCompressionFormat.None);
@@ -997,7 +996,6 @@ unsafe partial class LocalAssetLoader {
 				assetData.Extract<int>(BakerySectionTextureDimensionsY)
 			);
 			var isRgba = assetData.Extract<bool>(BakerySectionTextureIsRgba);
-			var generateMipMaps = assetData.Extract<bool>(BakerySectionTextureGenerateMipMaps);
 			var compressionFormat = assetData.Extract<TextureCompressionFormat>(BakerySectionTextureCompressionFormat);
 
 			var renderingConfig = new TextureRenderingConfig {
@@ -1014,18 +1012,18 @@ unsafe partial class LocalAssetLoader {
 					compressionFormat,
 					assetData.Extract<int>(BakerySectionTextureCompressedLevelCount),
 					isRgba ? TexelType.Rgba32 : TexelType.Rgb24,
-					generateMipMaps,
 					renderingConfig,
 					ctx.StoredOrOverridingName
 				);
 			}
 
+			var mipMapsEnabled = assetData.Extract<bool>(BakerySectionTextureMipMapsEnabled);
 			var allowsDynamicWrites = assetData.Extract<bool>(BakerySectionTextureAllowsDynamicWrites);
 			var dataType = assetData.Extract<TextureDataType>(BakerySectionTextureDataType);
 
 			return isRgba
-				? self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgba32>(BakerySectionTextureTexelData), dimensions, generateMipMaps, allowsDynamicWrites, renderingConfig, null, dataType, ctx.StoredOrOverridingName)
-				: self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgb24>(BakerySectionTextureTexelData), dimensions, generateMipMaps, allowsDynamicWrites, renderingConfig, null, dataType, ctx.StoredOrOverridingName);
+				? self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgba32>(BakerySectionTextureTexelData), dimensions, mipMapsEnabled, allowsDynamicWrites, renderingConfig, null, dataType, ctx.StoredOrOverridingName)
+				: self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgb24>(BakerySectionTextureTexelData), dimensions, mipMapsEnabled, allowsDynamicWrites, renderingConfig, null, dataType, ctx.StoredOrOverridingName);
 		}
 
 		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);

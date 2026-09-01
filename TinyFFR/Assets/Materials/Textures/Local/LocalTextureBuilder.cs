@@ -124,14 +124,23 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		return HandleToInstance(handle);
 	}
 
-	public Texture CreateTextureFromCompressedBlocks(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, bool generateMipMaps, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+	public Texture CreateTextureFromCompressedBlocks(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		if (compressionFormat == TextureCompressionFormat.None) {
 			throw new ArgumentOutOfRangeException(nameof(compressionFormat), compressionFormat, "Compression format must not be None.");
 		}
 
-		var expectedSizeBytes = TextureCompressor.GetCompressedSizeBytes(dimensions, compressionFormat, generateMipMaps);
+		var maxLevelCount = TextureUtils.GetMipLevelCount(dimensions);
+		if (levelCount < 1 || levelCount > maxLevelCount) {
+			throw new ArgumentOutOfRangeException(
+				nameof(levelCount),
+				levelCount,
+				$"Level count must be at least 1 and at most {maxLevelCount} for a {dimensions.X}x{dimensions.Y} texture."
+			);
+		}
+
+		var expectedSizeBytes = TextureCompressor.GetCompressedSizeBytes(dimensions, compressionFormat, levelCount);
 		if (blocks.Length < expectedSizeBytes) {
 			throw new ArgumentException(
 				$"Compressed block data for a {dimensions.X}x{dimensions.Y} {compressionFormat} texture requires {expectedSizeBytes} bytes, " +
@@ -142,10 +151,10 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 
 		var buffer = _globals.CreateGpuHoldingBuffer(expectedSizeBytes);
 		blocks[..expectedSizeBytes].CopyTo(buffer.AsSpan<byte>());
-		return UploadCompressedBlocksAndStoreTextureData(buffer, dimensions, compressionFormat, levelCount, sourceTexelType, generateMipMaps, renderingConfig, name);
+		return UploadCompressedBlocksAndStoreTextureData(buffer, dimensions, compressionFormat, levelCount, sourceTexelType, renderingConfig, name);
 	}
 
-	Texture UploadCompressedBlocksAndStoreTextureData(TemporaryLoadSpaceBuffer buffer, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, bool generateMipMaps, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+	Texture UploadCompressedBlocksAndStoreTextureData(TemporaryLoadSpaceBuffer buffer, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
 		var levelOffsets = stackalloc uint[levelCount];
 		var levelSizes = stackalloc uint[levelCount];
 		var runningOffset = 0;
@@ -171,7 +180,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(dimensions, sourceTexelType, false, generateMipMaps, renderingConfig, compressionFormat));
+		_loadedTextures.Add(handle, new(dimensions, sourceTexelType, false, levelCount > 1, renderingConfig, compressionFormat));
 		return HandleToInstance(handle);
 	}
 
@@ -195,7 +204,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 			_globals.ReleaseGpuHoldingBufferWithoutGpuSubmission(preallocatedBuffer.BufferId);
 		}
 
-		return UploadCompressedBlocksAndStoreTextureData(compressedBuffer, dimensions, compressionFormat, levelCount, TTexel.BlitType, generateMipMaps, renderingConfig, name);
+		return UploadCompressedBlocksAndStoreTextureData(compressedBuffer, dimensions, compressionFormat, levelCount, TTexel.BlitType, renderingConfig, name);
 	}
 
 	ITextureBuilder.PreallocatedBuffer<TTexel> ITextureBuilder.PreallocateBuffer<TTexel>(int texelCount) => PreallocateBuffer<TTexel>(texelCount);
