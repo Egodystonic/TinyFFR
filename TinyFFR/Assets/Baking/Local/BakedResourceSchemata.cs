@@ -52,4 +52,29 @@ static class BakedResourceSchemata {
 		public const string KeyMap = "key_map";
 		public const string AbsorptionTransmissionMap = "absorption_transmission_map";
 	}
+
+	public static class FontBakingSchema {
+		[StructLayout(LayoutKind.Sequential, Pack = 1)]
+		public readonly record struct BakedRuneEntry(
+			int RuneValue,
+			float AtlasUvOffsetX,
+			float AtlasUvOffsetY,
+			float AtlasUvSizeX,
+			float AtlasUvSizeY,
+			float NibOffsetX,
+			float NibOffsetY,
+			float AdvanceWidth
+		);
+
+		[StructLayout(LayoutKind.Sequential, Pack = 1)]
+		public readonly record struct BakedKerningEntry(ulong PackedRunePair, float Advance);
+
+		public const string Atlas = "atlas";
+		public const string Ascent = "ascent";
+		public const string Descent = "descent";
+		public const string LineAdvance = "line_advance";
+		public const string LineBreakRune = "line_break_rune";
+		public const string RuneMap = "rune_map";
+		public const string KerningMap = "kerning_map";
+	}
 }

@@ -332,12 +332,68 @@ class LocalAssetBakingTest {
 		}
 	}
 
+	sealed class FontEntry : BakedAssetEntry {
+		const string SampleText = "Sphinx of black quartz, judge my vow!\nnaïve café — “quoted” 0123456789";
+
+		Font? _font;
+		FontPen? _pen;
+		CanvasText? _canvasObject;
+		TinyFfrAsyncOperation<Font>? _pendingOperation;
+
+		public override string DisplayName => "Font";
+		public override string BakedFileName => "font.tinyffr";
+
+		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
+			if (_pendingOperation is { } op) dest.Add(op);
+		}
+
+		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
+			_pendingOperation = factory.AssetLoader.LoadFontAsync(CommonTestAssets.FindAsset("EHSMB.TTF"), "EHSMB");
+		}
+
+		public override void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath) {
+			_pendingOperation = factory.AssetLoader.LoadBakedFontAsync(filePath);
+		}
+
+		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
+			if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
+			_font = op.GetResultAndDisposeOperation();
+			_pendingOperation = null;
+			_pen = _font.Value.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
+		}
+
+		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {
+			factory.AssetBakery.Bake(_font!.Value, filePath);
+		}
+
+		public override void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas) {
+			var canvasObject = canvas.Add(SampleText, _pen!.Value, TextJustification.Right);
+			canvasObject.SetPlacementFraction(Orientation2D.DownRight, (0.012f, 0.06f), 0.030f);
+			_canvasObject = canvasObject;
+		}
+
+		public override void RemoveFromScene(Scene scene, CanvasScene canvas) {
+			_canvasObject?.Dispose();
+			_canvasObject = null;
+		}
+
+		public override void Dispose() {
+			_canvasObject?.Dispose();
+			_canvasObject = null;
+			_pen?.Dispose();
+			_pen = null;
+			_font?.Dispose();
+			_font = null;
+		}
+	}
+
 	static BakedAssetEntry[] CreateEntries() => new BakedAssetEntry[] {
 		new BackdropTextureEntry(),
 		new FileTextureEntry(),
 		new BuiltInTextureEntry(),
 		new AnisotropyMapEntry(),
-		new MaterialEntry()
+		new MaterialEntry(),
+		new FontEntry()
 	};
 
 	[SetUp]
