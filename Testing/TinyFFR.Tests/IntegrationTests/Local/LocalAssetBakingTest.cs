@@ -187,70 +187,70 @@ class LocalAssetBakingTest {
 		var entryElapsedMilliseconds = new double[entries.Length];
 
 		using var factory = new LocalTinyFfrFactory(assetBakeryConfig: new AssetBakeryConfig { Enabled = true });
+		var display = factory.DisplayDiscoverer.Primary!.Value;
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Asset Baking Test | SPACE = toggle normal/prebaked load | ESC = quit");
+		using var camera = factory.CameraBuilder.CreateCamera();
+		using var scene = factory.SceneBuilder.CreateScene();
+		using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+
+		using var canvas = factory.SceneBuilder.CreateCanvasScene();
+		using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvas, window);
+		using var compositor = factory.RendererBuilder.CreateCompositor(window);
+		compositor.Add(sceneRenderer, RenderCompositionType.Standard);
+		compositor.Add(canvasRenderer, RenderCompositionType.RetainPreviousScenes);
+
+		using var font = factory.AssetLoader.LoadFont(BuiltInFont.Monospace);
+		using var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
+		using var metricsDisplay = canvas.Add("", pen, TextJustification.Left);
+		using var statusDisplay = canvas.Add("", pen, TextJustification.Left);
+		metricsDisplay.SetPlacementFraction(Orientation2D.UpLeft, (0.012f, 0.015f), 0.024f);
+		statusDisplay.SetPlacementFraction(Orientation2D.DownLeft, (0.012f, 0.015f), 0.024f);
+
+		var currentPhase = LoadPhase.Normal;
+		var loadInProgress = false;
+		var loadStartTimestamp = 0L;
+
+		void RefreshMetrics() {
+			var metricsText = BuildMetricsText(currentPhase, entries, normalMilliseconds, prebakedMilliseconds, bakedFileSizes);
+			metricsDisplay.SetText(metricsText, TextJustification.Left);
+			Console.WriteLine(metricsText);
+		}
+
+		void BeginPhaseLoad() {
+			for (var i = 0; i < entries.Length; ++i) {
+				entryHasCompleted[i] = false;
+				entryElapsedMilliseconds[i] = 0d;
+				if (currentPhase == LoadPhase.Normal) entries[i].BeginLoadFromSource(factory);
+				else entries[i].BeginLoadFromBakedFile(factory, Path.Combine(bakedDir, entries[i].BakedFileName));
+			}
+			loadStartTimestamp = Stopwatch.GetTimestamp();
+			loadInProgress = true;
+		}
+
+		void FinishPhaseLoad() {
+			for (var i = 0; i < entries.Length; ++i) {
+				entries[i].CompletePendingLoad();
+
+				var filePath = Path.Combine(bakedDir, entries[i].BakedFileName);
+				if (currentPhase == LoadPhase.Normal) {
+					normalMilliseconds[i] = entryElapsedMilliseconds[i];
+					entries[i].BakeToFile(factory, filePath);
+				}
+				else prebakedMilliseconds[i] = entryElapsedMilliseconds[i];
+
+				bakedFileSizes[i] = File.Exists(filePath) ? new FileInfo(filePath).Length : -1L;
+			}
+			foreach (var entry in entries) entry.AddToScene(scene, canvas);
+			loadInProgress = false;
+			RefreshMetrics();
+		}
+
 		try {
-			var display = factory.DisplayDiscoverer.Primary!.Value;
-			using var window = factory.WindowBuilder.CreateWindow(display, title: "Asset Baking Test | SPACE = toggle normal/prebaked load | ESC = quit");
-			using var camera = factory.CameraBuilder.CreateCamera();
-			using var scene = factory.SceneBuilder.CreateScene();
-			using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-
-			using var canvas = factory.SceneBuilder.CreateCanvasScene();
-			using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvas, window);
-			using var compositor = factory.RendererBuilder.CreateCompositor(window);
-			compositor.Add(sceneRenderer, RenderCompositionType.Standard);
-			compositor.Add(canvasRenderer, RenderCompositionType.RetainPreviousScenes);
-
-			using var font = factory.AssetLoader.LoadFont(BuiltInFont.Monospace);
-			using var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
-			using var metricsDisplay = canvas.Add("", pen, TextJustification.Left);
-			using var statusDisplay = canvas.Add("", pen, TextJustification.Left);
-			metricsDisplay.SetPlacementFraction(Orientation2D.UpLeft, (0.012f, 0.015f), 0.024f);
-			statusDisplay.SetPlacementFraction(Orientation2D.DownLeft, (0.012f, 0.015f), 0.024f);
-
-			var currentPhase = LoadPhase.Normal;
-			var loadInProgress = false;
-			var loadStartTimestamp = 0L;
-
-			void RefreshMetrics() {
-				var metricsText = BuildMetricsText(currentPhase, entries, normalMilliseconds, prebakedMilliseconds, bakedFileSizes);
-				metricsDisplay.SetText(metricsText, TextJustification.Left);
-				Console.WriteLine(metricsText);
-			}
-
-			void BeginPhaseLoad() {
-				for (var i = 0; i < entries.Length; ++i) {
-					entryHasCompleted[i] = false;
-					entryElapsedMilliseconds[i] = 0d;
-					if (currentPhase == LoadPhase.Normal) entries[i].BeginLoadFromSource(factory);
-					else entries[i].BeginLoadFromBakedFile(factory, Path.Combine(bakedDir, entries[i].BakedFileName));
-				}
-				loadStartTimestamp = Stopwatch.GetTimestamp();
-				loadInProgress = true;
-			}
-
-			void FinishPhaseLoad() {
-				for (var i = 0; i < entries.Length; ++i) {
-					entries[i].CompletePendingLoad();
-
-					var filePath = Path.Combine(bakedDir, entries[i].BakedFileName);
-					if (currentPhase == LoadPhase.Normal) {
-						normalMilliseconds[i] = entryElapsedMilliseconds[i];
-						entries[i].BakeToFile(factory, filePath);
-					}
-					else prebakedMilliseconds[i] = entryElapsedMilliseconds[i];
-
-					bakedFileSizes[i] = File.Exists(filePath) ? new FileInfo(filePath).Length : -1L;
-				}
-				foreach (var entry in entries) entry.AddToScene(scene, canvas);
-				loadInProgress = false;
-				RefreshMetrics();
-			}
-
 			RefreshMetrics();
 			BeginPhaseLoad();
 
 			using var loop = factory.ApplicationLoopBuilder.CreateLoop();
-			while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < MaxSceneDuration) {
+			while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < MaxSceneDuration && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 				_ = loop.IterateOnce();
 
 				if (loadInProgress) {
@@ -290,6 +290,7 @@ class LocalAssetBakingTest {
 			}
 		}
 		finally {
+			foreach (var entry in entries) entry.RemoveFromScene(scene, canvas);
 			foreach (var entry in entries) entry.Dispose();
 		}
 	}
