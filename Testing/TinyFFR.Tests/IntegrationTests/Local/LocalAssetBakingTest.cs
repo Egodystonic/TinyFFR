@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Text;
@@ -33,8 +34,8 @@ class LocalAssetBakingTest {
 		public abstract void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath);
 		public abstract void CompletePendingLoad();
 		public abstract void BakeToFile(LocalTinyFfrFactory factory, string filePath);
-		public abstract void AddToScene(Scene scene);
-		public abstract void RemoveFromScene(Scene scene);
+		public abstract void AddToScene(Scene scene, CanvasScene canvas);
+		public abstract void RemoveFromScene(Scene scene, CanvasScene canvas);
 		public abstract void Dispose();
 	}
 
@@ -64,9 +65,9 @@ class LocalAssetBakingTest {
 			factory.AssetBakery.Bake(_texture!.Value, filePath);
 		}
 
-		public override void AddToScene(Scene scene) => scene.SetBackdrop(_texture!.Value, 1f);
+		public override void AddToScene(Scene scene, CanvasScene canvas) => scene.SetBackdrop(_texture!.Value, 1f);
 
-		public override void RemoveFromScene(Scene scene) => scene.RemoveBackdrop();
+		public override void RemoveFromScene(Scene scene, CanvasScene canvas) => scene.RemoveBackdrop();
 
 		public override void Dispose() {
 			_texture?.Dispose();
@@ -74,8 +75,94 @@ class LocalAssetBakingTest {
 		}
 	}
 
+	abstract class TextureEntry : BakedAssetEntry {
+		Texture? _texture;
+		TinyFfrAsyncOperation<Texture>? _pendingOperation;
+		CanvasTexture? _canvasObject;
+
+		protected abstract XYPair<float> CanvasPosition { get; }
+		protected abstract TinyFfrAsyncOperation<Texture> DispatchSourceLoad(LocalTinyFfrFactory factory);
+
+		public override TinyFfrAsyncOperation? PendingOperation => _pendingOperation is { } op ? (TinyFfrAsyncOperation) op : null;
+
+		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
+			_pendingOperation = DispatchSourceLoad(factory);
+		}
+
+		public override void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath) {
+			_pendingOperation = factory.AssetLoader.LoadBakedTextureAsync(filePath);
+		}
+
+		public override void CompletePendingLoad() {
+			if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
+			_texture = op.GetResultAndDisposeOperation();
+			_pendingOperation = null;
+		}
+
+		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {
+			factory.AssetBakery.Bake(_texture!.Value, filePath);
+		}
+
+		public override void AddToScene(Scene scene, CanvasScene canvas) {
+			var canvasObject = canvas.Add(_texture!.Value);
+			canvasObject.SetPlacementFraction(Orientation2D.UpLeft, CanvasPosition, (0.16f, 0.16f));
+			_canvasObject = canvasObject;
+		}
+
+		public override void RemoveFromScene(Scene scene, CanvasScene canvas) {
+			_canvasObject?.Dispose();
+			_canvasObject = null;
+		}
+
+		public override void Dispose() {
+			_canvasObject?.Dispose();
+			_canvasObject = null;
+			_texture?.Dispose();
+			_texture = null;
+		}
+	}
+
+	sealed class FileTextureEntry : TextureEntry {
+		public override string DisplayName => "File Texture";
+		public override string BakedFileName => "file_texture.tinyffr";
+		protected override XYPair<float> CanvasPosition => (0.80f, 0.04f);
+
+		protected override TinyFfrAsyncOperation<Texture> DispatchSourceLoad(LocalTinyFfrFactory factory) {
+			return factory.AssetLoader.LoadTextureAsync(CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex), TextureDataType.ColorSrgb);
+		}
+	}
+
+	sealed class BuiltInTextureEntry : TextureEntry {
+		public override string DisplayName => "Built-In Texture";
+		public override string BakedFileName => "built_in_texture.tinyffr";
+		protected override XYPair<float> CanvasPosition => (0.80f, 0.24f);
+
+		protected override TinyFfrAsyncOperation<Texture> DispatchSourceLoad(LocalTinyFfrFactory factory) {
+			return factory.AssetLoader.LoadColorMapAsync(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture, Quality.VeryHigh);
+		}
+	}
+
+	sealed class AnisotropyMapEntry : TextureEntry {
+		public override string DisplayName => "Anisotropy Map";
+		public override string BakedFileName => "anisotropy_map.tinyffr";
+		protected override XYPair<float> CanvasPosition => (0.80f, 0.44f);
+
+		protected override TinyFfrAsyncOperation<Texture> DispatchSourceLoad(LocalTinyFfrFactory factory) {
+			return factory.AssetLoader.LoadAnisotropyMapRadialAngleFormattedAsync(
+				CommonTestAssets.FindAsset("aniso_metal/aniso_angle.jpg"),
+				CommonTestAssets.FindAsset("aniso_metal/aniso_strength.jpg"),
+				Orientation2D.Up,
+				AnisotropyRadialAngleRange.ZeroTo360,
+				encodedAnticlockwise: true
+			);
+		}
+	}
+
 	static BakedAssetEntry[] CreateEntries() => new BakedAssetEntry[] {
-		new BackdropTextureEntry()
+		new BackdropTextureEntry(),
+		new FileTextureEntry(),
+		new BuiltInTextureEntry(),
+		new AnisotropyMapEntry()
 	};
 
 	[SetUp]
@@ -87,7 +174,7 @@ class LocalAssetBakingTest {
 	[Test]
 	public void Execute() {
 		var entries = CreateEntries();
-		var bakedDir = TestUtils.SetUpCleanTestDir(BakedAssetDirName);
+		var bakedDir = SetUpCleanTestDir(BakedAssetDirName);
 		Console.WriteLine($"Baked asset directory: {bakedDir}");
 
 		var normalMilliseconds = new double?[entries.Length];
@@ -117,8 +204,8 @@ class LocalAssetBakingTest {
 			using var pen = font.CreatePen(BuiltInFontPenStyle.WhiteWithOutline);
 			using var metricsDisplay = canvas.Add("", pen, TextJustification.Left);
 			using var statusDisplay = canvas.Add("", pen, TextJustification.Left);
-			metricsDisplay.SetPlacementFraction(Orientation2D.UpLeft, (0.012f, 0.015f), 0.026f);
-			statusDisplay.SetPlacementFraction(Orientation2D.DownLeft, (0.012f, 0.015f), 0.026f);
+			metricsDisplay.SetPlacementFraction(Orientation2D.UpLeft, (0.012f, 0.015f), 0.024f);
+			statusDisplay.SetPlacementFraction(Orientation2D.DownLeft, (0.012f, 0.015f), 0.024f);
 
 			var currentPhase = LoadPhase.Normal;
 			var loadInProgress = false;
@@ -154,7 +241,7 @@ class LocalAssetBakingTest {
 
 					bakedFileSizes[i] = File.Exists(filePath) ? new FileInfo(filePath).Length : -1L;
 				}
-				foreach (var entry in entries) entry.AddToScene(scene);
+				foreach (var entry in entries) entry.AddToScene(scene, canvas);
 				loadInProgress = false;
 				RefreshMetrics();
 			}
@@ -188,7 +275,7 @@ class LocalAssetBakingTest {
 					statusDisplay.SetText($"Idle - press SPACE to reload as {DescribePhase(nextPhase)}", TextJustification.Left);
 
 					if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-						foreach (var entry in entries) entry.RemoveFromScene(scene);
+						foreach (var entry in entries) entry.RemoveFromScene(scene, canvas);
 						foreach (var entry in entries) entry.Dispose();
 						currentPhase = nextPhase;
 						BeginPhaseLoad();

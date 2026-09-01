@@ -193,6 +193,9 @@ public partial interface IAssetLoader {
 	
 	BackdropTexture LoadBakedBackdropTexture(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
 	TinyFfrAsyncOperation<BackdropTexture> LoadBakedBackdropTextureAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+
+	Texture LoadBakedTexture(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+	TinyFfrAsyncOperation<Texture> LoadBakedTextureAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
 	#endregion
 	
 	#region Load Font

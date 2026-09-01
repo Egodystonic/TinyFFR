@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -353,8 +354,10 @@ unsafe partial class LocalAssetLoader {
 
 	static Texture CompleteTextureLoad(LocalAssetLoader self, TextureCreationMetadata data, ReadOnlySpan<char> name) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+		Texture result;
 		if (data.CompressionFormat != TextureCompressionFormat.None && data.CompressedData is { } compressedData) {
-			return self._textureBuilder.CreateTextureFromCompressedBlocks(
+			result = self._textureBuilder.CreateTextureFromCompressedBlocks(
 				compressedData.Span,
 				data.Dimensions,
 				data.CompressionFormat,
@@ -365,10 +368,14 @@ unsafe partial class LocalAssetLoader {
 				name
 			);
 		}
+		else {
+			result = data.IsRgba
+				? self._textureBuilder.CreateTextureWithoutProcessing(data.Rgba32Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, null, data.DataType, name)
+				: self._textureBuilder.CreateTextureWithoutProcessing(data.Rgb24Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, null, data.DataType, name);
+		}
 
-		return data.IsRgba
-			? self._textureBuilder.CreateTextureWithoutProcessing(data.Rgba32Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, null, data.DataType, name)
-			: self._textureBuilder.CreateTextureWithoutProcessing(data.Rgb24Texels, data.Dimensions, data.GenerateMipMaps, data.AllowsDynamicWrites, data.RenderingConfig, null, data.DataType, name);
+		self.RegisterInBakery(result, data, name);
+		return result;
 	}
 	#endregion
 
@@ -921,6 +928,109 @@ unsafe partial class LocalAssetLoader {
 
 		return result;
 	}
+
+	#region Baking
+	const string BakerySectionTextureDimensionsX = "dimensions_x";
+	const string BakerySectionTextureDimensionsY = "dimensions_y";
+	const string BakerySectionTextureIsRgba = "is_rgba";
+	const string BakerySectionTextureGenerateMipMaps = "generate_mipmaps";
+	const string BakerySectionTextureAllowsDynamicWrites = "allows_dynamic_writes";
+	const string BakerySectionTextureDataType = "data_type";
+	const string BakerySectionTextureCompressionFormat = "compression_format";
+	const string BakerySectionTextureCompressedLevelCount = "compressed_level_count";
+	const string BakerySectionTextureDisableTextureRepeat = "disable_texture_repeat";
+	const string BakerySectionTextureDisableTexelBlending = "disable_texel_blending";
+	const string BakerySectionTextureAnisotropicFilteringQuality = "anisotropic_filtering_quality";
+	const string BakerySectionTextureAnisotropyLevel = "anisotropy_level";
+	const string BakerySectionTextureTexelData = "texel_data";
+
+	void RegisterInBakery(Texture resource, TextureCreationMetadata data, ReadOnlySpan<char> name) {
+		var bakery = _globals.Bakery;
+		if (!bakery.Enabled) return;
+
+		var isCompressed = data.CompressionFormat != TextureCompressionFormat.None && data.CompressedData is not null;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, name);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureDimensionsX, data.Dimensions.X);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureDimensionsY, data.Dimensions.Y);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureIsRgba, data.IsRgba);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureGenerateMipMaps, data.GenerateMipMaps);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureAllowsDynamicWrites, data.AllowsDynamicWrites);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureDataType, data.DataType);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureCompressionFormat, isCompressed ? data.CompressionFormat : TextureCompressionFormat.None);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureCompressedLevelCount, isCompressed ? data.CompressedLevelCount : 0);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureDisableTextureRepeat, data.RenderingConfig.DisableTextureRepeat);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureDisableTexelBlending, data.RenderingConfig.DisableTexelBlending);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureAnisotropicFilteringQuality, data.RenderingConfig.AnisotropicFilteringQuality);
+		bakery.AddResourceBakeValue(resource, BakerySectionTextureAnisotropyLevel, data.RenderingConfig.AnisotropyLevel);
+
+		if (isCompressed) {
+			bakery.AddResourceBakeValue(resource, BakerySectionTextureTexelData, data.CompressedData!.Value.Span);
+		}
+		else {
+			bakery.AddResourceBakeValue(
+				resource,
+				BakerySectionTextureTexelData,
+				data.IsRgba ? MemoryMarshal.AsBytes(data.Rgba32Texels) : MemoryMarshal.AsBytes(data.Rgb24Texels)
+			);
+		}
+
+		bakery.CompleteResourceBake(resource);
+	}
+
+	public Texture LoadBakedTexture(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.Load(this, bakedAssetFilePath, name, &LoadBakedTextureCore);
+	}
+
+	public TinyFfrAsyncOperation<Texture> LoadBakedTextureAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadAsync(this, bakedAssetFilePath, name, &LoadBakedTextureCore);
+	}
+
+	static Texture LoadBakedTextureCore(LocalAssetBakery.AssetLoadContext ctx) {
+		static Texture Finalize(LocalAssetBakery.AssetLoadContext ctx) {
+			var assetData = ctx.AssetData;
+			var self = ctx.Invoker<LocalAssetLoader>();
+
+			var dimensions = new XYPair<int>(
+				assetData.Extract<int>(BakerySectionTextureDimensionsX),
+				assetData.Extract<int>(BakerySectionTextureDimensionsY)
+			);
+			var isRgba = assetData.Extract<bool>(BakerySectionTextureIsRgba);
+			var generateMipMaps = assetData.Extract<bool>(BakerySectionTextureGenerateMipMaps);
+			var compressionFormat = assetData.Extract<TextureCompressionFormat>(BakerySectionTextureCompressionFormat);
+
+			var renderingConfig = new TextureRenderingConfig {
+				DisableTextureRepeat = assetData.Extract<bool>(BakerySectionTextureDisableTextureRepeat),
+				DisableTexelBlending = assetData.Extract<bool>(BakerySectionTextureDisableTexelBlending),
+				AnisotropicFilteringQuality = assetData.Extract<Quality>(BakerySectionTextureAnisotropicFilteringQuality),
+				AnisotropyLevel = assetData.Extract<float>(BakerySectionTextureAnisotropyLevel)
+			};
+
+			if (compressionFormat != TextureCompressionFormat.None) {
+				return self._textureBuilder.CreateTextureFromCompressedBlocks(
+					assetData.ExtractSpan<byte>(BakerySectionTextureTexelData),
+					dimensions,
+					compressionFormat,
+					assetData.Extract<int>(BakerySectionTextureCompressedLevelCount),
+					isRgba ? TexelType.Rgba32 : TexelType.Rgb24,
+					generateMipMaps,
+					renderingConfig,
+					ctx.StoredOrOverridingName
+				);
+			}
+
+			var allowsDynamicWrites = assetData.Extract<bool>(BakerySectionTextureAllowsDynamicWrites);
+			var dataType = assetData.Extract<TextureDataType>(BakerySectionTextureDataType);
+
+			return isRgba
+				? self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgba32>(BakerySectionTextureTexelData), dimensions, generateMipMaps, allowsDynamicWrites, renderingConfig, null, dataType, ctx.StoredOrOverridingName)
+				: self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgb24>(BakerySectionTextureTexelData), dimensions, generateMipMaps, allowsDynamicWrites, renderingConfig, null, dataType, ctx.StoredOrOverridingName);
+		}
+
+		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_texture_file_data")]
