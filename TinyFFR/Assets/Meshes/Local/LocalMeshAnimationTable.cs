@@ -687,8 +687,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 
 		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonNodeCount, skeleton.NodeCount);
 		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonFirstParentedNodeIndex, skeleton.FirstParentedNodeIndex);
-		var modelImportTransformMatrix = skeleton.ModelImportTransformMatrix;
-		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonModelImportTransform, MemoryMarshal.AsBytes(new ReadOnlySpan<Matrix4x4>(in modelImportTransformMatrix)));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonModelImportTransform, skeleton.ModelImportTransformMatrix);
 		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonDefaultLocalTransforms, MemoryMarshal.AsBytes(skeleton.DefaultLocalTransforms.Span[..skeleton.NodeCount]));
 		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonBindPoseInversions, MemoryMarshal.AsBytes(skeleton.BindPoseInversions.Span[..skeleton.BoneCount]));
 		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonParentIndices, MemoryMarshal.AsBytes(skeleton.ParentIndices.Span[..skeleton.NodeCount]));

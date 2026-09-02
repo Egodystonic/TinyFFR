@@ -235,7 +235,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	}
 
 	PooledHeapMemory<byte>? GetBakeryTexelBufferCopyIfEnabled(ReadOnlySpan<byte> data) {
-		if (!_globals.BakeryIsEnabled) return null;
+		if (!_globals.Bakery.Enabled) return null;
 		var result = _globals.HeapPool.BorrowAndCopy(data);
 		return result;
 	}
@@ -535,6 +535,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	void Dispose(ResourceHandle<Texture> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeTexture);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromCollection) _loadedTextures.Remove(handle);

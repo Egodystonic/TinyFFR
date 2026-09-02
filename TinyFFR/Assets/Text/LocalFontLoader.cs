@@ -442,7 +442,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 
 	#region Baking
 	void RegisterInBakery(Font resource, in FontData data, ReadOnlySpan<char> name) {
-		if (!_globals.BakeryIsEnabled) return;
+		if (!_globals.Bakery.Enabled) return;
 		var bakery = _globals.Bakery;
 
 		bakery.StartResourceBake(resource);
@@ -1009,6 +1009,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		var data = _activeFonts[handle];
 
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		foreach (var penHandle in data.ActivePens.Keys) {
 			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(data.ActivePens[penHandle].Material);
 		}

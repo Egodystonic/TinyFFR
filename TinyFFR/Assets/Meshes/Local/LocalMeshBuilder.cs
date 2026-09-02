@@ -315,7 +315,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	}
 
 	PooledHeapMemory<byte>? GetBakeryBufferCopyIfEnabled(ReadOnlySpan<byte> data) {
-		if (!_globals.BakeryIsEnabled) return null;
+		if (!_globals.Bakery.Enabled) return null;
 		var result = _globals.HeapPool.Borrow(data.Length);
 		data.CopyTo(result.Span);
 		return result;
@@ -329,7 +329,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.IsSkeletal, typeof(TVertex) == typeof(MeshVertexSkeletal));
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.VertexCount, vertexCount);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.TriangleCount, triangleCount);
-		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoundingBox, MemoryMarshal.AsBytes(new ReadOnlySpan<PositionedCuboid>(in boundingBox)));
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoundingBox, boundingBox);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoneCount, boneCount);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.AllowsPerInstanceVertexMutation, allowsPerInstanceVertexMutation);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.GeneratesWireframeData, generateWireframeData);
@@ -1240,8 +1240,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public void Dispose(ResourceHandle<Mesh> handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(ResourceHandle<Mesh> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
-		_mutableVertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(Mesh), _globals.GetResourceName(handle.Ident, DefaultMeshName)); 
+		_mutableVertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(Mesh), _globals.GetResourceName(handle.Ident, DefaultMeshName));
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		
 #pragma warning disable CA2000 // Compiler incorrectly assumes animTable is going out of scope here and warns me to invoke Dispose() on it
 		if (_activeMeshAnimationTables.Remove(handle, out var animTable)) {

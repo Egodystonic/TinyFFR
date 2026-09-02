@@ -88,6 +88,42 @@ sealed unsafe class ArrayPoolBackedLruCache<TKey, TValue> : IArrayPoolBackedLruC
 		return true;
 	}
 
+	public bool Remove(TKey key) => Remove(key, out _);
+
+	public bool Remove(TKey key, out TValue value) {
+		if (!_liveNodeIndexLookupMap.TryGetValue(key, out var index)) {
+			value = default!;
+			return false;
+		}
+
+		value = _nodes[index].Value;
+		UnlinkNode(index);
+		_liveNodeIndexLookupMap.Remove(key);
+
+		var lastIndex = _count - 1;
+		if (index != lastIndex) {
+			_nodes[index] = _nodes[lastIndex];
+			ref var relocated = ref _nodes[index];
+			if (relocated.NextMoreRecentNodeIndex != NullIndex) _nodes[relocated.NextMoreRecentNodeIndex].NextLessRecentNodeIndex = index;
+			if (relocated.NextLessRecentNodeIndex != NullIndex) _nodes[relocated.NextLessRecentNodeIndex].NextMoreRecentNodeIndex = index;
+			if (_mostRecentNodeIndex == lastIndex) _mostRecentNodeIndex = index;
+			if (_leastRecentNodeIndex == lastIndex) _leastRecentNodeIndex = index;
+			_liveNodeIndexLookupMap[relocated.Key] = index;
+		}
+
+		_nodes[lastIndex] = default;
+		--_count;
+		return true;
+	}
+
+	void UnlinkNode(int index) {
+		ref var node = ref _nodes[index];
+		if (node.NextMoreRecentNodeIndex != NullIndex) _nodes[node.NextMoreRecentNodeIndex].NextLessRecentNodeIndex = node.NextLessRecentNodeIndex;
+		if (node.NextLessRecentNodeIndex != NullIndex) _nodes[node.NextLessRecentNodeIndex].NextMoreRecentNodeIndex = node.NextMoreRecentNodeIndex;
+		if (_mostRecentNodeIndex == index) _mostRecentNodeIndex = node.NextLessRecentNodeIndex;
+		if (_leastRecentNodeIndex == index) _leastRecentNodeIndex = node.NextMoreRecentNodeIndex;
+	}
+
 	void SetNodeMostRecent(int index) {
 		if (index == _mostRecentNodeIndex) return;
 

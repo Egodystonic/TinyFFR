@@ -26,7 +26,6 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public HeapPool HeapPool { get; }
 	public LocalResourceGroupImplProvider ResourceGroupProvider => _resourceGroupProvider;
 	public LocalAssetBakery Bakery => _bakery;
-	public bool BakeryIsEnabled => _bakery.IsResolved && _bakery.Value.Enabled;
 	public bool InEnhancedSecurityEnvironment { get; }
 	
 	public IJobExecutionFacade SynchronousWorkScheduler => _synchronousWorkScheduler;

@@ -808,7 +808,7 @@ unsafe partial class LocalAssetLoader {
 			var isSkeletal = assetData.Extract<bool>(MeshBakingSchema.IsSkeletal);
 			var vertexCount = assetData.Extract<int>(MeshBakingSchema.VertexCount);
 			var triangleCount = assetData.Extract<int>(MeshBakingSchema.TriangleCount);
-			var boundingBox = assetData.ExtractSpan<PositionedCuboid>(MeshBakingSchema.BoundingBox)[0];
+			var boundingBox = assetData.Extract<PositionedCuboid>(MeshBakingSchema.BoundingBox);
 			var boneCount = assetData.Extract<int>(MeshBakingSchema.BoneCount);
 			var allowsPerInstanceVertexMutation = assetData.Extract<bool>(MeshBakingSchema.AllowsPerInstanceVertexMutation);
 			var generateWireframeData = assetData.Extract<bool>(MeshBakingSchema.GeneratesWireframeData);
@@ -863,7 +863,7 @@ unsafe partial class LocalAssetLoader {
 			nodeCount,
 			boneCount,
 			assetData.Extract<int>(MeshBakingSchema.SkeletonFirstParentedNodeIndex),
-			assetData.ExtractSpan<Matrix4x4>(MeshBakingSchema.SkeletonModelImportTransform)[0],
+			assetData.Extract<Matrix4x4>(MeshBakingSchema.SkeletonModelImportTransform),
 			assetData.ExtractSpan<Matrix4x4>(MeshBakingSchema.SkeletonDefaultLocalTransforms)[..nodeCount],
 			assetData.ExtractSpan<Matrix4x4>(MeshBakingSchema.SkeletonBindPoseInversions)[..boneCount],
 			assetData.ExtractSpan<int>(MeshBakingSchema.SkeletonParentIndices)[..nodeCount],

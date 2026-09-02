@@ -7,6 +7,8 @@ public interface IArrayPoolBackedLruCache<in TKey, TValue> : IDisposable {
 	void AddOrSet(TKey key, TValue @value);
 	bool AddOrSet(TKey key, TValue @value, out TValue previousValue);
 	bool TryGet(TKey key, out TValue @value);
+	bool Remove(TKey key);
+	bool Remove(TKey key, out TValue @value);
 	void Clear(bool invokeCacheEvictionCallbackOnAllContainedValues);
 	void Dispose(bool invokeCacheEvictionCallbackOnAllContainedValues);
 }

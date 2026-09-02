@@ -55,8 +55,10 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		typeof(MeshAnimation),
 		typeof(MeshNode),
 		typeof(Model),
-		typeof(Texture)
-	}; 
+		typeof(Texture),
+		typeof(Matrix4x4),
+		typeof(PositionedCuboid)
+	};
 #pragma warning disable CA1859 // "Don't use readonlydict for increased performance" -- I don't need perf, I need the intentionality of read-only; that's why I chose that interface :/
 	static readonly IReadOnlyDictionary<Type, int> _typeToTypeIdMap = _typeIdToTypeMap.Select((t, i) => (Type: t, Id: i)).ToDictionary(tuple => tuple.Type, tuple => tuple.Id);
 #pragma warning restore CA1859
@@ -86,6 +88,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		get; 
 		set {
 			if (field == value) return;
+			if (value) ThrowIfThisIsDisposed();
 			field = value;
 			if (!value) {
 				ClearBakeryMemory();
@@ -248,6 +251,12 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		CompleteResourceBake(resource);
 		_pendingFinalizers[resource.AsStub] = new PendingFinalizer(invoker, (UIntPtr) finalizer);
+	}
+
+	public void DiscardBakeryDataIfPresent<TResource>(TResource resource) where TResource : IResource {
+		if (!Enabled) return;
+		if (_resourcesReadyForBaking.Remove(resource.AsStub, out var bakeData)) bakeData.Buffer.Dispose();
+		_pendingFinalizers.Remove(resource.AsStub);
 	}
 
 	public void Bake(BackdropTexture resource, ReadOnlySpan<char> filePath) => Bake<BackdropTexture>(resource, filePath);
@@ -477,7 +486,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	public void Dispose() {
 		try {
 			if (_isDisposed) return;
-			ClearBakeryMemory();
+			Enabled = false;
 			foreach (var val in _inProgressResources.Values) {
 				val.Buffer.Dispose();
 			}

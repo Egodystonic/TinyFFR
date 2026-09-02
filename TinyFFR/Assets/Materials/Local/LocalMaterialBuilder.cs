@@ -307,7 +307,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	#region Baking
 	void RegisterInBakery(Material resource, in LightingIgnoringMaterialCreationConfig config) {
-		if (!_globals.BakeryIsEnabled) return;
+		if (!_globals.Bakery.Enabled) return;
 		var bakery = _globals.Bakery;
 
 		bakery.StartResourceBake(resource);
@@ -319,7 +319,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	void RegisterInBakery(Material resource, in ColorKeyedMaterialCreationConfig config) {
-		if (!_globals.BakeryIsEnabled) return;
+		if (!_globals.Bakery.Enabled) return;
 		var bakery = _globals.Bakery;
 
 		bakery.StartResourceBake(resource);
@@ -331,7 +331,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	void RegisterInBakery(Material resource, in StandardMaterialCreationConfig config) {
-		if (!_globals.BakeryIsEnabled) return;
+		if (!_globals.Bakery.Enabled) return;
 		var bakery = _globals.Bakery;
 
 		bakery.StartResourceBake(resource);
@@ -349,7 +349,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	void RegisterInBakery(Material resource, in TransmissiveMaterialCreationConfig config) {
-		if (!_globals.BakeryIsEnabled) return;
+		if (!_globals.Bakery.Enabled) return;
 		var bakery = _globals.Bakery;
 
 		bakery.StartResourceBake(resource);
@@ -785,6 +785,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if (IsDisposed(handle)) return;
 		if (handle == DefaultMaterial.GetHandleWithoutDisposeCheck()) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeMaterial);
 		_globals.DisposeResourceNameIfExists(handle.Ident);

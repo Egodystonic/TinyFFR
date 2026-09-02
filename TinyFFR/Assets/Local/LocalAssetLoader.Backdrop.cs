@@ -544,6 +544,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	void Dispose(ResourceHandle<BackdropTexture> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		var data = _loadedBackdropTextures[handle];
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.IblTextureHandle, &UnloadIblFileFromMemory);
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.SkyboxTextureHandle, &UnloadSkyboxFileFromMemory);
