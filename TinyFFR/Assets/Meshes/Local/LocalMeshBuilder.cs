@@ -905,7 +905,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (!_activeMeshes.TryGetValue(meshHandle, out var meshData)) return;
 		_activeMeshes[meshHandle] = meshData with { BoundingBox = newBoundingBox };
 		foreach (var instance in _globals.DependencyTracker.GetDependentsOfGivenType<Mesh, ModelInstance, IModelInstanceImplProvider>(HandleToInstance(meshHandle))) {
-			instance.SetBoundingBox(newBoundingBox);
+			instance.SetNonTransformedBoundingBox(newBoundingBox);
 		}
 	}
 
