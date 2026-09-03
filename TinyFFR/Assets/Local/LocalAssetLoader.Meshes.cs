@@ -800,58 +800,57 @@ unsafe partial class LocalAssetLoader {
 	static Mesh LoadBakedMeshCore(LocalAssetBakery.AssetLoadContext ctx) {
 		static Mesh Finalize(LocalAssetBakery.AssetLoadContext ctx) {
 			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-
-			var assetData = ctx.AssetData;
-			var self = ctx.Invoker<LocalAssetLoader>();
-			var name = ctx.StoredOrOverridingName;
-
-			var isSkeletal = assetData.Extract<bool>(MeshBakingSchema.IsSkeletal);
-			var vertexCount = assetData.Extract<int>(MeshBakingSchema.VertexCount);
-			var triangleCount = assetData.Extract<int>(MeshBakingSchema.TriangleCount);
-			var boundingBox = assetData.Extract<PositionedCuboid>(MeshBakingSchema.BoundingBox);
-			var boneCount = assetData.Extract<int>(MeshBakingSchema.BoneCount);
-			var allowsPerInstanceVertexMutation = assetData.Extract<bool>(MeshBakingSchema.AllowsPerInstanceVertexMutation);
-			var generateWireframeData = assetData.Extract<bool>(MeshBakingSchema.GeneratesWireframeData);
-			var triangles = assetData.ExtractSpan<VertexTriangle>(MeshBakingSchema.IndexData)[..triangleCount];
-
-			Mesh result;
-			if (isSkeletal) {
-				result = self._meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
-					assetData.ExtractSpan<MeshVertexSkeletal>(MeshBakingSchema.VertexData)[..vertexCount],
-					triangles,
-					boundingBox,
-					allowsPerInstanceVertexMutation,
-					generateWireframeData,
-					name,
-					boneCount
-				);
-			}
-			else {
-				result = self._meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
-					assetData.ExtractSpan<MeshVertex>(MeshBakingSchema.VertexData)[..vertexCount],
-					triangles,
-					boundingBox,
-					allowsPerInstanceVertexMutation,
-					generateWireframeData,
-					name,
-					boneCount
-				);
-			}
-
-			if (!isSkeletal) return result;
-
-			try {
-				RestoreSkeletalData(self, result, assetData);
-			}
-			catch {
-				result.Dispose();
-				throw;
-			}
-
-			return result;
+			return CreateMeshFromBakedAsset(ctx.Invoker<LocalAssetLoader>(), ctx.AssetData, ctx.StoredOrOverridingName);
 		}
 
 		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static Mesh CreateMeshFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name) {
+		var isSkeletal = assetData.Extract<bool>(MeshBakingSchema.IsSkeletal);
+		var vertexCount = assetData.Extract<int>(MeshBakingSchema.VertexCount);
+		var triangleCount = assetData.Extract<int>(MeshBakingSchema.TriangleCount);
+		var boundingBox = assetData.Extract<PositionedCuboid>(MeshBakingSchema.BoundingBox);
+		var boneCount = assetData.Extract<int>(MeshBakingSchema.BoneCount);
+		var allowsPerInstanceVertexMutation = assetData.Extract<bool>(MeshBakingSchema.AllowsPerInstanceVertexMutation);
+		var generateWireframeData = assetData.Extract<bool>(MeshBakingSchema.GeneratesWireframeData);
+		var triangles = assetData.ExtractSpan<VertexTriangle>(MeshBakingSchema.IndexData)[..triangleCount];
+
+		Mesh result;
+		if (isSkeletal) {
+			result = self._meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+				assetData.ExtractSpan<MeshVertexSkeletal>(MeshBakingSchema.VertexData)[..vertexCount],
+				triangles,
+				boundingBox,
+				allowsPerInstanceVertexMutation,
+				generateWireframeData,
+				name,
+				boneCount
+			);
+		}
+		else {
+			result = self._meshBuilder.CreateMeshFromPreValidatedAndTransformedData(
+				assetData.ExtractSpan<MeshVertex>(MeshBakingSchema.VertexData)[..vertexCount],
+				triangles,
+				boundingBox,
+				allowsPerInstanceVertexMutation,
+				generateWireframeData,
+				name,
+				boneCount
+			);
+		}
+
+		if (!isSkeletal) return result;
+
+		try {
+			RestoreSkeletalData(self, result, assetData);
+		}
+		catch {
+			result.Dispose();
+			throw;
+		}
+
+		return result;
 	}
 
 	static void RestoreSkeletalData(LocalAssetLoader self, Mesh mesh, LoadedBakedAsset assetData) {

@@ -16,6 +16,7 @@ public interface IAssetBakery {
 	void Bake(Material resource, ReadOnlySpan<char> filePath);
 	void Bake(Mesh resource, ReadOnlySpan<char> filePath);
 	void Bake(Model resource, ReadOnlySpan<char> filePath);
+	void Bake(ResourceGroup resource, ReadOnlySpan<char> filePath);
 	void Bake(Texture resource, ReadOnlySpan<char> filePath);
 	void ClearBakeryMemory();
 }

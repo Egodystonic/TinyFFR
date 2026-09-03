@@ -6,7 +6,7 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Baking;
 
 public sealed record AssetBakeryConfig {
-	public const int DefaultMaxResourcesInBakeryMemory = 200;
+	public const int DefaultMaxResourcesInBakeryMemory = 500;
 
 	public bool Enabled { get; init; } = false;
 

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -14,12 +15,14 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	const int ResourceNameIndexSpaceMax = 20;
 	const string MeshNameSuffix = " mesh ";
+	const string ModelNameSuffix = " model ";
 	
 	const string DefaultModelName = "Unnamed Model";
 	readonly WorkerJobSyncHelper<LocalAssetLoader, ModelLoadContext, ModelLoadConfig> _modelLoadWorkerSyncHelper;
@@ -34,7 +37,20 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		_loadedModels.Add(_prevModelHandle, (mesh, material));
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), mesh);
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), material);
-		return HandleToInstance(handle);
+		var result = HandleToInstance(handle);
+		RegisterInBakery(result, mesh, material);
+		return result;
+	}
+
+	void RegisterInBakery(Model resource, Mesh mesh, Material material) {
+		if (!_globals.Bakery.Enabled) return;
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, _globals.GetResourceName(resource.GetHandleWithoutDisposeCheck().Ident, DefaultModelName));
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.ModelMesh, mesh);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.ModelMaterial, material);
+		bakery.CompleteResourceBake(resource);
 	}
 	
 	sealed class ModelLoadSubMeshData : IDisposable {
@@ -103,6 +119,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 
 		// Handed across each primary thread hop
 		public ResourceGroup? Group { get; set; } = null;
+		public int ModelIndex { get; set; } = 0;
 		public int TotalResourceCountHint { get; set; } = 0;
 
 		public override void TearDown() {
@@ -119,6 +136,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			FilePath?.Dispose();
 			FilePath = null;
 			TotalResourceCountHint = 0;
+			ModelIndex = 0;
 			HeapPool = null!;
 			Self = null!;
 		}
@@ -264,7 +282,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			material = context.AssetIndexToMaterialMap[context.CurrentSubMeshData.MaterialAssetIndex];
 		}
 
-		group.Add(self.CreateModel(mesh, material, default));
+		var resourceGroupName = context.Name;
+		Span<char> modelNameBuffer = stackalloc char[SpanUtils.GetConcatenatedLength(resourceGroupName, ModelNameSuffix) + ResourceNameIndexSpaceMax];
+		SpanUtils.Concatenate(modelNameBuffer, resourceGroupName, ModelNameSuffix);
+		var modelNameWriteStartIndex = SpanUtils.GetConcatenatedLength(resourceGroupName, ModelNameSuffix);
+		_ = context.ModelIndex.TryFormat(modelNameBuffer[modelNameWriteStartIndex..], out var modelIndexCharsCount, provider: CultureInfo.InvariantCulture);
+		++context.ModelIndex;
+
+		group.Add(self.CreateModel(mesh, material, modelNameBuffer[..(modelNameWriteStartIndex + modelIndexCharsCount)]));
 	}
 
 	static ResourceGroup CompleteModelLoad(ModelLoadContext context) {
@@ -433,18 +458,93 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedModels[handle].Material;
 	}
+	
+	#region Baking
+	public ResourceGroup LoadBakedModel(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.Load<Model, ResourceGroup, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedModelCore);
+	}
+
+	public TinyFfrAsyncOperation<ResourceGroup> LoadBakedModelAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadAsync<Model, ResourceGroup, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedModelCore);
+	}
+
+	public ResourceGroup LoadBakedResourceGroup(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.Load<ResourceGroup, ResourceGroup, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedResourceGroupCore);
+	}
+
+	public TinyFfrAsyncOperation<ResourceGroup> LoadBakedResourceGroupAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadAsync<ResourceGroup, ResourceGroup, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedResourceGroupCore);
+	}
+
+	static ResourceGroup LoadBakedModelCore(LocalAssetBakery.AssetLoadContext ctx) {
+		static ResourceGroup Finalize(LocalAssetBakery.AssetLoadContext ctx) {
+			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+			var assetData = ctx.AssetData;
+			var self = ctx.Invoker<LocalAssetLoader>();
+			var name = ctx.StoredOrOverridingName;
+
+			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, name);
+			var resolver = new BakedAssetResolver(assetData, group, self);
+			try {
+				resolver.MaterializeAll();
+				group.Add(CreateModelFromBakedAsset(self, name, BakedPoolKind.Root, -1, in resolver));
+			}
+			catch {
+				group.Dispose();
+				throw;
+			}
+
+			group.Seal();
+			return group;
+		}
+
+		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static ResourceGroup LoadBakedResourceGroupCore(LocalAssetBakery.AssetLoadContext ctx) {
+		static ResourceGroup Finalize(LocalAssetBakery.AssetLoadContext ctx) {
+			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+			var assetData = ctx.AssetData;
+			var self = ctx.Invoker<LocalAssetLoader>();
+			var name = ctx.StoredOrOverridingName;
+
+			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, name);
+			var resolver = new BakedAssetResolver(assetData, group, self);
+			try {
+				resolver.MaterializeAll();
+			}
+			catch {
+				group.Dispose();
+				throw;
+			}
+
+			group.Seal();
+			return group;
+		}
+
+		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static Model CreateModelFromBakedAsset(LocalAssetLoader self, ReadOnlySpan<char> name, BakedPoolKind ownerKind, int ownerIndex, in BakedAssetResolver resolver) {
+		var mesh = resolver.ResolveMesh(ownerKind, ownerIndex, BakedReferenceSlot.ModelMesh);
+		var material = resolver.ResolveMaterial(ownerKind, ownerIndex, BakedReferenceSlot.ModelMaterial);
+		return self.CreateModel(mesh, material, name);
+	}
+	#endregion
 
 	public string GetNameAsNewStringObject(ResourceHandle<Model> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return new String(_globals.GetResourceName(handle.Ident, DefaultBackdropTextureName));
+		return new String(_globals.GetResourceName(handle.Ident, DefaultModelName));
 	}
 	public int GetNameLength(ResourceHandle<Model> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Length;
+		return _globals.GetResourceName(handle.Ident, DefaultModelName).Length;
 	}
 	public void CopyName(ResourceHandle<Model> handle, Span<char> destinationBuffer) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_globals.CopyResourceName(handle.Ident, DefaultBackdropTextureName, destinationBuffer);
+		_globals.CopyResourceName(handle.Ident, DefaultModelName, destinationBuffer);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -566,6 +666,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	void Dispose(ResourceHandle<Model> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromCollection) _loadedModels.Remove(handle);

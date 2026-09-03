@@ -1,17 +1,109 @@
 // Created on 2026-08-29 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Globalization;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+
 namespace Egodystonic.TinyFFR.Assets.Baking;
 
 static class BakedResourceSchemata {
 	public const int VersionMajor = 1;
 	public const int VersionMinor = 0;
+
+	public enum BakedPoolKind {
+		Root = -1,
+		Texture = 0,
+		Material = 1,
+		Mesh = 2,
+		Model = 3
+	}
 	
+	public static BakedPoolKind GetPoolKindForType(Type type) {
+		if (type == typeof(Texture)) return BakedPoolKind.Texture;
+		if (type == typeof(Material)) return BakedPoolKind.Material;
+		if (type == typeof(Mesh)) return BakedPoolKind.Mesh;
+		if (type == typeof(Model)) return BakedPoolKind.Model;
+		return BakedPoolKind.Root;
+	}
+	
+	public static Type GetTypeForPoolKind(BakedPoolKind kind) => kind switch {
+		BakedPoolKind.Texture => typeof(Texture),
+		BakedPoolKind.Material => typeof(Material),
+		BakedPoolKind.Mesh => typeof(Mesh),
+		BakedPoolKind.Model => typeof(Model),
+		_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+	};
+
+	public enum BakedReferenceSlot {
+		ColorMap = 0,
+		NormalMap = 1,
+		OrmrMap = 2,
+		AnisotropyMap = 3,
+		EmissiveMap = 4,
+		ClearCoatMap = 5,
+		KeyMap = 6,
+		AbsorptionTransmissionMap = 7,
+		ModelMesh = 8,
+		ModelMaterial = 9,
+		FontAtlas = 10
+	}
+
+	public static class AssetPoolSchema {
+		[StructLayout(LayoutKind.Sequential, Pack = 1)]
+		public readonly record struct BakedReferenceEntry(
+			int OwnerKind,
+			int OwnerIndex,
+			int Slot,
+			int TargetKind,
+			int TargetIndex
+		);
+
+		public const string TextureCount = "pool_texture_count";
+		public const string MaterialCount = "pool_material_count";
+		public const string MeshCount = "pool_mesh_count";
+		public const string ModelCount = "pool_model_count";
+
+		public const string TexturePrefix = "pool_texture_";
+		public const string MaterialPrefix = "pool_material_";
+		public const string MeshPrefix = "pool_mesh_";
+		public const string ModelPrefix = "pool_model_";
+
+		public const string ReferenceTable = "reference_table";
+
+		public const int MaxPoolSectionNameLength = 32;
+
+		public static ReadOnlySpan<char> GetCountSectionName(BakedPoolKind kind) => kind switch {
+			BakedPoolKind.Texture => TextureCount,
+			BakedPoolKind.Material => MaterialCount,
+			BakedPoolKind.Mesh => MeshCount,
+			BakedPoolKind.Model => ModelCount,
+			_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+		};
+
+		public static ReadOnlySpan<char> GetEntryPrefix(BakedPoolKind kind) => kind switch {
+			BakedPoolKind.Texture => TexturePrefix,
+			BakedPoolKind.Material => MaterialPrefix,
+			BakedPoolKind.Mesh => MeshPrefix,
+			BakedPoolKind.Model => ModelPrefix,
+			_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+		};
+
+		public static ReadOnlySpan<char> WriteEntrySectionName(Span<char> destination, BakedPoolKind kind, int index) {
+			var prefix = GetEntryPrefix(kind);
+			prefix.CopyTo(destination);
+			if (!index.TryFormat(destination[prefix.Length..], out var indexCharsWritten, provider: CultureInfo.InvariantCulture)) {
+				throw new InvalidOperationException($"Could not format pool section name for index {index} (this is a bug in TinyFFR).");
+			}
+			return destination[..(prefix.Length + indexCharsWritten)];
+		}
+	}
+
 	public static class BackdropTextureBakingSchema {
 		public const string SkyboxData = "skybox";
 		public const string IblData = "ibl";
 	}
-	
+
 	public static class TextureBakingSchema {
 		public const string DimensionsX = "dimensions_x";
 		public const string DimensionsY = "dimensions_y";
@@ -35,22 +127,13 @@ static class BakedResourceSchemata {
 			Standard,
 			Transmissive
 		}
-		
+
 		public const string Kind = "material_kind";
 		public const string EnablePerInstanceEffects = "enable_per_instance_effects";
 		public const string AlphaMode = "alpha_mode";
 		public const string BlendOutputAlphaWithScene = "blend_output_alpha_with_scene";
 		public const string RefractionThickness = "refraction_thickness";
 		public const string TransmissiveQuality = "transmissive_quality";
-
-		public const string ColorMap = "color_map";
-		public const string NormalMap = "normal_map";
-		public const string OrmrMap = "ormr_map";
-		public const string AnisotropyMap = "anisotropy_map";
-		public const string EmissiveMap = "emissive_map";
-		public const string ClearCoatMap = "clear_coat_map";
-		public const string KeyMap = "key_map";
-		public const string AbsorptionTransmissionMap = "absorption_transmission_map";
 	}
 
 	public static class FontBakingSchema {
@@ -69,7 +152,6 @@ static class BakedResourceSchemata {
 		[StructLayout(LayoutKind.Sequential, Pack = 1)]
 		public readonly record struct BakedKerningEntry(ulong PackedRunePair, float Advance);
 
-		public const string Atlas = "atlas";
 		public const string Ascent = "ascent";
 		public const string Descent = "descent";
 		public const string LineAdvance = "line_advance";

@@ -28,71 +28,11 @@ unsafe partial class LocalAssetLoader {
 			var self = ctx.Invoker<LocalAssetLoader>();
 			var name = ctx.StoredOrOverridingName;
 
-			var kind = assetData.Extract<MaterialBakingSchema.BakedMaterialKind>(MaterialBakingSchema.Kind);
-			var enablePerInstanceEffects = assetData.Extract(MaterialBakingSchema.EnablePerInstanceEffects, false);
-
 			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, name);
-
+			var resolver = new BakedAssetResolver(assetData, group, self);
 			try {
-				switch (kind) {
-					case MaterialBakingSchema.BakedMaterialKind.LightingIgnoring: {
-						var colorMap = RebuildRequiredMap(self, group, assetData, MaterialBakingSchema.ColorMap);
-						var material = self._materialBuilder.CreateLightingIgnoringMaterial(new LightingIgnoringMaterialCreationConfig {
-							ColorMap = colorMap,
-							Name = name,
-							EnablePerInstanceEffects = enablePerInstanceEffects
-						});
-						group.Add(material);
-						break;
-					}
-					case MaterialBakingSchema.BakedMaterialKind.ColorKeyed: {
-						var keyMap = RebuildRequiredMap(self, group, assetData, MaterialBakingSchema.KeyMap);
-						var material = self._materialBuilder.CreateColorKeyedMaterial(new ColorKeyedMaterialCreationConfig {
-							KeyMap = keyMap,
-							BlendOutputAlphaWithScene = assetData.Extract<bool>(MaterialBakingSchema.BlendOutputAlphaWithScene),
-							Name = name
-						});
-						group.Add(material);
-						break;
-					}
-					case MaterialBakingSchema.BakedMaterialKind.Standard: {
-						var colorMap = RebuildRequiredMap(self, group, assetData, MaterialBakingSchema.ColorMap);
-						var material = self._materialBuilder.CreateStandardMaterial(new StandardMaterialCreationConfig {
-							ColorMap = colorMap,
-							NormalMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.NormalMap),
-							OcclusionRoughnessMetallicReflectanceMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.OrmrMap),
-							AnisotropyMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.AnisotropyMap),
-							EmissiveMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.EmissiveMap),
-							ClearCoatMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.ClearCoatMap),
-							AlphaMode = assetData.Extract<StandardMaterialAlphaMode>(MaterialBakingSchema.AlphaMode),
-							Name = name,
-							EnablePerInstanceEffects = enablePerInstanceEffects
-						});
-						group.Add(material);
-						break;
-					}
-					case MaterialBakingSchema.BakedMaterialKind.Transmissive: {
-						var colorMap = RebuildRequiredMap(self, group, assetData, MaterialBakingSchema.ColorMap);
-						var absorptionTransmissionMap = RebuildRequiredMap(self, group, assetData, MaterialBakingSchema.AbsorptionTransmissionMap);
-						var material = self._materialBuilder.CreateTransmissiveMaterial(new TransmissiveMaterialCreationConfig {
-							ColorMap = colorMap,
-							AbsorptionTransmissionMap = absorptionTransmissionMap,
-							NormalMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.NormalMap),
-							OcclusionRoughnessMetallicReflectanceMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.OrmrMap),
-							AnisotropyMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.AnisotropyMap),
-							EmissiveMap = RebuildOptionalMap(self, group, assetData, MaterialBakingSchema.EmissiveMap),
-							RefractionThickness = assetData.Extract<float>(MaterialBakingSchema.RefractionThickness),
-							Quality = assetData.Extract<TransmissiveMaterialQuality>(MaterialBakingSchema.TransmissiveQuality),
-							AlphaMode = assetData.Extract<TransmissiveMaterialAlphaMode>(MaterialBakingSchema.AlphaMode),
-							Name = name,
-							EnablePerInstanceEffects = enablePerInstanceEffects
-						});
-						group.Add(material);
-						break;
-					}
-					default:
-						throw new AssetBakeException($"Baked material declares unknown material kind '{kind}'.");
-				}
+				resolver.MaterializeAll();
+				group.Add(CreateMaterialFromBakedAsset(self, assetData, name, BakedPoolKind.Root, -1, in resolver));
 			}
 			catch {
 				group.Dispose();
@@ -106,19 +46,56 @@ unsafe partial class LocalAssetLoader {
 		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
 	}
 
-	static Texture RebuildRequiredMap(LocalAssetLoader self, ResourceGroup group, LoadedBakedAsset assetData, ReadOnlySpan<char> sectionName) {
-		return RebuildMap(self, group, assetData.ExtractSubAsset<Texture>(sectionName));
-	}
+	static Material CreateMaterialFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name, BakedPoolKind ownerKind, int ownerIndex, in BakedAssetResolver resolver) {
+		var kind = assetData.Extract<MaterialBakingSchema.BakedMaterialKind>(MaterialBakingSchema.Kind);
+		var enablePerInstanceEffects = assetData.Extract(MaterialBakingSchema.EnablePerInstanceEffects, false);
 
-	static Texture? RebuildOptionalMap(LocalAssetLoader self, ResourceGroup group, LoadedBakedAsset assetData, ReadOnlySpan<char> sectionName) {
-		if (assetData.TryExtractSubAsset<Texture>(sectionName) is not { } subAsset) return null;
-		return RebuildMap(self, group, subAsset);
-	}
-
-	static Texture RebuildMap(LocalAssetLoader self, ResourceGroup group, LoadedBakedAsset subAsset) {
-		var result = CreateTextureFromBakedAsset(self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
-		group.Add(result);
-		return result;
+		switch (kind) {
+			case MaterialBakingSchema.BakedMaterialKind.LightingIgnoring: {
+				return self._materialBuilder.CreateLightingIgnoringMaterial(new LightingIgnoringMaterialCreationConfig {
+					ColorMap = resolver.ResolveTexture(ownerKind, ownerIndex, BakedReferenceSlot.ColorMap),
+					Name = name,
+					EnablePerInstanceEffects = enablePerInstanceEffects
+				});
+			}
+			case MaterialBakingSchema.BakedMaterialKind.ColorKeyed: {
+				return self._materialBuilder.CreateColorKeyedMaterial(new ColorKeyedMaterialCreationConfig {
+					KeyMap = resolver.ResolveTexture(ownerKind, ownerIndex, BakedReferenceSlot.KeyMap),
+					BlendOutputAlphaWithScene = assetData.Extract<bool>(MaterialBakingSchema.BlendOutputAlphaWithScene),
+					Name = name
+				});
+			}
+			case MaterialBakingSchema.BakedMaterialKind.Standard: {
+				return self._materialBuilder.CreateStandardMaterial(new StandardMaterialCreationConfig {
+					ColorMap = resolver.ResolveTexture(ownerKind, ownerIndex, BakedReferenceSlot.ColorMap),
+					NormalMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.NormalMap),
+					OcclusionRoughnessMetallicReflectanceMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.OrmrMap),
+					AnisotropyMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.AnisotropyMap),
+					EmissiveMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.EmissiveMap),
+					ClearCoatMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.ClearCoatMap),
+					AlphaMode = assetData.Extract<StandardMaterialAlphaMode>(MaterialBakingSchema.AlphaMode),
+					Name = name,
+					EnablePerInstanceEffects = enablePerInstanceEffects
+				});
+			}
+			case MaterialBakingSchema.BakedMaterialKind.Transmissive: {
+				return self._materialBuilder.CreateTransmissiveMaterial(new TransmissiveMaterialCreationConfig {
+					ColorMap = resolver.ResolveTexture(ownerKind, ownerIndex, BakedReferenceSlot.ColorMap),
+					AbsorptionTransmissionMap = resolver.ResolveTexture(ownerKind, ownerIndex, BakedReferenceSlot.AbsorptionTransmissionMap),
+					NormalMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.NormalMap),
+					OcclusionRoughnessMetallicReflectanceMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.OrmrMap),
+					AnisotropyMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.AnisotropyMap),
+					EmissiveMap = resolver.ResolveOptionalTexture(ownerKind, ownerIndex, BakedReferenceSlot.EmissiveMap),
+					RefractionThickness = assetData.Extract<float>(MaterialBakingSchema.RefractionThickness),
+					Quality = assetData.Extract<TransmissiveMaterialQuality>(MaterialBakingSchema.TransmissiveQuality),
+					AlphaMode = assetData.Extract<TransmissiveMaterialAlphaMode>(MaterialBakingSchema.AlphaMode),
+					Name = name,
+					EnablePerInstanceEffects = enablePerInstanceEffects
+				});
+			}
+			default:
+				throw new AssetBakeException($"Baked material declares unknown material kind '{kind}'.");
+		}
 	}
 	#endregion
 }

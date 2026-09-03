@@ -260,6 +260,12 @@ public partial interface IAssetLoader {
 
 	#region Load Generic / Combined
 	Model CreateModel(Mesh mesh, Material material, ReadOnlySpan<char> name = default);
+
+	ResourceGroup LoadBakedModel(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+	TinyFfrAsyncOperation<ResourceGroup> LoadBakedModelAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+
+	ResourceGroup LoadBakedResourceGroup(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+	TinyFfrAsyncOperation<ResourceGroup> LoadBakedResourceGroupAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
 	
 	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
 		return LoadAll(

@@ -314,7 +314,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, config.Name);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.Kind, MaterialBakingSchema.BakedMaterialKind.LightingIgnoring);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.EnablePerInstanceEffects, config.EnablePerInstanceEffects);
-		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.ColorMap, config.ColorMap);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.ColorMap, config.ColorMap);
 		bakery.CompleteResourceBake(resource);
 	}
 
@@ -326,11 +326,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, config.Name);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.Kind, MaterialBakingSchema.BakedMaterialKind.ColorKeyed);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.BlendOutputAlphaWithScene, config.BlendOutputAlphaWithScene);
-		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.KeyMap, config.KeyMap);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.KeyMap, config.KeyMap);
 		bakery.CompleteResourceBake(resource);
 	}
 
 	void RegisterInBakery(Material resource, in StandardMaterialCreationConfig config) {
+		static void AddOptionalMapRef(LocalAssetBakery bakery, Material resource, BakedReferenceSlot slot, Texture? map) {
+			if (map is not { } actualMap) return;
+			bakery.AddResourceBakeReference(resource, slot, actualMap);
+		}
+		
 		if (!_globals.Bakery.Enabled) return;
 		var bakery = _globals.Bakery;
 
@@ -339,16 +344,21 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.Kind, MaterialBakingSchema.BakedMaterialKind.Standard);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.EnablePerInstanceEffects, config.EnablePerInstanceEffects);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.AlphaMode, config.AlphaMode);
-		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.ColorMap, config.ColorMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.NormalMap, config.NormalMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.OrmrMap, config.OcclusionRoughnessMetallicReflectanceMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.AnisotropyMap, config.AnisotropyMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.EmissiveMap, config.EmissiveMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.ClearCoatMap, config.ClearCoatMap);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.ColorMap, config.ColorMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.NormalMap, config.NormalMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.OrmrMap, config.OcclusionRoughnessMetallicReflectanceMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.AnisotropyMap, config.AnisotropyMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.EmissiveMap, config.EmissiveMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.ClearCoatMap, config.ClearCoatMap);
 		bakery.CompleteResourceBake(resource);
 	}
 
 	void RegisterInBakery(Material resource, in TransmissiveMaterialCreationConfig config) {
+		static void AddOptionalMapRef(LocalAssetBakery bakery, Material resource, BakedReferenceSlot slot, Texture? map) {
+			if (map is not { } actualMap) return;
+			bakery.AddResourceBakeReference(resource, slot, actualMap);
+		}
+		
 		if (!_globals.Bakery.Enabled) return;
 		var bakery = _globals.Bakery;
 
@@ -359,18 +369,13 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.AlphaMode, config.AlphaMode);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.RefractionThickness, config.RefractionThickness);
 		bakery.AddResourceBakeValue(resource, MaterialBakingSchema.TransmissiveQuality, config.Quality);
-		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.ColorMap, config.ColorMap);
-		bakery.AddResourceBakeSubResource(resource, MaterialBakingSchema.AbsorptionTransmissionMap, config.AbsorptionTransmissionMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.NormalMap, config.NormalMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.OrmrMap, config.OcclusionRoughnessMetallicReflectanceMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.AnisotropyMap, config.AnisotropyMap);
-		AddOptionalMapToBake(bakery, resource, MaterialBakingSchema.EmissiveMap, config.EmissiveMap);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.ColorMap, config.ColorMap);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.AbsorptionTransmissionMap, config.AbsorptionTransmissionMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.NormalMap, config.NormalMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.OrmrMap, config.OcclusionRoughnessMetallicReflectanceMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.AnisotropyMap, config.AnisotropyMap);
+		AddOptionalMapRef(bakery, resource, BakedReferenceSlot.EmissiveMap, config.EmissiveMap);
 		bakery.CompleteResourceBake(resource);
-	}
-
-	static void AddOptionalMapToBake(LocalAssetBakery bakery, Material resource, ReadOnlySpan<char> sectionName, Texture? map) {
-		if (map is not { } actualMap) return;
-		bakery.AddResourceBakeSubResource(resource, sectionName, actualMap);
 	}
 	#endregion
 

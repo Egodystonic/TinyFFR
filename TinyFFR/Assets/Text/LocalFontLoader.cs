@@ -451,7 +451,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		bakery.AddResourceBakeValue(resource, FontBakingSchema.Descent, data.Descent);
 		bakery.AddResourceBakeValue(resource, FontBakingSchema.LineAdvance, data.LineAdvance);
 		bakery.AddResourceBakeValue(resource, FontBakingSchema.LineBreakRune, data.LineBreakRune.Value);
-		bakery.AddResourceBakeSubResource(resource, FontBakingSchema.Atlas, data.Atlas);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.FontAtlas, data.Atlas);
 
 		using (var runeBuffer = _globals.HeapPool.Borrow<FontBakingSchema.BakedRuneEntry>(data.RuneMap.Count)) {
 			var index = 0;

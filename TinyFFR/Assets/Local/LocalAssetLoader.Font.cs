@@ -68,10 +68,12 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Font> {
 			var self = ctx.Invoker<LocalAssetLoader>();
 			var name = ctx.StoredOrOverridingName;
 
-			var atlasAsset = assetData.ExtractSubAsset<Texture>(FontBakingSchema.Atlas);
-			var atlas = CreateTextureFromBakedAsset(self, atlasAsset, atlasAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
-
+			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: false);
+			var resolver = new BakedAssetResolver(assetData, group, self);
 			try {
+				resolver.MaterializeAll();
+				var atlas = resolver.ResolveTexture(BakedPoolKind.Root, -1, BakedReferenceSlot.FontAtlas);
+
 				return self._fontLoader.CreateFontFromBakedData(
 					atlas,
 					assetData.Extract<float>(FontBakingSchema.Ascent),
@@ -83,9 +85,8 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Font> {
 					name
 				);
 			}
-			catch {
-				atlas.Dispose();
-				throw;
+			finally {
+				group.Dispose();
 			}
 		}
 

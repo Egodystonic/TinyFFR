@@ -28,7 +28,7 @@ unsafe partial class LocalAssetLoader {
 	readonly WorkerJobSyncHelper<LocalAssetLoader, TextureLoadContext, TextureLoadConfig> _textureLoadWorkerSyncHelper;
 	readonly WorkerJobSyncHelper<LocalAssetLoader, CombinedTextureLoadContext, TextureCombinedLoadConfig> _combinedTextureLoadWorkerSyncHelper;
 
-	internal sealed class TextureCreationMetadata {
+	sealed class TextureCreationMetadata {
 		public IntPtr OwnedStbTexelBufferPtr { get; set; } = 0;
 		public IntPtr BorrowedTexelBufferPtr { get; set; } = 0;
 		public PooledHeapMemory<byte>? OwnedTexelData { get; set; } = null;
@@ -225,7 +225,7 @@ unsafe partial class LocalAssetLoader {
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}
 
-	internal static void ApplyCreationConfigToMetadata(TextureCreationMetadata data, in TextureCreationConfig config) {
+	static void ApplyCreationConfigToMetadata(TextureCreationMetadata data, in TextureCreationConfig config) {
 		data.GenerateMipMaps = config.GenerateMipMaps;
 		data.AllowsDynamicWrites = config.AllowsDynamicWrites;
 		data.RenderingConfig = config.RenderingConfig;
@@ -233,7 +233,7 @@ unsafe partial class LocalAssetLoader {
 		data.DataType = config.DataType;
 	}
 
-	internal static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
+	static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
 		var sourceTexelType = data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24;
 		var format = TextureCompressor.GetRecommendedFormat(
 			data.Dimensions,
@@ -941,7 +941,7 @@ unsafe partial class LocalAssetLoader {
 		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
 	}
 
-	internal static Texture CreateTextureFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name) {
+	static Texture CreateTextureFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		var dimensions = new XYPair<int>(
