@@ -106,13 +106,32 @@ class LocalModelLoadingTest {
 		ResourceGroup? loadedResources = null; 
 		ModelInstanceGroup? modelInstances = null;
 		var nextPrimitiveColorIsOpaque = true;
+		
+		var boundingBoxColours = new PrimitivePaintbrush[100];
+		for (var i = 0; i < boundingBoxColours.Length; ++i) {
+			boundingBoxColours[i] = new(ColorVect.Random() with { Alpha = 0.17f });
+		}
+		
+		var boundingBoxesOn = false;
+		void UpdateBoundingBoxes() {
+			scene.RemoveAll(false, false, true);
+			if (!boundingBoxesOn) return;
+			if (modelInstances is { } mig) {
+				var bbcIdx = curFileIndex;
+				foreach (var mi in mig) {
+					scene.AddPrimitiveShape(mi.CalculateBoundingBox()).SetPaintbrush(boundingBoxColours[bbcIdx]);
+					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
+				}
+			}
+		}
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				scene.RemoveAll(false, false, true);
+				boundingBoxesOn = false;
+				UpdateBoundingBoxes();
 				nextPrimitiveColorIsOpaque = true;
 				
 				if (modelInstances is {} i) {
@@ -155,20 +174,19 @@ class LocalModelLoadingTest {
 
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {
 				modelInstances?.RotateBy((90f * deltaTime) % Direction.Left);
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Y)) {
 				modelInstances?.RotateBy((90f * deltaTime) % Direction.Up);
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
 				modelInstances?.RotateBy((90f * deltaTime) % Direction.Forward);
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.B)) {
-				scene.RemoveAll(false, false, true);
-				if (modelInstances is { } mig) {
-					foreach (var mi in mig) {
-						scene.AddPrimitiveShape(mi.CalculateBoundingBox()).SetPaintbrush(new PrimitivePaintbrush(ColorVect.Random() with { Alpha = 0.25f }));
-					}
-				} 
+				boundingBoxesOn = !boundingBoxesOn;
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.W)) {
 				if (modelInstances?.Instances is { } enumerable) {

@@ -145,6 +145,24 @@ class LocalAnimationTest {
 		ResourceGroup? loadedResources = null;
 		ModelInstanceGroup? modelInstanceGroup = null;
 		
+		var boundingBoxColours = new PrimitivePaintbrush[100];
+		for (var i = 0; i < boundingBoxColours.Length; ++i) {
+			boundingBoxColours[i] = new(ColorVect.Random() with { Alpha = 0.17f });
+		}
+		
+		var boundingBoxesOn = false;
+		void UpdateBoundingBoxes() {
+			scene.RemoveAll(false, false, true);
+			if (!boundingBoxesOn) return;
+			if (modelInstanceGroup is { } mig) {
+				var bbcIdx = curFileIndex;
+				foreach (var mi in mig) {
+					scene.AddPrimitiveShape(mi.CalculateBoundingBox()).SetPaintbrush(boundingBoxColours[bbcIdx]);
+					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
+				}
+			}
+		}
+		
 		void UpdateTitle() {
 			window.SetTitle(
 				$"X/Y/Z rotates | " +
@@ -164,7 +182,8 @@ class LocalAnimationTest {
 			var deltaTime = loop.IterateOnce().AsDeltaTime();
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				scene.RemoveAll(false, false, true);
+				boundingBoxesOn = false;
+				UpdateBoundingBoxes();
 				if (modelInstanceGroup is {} i) {
 					scene.Remove(i);
 					i.Dispose();
@@ -190,12 +209,8 @@ class LocalAnimationTest {
 				UpdateTitle();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.B)) {
-				scene.RemoveAll(false, false, true);
-				if (modelInstanceGroup is { } mig) {
-					foreach (var mi in mig) {
-						scene.AddPrimitiveShape(mi.CalculateBoundingBox()).SetPaintbrush(new PrimitivePaintbrush(ColorVect.Random() with { Alpha = 0.25f }));
-					}
-				} 
+				boundingBoxesOn = !boundingBoxesOn;
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstanceGroup.HasValue) {
 				prevAnimIndex = curAnimIndex;
@@ -226,12 +241,15 @@ class LocalAnimationTest {
 
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {
 				modelInstanceGroup?.RotateBy((90f * deltaTime) % Direction.Left);
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Y)) {
 				modelInstanceGroup?.RotateBy((90f * deltaTime) % Direction.Up);
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
 				modelInstanceGroup?.RotateBy((90f * deltaTime) % Direction.Forward);
+				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
 				lightBrightnessStage++;
@@ -244,6 +262,7 @@ class LocalAnimationTest {
 				});
 			}
 			modelInstanceGroup?.ScaleBy(1f - (0.05f * loop.Input.KeyboardAndMouse.MouseScrollWheelDelta)); 
+			if (loop.Input.KeyboardAndMouse.MouseScrollWheelDelta != 0) UpdateBoundingBoxes();
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.E)) {
 				factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
 			}
