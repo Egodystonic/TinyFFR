@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -12,6 +13,7 @@ using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
@@ -41,7 +43,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		public PooledHeapMemory<char>? DirectoryPath { get; set; } = null;
 		public PooledHeapMemory<char>? HdrOrExrFilePath { get; set; } = null;
 		public PooledHeapMemory<char>? DestinationDirectoryPath { get; set; } = null;
-		public BackdropTextureResolution Resolution { get; set; } = BackdropTextureResolution.Standard;
+		public Quality Resolution { get; set; } = Quality.Standard;
 
 		// Worker thread owned
 		public PooledHeapMemory<byte>? SkyboxFileData { get; set; } = null;
@@ -64,11 +66,6 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 #pragma warning restore CA1031
 				PerCallWorkspaceDirectory = null;
 			}
-			if (HeapPoolSerializedConfig is { } config) {
-				BackdropTextureCreationConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			SkyboxFilePath?.Dispose();
 			SkyboxFilePath = null;
 			IblFilePath?.Dispose();
@@ -79,7 +76,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			HdrOrExrFilePath = null;
 			DestinationDirectoryPath?.Dispose();
 			DestinationDirectoryPath = null;
-			Resolution = BackdropTextureResolution.Standard;
+			Resolution = Quality.Standard;
 			HeapPool = null!;
 			Self = null!;
 		}
@@ -119,20 +116,20 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		context.DirectoryPath = _globals.HeapPool.BorrowAndCopy(directoryPath);
 		context.SetName(name);
 	}
-	void SetUpHdrOrExrContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> name, BackdropTextureResolution resolution) {
+	void SetUpHdrOrExrContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> name, Quality resolution) {
 		ExtractHdrPreprocessorIfNecessary();
 		context.HdrOrExrFilePath = _globals.HeapPool.BorrowAndCopy(hdrOrExrFilePath);
 		context.Resolution = resolution;
 		context.SetName(name);
 	}
-	void SetUpPreprocessOnlyContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, BackdropTextureResolution resolution) {
+	void SetUpPreprocessOnlyContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality resolution) {
 		ExtractHdrPreprocessorIfNecessary();
 		context.HdrOrExrFilePath = _globals.HeapPool.BorrowAndCopy(hdrOrExrFilePath);
 		context.DestinationDirectoryPath = _globals.HeapPool.BorrowAndCopy(destinationDirectoryPath);
 		context.Resolution = resolution;
 	}
 
-	public void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard) {
+	public void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 
@@ -141,7 +138,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 
 		_ = contextWrapper.DispatchArbitrarySynchronousOperation(&PreprocessHdrOrExrCore);
 	}
-	public TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard) {
+	public TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 
@@ -193,7 +190,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadPreprocessedBackdropTextureCore, in config);
 	}
 
-	public BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard) {
+	public BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -203,7 +200,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 
 		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadBackdropTextureCore, in config);
 	}
-	public TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard) {
+	public TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -330,11 +327,11 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 
 		try {
 			var quality = context.Resolution switch {
-				BackdropTextureResolution.RoughDraft => "64",
-				BackdropTextureResolution.Higher => "512",
-				BackdropTextureResolution.VeryHigh => "2048",
-				BackdropTextureResolution.Production => "4096",
-				_ => "256"
+				Quality.VeryLow => "64",
+				Quality.Low => "256",
+				Quality.High => "2048",
+				Quality.VeryHigh => "4096",
+				_ => "512"
 			};
 			var process = Process.Start(self._hdrPreprocessorFilePath, "-q -s " + quality + " -f ktx -x \"" + destinationDirectoryPath + "\" \"" + fileString + "\"");
 			if (!process.WaitForExit(self._maxHdrProcessingTime)) {
@@ -382,7 +379,9 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 						out var iblTextureHandle
 					).ThrowIfFailure();
 
-					return context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, context.Name);
+					var result = context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, context.Name);
+					context.Self.RegisterInBakery(result, skyboxFileData.Span, iblFileData.Span, context.Name);
+					return result;
 				}
 				finally {
 					iblPin.Free();
@@ -455,6 +454,62 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			: _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Equals(name, comparisonType);
 	}
 	#endregion
+	
+	#region Baking
+	
+	
+	void RegisterInBakery(BackdropTexture resource, ReadOnlySpan<byte> skyboxData, ReadOnlySpan<byte> iblData, ReadOnlySpan<char> name) {
+		var bakery = _globals.Bakery;
+		if (!bakery.Enabled) return;
+		
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, name);
+		bakery.AddResourceBakeValue(resource, BackdropTextureBakingSchema.SkyboxData, skyboxData);
+		bakery.AddResourceBakeValue(resource, BackdropTextureBakingSchema.IblData, iblData);
+		bakery.CompleteResourceBake(resource);
+	}
+
+	public BackdropTexture LoadBakedBackdropTexture(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.Load<BackdropTexture, BackdropTexture, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
+	}
+	
+	public TinyFfrAsyncOperation<BackdropTexture> LoadBakedBackdropTextureAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadAsync<BackdropTexture, BackdropTexture, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedBackdropTextureCore);
+	}
+	
+	static BackdropTexture LoadBakedBackdropTextureCore(LocalAssetBakery.AssetLoadContext ctx) {
+		static BackdropTexture Finalize(LocalAssetBakery.AssetLoadContext ctx) {
+			var assetData = ctx.AssetData;
+			var skyboxData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.SkyboxData);
+			var iblData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.IblData);
+			fixed (byte* skyboxPin = skyboxData) {
+				fixed (byte* iblPin = iblData) {
+					LoadSkyboxFileInToMemory(
+						skyboxPin,
+						skyboxData.Length,
+						out var skyboxTextureHandle
+					).ThrowIfFailure();
+
+					try {
+						LoadIblFileInToMemory(
+							iblPin,
+							iblData.Length,
+							out var iblTextureHandle
+						).ThrowIfFailure();
+
+						return ctx.Invoker<LocalAssetLoader>().StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, ctx.StoredOrOverridingName);
+					}
+					catch {
+						UnloadSkyboxFileFromMemory(skyboxTextureHandle);
+						throw;
+					}
+				}	
+			}
+		}
+		
+		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_skybox_file_in_to_memory")]
@@ -489,6 +544,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	void Dispose(ResourceHandle<BackdropTexture> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		var data = _loadedBackdropTextures[handle];
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.IblTextureHandle, &UnloadIblFileFromMemory);
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.SkyboxTextureHandle, &UnloadSkyboxFileFromMemory);

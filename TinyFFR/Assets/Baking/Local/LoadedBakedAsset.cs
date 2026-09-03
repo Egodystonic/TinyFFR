@@ -1,0 +1,81 @@
+// Created on 2026-08-29 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2026
+
+using System.Text;
+using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
+
+namespace Egodystonic.TinyFFR.Assets.Baking;
+
+readonly record struct BakedAssetStreamSection(Type Type, int DataStartIndex, int DataLength, LoadedBakedAsset? SubAsset);
+
+sealed unsafe class LoadedBakedAsset : IDisposable {
+	readonly LocalAssetBakery _owningBakery;
+	readonly delegate* managed<LocalAssetBakery, LoadedBakedAsset, void> _disposalFunc;
+	
+	public Type Type { get; set; } = null!;
+	public ArrayPoolBackedStringKeyMap<BakedAssetStreamSection> Sections { get; } = new();
+	public PooledHeapMemory<byte> Stream { get; set; } = default;
+	public bool IsRootAsset { get; set; } = false;
+
+	public LoadedBakedAsset(LocalAssetBakery owningBakery, delegate*<LocalAssetBakery, LoadedBakedAsset, void> disposalFunc) {
+		_owningBakery = owningBakery;
+		_disposalFunc = disposalFunc;
+	}
+	
+	public T Extract<T>(ReadOnlySpan<char> sectionTitle) where T : unmanaged {
+		if (!Sections.TryGetValue(sectionTitle, out var section)) throw new AssetBakeException($"Missing required section title '{sectionTitle}'.");
+		if (section.Type != BakedValueTypeConverter<T>.Converted) throw new AssetBakeException($"Section '{sectionTitle}' was required to represent a value of type '{typeof(T).Name}' but instead represented a value of type '{section.Type.Name}'.");
+		if (section.DataLength < Unsafe.SizeOf<T>()) throw new AssetBakeException($"Required section '{sectionTitle}' was required to represent a value of type '{typeof(T).Name}' (length {Unsafe.SizeOf<T>()} bytes) but declared a data length of {section.DataLength} bytes.");
+		try {
+			return MemoryMarshal.Cast<byte, T>(Stream.Span[section.DataStartIndex..(section.DataStartIndex + section.DataLength)])[0];
+		}
+		catch (Exception e) {
+			throw new AssetBakeException($"Required section '{sectionTitle}' data was corrupted.", e);
+		}
+	}
+	public T Extract<T>(ReadOnlySpan<char> sectionTitle, T fallback) where T : unmanaged {
+		if (!Sections.TryGetValue(sectionTitle, out var section) || section.Type != BakedValueTypeConverter<T>.Converted) return fallback;
+		if (section.DataLength < Unsafe.SizeOf<T>()) return fallback;
+		try {
+			return MemoryMarshal.Cast<byte, T>(Stream.Span[section.DataStartIndex..(section.DataStartIndex + section.DataLength)])[0];
+		}
+		catch (Exception e) when (e is ArgumentException or OverflowException or IndexOutOfRangeException) {
+			return fallback;
+		}
+	}
+	
+	public Span<T> ExtractSpan<T>(ReadOnlySpan<char> sectionTitle) where T : unmanaged {
+		if (!Sections.TryGetValue(sectionTitle, out var section)) throw new AssetBakeException($"Missing required section title '{sectionTitle}'.");
+		if (section.Type != typeof(byte[])) throw new AssetBakeException($"Section '{sectionTitle}' was required to represent a value of type '{typeof(byte[]).Name}' but instead represented a value of type '{section.Type.Name}'.");
+		return MemoryMarshal.Cast<byte, T>(Stream.Span.Slice(section.DataStartIndex, section.DataLength));
+	}
+	public Span<T> ExtractSpan<T>(ReadOnlySpan<char> sectionTitle, Span<T> fallback) where T : unmanaged {
+		if (!Sections.TryGetValue(sectionTitle, out var section) || section.Type != typeof(byte[])) return fallback;
+		return MemoryMarshal.Cast<byte, T>(Stream.Span.Slice(section.DataStartIndex, section.DataLength));
+	}
+	
+	public ReadOnlySpan<char> ExtractString(ReadOnlySpan<char> sectionTitle) {
+		if (!Sections.TryGetValue(sectionTitle, out var section)) throw new AssetBakeException($"Missing required section title '{sectionTitle}'.");
+		if (section.Type != typeof(string)) throw new AssetBakeException($"Section '{sectionTitle}' was required to represent a value of type '{nameof(String)}' but instead represented a value of type '{section.Type.Name}'.");
+		return MemoryMarshal.Cast<byte, char>(Stream.Span.Slice(section.DataStartIndex, section.DataLength)); 
+	}
+	public ReadOnlySpan<char> ExtractString(ReadOnlySpan<char> sectionTitle, ReadOnlySpan<char> fallback) {
+		if (!Sections.TryGetValue(sectionTitle, out var section) || section.Type != typeof(string)) return fallback;
+		return MemoryMarshal.Cast<byte, char>(Stream.Span.Slice(section.DataStartIndex, section.DataLength));
+	}
+	
+	public LoadedBakedAsset ExtractSubAsset<TResource>(ReadOnlySpan<char> sectionTitle) where TResource : IResource {
+		if (!Sections.TryGetValue(sectionTitle, out var section)) throw new AssetBakeException($"Missing required section title '{sectionTitle}'.");
+		if (section.Type != typeof(TResource)) throw new AssetBakeException($"Section '{sectionTitle}' was required to represent a value of type '{typeof(TResource).Name}' but instead represented a value of type '{section.Type.Name}'.");
+		return section.SubAsset ?? throw new AssetBakeException($"Required section '{sectionTitle}' contained empty sub-asset data.");
+	}
+	public LoadedBakedAsset? TryExtractSubAsset<TResource>(ReadOnlySpan<char> sectionTitle) where TResource : IResource {
+		if (!Sections.TryGetValue(sectionTitle, out var section)) return null;
+		if (section.Type != typeof(TResource)) return null;
+		return section.SubAsset;
+	}
+	
+	public void Dispose() => _disposalFunc(_owningBakery, this);
+}

@@ -167,7 +167,7 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static explicit operator PositionedCuboid(PositionedRotatedCuboid operand) => new((TranslatedConvexShape<Cuboid>) operand._impl);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator PositionedRotatedCuboid(PositionedCuboid operand) => new(operand.ToStandardCuboid(), operand.Position, Rotation.None);
+	public static implicit operator PositionedRotatedCuboid(PositionedCuboid operand) => new(operand.ToStandardCuboid(), operand.Position, Rotation.None);
 
 	public static PositionedRotatedCuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth, Location centerPoint, Rotation rotation) => new(Cuboid.FromHalfDimensions(halfWidth, halfHeight, halfDepth), centerPoint, rotation);
 
@@ -299,6 +299,7 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => _impl.TryFormat(destination, out charsWritten, format, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedRotatedCuboid MovedBy(Vect v) => _impl.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedRotatedCuboid ScaledBy(float scalar) => _impl.ScaledBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedRotatedCuboid ScaledBy(Vect v) => new PositionedRotatedCuboid(_impl.BaseShape.ScaledBy(v), Position, Rotation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedRotatedCuboid Clamp(PositionedRotatedCuboid min, PositionedRotatedCuboid max) => _impl.Clamp(min, max);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override bool Equals(object? obj) => obj is PositionedRotatedCuboid other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override int GetHashCode() => _impl.GetHashCode();

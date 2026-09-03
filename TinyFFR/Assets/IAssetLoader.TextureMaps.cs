@@ -13,9 +13,9 @@ namespace Egodystonic.TinyFFR.Assets;
 
 public partial interface IAssetLoader {
 	#region Color & Canvas
-	Texture LoadColorMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+	Texture LoadColorMap(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) => LoadTexture(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 
-	TinyFfrAsyncOperation<Texture> LoadColorMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+	TinyFfrAsyncOperation<Texture> LoadColorMapAsync(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) => LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 
 	Texture LoadCanvasTexture(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForCanvasTexture(Path.GetFileName(filePath)));
 
@@ -23,8 +23,8 @@ public partial interface IAssetLoader {
 	#endregion
 
 	#region Normal
-	Texture LoadNormalMap(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
-		if (!isDirectXFormat) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, Path.GetFileName(filePath)));
+	Texture LoadNormalMap(ReadOnlySpan<char> filePath, bool isDirectXFormat = false, Quality? compressionQuality = null) {
+		if (!isDirectXFormat) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, compressionQuality, Path.GetFileName(filePath)));
 		return LoadTexture(
 			filePath,
 			TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, Path.GetFileName(filePath)) with {
@@ -33,8 +33,8 @@ public partial interface IAssetLoader {
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadNormalMapAsync(ReadOnlySpan<char> filePath, bool isDirectXFormat = false) {
-		if (!isDirectXFormat) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, Path.GetFileName(filePath)));
+	TinyFfrAsyncOperation<Texture> LoadNormalMapAsync(ReadOnlySpan<char> filePath, bool isDirectXFormat = false, Quality? compressionQuality = null) {
+		if (!isDirectXFormat) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, compressionQuality, Path.GetFileName(filePath)));
 		return LoadTextureAsync(
 			filePath,
 			TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataUnitVector, Path.GetFileName(filePath)) with {
@@ -45,8 +45,8 @@ public partial interface IAssetLoader {
 	#endregion
 
 	#region ORM & ORMR
-	Texture LoadOcclusionRoughnessMetallicMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)));
-	Texture LoadOcclusionRoughnessMetallicMap(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath) {
+	Texture LoadOcclusionRoughnessMetallicMap(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)));
+	Texture LoadOcclusionRoughnessMetallicMap(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(occlusionFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		var c = Path.GetFileName(metallicFilePath);
@@ -62,12 +62,12 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureC, R)
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)));
-	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicMapAsync(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath) {
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicMapAsync(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)));
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicMapAsync(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(occlusionFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		var c = Path.GetFileName(metallicFilePath);
@@ -83,15 +83,15 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureC, R)
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
 
-	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> filePath) {
-		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)));
+	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)));
 		else return LoadOcclusionRoughnessMetallicReflectanceMap(filePath, BuiltInTexturePaths.DefaultReflectanceMap);
 	}
-	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> occlusionRoughnessMetallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
+	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> occlusionRoughnessMetallicFilePath, ReadOnlySpan<char> reflectanceFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(occlusionRoughnessMetallicFilePath);
 		var b = Path.GetFileName(reflectanceFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -106,10 +106,10 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R),
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
-	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
+	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, ReadOnlySpan<char> reflectanceFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(occlusionFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		var c = Path.GetFileName(metallicFilePath);
@@ -128,15 +128,15 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureC, R),
 				OutputTextureWAlphaChannelSource = new(TextureD, R),
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> filePath) {
-		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)));
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)));
 		else return LoadOcclusionRoughnessMetallicReflectanceMapAsync(filePath, BuiltInTexturePaths.DefaultReflectanceMap);
 	}
-	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> occlusionRoughnessMetallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> occlusionRoughnessMetallicFilePath, ReadOnlySpan<char> reflectanceFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(occlusionRoughnessMetallicFilePath);
 		var b = Path.GetFileName(reflectanceFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -151,10 +151,10 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R),
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
-	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
+	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> occlusionFilePath, ReadOnlySpan<char> roughnessFilePath, ReadOnlySpan<char> metallicFilePath, ReadOnlySpan<char> reflectanceFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(occlusionFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		var c = Path.GetFileName(metallicFilePath);
@@ -173,16 +173,16 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureC, R),
 				OutputTextureWAlphaChannelSource = new(TextureD, R),
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
 	#endregion
 
 	#region AT
-	Texture LoadAbsorptionTransmissionMap(ReadOnlySpan<char> filePath, bool invertAbsorption = false) {
+	Texture LoadAbsorptionTransmissionMap(ReadOnlySpan<char> filePath, bool invertAbsorption = false, Quality? compressionQuality = null) {
 		var includesTransmission = ReadTextureMetadata(filePath).IncludesAlphaChannel;
 		if (!includesTransmission) return LoadAbsorptionTransmissionMap(filePath, BuiltInTexturePaths.DefaultTransmissionMap, invertAbsorption);
-		if (!invertAbsorption) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+		if (!invertAbsorption) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 
 		return LoadTexture(
 			filePath,
@@ -191,7 +191,7 @@ public partial interface IAssetLoader {
 			}
 		);
 	}
-	Texture LoadAbsorptionTransmissionMap(ReadOnlySpan<char> absorptionFilePath, ReadOnlySpan<char> transmissionFilePath, bool invertAbsorption = false) {
+	Texture LoadAbsorptionTransmissionMap(ReadOnlySpan<char> absorptionFilePath, ReadOnlySpan<char> transmissionFilePath, bool invertAbsorption = false, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(absorptionFilePath);
 		var b = Path.GetFileName(transmissionFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -206,14 +206,14 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R)
 			},
-			TextureCreationConfig.ForColorTexture(name)
+			TextureCreationConfig.ForColorTexture(compressionQuality, name)
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadAbsorptionTransmissionMapAsync(ReadOnlySpan<char> filePath, bool invertAbsorption = false) {
+	TinyFfrAsyncOperation<Texture> LoadAbsorptionTransmissionMapAsync(ReadOnlySpan<char> filePath, bool invertAbsorption = false, Quality? compressionQuality = null) {
 		var includesTransmission = ReadTextureMetadata(filePath).IncludesAlphaChannel;
 		if (!includesTransmission) return LoadAbsorptionTransmissionMapAsync(filePath, BuiltInTexturePaths.DefaultTransmissionMap, invertAbsorption);
-		if (!invertAbsorption) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+		if (!invertAbsorption) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 
 		return LoadTextureAsync(
 			filePath,
@@ -222,7 +222,7 @@ public partial interface IAssetLoader {
 			}
 		);
 	}
-	TinyFfrAsyncOperation<Texture> LoadAbsorptionTransmissionMapAsync(ReadOnlySpan<char> absorptionFilePath, ReadOnlySpan<char> transmissionFilePath, bool invertAbsorption = false) {
+	TinyFfrAsyncOperation<Texture> LoadAbsorptionTransmissionMapAsync(ReadOnlySpan<char> absorptionFilePath, ReadOnlySpan<char> transmissionFilePath, bool invertAbsorption = false, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(absorptionFilePath);
 		var b = Path.GetFileName(transmissionFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -237,17 +237,17 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R)
 			},
-			TextureCreationConfig.ForColorTexture(name)
+			TextureCreationConfig.ForColorTexture(compressionQuality, name)
 		);
 	}
 	#endregion
 
 	#region Emissive
-	Texture LoadEmissiveMap(ReadOnlySpan<char> filePath) {
-		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+	Texture LoadEmissiveMap(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 		else return LoadEmissiveMap(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityMap);
 	}
-	Texture LoadEmissiveMap(ReadOnlySpan<char> emissiveColorFilePath, ReadOnlySpan<char> emissiveIntensityFilePath) {
+	Texture LoadEmissiveMap(ReadOnlySpan<char> emissiveColorFilePath, ReadOnlySpan<char> emissiveIntensityFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(emissiveColorFilePath);
 		var b = Path.GetFileName(emissiveIntensityFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -262,15 +262,15 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R),
 			},
-			TextureCreationConfig.ForColorTexture(name)
+			TextureCreationConfig.ForColorTexture(compressionQuality, name)
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadEmissiveMapAsync(ReadOnlySpan<char> filePath) {
-		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(Path.GetFileName(filePath)));
+	TinyFfrAsyncOperation<Texture> LoadEmissiveMapAsync(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
+		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 		else return LoadEmissiveMapAsync(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityMap);
 	}
-	TinyFfrAsyncOperation<Texture> LoadEmissiveMapAsync(ReadOnlySpan<char> emissiveColorFilePath, ReadOnlySpan<char> emissiveIntensityFilePath) {
+	TinyFfrAsyncOperation<Texture> LoadEmissiveMapAsync(ReadOnlySpan<char> emissiveColorFilePath, ReadOnlySpan<char> emissiveIntensityFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(emissiveColorFilePath);
 		var b = Path.GetFileName(emissiveIntensityFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -285,7 +285,7 @@ public partial interface IAssetLoader {
 				OutputTextureZBlueChannelSource = new(TextureA, B),
 				OutputTextureWAlphaChannelSource = new(TextureB, R),
 			},
-			TextureCreationConfig.ForColorTexture(name)
+			TextureCreationConfig.ForColorTexture(compressionQuality, name)
 		);
 	}
 	#endregion
@@ -353,14 +353,14 @@ public partial interface IAssetLoader {
 		new TextureCombinationSource(TextureB, R)
 	);
 	
-	Texture LoadAnisotropyMapVectorFormatted(ReadOnlySpan<char> filePath, ColorChannel? strengthChannel) {
+	Texture LoadAnisotropyMapVectorFormatted(ReadOnlySpan<char> filePath, ColorChannel? strengthChannel, Quality? compressionQuality = null) {
 		return strengthChannel switch {
-			B => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath))),
-			A => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
-			_ => LoadAnisotropyMapVectorFormatted(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap)
+			B => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath))),
+			A => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
+			_ => LoadAnisotropyMapVectorFormatted(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap, compressionQuality)
 		};
 	}
-	Texture LoadAnisotropyMapVectorFormatted(ReadOnlySpan<char> vectorFilePath, ReadOnlySpan<char> strengthFilePath) {
+	Texture LoadAnisotropyMapVectorFormatted(ReadOnlySpan<char> vectorFilePath, ReadOnlySpan<char> strengthFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(vectorFilePath);
 		var b = Path.GetFileName(strengthFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -374,18 +374,18 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureA, G),
 				OutputTextureZBlueChannelSource = new(TextureB, R),
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapVectorFormattedAsync(ReadOnlySpan<char> filePath, ColorChannel? strengthChannel) {
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapVectorFormattedAsync(ReadOnlySpan<char> filePath, ColorChannel? strengthChannel, Quality? compressionQuality = null) {
 		return strengthChannel switch {
-			B => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath))),
-			A => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
-			_ => LoadAnisotropyMapVectorFormattedAsync(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap)
+			B => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath))),
+			A => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
+			_ => LoadAnisotropyMapVectorFormattedAsync(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap, compressionQuality)
 		};
 	}
-	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapVectorFormattedAsync(ReadOnlySpan<char> vectorFilePath, ReadOnlySpan<char> strengthFilePath) {
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapVectorFormattedAsync(ReadOnlySpan<char> vectorFilePath, ReadOnlySpan<char> strengthFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(vectorFilePath);
 		var b = Path.GetFileName(strengthFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -399,7 +399,7 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureA, G),
 				OutputTextureZBlueChannelSource = new(TextureB, R),
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name)
 		);
 	}
 
@@ -441,17 +441,17 @@ public partial interface IAssetLoader {
 			}
 		}
 	}
-	Texture LoadAnisotropyMapRadialAngleFormatted(ReadOnlySpan<char> filePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel) {
+	Texture LoadAnisotropyMapRadialAngleFormatted(ReadOnlySpan<char> filePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel, Quality? compressionQuality = null) {
 		var includesAlphaChannel = ReadTextureMetadata(filePath).IncludesAlphaChannel;
 		return LoadTexture(
 			filePath,
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)) with {
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)) with {
 				ProcessingToApply = CreateRadialAngleAnisotropyProcessingConfig(includesAlphaChannel, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel)
 			},
 			new TextureReadConfig { IncludeWAlphaChannel = includesAlphaChannel, ForceWAlphaChannelPresence = includesAlphaChannel }
 		);
 	}
-	Texture LoadAnisotropyMapRadialAngleFormatted(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise) {
+	Texture LoadAnisotropyMapRadialAngleFormatted(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(radialAngleFilePath);
 		var b = Path.GetFileName(strengthFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -461,23 +461,23 @@ public partial interface IAssetLoader {
 			radialAngleFilePath,
 			strengthFilePath,
 			RadialAngleAnisotropyCombinationConfig,
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name) with {
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name) with {
 				ProcessingToApply = CreateRadialAngleAnisotropyProcessingConfig(false, zeroDirection, encodedRange, encodedAnticlockwise, B)
 			}
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> filePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel) {
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> filePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel, Quality? compressionQuality = null) {
 		var includesAlphaChannel = ReadTextureMetadata(filePath).IncludesAlphaChannel;
 		return LoadTextureAsync(
 			filePath,
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, Path.GetFileName(filePath)) with {
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)) with {
 				ProcessingToApply = CreateRadialAngleAnisotropyProcessingConfig(includesAlphaChannel, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel)
 			},
 			new TextureReadConfig { IncludeWAlphaChannel = includesAlphaChannel, ForceWAlphaChannelPresence = includesAlphaChannel }
 		);
 	}
-	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise) {
+	TinyFfrAsyncOperation<Texture> LoadAnisotropyMapRadialAngleFormattedAsync(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(radialAngleFilePath);
 		var b = Path.GetFileName(strengthFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -487,7 +487,7 @@ public partial interface IAssetLoader {
 			radialAngleFilePath,
 			strengthFilePath,
 			RadialAngleAnisotropyCombinationConfig,
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, name) with {
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, name) with {
 				ProcessingToApply = CreateRadialAngleAnisotropyProcessingConfig(false, zeroDirection, encodedRange, encodedAnticlockwise, B)
 			}
 		);
@@ -495,8 +495,8 @@ public partial interface IAssetLoader {
 	#endregion
 
 	#region Clearcoat
-	Texture LoadClearCoatMap(ReadOnlySpan<char> filePath) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, Path.GetFileName(filePath)));
-	Texture LoadClearCoatMap(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath) {
+	Texture LoadClearCoatMap(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, compressionQuality, Path.GetFileName(filePath)));
+	Texture LoadClearCoatMap(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(thicknessFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -510,12 +510,12 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureA, B)
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, compressionQuality, name)
 		);
 	}
 
-	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> filePath) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, Path.GetFileName(filePath)));
-	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath) {
+	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, compressionQuality, Path.GetFileName(filePath)));
+	TinyFfrAsyncOperation<Texture> LoadClearCoatMapAsync(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath, Quality? compressionQuality = null) {
 		var a = Path.GetFileName(thicknessFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
@@ -529,7 +529,7 @@ public partial interface IAssetLoader {
 				OutputTextureYGreenChannelSource = new(TextureB, R),
 				OutputTextureZBlueChannelSource = new(TextureA, B)
 			},
-			TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, name)
+			TextureCreationConfig.ForDataTexture(TextureDataType.LinearDataTwoChannelMax, compressionQuality, name)
 		);
 	}
 	#endregion

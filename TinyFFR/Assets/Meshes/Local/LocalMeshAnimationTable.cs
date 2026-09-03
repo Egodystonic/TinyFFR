@@ -4,11 +4,13 @@
 using System;
 using System.Globalization;
 using System.Security;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
@@ -675,6 +677,179 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		Matrix4x4* transformsPtr,
 		int boneCount
 	);
+	#endregion
+
+	#region Baking
+	public bool SkeletonIsSet => _currentSkeleton != null;
+
+	public void WriteBakeData(LocalAssetBakery bakery, Mesh mesh) {
+		var skeleton = GetSkeletonOrThrow();
+
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonNodeCount, skeleton.NodeCount);
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonFirstParentedNodeIndex, skeleton.FirstParentedNodeIndex);
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonModelImportTransform, skeleton.ModelImportTransformMatrix);
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonDefaultLocalTransforms, MemoryMarshal.AsBytes(skeleton.DefaultLocalTransforms.Span[..skeleton.NodeCount]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonBindPoseInversions, MemoryMarshal.AsBytes(skeleton.BindPoseInversions.Span[..skeleton.BoneCount]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonParentIndices, MemoryMarshal.AsBytes(skeleton.ParentIndices.Span[..skeleton.NodeCount]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonBoneToNodeMap, MemoryMarshal.AsBytes(skeleton.BoneToNodeMap.Span[..skeleton.BoneCount]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.SkeletonMutationTargetIndexMap, MemoryMarshal.AsBytes(skeleton.MutationTargetIndexMap.Span[..skeleton.NodeCount]));
+
+		WriteAnimationBakeData(bakery, mesh);
+		WriteNodeNameBakeData(bakery, mesh);
+	}
+
+	void WriteAnimationBakeData(LocalAssetBakery bakery, Mesh mesh) {
+		var animationCount = _animationDataMap.Count;
+		var totalScaling = 0;
+		var totalRotation = 0;
+		var totalTranslation = 0;
+		var totalMutations = 0;
+		var totalNameChars = 0;
+
+		for (var i = 0; i < animationCount; ++i) {
+			var pair = _animationDataMap.GetPairAtIndex(i);
+			totalScaling += pair.Value.ScalingKeyframes.Span.Length;
+			totalRotation += pair.Value.RotationKeyframes.Span.Length;
+			totalTranslation += pair.Value.TranslationKeyframes.Span.Length;
+			totalMutations += pair.Value.BoneMutationDescriptors.Span.Length;
+			totalNameChars += _globals.GetResourceName(pair.Key.Ident, default).Length;
+		}
+
+		using var entries = _globals.HeapPool.Borrow<MeshBakingSchema.BakedAnimationEntry>(animationCount);
+		using var scaling = _globals.HeapPool.Borrow<SkeletalAnimationScalingKeyframe>(totalScaling);
+		using var rotation = _globals.HeapPool.Borrow<SkeletalAnimationRotationKeyframe>(totalRotation);
+		using var translation = _globals.HeapPool.Borrow<SkeletalAnimationTranslationKeyframe>(totalTranslation);
+		using var mutations = _globals.HeapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(totalMutations);
+		using var nameChars = _globals.HeapPool.Borrow<char>(totalNameChars);
+
+		var entryIndex = 0;
+		var scalingCursor = 0;
+		var rotationCursor = 0;
+		var translationCursor = 0;
+		var mutationCursor = 0;
+		var nameCursor = 0;
+
+		for (var i = 0; i < animationCount; ++i) {
+			var pair = _animationDataMap.GetPairAtIndex(i);
+			var data = pair.Value;
+			var name = _globals.GetResourceName(pair.Key.Ident, default);
+
+			data.ScalingKeyframes.Span.CopyTo(scaling.Span[scalingCursor..]);
+			data.RotationKeyframes.Span.CopyTo(rotation.Span[rotationCursor..]);
+			data.TranslationKeyframes.Span.CopyTo(translation.Span[translationCursor..]);
+			data.BoneMutationDescriptors.Span.CopyTo(mutations.Span[mutationCursor..]);
+			name.CopyTo(nameChars.Span[nameCursor..]);
+
+			entries.Span[entryIndex++] = new MeshBakingSchema.BakedAnimationEntry(
+				scalingCursor, data.ScalingKeyframes.Span.Length,
+				rotationCursor, data.RotationKeyframes.Span.Length,
+				translationCursor, data.TranslationKeyframes.Span.Length,
+				mutationCursor, data.BoneMutationDescriptors.Span.Length,
+				nameCursor, name.Length,
+				data.DefaultCompletionTimeSeconds
+			);
+
+			scalingCursor += data.ScalingKeyframes.Span.Length;
+			rotationCursor += data.RotationKeyframes.Span.Length;
+			translationCursor += data.TranslationKeyframes.Span.Length;
+			mutationCursor += data.BoneMutationDescriptors.Span.Length;
+			nameCursor += name.Length;
+		}
+
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.AnimationTable, MemoryMarshal.AsBytes(entries.Span[..entryIndex]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.AnimationScalingKeyframes, MemoryMarshal.AsBytes(scaling.Span[..scalingCursor]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.AnimationRotationKeyframes, MemoryMarshal.AsBytes(rotation.Span[..rotationCursor]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.AnimationTranslationKeyframes, MemoryMarshal.AsBytes(translation.Span[..translationCursor]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.AnimationMutationDescriptors, MemoryMarshal.AsBytes(mutations.Span[..mutationCursor]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.AnimationNameChars, nameChars.Span[..nameCursor]);
+	}
+
+	void WriteNodeNameBakeData(LocalAssetBakery bakery, Mesh mesh) {
+		var nodeNameCount = _nodeNameMap.Count;
+		var totalNameChars = 0;
+		foreach (var kvp in _nodeNameMap) totalNameChars += kvp.Key.AsSpan.Length;
+
+		using var entries = _globals.HeapPool.Borrow<MeshBakingSchema.BakedNodeNameEntry>(nodeNameCount);
+		using var nameChars = _globals.HeapPool.Borrow<char>(totalNameChars);
+
+		var entryIndex = 0;
+		var nameCursor = 0;
+		foreach (var kvp in _nodeNameMap) {
+			var name = kvp.Key.AsSpan;
+			name.CopyTo(nameChars.Span[nameCursor..]);
+			entries.Span[entryIndex++] = new MeshBakingSchema.BakedNodeNameEntry(
+				(int) kvp.Value.GetHandleWithoutDisposeCheck().AsInteger,
+				nameCursor,
+				name.Length
+			);
+			nameCursor += name.Length;
+		}
+
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.NodeNameTable, MemoryMarshal.AsBytes(entries.Span[..entryIndex]));
+		bakery.AddResourceBakeValue(mesh, MeshBakingSchema.NodeNameChars, nameChars.Span[..nameCursor]);
+	}
+
+	public void SetSkeletonFromBakedData(
+		Mesh owningMesh,
+		int nodeCount,
+		int boneCount,
+		int firstParentedNodeIndex,
+		Matrix4x4 modelImportTransformMatrix,
+		ReadOnlySpan<Matrix4x4> defaultLocalTransforms,
+		ReadOnlySpan<Matrix4x4> bindPoseInversions,
+		ReadOnlySpan<int> parentIndices,
+		ReadOnlySpan<int> boneToNodeMap,
+		ReadOnlySpan<int> mutationTargetIndexMap
+	) {
+		if (_currentSkeleton != null) {
+			throw new InvalidOperationException("Skeleton already set for this animation table (this is a bug in TinyFFR).");
+		}
+
+		_currentSkeleton = new(
+			owningMesh,
+			nodeCount,
+			boneCount,
+			firstParentedNodeIndex,
+			_globals.HeapPool.BorrowAndCopy(defaultLocalTransforms),
+			_globals.HeapPool.BorrowAndCopy(bindPoseInversions),
+			_globals.HeapPool.Borrow<Matrix4x4>(nodeCount),
+			_globals.HeapPool.BorrowAndCopy(parentIndices),
+			_globals.HeapPool.BorrowAndCopy(boneToNodeMap),
+			_globals.HeapPool.BorrowAndCopy(mutationTargetIndexMap),
+			modelImportTransformMatrix
+		);
+	}
+
+	public MeshAnimation AddPreProcessedAnimation(
+		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes,
+		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes,
+		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes,
+		ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor> nodeMutations,
+		float defaultCompletionTimeSeconds,
+		ReadOnlySpan<char> name
+	) {
+		ThrowIfThisIsDisposed();
+		_ = GetSkeletonOrThrow();
+
+		var handle = new ResourceHandle<MeshAnimation>(++_prevHandleId);
+		var data = new AnimationData(
+			_globals.HeapPool.BorrowAndCopy(scalingKeyframes),
+			_globals.HeapPool.BorrowAndCopy(rotationKeyframes),
+			_globals.HeapPool.BorrowAndCopy(translationKeyframes),
+			_globals.HeapPool.BorrowAndCopy(nodeMutations),
+			defaultCompletionTimeSeconds
+		);
+
+		_animationDataMap.Add(handle, data);
+		_globals.StoreMandatoryResourceName(handle.Ident, name);
+		_animationNameMap.Add(name, HandleToInstance(handle));
+
+		return HandleToInstance(handle);
+	}
+
+	public void SetNodeNameFromBakedData(int nodeIndex, ReadOnlySpan<char> name) {
+		_nodeNameMap[name] = new MeshNode((nuint) nodeIndex, _meshNodeImplProvider);
+	}
 	#endregion
 
 	#region Disposal & Recycle

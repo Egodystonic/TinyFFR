@@ -177,7 +177,21 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void TriggerManualBoundingBoxRecalculation() => Implementation.TriggerManualBoundingBoxRecalculation(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetBoundingBox(PositionedCuboid newBoundingBox) => Implementation.SetBoundingBox(_handle, newBoundingBox);
+	public void SetNonTransformedBoundingBox(PositionedCuboid newBoundingBox) => Implementation.SetNonTransformedBoundingBox(_handle, newBoundingBox);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PositionedCuboid GetNonTransformedBoundingBox() => Implementation.GetNonTransformedBoundingBox(_handle);
+	
+	public PositionedRotatedCuboid CalculateBoundingBox() {
+		var nonTransformed = GetNonTransformedBoundingBox();
+		var transform = Transform;
+		var scaledNonTransformedTranslation = nonTransformed.Position.AsVect() * transform.Scaling;
+		return new PositionedRotatedCuboid(
+			nonTransformed.ToStandardCuboid().ScaledBy(transform.Scaling),
+			transform.Translation.AsLocation() + scaledNonTransformedTranslation * transform.Rotation,
+			transform.Rotation
+		);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

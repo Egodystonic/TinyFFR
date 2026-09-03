@@ -106,14 +106,14 @@ unsafe class LocalAsyncLoadingTest {
 	}
 
 	void RunInteractiveTest() {
-		using var factory = new LocalTinyFfrFactory();
+		using var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { ThreadingConfig = new ThreadingConfig { MaxShutdownWaitTime = TimeSpan.FromSeconds(2d) }});
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Async Model Viewer | SPACE = next loaded model | A = cycle anim | S = play/stop anim | L = camera light | ESC = quit");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), cameraRange: CameraPlaneConfiguration.CloseRange);
 		using var cameraController = camera.CreateController<InspectorCameraController>();
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true, brightness: 0f);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
-		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
+		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
 		using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		sceneRenderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.Ultra));
@@ -259,6 +259,7 @@ unsafe class LocalAsyncLoadingTest {
 			}
 
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				scene.RemoveAll(false, false, true);
 				var next = NextLoadedIndex(currentIndex);
 				if (next >= 0) ShowModel(next);
 			}
@@ -300,7 +301,7 @@ unsafe class LocalAsyncLoadingTest {
 
 			compositor.RenderAll();
 		}
-
+		
 		if (modelInstances is { } finalGroup) {
 			scene.Remove(finalGroup);
 			finalGroup.Dispose();
@@ -309,12 +310,16 @@ unsafe class LocalAsyncLoadingTest {
 		for (var i = 0; i < fileCount; ++i) {
 			if (ops[i] is not { } op) continue;
 			try {
-				groups[i] = op.GetResultAndDisposeOperation();
+				if (!op.GetResultAndDisposeOperation(TimeSpan.FromSeconds(2d), out var rg)) {
+					throw new InvalidOperationException("Closing test early to prevent tedious wait.");
+				}
+				groups[i] = rg;
 			}
 #pragma warning disable CA1031 // Shutting down; a load that failed on the way out is not interesting
 			catch (Exception e) {
 #pragma warning restore CA1031
 				Console.WriteLine($"Load of '{InteractiveTestFiles[i].Filename}' faulted during shutdown: {e.Message}");
+				throw;
 			}
 		}
 		foreach (var group in groups) group?.Dispose();

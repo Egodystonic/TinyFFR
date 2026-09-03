@@ -83,6 +83,22 @@ StartExportedFunc(set_model_instance_aabb, ModelInstanceHandle modelInstance, fl
 	EndExportedFunc
 }
 
+void native_impl_objects::get_model_instance_aabb(ModelInstanceHandle modelInstance, float3* outAabbCenter, float3* outAabbHalfExtents) {
+	ThrowIfNull(outAabbCenter, "Out AABB center pointer was null.");
+	ThrowIfNull(outAabbHalfExtents, "Out AABB half extents pointer was null.");
+
+	auto& manager = filament_engine->getRenderableManager();
+	auto instance = manager.getInstance(Entity::import(modelInstance));
+	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
+	const auto& box = manager.getAxisAlignedBoundingBox(instance);
+	*outAabbCenter = box.center;
+	*outAabbHalfExtents = box.halfExtent;
+}
+StartExportedFunc(get_model_instance_aabb, ModelInstanceHandle modelInstance, float3* outAabbCenter, float3* outAabbHalfExtents) {
+	native_impl_objects::get_model_instance_aabb(modelInstance, outAabbCenter, outAabbHalfExtents);
+	EndExportedFunc
+}
+
 void native_impl_objects::set_model_instance_material(ModelInstanceHandle modelInstance, MaterialHandle material) {
 	ThrowIfNull(material, "Material was null.");
 

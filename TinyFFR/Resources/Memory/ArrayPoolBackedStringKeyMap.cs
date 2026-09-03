@@ -2,14 +2,28 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Buffers;
+using System.Threading;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 unsafe abstract class ArrayPoolBackedStringKeyMap {
 	protected static readonly ManagedStringPool StringPool = new();
-	protected static readonly VectorPool<ManagedStringPool.RentedStringHandle> StringHandleVectorPool = new(zeroMemoryOnReturn: true, &CreateVector);
-	
+	static readonly Lock StringHandleVectorPoolLock = new();
+	static readonly VectorPool<ManagedStringPool.RentedStringHandle> StringHandleVectorPool = new(zeroMemoryOnReturn: true, &CreateVector);
+
 	static ArrayPoolBackedVector<ManagedStringPool.RentedStringHandle> CreateVector() => new(initialCapacity: 1);
+
+	protected static ArrayPoolBackedVector<ManagedStringPool.RentedStringHandle> RentStringHandleVector() {
+		lock (StringHandleVectorPoolLock) {
+			return StringHandleVectorPool.Rent();
+		}
+	}
+
+	protected static void ReturnStringHandleVector(ArrayPoolBackedVector<ManagedStringPool.RentedStringHandle> vector) {
+		lock (StringHandleVectorPoolLock) {
+			StringHandleVectorPool.Return(vector);
+		}
+	}
 }
 
 sealed class ArrayPoolBackedStringKeyMap<TValue> : ArrayPoolBackedStringKeyMap, IDisposable {
@@ -60,7 +74,7 @@ sealed class ArrayPoolBackedStringKeyMap<TValue> : ArrayPoolBackedStringKeyMap, 
 		}
 		else {
 			handle = StringPool.RentAndCopy(key);
-			var vector = StringHandleVectorPool.Rent();
+			var vector = RentStringHandleVector();
 			vector.Add(handle);
 			_hashCodeToHandlesMap.Add(hashCode, vector);
 		}
@@ -70,7 +84,7 @@ sealed class ArrayPoolBackedStringKeyMap<TValue> : ArrayPoolBackedStringKeyMap, 
 	
 	public void Clear() {
 		foreach (var key in _handlesToValuesMap.Keys) StringPool.Return(key);
-		foreach (var value in _hashCodeToHandlesMap.Values) StringHandleVectorPool.Return(value);
+		foreach (var value in _hashCodeToHandlesMap.Values) ReturnStringHandleVector(value);
 		_handlesToValuesMap.Clear();
 		_hashCodeToHandlesMap.Clear();
 	}
@@ -101,7 +115,7 @@ sealed class ArrayPoolBackedStringKeyMap<TValue> : ArrayPoolBackedStringKeyMap, 
 		var handlesVector = _hashCodeToHandlesMap[hashCode];
 		if (handlesVector.Count == 1) {
 			_hashCodeToHandlesMap.Remove(hashCode);
-			StringHandleVectorPool.Return(handlesVector);
+			ReturnStringHandleVector(handlesVector);
 		}
 		else {
 			handlesVector.Remove(h);

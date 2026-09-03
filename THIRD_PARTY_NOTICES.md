@@ -427,8 +427,9 @@ from Tavmjong Bah. For further information, contact: tavmjong @ free
 
 ### Other
 
-This project also embeds some CC0 resources:
+This project also embeds some CC0 resources (either in its distribution or as part of the local repo for testing):
 
 https://ambientcg.com/view?id=NightSkyHDRI001
 https://polyhaven.com/a/metro_noord
 https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+https://www.dafont.com/electronic-highway-sign.font?l[]=10&l[]=1

@@ -113,12 +113,15 @@ public static unsafe class TextureCompressor {
 	}
 	
 	public static int GetCompressedSizeBytes(XYPair<int> dimensions, TextureCompressionFormat format, bool includeMipChain) {
+		return GetCompressedSizeBytes(dimensions, format, includeMipChain ? TextureUtils.GetMipLevelCount(dimensions) : 1);
+	}
+
+	public static int GetCompressedSizeBytes(XYPair<int> dimensions, TextureCompressionFormat format, int levelCount) {
 		if (format == TextureCompressionFormat.None) {
 			throw new ArgumentOutOfRangeException(nameof(format), format, "Can not calculate compressed size for an uncompressed format.");
 		}
-		var numMipLevels = includeMipChain ? TextureUtils.GetMipLevelCount(dimensions) : 1;
 		var result = 0;
-		for (var i = 0; i < numMipLevels; ++i) {
+		for (var i = 0; i < levelCount; ++i) {
 			result += GetMipLevelSizeBytes(TextureUtils.GetMipLevelDimensions(dimensions, i), format);
 		}
 		return result;

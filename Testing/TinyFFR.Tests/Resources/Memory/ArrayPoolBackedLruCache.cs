@@ -376,4 +376,138 @@ class ArrayPoolBackedLruCacheTest {
 			Assert.AreEqual(kvp.Value, v);
 		}
 	}
+
+	[Test]
+	public void ShouldReturnFalseWhenRemovingMissingKey() {
+		using var cache = new ArrayPoolBackedLruCache<int, int>(3);
+		cache.AddOrSet(1, 10);
+
+		Assert.IsFalse(cache.Remove(2, out var v));
+		Assert.AreEqual(default(int), v);
+		Assert.IsTrue(cache.TryGet(1, out _));
+	}
+
+	[Test]
+	public void ShouldRemoveOnlyElement() {
+		using var cache = new ArrayPoolBackedLruCache<int, int>(3);
+		cache.AddOrSet(1, 10);
+
+		Assert.IsTrue(cache.Remove(1, out var v));
+		Assert.AreEqual(10, v);
+		Assert.IsFalse(cache.TryGet(1, out _));
+
+		cache.AddOrSet(2, 20);
+		Assert.IsTrue(cache.TryGet(2, out v));
+		Assert.AreEqual(20, v);
+	}
+
+	[Test]
+	public void ShouldRemoveLeastRecentElement() {
+		using var cache = new ArrayPoolBackedLruCache<int, int>(3);
+		cache.AddOrSet(1, 10);
+		cache.AddOrSet(2, 20);
+		cache.AddOrSet(3, 30);
+
+		Assert.IsTrue(cache.Remove(1, out var v));
+		Assert.AreEqual(10, v);
+		Assert.IsFalse(cache.TryGet(1, out _));
+		Assert.IsTrue(cache.TryGet(2, out _));
+		Assert.IsTrue(cache.TryGet(3, out _));
+	}
+
+	[Test]
+	public void ShouldRemoveMostRecentElement() {
+		using var cache = new ArrayPoolBackedLruCache<int, int>(3);
+		cache.AddOrSet(1, 10);
+		cache.AddOrSet(2, 20);
+		cache.AddOrSet(3, 30);
+
+		Assert.IsTrue(cache.Remove(3, out var v));
+		Assert.AreEqual(30, v);
+		Assert.IsFalse(cache.TryGet(3, out _));
+		Assert.IsTrue(cache.TryGet(1, out _));
+		Assert.IsTrue(cache.TryGet(2, out _));
+	}
+
+	[Test]
+	public void ShouldRemoveMiddleElement() {
+		using var cache = new ArrayPoolBackedLruCache<int, int>(3);
+		cache.AddOrSet(1, 10);
+		cache.AddOrSet(2, 20);
+		cache.AddOrSet(3, 30);
+
+		Assert.IsTrue(cache.Remove(2, out var v));
+		Assert.AreEqual(20, v);
+		Assert.IsFalse(cache.TryGet(2, out _));
+		Assert.IsTrue(cache.TryGet(1, out _));
+		Assert.IsTrue(cache.TryGet(3, out _));
+	}
+
+	[Test]
+	public unsafe void ShouldFreeCapacityWhenRemoving() {
+		var evictions = new List<(int Key, int Value)>();
+		using var cache = new ArrayPoolBackedLruCache<int, int>(3, &RecordEviction, evictions);
+
+		cache.AddOrSet(1, 10);
+		cache.AddOrSet(2, 20);
+		cache.AddOrSet(3, 30);
+		Assert.IsTrue(cache.Remove(2, out _));
+
+		cache.AddOrSet(4, 40);
+		Assert.AreEqual(0, evictions.Count, "Removing an element should have freed a slot without evicting anything.");
+		Assert.IsTrue(cache.TryGet(1, out _));
+		Assert.IsTrue(cache.TryGet(3, out _));
+		Assert.IsTrue(cache.TryGet(4, out _));
+
+		cache.AddOrSet(5, 50);
+		Assert.AreEqual(1, evictions.Count);
+		Assert.IsFalse(cache.TryGet(1, out _), "Least-recently-used element should have been evicted.");
+	}
+
+	[Test]
+	public unsafe void ShouldPreserveRecencyOrderAfterRemoval() {
+		var evictions = new List<(int Key, int Value)>();
+		using var cache = new ArrayPoolBackedLruCache<int, int>(4, &RecordEviction, evictions);
+
+		cache.AddOrSet(1, 10);
+		cache.AddOrSet(2, 20);
+		cache.AddOrSet(3, 30);
+		cache.AddOrSet(4, 40);
+		_ = cache.TryGet(1, out _);
+
+		Assert.IsTrue(cache.Remove(3, out _));
+
+		cache.AddOrSet(5, 50);
+		cache.AddOrSet(6, 60);
+
+		Assert.AreEqual(1, evictions.Count);
+		Assert.AreEqual(2, evictions[0].Key, "Expected key 2 (the least recently used survivor) to be evicted first.");
+	}
+
+	[Test]
+	public void ShouldBehaveCorrectlyWhenRemovingEveryElementInEachOrder() {
+		for (var removalStart = 0; removalStart < 4; ++removalStart) {
+			using var cache = new ArrayPoolBackedLruCache<int, int>(4);
+			for (var i = 0; i < 4; ++i) cache.AddOrSet(i, i * 10);
+
+			for (var i = 0; i < 4; ++i) {
+				var key = (removalStart + i) % 4;
+				Assert.IsTrue(cache.Remove(key, out var v), $"Removal start {removalStart}, key {key}.");
+				Assert.AreEqual(key * 10, v);
+				Assert.IsFalse(cache.TryGet(key, out _));
+
+				for (var j = i + 1; j < 4; ++j) {
+					var remainingKey = (removalStart + j) % 4;
+					Assert.IsTrue(cache.TryGet(remainingKey, out var remainingValue), $"Removal start {removalStart}, expected key {remainingKey} to survive.");
+					Assert.AreEqual(remainingKey * 10, remainingValue);
+				}
+			}
+
+			for (var i = 0; i < 4; ++i) cache.AddOrSet(i, i * 100);
+			for (var i = 0; i < 4; ++i) {
+				Assert.IsTrue(cache.TryGet(i, out var v));
+				Assert.AreEqual(i * 100, v);
+			}
+		}
+	}
 }

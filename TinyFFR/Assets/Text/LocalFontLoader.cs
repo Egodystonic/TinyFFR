@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -15,6 +16,7 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
+using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
@@ -94,11 +96,6 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			if (FontLoadRuneToGlyphMap != null) Self._fontLoadRuneToGlyphMapMap.Return(FontLoadRuneToGlyphMap);
 			if (RuneMap != null) Self._runeMapPool.Return(RuneMap);
 			if (KerningMap != null) Self._kerningMapPool.Return(KerningMap);
-			if (HeapPoolSerializedConfig is { } config) {
-				FontCreationConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			HeapPoolFilePath?.Dispose();
 			HeapPoolFilePath = null;
 			HeapPool = null!;
@@ -412,7 +409,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				var handle = new ResourceHandle<Font>(ctx.Self._prevHandleId);
 				ctx.Self._globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, ctx.Name, DefaultFontName);
 				ctx.Self._activeFonts.Add(
-					handle, 
+					handle,
 					new FontData(
 						atlas,
 						ctx.Ascent,
@@ -420,15 +417,17 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 						ctx.LineAdvance,
 						ctx.LineBreakRune,
 						ctx.RuneMap,
-						ctx.KerningMap, 
-						ctx.Self._penMapPool.Rent(), 
-						ctx.Self._stringMapPool.Rent(), 
+						ctx.KerningMap,
+						ctx.Self._penMapPool.Rent(),
+						ctx.Self._stringMapPool.Rent(),
 						ctx.Self._renderedTextCachePool.Rent()
 					)
 				);
+				var result = ctx.Self.HandleToInstance(handle);
+				ctx.Self.RegisterInBakery(result, ctx.Self._activeFonts[handle], ctx.Name);
 				ctx.RuneMap = null!;
 				ctx.KerningMap = null!;
-				return ctx.Self.HandleToInstance(handle);
+				return result;
 			}
 			
 			return context.GenerateResourceOnPrimaryAndWait(&Complete);
@@ -438,6 +437,91 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			ttfFileData?.Dispose();
 			if (fontLoadInteropResult is { } r && r) FontDispose(fontHandle).ThrowIfFailure();
 		}
+	}
+	#endregion
+
+	#region Baking
+	void RegisterInBakery(Font resource, in FontData data, ReadOnlySpan<char> name) {
+		if (!_globals.Bakery.Enabled) return;
+		var bakery = _globals.Bakery;
+
+		bakery.StartResourceBake(resource);
+		bakery.AddResourceBakeValue(resource, LocalAssetBakery.ResourceNameSectionName, name);
+		bakery.AddResourceBakeValue(resource, FontBakingSchema.Ascent, data.Ascent);
+		bakery.AddResourceBakeValue(resource, FontBakingSchema.Descent, data.Descent);
+		bakery.AddResourceBakeValue(resource, FontBakingSchema.LineAdvance, data.LineAdvance);
+		bakery.AddResourceBakeValue(resource, FontBakingSchema.LineBreakRune, data.LineBreakRune.Value);
+		bakery.AddResourceBakeReference(resource, BakedReferenceSlot.FontAtlas, data.Atlas);
+
+		using (var runeBuffer = _globals.HeapPool.Borrow<FontBakingSchema.BakedRuneEntry>(data.RuneMap.Count)) {
+			var index = 0;
+			foreach (var kvp in data.RuneMap) {
+				runeBuffer.Span[index++] = new FontBakingSchema.BakedRuneEntry(
+					kvp.Key.Value,
+					kvp.Value.AtlasUVOffset.X,
+					kvp.Value.AtlasUVOffset.Y,
+					kvp.Value.AtlasUVSize.X,
+					kvp.Value.AtlasUVSize.Y,
+					kvp.Value.NibOffset.X,
+					kvp.Value.NibOffset.Y,
+					kvp.Value.AdvanceWidth
+				);
+			}
+			bakery.AddResourceBakeValue(resource, FontBakingSchema.RuneMap, MemoryMarshal.AsBytes(runeBuffer.Span[..index]));
+		}
+
+		using (var kerningBuffer = _globals.HeapPool.Borrow<FontBakingSchema.BakedKerningEntry>(data.KerningMap.Count)) {
+			var index = 0;
+			foreach (var kvp in data.KerningMap) {
+				kerningBuffer.Span[index++] = new FontBakingSchema.BakedKerningEntry(kvp.Key, kvp.Value);
+			}
+			bakery.AddResourceBakeValue(resource, FontBakingSchema.KerningMap, MemoryMarshal.AsBytes(kerningBuffer.Span[..index]));
+		}
+
+		bakery.CompleteResourceBake(resource);
+	}
+
+	internal Font CreateFontFromBakedData(Texture atlas, float ascent, float descent, float lineAdvance, Rune lineBreakRune, ReadOnlySpan<FontBakingSchema.BakedRuneEntry> runeEntries, ReadOnlySpan<FontBakingSchema.BakedKerningEntry> kerningEntries, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+		var runeMap = _runeMapPool.Rent();
+		var kerningMap = _kerningMapPool.Rent();
+
+		foreach (var entry in runeEntries) {
+			runeMap[new Rune(entry.RuneValue)] = new AtlasRuneData(
+				new XYPair<float>(entry.AtlasUvOffsetX, entry.AtlasUvOffsetY),
+				new XYPair<float>(entry.AtlasUvSizeX, entry.AtlasUvSizeY),
+				new XYPair<float>(entry.NibOffsetX, entry.NibOffsetY),
+				entry.AdvanceWidth
+			);
+		}
+		foreach (var entry in kerningEntries) {
+			kerningMap[entry.PackedRunePair] = entry.Advance;
+		}
+
+		_prevHandleId++;
+		var handle = new ResourceHandle<Font>(_prevHandleId);
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultFontName);
+		_activeFonts.Add(
+			handle,
+			new FontData(
+				atlas,
+				ascent,
+				descent,
+				lineAdvance,
+				lineBreakRune,
+				runeMap,
+				kerningMap,
+				_penMapPool.Rent(),
+				_stringMapPool.Rent(),
+				_renderedTextCachePool.Rent()
+			)
+		);
+
+		var result = HandleToInstance(handle);
+		RegisterInBakery(result, _activeFonts[handle], name);
+		return result;
 	}
 	#endregion
 
@@ -925,6 +1009,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		var data = _activeFonts[handle];
 
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		foreach (var penHandle in data.ActivePens.Keys) {
 			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(data.ActivePens[penHandle].Material);
 		}

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -27,7 +28,7 @@ unsafe partial class LocalAssetLoader {
 	readonly WorkerJobSyncHelper<LocalAssetLoader, TextureLoadContext, TextureLoadConfig> _textureLoadWorkerSyncHelper;
 	readonly WorkerJobSyncHelper<LocalAssetLoader, CombinedTextureLoadContext, TextureCombinedLoadConfig> _combinedTextureLoadWorkerSyncHelper;
 
-	internal sealed class TextureCreationMetadata {
+	sealed class TextureCreationMetadata {
 		public IntPtr OwnedStbTexelBufferPtr { get; set; } = 0;
 		public IntPtr BorrowedTexelBufferPtr { get; set; } = 0;
 		public PooledHeapMemory<byte>? OwnedTexelData { get; set; } = null;
@@ -96,11 +97,6 @@ unsafe partial class LocalAssetLoader {
 			BuiltInDimensions = default;
 			BuiltInContainsAlpha = false;
 			HasBuiltInSource = false;
-			if (HeapPoolSerializedConfig is { } config) {
-				TextureLoadConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			FilePath?.Dispose();
 			FilePath = null;
 			HeapPool = null!;
@@ -126,11 +122,6 @@ unsafe partial class LocalAssetLoader {
 
 		public override void TearDown() {
 			CreationMetadata.TearDown();
-			if (HeapPoolSerializedConfig is { } config) {
-				TextureCombinedLoadConfig.DisposeAllocatedHeapStorage(config.Span);
-				config.Dispose();
-				HeapPoolSerializedConfig = null;
-			}
 			FilePathAMemory?.Dispose();
 			FilePathAMemory = null;
 			FilePathBMemory?.Dispose();
@@ -234,7 +225,7 @@ unsafe partial class LocalAssetLoader {
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}
 
-	internal static void ApplyCreationConfigToMetadata(TextureCreationMetadata data, in TextureCreationConfig config) {
+	static void ApplyCreationConfigToMetadata(TextureCreationMetadata data, in TextureCreationConfig config) {
 		data.GenerateMipMaps = config.GenerateMipMaps;
 		data.AllowsDynamicWrites = config.AllowsDynamicWrites;
 		data.RenderingConfig = config.RenderingConfig;
@@ -242,7 +233,7 @@ unsafe partial class LocalAssetLoader {
 		data.DataType = config.DataType;
 	}
 
-	internal static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
+	static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
 		var sourceTexelType = data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24;
 		var format = TextureCompressor.GetRecommendedFormat(
 			data.Dimensions,
@@ -363,6 +354,7 @@ unsafe partial class LocalAssetLoader {
 
 	static Texture CompleteTextureLoad(LocalAssetLoader self, TextureCreationMetadata data, ReadOnlySpan<char> name) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
 		if (data.CompressionFormat != TextureCompressionFormat.None && data.CompressedData is { } compressedData) {
 			return self._textureBuilder.CreateTextureFromCompressedBlocks(
 				compressedData.Span,
@@ -370,7 +362,7 @@ unsafe partial class LocalAssetLoader {
 				data.CompressionFormat,
 				data.CompressedLevelCount,
 				data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24,
-				data.GenerateMipMaps,
+				data.DataType,
 				data.RenderingConfig,
 				name
 			);
@@ -931,6 +923,63 @@ unsafe partial class LocalAssetLoader {
 
 		return result;
 	}
+
+	#region Baking
+	public Texture LoadBakedTexture(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.Load<Texture, Texture, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedTextureCore);
+	}
+
+	public TinyFfrAsyncOperation<Texture> LoadBakedTextureAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadAsync<Texture, Texture, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedTextureCore);
+	}
+
+	static Texture LoadBakedTextureCore(LocalAssetBakery.AssetLoadContext ctx) {
+		static Texture Finalize(LocalAssetBakery.AssetLoadContext ctx) {
+			return CreateTextureFromBakedAsset(ctx.Invoker<LocalAssetLoader>(), ctx.AssetData, ctx.StoredOrOverridingName);
+		}
+
+		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static Texture CreateTextureFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+
+		var dimensions = new XYPair<int>(
+			assetData.Extract<int>(BakedResourceSchemata.TextureBakingSchema.DimensionsX),
+			assetData.Extract<int>(BakedResourceSchemata.TextureBakingSchema.DimensionsY)
+		);
+		var isRgba = assetData.Extract<bool>(BakedResourceSchemata.TextureBakingSchema.IsRgba);
+		var compressionFormat = assetData.Extract<TextureCompressionFormat>(BakedResourceSchemata.TextureBakingSchema.CompressionFormat);
+		var dataType = assetData.Extract<TextureDataType>(BakedResourceSchemata.TextureBakingSchema.DataType);
+
+		var renderingConfig = new TextureRenderingConfig {
+			DisableTextureRepeat = assetData.Extract<bool>(BakedResourceSchemata.TextureBakingSchema.DisableTextureRepeat),
+			DisableTexelBlending = assetData.Extract<bool>(BakedResourceSchemata.TextureBakingSchema.DisableTexelBlending),
+			AnisotropicFilteringQuality = assetData.Extract<Quality>(BakedResourceSchemata.TextureBakingSchema.AnisotropicFilteringQuality),
+			AnisotropyLevel = assetData.Extract<float>(BakedResourceSchemata.TextureBakingSchema.AnisotropyLevel)
+		};
+
+		if (compressionFormat != TextureCompressionFormat.None) {
+			return self._textureBuilder.CreateTextureFromCompressedBlocks(
+				assetData.ExtractSpan<byte>(BakedResourceSchemata.TextureBakingSchema.TexelData),
+				dimensions,
+				compressionFormat,
+				assetData.Extract<int>(BakedResourceSchemata.TextureBakingSchema.CompressedLevelCount),
+				isRgba ? TexelType.Rgba32 : TexelType.Rgb24,
+				dataType,
+				renderingConfig,
+				name
+			);
+		}
+
+		var mipMapsEnabled = assetData.Extract<bool>(BakedResourceSchemata.TextureBakingSchema.MipMapsEnabled);
+		var allowsDynamicWrites = assetData.Extract<bool>(BakedResourceSchemata.TextureBakingSchema.AllowsDynamicWrites);
+
+		return isRgba
+			? self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgba32>(BakedResourceSchemata.TextureBakingSchema.TexelData), dimensions, mipMapsEnabled, allowsDynamicWrites, renderingConfig, null, dataType, name)
+			: self._textureBuilder.CreateTextureWithoutProcessing(assetData.ExtractSpan<TexelRgb24>(BakedResourceSchemata.TextureBakingSchema.TexelData), dimensions, mipMapsEnabled, allowsDynamicWrites, renderingConfig, null, dataType, name);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_texture_file_data")]
