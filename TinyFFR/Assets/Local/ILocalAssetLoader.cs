@@ -9,19 +9,11 @@ using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-public enum BackdropTextureResolution {
-	Standard,
-	RoughDraft,
-	Higher,
-	VeryHigh,
-	Production
-}
-
 public interface ILocalAssetLoader : IAssetLoader {
 	internal static string HdrExrToKtxWorkspaceDirectoryPath { get; } = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, "HdrExrToKtxWorkspace");
 
-	void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard);
-	TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard);
+	void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard);
+	TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard);
 
 	BackdropTexture LoadBackdropTextureFromPreprocessedDirectory(ReadOnlySpan<char> directoryPath, ReadOnlySpan<char> name = default) {
 		return LoadBackdropTextureFromPreprocessedDirectory(directoryPath, new BackdropTextureCreationConfig { Name = name });
@@ -32,13 +24,13 @@ public interface ILocalAssetLoader : IAssetLoader {
 	}
 	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureFromPreprocessedDirectoryAsync(ReadOnlySpan<char> directoryPath, in BackdropTextureCreationConfig config);
 
-	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard, ReadOnlySpan<char> name = default) {
+	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, Quality backdropTextureResolution = Quality.Standard, ReadOnlySpan<char> name = default) {
 		return LoadBackdropTexture(hdrOrExrFilePath, new BackdropTextureCreationConfig { Name = name }, backdropTextureResolution);
 	}
 	// TODO xmldoc that this is really slow and generates a lot of garbage
-	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard);
-	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard, ReadOnlySpan<char> name = default) {
+	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard);
+	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, Quality backdropTextureResolution = Quality.Standard, ReadOnlySpan<char> name = default) {
 		return LoadBackdropTextureAsync(hdrOrExrFilePath, new BackdropTextureCreationConfig { Name = name }, backdropTextureResolution);
 	}
-	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard);
+	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard);
 }

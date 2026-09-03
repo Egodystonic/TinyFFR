@@ -185,9 +185,10 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public PositionedRotatedCuboid CalculateBoundingBox() {
 		var nonTransformed = GetNonTransformedBoundingBox();
 		var transform = Transform;
+		var scaledNonTransformedTranslation = nonTransformed.Position.AsVect() * transform.Scaling;
 		return new PositionedRotatedCuboid(
 			nonTransformed.ToStandardCuboid().ScaledBy(transform.Scaling),
-			transform.Translation.AsLocation(),
+			transform.Translation.AsLocation() + scaledNonTransformedTranslation * transform.Rotation,
 			transform.Rotation
 		);
 	}

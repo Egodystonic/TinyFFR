@@ -148,6 +148,7 @@ class LocalAnimationTest {
 		void UpdateTitle() {
 			window.SetTitle(
 				$"X/Y/Z rotates | " +
+				$"B boundingbox | " +
 				$"A = chg anim | " +
 				$"S = chg start/stop | " +
 				$"N = chg node | " +
@@ -163,6 +164,7 @@ class LocalAnimationTest {
 			var deltaTime = loop.IterateOnce().AsDeltaTime();
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				scene.RemoveAll(false, false, true);
 				if (modelInstanceGroup is {} i) {
 					scene.Remove(i);
 					i.Dispose();
@@ -186,6 +188,14 @@ class LocalAnimationTest {
 				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
 				scene.Add(modelInstanceGroup.Value);
 				UpdateTitle();
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.B)) {
+				scene.RemoveAll(false, false, true);
+				if (modelInstanceGroup is { } mig) {
+					foreach (var mi in mig) {
+						scene.AddPrimitiveShape(mi.CalculateBoundingBox()).SetPaintbrush(new PrimitivePaintbrush(ColorVect.Random() with { Alpha = 0.25f }));
+					}
+				} 
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstanceGroup.HasValue) {
 				prevAnimIndex = curAnimIndex;

@@ -88,7 +88,7 @@ class LocalModelLoadingTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Press Space");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | B = show bounding boxes | Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), cameraRange: CameraPlaneConfiguration.CloseRange);
 		using var cameraController = camera.CreateController<InspectorCameraController>();
 		var lightBrightnessStage = 0;
@@ -112,6 +112,7 @@ class LocalModelLoadingTest {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				scene.RemoveAll(false, false, true);
 				nextPrimitiveColorIsOpaque = true;
 				
 				if (modelInstances is {} i) {
@@ -160,6 +161,14 @@ class LocalModelLoadingTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
 				modelInstances?.RotateBy((90f * deltaTime) % Direction.Forward);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.B)) {
+				scene.RemoveAll(false, false, true);
+				if (modelInstances is { } mig) {
+					foreach (var mi in mig) {
+						scene.AddPrimitiveShape(mi.CalculateBoundingBox()).SetPaintbrush(new PrimitivePaintbrush(ColorVect.Random() with { Alpha = 0.25f }));
+					}
+				} 
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.W)) {
 				if (modelInstances?.Instances is { } enumerable) {
