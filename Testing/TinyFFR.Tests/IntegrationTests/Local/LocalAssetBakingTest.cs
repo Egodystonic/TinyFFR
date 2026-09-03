@@ -852,10 +852,10 @@ class LocalAssetBakingTest {
 				bakedFileSizes[i] = File.Exists(filePath) ? new FileInfo(filePath).Length : -1L;
 			}
 			foreach (var entry in entries) entry.AddToScene(factory, scene, canvas);
-			// var cuboids = factory.ResourceDirectory.GetAllActiveInstances<ModelInstance>().Select(mi => (PositionedRotatedCuboid) mi.Mesh.BoundingBox).ToArray(); 
-			// foreach (var cuboid in cuboids) {
-			// 	scene.AddPrimitiveShape(cuboid, wireframe: true);
-			// }
+			var cuboids = factory.ResourceDirectory.GetAllActiveInstances<ModelInstance>().Select(mi => ((PositionedRotatedCuboid) mi.GetBoundingBox())).ToArray(); 
+			foreach (var cuboid in cuboids) {
+				scene.AddPrimitiveShape(cuboid, wireframe: true);
+			}
 			loadInProgress = false;
 			RefreshMetrics();
 		}

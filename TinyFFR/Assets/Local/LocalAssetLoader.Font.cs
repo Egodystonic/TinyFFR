@@ -85,6 +85,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Font> {
 					name
 				);
 			}
+			catch {
+				group.Dispose(disposeContainedResources: true);
+				throw;
+			}
 			finally {
 				group.Dispose();
 			}

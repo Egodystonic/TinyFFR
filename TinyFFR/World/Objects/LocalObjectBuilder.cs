@@ -349,6 +349,11 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		ApplyBoundingBox(handle, newBoundingBox);
 	}
+	public PositionedCuboid GetBoundingBox(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetModelInstanceAabb(handle, out var center, out var halfExtents).ThrowIfFailure();
+		return new PositionedCuboid(halfExtents.X * 2f, halfExtents.Y * 2f, halfExtents.Z * 2f, Location.FromVector3(center));
+	}
 	void ApplyBoundingBox(ResourceHandle<ModelInstance> handle, PositionedCuboid newBoundingBox) {
 		SetModelInstanceAabb(
 			handle,
@@ -678,6 +683,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		UIntPtr modelInstanceHandle,
 		Vector3 aabbCenter,
 		Vector3 aabbHalfExtents
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_model_instance_aabb")]
+	static extern InteropResult GetModelInstanceAabb(
+		UIntPtr modelInstanceHandle,
+		out Vector3 outAabbCenter,
+		out Vector3 outAabbHalfExtents
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]

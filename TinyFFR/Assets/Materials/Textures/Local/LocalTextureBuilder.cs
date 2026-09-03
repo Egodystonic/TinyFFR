@@ -144,6 +144,9 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		if (compressionFormat == TextureCompressionFormat.None) {
 			throw new ArgumentOutOfRangeException(nameof(compressionFormat), compressionFormat, "Compression format must not be None.");
 		}
+		if (!TextureCompressor.FormatIsSupported(compressionFormat)) {
+			throw new ArgumentException($"Texture compression format '{compressionFormat}' is not supported on this machine.", nameof(compressionFormat));
+		}
 
 		var maxLevelCount = TextureUtils.GetMipLevelCount(dimensions);
 		if (levelCount < 1 || levelCount > maxLevelCount) {
