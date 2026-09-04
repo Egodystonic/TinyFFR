@@ -378,7 +378,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		var workspace = skeleton.Workspace.Span[..skeleton.NodeCount];
 		skeleton.DefaultLocalTransforms.Span[..skeleton.NodeCount].CopyTo(workspace);
 
-		SkeletalMeshUtils.ResolveGlobalNodeTransforms(
+		SkeletalMeshUtils.ApplySkeletalTransformHierarchy(
 			skeleton.ParentIndices.Span,
 			skeleton.FirstParentedNodeIndex,
 			skeleton.ModelImportTransformMatrix,
@@ -413,7 +413,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			);
 		}
 
-		SkeletalMeshUtils.ResolveGlobalNodeTransforms(
+		SkeletalMeshUtils.ApplySkeletalTransformHierarchy(
 			skeleton.ParentIndices.Span,
 			skeleton.FirstParentedNodeIndex,
 			skeleton.ModelImportTransformMatrix,
@@ -434,7 +434,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		
 		WriteAnimationNodeTransformsToWorkspace(startAnimData, endAnimData);
 
-		SkeletalMeshUtils.WriteBoneMatrices(
+		SkeletalMeshUtils.ApplyBindPoseInversions(
 			skeleton.BindPoseInversions.Span[..skeleton.BoneCount],
 			skeleton.BoneToNodeMap.Span,
 			skeleton.Workspace.Span[..skeleton.NodeCount],
@@ -522,7 +522,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		}
 		WriteBindPoseNodeTransformsToWorkspace();
 		
-		SkeletalMeshUtils.WriteBoneMatrices(
+		SkeletalMeshUtils.ApplyBindPoseInversions(
 			skeleton.BindPoseInversions.Span[..skeleton.BoneCount],
 			skeleton.BoneToNodeMap.Span,
 			skeleton.Workspace.Span[..skeleton.NodeCount],

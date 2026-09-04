@@ -374,8 +374,8 @@ unsafe partial class LocalAssetLoader {
 
 		workspace.PrepareBoneLocalBounds(vertices);
 
-		var minimum = new Vector3(Single.PositiveInfinity);
-		var maximum = new Vector3(Single.NegativeInfinity);
+		var minimum = SkeletalMeshUtils.EmptyBoundsMinimum;
+		var maximum = SkeletalMeshUtils.EmptyBoundsMaximum;
 		workspace.AddBindPoseBounds(vertices, ref minimum, ref maximum);
 
 		if (correctFlippedOrientation && workspace.AllInfluencingBonesAreMirrored) {

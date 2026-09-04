@@ -223,8 +223,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		using var workspace = new SkeletalBoundsWorkspace(_globals.HeapPool, skeletalNodes, boneCount, modelImportTransformMatrix);
 
-		var minimum = new Vector3(Single.PositiveInfinity);
-		var maximum = new Vector3(Single.NegativeInfinity);
+		var minimum = SkeletalMeshUtils.EmptyBoundsMinimum;
+		var maximum = SkeletalMeshUtils.EmptyBoundsMaximum;
 		workspace.AddBindPoseBounds(transformedVertices, ref minimum, ref maximum);
 
 		return (config.BoundingBoxOverride ?? SkeletalMeshUtils.BoundsToCuboid(minimum, maximum))

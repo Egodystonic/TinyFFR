@@ -81,7 +81,7 @@ static class SkeletalMeshUtils {
 		return firstParentedNodeIndex;
 	}
 
-	public static void ResolveGlobalNodeTransforms(ReadOnlySpan<int> parentIndices, int firstParentedNodeIndex, Matrix4x4 modelImportTransformMatrix, Span<Matrix4x4> workspace) {
+	public static void ApplySkeletalTransformHierarchy(ReadOnlySpan<int> parentIndices, int firstParentedNodeIndex, Matrix4x4 modelImportTransformMatrix, Span<Matrix4x4> workspace) {
 		for (var i = 0; i < firstParentedNodeIndex; ++i) {
 			workspace[i] *= modelImportTransformMatrix;
 		}
@@ -91,7 +91,7 @@ static class SkeletalMeshUtils {
 		}
 	}
 
-	public static void WriteBoneMatrices(ReadOnlySpan<Matrix4x4> bindPoseInversions, ReadOnlySpan<int> boneToNodeMap, ReadOnlySpan<Matrix4x4> workspace, Span<Matrix4x4> destination) {
+	public static void ApplyBindPoseInversions(ReadOnlySpan<Matrix4x4> bindPoseInversions, ReadOnlySpan<int> boneToNodeMap, ReadOnlySpan<Matrix4x4> workspace, Span<Matrix4x4> destination) {
 		for (var i = 0; i < bindPoseInversions.Length; ++i) {
 			destination[i] = bindPoseInversions[i] * workspace[boneToNodeMap[i]];
 		}
@@ -150,22 +150,28 @@ static class SkeletalMeshUtils {
 		}
 	}
 
+	public static readonly Location EmptyBoundsMinimum = new(Single.PositiveInfinity, Single.PositiveInfinity, Single.PositiveInfinity);
+	public static readonly Location EmptyBoundsMaximum = new(Single.NegativeInfinity, Single.NegativeInfinity, Single.NegativeInfinity);
+
+	static Location Min(Location a, Location b) => Location.FromVector3(Vector3.Min(a.ToVector3(), b.ToVector3()));
+	static Location Max(Location a, Location b) => Location.FromVector3(Vector3.Max(a.ToVector3(), b.ToVector3()));
+
 	public static void CalculateBoneLocalBounds(
 		ReadOnlySpan<MeshVertexSkeletal> vertices,
 		ReadOnlySpan<Matrix4x4> bindPoseInversions,
-		Span<Vector3> boneMinimums,
-		Span<Vector3> boneMaximums,
+		Span<Location> boneMinimums,
+		Span<Location> boneMaximums,
 		Span<bool> boneInfluenceMap
 	) {
 		boneInfluenceMap.Clear();
 		for (var b = 0; b < bindPoseInversions.Length; ++b) {
-			boneMinimums[b] = new Vector3(Single.PositiveInfinity);
-			boneMaximums[b] = new Vector3(Single.NegativeInfinity);
+			boneMinimums[b] = EmptyBoundsMinimum;
+			boneMaximums[b] = EmptyBoundsMaximum;
 		}
 
 		for (var v = 0; v < vertices.Length; ++v) {
 			var vertex = vertices[v];
-			var position = vertex.Location.ToVector3();
+			var position = vertex.Location;
 			var indices = vertex.BoneIndices;
 			var weights = vertex.BoneWeights;
 
@@ -174,9 +180,9 @@ static class SkeletalMeshUtils {
 				var boneIndex = indices[i];
 				if (boneIndex >= bindPoseInversions.Length) continue;
 
-				var boneLocalPosition = Vector3.Transform(position, bindPoseInversions[boneIndex]);
-				boneMinimums[boneIndex] = Vector3.Min(boneMinimums[boneIndex], boneLocalPosition);
-				boneMaximums[boneIndex] = Vector3.Max(boneMaximums[boneIndex], boneLocalPosition);
+				var boneLocalPosition = position * new Transform(bindPoseInversions[boneIndex]);
+				boneMinimums[boneIndex] = Min(boneMinimums[boneIndex], boneLocalPosition);
+				boneMaximums[boneIndex] = Max(boneMaximums[boneIndex], boneLocalPosition);
 				boneInfluenceMap[boneIndex] = true;
 			}
 		}
@@ -185,16 +191,16 @@ static class SkeletalMeshUtils {
 	public static void CalculateBindPoseSkinnedBounds(
 		ReadOnlySpan<MeshVertexSkeletal> vertices,
 		ReadOnlySpan<Matrix4x4> boneMatrices,
-		ref Vector3 minimum,
-		ref Vector3 maximum
+		ref Location minimum,
+		ref Location maximum
 	) {
 		for (var v = 0; v < vertices.Length; ++v) {
 			var vertex = vertices[v];
-			var position = vertex.Location.ToVector3();
+			var position = vertex.Location;
 			var indices = vertex.BoneIndices;
 			var weights = vertex.BoneWeights;
 
-			var accumulator = Vector3.Zero;
+			var accumulator = Vect.Zero;
 			var totalWeight = 0f;
 			for (var i = 0; i < MeshVertexSkeletal.MaxBonesPerVertex; ++i) {
 				var weight = weights[i];
@@ -202,46 +208,46 @@ static class SkeletalMeshUtils {
 				var boneIndex = indices[i];
 				if (boneIndex >= boneMatrices.Length) continue;
 
-				accumulator += Vector3.Transform(position, boneMatrices[boneIndex]) * weight;
+				accumulator += (position * new Transform(boneMatrices[boneIndex])).AsVect() * weight;
 				totalWeight += weight;
 			}
 
 			if (totalWeight <= 0f) {
-				minimum = Vector3.Min(minimum, Vector3.Min(position, Vector3.Zero));
-				maximum = Vector3.Max(maximum, Vector3.Max(position, Vector3.Zero));
+				minimum = Min(minimum, Min(position, Location.Origin));
+				maximum = Max(maximum, Max(position, Location.Origin));
 			}
 			else {
-				minimum = Vector3.Min(minimum, accumulator);
-				maximum = Vector3.Max(maximum, accumulator);
+				minimum = Min(minimum, accumulator.AsLocation());
+				maximum = Max(maximum, accumulator.AsLocation());
 			}
 		}
 	}
 
 	public static void ExpandBoundsByPose(
-		ReadOnlySpan<Vector3> boneMinimums,
-		ReadOnlySpan<Vector3> boneMaximums,
+		ReadOnlySpan<Location> boneMinimums,
+		ReadOnlySpan<Location> boneMaximums,
 		ReadOnlySpan<bool> boneInfluenceMap,
 		ReadOnlySpan<int> boneToNodeMap,
 		ReadOnlySpan<Matrix4x4> workspace,
-		ref Vector3 minimum,
-		ref Vector3 maximum
+		ref Location minimum,
+		ref Location maximum
 	) {
 		for (var b = 0; b < boneInfluenceMap.Length; ++b) {
 			if (!boneInfluenceMap[b]) continue;
 
 			var boneMinimum = boneMinimums[b];
 			var boneMaximum = boneMaximums[b];
-			var nodeTransform = workspace[boneToNodeMap[b]];
+			var nodeTransform = new Transform(workspace[boneToNodeMap[b]]);
 
 			for (var cornerIndex = 0; cornerIndex < 8; ++cornerIndex) {
-				var corner = new Vector3(
+				var corner = new Location(
 					(cornerIndex & 1) == 0 ? boneMinimum.X : boneMaximum.X,
 					(cornerIndex & 2) == 0 ? boneMinimum.Y : boneMaximum.Y,
 					(cornerIndex & 4) == 0 ? boneMinimum.Z : boneMaximum.Z
 				);
-				var transformedCorner = Vector3.Transform(corner, nodeTransform);
-				minimum = Vector3.Min(minimum, transformedCorner);
-				maximum = Vector3.Max(maximum, transformedCorner);
+				var transformedCorner = corner * nodeTransform;
+				minimum = Min(minimum, transformedCorner);
+				maximum = Max(maximum, transformedCorner);
 			}
 		}
 	}
@@ -256,14 +262,14 @@ static class SkeletalMeshUtils {
 		return foundAny;
 	}
 
-	public static PositionedCuboid BoundsToCuboid(Vector3 minimum, Vector3 maximum) {
+	public static PositionedCuboid BoundsToCuboid(Location minimum, Location maximum) {
 		if (minimum.X > maximum.X || minimum.Y > maximum.Y || minimum.Z > maximum.Z) return PositionedCuboid.UnitCubeAtOrigin;
 
 		return new PositionedCuboid(
 			maximum.X - minimum.X,
 			maximum.Y - minimum.Y,
 			maximum.Z - minimum.Z,
-			Location.FromVector3((minimum + maximum) * 0.5f)
+			((minimum.AsVect() + maximum.AsVect()) * 0.5f).AsLocation()
 		);
 	}
 }
@@ -273,8 +279,8 @@ readonly struct SkeletalBoundsWorkspace : IDisposable {
 	readonly PooledHeapMemory<Matrix4x4> _pose;
 	readonly PooledHeapMemory<Matrix4x4> _bindPoseInversions;
 	readonly PooledHeapMemory<Matrix4x4> _boneMatrices;
-	readonly PooledHeapMemory<Vector3> _boneMinimums;
-	readonly PooledHeapMemory<Vector3> _boneMaximums;
+	readonly PooledHeapMemory<Location> _boneMinimums;
+	readonly PooledHeapMemory<Location> _boneMaximums;
 	readonly PooledHeapMemory<bool> _boneInfluenceMap;
 	readonly PooledHeapMemory<int> _parentIndices;
 	readonly PooledHeapMemory<int> _inputToOutputIndexMap;
@@ -288,8 +294,8 @@ readonly struct SkeletalBoundsWorkspace : IDisposable {
 	Span<Matrix4x4> Pose => _pose.Span[.._nodeCount];
 	ReadOnlySpan<Matrix4x4> BindPoseInversions => _bindPoseInversions.Span[.._boneCount];
 	Span<Matrix4x4> BoneMatrices => _boneMatrices.Span[.._boneCount];
-	Span<Vector3> BoneMinimums => _boneMinimums.Span[.._boneCount];
-	Span<Vector3> BoneMaximums => _boneMaximums.Span[.._boneCount];
+	Span<Location> BoneMinimums => _boneMinimums.Span[.._boneCount];
+	Span<Location> BoneMaximums => _boneMaximums.Span[.._boneCount];
 	Span<bool> BoneInfluenceMap => _boneInfluenceMap.Span[.._boneCount];
 	ReadOnlySpan<int> ParentIndices => _parentIndices.Span[.._nodeCount];
 	ReadOnlySpan<int> InputToOutputIndexMap => _inputToOutputIndexMap.Span[.._nodeCount];
@@ -307,8 +313,8 @@ readonly struct SkeletalBoundsWorkspace : IDisposable {
 		_bindPoseInversions = pool.Borrow<Matrix4x4>(boneCount);
 		_boneToNodeMap = pool.Borrow<int>(boneCount);
 		_boneMatrices = pool.Borrow<Matrix4x4>(boneCount);
-		_boneMinimums = pool.Borrow<Vector3>(boneCount);
-		_boneMaximums = pool.Borrow<Vector3>(boneCount);
+		_boneMinimums = pool.Borrow<Location>(boneCount);
+		_boneMaximums = pool.Borrow<Location>(boneCount);
 		_boneInfluenceMap = pool.Borrow<bool>(boneCount);
 
 		using var depths = pool.Borrow<int>(_nodeCount);
@@ -331,14 +337,14 @@ readonly struct SkeletalBoundsWorkspace : IDisposable {
 
 		DefaultLocalTransforms.CopyTo(Pose);
 		ResolvePoseFromLocalTransforms();
-		SkeletalMeshUtils.WriteBoneMatrices(BindPoseInversions, BoneToNodeMap, Pose, BoneMatrices);
+		SkeletalMeshUtils.ApplyBindPoseInversions(BindPoseInversions, BoneToNodeMap, Pose, BoneMatrices);
 	}
 
 	void ResolvePoseFromLocalTransforms() {
-		SkeletalMeshUtils.ResolveGlobalNodeTransforms(ParentIndices, _firstParentedNodeIndex, _modelImportTransformMatrix, Pose);
+		SkeletalMeshUtils.ApplySkeletalTransformHierarchy(ParentIndices, _firstParentedNodeIndex, _modelImportTransformMatrix, Pose);
 	}
 
-	public void AddBindPoseBounds(ReadOnlySpan<MeshVertexSkeletal> vertices, ref Vector3 minimum, ref Vector3 maximum) {
+	public void AddBindPoseBounds(ReadOnlySpan<MeshVertexSkeletal> vertices, ref Location minimum, ref Location maximum) {
 		SkeletalMeshUtils.CalculateBindPoseSkinnedBounds(vertices, BoneMatrices, ref minimum, ref maximum);
 	}
 
@@ -358,7 +364,7 @@ readonly struct SkeletalBoundsWorkspace : IDisposable {
 		ResolvePoseFromLocalTransforms();
 	}
 
-	public void ExpandBoundsByCurrentPose(ref Vector3 minimum, ref Vector3 maximum) {
+	public void ExpandBoundsByCurrentPose(ref Location minimum, ref Location maximum) {
 		SkeletalMeshUtils.ExpandBoundsByPose(BoneMinimums, BoneMaximums, BoneInfluenceMap, BoneToNodeMap, Pose, ref minimum, ref maximum);
 	}
 
