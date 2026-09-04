@@ -345,11 +345,11 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	void CalculateAndUpdateBoundingBox(ResourceHandle<ModelInstance> handle, LocalVertexMutationData vertexMutationData) {
 		ApplyBoundingBox(handle, MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin));
 	}
-	public void SetNonTransformedBoundingBox(ResourceHandle<ModelInstance> handle, PositionedCuboid newBoundingBox) {
+	public void SetModelSpaceBoundingBox(ResourceHandle<ModelInstance> handle, PositionedCuboid newBoundingBox) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		ApplyBoundingBox(handle, newBoundingBox);
 	}
-	public PositionedCuboid GetNonTransformedBoundingBox(ResourceHandle<ModelInstance> handle) {
+	public PositionedCuboid GetModelSpaceBoundingBox(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetModelInstanceAabb(handle, out var center, out var halfExtents).ThrowIfFailure();
 		return new PositionedCuboid(halfExtents.X * 2f, halfExtents.Y * 2f, halfExtents.Z * 2f, Location.FromVector3(center));

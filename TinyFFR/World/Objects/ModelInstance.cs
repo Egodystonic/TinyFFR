@@ -177,13 +177,13 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void TriggerManualBoundingBoxRecalculation() => Implementation.TriggerManualBoundingBoxRecalculation(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetNonTransformedBoundingBox(PositionedCuboid newBoundingBox) => Implementation.SetNonTransformedBoundingBox(_handle, newBoundingBox);
+	public void SetModelSpaceBoundingBox(PositionedCuboid newBoundingBox) => Implementation.SetModelSpaceBoundingBox(_handle, newBoundingBox);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public PositionedCuboid GetNonTransformedBoundingBox() => Implementation.GetNonTransformedBoundingBox(_handle);
+	public PositionedCuboid GetModelSpaceBoundingBox() => Implementation.GetModelSpaceBoundingBox(_handle);
 	
-	public PositionedRotatedCuboid CalculateBoundingBox() {
-		var nonTransformed = GetNonTransformedBoundingBox();
+	public PositionedRotatedCuboid GetWorldSpaceBoundingBox() {
+		var nonTransformed = GetModelSpaceBoundingBox();
 		var transform = Transform;
 		var scaledNonTransformedTranslation = nonTransformed.Position.AsVect() * transform.Scaling;
 		return new PositionedRotatedCuboid(

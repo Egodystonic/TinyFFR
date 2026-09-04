@@ -119,7 +119,7 @@ class LocalModelLoadingTest {
 			if (modelInstances is { } mig) {
 				var bbcIdx = curFileIndex;
 				foreach (var mi in mig) {
-					scene.AddPrimitiveShape(mi.CalculateBoundingBox()).SetPaintbrush(boundingBoxColours[bbcIdx]);
+					scene.AddPrimitiveShape(mi.GetWorldSpaceBoundingBox()).SetPaintbrush(boundingBoxColours[bbcIdx]);
 					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
 				}
 			}

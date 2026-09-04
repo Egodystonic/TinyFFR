@@ -310,6 +310,21 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		if (loadSkeletalAnimationData) {
 			GatherSubMeshVertexDataOnWorker<MeshVertexSkeletal>(assetHandle, subMeshIndex, readConfig.MeshConfig.CorrectFlippedOrientation, in meshConfig, buffers, context.HeapPool);
 			GatherSubMeshSkeletalDataOnWorker(context, assetHandle, subMeshIndex, in readConfig);
+			if (buffers is { VertexData: { } skeletalVertexData, TriangleData: { } skeletalTriangleData, SkeletalNodes: { } gatheredSkeletalNodes }) {
+				buffers.BoundingBox = CalculateSkeletalBoundingBoxOnWorker(
+					MemoryMarshal.Cast<byte, MeshVertexSkeletal>(skeletalVertexData.Span)[..buffers.VertexCount],
+					MemoryMarshal.Cast<byte, VertexTriangle>(skeletalTriangleData.Span)[..buffers.TriangleCount],
+					gatheredSkeletalNodes.Span[..buffers.NodeCount],
+					buffers.BoneCount,
+					buffers.OriginTranslation,
+					buffers.LinearRescalingFactor,
+					buffers.SkeletalDataRegistry,
+					context.HeapPool,
+					in meshConfig,
+					readConfig.MeshConfig.CorrectFlippedOrientation,
+					buffers.BoundingBox
+				);
+			}
 		}
 		else {
 			GatherSubMeshVertexDataOnWorker<MeshVertex>(assetHandle, subMeshIndex, readConfig.MeshConfig.CorrectFlippedOrientation, in meshConfig, buffers, context.HeapPool);

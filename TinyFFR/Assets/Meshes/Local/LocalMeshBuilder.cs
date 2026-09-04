@@ -131,7 +131,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			);
 		}
 
-		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneCount);
+		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneCount, skeletalNodes);
 		AttachSkeletonToMesh(result, boneCount, skeletalNodes, config.OriginTranslation, config.LinearRescalingFactor);
 		return result;
 	}
@@ -213,7 +213,25 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
 	}
 
-	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount) where TVertex : unmanaged, IMeshVertex {
+	PositionedCuboid CalculateSkeletalBindPoseBoundingBox(ReadOnlySpan<MeshVertexSkeletal> transformedVertices, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, int boneCount, in MeshCreationConfig config) {
+		var nodeCount = skeletalNodes.Length;
+		if (nodeCount <= 0 || boneCount <= 0 || transformedVertices.Length == 0) {
+			return CalculateMeshBoundingBox(transformedVertices, in config);
+		}
+
+		var modelImportTransformMatrix = Matrix4x4.CreateTranslation(-(config.OriginTranslation.ToVector3())) * Matrix4x4.CreateScale(config.LinearRescalingFactor);
+
+		using var workspace = new SkeletalBoundsWorkspace(_globals.HeapPool, skeletalNodes, boneCount, modelImportTransformMatrix);
+
+		var minimum = new Vector3(Single.PositiveInfinity);
+		var maximum = new Vector3(Single.NegativeInfinity);
+		workspace.AddBindPoseBounds(transformedVertices, ref minimum, ref maximum);
+
+		return (config.BoundingBoxOverride ?? SkeletalMeshUtils.BoundsToCuboid(minimum, maximum))
+			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
+	}
+
+	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes = default) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ValidateMeshData(vertices, triangles, in config);
@@ -229,7 +247,14 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (config.FlipTriangles) FlipTriangleWindings(tempIndexBuffer.AsSpan<VertexTriangle>());
 		ApplyVertexTransforms(tempVertexBuffer.AsSpan<TVertex>(), in config);
 
-		var boundingBox = CalculateMeshBoundingBox<TVertex>(tempVertexBuffer.AsSpan<TVertex>(), in config);
+		var boundingBox = boneCount > 0 && !skeletalNodes.IsEmpty && typeof(TVertex) == typeof(MeshVertexSkeletal)
+			? CalculateSkeletalBindPoseBoundingBox(
+				MemoryMarshal.Cast<TVertex, MeshVertexSkeletal>(tempVertexBuffer.AsSpan<TVertex>())[..vertices.Length],
+				skeletalNodes,
+				boneCount,
+				in config
+			)
+			: CalculateMeshBoundingBox(tempVertexBuffer.AsSpan<TVertex>(), in config);
 
 		return CompleteMeshCreation<TVertex>(
 			handle,
@@ -905,7 +930,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (!_activeMeshes.TryGetValue(meshHandle, out var meshData)) return;
 		_activeMeshes[meshHandle] = meshData with { BoundingBox = newBoundingBox };
 		foreach (var instance in _globals.DependencyTracker.GetDependentsOfGivenType<Mesh, ModelInstance, IModelInstanceImplProvider>(HandleToInstance(meshHandle))) {
-			instance.SetNonTransformedBoundingBox(newBoundingBox);
+			instance.SetModelSpaceBoundingBox(newBoundingBox);
 		}
 	}
 

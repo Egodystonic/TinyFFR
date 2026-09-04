@@ -214,6 +214,21 @@ unsafe partial class LocalAssetLoader {
 				context.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<MeshVertexSkeletal>(in creationConfig);
 				GatherMeshDataOnWorker<MeshVertexSkeletal>(context, assetHandle, metadata, in readConfig, in creationConfig);
 				GatherSkeletalDataOnWorker(context, assetHandle, skeletalSubMeshIndex, in readConfig);
+				if (context.VertexData is { } skeletalVertexData && context.TriangleData is { } skeletalTriangleData && context.SkeletalNodes is { } gatheredSkeletalNodes) {
+					context.BoundingBox = CalculateSkeletalBoundingBoxOnWorker(
+						MemoryMarshal.Cast<byte, MeshVertexSkeletal>(skeletalVertexData.Span)[..context.VertexCount],
+						MemoryMarshal.Cast<byte, VertexTriangle>(skeletalTriangleData.Span)[..context.TriangleCount],
+						gatheredSkeletalNodes.Span[..context.NodeCount],
+						context.BoneCount,
+						context.OriginTranslation,
+						context.LinearRescalingFactor,
+						context.GatherBuffers,
+						context.HeapPool,
+						in creationConfig,
+						readConfig.CorrectFlippedOrientation,
+						context.BoundingBox
+					);
+				}
 			}
 			else {
 				context.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<MeshVertex>(in creationConfig);
@@ -335,6 +350,92 @@ unsafe partial class LocalAssetLoader {
 			GatherMeshAnimations(assetHandle, nodeHandles, nodeCount, readConfig.AnimationTicksPerSecondOverride, nameBuffer, context.HeapPool, context.GatherBuffers);
 			GatherNodeNames(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), maxNodeNameLength, nameBuffer, context.HeapPool, context.GatherBuffers);
 		}
+	}
+
+	static PositionedCuboid CalculateSkeletalBoundingBoxOnWorker(
+		ReadOnlySpan<MeshVertexSkeletal> vertices,
+		Span<VertexTriangle> triangles,
+		ReadOnlySpan<SkeletalAnimationNode> skeletalNodes,
+		int boneCount,
+		Vect originTranslation,
+		float linearRescalingFactor,
+		MeshSkeletalGatherBuffers gatherBuffers,
+		ThreadSafeHeapPoolWrapper heapPool,
+		in MeshCreationConfig creationConfig,
+		bool correctFlippedOrientation,
+		PositionedCuboid fallbackBoundingBox
+	) {
+		var nodeCount = skeletalNodes.Length;
+		if (boneCount <= 0 || nodeCount <= 0 || vertices.Length == 0) return fallbackBoundingBox;
+
+		var modelImportTransformMatrix = Matrix4x4.CreateTranslation(-(originTranslation.ToVector3())) * Matrix4x4.CreateScale(linearRescalingFactor);
+
+		using var workspace = new SkeletalBoundsWorkspace(heapPool, skeletalNodes, boneCount, modelImportTransformMatrix);
+
+		workspace.PrepareBoneLocalBounds(vertices);
+
+		var minimum = new Vector3(Single.PositiveInfinity);
+		var maximum = new Vector3(Single.NegativeInfinity);
+		workspace.AddBindPoseBounds(vertices, ref minimum, ref maximum);
+
+		if (correctFlippedOrientation && workspace.AllInfluencingBonesAreMirrored) {
+			LocalMeshBuilder.FlipTriangleWindings(triangles);
+		}
+		
+		static int GatherAnimationSampleTimes(in GatheredAnimation animation, Span<float> destination) {
+			var count = 0;
+			var scalingKeys = animation.ScalingKeyframes.Span;
+			var rotationKeys = animation.RotationKeyframes.Span;
+			var translationKeys = animation.TranslationKeyframes.Span;
+
+			for (var i = 0; i < scalingKeys.Length; ++i) destination[count++] = scalingKeys[i].TimeKeySeconds;
+			for (var i = 0; i < rotationKeys.Length; ++i) destination[count++] = rotationKeys[i].TimeKeySeconds;
+			for (var i = 0; i < translationKeys.Length; ++i) destination[count++] = translationKeys[i].TimeKeySeconds;
+
+			var times = destination[..count];
+			times.Sort();
+
+			var writeCursor = 0;
+			for (var i = 0; i < times.Length; ++i) {
+				if (i == 0 || times[i] > times[writeCursor - 1]) times[writeCursor++] = times[i];
+			}
+			return writeCursor;
+		}
+
+		for (var animationIndex = 0; animationIndex < gatherBuffers.Animations.Count; ++animationIndex) {
+			var animation = gatherBuffers.Animations[animationIndex];
+			var totalKeyframeCount = animation.ScalingKeyframes.Span.Length + animation.RotationKeyframes.Span.Length + animation.TranslationKeyframes.Span.Length;
+			if (totalKeyframeCount == 0) continue;
+
+			using var sampleTimes = heapPool.Borrow<float>(totalKeyframeCount);
+			var sampleCount = GatherAnimationSampleTimes(in animation, sampleTimes.Span[..totalKeyframeCount]);
+			if (sampleCount == 0) continue;
+
+			const int MaxSamplesPerAnimation = 64;
+			var stride = ((sampleCount - 1) / MaxSamplesPerAnimation) + 1;
+			for (var sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += stride) {
+				workspace.ApplyAnimationPose(
+					animation.Mutations.Span,
+					animation.ScalingKeyframes.Span,
+					animation.RotationKeyframes.Span,
+					animation.TranslationKeyframes.Span,
+					sampleTimes.Span[sampleIndex]
+				);
+				workspace.ExpandBoundsByCurrentPose(ref minimum, ref maximum);
+			}
+			// Deliberately check the last keyframe to make sure we capture the extrema at both start + end
+			workspace.ApplyAnimationPose(
+				animation.Mutations.Span,
+				animation.ScalingKeyframes.Span,
+				animation.RotationKeyframes.Span,
+				animation.TranslationKeyframes.Span,
+				sampleTimes.Span[sampleCount - 1]
+			);
+			workspace.ExpandBoundsByCurrentPose(ref minimum, ref maximum);
+		}
+
+		return (creationConfig.BoundingBoxOverride ?? SkeletalMeshUtils.BoundsToCuboid(minimum, maximum))
+			.WithAllExtentsAdjustedBy(creationConfig.BoundingBoxAdditionalMargin);
 	}
 
 	static Mesh CompleteMeshLoad(MeshLoadContext context) {
@@ -511,7 +612,7 @@ unsafe partial class LocalAssetLoader {
 					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
 					CopyLoadedAssetMeshVertices(assetHandle, i, (int) (vertexBufferCount - (vBufferPtr - (MeshVertex*) vertexBufferPtr)), vBufferPtr).ThrowIfFailure();
-					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBufferCount - (tBufferPtr - triangleBufferPtr)), tBufferPtr).ThrowIfFailure();
+					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, true, (int) (triangleBufferCount - (tBufferPtr - triangleBufferPtr)), tBufferPtr).ThrowIfFailure();
 					vBufferPtr += vCount;
 					tBufferPtr += tCount;
 				}
@@ -523,7 +624,7 @@ unsafe partial class LocalAssetLoader {
 					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
 					CopyLoadedAssetMeshSkeletalVertices(assetHandle, i, (int) (vertexBufferCount - (vBufferPtr - (MeshVertexSkeletal*) vertexBufferPtr)), vBufferPtr).ThrowIfFailure();
-					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBufferCount - (tBufferPtr - triangleBufferPtr)), tBufferPtr).ThrowIfFailure();
+					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, false, (int) (triangleBufferCount - (tBufferPtr - triangleBufferPtr)), tBufferPtr).ThrowIfFailure();
 					vBufferPtr += vCount;
 					tBufferPtr += tCount;
 				}
@@ -535,7 +636,7 @@ unsafe partial class LocalAssetLoader {
 	}
 
 	static void CopySubMeshDataFromAsset<TVertex>(UIntPtr assetHandle, bool correctFlippedOrientation, int subMeshIndex, TVertex* vertexBufferPtr, int vertexBufferCount, VertexTriangle* triangleBufferPtr, int triangleBufferCount) where TVertex : unmanaged, IMeshVertex {
-		CopyLoadedAssetMeshTriangles(assetHandle, subMeshIndex, correctFlippedOrientation, triangleBufferCount, triangleBufferPtr).ThrowIfFailure();
+		CopyLoadedAssetMeshTriangles(assetHandle, subMeshIndex, correctFlippedOrientation, typeof(TVertex) == typeof(MeshVertex), triangleBufferCount, triangleBufferPtr).ThrowIfFailure();
 
 		if (typeof(TVertex) == typeof(MeshVertex)) {
 			CopyLoadedAssetMeshVertices(assetHandle, subMeshIndex, vertexBufferCount, (MeshVertex*) vertexBufferPtr).ThrowIfFailure();
@@ -923,6 +1024,7 @@ unsafe partial class LocalAssetLoader {
 		UIntPtr assetHandle,
 		int meshIndex,
 		InteropBool correctFlippedOrientation,
+		InteropBool prebakeTransforms,
 		int bufferSizeTriangles,
 		VertexTriangle* triangleBufferPtr
 	);

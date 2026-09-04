@@ -284,3 +284,11 @@ Each animation requires the following arguments passed to `AttachAnimation()`:
 ### SetSkeletonNodeName()
 	
 This optional method on the `IMeshBuilder` allows you to set names for each node in a created skeletal mesh. This can be important if you need to look up those nodes later by name for e.g. getting their transform matrices post-animation.
+
+### Bounding Boxes
+
+The vertices of a skeletal mesh are stored in their unposed form and are moved in to place on the GPU by the mesh's bone transforms. This means a skeletal mesh's `BoundingBox` can not simply be the extents of its vertex data; instead TinyFFR calculates it by applying the bind pose to the vertices, and then widening the result to cover every pose of every animation attached to the mesh. The box is therefore valid for frustum culling no matter which animation is playing.
+
+Meshes loaded from a file via the `AssetLoader` get this treatment automatically, as their animations are known when the mesh is created.
+
+Meshes you build yourself via `IMeshBuilder.CreateMesh()` are a special case: because `AttachAnimation()` is necessarily invoked *after* the mesh has been created, the mesh's bounding box covers the bind pose only. If your animations move vertices outside of that box, supply your own box via `MeshCreationConfig.BoundingBoxOverride` when creating the mesh.

@@ -109,7 +109,7 @@ StartExportedFunc(get_loaded_asset_texture_count, MemoryLoadedAssetHandle assetH
 void walk_nodes_to_find_global_index_from_mesh_index(aiNode* node, int32_t& startingIndex, int32_t targetIndex, unsigned int& resultGlobalIndex, aiMatrix4x4& resultTransform) {
 	ThrowIf(node->mNumMeshes > MeshMaxCount, "Mesh count too high.");
 
-	resultTransform = node->mTransformation * resultTransform;
+	resultTransform = resultTransform * node->mTransformation;
 
 	auto originalStartingIndex = startingIndex;
 	startingIndex += static_cast<int32_t>(node->mNumMeshes);
@@ -310,11 +310,12 @@ StartExportedFunc(copy_loaded_asset_mesh_skeletal_vertices, MemoryLoadedAssetHan
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeTriangles, int32_t* buffer) {
+void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, interop_bool prebakeTransforms, int32_t bufferSizeTriangles, int32_t* buffer) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 
 	auto transform = aiMatrix4x4{};
 	auto mesh = get_mesh_at_index(assetHandle, meshIndex, transform);
+	if (!prebakeTransforms) transform = aiMatrix4x4 { };
 	auto transformDetIsNeg = transform.Determinant() < 0.0f;
 	auto triangleCount = get_mesh_triangle_count(mesh);
 
@@ -339,8 +340,8 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAsse
 		}
 	}
 }
-StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeTriangles, int32_t* buffer) {
-	native_impl_asset_loader::copy_loaded_asset_mesh_triangles(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeTriangles, buffer);
+StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, interop_bool prebakeTransforms, int32_t bufferSizeTriangles, int32_t* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_triangles(assetHandle, meshIndex, correctFlippedOrientation, prebakeTransforms, bufferSizeTriangles, buffer);
 	EndExportedFunc
 }
 #pragma endregion
