@@ -243,32 +243,9 @@ public static partial class TextureUtils {
 		var bDimensionsMatchDest = bDimensions == destDimensions;
 		var aIsSingleTexel = aDimensions == XYPair<int>.One;
 		var bIsSingleTexel = bDimensions == XYPair<int>.One;
+		var canSkipRescaling = allDimensionsMatch || ((aDimensionsMatchDest || aIsSingleTexel) && (bDimensionsMatchDest || bIsSingleTexel));
 
-		if (allDimensionsMatch || ((aDimensionsMatchDest || aIsSingleTexel) && (bDimensionsMatchDest || bIsSingleTexel))) {
-			var area = destDimensions.Area;
-			if (aDimensionsMatchDest && bDimensionsMatchDest) {
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[1] = bBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && bDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[1] = bBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else {
-				localSampleBuffer[1] = bBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-		}
-		else {
+		if (!canSkipRescaling) {
 			var aCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(aDimensions, destDimensions);
 			var bCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(bDimensions, destDimensions);
 			for (var y = 0; y < destDimensions.Y; ++y) {
@@ -277,6 +254,35 @@ public static partial class TextureUtils {
 					localSampleBuffer[1] = CalculateUpwardRescaledValue(x, y, bBuffer, bDimensions, destDimensions, bCentralizingOffset, combinationConfig.ScalingStrategy);
 					destinationBuffer[destDimensions.Index(x, y)] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
+			}
+			return;
+		}
+		
+		var area = destDimensions.Area;
+		switch (aDimensionsMatchDest, bDimensionsMatchDest) {
+			case (true, true): {
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[1] = bBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, true): {
+				localSampleBuffer[0] = aBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[1] = bBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			default: {
+				localSampleBuffer[1] = bBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
 			}
 		}
 	}
@@ -328,67 +334,9 @@ public static partial class TextureUtils {
 		var aIsSingleTexel = aDimensions == XYPair<int>.One;
 		var bIsSingleTexel = bDimensions == XYPair<int>.One;
 		var cIsSingleTexel = cDimensions == XYPair<int>.One;
+		var canSkipRescaling = allDimensionsMatch || ((aDimensionsMatchDest || aIsSingleTexel) && (bDimensionsMatchDest || bIsSingleTexel) && (cDimensionsMatchDest || cIsSingleTexel));
 
-		if (allDimensionsMatch || ((aDimensionsMatchDest || aIsSingleTexel) && (bDimensionsMatchDest || bIsSingleTexel) && (cDimensionsMatchDest || cIsSingleTexel))) {
-			var area = destDimensions.Area;
-			if (aDimensionsMatchDest && bDimensionsMatchDest && cDimensionsMatchDest) {
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && bDimensionsMatchDest && cDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && !bDimensionsMatchDest && cDimensionsMatchDest) {
-				localSampleBuffer[1] = bBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && !bDimensionsMatchDest && cDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[1] = bBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && bDimensionsMatchDest && !cDimensionsMatchDest) {
-				localSampleBuffer[2] = cBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[1] = bBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && bDimensionsMatchDest && !cDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[2] = cBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[1] = bBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else {
-				localSampleBuffer[1] = bBuffer[0];
-				localSampleBuffer[2] = cBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-		}
-		else {
+		if (!canSkipRescaling) {
 			var aCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(aDimensions, destDimensions);
 			var bCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(bDimensions, destDimensions);
 			var cCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(cDimensions, destDimensions);
@@ -399,6 +347,74 @@ public static partial class TextureUtils {
 					localSampleBuffer[2] = CalculateUpwardRescaledValue(x, y, cBuffer, cDimensions, destDimensions, cCentralizingOffset, combinationConfig.ScalingStrategy);
 					destinationBuffer[destDimensions.Index(x, y)] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
+			}
+			return;
+		}
+		
+		var area = destDimensions.Area;
+		switch (aDimensionsMatchDest, bDimensionsMatchDest, cDimensionsMatchDest) {
+			case (true, true, true): {
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, true, true): {
+				localSampleBuffer[0] = aBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, false, true): {
+				localSampleBuffer[1] = bBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, false, true): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[1] = bBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, true, false): {
+				localSampleBuffer[2] = cBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[1] = bBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, true, false): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[2] = cBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[1] = bBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			default: {
+				localSampleBuffer[1] = bBuffer[0];
+				localSampleBuffer[2] = cBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
 			}
 		}
 	}
@@ -457,146 +473,9 @@ public static partial class TextureUtils {
 		var bIsSingleTexel = bDimensions == XYPair<int>.One;
 		var cIsSingleTexel = cDimensions == XYPair<int>.One;
 		var dIsSingleTexel = dDimensions == XYPair<int>.One;
+		var canSkipRescaling = allDimensionsMatch || ((aDimensionsMatchDest || aIsSingleTexel) && (bDimensionsMatchDest || bIsSingleTexel) && (cDimensionsMatchDest || cIsSingleTexel) && (dDimensionsMatchDest || dIsSingleTexel));
 
-		if (allDimensionsMatch || ((aDimensionsMatchDest || aIsSingleTexel) && (bDimensionsMatchDest || bIsSingleTexel) && (cDimensionsMatchDest || cIsSingleTexel) && (dDimensionsMatchDest || dIsSingleTexel))) {
-			var area = destDimensions.Area;
-			if (aDimensionsMatchDest && bDimensionsMatchDest && cDimensionsMatchDest && dDimensionsMatchDest) {
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && bDimensionsMatchDest && cDimensionsMatchDest && dDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && !bDimensionsMatchDest && cDimensionsMatchDest && dDimensionsMatchDest) {
-				localSampleBuffer[1] = bBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && !bDimensionsMatchDest && cDimensionsMatchDest && dDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[1] = bBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[2] = cBuffer[i];
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && bDimensionsMatchDest && !cDimensionsMatchDest && dDimensionsMatchDest) {
-				localSampleBuffer[2] = cBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && bDimensionsMatchDest && !cDimensionsMatchDest && dDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[2] = cBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && !bDimensionsMatchDest && !cDimensionsMatchDest && dDimensionsMatchDest) {
-				localSampleBuffer[1] = bBuffer[0];
-				localSampleBuffer[2] = cBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && !bDimensionsMatchDest && !cDimensionsMatchDest && dDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[1] = bBuffer[0];
-				localSampleBuffer[2] = cBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[3] = dBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && bDimensionsMatchDest && cDimensionsMatchDest && !dDimensionsMatchDest) {
-				localSampleBuffer[3] = dBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && bDimensionsMatchDest && cDimensionsMatchDest && !dDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[3] = dBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[1] = bBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && !bDimensionsMatchDest && cDimensionsMatchDest && !dDimensionsMatchDest) {
-				localSampleBuffer[1] = bBuffer[0];
-				localSampleBuffer[3] = dBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && !bDimensionsMatchDest && cDimensionsMatchDest && !dDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[1] = bBuffer[0];
-				localSampleBuffer[3] = dBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[2] = cBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (aDimensionsMatchDest && bDimensionsMatchDest && !cDimensionsMatchDest && !dDimensionsMatchDest) {
-				localSampleBuffer[2] = cBuffer[0];
-				localSampleBuffer[3] = dBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					localSampleBuffer[1] = bBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else if (!aDimensionsMatchDest && bDimensionsMatchDest && !cDimensionsMatchDest && !dDimensionsMatchDest) {
-				localSampleBuffer[0] = aBuffer[0];
-				localSampleBuffer[2] = cBuffer[0];
-				localSampleBuffer[3] = dBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[1] = bBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-			else {
-				localSampleBuffer[1] = bBuffer[0];
-				localSampleBuffer[2] = cBuffer[0];
-				localSampleBuffer[3] = dBuffer[0];
-				for (var i = 0; i < area; ++i) {
-					localSampleBuffer[0] = aBuffer[i];
-					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
-				}
-			}
-		}
-		else {
+		if (!canSkipRescaling) {
 			var aCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(aDimensions, destDimensions);
 			var bCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(bDimensions, destDimensions);
 			var cCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(cDimensions, destDimensions);
@@ -609,6 +488,161 @@ public static partial class TextureUtils {
 					localSampleBuffer[3] = CalculateUpwardRescaledValue(x, y, dBuffer, dDimensions, destDimensions, dCentralizingOffset, combinationConfig.ScalingStrategy);
 					destinationBuffer[destDimensions.Index(x, y)] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
+			}
+			return;
+		}
+		
+		var area = destDimensions.Area;
+		switch (aDimensionsMatchDest, bDimensionsMatchDest, cDimensionsMatchDest, dDimensionsMatchDest) {
+			case (true, true, true, true): {
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, true, true, true): {
+				localSampleBuffer[0] = aBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, false, true, true): {
+				localSampleBuffer[1] = bBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, false, true, true): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[1] = bBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[2] = cBuffer[i];
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, true, false, true): {
+				localSampleBuffer[2] = cBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, true, false, true): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[2] = cBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, false, false, true): {
+				localSampleBuffer[1] = bBuffer[0];
+				localSampleBuffer[2] = cBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, false, false, true): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[1] = bBuffer[0];
+				localSampleBuffer[2] = cBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[3] = dBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, true, true, false): {
+				localSampleBuffer[3] = dBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, true, true, false): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[3] = dBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[1] = bBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, false, true, false): {
+				localSampleBuffer[1] = bBuffer[0];
+				localSampleBuffer[3] = dBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, false, true, false): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[1] = bBuffer[0];
+				localSampleBuffer[3] = dBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[2] = cBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (true, true, false, false): {
+				localSampleBuffer[2] = cBuffer[0];
+				localSampleBuffer[3] = dBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					localSampleBuffer[1] = bBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			case (false, true, false, false): {
+				localSampleBuffer[0] = aBuffer[0];
+				localSampleBuffer[2] = cBuffer[0];
+				localSampleBuffer[3] = dBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[1] = bBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
+			}
+			default: {
+				localSampleBuffer[1] = bBuffer[0];
+				localSampleBuffer[2] = cBuffer[0];
+				localSampleBuffer[3] = dBuffer[0];
+				for (var i = 0; i < area; ++i) {
+					localSampleBuffer[0] = aBuffer[i];
+					destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+				}
+				break;
 			}
 		}
 	}
