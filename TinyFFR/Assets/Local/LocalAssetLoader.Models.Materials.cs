@@ -65,6 +65,66 @@ unsafe partial class LocalAssetLoader {
 			ClearCoatRoughnessParamsPtr = clearCoatRoughnessParamsPtr;
 		}
 	};
+	sealed class AssetTextureDecodeCache : IDisposable {
+		const long MaxCachedBytes = 64L * 1024L * 1024L;
+
+		readonly record struct CacheEntry(int MaterialIndex, int TextureIndex, PooledHeapMemory<TexelRgba32> Buffer, XYPair<int> Dimensions);
+
+		readonly ArrayPoolBackedVector<CacheEntry> _entries = new();
+		long _cachedBytes = 0L;
+
+		public AssetTextureDecodeCache() { }
+
+		static bool KeyMatches(in CacheEntry entry, int materialIndex, int textureIndex) {
+			if (entry.TextureIndex != textureIndex) return false;
+			return textureIndex >= 0 || entry.MaterialIndex == materialIndex;
+		}
+
+		public bool TryGetCopy(int materialIndex, int textureIndex, ThreadSafeHeapPoolWrapper heapPool, out EmbeddedTextureData result) {
+			for (var i = 0; i < _entries.Count; ++i) {
+				var entry = _entries[i];
+				if (!KeyMatches(in entry, materialIndex, textureIndex)) continue;
+				var copy = heapPool.Borrow<TexelRgba32>(entry.Dimensions.Area);
+				entry.Buffer.Span[..entry.Dimensions.Area].CopyTo(copy.Span);
+				result = new EmbeddedTextureData(copy, entry.Dimensions);
+				return true;
+			}
+
+			result = default;
+			return false;
+		}
+
+		public void Store(int materialIndex, int textureIndex, in EmbeddedTextureData data, ThreadSafeHeapPoolWrapper heapPool) {
+			var area = data.Dimensions.Area;
+			if (area <= 0) return;
+			var byteCount = (long) area * System.Runtime.CompilerServices.Unsafe.SizeOf<TexelRgba32>();
+			if (byteCount > MaxCachedBytes) return;
+
+			while (_entries.Count > 0 && byteCount > MaxCachedBytes - _cachedBytes) {
+				var evicted = _entries[0];
+				_cachedBytes -= (long) evicted.Dimensions.Area * System.Runtime.CompilerServices.Unsafe.SizeOf<TexelRgba32>();
+				evicted.Buffer.Dispose();
+				_entries.RemoveAt(0);
+			}
+
+			var buffer = heapPool.Borrow<TexelRgba32>(area);
+			data.TexelSpan.CopyTo(buffer.Span);
+			_entries.Add(new CacheEntry(materialIndex, textureIndex, buffer, data.Dimensions));
+			_cachedBytes += byteCount;
+		}
+
+		public void Clear() {
+			for (var i = 0; i < _entries.Count; ++i) _entries[i].Buffer.Dispose();
+			_entries.ClearWithoutZeroingMemory();
+			_cachedBytes = 0L;
+		}
+
+		public void Dispose() {
+			Clear();
+			_entries.Dispose();
+		}
+	}
+
 	readonly struct EmbeddedTextureData : IDisposable {
 		readonly PooledHeapMemory<TexelRgba32> _texelBuffer;
 		public readonly XYPair<int> Dimensions;
@@ -185,6 +245,15 @@ unsafe partial class LocalAssetLoader {
 	}
 
 	EmbeddedTextureData LoadAssetTexture(UIntPtr assetHandle, int materialIndex, int textureIndex, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, ThreadSafeHeapPoolWrapper heapPool) {
+		var cache = _assetTextureDecodeCache.Value!;
+		if (cache.TryGetCopy(materialIndex, textureIndex, heapPool, out var cached)) return cached;
+
+		var result = LoadAssetTextureCore(assetHandle, materialIndex, textureIndex, in assetRootDirStrRef, uriUnescapeEmbeddedResourceStrings, heapPool);
+		cache.Store(materialIndex, textureIndex, in result, heapPool);
+		return result;
+	}
+
+	EmbeddedTextureData LoadAssetTextureCore(UIntPtr assetHandle, int materialIndex, int textureIndex, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, ThreadSafeHeapPoolWrapper heapPool) {
 		if (textureIndex < 0) {
 			GetLoadedAssetTextureExternalPathLength(
 				assetHandle,

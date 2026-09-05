@@ -154,7 +154,7 @@ unsafe class LocalAsyncLoadingTest {
 					MeshConfig = new() { LinearRescalingFactor = InteractiveTestFiles[i].ScalingFactor },
 					TextureConfig = new() { 
 						DataType = TextureDataType.ColorSrgb, 
-						CompressionQuality = InteractiveTestFiles[i].Filename.Equals("NodePerformanceTest.glb", StringComparison.Ordinal) ? null : Quality.VeryHigh
+						CompressionQuality = InteractiveTestFiles[i].Filename.Equals("NodePerformanceTest.glb", StringComparison.Ordinal) ? null : Quality.Low
 					}
 				},
 				new ModelReadConfig {

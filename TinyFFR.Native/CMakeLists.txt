@@ -71,7 +71,10 @@ elseif(UNIX AND NOT APPLE)
 	target_compile_definitions(TinyFFR.Native PRIVATE TFFR_LINUX)
     target_link_libraries(TinyFFR.Native 
 		PRIVATE 
-			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/$<LOWER_CASE:$<CONFIG>>/libassimp.so
+			debug
+				${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/$<LOWER_CASE:$<CONFIG>>/libassimpd.so
+			optimized
+				${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/$<LOWER_CASE:$<CONFIG>>/libassimp.so
 			debug
 				${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/$<LOWER_CASE:$<CONFIG>>/libSDL2d.so
 			optimized

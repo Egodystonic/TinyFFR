@@ -251,6 +251,9 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			if (!File.Exists(new String(filePath.Span))) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
 			else throw;
 		}
+		finally {
+			self._assetTextureDecodeCache.Value!.Clear();
+		}
 	}
 
 	static ResourceGroup GetOrCreateGroupOnPrimary(ModelLoadContext context) {

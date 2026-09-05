@@ -21,6 +21,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ThreadLocal<InteropStringBuffer> _assetFilePathBufferStore;
+	readonly ThreadLocal<AssetTextureDecodeCache> _assetTextureDecodeCache = new(static () => new AssetTextureDecodeCache(), trackAllValues: true);
 	bool _isDisposed = false;
 
 	InteropStringBuffer AssetFilePathBuffer => _assetFilePathBufferStore.Value;
@@ -88,6 +89,8 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 			_modelLoadWorkerSyncHelper.Dispose();
 			foreach (var pathBuffer in _assetFilePathBufferStore.Values) pathBuffer.Dispose();
 			_assetFilePathBufferStore.Dispose();
+			foreach (var decodeCache in _assetTextureDecodeCache.Values) decodeCache.Dispose();
+			_assetTextureDecodeCache.Dispose();
 			_fontLoader.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();

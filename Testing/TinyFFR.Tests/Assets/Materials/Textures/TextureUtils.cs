@@ -395,6 +395,60 @@ class TextureUtilsTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyCombineTexturesWithSingleTexelSources() {
+		var dimensions = new XYPair<int>(8, 8);
+		var singleTexelDimensions = new XYPair<int>(1, 1);
+
+		TexelRgba32[] CreateRandomRgbaTexture(int count) => Enumerable.Range(0, count).Select(_ => new TexelRgba32(ColorVect.Random())).ToArray();
+
+		var fullBuffers = new[] {
+			CreateRandomRgbaTexture(dimensions.Area),
+			CreateRandomRgbaTexture(dimensions.Area),
+			CreateRandomRgbaTexture(dimensions.Area),
+			CreateRandomRgbaTexture(dimensions.Area)
+		};
+		var singleTexelBuffers = new[] {
+			CreateRandomRgbaTexture(1),
+			CreateRandomRgbaTexture(1),
+			CreateRandomRgbaTexture(1),
+			CreateRandomRgbaTexture(1)
+		};
+
+		void AssertEverySingleTexelCombination(int numInputs, string combinationStr) {
+			var comboConf = new TextureCombinationConfig(combinationStr);
+
+			for (var mask = 0; mask < (1 << numInputs); ++mask) {
+				var buffers = new TexelRgba32[numInputs][];
+				var dims = new XYPair<int>[numInputs];
+				for (var k = 0; k < numInputs; ++k) {
+					var isSingleTexel = (mask & (1 << k)) != 0;
+					buffers[k] = isSingleTexel ? singleTexelBuffers[k] : fullBuffers[k];
+					dims[k] = isSingleTexel ? singleTexelDimensions : dimensions;
+				}
+
+				var everySourceIsSingleTexel = mask == (1 << numInputs) - 1;
+				var destDimensions = everySourceIsSingleTexel ? singleTexelDimensions : dimensions;
+				var destBuffer = new TexelRgba32[destDimensions.Area];
+
+				if (numInputs == 2) TextureUtils.CombineTextures(buffers[0], dims[0], buffers[1], dims[1], comboConf, destBuffer);
+				else if (numInputs == 3) TextureUtils.CombineTextures(buffers[0], dims[0], buffers[1], dims[1], buffers[2], dims[2], comboConf, destBuffer);
+				else TextureUtils.CombineTextures(buffers[0], dims[0], buffers[1], dims[1], buffers[2], dims[2], buffers[3], dims[3], comboConf, destBuffer);
+
+				for (var i = 0; i < destBuffer.Length; ++i) {
+					var inputs = new TexelRgba32[numInputs];
+					for (var k = 0; k < numInputs; ++k) inputs[k] = buffers[k].Length == 1 ? buffers[k][0] : buffers[k][i];
+					var expectation = comboConf.SelectTexel<TexelRgba32, TexelRgba32, byte>(inputs);
+					Assert.AreEqual(expectation, destBuffer[i], $"numInputs {numInputs}, single-texel mask {mask}, texel {i}");
+				}
+			}
+		}
+
+		AssertEverySingleTexelCombination(2, "0R1G0B1A");
+		AssertEverySingleTexelCombination(3, "0R1G2B1A");
+		AssertEverySingleTexelCombination(4, "0R3G2B1A");
+	}
+
+	[Test]
 	public void ShouldCorrectlyApplyUpwardRescaling() {
 		var srcDimensions = new XYPair<int>(8, 8);
 		var rygbBorderedTex = new TexelRgb24[srcDimensions.Area];
