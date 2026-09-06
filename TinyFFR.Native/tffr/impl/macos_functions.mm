@@ -1,6 +1,6 @@
-#import <Cocoa/Cocoa.h>
+#import <QuartzCore/QuartzCore.h>
 
-extern "C" void* macos_get_cocoa_view(NSWindow* nsWindow) {
-    NSView* view = [nsWindow contentView];
-    return view;
+extern "C" void macos_mark_metal_layer_opaque(void* metalLayer) {
+    CAMetalLayer* layer = (CAMetalLayer*) metalLayer;
+    layer.opaque = YES;
 }

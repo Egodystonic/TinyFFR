@@ -7,14 +7,30 @@
 
 #include "utils_and_constants.h"
 
+#if defined(TFFR_MACOS)
+#include <unordered_map>
+#include "sdl/SDL_metal.h"
+
+static std::unordered_map<WindowHandle, SDL_MetalView> metal_views;
+
+void* native_impl_window::get_window_metal_layer(WindowHandle handle) {
+	auto const iter = metal_views.find(handle);
+	ThrowIf(iter == metal_views.end(), "Window has no associated metal view.");
+	auto result = SDL_Metal_GetLayer(iter->second);
+	ThrowIfNull(result, "Could not get metal layer for window: ", SDL_GetError());
+	return result;
+}
+#endif
+
 WindowHandle native_impl_window::create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos, int32_t renderingApiIndex) {
-#if defined(TFFR_LINUX)
+#if defined(TFFR_LINUX) || defined(TFFR_MACOS)
 	Uint32 windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
 #else
 	Uint32 windowFlags = SDL_WINDOW_RESIZABLE;
 #endif
 	
-	if (renderingApiIndex == RENDERING_API_OPENGL) windowFlags |= SDL_WINDOW_OPENGL;
+	if (renderingApiIndex == RENDERING_API_METAL) windowFlags |= SDL_WINDOW_METAL;
+	else if (renderingApiIndex == RENDERING_API_OPENGL) windowFlags |= SDL_WINDOW_OPENGL;
 	else windowFlags |= SDL_WINDOW_VULKAN;
 	
 	auto result = SDL_CreateWindow(
@@ -26,6 +42,17 @@ WindowHandle native_impl_window::create_window(int32_t width, int32_t height, in
 		windowFlags
 	);
 	ThrowIfNull(result, "Could not create window: ", SDL_GetError());
+
+#if defined(TFFR_MACOS)
+	auto metalView = SDL_Metal_CreateView(result);
+	if (metalView == nullptr) {
+		SDL_DestroyWindow(result);
+		Throw("Could not create metal view for window: ", SDL_GetError());
+	}
+	metal_views[result] = metalView;
+	macos_mark_metal_layer_opaque(SDL_Metal_GetLayer(metalView));
+#endif
+
 	SDL_ShowWindow(result);
 	return result;
 }
@@ -341,6 +368,13 @@ StartExportedFunc(set_clipboard_text, const char* newText) {
 
 void native_impl_window::dispose_window(WindowHandle handle) {
 	ThrowIfNull(handle, "Window was null.");
+#if defined(TFFR_MACOS)
+	auto const iter = metal_views.find(handle);
+	if (iter != metal_views.end()) {
+		SDL_Metal_DestroyView(iter->second);
+		metal_views.erase(iter);
+	}
+#endif
 	SDL_DestroyWindow(handle);
 }
 StartExportedFunc(dispose_window, WindowHandle handle) {

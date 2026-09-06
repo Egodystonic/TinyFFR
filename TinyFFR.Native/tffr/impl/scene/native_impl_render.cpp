@@ -5,6 +5,7 @@
 #include "scene/native_impl_render.h"
 
 #include "native_impl_init.h"
+#include "environment/native_impl_window.h"
 #include "utils_and_constants.h"
 #include "filament/SwapChain.h"
 #include "filament/View.h"
@@ -15,11 +16,7 @@
 
 #include "sdl/SDL_syswm.h"
 
-#if defined(TFFR_MACOS)
-
-extern "C" void* macos_get_cocoa_view(NSWindow* nsWindow);
-
-#elif defined(TFFR_WIN)
+#if defined(TFFR_WIN)
 
 #undef OPAQUE
 
@@ -113,8 +110,7 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 		}
 	}
 #elif defined(TFFR_MACOS)
-	NSWindow* cocoaWindow = wmInfo.info.cocoa.window;
-	*outSwapChain = filament_engine->createSwapChain(macos_get_cocoa_view(cocoaWindow), 0UL);
+	*outSwapChain = filament_engine->createSwapChain(native_impl_window::get_window_metal_layer(window), 0UL);
 #else
 	Throw("TinyFFR was built with no platform identification directive.")
 #endif

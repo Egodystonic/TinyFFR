@@ -63,7 +63,7 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 	};
 	
 #if defined(TFFR_MACOS)
-	auto backend = filament::Engine::Backend::OPENGL;
+	auto backend = filament::Engine::Backend::METAL;
 #elif defined(TFFR_LINUX)
 	auto backend = filament::Engine::Backend::VULKAN;
 #else

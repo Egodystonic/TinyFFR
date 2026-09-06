@@ -73,6 +73,7 @@ typedef uint8_t interop_bool;
 #define RENDERING_API_DEFAULT 0
 #define RENDERING_API_OPENGL 1
 #define RENDERING_API_VULKAN 2
+#define RENDERING_API_METAL 3
 
 #pragma endregion
 
