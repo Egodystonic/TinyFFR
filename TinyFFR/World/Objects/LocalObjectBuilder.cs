@@ -22,6 +22,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 	readonly record struct PrivateMaterialData(Material Material, bool IsDefault, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
 	readonly record struct TextInstanceData(FontPen Pen, FontString String, TextLayout Layout);
+	readonly record struct ModelInstanceData(Mesh Mesh, Material Material);
 	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3DOpaque;
@@ -29,6 +30,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	// Because these properties are set frequently, they're all kept in their own separate maps for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ModelInstanceData> _activeInstanceData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, PrivateMaterialData> _privateMaterialInstances = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, TextInstanceData> _activeInstanceTextInstanceData = new();
@@ -69,6 +71,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		var result = HandleToInstance(handle);
 		SetShadowOptionsAccordingToMaterial(handle, materialActual);
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
+		_activeInstanceData.Add(handle, new(mesh, materialArg));
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		if (!isDefault) _globals.DependencyTracker.RegisterDependency(result, materialActual);
@@ -221,7 +224,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	public Mesh GetMesh(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.DependencyTracker.GetNthTargetOfGivenType<ModelInstance, Mesh, IMeshImplProvider>(HandleToInstance(handle), 0);
+		return _activeInstanceData[handle].Mesh;
 	}
 	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -255,8 +258,10 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			new Vector3(newMeshBoundingBox.HalfWidth, newMeshBoundingBox.HalfHeight, newMeshBoundingBox.HalfDepth)
 		).ThrowIfFailure();
 		
-		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMesh(handle));
+		var instanceData = _activeInstanceData[handle];
+		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), instanceData.Mesh);
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
+		_activeInstanceData[handle] = instanceData with { Mesh = newMesh };
 	}
 
 	LocalVertexMutationData GetOrAllocateActiveVertexMutationData(ResourceHandle<ModelInstance> handle) {
@@ -364,9 +369,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var targets = _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, IMaterialImplProvider>(HandleToInstance(handle));
-		if (targets.Count > 0) return targets[0];
-		else return _materialBuilder.DefaultMaterial;
+		return _activeInstanceData[handle].Material;
 	}
 	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -379,6 +382,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat);
 		}
 		else if (newIsDefault) return; // Return early if old mat is the default and we're setting the default again (no-op)
+
+		_activeInstanceData[handle] = _activeInstanceData[handle] with { Material = newMaterial };
 
 		if (newIsDefault) {
 			var primitiveMat = _materialBuilder.AllocateDefaultMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
@@ -752,6 +757,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		DisposeMutationDataIfPresent(handle);
 		DisposeTextInstanceDataIfPresent(handle);
 		_activeInstanceDrawOrderDeferralAmounts.Remove(handle);
+		_activeInstanceData.Remove(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
 	
@@ -773,6 +779,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			if (_isDisposed) return;
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
+			_activeInstanceData.Dispose();
 			_privateMaterialInstances.Dispose();
 			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();

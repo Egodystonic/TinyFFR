@@ -193,8 +193,31 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		);
 	}
 	
-	public PositionedCuboid GetUnscaledWorldSpaceAxisAlignedBoundingBox() => Mesh.AxisAlignedBoundingBox.MovedBy(Transform.Translation);
-	public PositionedSphere GetUnscaledWorldSpaceBoundingSphere() => Mesh.BoundingSphere.MovedBy(Transform.Translation);
+	public PositionedSphere GetWorldSpaceBoundingSphere() {
+		var transform = Transform;
+		var modelSpaceSphere = Mesh.BoundingSphere;
+		return new PositionedSphere(
+			modelSpaceSphere.Radius * transform.Scaling.MaxComponentMagnitude,
+			transform.Translation.AsLocation() + modelSpaceSphere.Position.AsVect() * transform.Scaling * transform.Rotation
+		);
+	}
+	
+	public PositionedCuboid GetWorldSpaceAxisAlignedBoundingBox() {
+		var transform = Transform;
+		var modelSpaceBox = Mesh.AxisAlignedBoundingBox;
+		return new PositionedCuboid(
+			modelSpaceBox.ToStandardCuboid().ScaledBy(transform.Scaling.MaxComponentMagnitude),
+			transform.Translation.AsLocation() + modelSpaceBox.Position.AsVect() * transform.Scaling * transform.Rotation
+		);
+	}
+
+	public PositionedSphere GetWorldSpaceBoundingSphere(bool calculateSmallestFitFromLiveBoundingBox) {
+		return calculateSmallestFitFromLiveBoundingBox ? GetWorldSpaceBoundingBox().SmallestEnclosingSphere : GetWorldSpaceBoundingSphere();
+	}
+
+	public PositionedCuboid GetWorldSpaceAxisAlignedBoundingBox(bool calculateSmallestFitFromLiveBoundingBox) {
+		return calculateSmallestFitFromLiveBoundingBox ? GetWorldSpaceBoundingBox().SmallestEnclosingNonRotatedCuboid : GetWorldSpaceAxisAlignedBoundingBox();
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

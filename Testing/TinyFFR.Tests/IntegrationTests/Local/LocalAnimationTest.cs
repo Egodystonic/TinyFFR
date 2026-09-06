@@ -159,6 +159,10 @@ class LocalAnimationTest {
 				foreach (var mi in mig) {
 					scene.AddPrimitiveShape(mi.GetWorldSpaceBoundingBox()).SetPaintbrush(boundingBoxColours[bbcIdx]);
 					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
+					scene.AddPrimitiveShape(mi.GetWorldSpaceAxisAlignedBoundingBox(true), wireframe: true).SetPaintbrush(boundingBoxColours[bbcIdx]);
+					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
+					scene.AddPrimitiveShape(mi.GetWorldSpaceBoundingSphere(true), wireframe: true).SetPaintbrush(boundingBoxColours[bbcIdx]);
+					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
 				}
 			}
 		}
