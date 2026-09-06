@@ -70,6 +70,18 @@ fragment {
         vec3 c2 = textureLod(materialParams_source, base + vec2(u.x, v.y), lod).rgb;
         vec3 c3 = textureLod(materialParams_source, base + vec2(u.y, v.y), lod).rgb;
 
+        // === Begin TinyFFR Alteration ===
+        // Sanitise non-finite samples before they reach the firefly weights or threshold().
+        // Both divide by (1 + max3(c)); with an Inf sample that yields a zero (or infinite)
+        // weight, and the subsequent multiply produces NaN, which then contaminates the whole
+        // bloom mip chain and resolves to a hard-edged black rectangle centred on the highlight.
+        // max() maps NaN to 0, min() maps +Inf to fp16 max; finite values are untouched.
+        c0 = min(max(vec3(0.0), c0), vec3(65504.0));
+        c1 = min(max(vec3(0.0), c1), vec3(65504.0));
+        c2 = min(max(vec3(0.0), c2), vec3(65504.0));
+        c3 = min(max(vec3(0.0), c3), vec3(65504.0));
+        // === End TinyFFR Alteration ===
+
         float w0 = uw.x * vw.x * (1.0 / 16.0);
         float w1 = uw.y * vw.x * (1.0 / 16.0);
         float w2 = uw.x * vw.y * (1.0 / 16.0);

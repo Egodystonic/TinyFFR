@@ -63,8 +63,15 @@ fragment {
 #endif
             p, materialParams.RcasCon);
 
+        // === Begin TinyFFR Alteration ===
+        // Upper bound added: the TAA pass ahead of this one reconstructs values up to fp16 max
+        // (taa.mat's untonemap epsilon floor), and the RCAS resolve multiplies by rcpL (up to
+        // 1.7554), which overflows the fp16 HDR buffer to +Inf. Bloom's threshold pass then
+        // evaluates Inf * (1/(1+Inf*invHighlight)) = Inf * 0 = NaN, and the NaN spreads through
+        // the bloom mip chain as a hard-edged black rectangle. max() first also maps NaN to 0.
         // todo: make this an option
-        postProcess.color.rgb = max(vec3(0), postProcess.color.rgb);
+        postProcess.color.rgb = min(max(vec3(0), postProcess.color.rgb), vec3(65504.0));
+        // === End TinyFFR Alteration ===
 
 #if POST_PROCESS_OPAQUE
         postProcess.color.a = 1.0;
