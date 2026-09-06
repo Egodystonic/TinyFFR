@@ -329,6 +329,12 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle) => throw new NotSupportedException();
 	public IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle) => throw new NotSupportedException();
 
+	public int FindIntersections(ResourceHandle<Scene> handle, BoundedRay ray, Span<ModelInstance> resultsDest, float rayThickness, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
+	public int FindIntersections(ResourceHandle<Scene> handle, Ray ray, Span<ModelInstance> resultsDest, float rayThickness, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
+	public int FindIntersections(ResourceHandle<Scene> handle, PositionedRotatedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
+	public int FindIntersections(ResourceHandle<Scene> handle, PositionedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
+	public int FindIntersections(ResourceHandle<Scene> handle, PositionedSphere shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
+
 	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture) => throw new NotSupportedException();
 	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material) => throw new NotSupportedException();
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) => throw new NotSupportedException();

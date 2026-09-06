@@ -16,6 +16,9 @@ namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable {
 	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
+	readonly record struct RayIntersectionData(float DistanceSquared, ModelInstance Instance) : IComparable<RayIntersectionData> {
+		public int CompareTo(RayIntersectionData other) => DistanceSquared.CompareTo(other.DistanceSquared);
+	}
 	readonly record struct FogData(ColorVect Color, float Density, float StartDistance, float Height, float HeightFalloff, float MaximumOpacity, bool ColorFromIbl, float InScatteringSize, Quaternion SkywardDirectionRotation);
 	const string DefaultSceneName = "Unnamed Scene";
 	const string BuiltInSceneDataResourcePrefix = "Assets.builtin_backdrop_";
@@ -25,6 +28,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _modelInstanceMap = new();
 	readonly ArrayPoolBackedVector<ModelInstance> _removeAllScratchVector = new();
+	readonly ArrayPoolBackedVector<RayIntersectionData> _rayIntersectionBuffer = new();
 	readonly SetPool<ModelInstance> _modelInstanceSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
@@ -72,6 +76,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_canvasTextDataMap.Add(handle, _canvasTextDataMapPool.Rent());
 		_lightMap.Add(handle, _lightSetPool.Rent());
 		_primitiveMap.Add(handle, _primitiveMapPool.Rent());
+		_primitiveInstancesLedger.Add(handle, _modelInstanceSetPool.Rent());
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
@@ -131,7 +136,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		ThrowIfThisOrHandleIsDisposed(handle);
 		foreach (var inst in modelInstanceGroup) Remove(handle, inst);
 	}
-	
+
 	public IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
@@ -428,6 +433,88 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		}
 	}
 	#endregion
+	
+	#region Intersection Queries
+	public int FindIntersections(ResourceHandle<Scene> handle, BoundedRay ray, Span<ModelInstance> resultsDest, float rayThickness, bool disallowCachedBoundingBoxes) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (resultsDest.IsEmpty) return 0;
+
+		_rayIntersectionBuffer.Clear();
+		var primitiveInstances = _primitiveInstancesLedger[handle];
+		var hasPrimitives = primitiveInstances.Count > 0;
+		foreach (var modelInstance in _modelInstanceMap[handle]) {
+			if (hasPrimitives && primitiveInstances.Contains(modelInstance)) continue;
+			if (!disallowCachedBoundingBoxes && modelInstance.GetWorldSpaceBoundingSphere().DistanceFrom(ray) > rayThickness) continue;
+			var boundingBox = modelInstance.GetWorldSpaceBoundingBox();
+			if (boundingBox.IntersectionWith(ray) is { } intersection) {
+				_rayIntersectionBuffer.Add(new(GetRayIntersectionSortKey(boundingBox, ray.StartPoint, intersection), modelInstance));
+			}
+			else if (rayThickness > 0f
+				&& boundingBox.DistanceFrom(ray) <= rayThickness
+				&& boundingBox.RelationshipTo(new Plane(ray.Direction, ray.StartPoint)) != PlaneObjectRelationship.PlaneFacesAwayFromObject
+				&& boundingBox.RelationshipTo(new Plane(ray.Direction, ray.EndPoint)) != PlaneObjectRelationship.PlaneFacesTowardsObject) {
+				_rayIntersectionBuffer.Add(new(ray.StartPoint.DistanceSquaredFrom(boundingBox.ClosestPointOn(ray)), modelInstance));
+			}
+		}
+		return CopySortedRayIntersections(resultsDest);
+	}
+
+	public int FindIntersections(ResourceHandle<Scene> handle, Ray ray, Span<ModelInstance> resultsDest, float rayThickness, bool disallowCachedBoundingBoxes) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (resultsDest.IsEmpty) return 0;
+
+		_rayIntersectionBuffer.Clear();
+		var primitiveInstances = _primitiveInstancesLedger[handle];
+		var hasPrimitives = primitiveInstances.Count > 0;
+		foreach (var modelInstance in _modelInstanceMap[handle]) {
+			if (hasPrimitives && primitiveInstances.Contains(modelInstance)) continue;
+			if (!disallowCachedBoundingBoxes && modelInstance.GetWorldSpaceBoundingSphere().DistanceFrom(ray) > rayThickness) continue;
+			var boundingBox = modelInstance.GetWorldSpaceBoundingBox();
+			if (boundingBox.IntersectionWith(ray) is { } intersection) {
+				_rayIntersectionBuffer.Add(new(GetRayIntersectionSortKey(boundingBox, ray.StartPoint, intersection), modelInstance));
+			}
+			else if (rayThickness > 0f
+				&& boundingBox.DistanceFrom(ray) <= rayThickness
+				&& boundingBox.RelationshipTo(new Plane(ray.Direction, ray.StartPoint)) != PlaneObjectRelationship.PlaneFacesAwayFromObject) {
+				_rayIntersectionBuffer.Add(new(ray.StartPoint.DistanceSquaredFrom(boundingBox.ClosestPointOn(ray)), modelInstance));
+			}
+		}
+		return CopySortedRayIntersections(resultsDest);
+	}
+
+	static float GetRayIntersectionSortKey(PositionedRotatedCuboid boundingBox, Location rayStartPoint, ConvexShapeLineIntersection intersection) {
+		return boundingBox.Contains(rayStartPoint) ? 0f : rayStartPoint.DistanceSquaredFrom(intersection.First);
+	}
+
+	int CopySortedRayIntersections(Span<ModelInstance> resultsDest) {
+		var buffer = _rayIntersectionBuffer.AsSpan;
+		buffer.Sort();
+		var resultCount = Int32.Min(buffer.Length, resultsDest.Length);
+		for (var i = 0; i < resultCount; ++i) resultsDest[i] = buffer[i].Instance;
+		return resultCount;
+	}
+
+	public int FindIntersections(ResourceHandle<Scene> handle, PositionedRotatedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => FindShapeIntersections(handle, shape, resultsDest, disallowCachedBoundingBoxes);
+	public int FindIntersections(ResourceHandle<Scene> handle, PositionedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => FindShapeIntersections(handle, shape, resultsDest, disallowCachedBoundingBoxes);
+	public int FindIntersections(ResourceHandle<Scene> handle, PositionedSphere shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => FindShapeIntersections(handle, shape, resultsDest, disallowCachedBoundingBoxes);
+
+	int FindShapeIntersections<TShape>(ResourceHandle<Scene> handle, TShape shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) where TShape : IIntersectable<PositionedSphere>, IIntersectable<PositionedRotatedCuboid> {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (resultsDest.IsEmpty) return 0;
+
+		var primitiveInstances = _primitiveInstancesLedger[handle];
+		var hasPrimitives = primitiveInstances.Count > 0;
+		var resultCount = 0;
+		foreach (var modelInstance in _modelInstanceMap[handle]) {
+			if (hasPrimitives && primitiveInstances.Contains(modelInstance)) continue;
+			if (!disallowCachedBoundingBoxes && !shape.IsIntersectedBy(modelInstance.GetWorldSpaceBoundingSphere())) continue;
+			if (!shape.IsIntersectedBy(modelInstance.GetWorldSpaceBoundingBox())) continue;
+			resultsDest[resultCount++] = modelInstance;
+			if (resultCount == resultsDest.Length) break;
+		}
+		return resultCount;
+	}
+	#endregion
 
 	public void RemoveAll(ResourceHandle<Scene> handle, bool includeModelInstances, bool includeLights, bool includePrimitives) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -450,6 +537,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 				_camLockedAbridgedInstanceMap[handle].Clear();
 				_camLockedFullInstanceMap[handle].Clear();
 				_cameraLockedInstancesLedger[handle].Clear();
+				_primitiveInstancesLedger[handle].Clear();
 				DisposeAllCanvasItems(handle);
 			}
 		}
@@ -635,6 +723,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 			_activeSceneHandles.Dispose();
 			_removeAllScratchVector.Dispose();
+			_rayIntersectionBuffer.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -654,6 +743,8 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		RemoveAllPrimitives(handle, false);
 		_primitiveMapPool.Return(_primitiveMap[handle]);
 		_primitiveMap.Remove(handle);
+		_modelInstanceSetPool.Return(_primitiveInstancesLedger[handle]);
+		_primitiveInstancesLedger.Remove(handle);
 		
 		RemoveBackdrop(handle);
 		_backdropMap.Remove(handle);

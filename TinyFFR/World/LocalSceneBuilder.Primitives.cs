@@ -23,6 +23,7 @@ sealed partial class LocalSceneBuilder {
 	static readonly float[] LineBandCrossSectionXFractions = { -1f, -0.6f, -0.6f, 0.6f, 0.6f, 1f };
 	static readonly float[] LineBandCrossSectionUCoords = { 0.9f, 0.9f, 0.5f, 0.5f, 0.1f, 0.1f };
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<nuint, PrimitiveData>> _primitiveMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<ModelInstance>> _primitiveInstancesLedger = new();
 	readonly MapPool<nuint, PrimitiveData> _primitiveMapPool;
 	QuadMesh? _primitiveSharedQuadMesh;
 	Mesh? _primitiveSharedMutableLineStripMesh;
@@ -51,7 +52,7 @@ sealed partial class LocalSceneBuilder {
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in CameraLockedQuadInstance quad, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(quad.UnderlyingQuadInstance.UnderlyingModelInstance, null, null, null, paintbrush);
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, quad);
+		AddPrimitiveInstance(handle, quad);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance lineBody, in PrimitiveLineBodyData lineBodyData, in CameraLockedQuadInstance startPoint, in CameraLockedQuadInstance endPoint, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(
@@ -62,9 +63,9 @@ sealed partial class LocalSceneBuilder {
 			paintbrush
 		);
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, lineBody);
-		Add(handle, startPoint);
-		Add(handle, endPoint);
+		AddPrimitiveInstance(handle, lineBody);
+		AddPrimitiveInstance(handle, startPoint);
+		AddPrimitiveInstance(handle, endPoint);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance lineBody, in PrimitiveLineBodyData lineBodyData, in CameraLockedQuadInstance startPoint, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(
@@ -75,8 +76,8 @@ sealed partial class LocalSceneBuilder {
 			paintbrush
 		);
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, lineBody);
-		Add(handle, startPoint);
+		AddPrimitiveInstance(handle, lineBody);
+		AddPrimitiveInstance(handle, startPoint);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance lineBody, in PrimitiveLineBodyData lineBodyData, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(
@@ -87,28 +88,41 @@ sealed partial class LocalSceneBuilder {
 			paintbrush
 		);
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, lineBody);
+		AddPrimitiveInstance(handle, lineBody);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance modelInstance, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(modelInstance, null, null, null, paintbrush);
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, modelInstance);
+		AddPrimitiveInstance(handle, modelInstance);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance modelInstance, Plane p, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(modelInstance, null, null, p, paintbrush);
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, modelInstance);
+		AddPrimitiveInstance(handle, modelInstance);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance modelInstance, ResourceGroup ownedResources, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(modelInstance, null, null, null, paintbrush) { OwnedResources = ownedResources };
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, modelInstance);
+		AddPrimitiveInstance(handle, modelInstance);
 	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in CameraLockedTextInstance text, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(null, text.UnderlyingTextInstance, null, null, paintbrush);
 		_primitiveMap[handle].Add(primitiveHandle, data);
-		Add(handle, text);
+		AddPrimitiveInstance(handle, text);
 	}
+	void AddPrimitiveInstance(ResourceHandle<Scene> handle, in ModelInstance modelInstance) {
+		Add(handle, modelInstance);
+		_primitiveInstancesLedger[handle].Add(modelInstance);
+	}
+	void AddPrimitiveInstance(ResourceHandle<Scene> handle, in CameraLockedQuadInstance quad) {
+		Add(handle, quad);
+		_primitiveInstancesLedger[handle].Add(quad.UnderlyingQuadInstance.UnderlyingModelInstance);
+	}
+	void AddPrimitiveInstance(ResourceHandle<Scene> handle, in CameraLockedTextInstance text) {
+		Add(handle, text);
+		_primitiveInstancesLedger[handle].Add(text.UnderlyingTextInstance.UnderlyingModelInstance);
+	}
+
 	static bool PaintbrushRequiresBlending(in PrimitivePaintbrush paintbrush) => paintbrush.PrimaryColor.Alpha < 1f || paintbrush.SecondaryColor?.Alpha < 1f || paintbrush.TertiaryColor?.Alpha < 1f; 
 	
 	QuadMesh GetSharedQuadMesh() {
@@ -679,28 +693,23 @@ sealed partial class LocalSceneBuilder {
 		_ = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush2d);
 	}
 	
-	bool IsPrimitiveInstance(ResourceHandle<Scene> handle, ModelInstance i) {
-		foreach (var kvp in _primitiveMap[handle]) {
-			if ((kvp.Value.ModelInstance ?? kvp.Value.TextInstance?.UnderlyingModelInstance) == i) return true;
-		}
-		return false;
-	}
+	bool IsPrimitiveInstance(ResourceHandle<Scene> handle, ModelInstance i) => _primitiveInstancesLedger[handle].Contains(i);
 	
 	void DisposeData(ResourceHandle<Scene> handle, in PrimitiveData data, bool removeFromScene) {
 		if (data.ModelInstance is { } mi) {
-			if (removeFromScene) Remove(handle, mi);
+			if (removeFromScene) RemovePrimitiveInstance(handle, mi);
 			mi.Dispose();
 		}
 		if (data.LinePoints?.StartPoint is { } lsp) {
-			if (removeFromScene) Remove(handle, lsp);
+			if (removeFromScene) RemovePrimitiveInstance(handle, lsp);
 			lsp.Dispose();
 		}
 		if (data.LinePoints?.EndPoint is { } lep) {
-			if (removeFromScene) Remove(handle, lep);
+			if (removeFromScene) RemovePrimitiveInstance(handle, lep);
 			lep.Dispose();
 		}
 		if (data.TextInstance is { } t) {
-			if (removeFromScene) Remove(handle, t.UnderlyingModelInstance);
+			if (removeFromScene) RemovePrimitiveInstance(handle, t.UnderlyingModelInstance);
 			var str = t.String;
 			var pen = t.Pen;
 			t.Dispose();
@@ -710,6 +719,11 @@ sealed partial class LocalSceneBuilder {
 		if (data.OwnedResources is { } owned) owned.Dispose();
 	}
 	
+	void RemovePrimitiveInstance(ResourceHandle<Scene> handle, in ModelInstance modelInstance) {
+		Remove(handle, modelInstance);
+		_primitiveInstancesLedger[handle].Remove(modelInstance);
+	}
+
 	void RemoveAllPrimitives(ResourceHandle<Scene> handle, bool removeFromScene) {
 		foreach (var data in _primitiveMap[handle].Values) DisposeData(handle, in data, removeFromScene);
 		_primitiveMap[handle].Clear();
@@ -725,6 +739,7 @@ sealed partial class LocalSceneBuilder {
 		_primitiveSharedQuadMesh?.Dispose();
 		_primitiveSharedMutableLineStripMesh?.Dispose();
 		_primitiveMap.Dispose();
+		_primitiveInstancesLedger.Dispose();
 		_primitiveMapPool.Dispose();
 	}
 }

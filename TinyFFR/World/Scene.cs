@@ -34,6 +34,11 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 		_impl = impl;
 	}
 	
+	public SceneQueryProvider QueryProvider {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(this);
+	}
+	
 	public IndirectEnumerable<Scene, ModelInstance> ContainedModelInstances {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetModelInstances(_handle);
@@ -42,6 +47,17 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetLights(_handle);
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal int FindIntersections(BoundedRay ray, Span<ModelInstance> resultsDest, float rayThickness, bool disallowCachedBoundingBoxes) => Implementation.FindIntersections(_handle, ray, resultsDest, rayThickness, disallowCachedBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal int FindIntersections(Ray ray, Span<ModelInstance> resultsDest, float rayThickness, bool disallowCachedBoundingBoxes) => Implementation.FindIntersections(_handle, ray, resultsDest, rayThickness, disallowCachedBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal int FindIntersections(PositionedRotatedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => Implementation.FindIntersections(_handle, shape, resultsDest, disallowCachedBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal int FindIntersections(PositionedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => Implementation.FindIntersections(_handle, shape, resultsDest, disallowCachedBoundingBoxes);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal int FindIntersections(PositionedSphere shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => Implementation.FindIntersections(_handle, shape, resultsDest, disallowCachedBoundingBoxes);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
