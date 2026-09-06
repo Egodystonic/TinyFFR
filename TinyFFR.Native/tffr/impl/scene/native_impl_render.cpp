@@ -626,8 +626,10 @@ StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescript
 	EndExportedFunc
 }
 
-void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId) {
+void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects) {
 	ThrowIfNull(viewDescriptor, "View was null.");
+
+	viewDescriptor->setTransparentPickingEnabled(static_cast<bool>(includeTransparentObjects));
 
 	auto const& viewport = viewDescriptor->getViewport();
 	auto& camera = viewDescriptor->getCamera();
@@ -640,8 +642,8 @@ void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, u
 	auto& query = viewDescriptor->pick(x, y, nullptr, &handle_filament_pick_query_callback);
 	query.storage[0] = reinterpret_cast<void*>(static_cast<uintptr_t>(pickId));
 }
-StartExportedFunc(submit_view_pick, ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId) {
-	native_impl_render::submit_view_pick(viewDescriptor, x, y, pickId);
+StartExportedFunc(submit_view_pick, ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects) {
+	native_impl_render::submit_view_pick(viewDescriptor, x, y, pickId, includeTransparentObjects);
 	EndExportedFunc
 }
 
@@ -668,25 +670,6 @@ void native_impl_render::try_get_pick_result(uint64_t pickId, uintptr_t* outMode
 }
 StartExportedFunc(try_get_pick_result, uint64_t pickId, uintptr_t* outModelInstance, float_t* outDepth, float3* outWorldPosition, interop_bool* outFound) {
 	native_impl_render::try_get_pick_result(pickId, outModelInstance, outDepth, outWorldPosition, outFound);
-	EndExportedFunc
-}
-
-void native_impl_render::set_view_transparent_picking_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
-	ThrowIfNull(viewDescriptor, "View was null.");
-	viewDescriptor->setTransparentPickingEnabled(static_cast<bool>(enabled));
-}
-StartExportedFunc(set_view_transparent_picking_enabled, ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
-	native_impl_render::set_view_transparent_picking_enabled(viewDescriptor, enabled);
-	EndExportedFunc
-}
-
-void native_impl_render::get_view_transparent_picking_enabled(ViewDescriptorHandle viewDescriptor, interop_bool* outEnabled) {
-	ThrowIfNull(viewDescriptor, "View was null.");
-	ThrowIfNull(outEnabled, "Enabled out pointer was null.");
-	*outEnabled = viewDescriptor->isTransparentPickingEnabled() ? interop_bool_true : interop_bool_false;
-}
-StartExportedFunc(get_view_transparent_picking_enabled, ViewDescriptorHandle viewDescriptor, interop_bool* outEnabled) {
-	native_impl_render::get_view_transparent_picking_enabled(viewDescriptor, outEnabled);
 	EndExportedFunc
 }
 

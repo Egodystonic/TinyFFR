@@ -779,7 +779,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).Size;
 	}
 
-	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var viewportCoord = ConvertRenderSurfaceCoordToViewportCoord(handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
@@ -791,7 +791,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			_loadedRenderers[handle].Viewport.Handle,
 			(uint) viewportCoord.X,
 			(uint) (viewportSize.Y - 1 - viewportCoord.Y),
-			pickId
+			pickId,
+			includeTransparentObjects
 		).ThrowIfFailure();
 
 		Render(handle);
@@ -805,16 +806,6 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		return new PixelPickResult(mi, Location.FromVector3(worldPosition));
 	}
 
-	public bool GetTransparentPickingEnabled(ResourceHandle<Renderer> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		GetViewTransparentPickingEnabled(_loadedRenderers[handle].Viewport.Handle, out var result).ThrowIfFailure();
-		return result;
-	}
-
-	public void SetTransparentPickingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		SetViewTransparentPickingEnabled(_loadedRenderers[handle].Viewport.Handle, enabled).ThrowIfFailure();
-	}
 	public Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
@@ -1038,7 +1029,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		UIntPtr viewDescriptorHandle,
 		uint x,
 		uint y,
-		ulong pickId
+		ulong pickId,
+		InteropBool includeTransparentObjects
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "try_get_pick_result")]
@@ -1048,18 +1040,6 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		out float outDepth,
 		out Vector3 outWorldPosition,
 		out InteropBool outFound
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_transparent_picking_enabled")]
-	static extern InteropResult SetViewTransparentPickingEnabled(
-		UIntPtr viewDescriptorHandle,
-		InteropBool enabled
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_view_transparent_picking_enabled")]
-	static extern InteropResult GetViewTransparentPickingEnabled(
-		UIntPtr viewDescriptorHandle,
-		out InteropBool outEnabled
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "render_scene")]

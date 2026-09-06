@@ -314,21 +314,12 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		return _actualRenderer.CreateRayFromRenderSurface(pixelCoord, coordOrigin, true);
 	}
 
-	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
-		return _actualRenderer.PickModelInstanceFromRenderSurface(pixelCoord, coordOrigin, true);
+		return _actualRenderer.PickModelInstanceFromRenderSurface(pixelCoord, includeTransparentObjects, coordOrigin, true);
 	}
 
-	public bool GetTransparentPickingEnabled(ResourceHandle<Renderer> handle) {
-		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		return _actualRenderer.TransparentPickingEnabled;
-	}
-
-	public void SetTransparentPickingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
-		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.TransparentPickingEnabled = enabled;
-	}
 	public Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
