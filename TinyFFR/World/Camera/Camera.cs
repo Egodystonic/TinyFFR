@@ -218,9 +218,9 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	public void LookAt(Location target) => ViewDirection = Position.DirectionTo(target);
 	public void LookAt(Location target, Direction upDirection) => SetViewAndUpDirection(Position.DirectionTo(target), upDirection);
 
-	public Ray CastRayFromNearPlane() => new(Position + ViewDirection * NearPlaneDistance, ViewDirection);
+	public Ray CreateRayFromNearPlane() => new(Position + ViewDirection * NearPlaneDistance, ViewDirection);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CastRayFromNearPlane(XYPair<float> normalizedNearPlaneCoord) => Implementation.CastRayFromNearPlane(_handle, normalizedNearPlaneCoord);
+	public Ray CreateRayFromNearPlane(XYPair<float> normalizedNearPlaneCoord) => Implementation.CreateRayFromNearPlane(_handle, normalizedNearPlaneCoord);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TController CreateController<TController>() where TController : ICameraController<TController> => TController.RentAndTetherToCamera(this); 

@@ -435,6 +435,15 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	#endregion
 	
 	#region Intersection Queries
+	internal ModelInstance? TryResolvePickedModelInstance(ResourceHandle<Scene> handle, nuint pickedInstanceHandleId) {
+		if (pickedInstanceHandleId == UIntPtr.Zero || IsDisposed(handle)) return null;
+		var potentialModelInstance = new ModelInstance(new ResourceHandle<ModelInstance>(pickedInstanceHandleId), _objectBuilder);
+		if (potentialModelInstance.IsDisposed) return null;
+		if (!_modelInstanceMap[handle].Contains(potentialModelInstance)) return null;
+		if (_primitiveInstancesLedger[handle].Contains(potentialModelInstance)) return null;
+		return potentialModelInstance;
+	}
+
 	public int FindIntersections(ResourceHandle<Scene> handle, BoundedRay ray, Span<ModelInstance> resultsDest, float rayThickness, bool disallowCachedBoundingBoxes) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (resultsDest.IsEmpty) return 0;

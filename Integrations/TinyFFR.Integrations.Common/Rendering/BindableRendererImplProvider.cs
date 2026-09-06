@@ -306,19 +306,35 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+	public Ray CreateRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
 		// The inner renderer targets a buffer, whose viewport dimensions are its texture dimensions by definition, so it can not
 		// make this adjustment itself; we pass 'true' downstream for disableDpiScalingAdjustment regardless to indicate the coordinate has already been converted.
-		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, coordOrigin, true);
+		return _actualRenderer.CreateRayFromRenderSurface(pixelCoord, coordOrigin, true);
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+
+	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
+		return _actualRenderer.PickModelInstanceFromRenderSurface(pixelCoord, coordOrigin, true);
+	}
+
+	public bool GetTransparentPickingEnabled(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.TransparentPickingEnabled;
+	}
+
+	public void SetTransparentPickingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.TransparentPickingEnabled = enabled;
+	}
+	public Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
 		// The inner renderer targets a buffer, whose viewport dimensions are its texture dimensions by definition, so it can not
 		// make this adjustment itself; we pass 'true' downstream for disableDpiScalingAdjustment regardless to indicate the coordinate has already been converted.
-		return _actualRenderer.CastRayFromRenderSubAreaSurface(pixelCoord, coordOrigin, true);
+		return _actualRenderer.CreateRayFromRenderSubAreaSurface(pixelCoord, coordOrigin, true);
 	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) {

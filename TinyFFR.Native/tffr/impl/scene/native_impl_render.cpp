@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include <unordered_map>
 #include "scene/native_impl_render.h"
 #include "scene/native_impl_render.h"
 
@@ -27,6 +29,50 @@ using namespace utils;
 
 static void handle_filament_buffer_ready_callback(void* _, size_t __, BufferIdentity identity) {
 	native_impl_init::deallocation_delegate(identity);
+}
+
+struct completed_pick_data {
+	uintptr_t modelInstance;
+	float_t depth;
+	float3 worldPosition;
+};
+struct pending_pick_data {
+	math::mat4 inverseViewProjection;
+	float_t viewportWidth;
+	float_t viewportHeight;
+};
+static std::unordered_map<uint64_t, completed_pick_data> completed_picks;
+static std::unordered_map<uint64_t, pending_pick_data> pending_picks;
+
+static void handle_filament_pick_query_callback(View::PickingQueryResult const& result, View::PickingQuery* query) {
+	auto const pickId = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(query->storage[0]));
+
+	auto worldPosition = float3 { 0.0f, 0.0f, 0.0f };
+	auto const pendingIter = pending_picks.find(pickId);
+	if (pendingIter != pending_picks.end()) {
+		auto const& pending = pendingIter->second;
+		auto const clipSpacePosition = math::double4 {
+			static_cast<double>(result.fragCoords.x) / static_cast<double>(pending.viewportWidth) * 2.0 - 1.0,
+			static_cast<double>(result.fragCoords.y) / static_cast<double>(pending.viewportHeight) * 2.0 - 1.0,
+			static_cast<double>(result.fragCoords.z) * 2.0 - 1.0,
+			1.0
+		};
+		auto const unprojected = pending.inverseViewProjection * clipSpacePosition;
+		if (unprojected.w != 0.0) {
+			worldPosition = float3 {
+				static_cast<float_t>(unprojected.x / unprojected.w),
+				static_cast<float_t>(unprojected.y / unprojected.w),
+				static_cast<float_t>(unprojected.z / unprojected.w)
+			};
+		}
+		pending_picks.erase(pendingIter);
+	}
+
+	completed_picks[pickId] = completed_pick_data {
+		static_cast<uintptr_t>(Entity::smuggle(result.renderable)),
+		result.depth,
+		worldPosition
+	};
 }
 
 void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandle* outSwapChain) {
@@ -577,6 +623,70 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 }
 StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
 	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity, waitForReadbackCompletion);
+	EndExportedFunc
+}
+
+void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+
+	auto const& viewport = viewDescriptor->getViewport();
+	auto& camera = viewDescriptor->getCamera();
+	pending_picks[pickId] = pending_pick_data {
+		inverse(camera.getProjectionMatrix() * camera.getViewMatrix()),
+		static_cast<float_t>(viewport.width),
+		static_cast<float_t>(viewport.height)
+	};
+
+	auto& query = viewDescriptor->pick(x, y, nullptr, &handle_filament_pick_query_callback);
+	query.storage[0] = reinterpret_cast<void*>(static_cast<uintptr_t>(pickId));
+}
+StartExportedFunc(submit_view_pick, ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId) {
+	native_impl_render::submit_view_pick(viewDescriptor, x, y, pickId);
+	EndExportedFunc
+}
+
+void native_impl_render::try_get_pick_result(uint64_t pickId, uintptr_t* outModelInstance, float_t* outDepth, float3* outWorldPosition, interop_bool* outFound) {
+	ThrowIfNull(outModelInstance, "Model instance out pointer was null.");
+	ThrowIfNull(outDepth, "Depth out pointer was null.");
+	ThrowIfNull(outWorldPosition, "World position out pointer was null.");
+	ThrowIfNull(outFound, "Found out pointer was null.");
+
+	auto const iter = completed_picks.find(pickId);
+	if (iter == completed_picks.end()) {
+		*outModelInstance = 0U;
+		*outDepth = 0.0f;
+		*outWorldPosition = float3 { 0.0f, 0.0f, 0.0f };
+		*outFound = interop_bool_false;
+		return;
+	}
+
+	*outModelInstance = iter->second.modelInstance;
+	*outDepth = iter->second.depth;
+	*outWorldPosition = iter->second.worldPosition;
+	*outFound = interop_bool_true;
+	completed_picks.erase(iter);
+}
+StartExportedFunc(try_get_pick_result, uint64_t pickId, uintptr_t* outModelInstance, float_t* outDepth, float3* outWorldPosition, interop_bool* outFound) {
+	native_impl_render::try_get_pick_result(pickId, outModelInstance, outDepth, outWorldPosition, outFound);
+	EndExportedFunc
+}
+
+void native_impl_render::set_view_transparent_picking_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	viewDescriptor->setTransparentPickingEnabled(static_cast<bool>(enabled));
+}
+StartExportedFunc(set_view_transparent_picking_enabled, ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
+	native_impl_render::set_view_transparent_picking_enabled(viewDescriptor, enabled);
+	EndExportedFunc
+}
+
+void native_impl_render::get_view_transparent_picking_enabled(ViewDescriptorHandle viewDescriptor, interop_bool* outEnabled) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	ThrowIfNull(outEnabled, "Enabled out pointer was null.");
+	*outEnabled = viewDescriptor->isTransparentPickingEnabled() ? interop_bool_true : interop_bool_false;
+}
+StartExportedFunc(get_view_transparent_picking_enabled, ViewDescriptorHandle viewDescriptor, interop_bool* outEnabled) {
+	native_impl_render::get_view_transparent_picking_enabled(viewDescriptor, outEnabled);
 	EndExportedFunc
 }
 

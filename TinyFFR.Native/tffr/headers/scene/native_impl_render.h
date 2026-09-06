@@ -29,6 +29,11 @@ public:
 	static void render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain, interop_bool invokeBeginFrame, interop_bool invokeEndFrame);
 	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion);
 
+	static void submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId);
+	static void try_get_pick_result(uint64_t pickId, uintptr_t* outModelInstance, float_t* outDepth, float3* outWorldPosition, interop_bool* outFound);
+	static void set_view_transparent_picking_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);
+	static void get_view_transparent_picking_enabled(ViewDescriptorHandle viewDescriptor, interop_bool* outEnabled);
+
 	static void set_view_quality_configuration(
 		ViewDescriptorHandle viewDescriptor,
 		int32_t shadowFidelityLevel,

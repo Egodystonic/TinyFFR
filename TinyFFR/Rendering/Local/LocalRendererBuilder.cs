@@ -174,6 +174,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	readonly LocalRenderOutputBufferImplProvider _renderOutputBufferImplProvider;
 	readonly LocalRenderOutputBufferTextureImplProvider _textureImplProvider;
 	nuint _previousHandleId = 0U;
+	ulong _previousPickId = 0UL;
 	bool _isDisposed = false;
 	static BitmapSaveConfig? _nextScreenshotCaptureConfig = null;
 	static ManagedStringPool.RentedStringHandle? _nextScreenshotCaptureFilePath = null;
@@ -738,9 +739,12 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		}
 	}
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+	public Ray CreateRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		return CreateRayFromViewportSurface(handle, ConvertRenderSurfaceCoordToViewportCoord(handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment), DiagonalOrientation2D.UpLeft, true);
+	}
 
+	XYPair<int> ConvertRenderSurfaceCoordToViewportCoord(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		var rendererData = _loadedRenderers[handle];
 		var viewport = rendererData.Viewport;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
@@ -759,15 +763,59 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			var vpBounds = viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
 			viewportTopLeft = new XYPair<int>(vpBounds.BottomLeft.X, vpBounds.BottomLeft.Y + vpBounds.Size.Y);
 		}
-		
-		var viewportRelativeCoord = new XYPair<int>(
+
+		return new XYPair<int>(
 			pixelCoord.X - viewportTopLeft.X,
 			pixelCoord.Y - (curTargetSize.Y - viewportTopLeft.Y)
 		);
-
-		return CastRayFromViewportSurface(handle, viewportRelativeCoord, DiagonalOrientation2D.UpLeft, true);
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+
+	XYPair<int> GetViewportPixelSize(ResourceHandle<Renderer> handle) {
+		var rendererData = _loadedRenderers[handle];
+		var viewport = rendererData.Viewport;
+		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
+		return viewport.LastCheckedRenderTargetSize == curTargetSize
+			? viewport.LastSetViewportSize
+			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).Size;
+	}
+
+	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		var viewportCoord = ConvertRenderSurfaceCoordToViewportCoord(handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
+		var viewportSize = GetViewportPixelSize(handle);
+		if (viewportCoord.X < 0 || viewportCoord.Y < 0 || viewportCoord.X >= viewportSize.X || viewportCoord.Y >= viewportSize.Y) return default;
+
+		var pickId = ++_previousPickId;
+		SubmitViewPick(
+			_loadedRenderers[handle].Viewport.Handle,
+			(uint) viewportCoord.X,
+			(uint) (viewportSize.Y - 1 - viewportCoord.Y),
+			pickId
+		).ThrowIfFailure();
+
+		Render(handle);
+		LocalFrameSynchronizationManager.StallForPendingCallbacks(handle);
+
+		TryGetPickResult(pickId, out var pickedInstanceHandle, out var depth, out var worldPosition, out var found).ThrowIfFailure();
+		if (!found) return null;
+		var matchingModelInstance = _sceneBuilder.TryResolvePickedModelInstance(_loadedRenderers[handle].Scene.GetHandleWithoutDisposeCheck(), pickedInstanceHandle);
+		if (matchingModelInstance is not { } mi) return null;
+
+		return new PixelPickResult(mi, Location.FromVector3(worldPosition));
+	}
+
+	public bool GetTransparentPickingEnabled(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetViewTransparentPickingEnabled(_loadedRenderers[handle].Viewport.Handle, out var result).ThrowIfFailure();
+		return result;
+	}
+
+	public void SetTransparentPickingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetViewTransparentPickingEnabled(_loadedRenderers[handle].Viewport.Handle, enabled).ThrowIfFailure();
+	}
+	public Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
@@ -790,7 +838,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		);
 		normalizedCoord = normalizedCoord with { Y = -normalizedCoord.Y };
 
-		return rendererData.Camera.CastRayFromNearPlane(normalizedCoord);
+		return rendererData.Camera.CreateRayFromNearPlane(normalizedCoord);
 	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) {
@@ -983,6 +1031,35 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		UIntPtr viewDescriptorHandle,
 		InteropBool blendTranslucent,
 		InteropBool clearDepth
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "submit_view_pick")]
+	static extern InteropResult SubmitViewPick(
+		UIntPtr viewDescriptorHandle,
+		uint x,
+		uint y,
+		ulong pickId
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "try_get_pick_result")]
+	static extern InteropResult TryGetPickResult(
+		ulong pickId,
+		out UIntPtr outModelInstanceHandle,
+		out float outDepth,
+		out Vector3 outWorldPosition,
+		out InteropBool outFound
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_transparent_picking_enabled")]
+	static extern InteropResult SetViewTransparentPickingEnabled(
+		UIntPtr viewDescriptorHandle,
+		InteropBool enabled
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_view_transparent_picking_enabled")]
+	static extern InteropResult GetViewTransparentPickingEnabled(
+		UIntPtr viewDescriptorHandle,
+		out InteropBool outEnabled
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "render_scene")]

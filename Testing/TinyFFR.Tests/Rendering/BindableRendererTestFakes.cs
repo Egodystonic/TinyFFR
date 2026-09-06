@@ -36,6 +36,8 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public readonly List<(Orientation2D Anchor, XYPair<float> Offset, XYPair<float> Dimensions)> SubAreaFractionCalls = new();
 	public readonly List<(Orientation2D Anchor, XYPair<int> Offset, XYPair<int> Dimensions)> SubAreaPixelCalls = new();
 	public readonly List<(XYPair<int> PixelCoord, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> RenderSurfaceRayCalls = new();
+	public readonly List<(XYPair<int> PixelCoord, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> PickAtCalls = new();
+	public bool FakeTransparentPickingEnabled = false;
 	public readonly List<(XYPair<int> PixelCoord, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> ViewportSurfaceRayCalls = new();
 
 	public FakeRendererImplProvider(ResourceHandle<Renderer> handle, Scene scene, Camera camera, RenderOutputBuffer targetBuffer, in RendererCreationConfig config) {
@@ -77,11 +79,17 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
 	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) => throw new NotSupportedException();
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+	public Ray CreateRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		RenderSurfaceRayCalls.Add((pixelCoord, coordOrigin, disableDpiScalingAdjustment));
 		return default;
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		PickAtCalls.Add((pixelCoord, coordOrigin, disableDpiScalingAdjustment));
+		return default;
+	}
+	public bool GetTransparentPickingEnabled(ResourceHandle<Renderer> handle) => FakeTransparentPickingEnabled;
+	public void SetTransparentPickingEnabled(ResourceHandle<Renderer> handle, bool enabled) => FakeTransparentPickingEnabled = enabled;
+	public Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ViewportSurfaceRayCalls.Add((pixelCoord, coordOrigin, disableDpiScalingAdjustment));
 		return default;
 	}
@@ -457,7 +465,7 @@ sealed class FakeCameraImplProvider : ICameraImplProvider {
 	public void Rotate(ResourceHandle<Camera> handle, Rotation rotation) { }
 	public void Rotate(ResourceHandle<Camera> handle, Quaternion rotationQuaternion) { }
 
-	public Ray CastRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord) => default;
+	public Ray CreateRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord) => default;
 }
 
 static class BindableRendererTestScaffold {

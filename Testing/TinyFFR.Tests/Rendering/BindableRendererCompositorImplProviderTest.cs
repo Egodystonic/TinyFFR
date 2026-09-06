@@ -324,7 +324,7 @@ class BindableRendererCompositorImplProviderTest {
 		var renderer = CreateBindableRenderer();
 		compositor.Add(renderer, RenderCompositionType.Standard);
 
-		_ = renderer.CastRayFromRenderSurface((100, 50));
+		_ = renderer.CreateRayFromRenderSurface((100, 50));
 
 		Assert.AreEqual(new XYPair<int>(200, 100), LatestInnerRenderer.RenderSurfaceRayCalls[0].PixelCoord);
 	}
@@ -337,7 +337,7 @@ class BindableRendererCompositorImplProviderTest {
 		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (1600, 900), (800, 450), NoopFrameHandler);
 
 		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (600, 300), (300, 150), NoopFrameHandler);
-		_ = renderer.CastRayFromRenderSurface((100, 50));
+		_ = renderer.CreateRayFromRenderSurface((100, 50));
 
 		Assert.AreEqual(new XYPair<int>(200, 100), LatestInnerRenderer.RenderSurfaceRayCalls[0].PixelCoord);
 	}

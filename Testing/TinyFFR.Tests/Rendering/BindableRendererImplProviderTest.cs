@@ -146,7 +146,7 @@ class BindableRendererImplProviderTest {
 		var renderer = CreateRenderer();
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (1600, 900), (800, 450), NoopFrameHandler);
 
-		_ = renderer.CastRayFromRenderSurface((100, 50));
+		_ = renderer.CreateRayFromRenderSurface((100, 50));
 
 		var actualRenderer = _builder.CreatedRenderers[^1];
 		Assert.AreEqual(1, actualRenderer.RenderSurfaceRayCalls.Count);
@@ -159,7 +159,7 @@ class BindableRendererImplProviderTest {
 		var renderer = CreateRenderer();
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (300, 150), (900, 450), NoopFrameHandler);
 
-		_ = renderer.CastRayFromRenderSurface((300, 150));
+		_ = renderer.CreateRayFromRenderSurface((300, 150));
 
 		Assert.AreEqual(new XYPair<int>(100, 50), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}
@@ -169,7 +169,7 @@ class BindableRendererImplProviderTest {
 		var renderer = CreateRenderer();
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (1600, 900), (800, 450), NoopFrameHandler);
 
-		_ = renderer.CastRayFromRenderSurface((100, 50), DiagonalOrientation2D.UpLeft, true);
+		_ = renderer.CreateRayFromRenderSurface((100, 50), DiagonalOrientation2D.UpLeft, true);
 
 		Assert.AreEqual(new XYPair<int>(100, 50), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}
@@ -179,7 +179,7 @@ class BindableRendererImplProviderTest {
 		var renderer = CreateRenderer();
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (1600, 900), (800, 450), NoopFrameHandler);
 
-		_ = renderer.CastRayFromRenderSubAreaSurface((100, 50));
+		_ = renderer.CreateRayFromRenderSubAreaSurface((100, 50));
 
 		var actualRenderer = _builder.CreatedRenderers[^1];
 		Assert.AreEqual(1, actualRenderer.ViewportSurfaceRayCalls.Count);
@@ -190,7 +190,7 @@ class BindableRendererImplProviderTest {
 	public void ShouldNotScaleRayCastCoordsBeforeFrameHandlingStarts() {
 		var renderer = CreateRenderer();
 
-		_ = renderer.CastRayFromRenderSurface((100, 50));
+		_ = renderer.CreateRayFromRenderSurface((100, 50));
 
 		Assert.AreEqual(new XYPair<int>(100, 50), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}
@@ -200,7 +200,7 @@ class BindableRendererImplProviderTest {
 		var renderer = CreateRenderer();
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (300, 150), (0, 0), NoopFrameHandler);
 
-		_ = renderer.CastRayFromRenderSurface((100, 50));
+		_ = renderer.CreateRayFromRenderSurface((100, 50));
 
 		Assert.AreEqual(new XYPair<int>(100, 50), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}
@@ -210,7 +210,7 @@ class BindableRendererImplProviderTest {
 		var renderer = CreateRenderer();
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (150, 150), (100, 100), NoopFrameHandler);
 
-		_ = renderer.CastRayFromRenderSurface((1, 3));
+		_ = renderer.CreateRayFromRenderSurface((1, 3));
 
 		Assert.AreEqual(new XYPair<int>(2, 4), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}
@@ -236,7 +236,7 @@ class BindableRendererImplProviderTest {
 		var bufferCountAfterFirstStart = _builder.CreatedBuffers.Count;
 
 		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (800, 400), (400, 200), NoopFrameHandler);
-		_ = renderer.CastRayFromRenderSurface((100, 50));
+		_ = renderer.CreateRayFromRenderSurface((100, 50));
 
 		Assert.AreEqual(bufferCountAfterFirstStart, _builder.CreatedBuffers.Count);
 		Assert.AreEqual(new XYPair<int>(200, 100), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);

@@ -46,7 +46,7 @@ class LocalCameraRayCreationTest {
 			}
 
 			foreach (var mc in loop.Input.KeyboardAndMouse.NewMouseClicks) {
-				var ray = renderer.CastRayFromRenderSurface(mc.Location);
+				var ray = renderer.CreateRayFromRenderSurface(mc.Location);
 				ray = ray.MovedBy(ray.Direction * 0.01f);
 				sceneRay?.Dispose();
 				sceneRay = scene.AddPrimitiveShape(ray, constantScreenSize: false);

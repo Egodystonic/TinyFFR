@@ -26,11 +26,15 @@ class LocalSceneQueryingTest {
 	const float RayForwardOffset = 0.4f;
 	const float RayDownwardOffset = 0.2f;
 	const float BoundingBoxAlpha = 0.2f;
+	const float PickPointSize = 0.02f;
 
 	static readonly ColorVect UnhitColor = new(0.35f, 0.37f, 0.45f);
 	static readonly ColorVect NearestHitColor = new(1f, 0.08f, 0.08f);
 	static readonly ColorVect FarthestHitColor = new(0.08f, 0.3f, 1f);
+	static readonly ColorVect PickedColor = new(1f, 0.95f, 0.1f);
+	static readonly ColorVect PickPointColor = new(1f, 0.1f, 0.65f);
 	static readonly PrimitivePaintbrush QueryShapePaintbrush = new(new ColorVect(0.1f, 0.9f, 0.4f, 0.6f));
+	static readonly PrimitivePaintbrush PickPointPaintbrush = new(PickPointColor);
 	static readonly InterpolationAlgorithm<Location> ShapeDragAlgorithm = InterpolationAlgorithm<Location>.Linear();
 	static readonly InterpolationAlgorithm<ColorVect> HitOrderGradient = InterpolationAlgorithm<ColorVect>.Linear();
 
@@ -89,7 +93,7 @@ class LocalSceneQueryingTest {
 						initialScaling: Vect.Random(Vect.One * 0.3f, Vect.One * 0.9f),
 						name: "Query Test Instance " + index
 					);
-					instance.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Wireframe);
+					instance.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain3D);
 					scene.Add(instance);
 					instances.Add(instance);
 				}
@@ -98,7 +102,7 @@ class LocalSceneQueryingTest {
 
 		var boundingBoxPrimitives = new List<ScenePrimitive>();
 		foreach (var instance in instances) {
-			boundingBoxPrimitives.Add(scene.AddPrimitiveShape(instance.GetWorldSpaceBoundingBox(), new PrimitivePaintbrush(UnhitColor with { Alpha = BoundingBoxAlpha })));
+			boundingBoxPrimitives.Add(scene.AddPrimitiveShape(instance.GetWorldSpaceBoundingBox(), new PrimitivePaintbrush(UnhitColor with { Alpha = BoundingBoxAlpha }), wireframe: true));
 		}
 		using var queryShapePrimitive = scene.AddPrimitive();
 		queryShapePrimitive.SetPaintbrush(in QueryShapePaintbrush);
@@ -109,6 +113,8 @@ class LocalSceneQueryingTest {
 		var rotatedCuboidAngle = Angle.Zero;
 		var frozen = false;
 		var rayThickness = 0f;
+		var pickedInstance = (ModelInstance?) null;
+		var pickPointPrimitive = (ScenePrimitive?) null;
 
 		Ray BuildQueryRay() => new(
 			camera.Position + camera.ViewDirection * RayForwardOffset + camera.UpDirection * -RayDownwardOffset,
@@ -136,6 +142,22 @@ class LocalSceneQueryingTest {
 			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, cameraController, deltaTime, window);
 			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, deltaTime);
 			DefaultCameraInputHandler.Progress(cameraController, deltaTime);
+
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.MouseRight)) {
+				var pickResult = renderer.PickModelInstanceFromRenderSurface(loop.Input.KeyboardAndMouse.MouseCursorPosition);
+				pickedInstance = pickResult?.ModelInstance;
+				if (pickResult is { } pr) {
+					if (pickPointPrimitive == null) {
+						pickPointPrimitive = scene.AddPrimitive();
+						pickPointPrimitive.Value.SetPaintbrush(in PickPointPaintbrush);
+					}
+					pickPointPrimitive.Value.SetGeometryPoint(pr.Position, PickPointSize, constantScreenSize: true);
+				}
+				else {
+					pickPointPrimitive?.Dispose();
+					pickPointPrimitive = null;
+				}
+			}
 
 			rotatedCuboidAngle += deltaTime * 45f;
 			rayThickness = MathF.Max(0f, rayThickness - loop.Input.KeyboardAndMouse.MouseScrollWheelDelta * RayThicknessStep);
@@ -185,9 +207,11 @@ class LocalSceneQueryingTest {
 					hitIndex = r;
 					break;
 				}
-				var color = hitIndex < 0
-					? UnhitColor
-					: HitOrderGradient.GetValue(NearestHitColor, FarthestHitColor, hitCount > 1 ? hitIndex / (float) (hitCount - 1) : 0f);
+				var color = pickedInstance is { } picked && picked == instances[i]
+					? PickedColor
+					: hitIndex < 0
+						? UnhitColor
+						: HitOrderGradient.GetValue(NearestHitColor, FarthestHitColor, hitCount > 1 ? hitIndex / (float) (hitCount - 1) : 0f);
 				instances[i].SetDefaultMaterialBaseColor(color);
 				boundingBoxPrimitives[i].SetPaintbrush(new PrimitivePaintbrush(color with { Alpha = BoundingBoxAlpha }));
 			}
@@ -195,12 +219,14 @@ class LocalSceneQueryingTest {
 			window.SetTitle(
 				$"Scene Querying | {queryMode} | {hitCount}/{resultCap} hit(s) of {instances.Count} instances | " +
 				$"{(frozen ? "FROZEN" : "live")} | ray thickness {rayThickness:N2} | red -> blue = hit order | " +
-				$"Space = mode, F = freeze, wheel = thickness, 1-{MaxResultCount} = result cap"
+				$"picked: {(pickedInstance is { } p ? p.GetNameAsNewStringObject() : "<none>")} | " +
+				$"Space = mode, F = freeze, wheel = thickness, RMB = pick, 1-{MaxResultCount} = result cap"
 			);
 
 			renderer.Render();
 		}
 
+		pickPointPrimitive?.Dispose();
 		foreach (var primitive in boundingBoxPrimitives) primitive.Dispose();
 		foreach (var instance in instances) {
 			scene.Remove(instance);

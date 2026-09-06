@@ -347,7 +347,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 		).ThrowIfFailure();
 	}
 
-	public Ray CastRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord) {
+	public Ray CreateRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
 		GetCameraModelMatrix(handle, out var modelMat).ThrowIfFailure();

@@ -9,6 +9,8 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+public readonly record struct PixelPickResult(ModelInstance ModelInstance, Location Position);
+
 public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplProvider> {
 	readonly ResourceHandle<Renderer> _handle;
 	readonly IRendererImplProvider _impl;
@@ -85,10 +87,19 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CastRayFromRenderSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
+	public Ray CreateRayFromRenderSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CreateRayFromRenderSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
+
+	public bool TransparentPickingEnabled {
+		get => Implementation.GetTransparentPickingEnabled(_handle);
+		set => Implementation.SetTransparentPickingEnabled(_handle, value);
+	}
+	public void SetTransparentPickingEnabled(bool enabled) => TransparentPickingEnabled = enabled;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CastRayFromRenderSubAreaSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CastRayFromViewportSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
+	public Ray CreateRayFromRenderSubAreaSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CreateRayFromViewportSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PixelPickResult? PickModelInstanceFromRenderSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.PickModelInstanceFromRenderSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetRenderSubAreaPixels(Orientation2D anchor, XYPair<int> pixelOffset, XYPair<int> pixelDimensions) => Implementation.SetTargetViewportDimensionsByPixel(_handle, anchor, pixelOffset, pixelDimensions);
