@@ -192,6 +192,9 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 			transform.Rotation
 		);
 	}
+	
+	public PositionedCuboid GetUnscaledWorldSpaceAxisAlignedBoundingBox() => Mesh.AxisAlignedBoundingBox.MovedBy(Transform.Translation);
+	public PositionedSphere GetUnscaledWorldSpaceBoundingSphere() => Mesh.BoundingSphere.MovedBy(Transform.Translation);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

@@ -5,6 +5,15 @@ namespace Egodystonic.TinyFFR;
 
 partial struct Sphere {
 	public bool IsPhysicallyValid => _radius.IsPositiveAndFinite();
+	
+	public Cuboid SmallestEnclosingCube {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(Diameter);
+	}
+	public Cuboid LargestEnclosedCube {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(Diameter * MathUtils.SquareRootOfThreeReciprocal);
+	}
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -325,13 +334,4 @@ partial struct Sphere {
 
 	// Maintainer's note: Cube root creates a uniform distribution (i.e. the volume of a sphere grows with the cube of its radius)
 	Location IConvexShape.GetRandomInternalLocation() => (Direction.Random() * (Radius * MathF.Cbrt(RandomUtils.NextSingle()))).AsLocation();
-
-	public Cuboid SmallestEnclosingCube {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(Diameter);
-	}
-	public Cuboid LargestEnclosedCube {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(Diameter * MathUtils.SquareRootOfThreeReciprocal);
-	}
 }

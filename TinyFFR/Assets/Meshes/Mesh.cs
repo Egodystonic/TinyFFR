@@ -36,6 +36,16 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetBoundingBox(_handle);
 	}
+	
+	public PositionedCuboid AxisAlignedBoundingBox {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetAxisAlignedBoundingBox(_handle);
+	}
+	
+	public PositionedSphere BoundingSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetBoundingSphere(_handle);
+	}
 
 	public bool AllowsPerInstanceVertexMutation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

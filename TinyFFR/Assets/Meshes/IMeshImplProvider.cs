@@ -10,6 +10,8 @@ public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	MeshBufferData GetBufferData(ResourceHandle<Mesh> handle);
 	MeshBufferData? GetWireframeBufferData(ResourceHandle<Mesh> handle);
 	PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle);
+	PositionedCuboid GetAxisAlignedBoundingBox(ResourceHandle<Mesh> handle);
+	PositionedSphere GetBoundingSphere(ResourceHandle<Mesh> handle);
 	bool GetAllowsPerInstanceVertexMutation(ResourceHandle<Mesh> handle);
 	ScopedReadOnlySpanLease<MeshVertex> BorrowDefaultVerticesSpan(ResourceHandle<Mesh> handle, Range range);
 	IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(ResourceHandle<Mesh> handle, MeshAnimationType? type);

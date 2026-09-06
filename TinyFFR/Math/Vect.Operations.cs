@@ -63,6 +63,21 @@ partial struct Vect :
 			return new Vect(1f / X, 1f / Y, 1f / Z);
 		}
 	}
+	
+	public float MaxComponent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Max(X, Y, Z);
+	}
+	public float MinComponent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Min(X, Y, Z);
+	}
+	public float MaxComponentMagnitude {
+		get => new Vect(Abs(AsVector4)).MaxComponent;
+	}
+	public float MinComponentMagnitude {
+		get => new Vect(Abs(AsVector4)).MinComponent;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location AsLocation() => (Location) this;

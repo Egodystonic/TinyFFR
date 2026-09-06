@@ -278,6 +278,8 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 			minExtents + minExtents.VectTo(maxExtents).ScaledBy(0.5f)
 		);
 	}
+	public static PositionedCuboid FromSmallestEnclosingAxisAligned(PositionedCuboid rotatable) => rotatable.SmallestEnclosingSphere.SmallestEnclosingCube;
+	public static PositionedCuboid FromSmallestEnclosingAxisAligned(PositionedRotatedCuboid rotatable) => rotatable.SmallestEnclosingSphere.SmallestEnclosingCube;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Cuboid ToStandardCuboid() => _impl.BaseShape;
@@ -326,7 +328,7 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => _impl.TryFormat(destination, out charsWritten, format, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedCuboid MovedBy(Vect v) => _impl.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedCuboid ScaledBy(float scalar) => _impl.ScaledBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedCuboid ScaledBy(Vect v) => new PositionedCuboid(_impl.BaseShape.ScaledBy(v), Position);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedCuboid ScaledBy(Vect v) => new(_impl.BaseShape.ScaledBy(v), Position);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public PositionedCuboid Clamp(PositionedCuboid min, PositionedCuboid max) => _impl.Clamp(min, max);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override bool Equals(object? obj) => obj is PositionedCuboid other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override int GetHashCode() => _impl.GetHashCode();

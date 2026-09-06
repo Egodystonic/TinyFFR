@@ -178,6 +178,8 @@ public readonly partial struct Cuboid : ICuboid<Cuboid> {
 	public PositionedRotatedCuboid WithPositionAndRotation(Location position, Rotation rotation) => ToPositionedRotatedCuboid(position, rotation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PositionedRotatedCuboid ToPositionedRotatedCuboid(Location position, Rotation rotation) => new(this, position, rotation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Cuboid FromSmallestEnclosingAxisAligned(Cuboid rotatable) => rotatable.SmallestEnclosingSphere.SmallestEnclosingCube;
 
 	public static Cuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth) {
 		return new() {

@@ -23,7 +23,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<MeshAnimation>, IResourceDirectory<MeshNode>, IResourceDirectory<DynamicVertexBuffer>, IDisposable {
-	readonly record struct MeshData(MeshBufferData BufferData, PositionedCuboid BoundingBox);
+	readonly record struct MeshData(MeshBufferData BufferData, PositionedCuboid BoundingBox, PositionedCuboid AxisAlignedBoundingBox, PositionedSphere BoundingSphere);
 	
 	readonly record struct DynamicVertexBufferData(
 		UIntPtr VertexBufferHandle,
@@ -322,7 +322,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
-		_activeMeshes.Add(handle, new(new MeshBufferData(vbHandle, ibHandle, 0, indexBufferCount, boneCount), boundingBox));
+		_activeMeshes.Add(handle, new(new MeshBufferData(vbHandle, ibHandle, 0, indexBufferCount, boneCount), boundingBox, PositionedCuboid.FromSmallestEnclosingAxisAligned(boundingBox), boundingBox.SmallestEnclosingSphere));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultMeshName);
 		var result = new Mesh(handle, this);
 
@@ -465,6 +465,14 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMeshes[handle].BoundingBox;
+	}
+	public PositionedCuboid GetAxisAlignedBoundingBox(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMeshes[handle].AxisAlignedBoundingBox;
+	}
+	public PositionedSphere GetBoundingSphere(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMeshes[handle].BoundingSphere;
 	}
 
 	public bool GetAllowsPerInstanceVertexMutation(ResourceHandle<Mesh> handle) {
@@ -738,7 +746,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			usesImGuiVertices,
 			vertexMirror,
 			indexMirror,
-			vertexMirror is { } mirror ? CalculateFullBoundingBox(mirror) : default
+			vertexMirror is { } mirror ? MathUtils.CalculateBoundingBox(mirror.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) : default
 		));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultDynamicVertexBufferName);
 		return HandleToInstance(handle);
@@ -763,9 +771,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		buffer.AsSpan<ushort>().Clear();
 		AllocateIndexBufferUShort(buffer.BufferIdentity, (ushort*) buffer.DataPtr, capacity, out var result).ThrowIfFailure();
 		return result;
-	}
-	static PositionedCuboid CalculateFullBoundingBox(PooledHeapMemory<MeshVertex> vertices) {
-		return MathUtils.CalculateBoundingBox<MeshVertex>(vertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
 	}
 
 	public int GetVertexBufferSize(ResourceHandle<DynamicVertexBuffer> handle) {
@@ -906,7 +911,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	}
 	void RecalculateBoundingBox(ResourceHandle<DynamicVertexBuffer> handle, bool overwriteChildMeshBoundingBoxes) {
 		var data = GetMirroredBufferDataOrThrow(handle);
-		SetBoundingBox(handle, CalculateFullBoundingBox(data.Vertices!.Value), overwriteChildMeshBoundingBoxes);
+		SetBoundingBox(handle, MathUtils.CalculateBoundingBox(data.Vertices!.Value.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin), overwriteChildMeshBoundingBoxes);
 	}
 
 	public void SetBoundingBox(ResourceHandle<DynamicVertexBuffer> handle, PositionedCuboid newBoundingBox, bool overwriteChildMeshBoundingBoxes) {
@@ -984,9 +989,12 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		var viewHandle = (ResourceHandle<Mesh>) (++_prevHandleId);
 		_vertexBufferRefCounts[data.VertexBufferHandle] += 1;
 		_indexBufferRefCounts[data.IndexBufferHandle] += 1;
+		var boundingBox = boundingBoxOverride ?? data.BoundingBox; 
 		_activeMeshes.Add(viewHandle, new(
 			new MeshBufferData(data.VertexBufferHandle, data.IndexBufferHandle, offset, count, 0),
-			boundingBoxOverride ?? data.BoundingBox
+			boundingBox,
+			PositionedCuboid.FromSmallestEnclosingAxisAligned(boundingBox),
+			boundingBox.SmallestEnclosingSphere
 		));
 		_meshViewParents.Add(viewHandle, handle);
 		_globals.StoreResourceNameOrDefaultIfEmpty(viewHandle.Ident, default, DefaultMeshName);

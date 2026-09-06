@@ -9,6 +9,15 @@ namespace Egodystonic.TinyFFR;
 
 partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 	public bool IsPhysicallyValid => _halfWidth.IsPositiveAndFinite() && _halfHeight.IsPositiveAndFinite() && _halfDepth.IsPositiveAndFinite();
+	
+	public Sphere SmallestEnclosingSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(new Vect(HalfWidth, HalfHeight, HalfDepth).Length);
+	}
+	public Sphere LargestEnclosedSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(SmallestHalfExtent);
+	}
 
 	#region With Methods
 	public Cuboid WithVolume(float newVolume) {
@@ -512,14 +521,5 @@ partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 			RandomUtils.NextSingle(-HalfHeight, HalfHeight), 
 			RandomUtils.NextSingle(-HalfDepth, HalfDepth)
 		);
-	}
-	
-	public Sphere SmallestEnclosingSphere {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(new Vect(HalfWidth, HalfHeight, HalfDepth).Length);
-	}
-	public Sphere LargestEnclosedSphere {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(SmallestHalfExtent);
 	}
 }

@@ -121,6 +121,10 @@ class LocalModelLoadingTest {
 				foreach (var mi in mig) {
 					scene.AddPrimitiveShape(mi.GetWorldSpaceBoundingBox()).SetPaintbrush(boundingBoxColours[bbcIdx]);
 					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
+					scene.AddPrimitiveShape(mi.GetUnscaledWorldSpaceAxisAlignedBoundingBox(), wireframe: true).SetPaintbrush(boundingBoxColours[bbcIdx]);
+					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
+					scene.AddPrimitiveShape(mi.GetUnscaledWorldSpaceBoundingSphere(), wireframe: true).SetPaintbrush(boundingBoxColours[bbcIdx]);
+					bbcIdx = (bbcIdx + 1) % boundingBoxColours.Length;
 				}
 			}
 		}
