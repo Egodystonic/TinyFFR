@@ -321,7 +321,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		RemoveBackdrop(handle);
 
 		CreateSceneBackdrop(
-			color.AsVector4,
+			color.ToVector3(),
 			Scene.BrightnessToLux(indirectLightingIntensity),
 			out var skyboxHandle,
 			out var indirectLightHandle
@@ -365,7 +365,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		RemoveBackdrop(handle);
 
 		CreateSceneBackdrop(
-			color.AsVector4,
+			color.ToVector3(),
 			0f,
 			out var skyboxHandle,
 			out var indirectLightHandle
@@ -629,7 +629,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_scene_backdrop_color")]
 	static extern InteropResult CreateSceneBackdrop(
-		Vector4 color,
+		Vector3 color,
 		float indirectLightingIntensity,
 		out UIntPtr outSkyboxHandle,
 		out UIntPtr outIndirectLightHandle

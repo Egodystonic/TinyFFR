@@ -50,7 +50,9 @@ WindowHandle native_impl_window::create_window(int32_t width, int32_t height, in
 		Throw("Could not create metal view for window: ", SDL_GetError());
 	}
 	metal_views[result] = metalView;
-	macos_mark_metal_layer_opaque(SDL_Metal_GetLayer(metalView));
+	auto const metalLayer = SDL_Metal_GetLayer(metalView);
+	macos_mark_metal_layer_opaque(metalLayer);
+	macos_set_metal_layer_vsync(metalLayer, native_impl_init::vsync_enabled);
 #endif
 
 	SDL_ShowWindow(result);

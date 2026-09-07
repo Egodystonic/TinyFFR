@@ -14,6 +14,7 @@ public:
 	static filament::Engine* filament_engine_ptr;
 	static deallocate_asset_buffer_delegate deallocation_delegate;
 	static log_notify_delegate log_delegate;
+	static interop_bool vsync_enabled;
 	
 	static void exec_once_only_initialization();
 	static void set_buffer_deallocation_delegate(deallocate_asset_buffer_delegate deallocationDelegate);

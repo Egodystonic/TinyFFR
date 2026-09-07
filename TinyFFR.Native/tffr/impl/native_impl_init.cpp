@@ -9,6 +9,7 @@
 filament::Engine* native_impl_init::filament_engine_ptr;
 deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
 log_notify_delegate native_impl_init::log_delegate;
+interop_bool native_impl_init::vsync_enabled = interop_bool_true;
 
 void native_impl_init::exec_once_only_initialization() {
 #if defined(TFFR_WIN)
@@ -52,6 +53,8 @@ void native_impl_init::notify_of_log_msg(const char* msg) {
 }
 
 void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex, filament::backend::swapchain_recreation_notify_delegate swapchainRecreationHintCallback) {
+	vsync_enabled = enableVsync;
+
 	auto config = filament::Engine::Config{
 		.commandBufferSizeMB = commandBufferSizeMb * 5U, // x5 because we allow up to 5x frame queue
 		.perRenderPassArenaSizeMB = furtherReduceMemoryUsage ? 3U : 70U,
@@ -85,6 +88,7 @@ StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBu
 	EndExportedFunc
 }
 void native_impl_init::on_factory_teardown() {
+	vsync_enabled = interop_bool_true;
 	if (filament_engine_ptr == nullptr) return;
 	filament::Engine::destroy(&filament_engine_ptr);
 }

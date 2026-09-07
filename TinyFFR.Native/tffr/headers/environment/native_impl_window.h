@@ -8,6 +8,7 @@ typedef SDL_Window* WindowHandle;
 
 #if defined(TFFR_MACOS)
 extern "C" void macos_mark_metal_layer_opaque(void* metalLayer);
+extern "C" void macos_set_metal_layer_vsync(void* metalLayer, interop_bool enabled);
 #endif
 
 class native_impl_window {

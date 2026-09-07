@@ -66,7 +66,9 @@ public:
      *
      * createDevice is called by the Metal backend from the backend thread.
      */
-    virtual void createDevice(MetalDevice& outDevice) noexcept;
+    // === Begin TinyFFR Alteration ===
+    void createDevice(MetalDevice& outDevice) noexcept;
+    // === End TinyFFR Alteration ===
 
     /**
      * Create a command submission queue on the Metal device object.
@@ -75,8 +77,10 @@ public:
      *
      * @param device The device which was returned from createDevice()
      */
-    virtual void createCommandQueue(
+    // === Begin TinyFFR Alteration ===
+    void createCommandQueue(
             MetalDevice& device, MetalCommandQueue& outCommandQueue) noexcept;
+    // === End TinyFFR Alteration ===
 
     /**
      * Obtain a MTLCommandBuffer enqueued on this Platform's MTLCommandQueue. The command buffer is

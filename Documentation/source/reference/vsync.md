@@ -15,11 +15,6 @@ var factory = new LocalTinyFfrFactory(
 
 1. 	Change this value to `true` or `false` according to your desired behaviour.
 
-??? failure "MacOS Support"
-	This setting currently has no effect on MacOS (VSync is always **on**).
-
-	Support will be added at a later date.
-
 ## Explanation
 
 "VSync", short for [Vertical Synchronization](https://en.wikipedia.org/wiki/Screen_tearing#Vertical_synchronization), is a configuration setting that controls whether or not your rendered frames must wait for the monitor's refresh rate.
