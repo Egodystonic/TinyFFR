@@ -269,7 +269,7 @@ sealed partial class LocalRendererBuilder {
 		proxyQuad.WidthFraction = 1f;
 		proxyQuad.HeightFraction = 1f;
 		proxyQuad.TextureExtentFraction = (1f, -1f);
-		proxyQuad.TextureOffsetFraction = (0f, -2f);
+		proxyQuad.TextureOffsetFraction = (0f, 0f);
 
 		var proxyConfig = new RendererCreationConfig {
 			Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Canvas),

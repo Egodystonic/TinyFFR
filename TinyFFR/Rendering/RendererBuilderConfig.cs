@@ -8,7 +8,8 @@ namespace Egodystonic.TinyFFR.Rendering;
 public enum RenderingBackendApi {
 	SystemRecommended = 0,
 	OpenGl = 1,
-	Vulkan = 2
+	Vulkan = 2,
+	Metal = 3
 }
 
 public sealed record RendererBuilderConfig {
@@ -24,10 +25,19 @@ public sealed record RendererBuilderConfig {
 	public bool EnableVSync { get; init; } = true;
 
 	internal RenderingBackendApi GetActualRenderingApi() {
+		if (OperatingSystem.IsMacOS()) {
+			if (RenderingApi is not (RenderingBackendApi.SystemRecommended or RenderingBackendApi.Metal)) {
+				throw new InvalidOperationException($"Rendering API '{RenderingApi}' is not supported on MacOS; only '{nameof(RenderingBackendApi.Metal)}' is available.");
+			}
+			return RenderingBackendApi.Metal;
+		}
+
+		if (RenderingApi == RenderingBackendApi.Metal) {
+			throw new InvalidOperationException($"Rendering API '{nameof(RenderingBackendApi.Metal)}' is only supported on MacOS.");
+		}
+
 		if (RenderingApi != RenderingBackendApi.SystemRecommended) return RenderingApi;
 		
-		if (OperatingSystem.IsWindows()) return RenderingBackendApi.Vulkan;
-		else if (OperatingSystem.IsLinux()) return RenderingBackendApi.Vulkan;
-		else return RenderingBackendApi.OpenGl;
+		return RenderingBackendApi.Vulkan;
 	}
 }

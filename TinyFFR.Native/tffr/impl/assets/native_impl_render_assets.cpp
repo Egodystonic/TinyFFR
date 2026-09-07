@@ -321,8 +321,8 @@ StartExportedFunc(update_texture_rgba_32, TextureHandle texture, BufferIdentity 
 static bool try_convert_tffr_compression_format_to_filament(int32_t formatId, Texture::InternalFormat* outInternalFormat, backend::CompressedPixelDataType* outPixelDataType) {
 	switch (formatId) {
 		case TFFR_COMPRESSION_FORMAT_BC1_SRGB:
-			*outInternalFormat = Texture::InternalFormat::DXT1_SRGB;
-			*outPixelDataType = backend::CompressedPixelDataType::DXT1_SRGB;
+			*outInternalFormat = Texture::InternalFormat::DXT1_SRGBA;
+			*outPixelDataType = backend::CompressedPixelDataType::DXT1_SRGBA;
 			return true;
 		case TFFR_COMPRESSION_FORMAT_BC3_SRGB:
 			*outInternalFormat = Texture::InternalFormat::DXT5_SRGBA;

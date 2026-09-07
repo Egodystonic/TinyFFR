@@ -6,9 +6,18 @@
 
 typedef SDL_Window* WindowHandle;
 
+#if defined(TFFR_MACOS)
+extern "C" void macos_mark_metal_layer_opaque(void* metalLayer);
+extern "C" void macos_set_metal_layer_vsync(void* metalLayer, interop_bool enabled);
+#endif
+
 class native_impl_window {
 public:
 	static WindowHandle create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos, int32_t renderingApiIndex);
+
+#if defined(TFFR_MACOS)
+	static void* get_window_metal_layer(WindowHandle handle);
+#endif
 
 	static void set_window_title(WindowHandle handle, const char* newTitle);
 	static void get_window_title(WindowHandle handle, char* resultBuffer, int32_t bufferLen);

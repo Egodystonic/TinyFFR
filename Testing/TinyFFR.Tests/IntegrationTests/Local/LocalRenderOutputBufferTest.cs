@@ -19,6 +19,7 @@ namespace Egodystonic.TinyFFR;
 [TestFixture, Explicit]
 class LocalRenderOutputBufferTest {
 	static readonly double MaxHslAverageDiffFraction = 0.00075d;
+	static readonly float MinHueComparisonSaturation = 0.15f;
 	static readonly XYPair<int> RenderDimensions = (480, 270);
 	static readonly (string Name, ColorVect Color)[] SceneColors = [
 		("purple", new(0.3f, 0f, 0.3f)),
@@ -201,29 +202,45 @@ class LocalRenderOutputBufferTest {
 			}
 			Assert.AreEqual(4 * (RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount + 1), list.Count);
 
-			var cumulativeHueValues = new double[list.Count];
+			var hueValues = new float[list.Count][];
+			var saturationValues = new float[list.Count][];
 			var cumulativeSaturationValues = new double[list.Count];
 			var cumulativeLightnessValues = new double[list.Count];
 			for (var i = 0; i < list.Count; ++i) {
 				Assert.AreEqual(list[0].Length, list[i].Length);
 
+				hueValues[i] = new float[list[0].Length];
+				saturationValues[i] = new float[list[0].Length];
 				for (var t = 0; t < list[0].Length; ++t) {
 					list[i][t].ToColorVect().ToHueSaturationLightness(out var h, out var s, out var l);
-					cumulativeHueValues[i] += h.Radians;
+					hueValues[i][t] = h.Radians;
+					saturationValues[i][t] = s;
 					cumulativeSaturationValues[i] += s;
 					cumulativeLightnessValues[i] += l;
 				}
+			}
 
-				if (i == 0) continue;
+			for (var i = 1; i < list.Count; ++i) {
+				var chromaticTexelCount = 0;
+				var referenceHueSum = 0d;
+				var comparisonHueSum = 0d;
+				for (var t = 0; t < list[0].Length; ++t) {
+					if (saturationValues[0][t] < MinHueComparisonSaturation || saturationValues[i][t] < MinHueComparisonSaturation) continue;
+					referenceHueSum += hueValues[0][t];
+					comparisonHueSum += hueValues[i][t];
+					++chromaticTexelCount;
+				}
+				Assert.Greater(chromaticTexelCount, 0);
 
-				var hueDiff = Math.Abs(cumulativeHueValues[0] / list[0].Length - cumulativeHueValues[i] / list[0].Length);
+				var meanReferenceHue = referenceHueSum / chromaticTexelCount;
+				var hueDiff = Math.Abs(meanReferenceHue - comparisonHueSum / chromaticTexelCount);
 				var satDiff = Math.Abs(cumulativeSaturationValues[0] / list[0].Length - cumulativeSaturationValues[i] / list[0].Length);
 				var lightDiff = Math.Abs(cumulativeLightnessValues[0] / list[0].Length - cumulativeLightnessValues[i] / list[0].Length);
 
-				Console.WriteLine($"Hue diff #{i}: {PercentageUtils.ConvertFractionToPercentageString((float) (hueDiff / (cumulativeHueValues[0] / list[0].Length)), "N5")}");
+				Console.WriteLine($"Hue diff #{i}: {PercentageUtils.ConvertFractionToPercentageString((float) (hueDiff / meanReferenceHue), "N5")} (over {chromaticTexelCount} chromatic texels)");
 				Console.WriteLine($"Sat diff #{i}: {PercentageUtils.ConvertFractionToPercentageString((float) (satDiff / (cumulativeSaturationValues[0] / list[0].Length)), "N5")}");
 				Console.WriteLine($"Lig diff #{i}: {PercentageUtils.ConvertFractionToPercentageString((float) (lightDiff / (cumulativeLightnessValues[0] / list[0].Length)), "N5")}");
-				Assert.LessOrEqual(hueDiff / (cumulativeHueValues[0] / list[0].Length), MaxHslAverageDiffFraction);
+				Assert.LessOrEqual(hueDiff / meanReferenceHue, MaxHslAverageDiffFraction);
 				Assert.LessOrEqual(satDiff / (cumulativeSaturationValues[0] / list[0].Length), MaxHslAverageDiffFraction);
 				Assert.LessOrEqual(lightDiff / (cumulativeLightnessValues[0] / list[0].Length), MaxHslAverageDiffFraction);
 			}
