@@ -1,18 +1,19 @@
-﻿using System.Configuration;
-using System.Data;
+// Created on 2026-09-08 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2026
+
 using System.Windows;
 using Egodystonic.TinyFFR.Testing;
+using TinyFFR.Tests.Integrations.Wpf.ViewModels;
+using TinyFFR.Tests.Integrations.Wpf.Views;
 
-namespace TinyFFR.Tests.Integrations.Wpf {
-	/// <summary>
-	/// Interaction logic for App.xaml
-	/// </summary>
-	public partial class App : Application {
-		protected override void OnStartup(StartupEventArgs e) {
-			CommonTestSupportFunctions.ResolveNativeAssembliesFromBuildOutputDir();
+namespace TinyFFR.Tests.Integrations.Wpf;
 
-			base.OnStartup(e);
-		}
+public partial class App : Application {
+	protected override void OnStartup(StartupEventArgs e) {
+		CommonTestSupportFunctions.ResolveNativeAssembliesFromBuildOutputDir();
+
+		base.OnStartup(e);
+
+		new MainWindow { DataContext = new MainViewModel() }.Show();
 	}
-
 }

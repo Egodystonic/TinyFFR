@@ -1,34 +1,33 @@
-// Created on 2026-07-31 by Ben Bowen
+// Created on 2026-09-08 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Input;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Egodystonic.TinyFFR;
-using Egodystonic.TinyFFR.Avalonia;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Testing.ModelViewer;
+using Egodystonic.TinyFFR.Wpf;
 
-namespace TinyFFR.Tests.Integrations.Avalonia.ViewModels;
+namespace TinyFFR.Tests.Integrations.Wpf.ViewModels;
 
 public sealed record ResolutionOption(string DisplayName, Size? Value);
 
 public partial class MainViewModel : ViewModelBase {
 	ModelViewerScene? _viewer;
 	IDisposable? _loop;
-	InputElement? _inputSource;
+	UIElement? _inputSource;
 	bool _startInFlight;
 	bool _compositorSwitchInFlight;
 	bool _hasDisplayedAModel;
 
 	// Set by the view; the UI loop needs an element to source TinyFFR's input abstraction from.
 	// Rendering can only start once we have it, so this doubles as the trigger for the initial start.
-	public void SetInputSource(InputElement inputSource) {
+	public void SetInputSource(UIElement inputSource) {
 		_inputSource = inputSource;
 		if (_viewer == null) _ = StartRenderingAsync();
 	}
@@ -186,7 +185,7 @@ public partial class MainViewModel : ViewModelBase {
 			IsRendering = true;
 			StatusText = "Rendering. Models are streaming in asynchronously.";
 
-			_loop = viewer.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput);
+			_loop = viewer.ApplicationLoopBuilder.StartWpfUiLoop(inputSource, TickWithInput);
 
 			await viewer.LoadBackdropAsync();
 			if (!ReferenceEquals(_viewer, viewer)) return;

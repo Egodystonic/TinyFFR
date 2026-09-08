@@ -1,26 +1,44 @@
-// Created on 2026-07-31 by Ben Bowen
+﻿// Created on 2026-07-31 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Collections.Generic;
-using CommunityToolkit.Mvvm.ComponentModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
-namespace TinyFFR.Tests.Integrations.Avalonia.Viewer;
+namespace Egodystonic.TinyFFR.Testing.ModelViewer;
 
-public sealed partial class ModelListEntry : ObservableObject {
+public sealed class ModelListEntry : INotifyPropertyChanged {
+	bool _isLoaded;
+	bool _loadFailed;
+
+	public event PropertyChangedEventHandler? PropertyChanged;
+
 	public string DisplayName { get; }
 	public string? FileName { get; }
 
 	public bool IsHeader => FileName is null;
 	public bool IsSelectable => FileName is not null && IsLoaded;
 
-	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(IsSelectable))]
-	[NotifyPropertyChangedFor(nameof(DisplayText))]
-	public partial bool IsLoaded { get; set; }
+	public bool IsLoaded {
+		get => _isLoaded;
+		set {
+			if (_isLoaded == value) return;
+			_isLoaded = value;
+			Raise();
+			Raise(nameof(IsSelectable));
+			Raise(nameof(DisplayText));
+		}
+	}
 
-	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(DisplayText))]
-	public partial bool LoadFailed { get; set; }
+	public bool LoadFailed {
+		get => _loadFailed;
+		set {
+			if (_loadFailed == value) return;
+			_loadFailed = value;
+			Raise();
+			Raise(nameof(DisplayText));
+		}
+	}
 
 	public string DisplayText {
 		get {
@@ -33,6 +51,8 @@ public sealed partial class ModelListEntry : ObservableObject {
 		DisplayName = displayName;
 		FileName = fileName;
 	}
+
+	void Raise([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
 
 public static class ModelCatalog {

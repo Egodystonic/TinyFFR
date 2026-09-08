@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:tffrAvalonia="clr-namespace:Egodystonic.TinyFFR.Avalonia;assembly=TinyFFR.Avalonia"
-    xmlns:viewer="clr-namespace:TinyFFR.Tests.Integrations.Avalonia.Viewer"
+    xmlns:viewer="clr-namespace:Egodystonic.TinyFFR.Testing.ModelViewer;assembly=TestCommon"
     xmlns:vm="clr-namespace:TinyFFR.Tests.Integrations.Avalonia.ViewModels"
     d:DesignHeight="800"
     d:DesignWidth="1400"

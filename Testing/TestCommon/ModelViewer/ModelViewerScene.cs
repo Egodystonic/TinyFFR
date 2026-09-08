@@ -14,12 +14,11 @@ using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
-using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
-namespace TinyFFR.Tests.Integrations.Avalonia.Viewer;
+namespace Egodystonic.TinyFFR.Testing.ModelViewer;
 
-sealed class ModelViewerScene : IDisposable {
+public sealed class ModelViewerScene : IDisposable {
 	const float SpinDegreesPerSec = 90f;
 	const float OverlayYawDegreesPerSec = -130f;
 	const float OverlayPitchDegreesPerSec = -80f;

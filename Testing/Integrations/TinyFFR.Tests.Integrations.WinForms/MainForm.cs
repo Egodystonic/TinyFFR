@@ -1,149 +1,273 @@
-﻿using Egodystonic.TinyFFR;
+using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Environment.Input;
-using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Testing.ModelViewer;
 using Egodystonic.TinyFFR.WinForms;
-using Egodystonic.TinyFFR.World;
 
 namespace TinyFFR.Tests.Integrations.WinForms {
 	public partial class MainForm : Form {
-		List<IDisposable>? _disposables;
-		ModelInstance _instance;
-		ModelInstance _overlayInstance;
-		PointLight _light;
-		Renderer _overlayRenderer;
-		bool _overlayEnabled;
-		FirstPersonCameraController? _cameraController;
+		ModelViewerScene? _viewer;
+		IDisposable? _loop;
+		ModelListEntry? _displayedEntry;
+		bool _uiReady;
+		bool _selectionUpdateInFlight;
+		bool _startInFlight;
+		bool _compositorSwitchInFlight;
+		bool _hasDisplayedAModel;
+		int _loadedModelCount;
+		int _failedModelCount;
+		int _totalModelCount;
 
 		public MainForm() {
 			InitializeComponent();
+
+			shadingStyleComboBox.DataSource = Enum.GetValues<ViewerShadingStyle>();
+			qualityComboBox.DataSource = Enum.GetValues<BuiltInQualityConfiguration>();
+			qualityComboBox.SelectedItem = BuiltInQualityConfiguration.Ultra;
+
+			modelListBox.DisplayMember = nameof(ModelListEntry.DisplayText);
+
+			_uiReady = true;
 		}
 
-		private void toggleRenderingButton_Click(object sender, EventArgs e) {
-			ToggleRendering();
+		protected override void OnLoad(EventArgs e) {
+			base.OnLoad(e);
+			_ = StartRenderingAsync();
 		}
 
-		private void changeLightColourButton_Click(object sender, EventArgs e) {
-			ChangeLightColour();
+		protected override void OnFormClosing(FormClosingEventArgs e) {
+			Shutdown();
+			base.OnFormClosing(e);
 		}
 
-		private void toggleOverlayButton_Click(object sender, EventArgs e) {
-			ToggleOverlay();
+		void HandleStartStopClicked(object? sender, EventArgs e) {
+			if (_viewer == null) _ = StartRenderingAsync();
+			else Shutdown();
 		}
 
-		void ToggleRendering() {
-			if (_disposables == null) StartRendering();
-			else StopRendering();
+		void HandleRenderOnceClicked(object? sender, EventArgs e) => _viewer?.Render();
+
+		void HandleRandomizeColorClicked(object? sender, EventArgs e) {
+			if (shadingStyleComboBox.SelectedItem is ViewerShadingStyle.Textured) return;
+			_viewer?.RandomizeColor(randomColorOpaqueCheckBox.Checked);
 		}
 
-		void ChangeLightColour() {
-			if (_disposables == null) return;
-			_light.AdjustColorHueBy(30f);
+		void HandleShiftLightHueClicked(object? sender, EventArgs e) => _viewer?.ShiftLightHue();
+
+		void HandleSpinChanged(object? sender, EventArgs e) => _viewer?.SetSpin(spinXCheckBox.Checked, spinYCheckBox.Checked, spinZCheckBox.Checked);
+
+		void HandleShadingStyleChanged(object? sender, EventArgs e) {
+			if (!_uiReady || shadingStyleComboBox.SelectedItem is not ViewerShadingStyle style) return;
+			_viewer?.SetShadingStyle(style);
 		}
 
-		void ToggleOverlay() {
-			if (sceneView.Compositor is not { } compositor) return;
-			_overlayEnabled = !_overlayEnabled;
-			compositor.SetEnabledState(_overlayRenderer, _overlayEnabled);
+		void HandleQualityChanged(object? sender, EventArgs e) {
+			if (!_uiReady || qualityComboBox.SelectedItem is not BuiltInQualityConfiguration quality) return;
+			_viewer?.SetQuality(quality);
 		}
 
-		void StartRendering() {
-			_disposables = new List<IDisposable>();
+		void HandleOverlayEnabledChanged(object? sender, EventArgs e) => _viewer?.SetOverlayEnabled(overlayEnabledCheckBox.Checked);
 
-			var factory = new LocalTinyFfrFactory();
-			var camera = factory.CameraBuilder.CreateCamera(Egodystonic.TinyFFR.Location.Origin);
-			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-			var tex = factory.AssetLoader.LoadColorMap(factory.AssetLoader.BuiltInTexturePaths.White);
-			var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
-			_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
-			_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
-			var scene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.LightingSunMidday);
-			var renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator);
+		void HandleCompositeModeChanged(object? sender, EventArgs e) {
+			overlayEnabledCheckBox.Enabled = compositeModeCheckBox.Checked;
+			_ = ApplyCompositorAsync(compositeModeCheckBox.Checked);
+		}
 
-			scene.Add(_instance);
-			scene.Add(_light);
+		void HandleModelSelectionChanged(object? sender, EventArgs e) {
+			if (!_uiReady || _selectionUpdateInFlight) return;
 
-			_cameraController = camera.CreateController<FirstPersonCameraController>();
-
-			_disposables.Add(factory);
-			_disposables.Add(camera);
-			_disposables.Add(_cameraController);
-			_disposables.Add(mesh);
-			_disposables.Add(tex);
-			_disposables.Add(mat);
-			_disposables.Add(_instance);
-			_disposables.Add(_light);
-			_disposables.Add(scene);
-			_disposables.Add(renderer);
-
-			if (compositeModeCheckBox.Checked) {
-				var overlayCamera = factory.CameraBuilder.CreateCamera(Egodystonic.TinyFFR.Location.Origin);
-				var overlayScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.None);
-				_overlayInstance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: overlayCamera.Position + Direction.Forward * 3f + Direction.Left * 0.9f + Direction.Up * 0.9f);
-				var overlayLight = factory.LightBuilder.CreatePointLight(overlayCamera.Position, ColorVect.FromHueSaturationLightness(120f, 0.8f, 0.75f));
-				_overlayRenderer = factory.RendererBuilder.CreateBindableRenderer(overlayScene, overlayCamera, factory.ResourceAllocator);
-				_overlayEnabled = true;
-
-				overlayScene.Add(_overlayInstance);
-				overlayScene.Add(overlayLight);
-
-				var compositor = factory.RendererBuilder.CreateBindableCompositor();
-				compositor.Add(renderer, RenderCompositionType.Standard);
-				compositor.Add(_overlayRenderer, RenderCompositionType.RetainPreviousScenes);
-
-				_disposables.Add(overlayCamera);
-				_disposables.Add(_overlayInstance);
-				_disposables.Add(overlayLight);
-				_disposables.Add(overlayScene);
-				_disposables.Add(_overlayRenderer);
-				// Reverse-order disposal disposes the compositor before the renderers; its parameterless
-				// Dispose detaches the contained renderers so they can then be disposed as standalones
-				_disposables.Add(compositor);
-
-				sceneView.Compositor = compositor;
-			}
-			else {
-				sceneView.Renderer = renderer;
+			// A WinForms ListBox cannot disable individual rows, so category headers and still-loading models bounce the selection back
+			if (modelListBox.SelectedItem is not ModelListEntry entry || !entry.IsSelectable) {
+				_selectionUpdateInFlight = true;
+				try {
+					if (_displayedEntry is { } displayed) modelListBox.SelectedItem = displayed;
+					else modelListBox.SelectedIndex = -1;
+				}
+				finally { _selectionUpdateInFlight = false; }
+				return;
 			}
 
-			_disposables.Add(factory.ApplicationLoopBuilder.StartWinFormsUiLoop(sceneView, TickWithInput));
+			if (ReferenceEquals(entry, _displayedEntry)) return;
+			if (_viewer is not { } viewer || !viewer.IsModelLoaded(entry.FileName!)) return;
 
-			RenderCurrentSource();
+			_displayedEntry = entry;
+			statusLabel.Text = viewer.DisplayModel(entry.FileName!);
+			viewer.Render();
 		}
 
-		void StopRendering() {
+		async Task StartRenderingAsync() {
+			if (_startInFlight || _viewer != null) return;
+
+			_startInFlight = true;
+			try {
+				var entries = ModelCatalog.Build();
+				var selectableCount = 0;
+				foreach (var entry in entries) {
+					if (entry.FileName != null) ++selectableCount;
+				}
+
+				_selectionUpdateInFlight = true;
+				try {
+					modelListBox.BeginUpdate();
+					modelListBox.Items.Clear();
+					modelListBox.Items.AddRange(entries);
+					modelListBox.SelectedIndex = -1;
+					modelListBox.EndUpdate();
+				}
+				finally {
+					_selectionUpdateInFlight = false;
+				}
+
+				_displayedEntry = null;
+				_loadedModelCount = 0;
+				_failedModelCount = 0;
+				_totalModelCount = selectableCount;
+				_hasDisplayedAModel = false;
+				UpdateLoadProgress();
+
+				var viewer = new ModelViewerScene();
+				_viewer = viewer;
+
+				PushAllSettings();
+
+				sceneView.Renderer = viewer.ActiveRenderer;
+				sceneView.Compositor = viewer.ActiveCompositor;
+				statusLabel.Text = "Rendering. Models are streaming in asynchronously.";
+
+				_loop = viewer.ApplicationLoopBuilder.StartWinFormsUiLoop(sceneView, TickWithInput);
+
+				await viewer.LoadBackdropAsync();
+				if (!ReferenceEquals(_viewer, viewer)) return;
+
+				if (compositeModeCheckBox.Checked) {
+					await ApplyCompositorAsync(true);
+					if (!ReferenceEquals(_viewer, viewer)) return;
+				}
+
+				foreach (var entry in entries) {
+					if (entry.FileName == null) continue;
+					_ = LoadEntryAsync(viewer, entry);
+				}
+			}
+			catch (Exception e) {
+				statusLabel.Text = $"Failed to start rendering: {e.GetBaseException().Message}";
+			}
+			finally {
+				_startInFlight = false;
+			}
+		}
+
+		async Task LoadEntryAsync(ModelViewerScene viewer, ModelListEntry entry) {
+			try {
+				await viewer.LoadModelAsync(entry.FileName!);
+				if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+				entry.IsLoaded = true;
+				++_loadedModelCount;
+				RefreshEntryRow(entry);
+
+				if (!_hasDisplayedAModel) {
+					_hasDisplayedAModel = true;
+					modelListBox.SelectedItem = entry;
+				}
+
+				UpdateLoadProgress();
+			}
+			catch (Exception e) {
+				if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+				entry.LoadFailed = true;
+				++_failedModelCount;
+				RefreshEntryRow(entry);
+				UpdateLoadProgress();
+				statusLabel.Text = $"Failed to load {entry.FileName}: {e.GetBaseException().Message}";
+			}
+		}
+
+		// Reassigning the item is what makes the ListBox re-read DisplayText; it re-selects the row itself if it was the selected one
+		void RefreshEntryRow(ModelListEntry entry) {
+			var index = modelListBox.Items.IndexOf(entry);
+			if (index < 0) return;
+
+			_selectionUpdateInFlight = true;
+			try { modelListBox.Items[index] = entry; }
+			finally { _selectionUpdateInFlight = false; }
+		}
+
+		void UpdateLoadProgress() {
+			var pending = _totalModelCount - _loadedModelCount - _failedModelCount;
+			if (pending <= 0 && _failedModelCount == 0) loadProgressLabel.Text = $"All {_totalModelCount} models loaded.";
+			else if (_failedModelCount > 0) loadProgressLabel.Text = $"Loaded {_loadedModelCount} of {_totalModelCount} ({_failedModelCount} failed, {pending} pending)";
+			else loadProgressLabel.Text = $"Loaded {_loadedModelCount} of {_totalModelCount} ({pending} pending)";
+
+			loadProgressBar.Maximum = Int32.Max(_totalModelCount, 1);
+			loadProgressBar.Value = Int32.Min(_loadedModelCount, loadProgressBar.Maximum);
+		}
+
+		void Shutdown() {
+			if (_viewer == null && _loop == null) return;
+
+			var viewer = _viewer;
+			_viewer = null;
+
+			_loop?.Dispose();
+			_loop = null;
+
 			sceneView.Renderer = null;
 			sceneView.Compositor = null;
-			_cameraController = null;
-			foreach (var d in Enumerable.Reverse(_disposables!)) {
-				d.Dispose();
+
+			viewer?.Dispose();
+
+			_selectionUpdateInFlight = true;
+			try { modelListBox.SelectedIndex = -1; }
+			finally { _selectionUpdateInFlight = false; }
+
+			_displayedEntry = null;
+			_loadedModelCount = 0;
+			_failedModelCount = 0;
+			_hasDisplayedAModel = false;
+			loadProgressLabel.Text = "";
+			loadProgressBar.Value = 0;
+			statusLabel.Text = "Not rendering.";
+		}
+
+		void PushAllSettings() {
+			if (_viewer is not { } viewer) return;
+
+			viewer.SetSpin(spinXCheckBox.Checked, spinYCheckBox.Checked, spinZCheckBox.Checked);
+			if (shadingStyleComboBox.SelectedItem is ViewerShadingStyle style) viewer.SetShadingStyle(style);
+			if (qualityComboBox.SelectedItem is BuiltInQualityConfiguration quality) viewer.SetQuality(quality);
+			viewer.SetOverlayEnabled(overlayEnabledCheckBox.Checked);
+		}
+
+		async Task ApplyCompositorAsync(bool value) {
+			if (_viewer is not { } viewer || _compositorSwitchInFlight) return;
+
+			_compositorSwitchInFlight = true;
+			try {
+				// Both must be unbound before the switch: the scene view rejects having Renderer and Compositor set simultaneously,
+				// and a renderer that is still supplying frames cannot be attached to a compositor
+				sceneView.Renderer = null;
+				sceneView.Compositor = null;
+
+				await viewer.SetCompositeModeAsync(value);
+				if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+				sceneView.Renderer = viewer.ActiveRenderer;
+				sceneView.Compositor = viewer.ActiveCompositor;
 			}
-			_disposables = null;
+			catch (Exception e) {
+				statusLabel.Text = $"Failed to change compositor mode: {e.GetBaseException().Message}";
+			}
+			finally {
+				_compositorSwitchInFlight = false;
+			}
 		}
 
-		void RenderCurrentSource() {
-			if (sceneView.Compositor is { } compositor) compositor.RenderAll();
-			else sceneView.Renderer?.Render();
-		}
-
-		// Exactly the same camera-control code a standalone TinyFFR application would use in its ApplicationLoop
 		void TickWithInput(TimeSpan deltaTime, ILatestInputRetriever input) {
-			if (_cameraController is { } controller) {
-				controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime.AsDeltaTime());
-				controller.Progress(deltaTime.AsDeltaTime());
-			}
-			Tick(deltaTime);
-		}
-
-		void Tick(TimeSpan deltaTime) {
-			RenderCurrentSource();
-
-			_instance.RotateBy((float) deltaTime.TotalSeconds * 130f % Direction.Up);
-			_instance.RotateBy((float) deltaTime.TotalSeconds * 80f % Direction.Right);
-			if (sceneView.Compositor != null) {
-				_overlayInstance.RotateBy((float) deltaTime.TotalSeconds * -130f % Direction.Up);
-				_overlayInstance.RotateBy((float) deltaTime.TotalSeconds * -80f % Direction.Right);
-			}
+			if (_viewer is not { } viewer) return;
+			viewer.Tick(deltaTime.AsDeltaTime(), input.KeyboardAndMouse);
+			if (animateCheckBox.Checked) viewer.Render();
 		}
 	}
 }
