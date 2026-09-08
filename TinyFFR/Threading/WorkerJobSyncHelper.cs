@@ -31,7 +31,7 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 			static Unused Work(TContext? @this) {
 				if (@this!._dispatchWorkPtr == null) throw new InvalidOperationException("Dispatch work pointer was null (this is a bug in TinyFFR).");
 				var resource = ((delegate* managed<TContext, TResource>) @this._dispatchWorkPtr)(@this);
-				resource.AllocateGcHandleAndSerializeResource(@this._generatedResourceData);
+				IResource.AllocateGcHandleAndSerializeResource(resource, @this._generatedResourceData);
 				return default;
 			}
 			

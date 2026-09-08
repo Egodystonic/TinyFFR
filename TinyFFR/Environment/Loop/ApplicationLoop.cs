@@ -18,6 +18,9 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 
 	IApplicationLoopImplProvider IResource<ApplicationLoop, IApplicationLoopImplProvider>.Implementation => Implementation;
 	ResourceHandle<ApplicationLoop> IResource<ApplicationLoop>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public ILatestInputRetriever Input {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

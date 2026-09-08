@@ -20,6 +20,9 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 
 	ILightImplProvider IResource<DirectionalLight, ILightImplProvider>.Implementation => Implementation;
 	ResourceHandle<DirectionalLight> IResource<DirectionalLight>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal DirectionalLight(ResourceHandle<DirectionalLight> handle, ILightImplProvider impl) {
 		_handle = handle;

@@ -20,6 +20,9 @@ public readonly struct PointLight : ILight<PointLight>, IPositionedSceneObject {
 
 	ILightImplProvider IResource<PointLight, ILightImplProvider>.Implementation => Implementation;
 	ResourceHandle<PointLight> IResource<PointLight>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal PointLight(ResourceHandle<PointLight> handle, ILightImplProvider impl) {
 		_handle = handle;

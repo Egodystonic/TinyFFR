@@ -15,6 +15,9 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 
 	IIndexBufferImplProvider IResource<IndexBuffer, IIndexBufferImplProvider>.Implementation => Implementation;
 	ResourceHandle<IndexBuffer> IResource<IndexBuffer>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal IndexBuffer(ResourceHandle<IndexBuffer> handle, IIndexBufferImplProvider impl) {
 		_handle = handle;

@@ -48,6 +48,9 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 
 	IModelInstanceImplProvider IResource<ModelInstance, IModelInstanceImplProvider>.Implementation => Implementation;
 	ResourceHandle<ModelInstance> IResource<ModelInstance>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

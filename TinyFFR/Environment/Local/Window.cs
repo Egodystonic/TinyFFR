@@ -18,6 +18,9 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 
 	IWindowImplProvider IResource<Window, IWindowImplProvider>.Implementation => Implementation;
 	ResourceHandle<Window> IResource<Window>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public Display Display {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

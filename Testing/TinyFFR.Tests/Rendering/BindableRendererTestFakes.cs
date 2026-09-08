@@ -277,8 +277,13 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 		return impl.GroupInstance;
 	}
 
+	public ScopedSpanLease<T> BorrowSpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true) => throw new NotSupportedException();
+	public ScopedReadOnlySpanLease<T> BorrowReadOnlySpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true) => throw new NotSupportedException();
 	public Memory<T> CreatePooledMemoryBuffer<T>(int numElements) => throw new NotSupportedException();
 	public void ReturnPooledMemoryBuffer<T>(Memory<T> buffer) => throw new NotSupportedException();
+	public IList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public IDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public ISet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
 	public IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null) => throw new NotSupportedException();
 	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>() => throw new NotSupportedException();
 	public IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>() => throw new NotSupportedException();

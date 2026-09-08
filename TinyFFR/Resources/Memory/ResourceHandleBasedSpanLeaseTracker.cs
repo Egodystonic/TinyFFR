@@ -1,6 +1,7 @@
 // Created on 2026-06-02 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Diagnostics.CodeAnalysis;
 using Egodystonic.TinyFFR.Factory.Local;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
@@ -44,7 +45,12 @@ sealed unsafe class ResourceHandleBasedSpanLeaseTracker<T> : IResourceHandleBase
 
 	public void ThrowIfAnyActiveRentals(ResourceHandle handle, ReadOnlySpan<char> targetResourceTypeName, ReadOnlySpan<char> targetResourceName) {
 		if (GetActiveRentalsCount(handle) == 0) return;
-		
+		ThrowForActiveRentals(handle, targetResourceTypeName, targetResourceName);
+	}
+
+	[DoesNotReturn]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	void ThrowForActiveRentals(ResourceHandle handle, ReadOnlySpan<char> targetResourceTypeName, ReadOnlySpan<char> targetResourceName) {
 		var rentalStrings = _activeRentalIds
 			.Where(kvp => kvp.Value == handle)
 			.Select(kvp => $"Leased {typeof(T)} span #{kvp.Key}")

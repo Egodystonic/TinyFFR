@@ -15,6 +15,9 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 
 	IRenderOutputBufferImplProvider IResource<RenderOutputBuffer, IRenderOutputBufferImplProvider>.Implementation => Implementation;
 	ResourceHandle<RenderOutputBuffer> IResource<RenderOutputBuffer>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public XYPair<int> TextureDimensions {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

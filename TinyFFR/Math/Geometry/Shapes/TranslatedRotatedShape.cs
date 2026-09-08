@@ -31,13 +31,13 @@ public readonly struct TranslatedRotatedShape<T> : ITranslatedRotatedShape<Trans
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.Minus(Translation).RotatedAroundOriginBy(Rotation.Reversed);
+	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.MovedBy(-Translation).RotatedAroundOriginBy(Rotation.Reversed);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.RotatedAroundOriginBy(Rotation).Plus(Translation);
+	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.RotatedAroundOriginBy(Rotation).MovedBy(Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.Minus(Translation).RotatedAroundOriginBy(Rotation.Reversed);
+	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.MovedBy(-Translation).RotatedAroundOriginBy(Rotation.Reversed);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.RotatedAroundOriginBy(Rotation).Plus(Translation);
+	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.RotatedAroundOriginBy(Rotation).MovedBy(Translation);
 
 	#region ToString / Format / Parse
 	public string ToString(string? format, IFormatProvider? formatProvider) {

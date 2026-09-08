@@ -16,7 +16,7 @@ public readonly record struct BitmapSaveConfig(bool IncludeAlphaChannel, bool Fl
 public static class ImageUtils {
 	const int MaxFilePathLength = 1024;
 	static readonly ThreadLocal<InteropStringBuffer> _threadLocalStringBuffer = new(() => new InteropStringBuffer(MaxFilePathLength, true), trackAllValues: false);
-	static readonly ArrayPool<byte> _dataBufferPool = ArrayPool<byte>.Shared;
+	static readonly ArrayPool<byte> _dataBufferPool = TinyFfrArrayPool<byte>.Shared;
 	static ReadOnlySpan<byte> DummyFileData => "tinyffr"u8;
 
 	public static void SaveBitmap<TTexel>(ReadOnlySpan<char> filePath, XYPair<int> dimensions, ReadOnlySpan<TTexel> texels) where TTexel : unmanaged, ITexel<TTexel, byte> {

@@ -17,6 +17,10 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	IMeshAnimationImplProvider IResource<MeshAnimation, IMeshAnimationImplProvider>.Implementation => Implementation;
 	ResourceHandle<MeshAnimation> IResource<MeshAnimation>.Handle => Handle;
 	
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
+
 	public MeshAnimationType Type {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetType(_handle);

@@ -29,7 +29,7 @@ sealed unsafe class ArrayPoolBackedLruCache<TKey, TValue> : IArrayPoolBackedLruC
 	public ArrayPoolBackedLruCache(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) {
 		if (maxValuesInCache <= 0) throw new ArgumentOutOfRangeException(nameof(maxValuesInCache), maxValuesInCache, "Requires positive value.");
 		_maxValuesInCache = maxValuesInCache;
-		_nodes = ArrayPool<Node>.Shared.Rent(maxValuesInCache);
+		_nodes = TinyFfrArrayPool<Node>.Shared.Rent(maxValuesInCache);
 		_cacheEvictionCallback = cacheEvictionCallback;
 		_cacheEvictionCallbackArg = cacheEvictionCallbackArg;
 	}
@@ -162,7 +162,7 @@ sealed unsafe class ArrayPoolBackedLruCache<TKey, TValue> : IArrayPoolBackedLruC
 			}
 		}
 		
-		ArrayPool<Node>.Shared.Return(_nodes, clearArray: true);
+		TinyFfrArrayPool<Node>.Shared.Return(_nodes, clearArray: true);
 		_liveNodeIndexLookupMap.Dispose();
 	}
 }

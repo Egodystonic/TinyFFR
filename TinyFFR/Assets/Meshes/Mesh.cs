@@ -16,6 +16,9 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 
 	IMeshImplProvider IResource<Mesh, IMeshImplProvider>.Implementation => Implementation;
 	ResourceHandle<Mesh> IResource<Mesh>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public MeshBufferData BufferData {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -15,6 +15,9 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 
 	ITextureImplProvider IResource<Texture, ITextureImplProvider>.Implementation => Implementation;
 	ResourceHandle<Texture> IResource<Texture>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public XYPair<int> Dimensions {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

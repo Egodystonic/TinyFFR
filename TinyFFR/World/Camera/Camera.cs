@@ -32,6 +32,9 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 
 	ICameraImplProvider IResource<Camera, ICameraImplProvider>.Implementation => Implementation;
 	ResourceHandle<Camera> IResource<Camera>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

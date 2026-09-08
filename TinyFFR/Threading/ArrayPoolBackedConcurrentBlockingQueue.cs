@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Threading;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Threading;
 
@@ -18,7 +19,7 @@ sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 	ulong _readCounter;
 
 	public ArrayPoolBackedConcurrentBlockingQueue() {
-		_buffer = ArrayPool<T>.Shared.Rent(InitialCapacity);
+		_buffer = TinyFfrArrayPool<T>.Shared.Rent(InitialCapacity);
 		_headBitmask = GetUsableCapacityBitmask(_buffer);
 	}
 
@@ -103,10 +104,10 @@ sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 		Debug.Assert(WriteHead == ReadHead);
 		var oldCapacity = Capacity;
 		var oldReadHead = ReadHead;
-		var newBuffer = ArrayPool<T>.Shared.Rent(oldCapacity * 2);
+		var newBuffer = TinyFfrArrayPool<T>.Shared.Rent(oldCapacity * 2);
 		Array.Copy(_buffer, oldReadHead, newBuffer, 0, oldCapacity - oldReadHead);
 		Array.Copy(_buffer, 0, newBuffer, oldCapacity - oldReadHead, oldReadHead);
-		ArrayPool<T>.Shared.Return(_buffer, true);
+		TinyFfrArrayPool<T>.Shared.Return(_buffer, true);
 		_buffer = newBuffer;
 		_headBitmask = GetUsableCapacityBitmask(newBuffer);
 		_writeCounter = (ulong) oldCapacity;
@@ -117,7 +118,7 @@ sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 		lock (_monitorObject) {
 			if (_isDisposed) return;
 			try {
-				ArrayPool<T>.Shared.Return(_buffer, true);
+				TinyFfrArrayPool<T>.Shared.Return(_buffer, true);
 			}
 			finally {
 				_buffer = Array.Empty<T>();

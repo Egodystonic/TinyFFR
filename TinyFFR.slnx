@@ -1,4 +1,4 @@
-<Solution>
+﻿<Solution>
   <Configurations>
     <BuildType Name="Debug" />
     <BuildType Name="Optimized" />
@@ -77,6 +77,13 @@
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
     <Project Path="Testing/TinyFFR.Tests/TinyFFR.Tests.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Testing/Benchmarks/">
+    <Project Path="Testing/Benchmarks/TinyFFR.Benchmarks/TinyFFR.Benchmarks.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />

@@ -15,6 +15,9 @@ public readonly struct VertexBuffer : IDisposableResource<VertexBuffer, IVertexB
 
 	IVertexBufferImplProvider IResource<VertexBuffer, IVertexBufferImplProvider>.Implementation => Implementation;
 	ResourceHandle<VertexBuffer> IResource<VertexBuffer>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal VertexBuffer(ResourceHandle<VertexBuffer> handle, IVertexBufferImplProvider impl) {
 		_handle = handle;

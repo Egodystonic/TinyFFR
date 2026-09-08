@@ -22,6 +22,9 @@ public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IO
 
 	ILightImplProvider IResource<SpotLight, ILightImplProvider>.Implementation => Implementation;
 	ResourceHandle<SpotLight> IResource<SpotLight>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal SpotLight(ResourceHandle<SpotLight> handle, ILightImplProvider impl) {
 		_handle = handle;

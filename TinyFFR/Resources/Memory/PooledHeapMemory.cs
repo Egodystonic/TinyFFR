@@ -15,7 +15,7 @@ interface IHeapPool {
 }
 
 sealed unsafe class HeapPool : IHeapPool, IDisposable {
-	readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
+	readonly ArrayPool<byte> _pool = TinyFfrArrayPool<byte>.Shared;
 	readonly ArrayPoolBackedMap<nuint, byte[]> _activeSpanLeases = new();
 	nuint _prevSpanLeaseId = 0U;
 	

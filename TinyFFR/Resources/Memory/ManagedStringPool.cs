@@ -12,7 +12,7 @@ sealed class ManagedStringPool {
 		public string AsNewStringObject => new(AsSpan);
 	}
 
-	readonly ArrayPool<char> _charPool = ArrayPool<char>.Shared;
+	readonly ArrayPool<char> _charPool = TinyFfrArrayPool<char>.Shared;
 
 	public RentedStringHandle RentAndCopy(ReadOnlySpan<char> src) {
 		var result = new RentedStringHandle(_charPool.Rent(src.Length), src.Length);

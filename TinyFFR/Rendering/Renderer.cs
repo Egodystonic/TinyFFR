@@ -20,6 +20,9 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 
 	IRendererImplProvider IResource<Renderer, IRendererImplProvider>.Implementation => Implementation;
 	ResourceHandle<Renderer> IResource<Renderer>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal Renderer(ResourceHandle<Renderer> handle, IRendererImplProvider impl) {
 		_handle = handle;

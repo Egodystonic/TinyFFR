@@ -17,6 +17,9 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 
 	IDisplayImplProvider IResource<Display, IDisplayImplProvider>.Implementation => Implementation;
 	ResourceHandle<Display> IResource<Display>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public bool IsPrimary {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

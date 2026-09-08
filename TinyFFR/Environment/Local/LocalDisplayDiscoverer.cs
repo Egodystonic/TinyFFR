@@ -75,7 +75,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		var modes = _displayModes[handle];
 		var result = modes[0];
-		foreach (var displayMode in modes[1..]) {
+		foreach (var displayMode in modes.AsSpan(1..)) {
 			if (displayMode.Resolution.Area > result.Resolution.Area) {
 				result = displayMode;
 			}
@@ -89,7 +89,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		var modes = _displayModes[handle];
 		var result = modes[0];
-		foreach (var displayMode in modes[1..]) {
+		foreach (var displayMode in modes.AsSpan(1..)) {
 			if (displayMode.RefreshRateHz > result.RefreshRateHz) {
 				result = displayMode;
 			}

@@ -15,6 +15,9 @@ public readonly struct RendererCompositor : IDisposableResource<RendererComposit
 
 	IRendererCompositorImplProvider IResource<RendererCompositor, IRendererCompositorImplProvider>.Implementation => Implementation;
 	ResourceHandle<RendererCompositor> IResource<RendererCompositor>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal RendererCompositor(ResourceHandle<RendererCompositor> handle, IRendererCompositorImplProvider impl) {
 		_handle = handle;

@@ -40,7 +40,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	const string DefaultGroupName = "Unnamed Resource Group";
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ArrayPool<SerializedResourceData> _dataArrayPool = ArrayPool<SerializedResourceData>.Shared;
+	readonly ArrayPool<SerializedResourceData> _dataArrayPool = TinyFfrArrayPool<SerializedResourceData>.Shared;
 	readonly ArrayPoolBackedMap<ResourceHandle<ResourceGroup>, GroupData> _dataMap = new();
 	nuint _previousGroupId = 0;
 	bool _isDisposed = false;

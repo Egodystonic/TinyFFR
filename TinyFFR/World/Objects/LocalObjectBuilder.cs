@@ -758,6 +758,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		DisposeTextInstanceDataIfPresent(handle);
 		_activeInstanceDrawOrderDeferralAmounts.Remove(handle);
 		_activeInstanceData.Remove(handle);
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
 	

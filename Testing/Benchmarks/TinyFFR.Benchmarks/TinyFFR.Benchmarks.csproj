@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Platforms>x64;ARM64</Platforms>
+    <Configurations>Debug;Release;Optimized</Configurations>
+    <RootNamespace>$(TffrRootNamespace).Benchmarks</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <ProjectReference Include="..\..\..\TinyFFR.Native\TinyFFR.Native.vcxproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\TinyFFR\TinyFFR.csproj" />
+    <ProjectReference Include="..\..\TestCommon\TestCommon.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -28,6 +28,9 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 
 	ISceneImplProvider IResource<Scene, ISceneImplProvider>.Implementation => Implementation;
 	ResourceHandle<Scene> IResource<Scene>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal Scene(ResourceHandle<Scene> handle, ISceneImplProvider impl) {
 		_handle = handle;

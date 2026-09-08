@@ -37,8 +37,9 @@
 [data-md-color-scheme="slate"] {
 	--md-primary-fg-color:        #cd99b7;
 	--md-accent-fg-color:        #a56c8d;
-	--md-default-bg-color:	#181a21;		
+	--md-default-bg-color:	#15161b;
 	--md-footer-bg-color:		#2a2c33;
+	--md-code-bg-color:		hsl(222.9, 9.6%, 14.3%);
 }
 
 .def-icon {

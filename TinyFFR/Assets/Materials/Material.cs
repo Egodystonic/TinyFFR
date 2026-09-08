@@ -16,6 +16,9 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 
 	IMaterialImplProvider IResource<Material, IMaterialImplProvider>.Implementation => Implementation;
 	ResourceHandle<Material> IResource<Material>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public bool SupportsPerInstanceEffects {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

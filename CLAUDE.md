@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 * Do not add comments to code ever.
 * Avoid code that create GC pressure in the main library code (TinyFFR). Generating garbage is absolutely fine in the test projects.
+* The benchmarking projects under `Testing/Benchmarks` are the exception to the above: their scaffolding must generate no GC pressure at all, because BenchmarkDotNet's `MemoryDiagnoser` would otherwise report the harness's allocations instead of the library's. Use `IResourceAllocator.GetSharedScratchList/Dictionary/Set` or `CreatePooledMemoryBuffer` for scratch storage, function-pointer callback overloads rather than lambdas, and pre-resolved `static readonly` fields for asset paths and texture patterns.
 * Don't try to run any tests marked as [Explicit]. These tests often spin up windows on the desktop and expect user interaction for verification.
 
 ## Project Overview
@@ -39,6 +40,33 @@ Run a single test:
 dotnet test Testing/TinyFFR.Tests --filter "FullyQualifiedName~TestClassName.TestMethodName"
 ```
 Integration tests are marked `[Explicit]` and require manual invocation. Do not run these.
+
+### Run Benchmarks
+Benchmarks live in `Testing/Benchmarks/TinyFFR.Benchmarks`, one folder per benchmark. Full usage is in `Testing/Benchmarks/README.md`. They must be run in Release:
+```bash
+dotnet run --project Testing/Benchmarks/TinyFFR.Benchmarks -c Release -p:Platform=x64
+```
+`--job dry` (1 warmup + 1 iteration) is the quick pass while iterating; `--job standard` is the default; `--job long` tightens confidence intervals. Run a subset with `--filter "*RenderFrame*"` — note BenchmarkDotNet wants multiple globs after a *single* `--filter`, not one switch per glob.
+
+The results table includes an `Alloc Rate` column (`Allocated / Mean`, managed MB per second) — the proxy for GC pressure. BenchmarkDotNet's `Gen0/1/2` columns exist but are near-useless here: BDN forces a GC around every iteration, so with `InvocationCount=1` every operation starts with a reset Gen0 budget and anything allocating less than one budget per ~100ms operation reports `-` regardless of the churn it would cause in a real loop. `Alloc Rate` never quantises to zero. Use it to rank sections, `--probe-alloc` to find the cause, and `--soak` for what the GC actually does unforced.
+
+The results table includes an `Allocated` column (process-wide managed bytes per invocation). It carries a small noise floor (~4-5 KB as of 2026-09-08, down from ~21 KB): a Gen2 trim callback is registered per pooled element type and allocates ~336 B per GC, and BenchmarkDotNet forces a GC around every measurement. Most of that floor disappeared when the collections moved to `TinyFfrArrayPool<T>` (`Resources/Memory/TinyFfrArrayPool.cs`), which registers no such callback; what remains comes from `ArrayPool<T>.Shared`, still used for buffers above `TinyFfrArrayPool.LargeBufferThresholdBytes`. That floor is not TinyFFR. Treat the column as a relative signal - section ordering is fixed, so a section carries the same floor every run - and do not read a few KB on a should-be-zero section as a regression.
+
+Pass `--probe-alloc [name]` to measure exact per-operation allocation for a library call, isolated from the results table's noise floor (per-thread `GC.GetAllocatedBytesForCurrentThread`, 3 warmup then min of 5). Use it whenever an `Allocated` figure needs explaining — a section can report hundreds of KB while every operation in it probes at 0 B, which means it is measuring retained memory (collections growing as it holds resources live), not a per-call cost. Probe groups live in `Smoke/SmokeProbes.cs`.
+```bash
+dotnet run --project Testing/Benchmarks/TinyFFR.Benchmarks -c Release -p:Platform=x64 -- --probe-alloc LoadBakedAssets
+```
+
+Pass `--inspect [name]` to run each Smoke section once against a real window for visual checking (works in Debug too):
+```bash
+dotnet run --project Testing/Benchmarks/TinyFFR.Benchmarks -c Debug -p:Platform=x64 -- --inspect Smoke
+```
+Pass `--soak [minutes]` for the Soak benchmark: a persistent scene rendered in a continuous loop, sampling allocation and GC counts every 15s and reporting whether allocation per frame trends upward. It runs *outside* BenchmarkDotNet precisely so no GC is ever forced, which makes it the right tool for drift, leak and pool-behaviour questions that Smoke structurally cannot answer.
+```bash
+dotnet run --project Testing/Benchmarks/TinyFFR.Benchmarks -c Release -p:Platform=x64 -- --soak 10
+```
+
+Sections are deliberately sized to take at least ~100ms so their measurements are precise and non-linear-complexity algorithms surface; all the sizes live in `Smoke/SmokeWorkload.cs`.
 
 ## Architecture
 

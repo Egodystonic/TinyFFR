@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -66,12 +67,38 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		}
 	}
 
-	internal static void ThrowIfAssetBufferSizeExceedsMaximum(long requiredSizeBytes, string assetDescription) {
+	internal static void ThrowIfAssetBufferSizeExceedsMaximum(long requiredSizeBytes, [InterpolatedStringHandlerArgument(nameof(requiredSizeBytes))] ref AssetDescriptionHandler assetDescription) {
 		if (requiredSizeBytes <= MaxAssetBufferSizeBytes) return;
 		throw new InvalidOperationException(
-			$"Can not load {assetDescription} because it requires an in-memory buffer of {requiredSizeBytes} bytes, " +
+			$"Can not load {assetDescription.ToStringAndClear()} because it requires an in-memory buffer of {requiredSizeBytes} bytes, " +
 			$"which exceeds the maximum size TinyFFR supports for a single asset buffer ({MaxAssetBufferSizeBytes} bytes)."
 		);
+	}
+
+	[InterpolatedStringHandler]
+	internal ref struct AssetDescriptionHandler {
+		DefaultInterpolatedStringHandler _inner;
+		readonly bool _sizeExceedsMaximum;
+
+		public AssetDescriptionHandler(int literalLength, int formattedCount, long requiredSizeBytes, out bool shouldAppend) {
+			_sizeExceedsMaximum = requiredSizeBytes > MaxAssetBufferSizeBytes;
+			shouldAppend = _sizeExceedsMaximum;
+			_inner = _sizeExceedsMaximum ? new DefaultInterpolatedStringHandler(literalLength, formattedCount) : default;
+		}
+
+		public void AppendLiteral(string value) {
+			if (_sizeExceedsMaximum) _inner.AppendLiteral(value);
+		}
+
+		public void AppendFormatted<T>(T value) {
+			if (_sizeExceedsMaximum) _inner.AppendFormatted(value);
+		}
+
+		public void AppendFormatted(ReadOnlySpan<char> value) {
+			if (_sizeExceedsMaximum) _inner.AppendFormatted(value);
+		}
+
+		public string ToStringAndClear() => _sizeExceedsMaximum ? _inner.ToStringAndClear() : "";
 	}
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Asset Loader [Disposed]" : "TinyFFR Local Asset Loader";

@@ -222,6 +222,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			OutstandingAsyncOperationRegistry.InvokeDeferredContinuations();
 			if (SynchronizationContext.Current is TinyFfrSynchronizationContext) SynchronizationContext.SetSynchronizationContext(null);
 			ThreadSafetyTracker.ClearPrimaryThread();
+			TinyFfrArrayPool.ReleaseAllPooledMemory();
+			LocalFileSystemUtils.ReleaseThreadLocalBuffers();
 		}
 	}
 

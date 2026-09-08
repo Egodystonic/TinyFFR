@@ -31,10 +31,10 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 	internal ResourceIdent Ident { get; }
 	internal ResourceStub AsStub => new(Ident, Implementation);
 
-	internal void AllocateGcHandleAndSerializeResource(Span<byte> dest) {
-		var gcHandle = GCHandle.Alloc(Implementation, GCHandleType.Normal);
+	internal static void AllocateGcHandleAndSerializeResource<TResource>(TResource resource, Span<byte> dest) where TResource : IResource<TResource> {
+		var gcHandle = GCHandle.Alloc(resource.Implementation, GCHandleType.Normal);
 		BinaryPrimitives.WriteIntPtrLittleEndian(dest, GCHandle.ToIntPtr(gcHandle));
-		BinaryPrimitives.WriteUIntPtrLittleEndian(dest[IntPtr.Size..], Handle);
+		BinaryPrimitives.WriteUIntPtrLittleEndian(dest[IntPtr.Size..], resource.Handle);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -64,6 +64,7 @@ public interface IResource<TSelf, out TImpl> : IResource<TSelf>
 
 	internal new TImpl Implementation { get; }
 	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal static TSelf RecreateFromResourceStub(ResourceStub stub) {
 		if (stub.TypeHandle != ResourceHandle<TSelf>.TypeHandle) {

@@ -114,6 +114,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <ClInclude Include="tffr\headers\environment\native_impl_window.h" />
     <ClInclude Include="tffr\headers\interop_result.h" />
     <ClInclude Include="tffr\headers\interop_utils.h" />
+    <ClInclude Include="tffr\headers\native_impl_file_io.h" />
     <ClInclude Include="tffr\headers\native_impl_init.h" />
     <ClInclude Include="tffr\headers\scene\camera\native_impl_camera.h" />
     <ClInclude Include="tffr\headers\scene\lights\native_impl_lights.h" />
@@ -138,6 +139,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <ClCompile Include="tffr\impl\environment\native_impl_window.cpp" />
     <ClCompile Include="tffr\impl\interop_result.cpp" />
     <ClCompile Include="tffr\impl\interop_utils.cpp" />
+    <ClCompile Include="tffr\impl\native_impl_file_io.cpp" />
     <ClCompile Include="tffr\impl\native_impl_init.cpp" />
     <ClCompile Include="tffr\impl\scene\camera\native_impl_camera.cpp" />
     <ClCompile Include="tffr\impl\scene\lights\native_impl_lights.cpp" />

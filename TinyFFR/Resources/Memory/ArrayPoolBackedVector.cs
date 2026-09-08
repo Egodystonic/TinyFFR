@@ -64,7 +64,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	}
 
 	public ArrayPoolBackedVector(int initialCapacity = DefaultInitialCapacity) {
-		_backingArray = ArrayPool<T>.Shared.Rent(initialCapacity);
+		_backingArray = TinyFfrArrayPool<T>.Shared.Rent(initialCapacity);
 	}
 
 	public void Add(T item) {
@@ -153,16 +153,16 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 
 	public void Dispose() {
 		++Version;
-		ArrayPool<T>.Shared.Return(_backingArray);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray);
 		_backingArray = null!;
 	}
 
 	void IncreaseBackingArraySizeIfFull() {
 		if (Count < _backingArray.Length) return;
 
-		var newBackingArray = ArrayPool<T>.Shared.Rent(_backingArray.Length * 2);
+		var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(_backingArray.Length * 2);
 		_backingArray.CopyTo(newBackingArray, 0);
-		ArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
 		_backingArray = newBackingArray;
 	}
 }

@@ -16,6 +16,9 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 
 	IDynamicVertexBufferImplProvider IResource<DynamicVertexBuffer, IDynamicVertexBufferImplProvider>.Implementation => Implementation;
 	ResourceHandle<DynamicVertexBuffer> IResource<DynamicVertexBuffer>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public int VertexBufferSize {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

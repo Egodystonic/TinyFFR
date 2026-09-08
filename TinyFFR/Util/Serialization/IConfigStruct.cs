@@ -69,7 +69,7 @@ public interface IConfigStruct {
 		dest = dest[(sizeof(int) + byteCount)..];
 	}
 	protected static void SerializationWriteAndAllocateResource<T>(scoped ref Span<byte> dest, T v) where T : IResource<T> {
-		v.AllocateGcHandleAndSerializeResource(dest);
+		IResource.AllocateGcHandleAndSerializeResource(v, dest);
 		dest = dest[SerializationSizeOfResource()..];
 	}
 	protected static void SerializationWriteSpan<T>(scoped ref Span<byte> dest, ReadOnlySpan<T> v) where T : unmanaged {
@@ -100,7 +100,7 @@ public interface IConfigStruct {
 	}
 	protected static void SerializationWriteAndAllocateNullableResource<T>(scoped ref Span<byte> dest, T? v) where T : struct, IResource<T> {
 		SerializationWriteBool(ref dest, v.HasValue);
-		if (v.HasValue) v.Value.AllocateGcHandleAndSerializeResource(dest);
+		if (v.HasValue) IResource.AllocateGcHandleAndSerializeResource(v.Value, dest);
 		else dest[..SerializationSizeOfResource()].Clear();
 		dest = dest[SerializationSizeOfResource()..];
 	}

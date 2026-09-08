@@ -17,7 +17,7 @@ This brings in `Egodystonic.TinyFFR` and [Hexa.NET.ImGui](https://www.nuget.org/
 
 ## The ImGui scene
 
-An ImGui interface is a **separate scene with its own renderer**, composited on top of your 3D pass — exactly like a [canvas](../reference/canvas.md):
+An ImGui interface is a **separate scene with its own renderer**, composited on top of your 3D pass — exactly like a canvas:
 
 ```csharp
 using var imguiScene = factory.SceneBuilder.CreateImGuiScene(factory);

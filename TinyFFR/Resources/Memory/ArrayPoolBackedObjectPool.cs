@@ -73,9 +73,21 @@ sealed unsafe class ArrayPoolBackedObjectPool<T, TArg> : IDisposable {
 	}
 }
 
-sealed unsafe class VectorPool<T> : IDisposable {
+sealed unsafe class VectorPool<T> : IDisposable, IReleasablePool {
+	public static VectorPool<T> Shared { get; } = CreateSharedInstance();
+
 	readonly bool _zeroMemoryOnReturn;
 	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedVector<T>> _objectPool;
+
+	public int ReleaseOrder => TinyFfrArrayPool.ObjectPoolReleaseOrder;
+
+	static VectorPool<T> CreateSharedInstance() {
+		var result = new VectorPool<T>(zeroMemoryOnReturn: true);
+		TinyFfrArrayPool.Register(result);
+		return result;
+	}
+
+	public void ReleaseAllPooledMemory() => _objectPool.ReleasePooledObjects(invokeDisposeOnEachItemBeforeRelease: true);
 
 	public VectorPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewVector, initialPoolCount) { }
 
@@ -115,6 +127,7 @@ sealed unsafe class MapPool<TKey, TValue> : IDisposable {
 	public void Return(ArrayPoolBackedMap<TKey, TValue> item) {
 		if (_zeroMemoryOnReturn) item.Clear();
 		else item.ClearWithoutZeroingMemory();
+		item.ShrinkToInitialBucketCount();
 		_objectPool.Return(item);
 	}
 
@@ -160,6 +173,7 @@ sealed unsafe class SetPool<T> : IDisposable {
 	public void Return(ArrayPoolBackedSet<T> item) {
 		if (_zeroMemoryOnReturn) item.Clear();
 		else item.ClearWithoutZeroingMemory();
+		item.ShrinkToInitialBucketCount();
 		_objectPool.Return(item);
 	}
 

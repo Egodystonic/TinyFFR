@@ -154,8 +154,8 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	public ArrayPoolBackedMap() {
 		_numBuckets = InitialBucketCount;
 		_hashMask = InitialBucketCount - 1;
-		_buckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(_numBuckets);
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>();
+		_buckets = TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(_numBuckets);
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i] = VectorPool<KeyValuePair<TKey, TValue>>.Shared.Rent();
 	}
 
 	public int Version { get; private set; } = 0;
@@ -338,9 +338,25 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		}
 	}
 
+	public void ShrinkToInitialBucketCount() {
+		if (_count != 0 || _numBuckets <= InitialBucketCount) return;
+
+		for (var i = InitialBucketCount; i < _numBuckets; ++i) VectorPool<KeyValuePair<TKey, TValue>>.Shared.Return(_buckets[i]);
+
+		var newBuckets = TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(InitialBucketCount);
+		for (var i = 0; i < InitialBucketCount; ++i) newBuckets[i] = _buckets[i];
+		TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
+
+		_buckets = newBuckets;
+		_numBuckets = InitialBucketCount;
+		_hashMask = InitialBucketCount - 1;
+		++Version;
+	}
+
 	public void Dispose() {
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Dispose();
-		ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
+		for (var i = 0; i < _numBuckets; ++i) VectorPool<KeyValuePair<TKey, TValue>>.Shared.Return(_buckets[i]);
+		TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
+		_buckets = null!;
 		++Version;
 	}
 
@@ -349,13 +365,13 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 		var newNumBuckets = _numBuckets * 2;
 		var newHashMask = newNumBuckets - 1;
-		var newBuckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(newNumBuckets);
+		var newBuckets = TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(newNumBuckets);
 
 		// Maintainer's note:
 		// Bucket count is always a power of two, so widening the mask by one bit splits each existing bucket in to
 		// itself and exactly one new bucket. That lets us keep the existing bucket instances rather than reallocating all of them.
 		for (var i = 0; i < _numBuckets; ++i) newBuckets[i] = _buckets[i];
-		for (var i = _numBuckets; i < newNumBuckets; ++i) newBuckets[i] = new ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>();
+		for (var i = _numBuckets; i < newNumBuckets; ++i) newBuckets[i] = VectorPool<KeyValuePair<TKey, TValue>>.Shared.Rent();
 
 		for (var i = 0; i < _numBuckets; ++i) {
 			var bucket = newBuckets[i];
@@ -368,7 +384,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 			}
 		}
 
-		ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
+		TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
 		_buckets = newBuckets;
 		_numBuckets = newNumBuckets;
 		_hashMask = newHashMask;

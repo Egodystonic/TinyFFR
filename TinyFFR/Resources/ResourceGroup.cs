@@ -22,6 +22,9 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 
 	IResourceGroupImplProvider IResource<ResourceGroup, IResourceGroupImplProvider>.Implementation => Implementation;
 	ResourceHandle<ResourceGroup> IResource<ResourceGroup>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	public int ResourceCount {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

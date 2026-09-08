@@ -524,6 +524,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDir
 				throw new InvalidOperationException($"Unexpected light type '{_activeLightMap[handle].Type}'.");
 		}
 		DisposeLight(handle).ThrowIfFailure();
+		_globals.DisposeResourceNameIfExists(new ResourceIdent(_activeLightMap[handle].TypeHandle, handle.AsInteger));
 		if (removeFromMap) _activeLightMap.Remove(handle);
 	}
 

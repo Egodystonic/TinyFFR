@@ -15,6 +15,9 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 
 	IBackdropTextureImplProvider IResource<BackdropTexture, IBackdropTextureImplProvider>.Implementation => Implementation;
 	ResourceHandle<BackdropTexture> IResource<BackdropTexture>.Handle => Handle;
+	ResourceIdent IResource.Ident => Handle.Ident;
+	IResourceImplProvider IResource.Implementation => Implementation;
+	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
 	internal UIntPtr SkyboxTextureHandle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

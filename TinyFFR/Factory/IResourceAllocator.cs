@@ -18,8 +18,14 @@ public interface IResourceAllocator {
 	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name);
 	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity);
 
+	ScopedSpanLease<T> BorrowSpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true);
+	ScopedReadOnlySpanLease<T> BorrowReadOnlySpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true);
 	Memory<T> CreatePooledMemoryBuffer<T>(int numElements);
 	void ReturnPooledMemoryBuffer<T>(Memory<T> buffer);
+	
+	IList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true);
+	IDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true);
+	ISet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true);
 
 	IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null);
 	IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>();

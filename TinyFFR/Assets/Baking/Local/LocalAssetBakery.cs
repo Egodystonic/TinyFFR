@@ -1,4 +1,4 @@
-// Created on 2026-08-29 by Ben Bowen
+﻿// Created on 2026-08-29 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Buffers.Binary;
@@ -188,7 +188,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			WritePoolsAndReferenceTable(rootStub);
 
 			var finalizedData = _inProgressResources[rootStub];
-			File.WriteAllBytes(filePath.ToString(), finalizedData.Buffer.Span[..finalizedData.CursorPos]);
+			LocalFileSystemUtils.WriteFile(filePath, finalizedData.Buffer.Span[..finalizedData.CursorPos]);
 		}
 		finally {
 			if (_inProgressResources.Remove(rootStub, out var rootData)) rootData.Buffer.Dispose();
@@ -400,7 +400,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			WritePoolsAndReferenceTable(rootStub);
 
 			var finalizedData = _inProgressResources[rootStub];
-			File.WriteAllBytes(filePath.ToString(), finalizedData.Buffer.Span[..finalizedData.CursorPos]);
+			LocalFileSystemUtils.WriteFile(filePath, finalizedData.Buffer.Span[..finalizedData.CursorPos]);
 		}
 		finally {
 			if (_inProgressResources.Remove(rootStub, out var finalData)) finalData.Buffer.Dispose();
@@ -513,7 +513,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			throw new InvalidOperationException($"Could not load {typeof(TResource).Name} resource at '{filePath}' because of unsupported type ID (this is a bug in TinyFFR).");
 		}
 		
-		var stream = LocalFileSystemUtils.ReadFileIntoPooledMemory(_globals.HeapPool.ThreadSafeWrapper, filePath.ToString(), "Baked resource");
+		var stream = LocalFileSystemUtils.ReadFileIntoPooledMemory(_globals.HeapPool.ThreadSafeWrapper, filePath, "Baked resource");
 		try {
 			var span = stream.Span;
 			if (span.Length < FileHeaderLengthBytes) throw new AssetBakeException("Stream length shorter than expected file header length.");

@@ -120,7 +120,7 @@ readonly unsafe struct ThreadJob {
 			var unwrappedContext = (TContext) GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(serializedContext[ContextOffset..])).Target!;
 			var result = workPtr(unwrappedContext);
 			var serializedResult = new SerializedJobData();
-			result.AllocateGcHandleAndSerializeResource(serializedResult[ResultOffset..]);
+			IResource.AllocateGcHandleAndSerializeResource(result, serializedResult[ResultOffset..]);
 			return serializedResult;
 		}
 

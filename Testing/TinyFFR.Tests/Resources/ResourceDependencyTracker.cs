@@ -78,6 +78,23 @@ class ResourceDependencyTrackerTest {
 			);
 		}
 
+		void AssertNthDependentsOfGivenType<TTarget, TDependent, TImpl>(TTarget target, params TDependent[] expected)
+			where TTarget : IResource
+			where TDependent : IResource<TDependent, TImpl>
+			where TImpl : class, IResourceImplProvider {
+			var actual = new List<TDependent>();
+			for (var i = 0; i < expected.Length; ++i) actual.Add(_tracker.GetNthDependentOfGivenType<TTarget, TDependent, TImpl>(target, i));
+			Assert.That(actual, Is.EquivalentTo(expected));
+		}
+		void AssertNthTargetsOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent, params TTarget[] expected)
+			where TDependent : IResource
+			where TTarget : IResource<TTarget, TImpl>
+			where TImpl : class, IResourceImplProvider {
+			var actual = new List<TTarget>();
+			for (var i = 0; i < expected.Length; ++i) actual.Add(_tracker.GetNthTargetOfGivenType<TDependent, TTarget, TImpl>(dependent, i));
+			Assert.That(actual, Is.EquivalentTo(expected));
+		}
+
 		AddDependencyAndAssert(_bravoResources[0], _alphaResources[0]);
 		AddDependencyAndAssert(_bravoResources[0], _alphaResources[0]);
 		AddDependencyAndAssert(_bravoResources[1], _alphaResources[0]);
@@ -86,9 +103,7 @@ class ResourceDependencyTrackerTest {
 		AddDependencyAndAssert(_alphaResources[0], _bravoResources[0]);
 		AddDependencyAndAssert(_bravoResources[1], _bravoResources[0]);
 
-		Assert.AreEqual(_bravoResources[0], _tracker.GetNthDependentOfGivenType<Alpha, Bravo, BravoImpl>(_alphaResources[0], 0));
-		Assert.AreEqual(_bravoResources[1], _tracker.GetNthDependentOfGivenType<Alpha, Bravo, BravoImpl>(_alphaResources[0], 1));
-		Assert.AreEqual(_bravoResources[2], _tracker.GetNthDependentOfGivenType<Alpha, Bravo, BravoImpl>(_alphaResources[0], 2));
+		AssertNthDependentsOfGivenType<Alpha, Bravo, BravoImpl>(_alphaResources[0], _bravoResources[0], _bravoResources[1], _bravoResources[2]);
 
 		Assert.AreEqual(_alphaResources[0], _tracker.GetNthDependentOfGivenType<Bravo, Alpha, AlphaImpl>(_bravoResources[0], 0));
 		Assert.AreEqual(_bravoResources[1], _tracker.GetNthDependentOfGivenType<Bravo, Bravo, BravoImpl>(_bravoResources[0], 0));
@@ -103,8 +118,7 @@ class ResourceDependencyTrackerTest {
 		Assert.AreEqual(_alphaResources[0], _tracker.GetNthTargetOfGivenType<Bravo, Alpha, AlphaImpl>(_bravoResources[0], 0));
 		Assert.AreEqual(_alphaResources[0], _tracker.GetNthTargetOfGivenType<Bravo, Alpha, AlphaImpl>(_bravoResources[1], 0));
 		Assert.AreEqual(_bravoResources[0], _tracker.GetNthTargetOfGivenType<Bravo, Bravo, BravoImpl>(_bravoResources[1], 0));
-		Assert.AreEqual(_alphaResources[0], _tracker.GetNthTargetOfGivenType<Bravo, Alpha, AlphaImpl>(_bravoResources[2], 0));
-		Assert.AreEqual(_alphaResources[1], _tracker.GetNthTargetOfGivenType<Bravo, Alpha, AlphaImpl>(_bravoResources[2], 1));
+		AssertNthTargetsOfGivenType<Bravo, Alpha, AlphaImpl>(_bravoResources[2], _alphaResources[0], _alphaResources[1]);
 
 		Assert.AreEqual(3, _tracker.GetDependents(_alphaResources[0]).Count);
 		Assert.AreEqual(1, _tracker.GetDependents(_alphaResources[1]).Count);
@@ -140,8 +154,7 @@ class ResourceDependencyTrackerTest {
 		Assert.AreEqual(1, _tracker.GetTargets(_bravoResources[1]).Count);
 		Assert.AreEqual(2, _tracker.GetDependents(_alphaResources[0]).Count);
 		Assert.AreEqual(_bravoResources[0], _tracker.GetNthTargetOfGivenType<Bravo, Bravo, BravoImpl>(_bravoResources[1], 0));
-		Assert.AreEqual(_bravoResources[0], _tracker.GetNthDependentOfGivenType<Alpha, Bravo, BravoImpl>(_alphaResources[0], 0));
-		Assert.AreEqual(_bravoResources[2], _tracker.GetNthDependentOfGivenType<Alpha, Bravo, BravoImpl>(_alphaResources[0], 1));
+		AssertNthDependentsOfGivenType<Alpha, Bravo, BravoImpl>(_alphaResources[0], _bravoResources[0], _bravoResources[2]);
 
 		Assert.Throws<ResourceDependencyException>(() => _tracker.ThrowForPrematureDisposalIfTargetHasDependents(_bravoResources[0]));
 		RemoveDependencyAndAssert(_alphaResources[0], _bravoResources[0]);

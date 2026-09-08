@@ -28,13 +28,13 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Minus(Translation);
+	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.MovedBy(-Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Plus(Translation);
+	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.MovedBy(Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Minus(Translation);
+	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.MovedBy(-Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Plus(Translation);
+	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.MovedBy(Translation);
 
 	#region ToString / Format / Parse
 	public string ToString(string? format, IFormatProvider? formatProvider) {

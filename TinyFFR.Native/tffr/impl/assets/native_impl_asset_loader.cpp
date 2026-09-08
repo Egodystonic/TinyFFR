@@ -529,10 +529,11 @@ void native_impl_asset_loader::get_loaded_asset_texture_path_len(MemoryLoadedAss
 		return;
 	}
 	auto cStr = path.C_Str();
-	std::filesystem::path root { assetRootDirPath };
-	std::filesystem::path rel { cStr };
+
+	std::filesystem::path root { reinterpret_cast<const char8_t*>(assetRootDirPath) };
+	std::filesystem::path rel { reinterpret_cast<const char8_t*>(cStr) };
 	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPathStr = full.string();
+	auto fullPathStr = full.u8string();
 	*outPathLength = static_cast<int32_t>(fullPathStr.length());
 }
 StartExportedFunc(get_loaded_asset_texture_path_len, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength) {
@@ -549,13 +550,14 @@ void native_impl_asset_loader::get_loaded_asset_texture_path(MemoryLoadedAssetHa
 	auto result = assetHandle->mMaterials[materialIndex]->GetTexture(static_cast<aiTextureType>(-1 * textureIndex), 0, &path);
 	ThrowIf(result != aiReturn_SUCCESS, "Could not load texture path!");
 	auto cStr = path.C_Str();
-	std::filesystem::path root { assetRootDirPath };
-	std::filesystem::path rel { cStr };
+
+	std::filesystem::path root { reinterpret_cast<const char8_t*>(assetRootDirPath) };
+	std::filesystem::path rel { reinterpret_cast<const char8_t*>(cStr) };
 	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPathStr = full.string();
+	auto fullPathStr = full.u8string();
 	auto len = fullPathStr.length();
 	ThrowIf(bufferLengthBytes <= len, "Given string buffer too small for texture path string.");
-	strcpy(strBuffer, fullPathStr.c_str());
+	interop_utils::safe_copy_string(strBuffer, bufferLengthBytes, reinterpret_cast<const char*>(fullPathStr.c_str()));
 }
 StartExportedFunc(get_loaded_asset_texture_path, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, char* strBuffer, int32_t bufferLengthBytes) {
 	native_impl_asset_loader::get_loaded_asset_texture_path(assetHandle, materialIndex, textureIndex, assetRootDirPath, strBuffer, bufferLengthBytes);

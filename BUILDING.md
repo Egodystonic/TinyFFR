@@ -63,6 +63,12 @@ This folder contains projects dedicated to providing integrations of TinyFFR wit
 
 This folder contains various projects dedicated to testing TinyFFR.
 
+### /Testing/Benchmarks/
+
+This folder contains the performance benchmarks, built on BenchmarkDotNet. Each benchmark lives in its own folder within the **TinyFFR.Benchmarks** project (**Smoke**, a broad sweep over as much of the library as possible, and **Soak**, a long-running steady-state render loop that deliberately runs outside BenchmarkDotNet so that no garbage collection is ever forced), and the **Harness** folder holds the shared infrastructure they all use — factory/render-target lifetime, GPU resource reclamation, command-line parsing, and the visual-inspection run mode.
+
+See **/Testing/Benchmarks/README.md** for how to run them and what the output means.
+
 ### /Testing/LocalDevTesting/
 
 This folder contains the _LocalDevTesting_ C# project. This project is designed for impromptu/ad-hoc testing of the library while developing it. 
