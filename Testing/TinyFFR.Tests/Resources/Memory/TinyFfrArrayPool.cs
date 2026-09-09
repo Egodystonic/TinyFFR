@@ -55,9 +55,9 @@ class TinyFfrArrayPoolTest {
 		for (var i = 0; i < SimultaneousRentalCount; ++i) buffers[i] = TinyFfrArrayPool<int>.Shared.Rent(BucketLength);
 		for (var i = 0; i < SimultaneousRentalCount; ++i) TinyFfrArrayPool<int>.Shared.Return(buffers[i]);
 
-		var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+		var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
 		for (var i = 0; i < SimultaneousRentalCount; ++i) buffers[i] = TinyFfrArrayPool<int>.Shared.Rent(BucketLength);
-		var allocatedDuring = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+		var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
 
 		for (var i = 0; i < SimultaneousRentalCount; ++i) TinyFfrArrayPool<int>.Shared.Return(buffers[i]);
 
@@ -99,13 +99,13 @@ class TinyFfrArrayPoolTest {
 
 		TinyFfrArrayPool<int>.Shared.Return(TinyFfrArrayPool<int>.Shared.Rent(BucketLength));
 
-		var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+		var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
 		for (var i = 0; i < NumCycles; ++i) {
 			var array = TinyFfrArrayPool<int>.Shared.Rent(BucketLength);
 			array[0] = i;
 			TinyFfrArrayPool<int>.Shared.Return(array);
 		}
-		var allocatedDuring = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+		var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
 
 		Assert.Less(allocatedDuring, BucketLength * sizeof(int), $"{NumCycles} rent/return cycles allocated {allocatedDuring} bytes.");
 	}

@@ -59,7 +59,7 @@ class LocalViewportAnchoringTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display);
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Starfield);
+		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		
