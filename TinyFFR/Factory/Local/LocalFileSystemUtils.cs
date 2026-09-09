@@ -20,13 +20,17 @@ static unsafe class LocalFileSystemUtils {
 
 	static readonly string PathTooLongMessage = $"File path exceeds the maximum supported length of {MaxFilePathLengthChars} characters.";
 
-	static readonly ThreadLocal<InteropStringBuffer> FilePathBufferStore = new(
+	static ThreadLocal<InteropStringBuffer> _filePathBufferStore = CreateFilePathBufferStore();
+
+	static ThreadLocal<InteropStringBuffer> CreateFilePathBufferStore() => new(
 		static () => new InteropStringBuffer(MaxFilePathLengthChars, addOneForNullTerminator: true),
 		trackAllValues: true
 	);
 
 	public static void ReleaseThreadLocalBuffers() {
-		foreach (var pathBuffer in FilePathBufferStore.Values) pathBuffer.Dispose();
+		foreach (var pathBuffer in _filePathBufferStore.Values) pathBuffer.Dispose();
+		_filePathBufferStore.Dispose();
+		_filePathBufferStore = CreateFilePathBufferStore();
 	}
 
 	public static void AttemptToEnsureApplicationDataFolderExists() {
@@ -43,7 +47,7 @@ static unsafe class LocalFileSystemUtils {
 	}
 
 	static InteropStringBuffer ConvertPathToUtf8(ReadOnlySpan<char> filePath) {
-		var result = FilePathBufferStore.Value;
+		var result = _filePathBufferStore.Value;
 		result.ConvertFromUtf16OrThrowIfBufferTooSmall(filePath, PathTooLongMessage);
 		return result;
 	}
