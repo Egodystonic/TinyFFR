@@ -5,6 +5,8 @@ using Egodystonic.TinyFFR.Testing.ModelViewer;
 using Egodystonic.TinyFFR.WinForms;
 
 namespace TinyFFR.Tests.Integrations.WinForms {
+	public sealed record ResolutionOption(string DisplayName, Size? Value);
+
 	public partial class MainForm : Form {
 		ModelViewerScene? _viewer;
 		IDisposable? _loop;
@@ -18,8 +20,26 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 		int _failedModelCount;
 		int _totalModelCount;
 
+		static readonly ResolutionOption[] ResolutionOptions = [
+			new ResolutionOption("Auto (pane size)", null),
+			new ResolutionOption("320 x 180", new Size(320, 180)),
+			new ResolutionOption("640 x 360", new Size(640, 360)),
+			new ResolutionOption("1280 x 720", new Size(1280, 720))
+		];
+		static readonly ResolutionOption[] MaxResolutionOptions = [
+			new ResolutionOption("Unlimited", null),
+			new ResolutionOption("720p (1280 x 720)", new Size(1280, 720)),
+			new ResolutionOption("1080p (1920 x 1080)", new Size(1920, 1080)),
+			new ResolutionOption("1440p (2560 x 1440)", new Size(2560, 1440))
+		];
+
 		public MainForm() {
 			InitializeComponent();
+
+			resolutionComboBox.DisplayMember = nameof(ResolutionOption.DisplayName);
+			resolutionComboBox.DataSource = ResolutionOptions;
+			maxResolutionComboBox.DisplayMember = nameof(ResolutionOption.DisplayName);
+			maxResolutionComboBox.DataSource = MaxResolutionOptions;
 
 			shadingStyleComboBox.DataSource = Enum.GetValues<ViewerShadingStyle>();
 			qualityComboBox.DataSource = Enum.GetValues<BuiltInQualityConfiguration>();
@@ -64,6 +84,16 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 		void HandleQualityChanged(object? sender, EventArgs e) {
 			if (!_uiReady || qualityComboBox.SelectedItem is not BuiltInQualityConfiguration quality) return;
 			_viewer?.SetQuality(quality);
+		}
+
+		void HandleResolutionChanged(object? sender, EventArgs e) {
+			if (!_uiReady || resolutionComboBox.SelectedItem is not ResolutionOption option) return;
+			sceneView.InternalRenderResolution = option.Value;
+		}
+
+		void HandleMaxResolutionChanged(object? sender, EventArgs e) {
+			if (!_uiReady || maxResolutionComboBox.SelectedItem is not ResolutionOption option) return;
+			sceneView.InternalRenderResolutionMax = option.Value;
 		}
 
 		void HandleOverlayEnabledChanged(object? sender, EventArgs e) => _viewer?.SetOverlayEnabled(overlayEnabledCheckBox.Checked);

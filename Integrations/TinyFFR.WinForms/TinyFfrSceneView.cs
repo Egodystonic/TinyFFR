@@ -13,6 +13,7 @@ public partial class TinyFfrSceneView : UserControl {
 	Renderer? _renderer;
 	RendererCompositor? _compositor;
 	Size? _internalRenderResolution;
+	Size? _internalRenderResolutionMax;
 
 	[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 	public Renderer? Renderer {
@@ -62,6 +63,19 @@ public partial class TinyFfrSceneView : UserControl {
 			}
 
 			_internalRenderResolution = value;
+			IdempotentlyUpdateRendererStateAccordingToControlState();
+		}
+	}
+
+	[DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+	public Size? InternalRenderResolutionMax {
+		get => _internalRenderResolutionMax;
+		set {
+			if (value is not (null or { Width: >= MinTextureDimensionXY and <= MaxTextureDimensionXY, Height: >= MinTextureDimensionXY and <= MaxTextureDimensionXY })) {
+				throw new ArgumentException($"{nameof(InternalRenderResolutionMax)} Width/Height must be between {MinTextureDimensionXY} and {MaxTextureDimensionXY}.", nameof(InternalRenderResolutionMax));
+			}
+
+			_internalRenderResolutionMax = value;
 			IdempotentlyUpdateRendererStateAccordingToControlState();
 		}
 	}
@@ -172,7 +186,10 @@ public partial class TinyFfrSceneView : UserControl {
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
 		var cursorCoordinateSpaceSize = ClientSize.AsXyPair().Cast<int>();
-		var targetSize = (InternalRenderResolution ?? ClientSize).AsXyPair().Cast<int>();
+		var targetSize = IntegrationUtils.ClampToMaxPreservingAspectRatio(
+			(InternalRenderResolution ?? ClientSize).AsXyPair().Cast<int>(),
+			InternalRenderResolutionMax?.AsXyPair().Cast<int>()
+		);
 
 		var targetSizeIsPermitted =
 			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)

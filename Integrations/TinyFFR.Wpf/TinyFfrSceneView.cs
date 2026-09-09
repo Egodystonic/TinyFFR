@@ -46,6 +46,13 @@ public class TinyFfrSceneView : Control {
 		new PropertyMetadata(null),
 		validateValueCallback: newValue => newValue is null or Size { Width: >= MinTextureDimensionXY and <= MaxTextureDimensionXY, Height: >= MinTextureDimensionXY and <= MaxTextureDimensionXY }
 	);
+	public static readonly DependencyProperty InternalRenderResolutionMaxProperty = DependencyProperty.Register(
+		nameof(InternalRenderResolutionMax),
+		typeof(Size?),
+		typeof(TinyFfrSceneView),
+		new PropertyMetadata(null),
+		validateValueCallback: newValue => newValue is null or Size { Width: >= MinTextureDimensionXY and <= MaxTextureDimensionXY, Height: >= MinTextureDimensionXY and <= MaxTextureDimensionXY }
+	);
 
 	public Renderer? Renderer {
 		get => (Renderer?)GetValue(RendererProperty);
@@ -62,6 +69,10 @@ public class TinyFfrSceneView : Control {
 	public Size? InternalRenderResolution {
 		get => (Size?)GetValue(InternalRenderResolutionProperty);
 		set => SetValue(InternalRenderResolutionProperty, value);
+	}
+	public Size? InternalRenderResolutionMax {
+		get => (Size?)GetValue(InternalRenderResolutionMaxProperty);
+		set => SetValue(InternalRenderResolutionMaxProperty, value);
 	}
 	Size BoundsSize => new(ActualWidth, ActualHeight);
 
@@ -142,7 +153,7 @@ public class TinyFfrSceneView : Control {
 
 	protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e) {
 		base.OnPropertyChanged(e);
-		if (e.Property == IsVisibleProperty || e.Property == ActualWidthProperty || e.Property == ActualHeightProperty || e.Property == InternalRenderResolutionProperty) {
+		if (e.Property == IsVisibleProperty || e.Property == ActualWidthProperty || e.Property == ActualHeightProperty || e.Property == InternalRenderResolutionProperty || e.Property == InternalRenderResolutionMaxProperty) {
 			IdempotentlyUpdateRendererStateAccordingToControlState();
 		}
 		else if (e.Property == RendererProperty) {
@@ -162,9 +173,12 @@ public class TinyFfrSceneView : Control {
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
 		var dpi = VisualTreeHelper.GetDpi(this);
 		var cursorCoordinateSpaceSize = BoundsSize.AsXyPair().Cast<int>();
-		var targetSize = InternalRenderResolution is { } explicitResolution
-			? explicitResolution.AsXyPair().Cast<int>()
-			: BoundsSize.AsXyPair().ScaledBy(new XYPair<double>(dpi.DpiScaleX, dpi.DpiScaleY)).CastWithRoundingIfNecessary<double, int>();
+		var targetSize = IntegrationUtils.ClampToMaxPreservingAspectRatio(
+			InternalRenderResolution is { } explicitResolution
+				? explicitResolution.AsXyPair().Cast<int>()
+				: BoundsSize.AsXyPair().ScaledBy(new XYPair<double>(dpi.DpiScaleX, dpi.DpiScaleY)).CastWithRoundingIfNecessary<double, int>(),
+			InternalRenderResolutionMax?.AsXyPair().Cast<int>()
+		);
 
 		var targetSizeIsPermitted =
 			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)

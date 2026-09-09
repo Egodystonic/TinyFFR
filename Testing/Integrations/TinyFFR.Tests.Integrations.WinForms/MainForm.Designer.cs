@@ -47,6 +47,10 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			shiftLightHueButton = new Button();
 			qualityHeaderLabel = new Label();
 			qualityComboBox = new ComboBox();
+			resolutionLabel = new Label();
+			resolutionComboBox = new ComboBox();
+			maxResolutionLabel = new Label();
+			maxResolutionComboBox = new ComboBox();
 			sceneView = new Egodystonic.TinyFFR.WinForms.TinyFfrSceneView();
 			statusLabel = new Label();
 			((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
@@ -79,6 +83,10 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			controlsPanel.Controls.Add(renderOnceButton);
 			controlsPanel.Controls.Add(compositeModeCheckBox);
 			controlsPanel.Controls.Add(overlayEnabledCheckBox);
+			controlsPanel.Controls.Add(resolutionLabel);
+			controlsPanel.Controls.Add(resolutionComboBox);
+			controlsPanel.Controls.Add(maxResolutionLabel);
+			controlsPanel.Controls.Add(maxResolutionComboBox);
 			controlsPanel.Controls.Add(modelHeaderLabel);
 			controlsPanel.Controls.Add(loadProgressLabel);
 			controlsPanel.Controls.Add(loadProgressBar);
@@ -161,6 +169,38 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			overlayEnabledCheckBox.UseVisualStyleBackColor = true;
 			overlayEnabledCheckBox.CheckedChanged += HandleOverlayEnabledChanged;
 			// 
+			// resolutionLabel
+			// 
+			resolutionLabel.AutoSize = true;
+			resolutionLabel.Margin = new Padding(3, 6, 3, 2);
+			resolutionLabel.Name = "resolutionLabel";
+			resolutionLabel.Text = "Internal render resolution";
+			// 
+			// resolutionComboBox
+			// 
+			resolutionComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+			resolutionComboBox.FormattingEnabled = true;
+			resolutionComboBox.Name = "resolutionComboBox";
+			resolutionComboBox.Size = new Size(300, 23);
+			resolutionComboBox.TabIndex = 5;
+			resolutionComboBox.SelectedIndexChanged += HandleResolutionChanged;
+			// 
+			// maxResolutionLabel
+			// 
+			maxResolutionLabel.AutoSize = true;
+			maxResolutionLabel.Margin = new Padding(3, 6, 3, 2);
+			maxResolutionLabel.Name = "maxResolutionLabel";
+			maxResolutionLabel.Text = "Max internal render resolution";
+			// 
+			// maxResolutionComboBox
+			// 
+			maxResolutionComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+			maxResolutionComboBox.FormattingEnabled = true;
+			maxResolutionComboBox.Name = "maxResolutionComboBox";
+			maxResolutionComboBox.Size = new Size(300, 23);
+			maxResolutionComboBox.TabIndex = 6;
+			maxResolutionComboBox.SelectedIndexChanged += HandleMaxResolutionChanged;
+			// 
 			// modelHeaderLabel
 			// 
 			modelHeaderLabel.AutoSize = true;
@@ -181,7 +221,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			loadProgressBar.Name = "loadProgressBar";
 			loadProgressBar.Size = new Size(300, 10);
 			loadProgressBar.Style = ProgressBarStyle.Continuous;
-			loadProgressBar.TabIndex = 5;
+			loadProgressBar.TabIndex = 7;
 			// 
 			// modelListBox
 			// 
@@ -189,7 +229,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			modelListBox.IntegralHeight = false;
 			modelListBox.Name = "modelListBox";
 			modelListBox.Size = new Size(300, 320);
-			modelListBox.TabIndex = 6;
+			modelListBox.TabIndex = 8;
 			modelListBox.SelectedIndexChanged += HandleModelSelectionChanged;
 			// 
 			// transformHeaderLabel
@@ -204,7 +244,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			// 
 			spinXCheckBox.AutoSize = true;
 			spinXCheckBox.Name = "spinXCheckBox";
-			spinXCheckBox.TabIndex = 7;
+			spinXCheckBox.TabIndex = 9;
 			spinXCheckBox.Text = "Spin X";
 			spinXCheckBox.UseVisualStyleBackColor = true;
 			spinXCheckBox.CheckedChanged += HandleSpinChanged;
@@ -213,7 +253,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			// 
 			spinYCheckBox.AutoSize = true;
 			spinYCheckBox.Name = "spinYCheckBox";
-			spinYCheckBox.TabIndex = 8;
+			spinYCheckBox.TabIndex = 10;
 			spinYCheckBox.Text = "Spin Y";
 			spinYCheckBox.UseVisualStyleBackColor = true;
 			spinYCheckBox.CheckedChanged += HandleSpinChanged;
@@ -222,7 +262,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			// 
 			spinZCheckBox.AutoSize = true;
 			spinZCheckBox.Name = "spinZCheckBox";
-			spinZCheckBox.TabIndex = 9;
+			spinZCheckBox.TabIndex = 11;
 			spinZCheckBox.Text = "Spin Z";
 			spinZCheckBox.UseVisualStyleBackColor = true;
 			spinZCheckBox.CheckedChanged += HandleSpinChanged;
@@ -241,7 +281,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			shadingStyleComboBox.FormattingEnabled = true;
 			shadingStyleComboBox.Name = "shadingStyleComboBox";
 			shadingStyleComboBox.Size = new Size(300, 23);
-			shadingStyleComboBox.TabIndex = 10;
+			shadingStyleComboBox.TabIndex = 12;
 			shadingStyleComboBox.SelectedIndexChanged += HandleShadingStyleChanged;
 			// 
 			// randomColorOpaqueCheckBox
@@ -250,7 +290,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			randomColorOpaqueCheckBox.Checked = true;
 			randomColorOpaqueCheckBox.CheckState = CheckState.Checked;
 			randomColorOpaqueCheckBox.Name = "randomColorOpaqueCheckBox";
-			randomColorOpaqueCheckBox.TabIndex = 11;
+			randomColorOpaqueCheckBox.TabIndex = 13;
 			randomColorOpaqueCheckBox.Text = "Opaque random colors";
 			randomColorOpaqueCheckBox.UseVisualStyleBackColor = true;
 			// 
@@ -258,7 +298,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			// 
 			randomizeColorButton.Name = "randomizeColorButton";
 			randomizeColorButton.Size = new Size(300, 28);
-			randomizeColorButton.TabIndex = 12;
+			randomizeColorButton.TabIndex = 14;
 			randomizeColorButton.Text = "Randomize color";
 			randomizeColorButton.UseVisualStyleBackColor = true;
 			randomizeColorButton.Click += HandleRandomizeColorClicked;
@@ -275,7 +315,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			// 
 			shiftLightHueButton.Name = "shiftLightHueButton";
 			shiftLightHueButton.Size = new Size(300, 28);
-			shiftLightHueButton.TabIndex = 13;
+			shiftLightHueButton.TabIndex = 15;
 			shiftLightHueButton.Text = "Shift light hue";
 			shiftLightHueButton.UseVisualStyleBackColor = true;
 			shiftLightHueButton.Click += HandleShiftLightHueClicked;
@@ -294,7 +334,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			qualityComboBox.FormattingEnabled = true;
 			qualityComboBox.Name = "qualityComboBox";
 			qualityComboBox.Size = new Size(300, 23);
-			qualityComboBox.TabIndex = 14;
+			qualityComboBox.TabIndex = 16;
 			qualityComboBox.SelectedIndexChanged += HandleQualityChanged;
 			// 
 			// sceneView
@@ -358,6 +398,10 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 		private Button shiftLightHueButton;
 		private Label qualityHeaderLabel;
 		private ComboBox qualityComboBox;
+		private Label resolutionLabel;
+		private ComboBox resolutionComboBox;
+		private Label maxResolutionLabel;
+		private ComboBox maxResolutionComboBox;
 		private Egodystonic.TinyFFR.WinForms.TinyFfrSceneView sceneView;
 		private Label statusLabel;
 	}

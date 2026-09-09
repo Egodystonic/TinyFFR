@@ -41,6 +41,11 @@ public class TinyFfrSceneView : Control {
 		null,
 		validate: newValue => newValue is not { } size || size is { Width: >= MinTextureDimensionXY and <= MaxTextureDimensionXY, Height: >= MinTextureDimensionXY and <= MaxTextureDimensionXY }
 	);
+	public static readonly StyledProperty<Size?> InternalRenderResolutionMaxProperty = AvaloniaProperty.Register<TinyFfrSceneView, Size?>(
+		nameof(InternalRenderResolutionMax),
+		null,
+		validate: newValue => newValue is not { } size || size is { Width: >= MinTextureDimensionXY and <= MaxTextureDimensionXY, Height: >= MinTextureDimensionXY and <= MaxTextureDimensionXY }
+	);
 
 	public Renderer? Renderer {
 		get => GetValue(RendererProperty);
@@ -57,6 +62,10 @@ public class TinyFfrSceneView : Control {
 	public Size? InternalRenderResolution {
 		get => GetValue(InternalRenderResolutionProperty);
 		set => SetValue(InternalRenderResolutionProperty, value);
+	}
+	public Size? InternalRenderResolutionMax {
+		get => GetValue(InternalRenderResolutionMaxProperty);
+		set => SetValue(InternalRenderResolutionMaxProperty, value);
 	}
 
 	public TinyFfrSceneView() {
@@ -135,7 +144,7 @@ public class TinyFfrSceneView : Control {
 
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
 		base.OnPropertyChanged(change);
-		if (change.Property == IsVisibleProperty || change.Property == BoundsProperty || change.Property == InternalRenderResolutionProperty) {
+		if (change.Property == IsVisibleProperty || change.Property == BoundsProperty || change.Property == InternalRenderResolutionProperty || change.Property == InternalRenderResolutionMaxProperty) {
 			IdempotentlyUpdateRendererStateAccordingToControlState();
 		}
 		else if (change.Property == RendererProperty) {
@@ -156,9 +165,12 @@ public class TinyFfrSceneView : Control {
 		var topLevel = TopLevel.GetTopLevel(this);
 
 		var cursorCoordinateSpaceSize = Bounds.Size.AsXyPair().Cast<int>();
-		var targetSize = InternalRenderResolution is { } explicitResolution
-			? explicitResolution.AsXyPair().Cast<int>()
-			: Bounds.Size.AsXyPair().ScaledBy(new XYPair<double>(topLevel?.RenderScaling ?? 1d)).CastWithRoundingIfNecessary<double, int>();
+		var targetSize = IntegrationUtils.ClampToMaxPreservingAspectRatio(
+			InternalRenderResolution is { } explicitResolution
+				? explicitResolution.AsXyPair().Cast<int>()
+				: Bounds.Size.AsXyPair().ScaledBy(new XYPair<double>(topLevel?.RenderScaling ?? 1d)).CastWithRoundingIfNecessary<double, int>(),
+			InternalRenderResolutionMax?.AsXyPair().Cast<int>()
+		);
 
 		var targetSizeIsPermitted =
 			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)

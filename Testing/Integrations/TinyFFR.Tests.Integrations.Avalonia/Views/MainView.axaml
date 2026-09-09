@@ -47,6 +47,17 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+                <TextBlock Text="Max internal render resolution" />
+                <ComboBox
+                    HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding MaxResolutionOptions}"
+                    SelectedItem="{Binding SelectedMaxResolution}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ResolutionOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
 
                 <TextBlock Classes="section" Text="Model" />
                 <TextBlock FontSize="11" Text="{Binding LoadProgressText}" TextWrapping="Wrap" />
@@ -120,6 +131,7 @@
                 Compositor="{Binding Compositor}"
                 FallbackBrush="LightGray"
                 InternalRenderResolution="{Binding InternalRenderResolution}"
+                InternalRenderResolutionMax="{Binding InternalRenderResolutionMax}"
                 Renderer="{Binding Renderer}" />
             <Border Background="#B0000000" IsHitTestVisible="False" IsVisible="{Binding IsAwaitingFirstModel}">
                 <TextBlock

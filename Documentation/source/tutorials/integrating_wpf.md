@@ -23,6 +23,7 @@ TinyFFR integration is offered primarily as a `TinyFfrSceneView` control which c
 <tffr:TinyFfrSceneView
     FallbackBrush="LightGray"
     InternalRenderResolution="{Binding InternalRenderResolution}"
+    InternalRenderResolutionMax="{Binding InternalRenderResolutionMax}"
     Renderer="{Binding Renderer}" />
 ```
 
@@ -34,6 +35,11 @@ TinyFFR integration is offered primarily as a `TinyFfrSceneView` control which c
 	{ .annotate }
 
 	1. The height and width of the render resolution of a scene view must both be between `1` and `32768`.
+
+* The `InternalRenderResolutionMax` property is also optional and sets an *upper bound* on the internal render resolution rather than a fixed value.(1) Like `InternalRenderResolution` it is a literal count of pixels and is not multiplied by the display's scaling factor. Whenever the resolution the control would otherwise render at exceeds this bound on either axis, it is scaled down to fit while preserving its aspect ratio: for example, a control that would render at 2000x1500 with an `InternalRenderResolutionMax` of 1000x1000 renders at 1000x750 instead. If both properties are set, both apply: `InternalRenderResolution` selects the resolution and `InternalRenderResolutionMax` then caps it.
+	{ .annotate }
+
+	1. The height and width of the maximum render resolution of a scene view must both be between `1` and `32768`.
 
 * The `Renderer` must be created via the `CreateBindableRenderer` extension method on an `IRendererFactory` instance. Attempting to databind a non-bindable renderer will fail. See next section:
 

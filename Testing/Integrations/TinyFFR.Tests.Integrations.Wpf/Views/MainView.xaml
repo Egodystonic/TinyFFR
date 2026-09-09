@@ -59,6 +59,11 @@
                     DisplayMemberPath="DisplayName"
                     ItemsSource="{Binding ResolutionOptions}"
                     SelectedItem="{Binding SelectedResolution}" />
+                <TextBlock Text="Max internal render resolution" />
+                <ComboBox
+                    DisplayMemberPath="DisplayName"
+                    ItemsSource="{Binding MaxResolutionOptions}"
+                    SelectedItem="{Binding SelectedMaxResolution}" />
 
                 <TextBlock Style="{StaticResource SectionHeader}" Text="Model" />
                 <TextBlock FontSize="11" Text="{Binding LoadProgressText}" TextWrapping="Wrap" />
@@ -146,6 +151,7 @@
                 Compositor="{Binding Compositor}"
                 FallbackBrush="LightGray"
                 InternalRenderResolution="{Binding InternalRenderResolution}"
+                InternalRenderResolutionMax="{Binding InternalRenderResolutionMax}"
                 Renderer="{Binding Renderer}" />
             <Border
                 Background="#B0000000"

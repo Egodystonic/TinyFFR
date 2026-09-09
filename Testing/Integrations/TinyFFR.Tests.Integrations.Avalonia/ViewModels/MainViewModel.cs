@@ -42,6 +42,12 @@ public partial class MainViewModel : ViewModelBase {
 		new ResolutionOption("640 x 360", new Size(640d, 360d)),
 		new ResolutionOption("1280 x 720", new Size(1280d, 720d))
 	};
+	public IReadOnlyList<ResolutionOption> MaxResolutionOptions { get; } = new[] {
+		new ResolutionOption("Unlimited", null),
+		new ResolutionOption("720p (1280 x 720)", new Size(1280d, 720d)),
+		new ResolutionOption("1080p (1920 x 1080)", new Size(1920d, 1080d)),
+		new ResolutionOption("1440p (2560 x 1440)", new Size(2560d, 1440d))
+	};
 
 	[ObservableProperty]
 	public partial IReadOnlyList<ModelListEntry> CatalogItems { get; set; } = ModelCatalog.Build();
@@ -134,8 +140,15 @@ public partial class MainViewModel : ViewModelBase {
 	[ObservableProperty]
 	public partial Size? InternalRenderResolution { get; set; }
 
+	[ObservableProperty]
+	public partial ResolutionOption? SelectedMaxResolution { get; set; }
+
+	[ObservableProperty]
+	public partial Size? InternalRenderResolutionMax { get; set; }
+
 	public MainViewModel() {
 		SelectedResolution = ResolutionOptions[0];
+		SelectedMaxResolution = MaxResolutionOptions[0];
 	}
 
 	[RelayCommand]
@@ -314,6 +327,8 @@ public partial class MainViewModel : ViewModelBase {
 	partial void OnQualityChanged(BuiltInQualityConfiguration value) => _viewer?.SetQuality(value);
 	partial void OnOverlayEnabledChanged(bool value) => _viewer?.SetOverlayEnabled(value);
 	partial void OnSelectedResolutionChanged(ResolutionOption? value) => InternalRenderResolution = value?.Value;
+
+	partial void OnSelectedMaxResolutionChanged(ResolutionOption? value) => InternalRenderResolutionMax = value?.Value;
 
 	partial void OnUseCompositorChanged(bool value) => _ = ApplyCompositorAsync(value);
 
