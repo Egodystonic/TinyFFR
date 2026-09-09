@@ -29,7 +29,8 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		
 		_globals = globals;
 
-		GetDisplayCount(out var numDisplays).ThrowIfFailure();
+		var numDisplays = 0;
+		if (!globals.InHeadlessEnvironment) GetDisplayCount(out numDisplays).ThrowIfFailure();
 		if (numDisplays is > MaxDisplayCount or < 0) throw new InvalidOperationException($"Display discoverer found {numDisplays} displays (too low/too high).");
 		_displays = new Display[numDisplays];
 		_displayModes = new DisplayModeArray[numDisplays];

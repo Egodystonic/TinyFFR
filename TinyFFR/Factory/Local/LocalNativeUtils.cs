@@ -29,6 +29,7 @@ static unsafe class LocalNativeUtils {
 
 	public const string NativeLibName = "TinyFFR.Native";
 	static bool _nativeLibInitialized = false;
+	static bool _sdlInitialized = false;
 	static nuint _nextTemporaryBufferId = 0;
 
 	[DllImport(NativeLibName, EntryPoint = "get_err_buffer")]
@@ -47,24 +48,27 @@ static unsafe class LocalNativeUtils {
 		return Encoding.UTF8.GetString(asSpan[..(firstZero >= 0 ? firstZero : bufferLength)]);
 	}
 
-	[DllImport(NativeLibName, EntryPoint = "exec_once_only_initialization")]
-	static extern InteropResult ExecOnceOnlyInitialization();
+	[DllImport(NativeLibName, EntryPoint = "exec_once_only_init_sdl")]
+	static extern InteropResult ExecOnceOnlyInitSdl();
 
-	public static void InitializeNativeLibIfNecessary() {
-		if (_nativeLibInitialized) return;
+	public static void InitializeNativeLibIfNecessary(bool headlessMode) {
+		if (!_nativeLibInitialized) {
+			if (UIntPtr.Size != 8) throw new InvalidOperationException("TinyFFR local factories are only supported on 64-bit platforms.");
 
-		if (UIntPtr.Size != 8) throw new InvalidOperationException("TinyFFR local factories are only supported on 64-bit platforms.");
+			// This curious invocation tells the NVIDIA drivers (if they exist) to force this application to run
+			// on the dedicated GPU in systems where that isn't always the default (e.g. gaming laptops).
+			// We don't actually need the loaded library handle, and if the load attempt fails 
+			// we can just ignore the failure as it means this system probably isn't an NVIDIA one.
+			_ = NativeLibrary.TryLoad("nvapi64.dll", out _);
 
-		// This curious invocation tells the NVIDIA drivers (if they exist) to force this application to run
-		// on the dedicated GPU in systems where that isn't always the default (e.g. gaming laptops).
-		// We don't actually need the loaded library handle, and if the load attempt fails 
-		// we can just ignore the failure as it means this system probably isn't an NVIDIA one.
-		_ = NativeLibrary.TryLoad("nvapi64.dll", out _);
+			SetLogNotifyDelegate(&HandleLogMessage);
+			SetBufferDeallocationDelegate(&DeallocateRentedBufferFromNativeCaller).ThrowIfFailure();
+			_nativeLibInitialized = true;
+		}
 
-		SetLogNotifyDelegate(&HandleLogMessage);
-		ExecOnceOnlyInitialization().ThrowIfFailure();
-		SetBufferDeallocationDelegate(&DeallocateRentedBufferFromNativeCaller).ThrowIfFailure();
-		_nativeLibInitialized = true;
+		if (headlessMode || _sdlInitialized) return;
+		ExecOnceOnlyInitSdl().ThrowIfFailure();
+		_sdlInitialized = true;
 	}
 
 	[DllImport(NativeLibName, EntryPoint = "set_buffer_deallocation_delegate")]

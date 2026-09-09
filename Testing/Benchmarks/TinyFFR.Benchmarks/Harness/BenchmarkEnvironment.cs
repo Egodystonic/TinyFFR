@@ -31,7 +31,10 @@ static class BenchmarkEnvironment {
 		if (_factory != null) return;
 
 		BenchmarkAssets.Initialize();
-		_factory = new LocalTinyFfrFactory(rendererBuilderConfig: new RendererBuilderConfig { EnableVSync = false });
+		_factory = new LocalTinyFfrFactory(
+			factoryConfig: new LocalTinyFfrFactoryConfig { HeadlessMode = kind != BenchmarkRenderTargetKind.Window },
+			rendererBuilderConfig: new RendererBuilderConfig { EnableVSync = false }
+		);
 		_renderTarget = new BenchmarkRenderTarget(_factory, kind);
 		_loop = _factory.ApplicationLoopBuilder.CreateLoop(frameRateCapHz: null, name: "Benchmark Loop");
 		_pumpScene = _factory.SceneBuilder.CreateScene(name: "Benchmark Reclamation Pump Scene");

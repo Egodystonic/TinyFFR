@@ -11,7 +11,7 @@ deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
 log_notify_delegate native_impl_init::log_delegate;
 interop_bool native_impl_init::vsync_enabled = interop_bool_true;
 
-void native_impl_init::exec_once_only_initialization() {
+void native_impl_init::exec_once_only_init_sdl() {
 #if defined(TFFR_WIN)
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
 #elif defined(TFFR_LINUX)
@@ -23,8 +23,8 @@ void native_impl_init::exec_once_only_initialization() {
 	
 	SDL_StopTextInput(); // Required to stop SDL sending some key inputs as SDL_TEXTINPUT events instead of SDL_KEYDOWN etc
 }
-StartExportedFunc(exec_once_only_initialization) {
-	native_impl_init::exec_once_only_initialization();
+StartExportedFunc(exec_once_only_init_sdl) {
+	native_impl_init::exec_once_only_init_sdl();
 	EndExportedFunc
 }
 

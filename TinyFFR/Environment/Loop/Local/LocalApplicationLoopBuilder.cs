@@ -44,7 +44,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	readonly ArrayPoolBackedMap<ResourceHandle<ApplicationLoop>, HandleTrackingData> _handleDataMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ApplicationLoop>, IterationTimingData> _iterationTimingsMap = new();
 #pragma warning disable CA2213 // Wants us to dispose _latestInputRetriever, but this is taken care of by the LocalInputManager
-	readonly LocalLatestInputRetriever _latestInputRetriever;
+	readonly LocalLatestInputRetriever? _latestInputRetriever;
 	readonly int _iterationTimingBufferMask;
 #pragma warning restore CA2213
 	nuint _prevHandleId = 0;
@@ -55,7 +55,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
-		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
+		_latestInputRetriever = globals.InHeadlessEnvironment ? null : LocalInputManager.IncrementRefCountAndGetRetriever();
 		_iterationTimingBufferMask = (1 << config.FrameRateBufferSizeLog2) - 1;
 		_defaultCooperativeTaskTimeFractionPerIteration = config.TargetPerFrameAsyncCooperativeTaskTimeFraction;
 	}
@@ -66,7 +66,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) (++_prevHandleId);
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates, false, _defaultCooperativeTaskTimeFractionPerIteration));
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates && !_globals.InHeadlessEnvironment, false, _defaultCooperativeTaskTimeFractionPerIteration));
 		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		return new(handle, this);
@@ -74,7 +74,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 	public ILatestInputRetriever GetInputStateProvider(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _latestInputRetriever;
+		return _latestInputRetriever ?? throw new InvalidOperationException("Input is not available in headless mode.");
 	}
 
 	public bool GetEnableInputTextTranscription(ResourceHandle<ApplicationLoop> handle) {
@@ -120,7 +120,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	}
 	void ExecuteIteration(bool shouldIterateInput, bool shouldTranscribeText) {
 		if (shouldIterateInput) {
-			_latestInputRetriever.IterateSystemWideInput(shouldTranscribeText);
+			_latestInputRetriever?.IterateSystemWideInput(shouldTranscribeText);
 		}
 	}
 
@@ -337,7 +337,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 			foreach (var kvp in _handleDataMap) Dispose(kvp.Key, removeFromMaps: false);
 			_handleDataMap.Dispose();
 			_iterationTimingsMap.Dispose();
-			LocalInputManager.DecrementRefCount();
+			if (_latestInputRetriever != null) LocalInputManager.DecrementRefCount();
 		}
 		finally {
 			_isDisposed = true;

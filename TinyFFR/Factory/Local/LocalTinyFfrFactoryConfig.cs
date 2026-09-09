@@ -16,6 +16,7 @@ public sealed class LocalTinyFfrFactoryConfig {
 	public const int DefaultMaxCpuToGpuAssetTransferSizeBytes = 1024 * 1024 * 100; // 100 MB  
 	public static readonly MemoryUsageRubric DefaultMemoryUsageRubric = MemoryUsageRubric.Standard;
 	public const bool DefaultEnhanceSecurity = false;
+	public const bool DefaultHeadlessMode = false;
 
 	public int MaxCpuToGpuAssetTransferSizeBytes {
 		get;
@@ -41,4 +42,6 @@ public sealed class LocalTinyFfrFactoryConfig {
 	public ThreadingConfig ThreadingConfig { get; init; } = new();
 
 	public bool InstallTinyFfrSynchronizationContextIfNonePreExisting { get; init; } = true;
+	
+	public bool HeadlessMode { get; init; } = DefaultHeadlessMode;
 }

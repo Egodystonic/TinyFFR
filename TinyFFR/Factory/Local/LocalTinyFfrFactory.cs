@@ -99,9 +99,10 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 		ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
 		LocalFileSystemUtils.AttemptToEnsureApplicationDataFolderExists();
-		LocalNativeUtils.InitializeNativeLibIfNecessary();
-		
+
 		factoryConfig ??= new();
+		LocalNativeUtils.InitializeNativeLibIfNecessary(factoryConfig.HeadlessMode);
+
 		windowBuilderConfig ??= new();
 		assetLoaderConfig ??= new();
 		rendererBuilderConfig ??= new();
@@ -139,7 +140,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 				_heapPool,
 				resourceGroupProviderRef,
 				bakeryRef,
-				factoryConfig.EnhanceSecurity
+				factoryConfig.EnhanceSecurity,
+				factoryConfig.HeadlessMode
 			);
 			_resourceGroupProvider = new(globals);
 			resourceGroupProviderRef.Resolve(_resourceGroupProvider);

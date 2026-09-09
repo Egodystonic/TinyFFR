@@ -69,7 +69,7 @@ public sealed class ModelViewerScene : IDisposable {
 	public string ResourceListing => _displayed?.ResourceListing ?? "";
 
 	public ModelViewerScene() {
-		_factory = new LocalTinyFfrFactory();
+		_factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { HeadlessMode = true });
 		_camera = _factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), cameraRange: CameraPlaneConfiguration.CloseRange);
 		_cameraController = _camera.CreateController<InspectorCameraController>();
 		_cameraLight = _factory.LightBuilder.CreateSpotLight(position: _camera.Position, coneDirection: _camera.ViewDirection, highQuality: true, brightness: 0f);

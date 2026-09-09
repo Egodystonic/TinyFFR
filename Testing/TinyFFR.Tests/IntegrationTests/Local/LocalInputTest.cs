@@ -40,6 +40,9 @@ class LocalInputTest {
 		using var beforeLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
 		using var loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 60 });
 		using var afterLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
+		using var camera = factory.CameraBuilder.CreateCamera();
+		using var scene = factory.SceneBuilder.CreateScene();
+		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		_numControllers = 0;
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
@@ -50,6 +53,7 @@ class LocalInputTest {
 			beforeLoop.IterateOnce();
 			loop.IterateOnce();
 			afterLoop.IterateOnce();
+			renderer.Render();
 		}
 		HandleInput(loop.Input);
 		Console.WriteLine($"Quit requested: {loop.Input.UserQuitRequested}");

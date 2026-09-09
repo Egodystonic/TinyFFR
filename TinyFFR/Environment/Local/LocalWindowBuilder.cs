@@ -41,6 +41,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 
 	public Window CreateWindow(in WindowCreationConfig config) {
 		ThrowIfThisIsDisposed();
+		if (_globals.InHeadlessEnvironment) throw new InvalidOperationException("Windows can not be created in headless mode.");
 		config.ThrowIfInvalid();
 		var globalPosition = config.Display.TranslateDisplayLocalWindowPositionToGlobal(config.Position);
 		CreateWindow(

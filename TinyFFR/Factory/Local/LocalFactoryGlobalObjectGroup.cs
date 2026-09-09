@@ -27,12 +27,13 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public LocalResourceGroupImplProvider ResourceGroupProvider => _resourceGroupProvider;
 	public LocalAssetBakery Bakery => _bakery;
 	public bool InEnhancedSecurityEnvironment { get; }
+	public bool InHeadlessEnvironment { get; }
 	
 	public IJobExecutionFacade SynchronousWorkScheduler => _synchronousWorkScheduler;
 	public IJobExecutionFacade ThreadPoolWorkScheduler => _threadPool;
 	public IPrimaryThreadDispatcher PrimaryThreadDispatcher => _threadPool;
 
-	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, CooperativeThreadPool threadPool, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, DeferredRef<LocalAssetBakery> bakeryRef, bool inEnhancedSecurityEnvironment) {
+	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, CooperativeThreadPool threadPool, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef, DeferredRef<LocalAssetBakery> bakeryRef, bool inEnhancedSecurityEnvironment, bool inHeadlessEnvironment) {
 		ArgumentNullException.ThrowIfNull(factory);
 		ArgumentNullException.ThrowIfNull(threadPool);
 		ArgumentNullException.ThrowIfNull(resourceNameMap);
@@ -50,6 +51,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 		_resourceGroupProvider = resourceGroupProviderRef;
 		_bakery = bakeryRef;
 		InEnhancedSecurityEnvironment = inEnhancedSecurityEnvironment;
+		InHeadlessEnvironment = inHeadlessEnvironment;
 	}
 
 	public void StoreResourceNameOrDefaultIfEmpty(ResourceIdent ident, ReadOnlySpan<char> name, ReadOnlySpan<char> fallbackStart) {

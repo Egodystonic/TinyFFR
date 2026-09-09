@@ -16,7 +16,7 @@ public:
 	static log_notify_delegate log_delegate;
 	static interop_bool vsync_enabled;
 	
-	static void exec_once_only_initialization();
+	static void exec_once_only_init_sdl();
 	static void set_buffer_deallocation_delegate(deallocate_asset_buffer_delegate deallocationDelegate);
 	static void set_log_notify_delegate(log_notify_delegate logNotifyDelegate);
 	static void notify_of_log_msg(const char* msg);
