@@ -6,6 +6,7 @@ using System.Threading;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
@@ -20,14 +21,22 @@ static unsafe class LocalFileSystemUtils {
 
 	static readonly string PathTooLongMessage = $"File path exceeds the maximum supported length of {MaxFilePathLengthChars} characters.";
 
-	static ThreadLocal<InteropStringBuffer> _filePathBufferStore = CreateFilePathBufferStore();
+	static ThreadLocal<InteropStringBuffer> _filePathBufferStore = null!;
 
-	static ThreadLocal<InteropStringBuffer> CreateFilePathBufferStore() => new(
-		static () => new InteropStringBuffer(MaxFilePathLengthChars, addOneForNullTerminator: true),
-		trackAllValues: true
-	);
+	static ThreadLocal<InteropStringBuffer> CreateFilePathBufferStore() {
+		return new(
+			static () => new InteropStringBuffer(MaxFilePathLengthChars, addOneForNullTerminator: true),
+			trackAllValues: true
+		);
+	}
 
+	public static void EnsureThreadLocalBufferIsAllocated() {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		_filePathBufferStore = CreateFilePathBufferStore();
+	}
+	
 	public static void ReleaseThreadLocalBuffers() {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		foreach (var pathBuffer in _filePathBufferStore.Values) pathBuffer.Dispose();
 		_filePathBufferStore.Dispose();
 		_filePathBufferStore = CreateFilePathBufferStore();

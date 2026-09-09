@@ -396,6 +396,18 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_privateMaterialInstances[handle] = new(primitiveMat, true, DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
 		}
 		else {
+			if (oldIsDefault) {
+				var nonWireframeBufferData = GetMesh(handle).BufferData;
+				SetModelInstanceMesh(
+					handle,
+					// Maintainer's note: Shouldn't be possible right now because we don't allow generation of wireframe data at the same time as setting the mutation-permitted flag
+					// But it's possible that might change in the future and in case we forget to alter this area I'm pre-emptively checking for it here
+					_activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData) ? mutationData.PrivateVertexBufferHandle : nonWireframeBufferData.VertexBufferHandle,
+					nonWireframeBufferData.IndexBufferHandle,
+					nonWireframeBufferData.IndexBufferStartIndex,
+					nonWireframeBufferData.IndexBufferCount
+				).ThrowIfFailure();
+			}
 			SetModelInstanceMaterial(
 				handle,
 				newMaterial.Handle

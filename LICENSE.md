@@ -1,13 +1,21 @@
 # Summary
 
+**Note: This summary section is intended for overview purposes only and does not override or replace the actual license text that follows.** Where conflicts are found, the license text below should always be considered the source of truth.
+
 > [!NOTE]
 > This license is intended to allow all commercial and non-commercial uses of TinyFFR and its source code except those that may directly compete with TinyFFR (in either a commercial or non-commercial context). It is permitted to otherwise use TinyFFR in any commercial or non-commercial context without restriction.
-
-> [!NOTE]
-> Two years after any specific release or commit is publicly visible, its license changes to MIT.
+> It is generally permitted to use TinyFFR to make: 
+> * ✅ Video games
+> * ✅ Game engines & editors
+> * ✅ Modding tools
+> * ✅ Control/visualization/robotics software
+> * ✅ Digital-content-creation software
+> * ✅ Archtectural or engineering software
+> * ✅ CAD/BIM software
+> * ✅ Simulation or digital-twin platforms 
 
 > [!TIP]
-> The intention of this license is to encourage users (and specifically large organizations) to centralize their improvements and efforts back in to this repository rather than fracturing it and/or creating competing forks.
+> Two years after any specific release or commit is publicly visible, that release/commit's license changes to MIT. The intention of this license is to encourage users (and specifically large organizations) to centralize their improvements and efforts back in to this repository rather than fracturing it and/or creating competing or commercialized forks.
 
 License questions are welcome in the 'discussion' section of the github repository. The license proper begins on the line below.
 
@@ -71,9 +79,11 @@ Permitted Purposes specifically include using the Software:
 
 2. for commercial and non-commercial education;
 
-3. for commercial and non-commercial research; and
+3. for commercial and non-commercial research;
 
-4. in connection with professional services that you provide to a licensee
+4. to create new products/applications incorporating the Software that offer significant additional functionality (including but not limited to video games, game engines & editors, modding tools, control/visualization/robotics software, digital-content-creation software, archtectural or engineering software, CAD/BIM software, simulation or digital-twin platforms) -- only where those applications' additional functionality can not be extricated from that provided solely by the Software (i.e. it must not be possible to disable the additional functionality and use the application/product as a Competing Use); and,
+
+5. in connection with professional services that you provide to a licensee
    using the Software in accordance with these Terms and Conditions.
 
 ### Patents
