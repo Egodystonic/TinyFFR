@@ -94,6 +94,7 @@ public partial class TinyFfrSceneView : UserControl {
 
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
 		if (_bitmap == null || _bitmap.Width != dimensions.X || _bitmap.Height != dimensions.Y) {
+			_bitmap?.Dispose();
 			_bitmap = new Bitmap(
 				dimensions.X,
 				dimensions.Y,
@@ -181,6 +182,7 @@ public partial class TinyFfrSceneView : UserControl {
 		var compositorLocal = Compositor;
 		var shouldDisableFrameCapture = (rendererLocal == null && compositorLocal == null) || !Visible || Parent == null || !targetSizeIsPermitted;
 		if (shouldDisableFrameCapture) {
+			_bitmap?.Dispose();
 			_bitmap = null;
 			if (rendererLocal != null) {
 				BindableRendererImplProvider.StopHandlingFrames(rendererLocal.Value);

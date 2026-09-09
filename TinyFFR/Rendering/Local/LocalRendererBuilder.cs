@@ -173,6 +173,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	readonly RendererBuilderConfig _config;
 	readonly LocalRenderOutputBufferImplProvider _renderOutputBufferImplProvider;
 	readonly LocalRenderOutputBufferTextureImplProvider _textureImplProvider;
+	readonly UIntPtr _reclamationRendererHandle;
+	readonly UIntPtr _reclamationSwapChainHandle;
 	nuint _previousHandleId = 0U;
 	ulong _previousPickId = 0UL;
 	bool _isDisposed = false;
@@ -197,6 +199,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		_renderOutputBufferImplProvider = new(this);
 		_rendererCompositorImplProvider = new(this);
 		_textureImplProvider = new(this);
+		AllocateRenderer(out _reclamationRendererHandle).ThrowIfFailure();
+		AllocateReclamationSwapChain(out _reclamationSwapChainHandle).ThrowIfFailure();
 		lock (_loadedTargetDataMutationLock) {
 			_buildersWithPotentialLoadedTargets.Add(this);
 		}
@@ -356,6 +360,11 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		if (ordering is RenderOrdering.Standalone or RenderOrdering.First) {
 			if (shouldRenewSwapChainIfIsWindowAndAlreadyExists && rendererData.RenderTarget.IsWindow && targetData.SwapChainPtr.HasValue) {
 				DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();
+				// These next three lines ensure we don't hold on to the VRAM represented by this swap chain
+				// while allocating the next. If it's a 4K double back buffer that's a lot of memory.
+				if (rendererData.EmitFences) LocalFrameSynchronizationManager.FlushAllPendingFences(handle);
+				LocalFrameSynchronizationManager.StallForPendingCallbacksHeadless();
+				CollectGpuGarbage();
 				AllocateSwapChain(
 					rendererData.RenderTarget.AsWindow.Handle,
 					out var newSwapChainHandle
@@ -452,7 +461,13 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		}
 
 		LocalFrameSynchronizationManager.StallForPendingCallbacks(handle);
+		CollectGpuGarbage();
 	}
+	
+	// This method works by triggering filament's internal VRAM GC
+	// Filament only executes the GC at the end of a frame targeting a swap chain, so the reclamation swap
+	// chain (created at init time) is a 1x1 headless SC used to trigger it
+	void CollectGpuGarbage() => CollectGpuGarbage(_reclamationRendererHandle, _reclamationSwapChainHandle).ThrowIfFailure();
 
 	static unsafe void HandleRenderTargetReadback(nuint bufferIdentity, Span<byte> data) {
 		if (!_pendingRenderTargetReadbacks.Remove(bufferIdentity, out var tuple)) return; // Can happen if user has cancelled pending readbacks
@@ -960,6 +975,15 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	static extern InteropResult AllocateRenderer(
 		out UIntPtr rendererHandle
 	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_reclamation_swap_chain")]
+	static extern InteropResult AllocateReclamationSwapChain(
+		out UIntPtr swapChainHandle
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "collect_gpu_garbage")]
+	static extern InteropResult CollectGpuGarbage(
+		UIntPtr rendererHandle,
+		UIntPtr swapChainHandle
+	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_view_descriptor")]
 	static extern InteropResult AllocateViewDescriptor(
 		UIntPtr sceneHandle,
@@ -1183,23 +1207,28 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		).ThrowIfFailure();
 
 		_loadedRenderers.Remove(handle);
-		ReleaseRenderTargetUnionIfUnused(data.RenderTarget);
+		// We force a GPU GC if we're releasing a render target to make sure we don't hold on to an old swapchain.
+		// If we did hold on to it and it's e.g. 4K double buffered we'd risk hitting the VRAM limit if the user
+		// is invoking an RTU recreation many times over a few frames (sounds unlikely but imagine e.g window resize
+		// via click + drag).
+		if (ReleaseRenderTargetUnionIfUnused(data.RenderTarget)) CollectGpuGarbage();
 	}
 
-	void ReleaseRenderTargetUnionIfUnused(RenderTargetUnion rtu) {
-		if (RenderTargetUnionIsInUse(rtu)) return;
+	bool ReleaseRenderTargetUnionIfUnused(RenderTargetUnion rtu) {
+		if (RenderTargetUnionIsInUse(rtu)) return false;
 
 		TargetSpecificData swapChainData;
 		lock (_loadedTargetDataMutationLock) {
-			if (!_loadedTargets.Remove(rtu, out swapChainData)) return;
+			if (!_loadedTargets.Remove(rtu, out swapChainData)) return false;
 		}
 		DisposeRenderer(
 			swapChainData.RendererPtr
 		).ThrowIfFailure();
-		if (swapChainData.SwapChainPtr == null) return;
+		if (swapChainData.SwapChainPtr == null) return true;
 		DisposeSwapChain(
 			swapChainData.SwapChainPtr.Value
 		).ThrowIfFailure();
+		return true;
 	}
 
 	public bool IsDisposed(ResourceHandle<RenderOutputBuffer> handle) => _isDisposed || !_loadedBuffers.ContainsKey(handle);
@@ -1231,6 +1260,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			while (_loadedBuffers.Count > 0) {
 				Dispose(_loadedBuffers.GetPairAtIndex(0).Key);
 			}
+			CollectGpuGarbage();
+
+			DisposeRenderer(_reclamationRendererHandle).ThrowIfFailure();
+			DisposeSwapChain(_reclamationSwapChainHandle).ThrowIfFailure();
 
 			_loadedCompositors.Dispose();
 			_loadedRenderers.Dispose();

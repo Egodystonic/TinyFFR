@@ -16,9 +16,10 @@ public enum AntiAliasingMode {
 public enum BuiltInQualityConfiguration {
 	Medium,
 	High,
+	VeryHigh,
 	Ultra,
 	Low,
-	Lowest,
+	VeryLow,
 	Canvas,
 	DebugAndDiagnostic
 }
@@ -46,7 +47,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 	public RenderQualityConfig() : this(BuiltInQualityConfiguration.High) { }
 	public RenderQualityConfig(BuiltInQualityConfiguration builtInQuality) {
 		switch (builtInQuality) {
-			case BuiltInQualityConfiguration.Lowest: {
+			case BuiltInQualityConfiguration.VeryLow: {
 				ShadowQuality = Quality.VeryLow;
 				ScreenSpaceEffectsQuality = Quality.VeryLow;
 				AntiAliasingMode = AntiAliasingMode.None;
@@ -85,11 +86,23 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 			case BuiltInQualityConfiguration.High: {
 				ShadowQuality = Quality.High;
 				ScreenSpaceEffectsQuality = Quality.High;
+				AntiAliasingMode = AntiAliasingMode.Fxaa;
+				AmbientOcclusionQuality = Quality.Standard;
+				InternalResolutionScalar = 1f;
+				HdrColorPrecision = Quality.High;
+				BloomQuality = Quality.High;
+				DepthOfFieldQuality = Quality.High;
+				DitheringEnabled = true;
+				break;
+			}
+			case BuiltInQualityConfiguration.VeryHigh: {
+				ShadowQuality = Quality.High;
+				ScreenSpaceEffectsQuality = Quality.High;
 				AntiAliasingMode = AntiAliasingMode.TaaBalanced;
 				AmbientOcclusionQuality = Quality.High;
 				InternalResolutionScalar = 1f;
 				HdrColorPrecision = Quality.High;
-				BloomQuality = Quality.High;
+				BloomQuality = Quality.VeryHigh;
 				DepthOfFieldQuality = Quality.High;
 				DitheringEnabled = true;
 				break;

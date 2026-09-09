@@ -110,6 +110,8 @@ static unsafe class LocalFrameSynchronizationManager {
 		StallForPendingCallbacks();
 	}
 
+	public static void StallForPendingCallbacksHeadless() => StallForPendingCallbacks();
+
 	public static void QueueResourceDisposal(UIntPtr handle, delegate*<UIntPtr, InteropResult> callback) {
 		var qrc = new QueuedResourceCallback(handle, callback);
 

@@ -17,6 +17,7 @@ typedef RenderTarget* RenderTargetHandle;
 class native_impl_render {
 public:
 	static void allocate_swap_chain(WindowHandle window, SwapChainHandle* outSwapChain);
+	static void allocate_reclamation_swap_chain(SwapChainHandle* outSwapChain);
 	static void allocate_renderer(RendererHandle* outRenderer);
 	static void allocate_view_descriptor(SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor);
 	static void dispose_view_descriptor(ViewDescriptorHandle viewDescriptor);
@@ -76,4 +77,5 @@ public:
 	static void create_gpu_fence(FenceHandle* outFence);
 	static void wait_for_fence(FenceHandle fenceHandle);
 	static void stall_for_pending_callbacks();
+	static void collect_gpu_garbage(RendererHandle renderer, SwapChainHandle swapChain);
 };

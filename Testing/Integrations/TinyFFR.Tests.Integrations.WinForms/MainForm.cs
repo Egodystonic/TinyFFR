@@ -1,4 +1,4 @@
-using Egodystonic.TinyFFR;
+﻿using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Testing.ModelViewer;
@@ -23,7 +23,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 
 			shadingStyleComboBox.DataSource = Enum.GetValues<ViewerShadingStyle>();
 			qualityComboBox.DataSource = Enum.GetValues<BuiltInQualityConfiguration>();
-			qualityComboBox.SelectedItem = BuiltInQualityConfiguration.Ultra;
+			qualityComboBox.SelectedItem = BuiltInQualityConfiguration.High;
 
 			modelListBox.DisplayMember = nameof(ModelListEntry.DisplayText);
 

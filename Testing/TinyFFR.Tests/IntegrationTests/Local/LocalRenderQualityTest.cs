@@ -81,9 +81,10 @@ class LocalRenderQualityTest {
 		static BuiltInQualityConfiguration CycleBuiltInQuality(BuiltInQualityConfiguration q) {
 			return q switch {
 				BuiltInQualityConfiguration.Medium => BuiltInQualityConfiguration.High,
-				BuiltInQualityConfiguration.High => BuiltInQualityConfiguration.Ultra,
-				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.Lowest,
-				BuiltInQualityConfiguration.Lowest => BuiltInQualityConfiguration.Low,
+				BuiltInQualityConfiguration.High => BuiltInQualityConfiguration.VeryHigh,
+				BuiltInQualityConfiguration.VeryHigh => BuiltInQualityConfiguration.Ultra,
+				BuiltInQualityConfiguration.Ultra => BuiltInQualityConfiguration.VeryLow,
+				BuiltInQualityConfiguration.VeryLow => BuiltInQualityConfiguration.Low,
 				_ => BuiltInQualityConfiguration.Medium,
 			};
 		}

@@ -76,6 +76,10 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	}
 
 	void RecreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
+		// We stop frame reading + wait for GPU to fast-dispose all internal back buffer resources to avoid catastrophic VRAM
+		// runaway when the UI control is resized over a number of frames (e.g. user drags window corner)
+		_sharedBuffer.StopReadingFrames(cancelQueuedFrames: true);
+		_actualCompositor.WaitForGpu();
 		_actualCompositor.Dispose();
 		for (var i = 0; i < _addedRenderers.Count; ++i) {
 			BindableRendererImplProvider.GetBindableImplementationOrThrow(_addedRenderers[i].BindableRenderer).DisposeActualRendererForCompositorRecreation();

@@ -119,7 +119,7 @@ public partial class MainViewModel : ViewModelBase {
 	public partial float BackdropIntensity { get; set; } = 1f;
 
 	[ObservableProperty]
-	public partial BuiltInQualityConfiguration Quality { get; set; } = BuiltInQualityConfiguration.Ultra;
+	public partial BuiltInQualityConfiguration Quality { get; set; } = BuiltInQualityConfiguration.High;
 
 	[ObservableProperty]
 	public partial bool UseCompositor { get; set; }

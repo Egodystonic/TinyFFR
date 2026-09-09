@@ -98,6 +98,10 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	}
 
 	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
+		// We stop frame reading + wait for GPU to fast-dispose all internal back buffer resources to avoid catastrophic VRAM
+		// runaway when the UI control is resized over a number of frames (e.g. user drags window corner)
+		_actualRendererTarget.StopReadingFrames(cancelQueuedFrames: true);
+		_actualRenderer.WaitForGpu();
 		_actualRenderer.Dispose();
 		_actualRendererTarget.Dispose();
 		CreateTargetBuffer(size, handler);

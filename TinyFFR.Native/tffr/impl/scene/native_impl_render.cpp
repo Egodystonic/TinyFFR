@@ -121,6 +121,17 @@ StartExportedFunc(allocate_swap_chain, WindowHandle window, SwapChainHandle* out
 	native_impl_render::allocate_swap_chain(window, outSwapChain);
 	EndExportedFunc
 }
+void native_impl_render::allocate_reclamation_swap_chain(SwapChainHandle* outSwapChain) {
+	ThrowIfNull(outSwapChain, "Swap chain out pointer was null.");
+
+	*outSwapChain = filament_engine->createSwapChain(1U, 1U, 0UL);
+	ThrowIfNull(*outSwapChain, "Could not create reclamation swap chain.");
+}
+StartExportedFunc(allocate_reclamation_swap_chain, SwapChainHandle* outSwapChain) {
+	native_impl_render::allocate_reclamation_swap_chain(outSwapChain);
+	EndExportedFunc
+}
+
 void native_impl_render::allocate_renderer(RendererHandle* outRenderer) {
 	ThrowIfNull(outRenderer, "Renderer out pointer was null.");
 
@@ -692,6 +703,18 @@ void native_impl_render::stall_for_pending_callbacks() {
 }
 StartExportedFunc(stall_for_pending_callbacks) {
 	native_impl_render::stall_for_pending_callbacks();
+	EndExportedFunc
+}
+
+void native_impl_render::collect_gpu_garbage(RendererHandle renderer, SwapChainHandle swapChain) {
+	ThrowIfNull(renderer, "Renderer was null.");
+	ThrowIfNull(swapChain, "Swap chain was null.");
+
+	renderer->beginFrame(swapChain);
+	renderer->endFrame();
+}
+StartExportedFunc(collect_gpu_garbage, RendererHandle renderer, SwapChainHandle swapChain) {
+	native_impl_render::collect_gpu_garbage(renderer, swapChain);
 	EndExportedFunc
 }
 

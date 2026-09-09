@@ -93,7 +93,7 @@ static unsafe partial class SmokeSections {
 		using var renderer = Target.CreateRenderer(scene, camera);
 
 		for (var cycle = 0; cycle < SmokeWorkload.QualityCycleCount; ++cycle) {
-			renderer.SetQuality(BuiltInQualityConfiguration.Lowest);
+			renderer.SetQuality(BuiltInQualityConfiguration.VeryLow);
 			renderer.SetFrustumCullingEnabled(false);
 			renderer.RenderAndWaitForGpu();
 			renderer.SetQuality(BuiltInQualityConfiguration.Medium);

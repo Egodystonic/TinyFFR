@@ -38,7 +38,7 @@ static class BenchmarkEnvironment {
 		_pumpCamera = _factory.CameraBuilder.CreateCamera(Location.Origin, name: "Benchmark Reclamation Pump Camera");
 		_pumpRenderer = _renderTarget.CreateRenderer(_pumpScene.Value, _pumpCamera.Value, new RendererCreationConfig {
 			Name = "Benchmark Reclamation Pump Renderer",
-			Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Lowest)
+			Quality = new RenderQualityConfig(BuiltInQualityConfiguration.VeryLow)
 		});
 	}
 
