@@ -146,7 +146,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 
 	public void AdjustPitch(float deltaTime, Angle adjustmentPerSec) => Pitch += adjustmentPerSec * deltaTime;
 
-	public const float DefaultPitchSensitivityMouseCursor = 0.02f;
+	public const float DefaultPitchSensitivityMouseCursor = 0.04f;
 	public void AdjustPitchViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -200,7 +200,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 
 	public void AdjustYaw(float deltaTime, Angle adjustmentPerSec) => Yaw += adjustmentPerSec * deltaTime;
 
-	public const float DefaultYawSensitivityMouseCursor = 0.02f;
+	public const float DefaultYawSensitivityMouseCursor = 0.04f;
 	public void AdjustYawViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -268,7 +268,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		AdjustPosition(orientation, moveSpeed * deltaTime);
 	}
 
-	public const float DefaultPositionSensitivityMouseCursor = 0.0002f;
+	public const float DefaultPositionSensitivityMouseCursor = 0.0004f;
 	public void AdjustPositionViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? distancePerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {

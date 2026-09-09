@@ -213,7 +213,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 
 	public void AdjustFollowDistance(float deltaTime, float adjustmentPerSec) => FollowDistance += adjustmentPerSec * deltaTime;
 
-	public const float DefaultFollowDistanceSensitivityMouseCursor = 0.001f;
+	public const float DefaultFollowDistanceSensitivityMouseCursor = 0.002f;
 	public void AdjustFollowDistanceViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -267,7 +267,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 
 	public void AdjustFollowHeight(float deltaTime, float adjustmentPerSec) => FollowHeight += adjustmentPerSec * deltaTime;
 
-	public const float DefaultFollowHeightSensitivityMouseCursor = 0.0002f;
+	public const float DefaultFollowHeightSensitivityMouseCursor = 0.0004f;
 	public void AdjustFollowHeightViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {

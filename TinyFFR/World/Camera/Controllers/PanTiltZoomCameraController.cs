@@ -246,7 +246,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 
 	public void AdjustPan(float deltaTime, Angle adjustmentPerSec) => Pan += adjustmentPerSec * deltaTime;
 
-	public const float DefaultPanSensitivityMouseCursor = 0.02f;
+	public const float DefaultPanSensitivityMouseCursor = 0.04f;
 	public void AdjustPanViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -298,7 +298,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 
 	public void AdjustTilt(float deltaTime, Angle adjustmentPerSec) => Tilt += adjustmentPerSec * deltaTime;
 	
-	public const float DefaultTiltSensitivityMouseCursor = 0.02f;
+	public const float DefaultTiltSensitivityMouseCursor = 0.04f;
 	public void AdjustTiltViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -352,7 +352,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 
 	public void AdjustZoom(float deltaTime, float adjustmentPerSec) => Zoom += adjustmentPerSec * deltaTime;
 	
-	public const float DefaultZoomSensitivityMouseCursor = 0.0001f;
+	public const float DefaultZoomSensitivityMouseCursor = 0.0002f;
 	public void AdjustZoomViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {

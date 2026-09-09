@@ -163,7 +163,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 
 	public void AdjustPitch(float deltaTime, Angle adjustmentPerSec) => Pitch += adjustmentPerSec * deltaTime;
 
-	public const float DefaultPitchSensitivityMouseCursor = 0.02f;
+	public const float DefaultPitchSensitivityMouseCursor = 0.04f;
 	public void AdjustPitchViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -217,7 +217,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 
 	public void AdjustYaw(float deltaTime, Angle adjustmentPerSec) => Yaw += adjustmentPerSec * deltaTime;
 
-	public const float DefaultYawSensitivityMouseCursor = 0.02f;
+	public const float DefaultYawSensitivityMouseCursor = 0.04f;
 	public void AdjustYawViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -273,7 +273,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	public void AdjustPosition(float deltaTime, Orientation cameraRelativeOrientation, float speed) => AdjustPosition(deltaTime, Camera.GetRelativeOrientationDirection(cameraRelativeOrientation) * speed);
 	public void AdjustPosition(float deltaTime, Vect adjustmentPerSec) => Position += adjustmentPerSec * deltaTime;
 
-	public const float DefaultPositionSensitivityMouseCursor = 0.0002f;
+	public const float DefaultPositionSensitivityMouseCursor = 0.0004f;
 	public void AdjustPositionViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Orientation cameraRelativeOrientation, float? speed = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		AdjustPositionViaMouseCursor(input, Camera.GetRelativeOrientationDirection(cameraRelativeOrientation) * (speed ?? DefaultPositionSensitivityMouseCursor), invertMouseControl, axis);

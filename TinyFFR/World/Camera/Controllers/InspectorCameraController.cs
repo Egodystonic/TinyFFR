@@ -198,7 +198,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 
 	public void AdjustPitch(float deltaTime, Angle adjustmentPerSec) => Pitch += adjustmentPerSec * deltaTime;
 
-	public const float DefaultPitchSensitivityMouseCursor = 0.02f;
+	public const float DefaultPitchSensitivityMouseCursor = 0.04f;
 	public void AdjustPitchViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -252,7 +252,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 
 	public void AdjustYaw(float deltaTime, Angle adjustmentPerSec) => Yaw += adjustmentPerSec * deltaTime;
 
-	public const float DefaultYawSensitivityMouseCursor = 0.02f;
+	public const float DefaultYawSensitivityMouseCursor = 0.04f;
 	public void AdjustYawViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -306,7 +306,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 
 	public void AdjustDistance(float deltaTime, float adjustmentPerSec) => Distance += adjustmentPerSec * deltaTime;
 
-	public const float DefaultDistanceSensitivityMouseCursor = 0.001f;
+	public const float DefaultDistanceSensitivityMouseCursor = 0.002f;
 	public void AdjustDistanceViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -367,7 +367,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	}
 	public void AdjustDistancePercentage(float deltaTime, float adjustmentPerSec) => AdjustDistancePercentage(adjustmentPerSec * deltaTime);
 
-	public const float DefaultDistancePercentageSensitivityMouseCursor = 0.01f;
+	public const float DefaultDistancePercentageSensitivityMouseCursor = 0.02f;
 	public void AdjustDistancePercentageViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {

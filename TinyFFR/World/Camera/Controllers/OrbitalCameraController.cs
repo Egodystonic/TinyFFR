@@ -251,7 +251,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 
 	public void AdjustAngle(float deltaTime, Angle adjustmentPerSec) => Angle += adjustmentPerSec * deltaTime;
 
-	public const float DefaultAngleSensitivityMouseCursor = 0.02f;
+	public const float DefaultAngleSensitivityMouseCursor = 0.04f;
 	public void AdjustAngleViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -305,7 +305,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 
 	public void AdjustHeight(float deltaTime, float adjustmentPerSec) => Height += adjustmentPerSec * deltaTime;
 
-	public const float DefaultHeightSensitivityMouseCursor = 0.0001f;
+	public const float DefaultHeightSensitivityMouseCursor = 0.0002f;
 	public void AdjustHeightViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
@@ -359,7 +359,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 
 	public void AdjustDistance(float deltaTime, float adjustmentPerSec) => Distance += adjustmentPerSec * deltaTime;
 
-	public const float DefaultDistanceSensitivityMouseCursor = 0.001f;
+	public const float DefaultDistanceSensitivityMouseCursor = 0.002f;
 	public void AdjustDistanceViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
