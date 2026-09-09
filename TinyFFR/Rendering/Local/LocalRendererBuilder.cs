@@ -134,7 +134,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		}
 	}
 	
-	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
+	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed, XYPair<int> LastObservedRenderTargetSize);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions, bool SubAreaIsHandledDownstream = false);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode, RenderCompositionType CompositionType = RenderCompositionType.Standard);
 	readonly unsafe struct OutputBufferCallbackData {
@@ -220,7 +220,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				out var rendererHandle
 			).ThrowIfFailure();
 
-			@this._loadedTargets.Add(result, new(rendererHandle, swapChainHandle, false));
+			@this._loadedTargets.Add(result, new(rendererHandle, swapChainHandle, false, result.ViewportDimensions));
 			return result;
 		}
 		static RenderTargetUnion SetUpBufferRenderer(LocalRendererBuilder @this, RenderOutputBuffer buffer) {
@@ -231,7 +231,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			AllocateRenderer(
 				out var rendererHandle
 			).ThrowIfFailure();
-			@this._loadedTargets.Add(result, new(rendererHandle, null, false));
+			@this._loadedTargets.Add(result, new(rendererHandle, null, false, result.ViewportDimensions));
 			return result;
 		}
 
@@ -351,13 +351,19 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			targetData = _loadedTargets[rendererData.RenderTarget];
 		}
 
-		var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetData.SwapchainShouldBeRenewed
-			|| RefreshViewportDimensionsIfRenderTargetSizeChanged(handle, ref rendererData, ref viewportData);
+		// This only refreshes/pushes this renderer's own viewport bounds to Filament; it must not be used to
+		// decide swap chain renewal below, because it also returns true whenever the user just changed this
+		// renderer's *sub-area* (e.g. via SetRenderSubArea*) rather than the render target itself resizing.
+		RefreshViewportDimensionsIfRenderTargetSizeChanged(handle, ref rendererData, ref viewportData);
 
 		// The swap chain must be renewed at most once per composed frame and never between a 'first'
 		// renderer's beginFrame and a 'last' renderer's endFrame; only the frame-opening renderer does it.
 		// Middle/last children re-read the (possibly renewed) swap chain that the first child stored.
 		if (ordering is RenderOrdering.Standalone or RenderOrdering.First) {
+			var curRealTargetSize = rendererData.RenderTarget.ViewportDimensions;
+			var hasRenderTargetActuallyResized = targetData.LastObservedRenderTargetSize != curRealTargetSize;
+			var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetData.SwapchainShouldBeRenewed || hasRenderTargetActuallyResized;
+
 			if (shouldRenewSwapChainIfIsWindowAndAlreadyExists && rendererData.RenderTarget.IsWindow && targetData.SwapChainPtr.HasValue) {
 				DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();
 				// These next three lines ensure we don't hold on to the VRAM represented by this swap chain
@@ -369,7 +375,14 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					rendererData.RenderTarget.AsWindow.Handle,
 					out var newSwapChainHandle
 				).ThrowIfFailure();
-				targetData = targetData with { SwapChainPtr = newSwapChainHandle, SwapchainShouldBeRenewed = false };
+				targetData = targetData with { SwapChainPtr = newSwapChainHandle, SwapchainShouldBeRenewed = false, LastObservedRenderTargetSize = curRealTargetSize };
+				lock (_loadedTargetDataMutationLock) {
+					_loadedTargets[rendererData.RenderTarget] = targetData;
+				}
+			}
+			else if (hasRenderTargetActuallyResized) {
+				// No swap chain to renew (e.g. a buffer target, or a window without one yet) — still record the new size.
+				targetData = targetData with { LastObservedRenderTargetSize = curRealTargetSize };
 				lock (_loadedTargetDataMutationLock) {
 					_loadedTargets[rendererData.RenderTarget] = targetData;
 				}
