@@ -445,6 +445,13 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					bufferData.HandleOnlyNextChange
 				).ThrowIfFailure();
 			}
+
+			// Required because filament doesn't GC at all if we're only rendering to an output buffer (e.g. UI frameworks or headless modes)
+			// Technically this is wasted effort if we're also rendering to a window each frame so maybe in future we could check to see if there's been a
+			// window/swapchain render since the previous time this was invoked and only then collect
+			if (ordering is RenderOrdering.Standalone or RenderOrdering.Last) {
+				CollectGpuGarbage(targetData.RendererPtr, _reclamationSwapChainHandle).ThrowIfFailure();
+			}
 		}
 
 		if (ordering is RenderOrdering.Standalone or RenderOrdering.Last && _loadedRenderers[fenceEmittingHandle].EmitFences) {
