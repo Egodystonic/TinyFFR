@@ -201,6 +201,13 @@ class LocalModelLoadingTest {
 					}
 				}
 			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.T)) {
+				if (modelInstances?.Instances is { } enumerable && loadedResources is { } lr) {
+					foreach (var inst in enumerable) {
+						inst.SetMaterial(lr.Models.First(m => m.Mesh == inst.Mesh).Material);
+					}
+				}
+			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
 				if (modelInstances?.Instances is { } enumerable) {
 					foreach (var inst in enumerable) {

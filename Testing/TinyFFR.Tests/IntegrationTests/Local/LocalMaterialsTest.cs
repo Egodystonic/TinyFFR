@@ -49,7 +49,7 @@ class LocalMaterialsTest {
 
 		public int ShaderType { get; set; } = 8;
 		public int ShaderQualityType { get; set; } = 1;
-		public int CompressionLevel { get; set; } = 3;
+		public int CompressionLevel { get; set; } = 0;
 
 		public static readonly Quality?[] CompressionLevels = { null, Quality.VeryLow, Quality.Low, Quality.Standard, Quality.High, Quality.VeryHigh };
 		public Quality? CompressionQuality => CompressionLevels[CompressionLevel];
