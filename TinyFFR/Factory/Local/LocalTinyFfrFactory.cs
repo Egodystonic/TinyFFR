@@ -98,6 +98,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
 		ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
+		LocalFileSystemUtils.EnsureThreadLocalBufferIsAllocated();
 		LocalFileSystemUtils.AttemptToEnsureApplicationDataFolderExists();
 
 		factoryConfig ??= new();
@@ -221,11 +222,19 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		finally {
 			IsDisposed = true;
 			_instance = null;
-			OutstandingAsyncOperationRegistry.InvokeDeferredContinuations();
-			if (SynchronizationContext.Current is TinyFfrSynchronizationContext) SynchronizationContext.SetSynchronizationContext(null);
-			ThreadSafetyTracker.ClearPrimaryThread();
-			TinyFfrArrayPool.ReleaseAllPooledMemory();
-			LocalFileSystemUtils.ReleaseThreadLocalBuffers();
+			try {
+				OutstandingAsyncOperationRegistry.InvokeDeferredContinuations();
+			}
+			finally {
+				try {
+					if (SynchronizationContext.Current is TinyFfrSynchronizationContext) SynchronizationContext.SetSynchronizationContext(null);
+					TinyFfrArrayPool.ReleaseAllPooledMemory();
+					LocalFileSystemUtils.ReleaseThreadLocalBuffers();
+				}
+				finally {
+					ThreadSafetyTracker.ClearPrimaryThread();
+				}
+			}
 		}
 	}
 
