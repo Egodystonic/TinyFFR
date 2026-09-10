@@ -29,6 +29,7 @@ public:
 	static void set_window_fullscreen_display_mode(WindowHandle window, DisplayHandle display, int32_t modeIndex);
 	static void get_window_fullscreen_display_mode(WindowHandle handle, int32_t* outWidth, int32_t* outHeight, int32_t* outRefreshRateHz);
 	static void get_window_back_buffer_size_actual(WindowHandle handle, int32_t* outWidth, int32_t* outHeight);
+	static void get_window_minimized_state(WindowHandle handle, interop_bool* outIsMinimized);
 	static void get_window_display_index(WindowHandle handle, int32_t* outDisplayIndex);
 
 	static void set_window_position(WindowHandle handle, int32_t newX, int32_t newY);

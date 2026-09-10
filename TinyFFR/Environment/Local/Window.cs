@@ -82,6 +82,11 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
 	XYPair<int> IRenderTarget.ViewportDimensions => Implementation.GetViewportDimensions(_handle);
 
+	internal bool IsMinimized {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetIsMinimized(_handle);
+	}
+
 	internal Window(ResourceHandle<Window> handle, IWindowImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;

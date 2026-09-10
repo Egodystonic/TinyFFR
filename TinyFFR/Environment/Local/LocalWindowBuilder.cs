@@ -290,6 +290,16 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 		return new(outWidth, outHeight);
 	}
 
+	public bool GetIsMinimized(ResourceHandle<Window> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetWindowMinimizedState(
+			handle,
+			out var outIsMinimized
+		).ThrowIfFailure();
+
+		return outIsMinimized;
+	}
+
 	public XYPair<int> GetPosition(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowPosition(
@@ -496,6 +506,9 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_back_buffer_size_actual")]
 	static extern InteropResult GetWindowBackBufferSizeActual(UIntPtr handle, out int outWidth, out int outHeight);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_minimized_state")]
+	static extern InteropResult GetWindowMinimizedState(UIntPtr handle, out InteropBool outIsMinimized);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_position")]
 	static extern InteropResult GetWindowPosition(UIntPtr handle, out int outX, out int outY);

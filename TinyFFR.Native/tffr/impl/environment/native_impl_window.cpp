@@ -43,6 +43,11 @@ WindowHandle native_impl_window::create_window(int32_t width, int32_t height, in
 	);
 	ThrowIfNull(result, "Could not create window: ", SDL_GetError());
 
+	// Allowing the user to drag or set the window size to 0 width or height can cause Vulkan to fail
+	// to create a swap chain. Unfortunately filament's driver thread attempts to even if we don't
+	// from C# and then throws a panic, so the best fix for now is disallowing a 0-width or 0-height window
+	SDL_SetWindowMinimumSize(result, 1, 1);
+
 #if defined(TFFR_MACOS)
 	auto metalView = SDL_Metal_CreateView(result);
 	if (metalView == nullptr) {
@@ -209,6 +214,17 @@ void native_impl_window::get_window_back_buffer_size_actual(WindowHandle handle,
 }
 StartExportedFunc(get_window_back_buffer_size_actual, WindowHandle ptr, int32_t* outWidth, int32_t* outHeight) {
 	native_impl_window::get_window_back_buffer_size_actual(ptr, outWidth, outHeight);
+	EndExportedFunc
+}
+
+void native_impl_window::get_window_minimized_state(WindowHandle handle, interop_bool* outIsMinimized) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outIsMinimized, "Out is-minimized pointer was null.");
+	auto flags = SDL_GetWindowFlags(handle);
+	*outIsMinimized = (flags & SDL_WINDOW_MINIMIZED) != 0 ? interop_bool_true : interop_bool_false;
+}
+StartExportedFunc(get_window_minimized_state, WindowHandle handle, interop_bool* outIsMinimized) {
+	native_impl_window::get_window_minimized_state(handle, outIsMinimized);
 	EndExportedFunc
 }
 

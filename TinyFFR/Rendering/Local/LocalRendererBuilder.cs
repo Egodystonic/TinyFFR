@@ -342,6 +342,17 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
+		// Maintainer's note:
+		// Attempting to render a window that's minimized or has 0 width or 0 height causes a crash on some
+		// OSs (Windows for sure). It's attributable to a failure to correctly handle the swapchain recreation failure on
+		// filament's behalf, but there's also a benefit of not wasting the user's CPU/GPU on rendering to a minimized
+		// or 0-sized window anyway.
+		var initialRenderTarget = _loadedRenderers[handle].RenderTarget;
+		if (initialRenderTarget.IsWindow) {
+			var curWindowSize = initialRenderTarget.ViewportDimensions;
+			if (curWindowSize.X <= 0 || curWindowSize.Y <= 0 || initialRenderTarget.AsWindow.IsMinimized) return;
+		}
+
 		SetUpSceneForRender(handle);
 		
 		var rendererData = _loadedRenderers[handle];
@@ -351,9 +362,6 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			targetData = _loadedTargets[rendererData.RenderTarget];
 		}
 
-		// This only refreshes/pushes this renderer's own viewport bounds to Filament; it must not be used to
-		// decide swap chain renewal below, because it also returns true whenever the user just changed this
-		// renderer's *sub-area* (e.g. via SetRenderSubArea*) rather than the render target itself resizing.
 		RefreshViewportDimensionsIfRenderTargetSizeChanged(handle, ref rendererData, ref viewportData);
 
 		// The swap chain must be renewed at most once per composed frame and never between a 'first'
@@ -361,8 +369,9 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		// Middle/last children re-read the (possibly renewed) swap chain that the first child stored.
 		if (ordering is RenderOrdering.Standalone or RenderOrdering.First) {
 			var curRealTargetSize = rendererData.RenderTarget.ViewportDimensions;
-			var hasRenderTargetActuallyResized = targetData.LastObservedRenderTargetSize != curRealTargetSize;
-			var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetData.SwapchainShouldBeRenewed || hasRenderTargetActuallyResized;
+			var targetHasNonZeroArea = curRealTargetSize is { X: > 0, Y: > 0 };
+			var hasRenderTargetActuallyResized = targetHasNonZeroArea && targetData.LastObservedRenderTargetSize != curRealTargetSize;
+			var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetHasNonZeroArea && (targetData.SwapchainShouldBeRenewed || hasRenderTargetActuallyResized);
 
 			if (shouldRenewSwapChainIfIsWindowAndAlreadyExists && rendererData.RenderTarget.IsWindow && targetData.SwapChainPtr.HasValue) {
 				DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();

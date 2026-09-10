@@ -2,6 +2,7 @@
 
 #include "interop_utils.h"
 #include "interop_result.h"
+#include "filament/utils/Panic.h"
 
 #pragma region Alloc/Dealloc
 
@@ -47,6 +48,9 @@ typedef uint8_t interop_bool;
 #define EndExportedFunc									\
 		return interop_result::success_int_val;			\
 	}													\
+	catch (utils::Panic& e) {							\
+		ExportFuncFail(e.what());						\
+	}													\
 	catch (std::exception& e) {							\
 		ExportFuncFail(e.what());						\
 	}													\
@@ -60,6 +64,9 @@ typedef uint8_t interop_bool;
 
 #define EndExportedFunc									\
 		return interop_result::success_int_val;			\
+	}													\
+	catch (utils::Panic& e) {							\
+		ExportFuncFail(e.what());						\
 	}													\
 	catch (std::exception& e) {							\
 		ExportFuncFail(e.what());						\
