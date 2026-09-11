@@ -287,6 +287,13 @@ class VectTest {
 		Assert.AreEqual(new Vect(-1f, -2f, 3f), -OneTwoNegThree);
 		Assert.AreEqual(new Vect(-1f, -1f, -1f), new Vect(1f, 1f, 1f).Reversed);
 	}
+	
+	[Test]
+	public void ShouldCorrectlyAbsolute() {
+		Assert.AreEqual(Vect.Zero, Vect.Zero.Absolute);
+		Assert.AreEqual(new Vect(1f, 2f, 3f), OneTwoNegThree.Absolute);
+		Assert.AreEqual(new Vect(1f, 2f, 3f), OneTwoNegThree.Absolute.Absolute);
+	}
 
 	[Test]
 	public void ShouldCorrectlyReciprocate() {

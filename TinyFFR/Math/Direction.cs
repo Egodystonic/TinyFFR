@@ -30,12 +30,37 @@ namespace Egodystonic.TinyFFR;
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)]
 public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;
+	/// <summary>
+	/// A special-case non-existent direction, with all components equal to <c>0f</c>.
+	/// </summary>
+	/// <remarks>
+	/// None is a valid input and output to/from many built-in functions. However, read the XMLDoc for any given function
+	/// to check that it gracefully handles None as there are some exceptions. 
+	/// </remarks>
 	public static readonly Direction None = new();
+	/// <summary>
+	/// The direction with components <c>(0f, 0f, 1f)</c>.
+	/// </summary>
 	public static readonly Direction Forward = new(0f, 0f, 1f);
+	/// <summary>
+	/// The direction with components <c>(0f, 0f, -1f)</c>.
+	/// </summary>
 	public static readonly Direction Backward = new(0f, 0f, -1f);
+	/// <summary>
+	/// The direction with components <c>(0f, 1f, 0f)</c>.
+	/// </summary>
 	public static readonly Direction Up = new(0f, 1f, 0f);
+	/// <summary>
+	/// The direction with components <c>(0f, -1f, 0f)</c>.
+	/// </summary>
 	public static readonly Direction Down = new(0f, -1f, 0f);
+	/// <summary>
+	/// The direction with components <c>(1f, 0f, 0f)</c>.
+	/// </summary>
 	public static readonly Direction Left = new(1f, 0f, 0f);
+	/// <summary>
+	/// The direction with components <c>(-1f, 0f, 0f)</c>.
+	/// </summary>
 	public static readonly Direction Right = new(-1f, 0f, 0f);
 	static readonly Direction[] _allCardinals = {
 		new(1, 0, 0),   new(0, 1, 0),   new(0, 0, 1),
@@ -73,9 +98,21 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		_allDiagonals[7],
 	};
 
+	/// <summary>
+	/// The six axis-aligned directions: <see cref="Left"/>, <see cref="Right"/>, <see cref="Up"/>, <see cref="Down"/>, <see cref="Forward"/>, and <see cref="Backward"/>.
+	/// </summary>
 	public static ReadOnlySpan<Direction> AllCardinals => _allCardinals;
+	/// <summary>
+	/// The twelve directions that lie exactly between two adjacent cardinal directions (e.g. exactly between <see cref="Up"/> and <see cref="Left"/>).
+	/// </summary>
 	public static ReadOnlySpan<Direction> AllIntercardinals => _allIntercardinals;
+	/// <summary>
+	/// The eight directions that lie exactly between three adjacent cardinal directions (e.g. exactly between <see cref="Up"/>, <see cref="Left"/>, and <see cref="Forward"/>).
+	/// </summary>
 	public static ReadOnlySpan<Direction> AllDiagonals => _allDiagonals;
+	/// <summary>
+	/// The union of <see cref="AllCardinals"/>, <see cref="AllIntercardinals"/>, and <see cref="AllDiagonals"/> (26 directions in total).
+	/// </summary>
 	public static ReadOnlySpan<Direction> AllOrientations => _allOrientations;
 
 	internal readonly Vector4 AsVector4;
@@ -83,45 +120,106 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	/* No init accessor on these properties. It's not intuitive that Direction tries to keep itself normalized, so
 	 * setting e.g. new Direction(1f, 2f, 3f) with { X = 4f, Y = 5f } is very hard to reason about.
 	 */
+	/// <inheritdoc />
 	public float X {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.X;
 	}
+	/// <inheritdoc />
 	public float Y {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Y;
 	}
+	/// <inheritdoc />
 	public float Z {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Z;
 	}
 
+	/// <inheritdoc />
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
 		Axis.Y => Y,
 		Axis.Z => Z,
 		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
 	};
+	/// <inheritdoc />
 	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
+	/// <inheritdoc />
 	public Direction this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
 
+	/// <summary>
+	/// Constructs a new <see cref="Direction"/> equal to <see cref="None"/>.
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction() : this(0f, 0f, 0f) { }
+	/// <summary>
+	/// Constructs a new <see cref="Direction"/> from the given <paramref name="x"/>, <paramref name="y"/>, and <paramref name="z"/> components.
+	/// </summary>
+	/// <remarks>
+	/// The given components are normalized to unit length as part of construction. If all three components are <c>0f</c>
+	/// (or otherwise sum to a zero-length vector), the result is <see cref="None"/> rather than an invalid or <c>NaN</c> direction.
+	/// If you already know your components are unit-length and want to skip the normalization step, use <see cref="FromVector3PreNormalized(float,float,float)"/> instead.
+	/// </remarks>
+	/// <param name="x">The X component, prior to normalization.</param>
+	/// <param name="y">The Y component, prior to normalization.</param>
+	/// <param name="z">The Z component, prior to normalization.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction(float x, float y, float z) : this(NormalizeOrZero(new Vector4(x, y, z, WValue))) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Direction(Vector4 v) { AsVector4 = v; }
 
 	#region Factories and Conversions
+	/// <summary>
+	/// Constructs a new <see cref="Direction"/> directly from the given already-unit-length <paramref name="v"/>, skipping normalization.
+	/// </summary>
+	/// <remarks>
+	/// This is a faster alternative to <see cref="FromVector3"/> for when you already know the
+	/// components describe a unit-length vector.
+	/// Be warned that if the components are not actually unit-length, the resultant <see cref="Direction"/> will not behave correctly
+	/// in most interactions that use it, potentially causing difficult-to-track mathematical errors throughout your application;
+	/// so if in doubt opt to use <see cref="FromVector3"/> instead.
+	/// </remarks>
+	/// <param name="v">The already-normalized vector to convert.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3PreNormalized(Vector3 v) => new(new Vector4(v, WValue));
+	/// <summary>
+	/// Constructs a new <see cref="Direction"/> directly from the given already-unit-length components, skipping normalization.
+	/// </summary>
+	/// <remarks>
+	/// This is a faster alternative to the <see cref="Direction(float,float,float)"/> constructor for when you already know the
+	/// components describe a unit-length vector.
+	/// Be warned that if the components are not actually unit-length, the resultant <see cref="Direction"/> will not behave correctly
+	/// in most interactions that use it, potentially causing difficult-to-track mathematical errors throughout your application;
+	/// so if in doubt opt to use <see cref="FromVector3"/> instead.
+	/// </remarks>
+	/// <param name="x">The X component, already normalized.</param>
+	/// <param name="y">The Y component, already normalized.</param>
+	/// <param name="z">The Z component, already normalized.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3PreNormalized(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
 
+	/// <summary>
+	/// Converts a compass-style <see cref="Orientation"/> to the equivalent <see cref="Direction"/>.
+	/// </summary>
+	/// <param name="orientation">The orientation to convert.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
-	// TODO xmldoc -- by default follows right hand rule (index finger = dirA, middle finger = dirB, thumb = result)
+	/// <summary>
+	/// Finds a <see cref="Direction"/> that is orthogonal (perpendicular) to both <paramref name="dirA"/> and <paramref name="dirB"/>.
+	/// </summary>
+	/// <remarks>
+	/// The result follows the right-hand rule: if the index finger of your right hand points along <paramref name="dirA"/>
+	/// and your middle finger points along <paramref name="dirB"/>, the result points in the same direction as your thumb.
+	/// <para>
+	/// If <paramref name="dirA"/> and <paramref name="dirB"/> are exactly parallel or exactly opposite (and neither is <see cref="None"/>),
+	/// there are infinitely many valid orthogonal directions; in that case this method returns an arbitrary but consistent
+	/// direction orthogonal to <paramref name="dirA"/> (see <see cref="AnyOrthogonal"/>).
+	/// </para>
+	/// </remarks>
+	/// <param name="dirA">The first direction. If this is <see cref="None"/>, the result is <see cref="None"/>.</param>
+	/// <param name="dirB">The second direction. If this is <see cref="None"/>, the result is <see cref="None"/>.</param>
 	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB) {
 		const float PreNormalizedCrossLengthSquaredTolerance = 1E-5f;
 		const float ParallelInputsCrossLengthSquaredTolerance = 1E-8f;
@@ -134,43 +232,107 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		else if (dirA == None || dirB == None) return None;
 		else return dirA.AnyOrthogonal();
 	}
+	/// <summary>
+	/// Finds a <see cref="Direction"/> that is orthogonal (perpendicular) to both <paramref name="dirA"/> and <paramref name="dirB"/>, choosing the handedness of the result.
+	/// </summary>
+	/// <remarks>
+	/// See <see cref="FromDualOrthogonalization(Direction,Direction)"/> for the right-handed behaviour and degenerate-input handling;
+	/// passing <see langword="false"/> for <paramref name="rightHanded"/> is equivalent to negating that result.
+	/// </remarks>
+	/// <param name="dirA">The first direction.</param>
+	/// <param name="dirB">The second direction.</param>
+	/// <param name="rightHanded">Whether to follow the right-hand rule (<see langword="true"/>) or the left-hand rule (<see langword="false"/>)
+	/// when deciding which of the two possible orthogonal directions to return.</param>
 	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB, bool rightHanded) {
 		return rightHanded ? FromDualOrthogonalization(dirA, dirB) : FromDualOrthogonalization(dirB, dirA);
 	}
-	// TODO xmldoc expects that dirA and dirB are definitely orthogonal already and not None
+	/// <summary>
+	/// A faster, less robust alternative to <see cref="FromDualOrthogonalization(Direction,Direction)"/>.
+	/// </summary>
+	/// <remarks>
+	/// Unlike <see cref="FromDualOrthogonalization(Direction,Direction)"/>, this method does not correct for near-parallel
+	/// inputs or handle <see cref="None"/> specially: it assumes <paramref name="dirA"/> and <paramref name="dirB"/> are
+	/// already genuinely orthogonal and that neither is <see cref="None"/>. Only use this overload when you can already
+	/// guarantee those conditions and need to avoid the extra checks <see cref="FromDualOrthogonalization(Direction,Direction)"/> performs.
+	/// The returned value of this function is undefined when any condition above is broken.
+	/// </remarks>
+	/// <param name="dirA">The first direction. Must not be <see cref="None"/>, and must be orthogonal to <paramref name="dirB"/>.</param>
+	/// <param name="dirB">The second direction. Must not be <see cref="None"/>, and must be orthogonal to <paramref name="dirA"/>.</param>
 	public static Direction FastFromDualOrthogonalization(Direction dirA, Direction dirB) {
 		return FromVector3(Vector3.Cross(dirA.ToVector3(), dirB.ToVector3()));
 	}
 
-	// TODO xmldoc: Imagine a plane, and imagine one direction along the plane is set as "zero". This factory method lets you specify directions as a polar angle offset from the zero direction on the plane
-	// TODO xmldoc: Angle is anticlockwise looking in to the plane normal (much like rotations)
+	/// <summary>
+	/// Returns the direction lying in <paramref name="plane"/> that is <paramref name="polarAngle"/> around from <paramref name="zeroDegreesDirection"/>.
+	/// </summary>
+	/// <remarks>
+	/// Picture looking directly at <paramref name="plane"/> with its normal axis pointing at you: <paramref name="zeroDegreesDirection"/> is
+	/// treated as the 0° direction within the plane, and <paramref name="polarAngle"/> is measured anticlockwise from
+	/// there (the same convention used elsewhere for <see cref="Rotation"/>).
+	/// </remarks>
+	/// <param name="plane">The plane the resultant direction should lie in.</param>
+	/// <param name="zeroDegreesDirection">The direction within <paramref name="plane"/> to treat as the 0° reference.
+	/// If this is <see cref="None"/> or exactly orthogonal to <paramref name="plane"/>, an arbitrary direction within the plane is substituted instead.</param>
+	/// <param name="polarAngle">The angle, anticlockwise from <paramref name="zeroDegreesDirection"/> (when the plane's normal is pointing at you), of the direction to return.</param>
 	public static Direction FromPlaneAndPolarAngle(Plane plane, Direction zeroDegreesDirection, Angle polarAngle) {
 		if (zeroDegreesDirection.ParallelizedWith(plane) == null) zeroDegreesDirection = plane.Normal.AnyOrthogonal();
 		var converter = plane.CreateDimensionConverter(Location.Origin, zeroDegreesDirection);
 		return FromVector3(converter.ConvertVect(XYPair<float>.FromPolarAngle(polarAngle)).ToVector3());
 	}
 
+	/// <summary>
+	/// Returns whichever element of <paramref name="span"/> is closest (by angle) to <paramref name="targetDir"/>.
+	/// </summary>
+	/// <param name="targetDir">The direction to find the nearest match for.</param>
+	/// <param name="span">The candidate directions to search. Must not be empty.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) => span[GetIndexOfNearestDirectionInSpan(targetDir, span)];
-	
+
+	/// <summary>
+	/// Converts a raw <see cref="Vector3"/> to a <see cref="Direction"/>, normalizing it to unit length.
+	/// </summary>
+	/// <remarks>
+	/// If <paramref name="v"/> is a zero-length vector, the result is <see cref="None"/> rather than an invalid or <c>NaN</c> direction.
+	/// If you already know <paramref name="v"/> is unit-length, <see cref="FromVector3PreNormalized(Vector3)"/> is a faster alternative that skips normalization.
+	/// </remarks>
+	/// <param name="v">The vector to convert.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
 
+	/// <summary>
+	/// Returns <paramref name="d"/> re-normalized to unit length.
+	/// </summary>
+	/// <remarks>
+	/// Directions are kept unit-length by construction, but repeated operations can
+	/// accrue floating-point drift over time. This method corrects that drift back to exactly unit length.
+	/// If <paramref name="d"/> is <see cref="None"/>, the result is also <see cref="None"/>.
+	/// </remarks>
+	/// <param name="d">The direction to re-normalize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction Renormalize(Direction d) => new(NormalizeOrZero(d.AsVector4));
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 ToVector3() => new(AsVector4.X, AsVector4.Y, AsVector4.Z);
 
+	/// <inheritdoc />
 	public void Deconstruct(out float x, out float y, out float z) {
 		x = X;
 		y = Y;
 		z = Z;
 	}
+	/// <inheritdoc />
+	/// <remarks>
+	/// The given components are normalized to unit length as part of the conversion, identically to the <see cref="Direction(float,float,float)"/> constructor.
+	/// </remarks>
 	public static implicit operator Direction((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
 	#endregion
 
 	#region Random
+	/// <summary>
+	/// Produces a random direction, uniformly distributed over the surface of a unit sphere (i.e. every possible direction is equally likely).
+	/// </summary>
+	/// <returns>A new <see cref="Direction"/>. This method never returns <see cref="None"/>.</returns>
 	public static Direction Random() {
 		/* Maintainer's note:
 		 * Previously this sampled a point inside a unit cube and then projected on the sphere surface, but that overrepresents the 8 diagonal axes in the distribution
@@ -210,10 +372,41 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 			return new(u * hatScalar, v * hatScalar, 1f - 2f * uvSquared);
 		}
 	}
+	/// <summary>
+	/// Produces a random direction that lies somewhere on the shortest arc between <paramref name="minInclusive"/> and <paramref name="maxExclusive"/>.
+	/// </summary>
+	/// <remarks>
+	/// Directions have no natural ordering, so this does
+	/// not mean "any direction between two bounds" in a volumetric sense: the result always lies exactly on the geodesic
+	/// (the shortest path around a great circle) connecting <paramref name="minInclusive"/> and <paramref name="maxExclusive"/>.
+	/// </remarks>
+	/// <param name="minInclusive">One end of the arc to pick from. This value itself can be returned.</param>
+	/// <param name="maxExclusive">The other end of the arc to pick from. This exact value will not be returned.</param>
 	public static Direction Random(Direction minInclusive, Direction maxExclusive) {
 		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
 	}
+	/// <summary>
+	/// Produces a random direction within a cone around <paramref name="coneCentre"/>.
+	/// </summary>
+	/// <remarks>
+	/// Equivalent to <c>Random(coneCentre, coneAngleMax, Angle.Zero)</c>; see <see cref="Random(Direction,Angle,Angle)"/> for details.
+	/// </remarks>
+	/// <param name="coneCentre">The direction at the centre of the cone to pick from. If this is <see cref="None"/>, the result is equivalent to calling <see cref="Random()"/>.</param>
+	/// <param name="coneAngleMax">The maximum angle, from <paramref name="coneCentre"/>, that the result can be.</param>
 	public static Direction Random(Direction coneCentre, Angle coneAngleMax) => Random(coneCentre, coneAngleMax, Angle.Zero);
+	/// <summary>
+	/// Produces a random direction within an angular band around <paramref name="coneCentre"/>.
+	/// </summary>
+	/// <remarks>
+	/// The result's angle from <paramref name="coneCentre"/> is uniformly distributed between <paramref name="coneAngleMin"/>
+	/// and <paramref name="coneAngleMax"/>, and its rotation around <paramref name="coneCentre"/> (i.e. where on the cone's
+	/// circular cross-section it falls) is uniformly random. Leaving <paramref name="coneAngleMin"/> at <see cref="Angle.Zero"/>
+	/// (the default when using <see cref="Random(Direction,Angle)"/>) samples a solid cone; setting it above zero excludes
+	/// a smaller inner cone, producing a hollow conical shell instead.
+	/// </remarks>
+	/// <param name="coneCentre">The direction at the centre of the cone to pick from. If this is <see cref="None"/>, the result is equivalent to calling <see cref="Random()"/>.</param>
+	/// <param name="coneAngleMax">The maximum angle, from <paramref name="coneCentre"/>, that the result can be. This value is clamped internally between 0° and 180°.</param>
+	/// <param name="coneAngleMin">The minimum angle, from <paramref name="coneCentre"/>, that the result can be. This value is clamped internally between 0° and 180°.</param>
 	public static Direction Random(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
 		if (coneCentre == None) return Random();
 
@@ -225,23 +418,44 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		};
 		return offset * new Rotation(Angle.Random(Angle.Zero, Angle.FullCircle), coneCentre);
 	}
+	/// <summary>
+	/// Produces a random direction lying within <paramref name="plane"/>.
+	/// </summary>
+	/// <remarks>
+	/// Equivalent to <c>Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle)</c> — i.e. every direction within the plane is equally likely.
+	/// </remarks>
+	/// <param name="plane">The plane the resultant direction should lie in.</param>
 	public static Direction Random(Plane plane) => Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);
+	/// <summary>
+	/// Produces a random direction lying within <paramref name="plane"/>, within an arc around <paramref name="arcCentre"/>.
+	/// </summary>
+	/// <remarks>
+	/// The result is uniformly distributed within the arc that spans <paramref name="arcAngle"/> in total, centred on
+	/// <paramref name="arcCentre"/> (i.e. extending <paramref name="arcAngle"/> / 2 to either side).
+	/// </remarks>
+	/// <param name="plane">The plane the resultant direction should lie in.</param>
+	/// <param name="arcCentre">The direction, lying within <paramref name="plane"/>, at the centre of the arc to pick from.
+	/// If this is <see cref="None"/> or exactly orthogonal to <paramref name="plane"/>, any random direction on <paramref name="plane"/> is returned instead.</param>
+	/// <param name="arcAngle">The total angular width of the arc to pick from.</param>
 	public static Direction Random(Plane plane, Direction arcCentre, Angle arcAngle) {
-		if (arcCentre.ParallelizedWith(plane) == null) arcCentre = plane.Normal.AnyOrthogonal();
+		if (arcCentre.ParallelizedWith(plane) == null) return Random(plane);
 		var halfAngle = arcAngle * 0.5f;
 		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.Random(-halfAngle, halfAngle));
 	}
 	#endregion
 
 	#region Span Conversion
+	/// <inheritdoc />
 	public static int SerializationByteSpanLength { get; } = sizeof(float) * 3;
 
+	/// <inheritdoc />
 	public static void SerializeToBytes(Span<byte> dest, Direction src) {
 		BinaryPrimitives.WriteSingleLittleEndian(dest, src.X);
 		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..], src.Y);
 		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..], src.Z);
 	}
 
+	/// <inheritdoc />
 	public static Direction DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		return FromVector3PreNormalized(
 			BinaryPrimitives.ReadSingleLittleEndian(src),
@@ -252,8 +466,10 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	#endregion
 
 	#region String Conversion
+	/// <inheritdoc />
 	public override string ToString() => this.ToString(null, null);
 
+	/// <inheritdoc />
 	public string ToStringDescriptive() {
 		const float ZeroAngleMaxProximity = 1E-3f;
 		var (orientation, direction) = NearestOrientation;
@@ -266,9 +482,11 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	 * We don't use FromVector3PreNormalized for these methods that parse from a string because it's likely that the
 	 * string representation has lost some precision and therefore the re-parsed value won't actually be unit-length.
 	 */
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction Parse(string s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
+	/// <inheritdoc />
 	public static bool TryParse(string? s, IFormatProvider? provider, out Direction result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
 			result = default;
@@ -280,9 +498,11 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		}
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
+	/// <inheritdoc />
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Direction result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
 			result = default;
@@ -296,19 +516,35 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	#endregion
 
 	#region Equality
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Direction other) => AsVector4.Equals(other.AsVector4);
+	/// <summary>
+	/// Determines whether this direction is equal to <paramref name="other"/> within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <remarks>
+	/// This compares the <see cref="X"/>, <see cref="Y"/>, and <see cref="Z"/> components independently, each within
+	/// <paramref name="tolerance"/>; it is not the same as checking whether the angle between the two directions is small
+	/// (for that, use <see cref="AngleTo(Direction)"/> or <see cref="IsWithinAngleTo"/> instead).
+	/// </remarks>
+	/// <param name="other">The other value.</param>
+	/// <param name="tolerance">The tolerance value.</param>
+	/// <returns>True if equal within tolerance, false if not.</returns>
 	public bool Equals(Direction other, float tolerance) {
 		return MathF.Abs(X - other.X) <= tolerance
 			&& MathF.Abs(Y - other.Y) <= tolerance
 			&& MathF.Abs(Z - other.Z) <= tolerance;
 	}
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Direction left, Direction right) => left.Equals(right);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(Direction left, Direction right) => !left.Equals(right);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override bool Equals(object? obj) => obj is Direction other && Equals(other);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => AsVector4.GetHashCode();
 	#endregion

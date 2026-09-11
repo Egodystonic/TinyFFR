@@ -15,21 +15,45 @@ namespace Egodystonic.TinyFFR;
 /// </remarks>
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)]
 public readonly partial struct Angle : IMathPrimitive<Angle> {
+	/// <summary>
+	/// The suffix appended to the string representation of an angle by <see cref="ToString()"/> and its overloads (i.e. <c>"°"</c>).
+	/// </summary>
 	public const string ToStringSuffix = "°";
 	const float Tau = MathF.Tau;
 	const float TauReciprocal = 1f / MathF.Tau;
 	const float RadiansToDegreesRatio = 360f / Tau;
 	const float DegreesToRadiansRatio = Tau / 360f;
+	/// <summary>
+	/// An angle of exactly <c>0°</c>.
+	/// </summary>
 	public static readonly Angle Zero = FromRadians(0f);
+	/// <summary>
+	/// Represents an angle of 45°.
+	/// </summary>
 	public static readonly Angle EighthCircle = FromRadians(Tau * 0.125f);
+	/// <summary>
+	/// Represents an angle of 60°.
+	/// </summary>
 	public static readonly Angle SixthCircle = FromRadians(Tau / 6f);
+	/// <summary>
+	/// Represents an angle of 120°.
+	/// </summary>
 	public static readonly Angle ThirdCircle = FromRadians(Tau / 3f);
 	/// <summary>
 	/// Represents an angle of 90°.
 	/// </summary>
 	public static readonly Angle QuarterCircle = FromRadians(Tau * 0.25f);
+	/// <summary>
+	/// Represents an angle of 180°.
+	/// </summary>
 	public static readonly Angle HalfCircle = FromRadians(Tau * 0.5f);
+	/// <summary>
+	/// Represents an angle of 270°.
+	/// </summary>
 	public static readonly Angle ThreeQuarterCircle = FromRadians(Tau * 0.75f);
+	/// <summary>
+	/// Represents an angle of 360°.
+	/// </summary>
 	public static readonly Angle FullCircle = FromRadians(Tau * 1f);
 
 	readonly float _radians;
@@ -99,6 +123,10 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		return FromRadians(MathF.Asin(sine));
 	}
 
+	/// <summary>
+	/// Returns the angle that is the arccosine of <paramref name="cosine"/> (e.g. the singular <c>angle</c> in the range 0° to 180° that maps <c>cos(angle)</c> to <paramref name="cosine"/>).
+	/// </summary>
+	/// <param name="cosine">The cosine value. Will be clamped to the range <c>[-1, 1]</c>.</param>
 	public static Angle FromCosine(float cosine) {
 		cosine = Single.Clamp(cosine, -1f, 1f);
 		return FromRadians(MathF.Acos(cosine));
@@ -161,10 +189,36 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	/// <param name="xy">The <see cref="XYPair{T}"/> representing a 2D vector. If this is <see cref="XYPair{T}.Zero"/>, the function will return <c>null</c>.</param>
 	/// <returns><c>atan2(x, y)</c>, or <c>null</c> if <paramref name="xy"/> is <see cref="XYPair{T}.Zero"/>.</returns>
 	public static Angle? From2DPolarAngle<T>(XYPair<T> xy) where T : unmanaged, INumber<T> => From2DPolarAngle(Single.CreateTruncating(xy.X), Single.CreateTruncating(xy.Y));
+	/// <summary>
+	/// Calculates the angle around a circle represented by the 2D vector (<paramref name="x"/>, <paramref name="y"/>).
+	/// </summary>
+	/// <remarks>
+	/// This function takes the four-quadrant inverse tangent of <paramref name="x"/> and <paramref name="y"/>.
+	/// This means that the direction the vector points is transformed to the resultant angle according to the following rules:
+	/// <ul>
+	/// <li>If the vector points exactly right (i.e. positive <paramref name="x"/> and zero <paramref name="y"/>) this function returns 0°.</li>
+	/// <li>If the vector points exactly up (i.e. zero <paramref name="x"/> and positive <paramref name="y"/>) this function returns 90°.</li>
+	/// <li>If the vector points exactly left (i.e. negative <paramref name="x"/> and zero <paramref name="y"/>) this function returns 180°.</li>
+	/// <li>If the vector points exactly down (i.e. zero <paramref name="x"/> and negative <paramref name="y"/>) this function returns 270°.</li>
+	/// <li>In general, the value returned by this function "starts" at 0° for a right-facing vector and increases as the vector rotates anticlockwise.</li>
+	/// </ul>
+	/// </remarks>
+	/// <param name="x">The X component of the 2D vector.</param>
+	/// <param name="y">The Y component of the 2D vector.</param>
+	/// <returns><c>atan2(x, y)</c>, or <c>null</c> if both <paramref name="x"/> and <paramref name="y"/> are <c>0f</c>.</returns>
 	public static Angle? From2DPolarAngle(float x, float y) {
 		if (x == 0f && y == 0f) return null;
 		return FromRadians(MathF.Atan2(y, x)).Normalized;
 	}
+	/// <summary>
+	/// Returns the angle around a circle represented by the given 2D <paramref name="orientation"/>.
+	/// </summary>
+	/// <remarks>
+	/// Each compass-style <see cref="Orientation2D"/> value maps to a fixed 45°-multiple angle (e.g. <see cref="Orientation2D.Right"/> is 0°, <see cref="Orientation2D.Up"/> is 90°, and so on),
+	/// following the same "starts at 0° facing right, increases anticlockwise" convention as <see cref="From2DPolarAngle(float,float)"/>.
+	/// </remarks>
+	/// <param name="orientation">The orientation to convert.</param>
+	/// <returns>The angle represented by <paramref name="orientation"/>, or <c>null</c> if <paramref name="orientation"/> is <see cref="Orientation2D.None"/>.</returns>
 	public static Angle? From2DPolarAngle(Orientation2D orientation) => orientation switch {
 		Orientation2D.None => null,
 		Orientation2D.Right => 0f,
@@ -252,6 +306,8 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	/// <summary>
 	/// Creates a new random angle <c>v</c> such that <c>minInclusive &lt;= v &lt; maxExclusive</c>.
 	/// </summary>
+	/// <param name="minInclusive">The minimum value that can be produced.</param>
+	/// <param name="maxExclusive">The ceiling of values that can be produced. No values higher/greater than this value will be produced, and nor will this value itself.</param>
 	public static Angle Random(Angle minInclusive, Angle maxExclusive) {
 		return FromRadians(RandomUtils.NextSingle(minInclusive.Radians, maxExclusive.Radians));
 	}
@@ -362,7 +418,25 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	/// <param name="other">The other angle to compare to. Can be positive, negative, or zero.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsEquivalentWithinCircleTo(Angle other) => IsEquivalentWithinCircleTo(other, Zero);
+	/// <summary>
+	/// Determines whether this angle is equivalent to <paramref name="other"/>, within a given <paramref name="tolerance"/>,
+	/// when used in the context of a rotating or orientating function around a circle.
+	/// </summary>
+	/// <remarks>
+	/// See <see cref="IsEquivalentWithinCircleTo(Angle)"/> for a description of what "equivalent within a circle" means.
+	/// </remarks>
+	/// <param name="other">The other angle to compare to. Can be positive, negative, or zero.</param>
+	/// <param name="tolerance">The tolerance to allow between the normalized values of this angle and <paramref name="other"/>.</param>
 	public bool IsEquivalentWithinCircleTo(Angle other, Angle tolerance) => IsEquivalentWithinCircleTo(other, tolerance.Degrees);
+	/// <summary>
+	/// Determines whether this angle is equivalent to <paramref name="other"/>, within a given tolerance in degrees,
+	/// when used in the context of a rotating or orientating function around a circle.
+	/// </summary>
+	/// <remarks>
+	/// See <see cref="IsEquivalentWithinCircleTo(Angle)"/> for a description of what "equivalent within a circle" means.
+	/// </remarks>
+	/// <param name="other">The other angle to compare to. Can be positive, negative, or zero.</param>
+	/// <param name="toleranceDegrees">The tolerance, in degrees, to allow between the normalized values of this angle and <paramref name="other"/>.</param>
 	public bool IsEquivalentWithinCircleTo(Angle other, float toleranceDegrees) {
 		var absDiff = MathF.Abs(Normalized.Degrees - other.Normalized.Degrees);
 		if (absDiff <= toleranceDegrees) return true;

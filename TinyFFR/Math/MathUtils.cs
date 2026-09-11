@@ -10,17 +10,53 @@ namespace Egodystonic.TinyFFR;
 /// A static class containing utility methods for working with math.
 /// </summary>
 public static class MathUtils {
+	/// <summary>
+	/// The golden ratio, <c>φ</c> (approximately <c>1.618</c>).
+	/// </summary>
 	public const float GoldenRatio = 1.6180339887f;
+	/// <summary>
+	/// The square root of 2 (approximately <c>1.414</c>).
+	/// </summary>
 	public const float SquareRootOfTwo = 1.4142135623f;
+	/// <summary>
+	/// The square root of 3 (approximately <c>1.732</c>).
+	/// </summary>
 	public const float SquareRootOfThree = 1.7320508075f;
+	/// <summary>
+	/// The reciprocal of <see cref="SquareRootOfTwo"/> (approximately <c>0.707</c>).
+	/// </summary>
 	public const float SquareRootOfTwoReciprocal = 1f / SquareRootOfTwo;
+	/// <summary>
+	/// The reciprocal of <see cref="SquareRootOfThree"/> (approximately <c>0.577</c>).
+	/// </summary>
 	public const float SquareRootOfThreeReciprocal = 1f / SquareRootOfThree;
 
+	/// <summary>
+	/// Calculates the modulus of <paramref name="lhs"/> and <paramref name="rhs"/>, but unlike the standard <c>%</c>
+	/// operator, the result always has the same sign as <paramref name="rhs"/> (the divisor).
+	/// </summary>
+	/// <remarks>
+	/// For example, <c>TrueModulus(-100, 30)</c> returns <c>20</c> (whereas <c>-100 % 30</c> returns <c>-10</c>), and
+	/// <c>TrueModulus(100, -30)</c> returns <c>-20</c>.
+	/// </remarks>
+	/// <param name="lhs">The dividend.</param>
+	/// <param name="rhs">The divisor.</param>
 	public static T TrueModulus<T>(T lhs, T rhs) where T : IModulusOperators<T, T, T>, IAdditionOperators<T, T, T> => (lhs % rhs + rhs) % rhs;
-	
+
+	/// <summary>
+	/// Returns the smallest of <paramref name="operand1"/>, <paramref name="operand2"/>, and <paramref name="operand3"/>.
+	/// </summary>
+	/// <param name="operand1">The first operand.</param>
+	/// <param name="operand2">The second operand.</param>
+	/// <param name="operand3">The third operand.</param>
 	public static T Min<T>(T operand1, T operand2, T operand3) where T : IComparisonOperators<T, T, bool> {
 		return operand1 < operand2 ? (operand1 < operand3 ? operand1 : operand3) : (operand2 < operand3 ? operand2 : operand3);
 	}
+	/// <summary>
+	/// Returns the smallest of the given <paramref name="operands"/>.
+	/// </summary>
+	/// <param name="operands">The operands to compare. Must not be empty.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="operands"/> is empty.</exception>
 	public static T Min<T>(params ReadOnlySpan<T> operands) where T : IComparisonOperators<T, T, bool> {
 		if (operands.Length == 0) throw new ArgumentException("Requires at least one operand.", nameof(operands));
 		var result = operands[0];
@@ -29,10 +65,21 @@ public static class MathUtils {
 		}
 		return result;
 	}
-	
+
+	/// <summary>
+	/// Returns the largest of <paramref name="operand1"/>, <paramref name="operand2"/>, and <paramref name="operand3"/>.
+	/// </summary>
+	/// <param name="operand1">The first operand.</param>
+	/// <param name="operand2">The second operand.</param>
+	/// <param name="operand3">The third operand.</param>
 	public static T Max<T>(T operand1, T operand2, T operand3) where T : IComparisonOperators<T, T, bool> {
 		return operand1 > operand2 ? (operand1 > operand3 ? operand1 : operand3) : (operand2 > operand3 ? operand2 : operand3);
 	}
+	/// <summary>
+	/// Returns the largest of the given <paramref name="operands"/>.
+	/// </summary>
+	/// <param name="operands">The operands to compare. Must not be empty.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="operands"/> is empty.</exception>
 	public static T Max<T>(params ReadOnlySpan<T> operands) where T : IComparisonOperators<T, T, bool> {
 		if (operands.Length == 0) throw new ArgumentException("Requires at least one operand.", nameof(operands));
 		var result = operands[0];
@@ -42,31 +89,81 @@ public static class MathUtils {
 		return result;
 	}
 
+	/// <summary>
+	/// Normalizes <paramref name="v"/> to unit length, or returns <see cref="Vector4.Zero"/> if <paramref name="v"/> is a zero-length vector.
+	/// </summary>
+	/// <param name="v">The vector to normalize.</param>
 	public static Vector4 NormalizeOrZero(Vector4 v) {
 		var norm = Vector4.Normalize(v);
 		return Single.IsFinite(norm.X) ? norm : Vector4.Zero;
 	}
 
+	/// <summary>
+	/// Normalizes <paramref name="q"/> to unit length, or returns <see cref="Quaternion.Identity"/> if <paramref name="q"/> is a zero quaternion.
+	/// </summary>
+	/// <param name="q">The quaternion to normalize.</param>
 	public static Quaternion NormalizeOrIdentity(Quaternion q) {
 		var norm = Quaternion.Normalize(q);
 		return Single.IsFinite(norm.X) ? norm : Quaternion.Identity;
 	}
 
+	/// <summary>
+	/// Determines whether this value is both finite and strictly greater than zero.
+	/// </summary>
+	/// <remarks>
+	/// Note that <c>-0f</c> returns <see langword="false"/> here (it is not strictly positive), but returns <see langword="true"/> from <see cref="IsNonNegativeAndFinite"/>.
+	/// </remarks>
+	/// <param name="this">The extended value.</param>
 	public static bool IsPositiveAndFinite(this float @this) => Single.IsFinite(@this) && @this > 0f;
+	/// <summary>
+	/// Determines whether this value is both finite and greater than or equal to zero.
+	/// </summary>
+	/// <param name="this">The extended value.</param>
 	public static bool IsNonNegativeAndFinite(this float @this) => Single.IsFinite(@this) && @this >= 0f;
 
+	/// <summary>
+	/// Returns the absolute value of <paramref name="num"/>, without the risk of overflow that <see cref="Math.Abs(int)"/>-style
+	/// functions have when given the minimum representable value of <typeparamref name="T"/>.
+	/// </summary>
+	/// <remarks>
+	/// For example, <c>SafeAbs(Int32.MinValue)</c> returns <see cref="Int32.MaxValue"/> rather than overflowing.
+	/// </remarks>
+	/// <param name="num">The value to take the absolute value of.</param>
 	public static T SafeAbs<T>(T num) where T : IMinMaxValue<T>, ISignedNumber<T>, IBinaryInteger<T> {
 		return num == T.MinValue ? T.MaxValue : T.Abs(num);
 	}
-	
+
+	/// <summary>
+	/// Maps this value from <paramref name="inputRange"/> in to the equivalent position within <paramref name="outputRange"/>.
+	/// </summary>
+	/// <remarks>
+	/// If this value lies outside <paramref name="inputRange"/>, the result is extrapolated outside <paramref name="outputRange"/> accordingly, rather than being clamped.
+	/// </remarks>
+	/// <param name="this">The extended value.</param>
+	/// <param name="inputRange">The range this value is currently expressed in terms of.</param>
+	/// <param name="outputRange">The range to map this value in to.</param>
 	public static T RemapRange<T>(this T @this, Pair<T, T> inputRange, Pair<T, T> outputRange) where T : IOrdinal<T> {
 		var inputDistance = T.GetInterpolationDistance(inputRange.First, inputRange.Second, @this);
 		return T.Interpolate(outputRange.First, outputRange.Second, inputDistance);
 	}
 
+	/// <summary>
+	/// Extracts the translation component from <paramref name="mat"/>.
+	/// </summary>
+	/// <param name="mat">The matrix to extract the translation from.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect GetTranslationFromMatrix(Matrix4x4 mat) => Vect.FromVector3(mat.Translation);
-	
+
+	/// <summary>
+	/// Extracts the scaling component from <paramref name="mat"/>, using a best-effort fallback if the matrix can't be cleanly decomposed.
+	/// </summary>
+	/// <remarks>
+	/// This first attempts <see cref="Matrix4x4.Decompose(Matrix4x4,out Vector3,out Quaternion,out Vector3)"/>; if that
+	/// fails (which can happen for degenerate matrices, e.g. ones with a zero or near-zero scale on an axis), it falls
+	/// back to measuring the length of each basis row directly, substituting <c>1f</c> for any axis whose length is
+	/// zero or non-finite so the result never contains an unusable scale component.
+	/// </remarks>
+	/// <param name="mat">The matrix to extract the scaling from.</param>
 	public static Vect GetBestGuessScalingFromMatrix(Matrix4x4 mat) {
 		if (Matrix4x4.Decompose(mat, out var s, out _, out _)) return Vect.FromVector3(s);
 
@@ -91,6 +188,15 @@ public static class MathUtils {
 		return new Vect(xScale, yScale, zScale);
 	}
 	
+	/// <summary>
+	/// Extracts the rotation component from <paramref name="mat"/>, using a best-effort fallback if the matrix can't be cleanly decomposed.
+	/// </summary>
+	/// <remarks>
+	/// This first attempts <see cref="Matrix4x4.Decompose(Matrix4x4,out Vector3,out Quaternion,out Vector3)"/>; if that
+	/// fails, it falls back to orthogonalizing the matrix's basis rows (via Gram-Schmidt) before converting them to a
+	/// quaternion, so a result is always produced even for degenerate or skewed matrices.
+	/// </remarks>
+	/// <param name="mat">The matrix to extract the rotation from.</param>
 	public static Quaternion GetBestGuessRotationFromMatrix(Matrix4x4 mat) {
 		if (Matrix4x4.Decompose(mat, out _, out var r, out _)) return r;
 
@@ -127,6 +233,15 @@ public static class MathUtils {
 		));
 	}
 
+	/// <summary>
+	/// Decomposes <paramref name="mat"/> in to an equivalent <see cref="Transform"/>, using a best-effort fallback if the matrix can't be cleanly decomposed.
+	/// </summary>
+	/// <remarks>
+	/// This first attempts <see cref="Matrix4x4.Decompose(Matrix4x4,out Vector3,out Quaternion,out Vector3)"/>; if that
+	/// fails, it falls back to the same best-effort logic used by <see cref="GetBestGuessScalingFromMatrix"/> and
+	/// <see cref="GetBestGuessRotationFromMatrix"/>, so a result is always produced even for degenerate or skewed matrices.
+	/// </remarks>
+	/// <param name="mat">The matrix to decompose.</param>
 	public static Transform GetBestGuessTransformFromMatrix(Matrix4x4 mat) {
 		if (Matrix4x4.Decompose(mat, out var s, out var r, out var t)) {
 			return new Transform(
@@ -177,6 +292,16 @@ public static class MathUtils {
 		);
 	}
 	
+	/// <summary>
+	/// Inverts <paramref name="mat"/>, always returning a usable result even if the matrix is singular (non-invertible).
+	/// </summary>
+	/// <remarks>
+	/// This first attempts a standard <see cref="Matrix4x4.Invert(Matrix4x4,out Matrix4x4)"/>; if that fails (e.g. because
+	/// <paramref name="mat"/> has a zero or near-zero scale on one or more axes), it decomposes the matrix, substitutes a
+	/// small non-zero scale for any degenerate axis, and inverts the corrected matrix instead. Unlike <see cref="Matrix4x4.Invert(Matrix4x4,out Matrix4x4)"/>,
+	/// this method never fails outright: in the worst case it returns <see cref="Matrix4x4.Identity"/>.
+	/// </remarks>
+	/// <param name="mat">The matrix to invert.</param>
 	public static Matrix4x4 ForceInvertMatrix(Matrix4x4 mat) {
 		if (Matrix4x4.Invert(mat, out var simpleSolution)) return simpleSolution;
 		
@@ -210,6 +335,14 @@ public static class MathUtils {
 		return Matrix4x4.Identity;
 	}
 
+	/// <summary>
+	/// Decomposes <paramref name="mat"/> in to an equivalent <see cref="Transform2D"/>, using a best-effort fallback for degenerate matrices.
+	/// </summary>
+	/// <remarks>
+	/// This substitutes <c>1f</c> for either axis' scale if it computes as zero or non-finite, so a usable result is
+	/// always produced even for degenerate matrices.
+	/// </remarks>
+	/// <param name="mat">The matrix to decompose.</param>
 	public static Transform2D GetBestGuessTransformFromMatrix(Matrix3x2 mat) {
 		var sx = MathF.Sqrt(mat.M11 * mat.M11 + mat.M12 * mat.M12);
 		var sy = MathF.Sqrt(mat.M21 * mat.M21 + mat.M22 * mat.M22);
@@ -224,6 +357,14 @@ public static class MathUtils {
 		return new Transform2D(new XYPair<float>(mat.M31, mat.M32), angle, new XYPair<float>(sx, sy));
 	}
 
+	/// <summary>
+	/// Inverts <paramref name="mat"/>, always returning a usable result even if the matrix is singular (non-invertible).
+	/// </summary>
+	/// <remarks>
+	/// This is the 2D equivalent of <see cref="ForceInvertMatrix(Matrix4x4)"/>: it falls back to substituting a small
+	/// non-zero scale for any degenerate axis before inverting, and never fails outright, returning <see cref="Matrix3x2.Identity"/> in the worst case.
+	/// </remarks>
+	/// <param name="mat">The matrix to invert.</param>
 	public static Matrix3x2 ForceInvertMatrix(Matrix3x2 mat) {
 		if (Matrix3x2.Invert(mat, out var simpleSolution)) return simpleSolution;
 
@@ -248,8 +389,11 @@ public static class MathUtils {
 		return Matrix3x2.Identity;
 	}
 	
-	// This is pretty ugly code, I wrote it while debugging some stuff and figured it's still
-	// kinda useful for debugging at times.
+	/// <summary>
+	/// Returns a human-readable description of this matrix, recognizing common special cases (identity, pure
+	/// translation, or a 90°-multiple rotation around a cardinal axis) and falling back to a full grid of its values otherwise.
+	/// </summary>
+	/// <param name="this">The extended matrix.</param>
 	public static string ToStringDescriptive(this Matrix4x4 @this) {
 		var result = "<";
 		var isIdentity = true;
@@ -289,6 +433,16 @@ public static class MathUtils {
 		return result;
 	}
 	
+	/// <summary>
+	/// Determines whether this matrix is equal to <paramref name="other"/> within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <remarks>
+	/// This compares each of the sixteen components independently, each within <paramref name="tolerance"/>.
+	/// </remarks>
+	/// <param name="this">The extended matrix.</param>
+	/// <param name="other">The other matrix.</param>
+	/// <param name="tolerance">The tolerance value.</param>
+	/// <returns>True if equal within tolerance, false if not.</returns>
 	public static bool Equals(this Matrix4x4 @this, Matrix4x4 other, float tolerance) {
 		for (var i = 0; i < 16; ++i) {
 			if (MathF.Abs(@this[(i >> 2) & 0b11, i & 0b11] - other[(i >> 2) & 0b11, i & 0b11]) > tolerance) return false;
@@ -296,6 +450,16 @@ public static class MathUtils {
 		return true;
 	}
 
+	/// <summary>
+	/// Determines whether this matrix is equal to <paramref name="other"/> within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <remarks>
+	/// This compares each of the six components independently, each within <paramref name="tolerance"/>.
+	/// </remarks>
+	/// <param name="this">The extended matrix.</param>
+	/// <param name="other">The other matrix.</param>
+	/// <param name="tolerance">The tolerance value.</param>
+	/// <returns>True if equal within tolerance, false if not.</returns>
 	public static bool Equals(this Matrix3x2 @this, Matrix3x2 other, float tolerance) {
 		return MathF.Abs(@this.M11 - other.M11) <= tolerance
 			&& MathF.Abs(@this.M12 - other.M12) <= tolerance
@@ -304,11 +468,21 @@ public static class MathUtils {
 			&& MathF.Abs(@this.M31 - other.M31) <= tolerance
 			&& MathF.Abs(@this.M32 - other.M32) <= tolerance;
 	}
-	
+
+	/// <summary>
+	/// Returns the four values making up row <paramref name="rowIndex"/> of this matrix.
+	/// </summary>
+	/// <param name="this">The extended matrix.</param>
+	/// <param name="rowIndex">The index of the row to retrieve. Must be between <c>0</c> and <c>3</c> inclusive.</param>
 	public static Vector4 GetRow(this Matrix4x4 @this, int rowIndex) {
 		return new Vector4(@this[rowIndex, 0], @this[rowIndex, 1], @this[rowIndex, 2], @this[rowIndex, 3]);
 	}
+	/// <summary>
+	/// Returns the four values making up column <paramref name="columnIndex"/> of this matrix.
+	/// </summary>
+	/// <param name="this">The extended matrix.</param>
+	/// <param name="columnIndex">The index of the column to retrieve. Must be between <c>0</c> and <c>3</c> inclusive.</param>
 	public static Vector4 GetColumn(this Matrix4x4 @this, int columnIndex) {
 		return new Vector4(@this[0, columnIndex], @this[1, columnIndex], @this[2, columnIndex], @this[3, columnIndex]);
-	} 
+	}
 }

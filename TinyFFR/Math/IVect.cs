@@ -22,7 +22,13 @@ public interface IVect : IMathPrimitive {
 	/// The first component of this vector.
 	/// </summary>
 	float X { get; }
+	/// <summary>
+	/// The second component of this vector.
+	/// </summary>
 	float Y { get; }
+	/// <summary>
+	/// The third component of this vector.
+	/// </summary>
 	float Z { get; }
 
 	/// <summary>
@@ -36,11 +42,23 @@ public interface IVect : IMathPrimitive {
 	/// <param name="axis">The axis whose component you wish to retrieve (e.g. <see cref="X"/>, <see cref="Y"/>, or <see cref="Z"/>).</param>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="axis"/> is not <see cref="Axis.X"/>, <see cref="Axis.Y"/>, or <see cref="Axis.Z"/>.</exception>
 	float this[Axis axis] { get; }
+	/// <summary>
+	/// Gets the two float components specified by <paramref name="first"/> and <paramref name="second"/>, as an <see cref="XYPair{T}"/>.
+	/// </summary>
+	/// <param name="first">The axis whose component you wish to retrieve as the first (<see cref="XYPair{T}.X"/>) value.</param>
+	/// <param name="second">The axis whose component you wish to retrieve as the second (<see cref="XYPair{T}.Y"/>) value.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="first"/> or <paramref name="second"/> is not <see cref="Axis.X"/>, <see cref="Axis.Y"/>, or <see cref="Axis.Z"/>.</exception>
 	XYPair<float> this[Axis first, Axis second] { get; }
 
 	string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => VectExtensions.ToString(this, format, formatProvider);
 	bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => VectExtensions.TryFormat(this, destination, out charsWritten, format, provider);
 
+	/// <summary>
+	/// Deconstructs this vector in to its individual <paramref name="x"/>, <paramref name="y"/>, and <paramref name="z"/> components.
+	/// </summary>
+	/// <param name="x">Will be set to the value of <see cref="X"/>.</param>
+	/// <param name="y">Will be set to the value of <see cref="Y"/>.</param>
+	/// <param name="z">Will be set to the value of <see cref="Z"/>.</param>
 	void Deconstruct(out float x, out float y, out float z);
 
 	/// <summary>
@@ -103,8 +121,24 @@ public interface IVect : IMathPrimitive {
 /// </summary>
 /// <typeparam name="TSelf">The type that is actually implementing this interface.</typeparam>
 public interface IVect<TSelf> : IVect, IMathPrimitive<TSelf>, IInterpolatable<TSelf> where TSelf : IVect<TSelf> {
+	/// <summary>
+	/// Converts a raw SIMD-ready <see cref="Vector3"/> to an instance of this vector type.
+	/// </summary>
+	/// <param name="v">The vector to convert.</param>
 	static abstract TSelf FromVector3(Vector3 v);
+	/// <summary>
+	/// Converts a tuple of three floats to an instance of this vector type.
+	/// </summary>
+	/// <param name="tuple">The tuple to convert; its elements are mapped to <see cref="IVect.X"/>, <see cref="IVect.Y"/>, and <see cref="IVect.Z"/> respectively.</param>
 	static abstract implicit operator TSelf((float X, float Y, float Z) tuple);
+	/// <summary>
+	/// Gets the three float components specified by <paramref name="first"/>, <paramref name="second"/>, and <paramref name="third"/>, reassembled as a new instance of this vector type.
+	/// This operation is sometimes referred to as a "swizzle".
+	/// </summary>
+	/// <param name="first">The axis whose component you wish to use as the resultant <see cref="IVect.X"/> value.</param>
+	/// <param name="second">The axis whose component you wish to use as the resultant <see cref="IVect.Y"/> value.</param>
+	/// <param name="third">The axis whose component you wish to use as the resultant <see cref="IVect.Z"/> value.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="first"/>, <paramref name="second"/>, or <paramref name="third"/> is not <see cref="Axis.X"/>, <see cref="Axis.Y"/>, or <see cref="Axis.Z"/>.</exception>
 	TSelf this[Axis first, Axis second, Axis third] { get; }
 }
 

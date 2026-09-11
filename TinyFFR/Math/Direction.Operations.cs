@@ -6,6 +6,12 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// The result of finding the compass-style orientation nearest to a given <see cref="Direction"/> (e.g. via <see cref="Direction.NearestOrientation"/>).
+/// </summary>
+/// <param name="AsEnum">The nearest orientation, as an enum value.</param>
+/// <param name="AsDirection">The nearest orientation, as its equivalent <see cref="Direction"/>.</param>
+/// <typeparam name="TOrientation">The enum type representing the orientation (e.g. <see cref="CardinalOrientation"/>, <see cref="Orientation"/>).</typeparam>
 public readonly record struct NearestOrientationResult<TOrientation>(TOrientation AsEnum, Direction AsDirection) where TOrientation : Enum;
 
 partial struct Direction :
@@ -26,6 +32,9 @@ partial struct Direction :
 	IParallelizationTarget<Direction, Vect>,
 	IOrthogonalizationTarget<Direction, Direction>,
 	IParallelizationTarget<Direction, Direction> {
+	/// <summary>
+	/// The default tolerance, in degrees, used by the parameterless overloads of <see cref="IsApproximatelyOrthogonalTo(Direction)"/> and <see cref="IsApproximatelyParallelTo(Direction)"/> (and their <see cref="Vect"/>-accepting equivalents).
+	/// </summary>
 	public const float DefaultParallelOrthogonalTestApproximationDegrees = 0.1f;
 	const float ParallelComponentsCheckErrorMargin = 1E-5f;
 	const float OrthogonalDotErrorMargin = 1E-5f;
@@ -38,32 +47,54 @@ partial struct Direction :
 		}
 	}
 
+	/// <summary>
+	/// Negates <paramref name="operand"/>; equivalent to reading <see cref="Flipped"/>.
+	/// </summary>
+	/// <param name="operand">The direction to negate.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator -(Direction operand) => operand.Flipped;
+	/// <summary>
+	/// Returns the direction pointing exactly opposite to this one (e.g. <see cref="Up"/> becomes <see cref="Down"/>).
+	/// </summary>
+	/// <remarks>
+	/// If this is <see cref="None"/>, the result is also <see cref="None"/>.
+	/// </remarks>
 	public Direction Flipped {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-AsVector4);
 	}
 	Direction IInvertible<Direction>.Inverted => Flipped;
 
+	/// <summary>
+	/// Finds the nearest of the six <see cref="AllCardinals"/> directions to this one.
+	/// </summary>
 	public NearestOrientationResult<CardinalOrientation> NearestOrientationCardinal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllCardinals, out var e, out var d);
 			return new((CardinalOrientation) e, d);
 		}
 	}
+	/// <summary>
+	/// Finds the nearest of the twelve <see cref="AllIntercardinals"/> directions to this one.
+	/// </summary>
 	public NearestOrientationResult<IntercardinalOrientation> NearestOrientationIntercardinal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllIntercardinals, out var e, out var d);
 			return new((IntercardinalOrientation) e, d);
 		}
 	}
+	/// <summary>
+	/// Finds the nearest of the eight <see cref="AllDiagonals"/> directions to this one.
+	/// </summary>
 	public NearestOrientationResult<DiagonalOrientation> NearestOrientationDiagonal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllDiagonals, out var e, out var d);
 			return new((DiagonalOrientation) e, d);
 		}
 	}
+	/// <summary>
+	/// Finds the nearest of the twenty-six <see cref="AllOrientations"/> directions to this one.
+	/// </summary>
 	public NearestOrientationResult<Orientation> NearestOrientation {
 		get {
 			GetNearestDirectionAndOrientation(this, AllOrientations, out var e, out var d);
@@ -71,11 +102,24 @@ partial struct Direction :
 		}
 	}
 
+	/// <summary>
+	/// Converts this direction to a unit-length <see cref="Vect"/>.
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect AsVect() => (Vect) this;
+	/// <summary>
+	/// Converts this direction to a <see cref="Vect"/> with the given <paramref name="length"/>.
+	/// </summary>
+	/// <param name="length">The desired length of the resultant vector. Can be negative, in which case the resultant vector points opposite to this direction.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect AsVect(float length) => new(AsVector4 * length);
 
+	/// <summary>
+	/// Finds the index within <paramref name="span"/> of whichever element is closest (by angle) to <paramref name="targetDir"/>.
+	/// </summary>
+	/// <param name="targetDir">The direction to find the nearest match for.</param>
+	/// <param name="span">The candidate directions to search. Must not be empty.</param>
+	/// <returns>The index within <paramref name="span"/> of the nearest direction.</returns>
 	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {
 		var result = -1;
 		var resultAngle = Angle.FullCircle;
@@ -112,26 +156,65 @@ partial struct Direction :
 		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
 	}
 	
+	/// <summary>
+	/// Determines whether this direction has a valid, finite, unit-length value.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="None"/> is considered physically valid (it's a deliberate sentinel value), as is any direction whose
+	/// components are all finite and whose length is (approximately) <c>1f</c>. If you want to exclude <see cref="None"/>, use <see cref="IsPhysicallyValidAndNotNone"/>.
+	/// </remarks>
 	public bool IsPhysicallyValid => this == None || IsApproxUnitLength;
+	/// <summary>
+	/// Determines whether this direction has a valid, finite, unit-length value, and is not <see cref="None"/>.
+	/// </summary>
 	public bool IsPhysicallyValidAndNotNone => IsApproxUnitLength;
 
 	#region Scaling and Addition/Subtraction
+	/// <summary>
+	/// Multiplies <paramref name="directionOperand"/> by <paramref name="scalarOperand"/>; equivalent to <c>directionOperand.AsVect(scalarOperand)</c>.
+	/// </summary>
+	/// <param name="directionOperand">The direction to scale.</param>
+	/// <param name="scalarOperand">The desired length of the resultant vector. Can be negative, in which case the resultant vector points opposite to <paramref name="directionOperand"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.AsVect(scalarOperand);
+	/// <summary>
+	/// Multiplies <paramref name="directionOperand"/> by <paramref name="scalarOperand"/>; equivalent to <c>directionOperand.AsVect(scalarOperand)</c>.
+	/// </summary>
+	/// <param name="scalarOperand">The desired length of the resultant vector. Can be negative, in which case the resultant vector points opposite to <paramref name="directionOperand"/>.</param>
+	/// <param name="directionOperand">The direction to scale.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.AsVect(scalarOperand);
 	#endregion
 
 	#region Interactions w/ Direction
-	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal; and that this is the cosine of the angle
-	// Maintainer's note: Clamping dot product is necessary to prevent nasty issues elsewhere.
-	// FP inaccuracy can result in values outside the -1 to 1 range, which then really fucks up stuff like inverse trigonometic functions (arccos/arcsin will return NaN).
-	// The expectation is that any two unit vectors' dot product will always be in the [-1, 1] range, so this just helps ensure that.
+	/// <summary>
+	/// Calculates the dot product of this direction and <paramref name="other"/>.
+	/// </summary>
+	/// <remarks>
+	/// Because both operands are unit-length, this is equivalent to the cosine of the angle between them: it is <c>1f</c>
+	/// when the two directions are identical, <c>-1f</c> when they point exactly opposite, and <c>0f</c> when they are
+	/// orthogonal (perpendicular). The result is always clamped to <c>[-1, 1]</c> to guard against floating-point error.
+	/// </remarks>
+	/// <param name="other">The other direction to calculate the dot product with.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float Dot(Direction other) => Single.Clamp(Vector4.Dot(AsVector4, other.AsVector4), -1f, 1f);
+	/// <summary>
+	/// Calculates the cross product of this direction and <paramref name="other"/>.
+	/// </summary>
+	/// <remarks>
+	/// The result is normalized back to unit length, so it is itself a valid <see cref="Direction"/> perpendicular to
+	/// both operands. If <paramref name="other"/> is parallel or opposite to this direction (or either is <see cref="None"/>),
+	/// the result is <see cref="None"/>.
+	/// </remarks>
+	/// <param name="other">The other direction to calculate the cross product with.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction Cross(Direction other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
 
+	/// <summary>
+	/// Calculates the angle formed between <paramref name="d1"/> and <paramref name="d2"/>; equivalent to <c>d1.AngleTo(d2)</c>.
+	/// </summary>
+	/// <param name="d1">The first direction.</param>
+	/// <param name="d2">The second direction.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
 	/// <summary>
@@ -198,6 +281,14 @@ partial struct Direction :
 		return unsignedAngle * axisSign; // (1)
 	}
 
+	/// <summary>
+	/// Returns an arbitrary but consistent direction orthogonal (perpendicular) to this one.
+	/// </summary>
+	/// <remarks>
+	/// There are infinitely many directions orthogonal to any given direction; this method deterministically picks one
+	/// of them (the same one every time for a given input), which is useful when you need "some direction at right
+	/// angles to this one" but don't care which. If this is <see cref="None"/>, the result is also <see cref="None"/>.
+	/// </remarks>
 	public Direction AnyOrthogonal() {
 		return FromVector3(Vector3.Cross(
 			ToVector3(),
@@ -231,46 +322,138 @@ partial struct Direction :
 	/// The returned value of this function is undefined when any condition above is broken.
 	/// </remarks>
 	/// <param name="d">The target direction.</param>
+	/// <returns>This direction adjusted to form a 90° angle with <paramref name="d"/>.</returns>
 	public Direction FastOrthogonalizedAgainst(Direction d) => new(Normalize(AsVector4 - d.AsVector4 * Vector4.Dot(AsVector4, d.AsVector4)));
 
+	/// <summary>
+	/// Attempts to parallelize this direction with <paramref name="d"/>.
+	/// Parallelization refers to adjusting this direction such that it forms an angle of exactly 0° or 180° with the target (<paramref name="d"/>).
+	/// </summary>
+	/// <param name="d">The target direction. Can be <see cref="None"/> (in which case this function returns <c>this</c>).</param>
+	/// <returns>Either <paramref name="d"/> or <c>-</c><paramref name="d"/> (whichever is closer to <c>this</c>); or <c>null</c> if there is
+	/// no single answer (i.e. <c>this</c> and <paramref name="d"/> are already exactly orthogonal).
+	/// If <c>this</c> or <paramref name="d"/> are <see cref="None"/>, returns <c>this</c>.</returns>
 	public Direction? ParallelizedWith(Direction d) {
 		if (this == None || d == None) return this;
 		var dot = Vector4.Dot(AsVector4, d.AsVector4);
 		if (MathF.Abs(dot) < OrthogonalDotErrorMargin) return null;
 		return new(d.AsVector4 * MathF.Sign(dot));
 	}
+	/// <summary>
+	/// Executes the same function as <see cref="ParallelizedWith(Direction)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes the following conditions:
+	/// <ul>
+	/// <li>Neither <c>this</c> or <paramref name="d"/> are <see cref="None"/>.</li>
+	/// <li><c>this</c> and <paramref name="d"/> are not orthogonal.</li>
+	/// </ul>
+	/// The returned value of this function is undefined when any condition above is broken.
+	/// </remarks>
+	/// <param name="d">The target direction.</param>
+	/// <returns>Either <paramref name="d"/> or <c>-</c><paramref name="d"/> (whichever is closer to <c>this</c>).</returns>
 	public Direction FastParallelizedWith(Direction d) => new(d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4)));
 
+	/// <summary>
+	/// Equivalent to <c>d.OrthogonalizedAgainst(this)</c>.
+	/// </summary>
+	/// <param name="d">The direction to orthogonalize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction? OrthogonalizationOf(Direction d) => d.OrthogonalizedAgainst(this);
+	/// <summary>
+	/// Equivalent to <c>d.FastOrthogonalizedAgainst(this)</c>.
+	/// </summary>
+	/// <param name="d">The direction to orthogonalize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction FastOrthogonalizationOf(Direction d) => d.FastOrthogonalizedAgainst(this);
+	/// <summary>
+	/// Equivalent to <c>d.ParallelizedWith(this)</c>.
+	/// </summary>
+	/// <param name="d">The direction to parallelize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction? ParallelizationOf(Direction d) => d.ParallelizedWith(this);
+	/// <summary>
+	/// Equivalent to <c>d.FastParallelizedWith(this)</c>.
+	/// </summary>
+	/// <param name="d">The direction to parallelize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction FastParallelizationOf(Direction d) => d.FastParallelizedWith(this);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear in xmldoc that this is prone to fp inaccuracy, better to use approximate variant in most cases, but this is faster and helps determine whether ParallelizedWith will return null
+	/// <summary>
+	/// Determines whether this direction is exactly orthogonal (perpendicular) to <paramref name="other"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is an exact check and is therefore prone to floating-point inaccuracy rejecting directions that are
+	/// "orthogonal enough" for practical purposes; in most cases prefer <see cref="IsApproximatelyOrthogonalTo(Direction)"/>.
+	/// This method is faster, however, and is useful for determining in advance whether <see cref="ParallelizedWith(Direction)"/> will return <c>null</c>.
+	/// </remarks>
+	/// <param name="other">The other direction to compare to.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsOrthogonalTo(Direction other) => MathF.Abs(Vector4.Dot(AsVector4, other.AsVector4)) < OrthogonalDotErrorMargin && this != None && other != None;
+	/// <summary>
+	/// Determines whether this direction is orthogonal (perpendicular) to <paramref name="other"/>, within <see cref="DefaultParallelOrthogonalTestApproximationDegrees"/>.
+	/// </summary>
+	/// <param name="other">The other direction to compare to.</param>
 	public bool IsApproximatelyOrthogonalTo(Direction other) => IsApproximatelyOrthogonalTo(other, DefaultParallelOrthogonalTestApproximationDegrees);
+	/// <summary>
+	/// Determines whether this direction is orthogonal (perpendicular) to <paramref name="other"/>, within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="other">The other direction to compare to. If this or <c>this</c> is <see cref="None"/>, returns <see langword="false"/>.</param>
+	/// <param name="tolerance">How far away from exactly 90° the angle between the two directions is allowed to be.</param>
 	public bool IsApproximatelyOrthogonalTo(Direction other, Angle tolerance) {
 		if (this == None || other == None) return false;
 		return AngleTo(other).Equals(Angle.QuarterCircle, tolerance);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear in xmldoc that this is prone to fp inaccuracy, better to use approximate variant in most cases, but this is faster, but this is faster and helps determine whether OrthogonalizedWith will return null
+	/// <summary>
+	/// Determines whether this direction is exactly parallel (or exactly opposite) to <paramref name="other"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is an exact check and is therefore prone to floating-point inaccuracy rejecting directions that are
+	/// "parallel enough" for practical purposes; in most cases prefer <see cref="IsApproximatelyParallelTo(Direction)"/>.
+	/// This method is faster, however, and is useful for determining in advance whether <see cref="OrthogonalizedAgainst(Direction)"/> will return <c>null</c>.
+	/// </remarks>
+	/// <param name="other">The other direction to compare to.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Direction other) => (Equals(other, ParallelComponentsCheckErrorMargin) || Equals(-other, ParallelComponentsCheckErrorMargin)) && this != None;
+	/// <summary>
+	/// Determines whether this direction is parallel (or opposite) to <paramref name="other"/>, within <see cref="DefaultParallelOrthogonalTestApproximationDegrees"/>.
+	/// </summary>
+	/// <param name="other">The other direction to compare to.</param>
 	public bool IsApproximatelyParallelTo(Direction other) => IsApproximatelyParallelTo(other, DefaultParallelOrthogonalTestApproximationDegrees);
+	/// <summary>
+	/// Determines whether this direction is parallel (or opposite) to <paramref name="other"/>, within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="other">The other direction to compare to. If this or <c>this</c> is <see cref="None"/>, returns <see langword="false"/>.</param>
+	/// <param name="tolerance">How far away from exactly 0° or exactly 180° the angle between the two directions is allowed to be.</param>
 	public bool IsApproximatelyParallelTo(Direction other, Angle tolerance) {
 		if (this == None || other == None) return false;
 		var angle = AngleTo(other);
 		return angle.Equals(Angle.Zero, tolerance) || angle.Equals(Angle.HalfCircle, tolerance);
 	}
 
+	/// <summary>
+	/// Determines whether the angle between this direction and <paramref name="other"/> is no greater than <paramref name="angle"/>.
+	/// </summary>
+	/// <param name="other">The other direction to compare to.</param>
+	/// <param name="angle">The maximum permitted angle between the two directions.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsWithinAngleTo(Direction other, Angle angle) => (this ^ other) <= angle;
-	
-	// TODO xmldoc explain that primary will never be altered, secondary will only be orthogonalized against primary, and tertiary will be orthogonalized against both
+
+	/// <summary>
+	/// Adjusts <paramref name="secondary"/> and <paramref name="tertiary"/> in place so that all three directions are mutually orthogonal.
+	/// </summary>
+	/// <remarks>
+	/// <paramref name="primary"/> is never altered. <paramref name="secondary"/> is orthogonalized against <paramref name="primary"/>
+	/// only. <paramref name="tertiary"/> is then set to whichever direction is orthogonal to both <paramref name="primary"/>
+	/// and the (now-adjusted) <paramref name="secondary"/>, choosing the sign that keeps it closest to its original value.
+	/// This is useful for building an orthonormal basis (e.g. a camera's forward/up/right vectors) out of directions that
+	/// may not start out perfectly orthogonal. Any of the three parameters that is <see cref="None"/> is left unaltered,
+	/// and is treated as if it were not present when orthogonalizing the others.
+	/// </remarks>
+	/// <param name="primary">The reference direction. Never modified by this method.</param>
+	/// <param name="secondary">The second direction; orthogonalized against <paramref name="primary"/> in place.</param>
+	/// <param name="tertiary">The third direction; set in place to be orthogonal to both <paramref name="primary"/> and <paramref name="secondary"/>.</param>
 	public static void OrthogonalizeAll(Direction primary, ref Direction secondary, ref Direction tertiary) {
 		switch (primary == None, secondary == None, tertiary == None) {
 			case (false, false, false):
@@ -290,7 +473,17 @@ partial struct Direction :
 			// default: Do nothing (only one or zero inputs is non-None, so nothing to orthogonalize)
 		}
 	}
-	// TODO xmldoc expects that no direction is None and that none are parallel/antiparallel
+	/// <summary>
+	/// Executes the same function as <see cref="OrthogonalizeAll"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes none of <paramref name="primary"/>, <paramref name="secondary"/>, or <paramref name="tertiary"/>
+	/// are <see cref="None"/>, and that no two of them are parallel or opposite. The returned value of this function is
+	/// undefined when any condition above is broken.
+	/// </remarks>
+	/// <param name="primary">The reference direction. Never modified by this method.</param>
+	/// <param name="secondary">The second direction; orthogonalized against <paramref name="primary"/> in place.</param>
+	/// <param name="tertiary">The third direction; set in place to be orthogonal to both <paramref name="primary"/> and <paramref name="secondary"/>.</param>
 	public static void FastOrthogonalizeAll(Direction primary, ref Direction secondary, ref Direction tertiary) {
 		secondary = secondary.FastOrthogonalizedAgainst(primary);
 		var dualOrthogonal = FastFromDualOrthogonalization(primary, secondary);
@@ -299,19 +492,48 @@ partial struct Direction :
 	#endregion
 
 	#region Interactions w/ Vect
+	/// <summary>
+	/// Calculates the dot product of this direction and <paramref name="other"/>; equivalent to <c>other.Dot(this)</c>.
+	/// </summary>
+	/// <param name="other">The vector to calculate the dot product with.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float Dot(Vect other) => other.Dot(this);
 
+	/// <summary>
+	/// Calculates the cross product of this direction and <paramref name="other"/>.
+	/// </summary>
+	/// <remarks>
+	/// The result is normalized back to unit length, so it is itself a valid <see cref="Direction"/> perpendicular to
+	/// both operands. If <paramref name="other"/>'s direction is parallel or opposite to this direction (or either is
+	/// zero-length/<see cref="None"/>), the result is <see cref="None"/>.
+	/// </remarks>
+	/// <param name="other">The vector to calculate the cross product with.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction Cross(Vect other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
 
+	/// <summary>
+	/// Equivalent to <c>v.OrthogonalizedAgainst(this)</c>.
+	/// </summary>
+	/// <param name="v">The vector to orthogonalize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect? OrthogonalizationOf(Vect v) => v.OrthogonalizedAgainst(this);
+	/// <summary>
+	/// Equivalent to <c>v.FastOrthogonalizedAgainst(this)</c>.
+	/// </summary>
+	/// <param name="v">The vector to orthogonalize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
 
+	/// <summary>
+	/// Equivalent to <c>v.ParallelizedWith(this)</c>.
+	/// </summary>
+	/// <param name="v">The vector to parallelize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect? ParallelizationOf(Vect v) => v.ParallelizedWith(this);
+	/// <summary>
+	/// Equivalent to <c>v.FastParallelizedWith(this)</c>.
+	/// </summary>
+	/// <param name="v">The vector to parallelize.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastParallelizationOf(Vect v) => v.FastParallelizedWith(this);
 
@@ -319,54 +541,141 @@ partial struct Direction :
 	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect v) => ProjectionOf(v);
 	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect v) => ProjectionOf(v);
 
+	/// <summary>
+	/// Determines whether this direction is exactly orthogonal (perpendicular) to <paramref name="v"/>'s direction; equivalent to <c>IsOrthogonalTo(v.Direction)</c>.
+	/// </summary>
+	/// <param name="v">The vector to compare to.</param>
 	public bool IsOrthogonalTo(Vect v) => IsOrthogonalTo(v.Direction);
+	/// <summary>
+	/// Determines whether this direction is orthogonal (perpendicular) to <paramref name="v"/>'s direction, within <see cref="DefaultParallelOrthogonalTestApproximationDegrees"/>.
+	/// </summary>
+	/// <param name="v">The vector to compare to.</param>
 	public bool IsApproximatelyOrthogonalTo(Vect v) => IsApproximatelyOrthogonalTo(v, DefaultParallelOrthogonalTestApproximationDegrees);
+	/// <summary>
+	/// Determines whether this direction is orthogonal (perpendicular) to <paramref name="v"/>'s direction, within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="v">The vector to compare to.</param>
+	/// <param name="tolerance">How far away from exactly 90° the angle between this direction and <paramref name="v"/>'s direction is allowed to be.</param>
 	public bool IsApproximatelyOrthogonalTo(Vect v, Angle tolerance) => IsApproximatelyOrthogonalTo(v.Direction, tolerance);
+	/// <summary>
+	/// Determines whether this direction is exactly parallel (or exactly opposite) to <paramref name="v"/>'s direction; equivalent to <c>IsParallelTo(v.Direction)</c>.
+	/// </summary>
+	/// <param name="v">The vector to compare to.</param>
 	public bool IsParallelTo(Vect v) => IsParallelTo(v.Direction);
+	/// <summary>
+	/// Determines whether this direction is parallel (or opposite) to <paramref name="v"/>'s direction, within <see cref="DefaultParallelOrthogonalTestApproximationDegrees"/>.
+	/// </summary>
+	/// <param name="v">The vector to compare to.</param>
 	public bool IsApproximatelyParallelTo(Vect v) => IsApproximatelyParallelTo(v, DefaultParallelOrthogonalTestApproximationDegrees);
+	/// <summary>
+	/// Determines whether this direction is parallel (or opposite) to <paramref name="v"/>'s direction, within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="v">The vector to compare to.</param>
+	/// <param name="tolerance">How far away from exactly 0° or exactly 180° the angle between this direction and <paramref name="v"/>'s direction is allowed to be.</param>
 	public bool IsApproximatelyParallelTo(Vect v, Angle tolerance) => IsApproximatelyParallelTo(v.Direction, tolerance);
 	#endregion
 
 	#region Rotation
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator >>(Direction start, Direction end) => Rotation.FromStartAndEndDirection(start, end);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator <<(Direction end, Direction start) => Rotation.FromStartAndEndDirection(start, end);
+	/// <summary>
+	/// Returns the rotation that would turn this direction into <paramref name="other"/>; equivalent to <c>this &gt;&gt; other</c>.
+	/// </summary>
+	/// <param name="other">The direction this direction should be rotated to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation RotationTo(Direction other) => Rotation.FromStartAndEndDirection(this, other);
+	/// <summary>
+	/// Returns the rotation that would turn <paramref name="other"/> into this direction; equivalent to <c>this &lt;&lt; other</c>.
+	/// </summary>
+	/// <param name="other">The direction that should be rotated to this direction.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation RotationFrom(Direction other) => Rotation.FromStartAndEndDirection(other, this);
 
+	/// <summary>
+	/// Combines <paramref name="axis"/> and <paramref name="angle"/> in to a new <see cref="Rotation"/>; equivalent to <c>new Rotation(angle, axis)</c>.
+	/// </summary>
+	/// <param name="axis">The axis of the resultant rotation.</param>
+	/// <param name="angle">The angle of the resultant rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator %(Direction axis, Angle angle) => new(angle, axis);
+	/// <summary>
+	/// Combines <paramref name="axis"/> and <paramref name="angle"/> in to a new <see cref="Rotation"/>; equivalent to <c>new Rotation(angle, axis)</c>.
+	/// </summary>
+	/// <param name="angle">The angle of the resultant rotation.</param>
+	/// <param name="axis">The axis of the resultant rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator %(Angle angle, Direction axis) => new(angle, axis);
 
+	/// <summary>
+	/// Returns this direction after being turned by <paramref name="rotation"/>; equivalent to <c>rotation.Rotate(this)</c>.
+	/// </summary>
+	/// <param name="rotation">The rotation to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotatedBy(Rotation rotation) => rotation.Rotate(this);
+	/// <summary>
+	/// Returns this direction after being turned by <paramref name="rotationQuaternion"/>.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotatedBy(Quaternion rotationQuaternion) => Rotation.Rotate(this, rotationQuaternion);
+	/// <summary>
+	/// Returns <paramref name="d"/> after being turned by <paramref name="r"/>; equivalent to <c>d.RotatedBy(r)</c>.
+	/// </summary>
+	/// <param name="d">The direction to rotate.</param>
+	/// <param name="r">The rotation to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator *(Direction d, Rotation r) => r.Rotate(d);
+	/// <summary>
+	/// Returns <paramref name="d"/> after being turned by <paramref name="r"/>; equivalent to <c>d.RotatedBy(r)</c>.
+	/// </summary>
+	/// <param name="r">The rotation to apply.</param>
+	/// <param name="d">The direction to rotate.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator *(Rotation r, Direction d) => r.Rotate(d);
 	#endregion
 
 	#region Clamping and Interpolation
+	/// <inheritdoc />
+	/// <remarks>
+	/// This rotates <paramref name="start"/> towards <paramref name="end"/> by the shortest path (the geodesic between
+	/// them on a unit sphere), so the interpolated direction sweeps smoothly and at a constant angular rate from one to
+	/// the other as <paramref name="distance"/> goes from <c>0f</c> to <c>1f</c>.
+	/// </remarks>
 	public static Direction Interpolate(Direction start, Direction end, float distance) {
 		return Rotation.FromStartAndEndDirection(start, end).ScaledBy(distance) * start;
 	}
+	/// <inheritdoc />
 	public static Rotation CreateInterpolationPrecomputation(Direction start, Direction end) {
 		return Rotation.FromStartAndEndDirection(start, end);
 	}
+	/// <inheritdoc />
 	public static Direction InterpolateUsingPrecomputation(Direction start, Direction end, Rotation precomputation, float distance) {
 		return precomputation.ScaledBy(distance) * start;
 	}
 
-	// TODO xmldoc that this clamps on to the arc between two directions in 3D space. It's a mistake to try to clamp on any arc >= 180deg
-	// TODO because this function will clamp to the shortest arc between min and max (so trying to restrict to 270deg viewing arc for example is wrong)
-	// TODO if the user wants to clamp within a 3D cone (even >= 90deg cone), they should use the other Clamp overload.
-	// TODO If the user wants to clamp within a 2D arc, they should use the other other Clamp overload
+	/// <summary>
+	/// Clamps this direction between <paramref name="min"/> and <paramref name="max"/>.
+	/// For example, clamping between <see cref="Up"/> and <see cref="Forward"/> will produce a direction somewhere on the 90° arc
+	/// between up and forward.
+	/// </summary>
+	/// <remarks>
+	/// This clamps within the shorter of the two arcs between <paramref name="min"/> and <paramref name="max"/> on their
+	/// shared great circle, so it is only meaningful for arcs shorter than 180°. For example, you can't use this to
+	/// restrict a direction to a 270°-wide viewing arc, because the "shortest arc" between the two boundary directions
+	/// would instead be the other, 90°-wide arc. If you want to clamp within a 3D cone (including cones of 90° or wider),
+	/// use <see cref="Clamp(Direction,Angle)"/> instead. If you want to clamp within a 2D arc on a plane (including for arcs greater than 180°),
+	/// use <see cref="Clamp(Plane,Direction,Angle,bool)"/> instead.
+	/// </remarks>
+	/// <param name="min">One end of the arc to clamp within. The meaning of min and max are interchangable here (i.e. min and max can be swapped with no effect on outcome).
+	/// Can be <see cref="None"/> (in which case this method returns <c>this</c>).</param>
+	/// <param name="max">The other end of the arc to clamp within. The meaning of min and max are interchangable here (i.e. min and max can be swapped with no effect on outcome).
+	/// Can be <see cref="None"/> (in which case this method returns <c>this</c>).</param>
+	/// <returns>This direction clamped on to the shortest arc between min and max. If min, max, or this are <see cref="None"/>, returns <c>this</c> unchanged.
+	/// If min and max are antipodal (i.e. they're exactly opposite directions), returns <c>this</c> unchanged also.</returns>
 	public Direction Clamp(Direction min, Direction max) {
 		// Doesn't make sense to clamp to "None", so return this
 		if (min == None || max == None || this == None) return this;
@@ -404,6 +713,12 @@ partial struct Direction :
 		return (thisAngle < midpoint) ? max : min;
 	}
 
+	/// <summary>
+	/// Clamps this direction so that it is no more than <paramref name="maxDifference"/> away (by angle) from <paramref name="target"/>.
+	/// This method clamps within a 3D cone around <paramref name="target"/>.
+	/// </summary>
+	/// <param name="target">The centre of the cone to clamp within. If <paramref name="target"/> or <c>this</c> is <see cref="None"/>, this method returns <c>this</c> unchanged.</param>
+	/// <param name="maxDifference">The maximum permitted angle between the result and <paramref name="target"/>. This value is clamped internally between 0° and 180°.</param>
 	public Direction Clamp(Direction target, Angle maxDifference) {
 		if (target == None || this == None) return this;
 		maxDifference = maxDifference.ClampZeroToHalfCircle();
@@ -414,8 +729,22 @@ partial struct Direction :
 		return (target >> this).ScaledBy(maxDifference.Radians / difference.Radians) * target;
 	}
 
-	// TODO xmldoc: Clamps on to a given arc (arcCentre + maxDiff) around a plane (plane); either leaving this direction directly clamped on to the plane or still with the 3D component (retainEtc). Also mention that the plane's location is not used, only its normal
-	// TODO xmldoc make it clear that the max arc difference is split across the centre direction; so e.g. a max diff of 90deg will result in 45deg either side
+	/// <summary>
+	/// Clamps this direction so that, when projected on to <paramref name="plane"/>, it lies within an arc of <paramref name="maxArcCentreDifference"/> centred on <paramref name="arcCentre"/>.
+	/// </summary>
+	/// <remarks>
+	/// <paramref name="maxArcCentreDifference"/> is the total width of the permitted arc, split evenly either side of
+	/// <paramref name="arcCentre"/> (e.g. a maximum difference of 90° permits up to 45° of rotation either way from
+	/// <paramref name="arcCentre"/> within the plane). Only <paramref name="plane"/>'s normal is used; its location is
+	/// irrelevant, since directions have no position. If <paramref name="retainOrthogonalDimension"/> is <see langword="true"/>,
+	/// the result keeps the same angle to <paramref name="plane"/> as this direction originally had; if <see langword="false"/>,
+	/// the result is collapsed fully into the plane.
+	/// </remarks>
+	/// <param name="plane">The plane to clamp within. Only its normal is used.</param>
+	/// <param name="arcCentre">The direction, lying within <paramref name="plane"/>, at the centre of the permitted arc.
+	/// If <paramref name="arcCentre"/> or <c>this</c> is <see cref="None"/>, or <paramref name="arcCentre"/> is exactly orthogonal to <paramref name="plane"/>, this method returns <c>this</c> unchanged.</param>
+	/// <param name="maxArcCentreDifference">The total angular width of the permitted arc around <paramref name="arcCentre"/>. This value is clamped internally between 0° and 360°.</param>
+	/// <param name="retainOrthogonalDimension">Whether to preserve this direction's original angle to <paramref name="plane"/> (<see langword="true"/>), or collapse the result fully into the plane (<see langword="false"/>).</param>
 	public Direction Clamp(Plane plane, Direction arcCentre, Angle maxArcCentreDifference, bool retainOrthogonalDimension) {
 		if (this == None || arcCentre == None) return this;
 		if (arcCentre.ParallelizedWith(plane) == null) return this;

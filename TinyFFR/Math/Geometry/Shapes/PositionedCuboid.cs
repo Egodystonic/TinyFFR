@@ -284,7 +284,7 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	public static PositionedCuboid FromBoundingBoxCalculation<TVertex>(ReadOnlySpan<TVertex> vertices, float additionalMargin) where TVertex : IMeshVertex {
 		return FromBoundingBoxCalculation(vertices).WithAllExtentsAdjustedBy(additionalMargin);
 	}
-	public static PositionedCuboid FromBoundingBoxCalculation<TVertex>(ReadOnlySpan<TVertex> vertices) where TVertex : IMeshVertex {
+	public static PositionedCuboid FromBoundingBoxCalculation<TVertex>(params ReadOnlySpan<TVertex> vertices) where TVertex : IMeshVertex {
 		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
 		
 		var (minX, minY, minZ) = vertices[0].Location;
@@ -310,8 +310,8 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	public static PositionedCuboid FromBoundingBoxCalculation(ReadOnlySpan<Location> vertices, float additionalMargin) {
 		return FromBoundingBoxCalculation(vertices).WithAllExtentsAdjustedBy(additionalMargin);
 	}
-	public static PositionedCuboid FromBoundingBoxCalculation(ReadOnlySpan<Location> vertices) {
-		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
+	public static PositionedCuboid FromBoundingBoxCalculation(params ReadOnlySpan<Location> vertices) {
+		if (vertices.Length == 0) return UnitCubeAtOrigin;
 		
 		var (minX, minY, minZ) = vertices[0];
 		var (maxX, maxY, maxZ) = vertices[0];
@@ -331,6 +331,11 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 			maxZ - minZ,
 			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
 		);
+	}
+	public static PositionedCuboid FromOppositeCorners(Location cornerA, Location cornerB) {
+		var boundedRay = new BoundedRay(cornerA, cornerB);
+		var extentsVect = boundedRay.StartToEndVect.Absolute;
+		return new PositionedCuboid(extentsVect.X, extentsVect.Y, extentsVect.Z, boundedRay.MiddlePoint);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
