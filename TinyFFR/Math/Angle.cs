@@ -6,7 +6,14 @@ using System.Drawing;
 
 namespace Egodystonic.TinyFFR;
 
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float
+/// <summary>
+/// Represents an angle in degrees.
+/// </summary>
+/// <remarks>
+/// An Angle can be constructed via implicit conversion from float (e.g. <c>Angle a = 120f</c> creates an Angle 'a' representing 120°).
+/// You can also use the static factory methods (e.g. <see cref="FromDegrees"/>, <see cref="FromRadians"/>, <see cref="FromFullCircleFraction"/>, etc).
+/// </remarks>
+[StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)]
 public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public const string ToStringSuffix = "°";
 	const float Tau = MathF.Tau;
@@ -17,6 +24,9 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public static readonly Angle EighthCircle = FromRadians(Tau * 0.125f);
 	public static readonly Angle SixthCircle = FromRadians(Tau / 6f);
 	public static readonly Angle ThirdCircle = FromRadians(Tau / 3f);
+	/// <summary>
+	/// Represents an angle of 90°.
+	/// </summary>
 	public static readonly Angle QuarterCircle = FromRadians(Tau * 0.25f);
 	public static readonly Angle HalfCircle = FromRadians(Tau * 0.5f);
 	public static readonly Angle ThreeQuarterCircle = FromRadians(Tau * 0.75f);
@@ -24,18 +34,27 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 
 	readonly float _radians;
 
+	/// <summary>
+	/// Returns the value of this angle in radians.
+	/// </summary>
 	public float Radians {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _radians;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private init => _radians = value;
 	}
+	/// <summary>
+	/// Returns the value of this angle in degrees.
+	/// </summary>
 	public float Degrees {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Radians * RadiansToDegreesRatio;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private init => Radians = value * DegreesToRadiansRatio;
 	}
+	/// <summary>
+	/// Returns the value of this angle in full-circle-fraction representation (i.e. 180° = 0.5, 360° = 1.0, etc).
+	/// </summary>
 	public float FullCircleFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Radians * TauReciprocal;
@@ -44,16 +63,37 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	}
 
 	// Chose degrees rather than radians to keep consistency with implicit conversion. See notes above implicit operator for more reasoning.
+	/// <summary>
+	/// Constructs a new Angle object. See also: <see cref="FromRadians"/>, <see cref="FromDegrees"/>, <see cref="FromFullCircleFraction"/>, etc.
+	/// </summary>
+	/// <param name="degrees">The value of this angle in degrees (°).</param>
 	public Angle(float degrees) => Degrees = degrees;
 
 	#region Factories and Conversions
+	/// <summary>
+	/// Returns the angle represented by the given value in radians.
+	/// </summary>
+	/// <param name="radians">The value in radians. Can be positive, zero, or negative. Infinite and NaN values are permitted but discouraged unless explicitly/deliberately expected downstream.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromRadians(float radians) => new() { Radians = radians };
+	/// <summary>
+	/// Returns the angle represented by the given value in degrees.
+	/// This is functionally identical to using the <c>Angle</c> constructor.
+	/// </summary>
+	/// <param name="degrees">The value in degrees. Can be positive, zero, or negative. Infinite and NaN values are permitted but discouraged unless explicitly/deliberately expected downstream.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromDegrees(float degrees) => new() { Degrees = degrees };
+	/// <summary>
+	/// Returns the angle represented by the given full circle fraction.
+	/// </summary>
+	/// <param name="fullCircleFraction">The distance around a circle this angle represents (e.g. 0.5 = 180°, 1.0 = 360°, etc). Can be positive, zero, or negative. Infinite and NaN values are permitted but discouraged unless explicitly/deliberately expected downstream.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromFullCircleFraction(float fullCircleFraction) => new() { FullCircleFraction = fullCircleFraction };
 	
+	/// <summary>
+	/// Returns the angle that is the arcsine of <paramref name="sine"/> (e.g. the singular <c>angle</c> in the range -90° to 90° that maps <c>sin(angle)</c> to <paramref name="sine"/>).  
+	/// </summary>
+	/// <param name="sine">The sine value. Will be clamped to the range <c>[-1, 1]</c>.</param>
 	public static Angle FromSine(float sine) {
 		sine = Single.Clamp(sine, -1f, 1f);
 		return FromRadians(MathF.Asin(sine));
@@ -64,6 +104,26 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		return FromRadians(MathF.Acos(cosine));
 	}
 
+	/// <summary>
+	/// Calculates the angle between <paramref name="d1"/> and <paramref name="d2"/>.
+	/// </summary>
+	/// <remarks>
+	/// Note that this function does some small corrections to help fight floating-point inaccuracy:
+	/// <ul>
+	/// <li>Results that are very near 0° will be clamped to 0°.</li>
+	/// <li>Results that are very near 90° will be clamped to 90°.</li>
+	/// <li>Results that are very near 180° will be clamped to 180°.</li>
+	/// </ul>
+	/// This clamping is done to help pre-emptively fix typical comparisons downstream (e.g. "<c>if (angleBetweenDirections == Angle.Zero)</c>" and similar). 
+	/// <para>
+	/// Furthermore, the linear algebra function used to calculate the value is clamped before trigonometric inversion
+	/// (i.e. <c>dot</c> is clamped before <c>acos</c>) to make sure floating-point inaccuracy does not accidentaly create
+	/// "NaN" values. 
+	/// </para>
+	/// </remarks>
+	/// <param name="d1">Any <see cref="Direction"/>. If this is <see cref="Direction.None"/> the returned value will always be 0°, regardless of what <paramref name="d2"/> is.</param>
+	/// <param name="d2">Any <see cref="Direction"/>. If this is <see cref="Direction.None"/> the returned value will always be 0°, regardless of what <paramref name="d1"/> is.</param>
+	/// <returns>A value between 0° and 180°.</returns>
 	public static Angle FromAngleBetweenDirections(Direction d1, Direction d2) {
 		const float FloatingPointErrorMargin = 1E-6f;
 
@@ -84,14 +144,27 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		};
 	}
 
-	// TODO clarify this is the four-quadrant inverse tangent
+	/// <summary>
+	/// Calculates the angle around a circle represented by <paramref name="xy"/> as a 2D vector.
+	/// </summary>
+	/// <remarks>
+	/// This function takes the four-quadrant inverse tangent of <paramref name="xy"/>.X and <paramref name="xy"/>.Y.
+	/// This means that the direction <paramref name="xy"/> points is transformed to the resultant angle according to the following rules:
+	/// <ul>
+	/// <li>If <paramref name="xy"/> points exactly right (i.e. positive X and zero Y) this function returns 0°.</li>
+	/// <li>If <paramref name="xy"/> points exactly up (i.e. zero X and positive Y) this function returns 90°.</li>
+	/// <li>If <paramref name="xy"/> points exactly left (i.e. negative X and zero Y) this function returns 180°.</li>
+	/// <li>If <paramref name="xy"/> points exactly down (i.e. zero X and negative Y) this function returns 270°.</li>
+	/// <li>In general, the value returned by this function "starts" at 0° for a right-facing <paramref name="xy"/> and increases as <paramref name="xy"/> rotates anticlockwise.</li>
+	/// </ul>
+	/// </remarks>
+	/// <param name="xy">The <see cref="XYPair{T}"/> representing a 2D vector. If this is <see cref="XYPair{T}.Zero"/>, the function will return <c>null</c>.</param>
+	/// <returns><c>atan2(x, y)</c>, or <c>null</c> if <paramref name="xy"/> is <see cref="XYPair{T}.Zero"/>.</returns>
 	public static Angle? From2DPolarAngle<T>(XYPair<T> xy) where T : unmanaged, INumber<T> => From2DPolarAngle(Single.CreateTruncating(xy.X), Single.CreateTruncating(xy.Y));
-	// TODO clarify this is the four-quadrant inverse tangent
 	public static Angle? From2DPolarAngle(float x, float y) {
 		if (x == 0f && y == 0f) return null;
 		return FromRadians(MathF.Atan2(y, x)).Normalized;
 	}
-	// TODO clarify this is the four-quadrant inverse tangent
 	public static Angle? From2DPolarAngle(Orientation2D orientation) => orientation switch {
 		Orientation2D.None => null,
 		Orientation2D.Right => 0f,
@@ -163,32 +236,48 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	 * TLDR: Chose degrees for ToString/Parse because they're nicer to work with/print out than radians, and wanted the implicit
 	 * conversion to match the Parse (e.g. "270f" == "Angle.Parse("270")").
 	 */
+	/// <summary>
+	/// Returns the angle represented by the given value in degrees.
+	/// This is functionally identical to using the <c>Angle</c> constructor.
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator Angle(float operand) => FromDegrees(operand);
 	#endregion
 
 	#region Random
+	/// <summary>
+	/// Creates a new random angle <c>v</c> such that <c>0° &lt;= v &lt; 360°</c>.
+	/// </summary>
 	public static Angle Random() => Random(Zero, FullCircle);
+	/// <summary>
+	/// Creates a new random angle <c>v</c> such that <c>minInclusive &lt;= v &lt; maxExclusive</c>.
+	/// </summary>
 	public static Angle Random(Angle minInclusive, Angle maxExclusive) {
 		return FromRadians(RandomUtils.NextSingle(minInclusive.Radians, maxExclusive.Radians));
 	}
 	#endregion
 
 	#region Span Conversion
+	/// <inheritdoc />
 	public static int SerializationByteSpanLength { get; } = sizeof(float);
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void SerializeToBytes(Span<byte> dest, Angle src) => BinaryPrimitives.WriteSingleLittleEndian(dest, src.Radians);
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle DeserializeFromBytes(ReadOnlySpan<byte> src) => FromRadians(BinaryPrimitives.ReadSingleLittleEndian(src));
 	#endregion
 
 	#region String Conversion
+	/// <inheritdoc />
 	public override string ToString() => ToString(null, null);
 
+	/// <inheritdoc />
 	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Degrees.ToString(format, formatProvider)}{ToStringSuffix}";
 
+	/// <inheritdoc />
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		charsWritten = 0;
 		// ReSharper disable once InlineOutVariableDeclaration This is neater
@@ -206,9 +295,12 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		return writeSuccess;
 	}
 
+	/// <inheritdoc />
 	public static Angle Parse(string s, IFormatProvider? provider = null) => Parse(s.AsSpan(), provider);
+	/// <inheritdoc />
 	public static bool TryParse(string? s, IFormatProvider? provider, out Angle result) => TryParse(s.AsSpan(), provider, out result);
 
+	/// <inheritdoc />
 	public static Angle Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
 		var indexOfSuffix = s.IndexOf(ToStringSuffix);
 
@@ -219,6 +311,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		return FromDegrees(degrees);
 	}
 
+	/// <inheritdoc />
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Angle result) {
 		var indexOfSuffix = s.IndexOf(ToStringSuffix);
 		if (indexOfSuffix < 0) indexOfSuffix = s.Length;
@@ -234,13 +327,39 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	#endregion
 
 	#region Equality
+	/// <summary>
+	/// Determines whether this value is equal to <paramref name="other"/> within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="other">The other value.</param>
+	/// <param name="tolerance">The tolerance value.</param>
+	/// <returns>True if equal within tolerance, false if not.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Angle other, Angle tolerance) => Equals(other, tolerance.Degrees);
+	/// <summary>
+	/// Determines whether this value is equal to <paramref name="other"/> within a given tolerance in degrees.
+	/// </summary>
+	/// <param name="other">The other value.</param>
+	/// <param name="toleranceDegrees">The tolerance value, in degrees.</param>
+	/// <returns>True if equal within tolerance, false if not.</returns>
 	public bool Equals(Angle other, float toleranceDegrees) {
 		// Using Degrees rather than Radians because the implicit conversion from float to Angle
 		// assumes degrees and therefore I feel like the tolerance value here should also be degrees
 		return MathF.Abs(Degrees - other.Degrees) <= toleranceDegrees;
 	}
+	/// <summary>
+	/// Determines whether this angle is equivalent to <paramref name="other"/>
+	/// when used in the context of a rotating or orientating function around a circle. 
+	/// </summary>
+	/// <remarks>
+	/// This function tells you whether <c>this</c> and <paramref name="other"/> "point" the same way. Examples:
+	/// <ul>
+	/// <li>0° and 360° returns <c>true</c>.</li>
+	/// <li>180° and -180° returns <c>true</c>.</li>
+	/// <li>90° and 450° returns <c>true</c>.</li>
+	/// <li>90° and -90° returns <c>false</c>.</li>
+	/// </ul>
+	/// </remarks>
+	/// <param name="other">The other angle to compare to. Can be positive, negative, or zero.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsEquivalentWithinCircleTo(Angle other) => IsEquivalentWithinCircleTo(other, Zero);
 	public bool IsEquivalentWithinCircleTo(Angle other, Angle tolerance) => IsEquivalentWithinCircleTo(other, tolerance.Degrees);
@@ -254,14 +373,19 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		return absDiff <= toleranceDegrees;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Angle other) => Radians.Equals(other.Radians);
+	/// <inheritdoc />
 	public override bool Equals(object? obj) => obj is Angle other && Equals(other);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => Normalized.Radians.GetHashCode();
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Angle left, Angle right) => left.Equals(right);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(Angle left, Angle right) => !left.Equals(right);
 	#endregion

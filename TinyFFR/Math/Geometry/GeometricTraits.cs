@@ -322,7 +322,14 @@ public interface ILengthAdjustable<out TSelf> where TSelf : ILengthAdjustable<TS
 	TSelf WithMinLength(float minLength);
 }
 
+/// <summary>
+/// Trait interface used to mark a mathematical or geometric primitive as capable of having
+/// its physical validity tested (e.g. "does this shape have negative surface area?" etc). 
+/// </summary>
 public interface IPhysicalValidityDeterminable {
+	/// <summary>
+	/// True if this object is physically valid/possible in the real world, false if not.
+	/// </summary>
 	bool IsPhysicallyValid { get; }
 }
 #endregion

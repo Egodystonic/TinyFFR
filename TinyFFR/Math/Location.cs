@@ -7,7 +7,7 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
+[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)]
 public readonly partial struct Location : IVect<Location> {
 	internal const float WValue = 1f;
 	internal const float DefaultRandomRange = 100f;

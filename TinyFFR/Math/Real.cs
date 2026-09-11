@@ -8,6 +8,10 @@ namespace Egodystonic.TinyFFR;
 
 // This is mostly a wrapper for float that implements some interfaces, meaning we can use floats in some APIs that work with those interfaces.
 // This could go away with a 'shapes' or 'extension everything' implementation in C#
+/// <summary>
+/// Represents a floating-point 32-bit value (same as <see cref="Single"/>) but with some additional methods exposed that are occasionally
+/// useful within TinyFFR. Real is implicitly convertible to and from <see cref="float"/>.
+/// </summary>
 public readonly struct Real : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdinal<Real> {
 	public static readonly Real Zero = 0f;
 	public static readonly Real One = 1f;

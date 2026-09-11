@@ -10,7 +10,7 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
+[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)]
 public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;
 	internal const float DefaultRandomRange = 100f;

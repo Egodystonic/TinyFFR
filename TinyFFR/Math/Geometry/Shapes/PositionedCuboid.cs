@@ -280,6 +280,58 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	}
 	public static PositionedCuboid FromSmallestEnclosingAxisAligned(PositionedCuboid rotatable) => rotatable.SmallestEnclosingSphere.SmallestEnclosingCube;
 	public static PositionedCuboid FromSmallestEnclosingAxisAligned(PositionedRotatedCuboid rotatable) => rotatable.SmallestEnclosingSphere.SmallestEnclosingCube;
+	
+	public static PositionedCuboid FromBoundingBoxCalculation<TVertex>(ReadOnlySpan<TVertex> vertices, float additionalMargin) where TVertex : IMeshVertex {
+		return FromBoundingBoxCalculation(vertices).WithAllExtentsAdjustedBy(additionalMargin);
+	}
+	public static PositionedCuboid FromBoundingBoxCalculation<TVertex>(ReadOnlySpan<TVertex> vertices) where TVertex : IMeshVertex {
+		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
+		
+		var (minX, minY, minZ) = vertices[0].Location;
+		var (maxX, maxY, maxZ) = vertices[0].Location;
+		for (var i = 1; i < vertices.Length; ++i) {
+			var loc = vertices[i].Location;
+			if (loc.X < minX) minX = loc.X;
+			if (loc.Y < minY) minY = loc.Y;
+			if (loc.Z < minZ) minZ = loc.Z;
+			if (loc.X > maxX) maxX = loc.X;
+			if (loc.Y > maxY) maxY = loc.Y;
+			if (loc.Z > maxZ) maxZ = loc.Z;
+		}
+		
+		return new(
+			maxX - minX,
+			maxY - minY,
+			maxZ - minZ,
+			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
+		);
+	}
+	
+	public static PositionedCuboid FromBoundingBoxCalculation(ReadOnlySpan<Location> vertices, float additionalMargin) {
+		return FromBoundingBoxCalculation(vertices).WithAllExtentsAdjustedBy(additionalMargin);
+	}
+	public static PositionedCuboid FromBoundingBoxCalculation(ReadOnlySpan<Location> vertices) {
+		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
+		
+		var (minX, minY, minZ) = vertices[0];
+		var (maxX, maxY, maxZ) = vertices[0];
+		for (var i = 1; i < vertices.Length; ++i) {
+			var loc = vertices[i];
+			if (loc.X < minX) minX = loc.X;
+			if (loc.Y < minY) minY = loc.Y;
+			if (loc.Z < minZ) minZ = loc.Z;
+			if (loc.X > maxX) maxX = loc.X;
+			if (loc.Y > maxY) maxY = loc.Y;
+			if (loc.Z > maxZ) maxZ = loc.Z;
+		}
+		
+		return new(
+			maxX - minX,
+			maxY - minY,
+			maxZ - minZ,
+			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
+		);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Cuboid ToStandardCuboid() => _impl.BaseShape;

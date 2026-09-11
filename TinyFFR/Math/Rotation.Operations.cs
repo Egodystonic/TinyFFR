@@ -19,6 +19,12 @@ partial struct Rotation :
 	Rotation IInvertible<Rotation>.Inverted => Reversed;
 	static Rotation IAdditiveIdentity<Rotation, Rotation>.AdditiveIdentity => None;
 
+	/// <summary>
+	/// Determines whether this rotation's angle and axis are physically valid.
+	/// </summary>
+	/// <remarks>
+	/// See: <see cref="Direction.IsPhysicallyValid"/> and <see cref="TinyFFR.Angle.IsPhysicallyValid"/>
+	/// </remarks>
 	public bool IsPhysicallyValid {
 		get {
 			return Axis.IsPhysicallyValid && Angle.IsPhysicallyValid;

@@ -134,6 +134,15 @@ partial struct Direction :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
+	/// <summary>
+	/// Determines the angle formed between this direction and <paramref name="other"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is equivalent to calling <see cref="Angle.FromAngleBetweenDirections"/>. 
+	/// </remarks>
+	/// <param name="other">The other direction. Can be <see cref="None"/> (in which case 0° will be returned).</param>
+	/// <returns>The angle between the two directions. If either direction is <see cref="None"/>, returns 0°.</returns>
+	/// <seealso cref="SignedAngleTo(Direction, Direction)"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
 	// Maintainer's notes: We have the following constraints for this to help it feel consistent:
@@ -142,6 +151,23 @@ partial struct Direction :
 	// 3) When the non-signed angle between this & other is 180deg, this will always return positive 180deg; in other words the range of values for this function is [-179.99.., 180.00]
 	// 4) When clockwiseAxis is None, this method always returns the same answer to non-signed AngleTo()
 	// These cases are commented inline below.
+	/// <summary>
+	/// Determines the angle formed between this and <paramref name="other"/>, additionally attributing a sign (+ or -)
+	/// to the result making it possible to differentiate the winding/chirality of the two directions.
+	/// </summary>
+	/// <remarks>
+	/// The output of this function has the following guarantees:
+	/// <ul>
+	/// <li>The answer returned will never differ from that given by <see cref="AngleTo(Direction)"/> excepting the sign.</li>
+	/// <li>When swapping the arguments (<c>this</c> and <paramref name="other"/>) or reversing <paramref name="clockwiseAxis"/> the sign will always flip (except according to the two caveats below).</li>
+	/// <li>Caveat: When the non-signed angle between <c>this</c> and <paramref name="other"/> is 180° the returned answer will always be +180° (i.e. the range of values for this function is -179.99.. to 180.00).</li>
+	/// <li>Caveat: When <paramref name="clockwiseAxis"/> is <see cref="None"/> this method always returns the same answer as would be given by <see cref="AngleTo(Direction)"/>.</li>
+	/// </ul>
+	/// </remarks>
+	/// <param name="other">The other direction. Can be <see cref="None"/> (in which case 0° will be returned).</param>
+	/// <param name="clockwiseAxis">The axis used to determine the sign. When looking along this axis, an apparent clockwise
+	/// winding from <c>this</c> to <paramref name="other"/> will be reported with a positive value. For example: <c>Direction.Forward.SignedAngleTo(Direction.Right, Direction.Down)</c> returns +90°.</param>
+	/// <returns>The signed angle between the two directions. If either direction is <see cref="None"/>, returns 0°.</returns>
 	public Angle SignedAngleTo(Direction other, Direction clockwiseAxis) {
 		const float FloatingPointErrorMargin = 1E-6f;
 
@@ -179,11 +205,32 @@ partial struct Direction :
 		));
 	}
 
+	/// <summary>
+	/// Attempts to orthogonalize this direction against <paramref name="d"/>.
+	/// Orthogonalization refers to adjusting this direction such that it forms an angle exactly 90° with the target (<paramref name="d"/>).
+	/// </summary>
+	/// <param name="d">The target direction. Can be <see cref="None"/> (in which case this function returns <c>this</c>).</param>
+	/// <returns>This direction adjusted such that it forms a 90° angle with <paramref name="d"/>; or <c>null</c> if there is no single
+	/// answer (i.e. the two values point in exactly the same direction or exactly opposite).
+	/// If <c>this</c> or <paramref name="d"/> are <see cref="None"/>, returns <c>this</c>.</returns>
 	public Direction? OrthogonalizedAgainst(Direction d) {
 		if (this == None || d == None) return this;
 		if (IsParallelTo(d)) return null;
 		return new(Normalize(AsVector4 - d.AsVector4 * Dot(d)));
 	}
+	/// <summary>
+	/// Executes the same function as <see cref="OrthogonalizedAgainst(Direction)"/> but skips some correctness checks, trading safety
+	/// for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes the following conditions:
+	/// <ul>
+	/// <li>Neither <c>this</c> or <paramref name="d"/> are <see cref="None"/>.</li>
+	/// <li><c>this</c> and <paramref name="d"/> are not parallel.</li>
+	/// </ul>
+	/// The returned value of this function is undefined when any condition above is broken.
+	/// </remarks>
+	/// <param name="d">The target direction.</param>
 	public Direction FastOrthogonalizedAgainst(Direction d) => new(Normalize(AsVector4 - d.AsVector4 * Vector4.Dot(AsVector4, d.AsVector4)));
 
 	public Direction? ParallelizedWith(Direction d) {

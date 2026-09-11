@@ -9,15 +9,49 @@ using static Egodystonic.TinyFFR.MathUtils;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Represents a three-dimensional rotation, encoded as an angle/axis pair.
+/// </summary>
+/// <remarks>
+/// A rotation object is a description of <i>how to rotate</i> something; e.g. "72° around the Left axis".
+/// <para>
+/// A Rotation does <b>not</b> represent any specific orientation/direction by itself, instead it represents the operation to apply to any existing direction/orientation to get a <i>new</i> direction/orientation.
+/// For example, "facing forward" is just a direction or orientation but "turn from forward to right" is a <i>Rotation</i> (in this case possibly encoded as "90° around the Down axis").
+/// </para>
+/// <para>
+/// You can construct a rotation like so:
+/// <ul>
+/// <li>From its angle &amp; axis directly (<c>new Rotation(72f, Direction.Left)</c>)</li>
+/// <li>From the transition between two directions (<c>Rotation.FromStartAndEndDirection(Direction.Up, Direction.Right)</c>)</li>
+/// <li>By combining multiple rotations (<c>rotationOne + rotationTwo + rotationThree</c>)</li>
+/// <li>...And a few various other mechanisms</li>
+/// </ul>
+/// </para>
+/// <para>
+/// You can then apply a rotation like so:
+/// <ul>
+/// <li>To a direction or vect (<c>var newDir = direction * rotation;</c></li>
+/// <li>To a geometric primitive (<c>var newPlane = plane * rotation;</c></li>
+/// <li>To a model instance or camera (<c>camOrInstance.RotateBy(rotation);</c></li>
+/// <li>...And a few other places</li>
+/// </ul>
+/// </para>
+/// <para>
+/// A note on Quaternions:
+/// Angle / axis representation was chosen as it is the most user friendly &amp; least error-prone. However in some circumstances
+/// it can be slow for certain operations required frequently or in bulk. Therefore, some APIs in TinyFFR accept both a Rotation and a <see cref="Quaternion"/>.
+/// In these cases you may wish to work with Quaternions directly; Rotation has many built-in static members that help you convert between the two with ease.
+/// </para>
+/// </remarks>
 [DebuggerDisplay("{ToStringDescriptive()}")]
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
+[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)]
 public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptiveStringProvider {
 	public const string ToStringMiddleSection = " around ";
 	public static readonly Rotation None = new(Angle.Zero, Direction.None);
 
 	readonly Vector4 _axis3dAndAngleRadians;
 	
-	// TODO indicate this is clockwise looking along the axis direction
+	// TODO indicate this is anticlockwise when the axis direction is pointing at you
 	public Angle Angle {
 		get => Angle.FromRadians(_axis3dAndAngleRadians.W);
 		init => _axis3dAndAngleRadians.W = value.Radians;
@@ -35,13 +69,6 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 
 	#region Factories and Conversions
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
-		// var dot = Vector4.Dot(startDirection.AsVector4, endDirection.AsVector4);
-		// if (dot > -0.9999f) return FromQuaternion(new(Vector3.Cross(startDirection.ToVector3(), endDirection.ToVector3()), dot + 1f));
-		//
-		// // If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
-		// // Therefore we just pick any perpendicular vector and rotate around that.
-		// var perpVec = startDirection.AnyOrthogonal();
-		// return new(Angle.HalfCircle, perpVec);
 		return new(startDirection.AngleTo(endDirection), Direction.FromDualOrthogonalization(startDirection, endDirection));
 	}
 	
@@ -169,6 +196,16 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	#endregion
 
 	#region Equality
+	/// <summary>
+	/// Determines whether this rotation and <paramref name="other"/> always produce the same end result when
+	/// applied to anything regardless of the target's starting direction/orientation.
+	/// </summary>
+	/// <remarks>
+	/// Unlike a standard <see cref="Equals(Rotation)"/> check, this method takes in to account rotations
+	/// that are exact "mirrors" of each other (i.e. <c>90° around Left</c> vs <c>-90° around Right</c>)
+	/// or those that differ only by multiples of 360°, etc.
+	/// </remarks>
+	/// <param name="other">The other rotation to compare to.</param>
 	public bool IsEquivalentForAllDirectionsTo(Rotation other) {
 		var thisQuat = ToQuaternion();
 		var otherQuat = other.ToQuaternion();
@@ -187,6 +224,16 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		return CompareQuats(thisQuat, otherQuat, tolerance) || CompareQuats(thisQuat, -otherQuat, tolerance);
 	}
 
+	/// <summary>
+	/// Determines whether this rotation and <paramref name="other"/> produce the same result when
+	/// applied to the given <paramref name="targetDirection"/>.
+	/// </summary>
+	/// <remarks>
+	/// This function essentially helps you determine if this rotation and <paramref name="other"/>
+	/// are ineffective or have the same effect against a specific direction (e.g. perhaps their
+	/// rotation axis is colinear with it). 
+	/// </remarks>
+	/// <param name="other">The other rotation to compare to.</param>
 	public bool IsEquivalentForSingleDirectionTo(Rotation other, Direction targetDirection) {
 		var thisResult = Rotate(targetDirection);
 		var otherResult = other.Rotate(targetDirection);

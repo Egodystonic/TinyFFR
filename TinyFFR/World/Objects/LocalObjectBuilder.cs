@@ -348,7 +348,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) CalculateAndUpdateBoundingBox(handle, vertexMutationData);
 	}
 	void CalculateAndUpdateBoundingBox(ResourceHandle<ModelInstance> handle, LocalVertexMutationData vertexMutationData) {
-		ApplyBoundingBox(handle, MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin));
+		ApplyBoundingBox(handle, PositionedCuboid.FromBoundingBoxCalculation(vertexMutationData.CurrentVertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin));
 	}
 	public void SetModelSpaceBoundingBox(ResourceHandle<ModelInstance> handle, PositionedCuboid newBoundingBox) {
 		ThrowIfThisOrHandleIsDisposed(handle);

@@ -17,14 +17,30 @@ partial struct Angle :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator -(Angle operand) => operand.Negated;
+	/// <summary>
+	/// Returns the negated value of this angle (e.g. <c>180°</c> becomes <c>-180°</c>, <c>-90°</c> becomes <c>90°</c>, etc).
+	/// </summary>
 	public Angle Negated {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FromRadians(-Radians);
 	}
 	Angle IInvertible<Angle>.Inverted => Negated;
 
+	/// <summary>
+	/// Determines whether this angle has a finite value.
+	/// </summary>
+	/// <remarks>
+	/// Finite positive, negative, and zero values return <c>true</c>.
+	/// Non-finite or NaN values return <c>false</c>.
+	/// </remarks>
 	public bool IsPhysicallyValid => Single.IsFinite(_radians);
 
+	/// <summary>
+	/// Returns the absolute value of this angle (e.g. <c>180°</c> remains <c>180°</c>, <c>-90°</c> becomes <c>90°</c>, etc).
+	/// </summary>
+	/// <remarks>
+	/// Note this is not the same as normalizing, see <see cref="Normalized"/>.
+	/// </remarks>
 	public Angle Absolute { // TODO make it clear that this is not the same as normalizing
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FromRadians(MathF.Abs(Radians));
@@ -105,8 +121,19 @@ partial struct Angle :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampNegativeQuarterCircleToQuarterCircle() => Clamp(-QuarterCircle, QuarterCircle);
 
-	// TODO xmldoc this creates a triangle wave when plotting y = x.Triangularize(p) where p is the maximum and -p is the minimum.
-	// The period of the wave is peak * 4. Submitting a negative peak flips the wave. 
+	/// <summary>
+	/// Plots this angle according to the given triangle-wave <paramref name="peak"/> amplitude.
+	/// </summary>
+	/// <remarks>
+	/// When plotting <c>y = x.Triangularize(peak)</c> this function creates a triangle wave oscillating between
+	/// <c>peak</c> and <c>-peak</c>. The period of the wave is <c>peak * 4</c>.
+	/// <para>
+	/// Functions like this are useful for creating a linear oscillation with a fixed amplitude. For example you can make
+	/// something "bounce back and forward" over time, or calculate a "bounceback"/"overshoot" function.
+	/// </para>
+	/// </remarks>
+	/// <param name="peak">The maximum value of the triangular peak. Can be negative to flip the resultant wave. If this is 0° the function will always return 0°.</param>
+	/// <seealso cref="TriangularizeRectified"/>
 	public Angle Triangularize(Angle peak) {
 		if (peak == Zero) return Zero;
 		var period = peak * 4f;
@@ -115,8 +142,20 @@ partial struct Angle :
 		return FromRadians(MathF.CopySign(amplitude, ieeeRemainder));
 	}
 
-	// TODO xmldoc this creates a triangle wave when plotting y = x.TriangularizeRectified(p) where p is the extreme and 0 is the minimum.
-	// All results are one side of the x-axis (or 0) and the period of the wave is peak * 2
+	/// <summary>
+	/// Plots this angle according to the given triangle-wave <paramref name="peak"/> amplitude, rectified so that all results sit on one side of
+	/// the x-axis.
+	/// </summary>
+	/// <remarks>
+	/// When plotting <c>y = x.Triangularize(peak)</c> this function creates a triangle wave oscillating between
+	/// <c>peak</c> and <c>0</c>. The period of the wave is <c>peak * 2</c>.
+	/// <para>
+	/// Functions like this are useful for creating a linear oscillation with a fixed amplitude. For example you can make
+	/// something "bounce back and forward" over time, or calculate a "bounceback"/"overshoot" function.
+	/// </para>
+	/// </remarks>
+	/// <param name="peak">The maximum value of the triangular peak. Can be negative to mirror the resultant wave underneath the x-axis. If this is 0° the function will always return 0°.</param>
+	/// <seealso cref="Triangularize"/>
 	public Angle TriangularizeRectified(Angle peak) {
 		if (peak == Zero) return Zero;
 		var period = peak * 4f;
@@ -125,12 +164,30 @@ partial struct Angle :
 		return FromRadians(amplitude);
 	}
 
+	/// <inheritdoc />
 	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.Radians, end.Radians, distance));
+	/// <inheritdoc />
 	public static float GetInterpolationDistance(Angle start, Angle end, Angle input) => Real.GetInterpolationDistance(start.Radians, end.Radians, input.Radians);
 
 	// TODO xmldoc this interpolates from start to end via the shortest distance "around the clock"; i.e. 270deg -> 0deg goes forward 90 rather than backwards 270
 	// The result will always be in the range [0, <360]
-	public static Angle InterpolateShortestDifference(Angle start, Angle end, float distance) {
+	/// <summary>
+	/// Interpolates a value from <paramref name="start"/> to <paramref name="end"/> according to the normalized <paramref name="distance"/>, specifically
+	/// taking the shortest path "around the circle" between them.
+	/// </summary>
+	/// <remarks>
+	/// This function differs from <see cref="Interpolate"/> in that it interpolates the shortest path around the circle from <paramref name="start"/> to <paramref name="end"/>,
+	/// rather than treating the two parameters purely numerically.
+	/// <para>
+	/// For example: <c>Angle.Interpolate(0f, 270f, 0.5f)</c> returns 135°. Conversely, <c>Angle.InterpolateShortestPath(0f, 270f, 0.5f)</c> returns 315°.
+	/// </para>
+	/// </remarks>
+	/// <param name="start">The starting value (i.e. the value returned when <paramref name="distance"/> is <c>0f</c>).</param>
+	/// <param name="end">The ending value (i.e. the value returned when <paramref name="distance"/> is <c>1f</c>).</param>
+	/// <param name="distance">The normalized distance between <paramref name="start"/> and <paramref name="end"/> to calculate (i.e. <c>0.5f</c> returns the value exactly halfway between start &amp; end).
+	/// Values outside the range 0-1 are permitted and will extend the interpolation calculation beyond the start or end value respectively.</param>
+	/// <returns>This function only ever returns a <see cref="Normalized"/> value, regardless of the range of <paramref name="start"/> and <paramref name="end"/>.</returns>
+	public static Angle InterpolateShortestPath(Angle start, Angle end, float distance) {
 		var shortestDiff = start.ShortestDifferenceTo(end);
 		var isPositiveDelta = end.ShortestDifferenceTo(start + shortestDiff) < end.ShortestDifferenceTo(start - shortestDiff);
 		var startNorm = start.Normalized;
@@ -143,14 +200,19 @@ partial struct Angle :
 	#endregion
 
 	#region Comparison
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int CompareTo(Angle other) => Radians.CompareTo(other.Radians);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator >(Angle left, Angle right) => left.Radians > right.Radians;
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator >=(Angle left, Angle right) => left.Radians >= right.Radians;
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator <(Angle left, Angle right) => left.Radians < right.Radians;
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator <=(Angle left, Angle right) => left.Radians <= right.Radians;
 	#endregion

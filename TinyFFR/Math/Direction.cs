@@ -9,8 +9,25 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Represents a single direction in 3D space (e.g. "Left", "Forward", "None", etc).
+/// </summary>
+/// <remarks>
+/// Direction is a specialized <see cref="IVect"/> that maintains itself as being unit-length (or <see cref="None"/>) at all times.
+/// <para>
+/// Constructing a direction from direct component values (e.g. <c>new Direction(0.707f, 0f, 0.707f)</c>) is rarely useful;
+/// most of the time you'll want to construct a direction from a specific operation:
+/// <ul>
+/// <li>Find a Direction that's orthogonal (perpendicular) to two others: <c>FromDualOrthogonalization(...)</c></li>
+/// <li>Find the nearest direction in a set: <c>FromNearestDirectionInSpan(...)</c></li>
+/// <li>Rotate another direction: <c>dir.RotatedBy(...)</c></li>
+/// <li>Get a random direction: <c>Random(...)</c></li>
+/// <li>...Plus a lot of mathematical functions (e.g. operations on planes, rays, spheres, etc)</li>
+/// </ul>
+/// </para>
+/// </remarks>
 [DebuggerDisplay("{ToStringDescriptive()}")]
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
+[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)]
 public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;
 	public static readonly Direction None = new();
@@ -126,7 +143,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	}
 
 	// TODO xmldoc: Imagine a plane, and imagine one direction along the plane is set as "zero". This factory method lets you specify directions as a polar angle offset from the zero direction on the plane
-	// TODO xmldoc: Angle is clockwise looking along the plane normal (much like rotations)
+	// TODO xmldoc: Angle is anticlockwise looking in to the plane normal (much like rotations)
 	public static Direction FromPlaneAndPolarAngle(Plane plane, Direction zeroDegreesDirection, Angle polarAngle) {
 		if (zeroDegreesDirection.ParallelizedWith(plane) == null) zeroDegreesDirection = plane.Normal.AnyOrthogonal();
 		var converter = plane.CreateDimensionConverter(Location.Origin, zeroDegreesDirection);

@@ -8,6 +8,26 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Represents a transformation of any given three-dimensional entity; specifically a
+/// <see cref="Scaling"/> operation, then a <see cref="Rotation"/>, and finally a <see cref="Translation"/> (i.e. move).  
+/// </summary>
+/// <remarks>
+/// By default a Transform is represented internally in-memory as its three separate operations (S, R, T) held distinctly.
+/// Using this approach allows anyone to get the initial <see cref="Scaling"/>/<see cref="Rotation"/>/<see cref="Translation"/>
+/// operations back out without degradation.
+/// <para>
+/// In some cases it is unavoidable that a Transform must be represented internally by a <see cref="Matrix4x4"/>. When this
+/// is the case, reading the <see cref="Scaling"/> and <see cref="Rotation"/> require deconstructing the matrix and may
+/// return skewed results if <see cref="Scaling"/> is not <see cref="Vect.One"/>.
+/// Together these values will combine to the same outcome when applied together but they may not be the same as the values
+/// used to construct the Transform and/or its matrix.
+/// </para>
+/// <para>
+/// <see cref="Translation"/> is always accurately returned regardless of internal representation. You can check the internal
+/// representation with <see cref="IsInternallyRepresentedByMatrix"/>.
+/// </para>
+/// </remarks>
 [DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Explicit)]
 public readonly partial struct Transform : IMathPrimitive<Transform>, IDescriptiveStringProvider {

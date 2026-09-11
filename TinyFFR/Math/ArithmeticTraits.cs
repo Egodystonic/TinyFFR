@@ -9,8 +9,16 @@ public interface INormalizable<out TSelf>
 	TSelf Normalized { get; }
 }
 
+/// <summary>
+/// Trait interface used to mark a mathematical or geometric primitive as being absolutizable.
+/// An absolutized value is one who sign identity is erased (e.g. all values are made positive).
+/// </summary>
+/// <typeparam name="TSelf">The type that is actually implementing this interface.</typeparam>
 public interface IAbsolutizable<out TSelf>
 	where TSelf : IAbsolutizable<TSelf> {
+	/// <summary>
+	/// Returns the absolute (non-negative) value of this object.
+	/// </summary>
 	TSelf Absolute { get; }
 }
 
@@ -52,7 +60,28 @@ public interface IInterpolatable<TSelf> :
 	IBoundedRandomizable<TSelf>
 	where TSelf : IInterpolatable<TSelf> {
 	static TSelf IBlendable<TSelf>.Blend(TSelf start, TSelf end, float distance) => TSelf.Interpolate(start, end, distance);
+	/// <summary>
+	/// Interpolates a value from <paramref name="start"/> to <paramref name="end"/> according to the normalized <paramref name="distance"/>.
+	/// </summary>
+	/// <param name="start">The starting value (i.e. the value returned when <paramref name="distance"/> is <c>0f</c>).</param>
+	/// <param name="end">The ending value (i.e. the value returned when <paramref name="distance"/> is <c>1f</c>).</param>
+	/// <param name="distance">The normalized distance between <paramref name="start"/> and <paramref name="end"/> to calculate (i.e. <c>0.5f</c> returns the value exactly halfway between start &amp; end).
+	/// Values outside the range 0-1 are permitted and will extend the interpolation calculation beyond the start or end value respectively.</param>
 	static abstract TSelf Interpolate(TSelf start, TSelf end, float distance);
+	/// <summary>
+	/// Clamps this value between <paramref name="min"/> and <paramref name="max"/>.
+	/// </summary>
+	/// <remarks>
+	/// Note that unlike most .NET clamp functions, TinyFFR allows you to swap <paramref name="min"/> and <paramref name="max"/> freely
+	/// and still get the same answer (i.e. <c>Clamp(4, 7)</c> is the same as <c>Clamp(7, 4)</c>).
+	/// <para>
+	/// This is a deliberate design choice given most clampable types in TinyFFR are not necessarily ordinal (i.e.
+	/// they do not have an obvious ordering; for example vectors, directions, shapes, rotations, etc).
+	/// </para>
+	/// </remarks>
+	/// <param name="min">The lower bound value (inclusive).</param>
+	/// <param name="max">The upper bound value (inclusive).</param>
+	/// <returns>A value <c>v</c> such that <c>min &lt;= v &lt;= max</c>.</returns>
 	TSelf Clamp(TSelf min, TSelf max);
 }
 
@@ -68,6 +97,14 @@ public interface IOrdinal<TSelf> :
 	IComparable<TSelf>,
 	IComparisonOperators<TSelf, TSelf, bool>
 	where TSelf : IOrdinal<TSelf> {
+	/// <summary>
+	/// Calculates the normalized distance of <paramref name="input"/> from <paramref name="start"/> to <paramref name="end"/>.
+	/// This function is essentially the "inverse" of <see cref="IInterpolatable{TSelf}.Interpolate"/>. 
+	/// </summary>
+	/// <param name="start">The starting value (i.e. when <paramref name="input"/> is equal to this  <c>0f</c> will be returned).</param>
+	/// <param name="end">The ending value (i.e. when <paramref name="input"/> is equal to this <c>1f</c> will be returned).</param>
+	/// <param name="input">The input value. Can be anything (e.g. could be between <paramref name="start"/> and <paramref name="end"/> or outside that range entirely).</param>
+	/// <returns>A normalized mapping of <paramref name="input"/> from [<paramref name="start"/>-<paramref name="end"/>] to [0-1].</returns>
 	static abstract float GetInterpolationDistance(TSelf start, TSelf end, TSelf input);
 }
 

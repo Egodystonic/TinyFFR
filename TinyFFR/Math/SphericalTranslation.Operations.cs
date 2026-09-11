@@ -29,7 +29,7 @@ public readonly partial struct SphericalTranslation :
 	}
 	// TODO xmldoc this interpolates around the shortest distance between the two coords; if a non-geometric interpolation is required use InterpolateArithmetically
 	public static SphericalTranslation InterpolateGeometrically(SphericalTranslation start, SphericalTranslation end, float distance) {
-		return new(Angle.InterpolateShortestDifference(start.AzimuthalOffset, end.AzimuthalOffset, distance), Angle.InterpolateShortestDifference(start.PolarOffset, end.PolarOffset, distance));
+		return new(Angle.InterpolateShortestPath(start.AzimuthalOffset, end.AzimuthalOffset, distance), Angle.InterpolateShortestPath(start.PolarOffset, end.PolarOffset, distance));
 	}
 	public static SphericalTranslation InterpolateArithmetically(SphericalTranslation start, SphericalTranslation end, float distance) {
 		return new(Angle.Interpolate(start.AzimuthalOffset, end.AzimuthalOffset, distance), Angle.Interpolate(start.PolarOffset, end.PolarOffset, distance));

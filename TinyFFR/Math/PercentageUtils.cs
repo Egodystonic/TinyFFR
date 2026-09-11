@@ -5,7 +5,13 @@ using System.Globalization;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// A static class containing utility methods for working with percentage values.
+/// </summary>
 public static class PercentageUtils {
+	/// <summary>
+	/// The suffix used for all percentage string conversions (<c>%</c>).
+	/// </summary>
 	public const string StringSuffix = "%";
 	
 	public static string ConvertFractionToPercentageString(XYPair<float> fraction, string? format = null, IFormatProvider? formatProvider = null) {

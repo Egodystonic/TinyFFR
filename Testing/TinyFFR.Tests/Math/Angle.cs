@@ -708,31 +708,31 @@ class AngleTest {
 
 	[Test]
 	public void ShouldCorrectlyInterpolateShortestDifference() {
-		AssertToleranceEquals(315f, Angle.InterpolateShortestDifference(270f, 0f, 0.5f), TestTolerance);
+		AssertToleranceEquals(315f, Angle.InterpolateShortestPath(270f, 0f, 0.5f), TestTolerance);
 
-		AssertToleranceEquals(180f, Angle.InterpolateShortestDifference(-100f, 100f, 0.5f), TestTolerance);
-		AssertToleranceEquals(260f, Angle.InterpolateShortestDifference(-100f, 100f, 0f), TestTolerance);
-		AssertToleranceEquals(100f, Angle.InterpolateShortestDifference(-100f, 100f, 1f), TestTolerance);
-		AssertToleranceEquals(340f, Angle.InterpolateShortestDifference(-100f, 100f, -0.5f), TestTolerance);
-		AssertToleranceEquals(20f, Angle.InterpolateShortestDifference(-100f, 100f, 1.5f), TestTolerance);
+		AssertToleranceEquals(180f, Angle.InterpolateShortestPath(-100f, 100f, 0.5f), TestTolerance);
+		AssertToleranceEquals(260f, Angle.InterpolateShortestPath(-100f, 100f, 0f), TestTolerance);
+		AssertToleranceEquals(100f, Angle.InterpolateShortestPath(-100f, 100f, 1f), TestTolerance);
+		AssertToleranceEquals(340f, Angle.InterpolateShortestPath(-100f, 100f, -0.5f), TestTolerance);
+		AssertToleranceEquals(20f, Angle.InterpolateShortestPath(-100f, 100f, 1.5f), TestTolerance);
 
-		AssertToleranceEquals(30f, Angle.InterpolateShortestDifference(30f, 30f, -1f), TestTolerance);
-		AssertToleranceEquals(30f, Angle.InterpolateShortestDifference(30f, 30f, 0f), TestTolerance);
-		AssertToleranceEquals(30f, Angle.InterpolateShortestDifference(30f, 30f, 0.5f), TestTolerance);
-		AssertToleranceEquals(30f, Angle.InterpolateShortestDifference(30f, 30f, 1f), TestTolerance);
-		AssertToleranceEquals(30f, Angle.InterpolateShortestDifference(30f, 30f, 2f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.InterpolateShortestPath(30f, 30f, -1f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.InterpolateShortestPath(30f, 30f, 0f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.InterpolateShortestPath(30f, 30f, 0.5f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.InterpolateShortestPath(30f, 30f, 1f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.InterpolateShortestPath(30f, 30f, 2f), TestTolerance);
 
-		AssertToleranceEquals(180f, Angle.InterpolateShortestDifference(-100f + 360f, 100f - 360f, 0.5f), TestTolerance);
-		AssertToleranceEquals(260f, Angle.InterpolateShortestDifference(-100f + 360f, 100f - 360f, 0f), TestTolerance);
-		AssertToleranceEquals(100f, Angle.InterpolateShortestDifference(-100f + 360f, 100f - 360f, 1f), TestTolerance);
-		AssertToleranceEquals(340f, Angle.InterpolateShortestDifference(-100f + 360f, 100f - 360f, -0.5f), TestTolerance);
-		AssertToleranceEquals(20f, Angle.InterpolateShortestDifference(-100f + 360f, 100f - 360f, 1.5f), TestTolerance);
+		AssertToleranceEquals(180f, Angle.InterpolateShortestPath(-100f + 360f, 100f - 360f, 0.5f), TestTolerance);
+		AssertToleranceEquals(260f, Angle.InterpolateShortestPath(-100f + 360f, 100f - 360f, 0f), TestTolerance);
+		AssertToleranceEquals(100f, Angle.InterpolateShortestPath(-100f + 360f, 100f - 360f, 1f), TestTolerance);
+		AssertToleranceEquals(340f, Angle.InterpolateShortestPath(-100f + 360f, 100f - 360f, -0.5f), TestTolerance);
+		AssertToleranceEquals(20f, Angle.InterpolateShortestPath(-100f + 360f, 100f - 360f, 1.5f), TestTolerance);
 
-		AssertToleranceEquals(180f, Angle.InterpolateShortestDifference(-100f - 360f, 100f + 360f, 0.5f), TestTolerance);
-		AssertToleranceEquals(260f, Angle.InterpolateShortestDifference(-100f - 360f, 100f + 360f, 0f), TestTolerance);
-		AssertToleranceEquals(100f, Angle.InterpolateShortestDifference(-100f - 360f, 100f + 360f, 1f), TestTolerance);
-		AssertToleranceEquals(340f, Angle.InterpolateShortestDifference(-100f - 360f, 100f + 360f, -0.5f), TestTolerance);
-		AssertToleranceEquals(20f, Angle.InterpolateShortestDifference(-100f - 360f, 100f + 360f, 1.5f), TestTolerance);
+		AssertToleranceEquals(180f, Angle.InterpolateShortestPath(-100f - 360f, 100f + 360f, 0.5f), TestTolerance);
+		AssertToleranceEquals(260f, Angle.InterpolateShortestPath(-100f - 360f, 100f + 360f, 0f), TestTolerance);
+		AssertToleranceEquals(100f, Angle.InterpolateShortestPath(-100f - 360f, 100f + 360f, 1f), TestTolerance);
+		AssertToleranceEquals(340f, Angle.InterpolateShortestPath(-100f - 360f, 100f + 360f, -0.5f), TestTolerance);
+		AssertToleranceEquals(20f, Angle.InterpolateShortestPath(-100f - 360f, 100f + 360f, 1.5f), TestTolerance);
 	}
 
 	[Test]

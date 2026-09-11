@@ -72,6 +72,9 @@ service that:
 5. makes publicly available a repository, fork, or codebase that
    is derived from the Software (and its source code) and substitutes wholly or partly for the software (including-but-not-limited-to making available features or integrations not otherwise provided by the software) (deliberately or incidentally).
    
+6. makes publicly available a repository, fork, or codebase that
+   is generated with the assistance of an LLM/AI explicitly or implicitly instructed to use TinyFFR as a reference or training data, even if the resultant code does not resemble that of TinyFFR
+   
 
 Permitted Purposes specifically include using the Software:
 
