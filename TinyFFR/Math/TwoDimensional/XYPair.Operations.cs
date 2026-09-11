@@ -43,6 +43,9 @@ partial struct XYPair<T> :
 		}
 	}
 
+	/// <summary>
+	/// Returns the length from <see cref="XYPair{T}.Zero"/> when considering this XYPair as a 2D vector.
+	/// </summary>
 	public float Length {
 		get => ToVector2().Length();
 	}
@@ -50,10 +53,16 @@ partial struct XYPair<T> :
 		get => ToVector2().LengthSquared();
 	}
 
+	/// <summary>
+	/// Returns the area of the rectangle when considering this XYPair as lengths/dimensions (i.e. this returns <c>X * Y</c>).
+	/// </summary>
 	public T Area {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => T.Abs(X * Y);
 	}
+	/// <summary>
+	/// Returns the ratio of X by Y (e.g. this returns <c>X / Y</c>); or <c>null</c> if Y is zero.
+	/// </summary>
 	public float? Ratio {
 		get {
 			var v2 = ToVector2();
@@ -115,6 +124,10 @@ partial struct XYPair<T> :
 
 	#region Interactions w/ XYPair
 	public float DistanceSquaredFrom(XYPair<T> pair) => Vector2.DistanceSquared(ToVector2(), pair.ToVector2());
+	/// <summary>
+	/// Returns the distance from <paramref name="pair"/> when considering both XYPairs as 2D points.
+	/// </summary>
+	/// <param name="pair">The XYPair to measure the 2D euclidean distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(XYPair<T> pair) => Vector2.Distance(ToVector2(), pair.ToVector2());
 	#endregion

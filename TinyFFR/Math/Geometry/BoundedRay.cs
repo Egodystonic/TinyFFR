@@ -6,44 +6,69 @@ using System.Diagnostics;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Represents a finite-length line with a <see cref="StartPoint"/> and an <see cref="EndPoint"/>.
+/// </summary>
 [DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
 public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay, BoundedRay>, IDescriptiveStringProvider {
 	readonly Location _startPoint;
 	readonly Vect _vect;
 
+	/// <summary>
+	/// Where in space this ray starts.
+	/// </summary>
 	public Location StartPoint {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _startPoint;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _startPoint = value;
 	}
+	/// <summary>
+	/// The direction from <see cref="StartPoint"/> to <see cref="EndPoint"/>.
+	/// Can be <see cref="Direction.None"/> if <see cref="StartPoint"/> and <see cref="EndPoint"/> are the same.
+	/// </summary>
 	public Direction Direction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _vect.Direction;
 	}
+	/// <summary>
+	/// The distance between <see cref="StartPoint"/> and <see cref="EndPoint"/>.
+	/// </summary>
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _vect.Length;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _vect = _vect.WithLength(value);
 	}
+	/// <summary>
+	/// The distance between <see cref="StartPoint"/> and <see cref="EndPoint"/>, squared.
+	/// </summary>
 	public float LengthSquared {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _vect.LengthSquared;
 	}
+	/// <summary>
+	/// The <see cref="Vect"/> that when added to <see cref="StartPoint"/> returns <see cref="EndPoint"/>.
+	/// </summary>
 	public Vect StartToEndVect {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _vect;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _vect = value;
 	}
+	/// <summary>
+	/// Where in space this ray ends.
+	/// </summary>
 	public Location EndPoint {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _startPoint + _vect;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _vect = value - _startPoint;
 	}
+	/// <summary>
+	/// The middle point of this ray (i.e. exactly half way between <see cref="StartPoint"/> and <see cref="EndPoint"/>).
+	/// </summary>
 	public Location MiddlePoint {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _startPoint + _vect * 0.5f;

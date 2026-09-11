@@ -2,6 +2,10 @@
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// A DimensionConverter helps you convert <see cref="Location"/>s, <see cref="Vect"/>s, and <see cref="Direction"/>s back and forward
+/// between 3D space and 2D space, using a given plane to define the 2D co-ordinate system in the 3D world. 
+/// </summary>
 public readonly record struct DimensionConverter {
 	public Direction XBasis { get; }
 	public Direction YBasis { get; }

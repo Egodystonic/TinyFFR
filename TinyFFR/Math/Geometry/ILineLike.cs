@@ -5,6 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Interface used to represent any line-like geometric primitive (e.g. <see cref="Line"/>, <see cref="Ray"/>, <see cref="BoundedRay"/>).
+/// </summary>
 public partial interface ILineLike :
 	IMathPrimitive,
 	
@@ -30,29 +33,122 @@ public partial interface ILineLike :
 	IClosestConvexShapePointsDiscoverable, 
 	IConvexShapeDistanceMeasurable,
 	IConvexShapeIntersectable<ConvexShapeLineIntersection> {
+	/// <summary>
+	/// The default thickness used for many line-like geometry operations.
+	/// </summary>
+	/// <remarks>
+	/// A non-zero thickness is often required for meaningful test operations on line-likes (such as intersection tests)
+	/// because the finite granularity of floating-point storage does not generally allow for true "line equation" math
+	/// to work correctly.
+	/// </remarks>
 	public const float DefaultLineThickness = 0.01f;
+	/// <summary>
+	/// The default tolerance (in degrees) used for parallelism, orthogonality, and colinearity tests between line-likes.
+	/// </summary>
 	public const float DefaultParallelOrthogonalColinearTestApproximationDegrees = Direction.DefaultParallelOrthogonalTestApproximationDegrees;
 
+	/// <summary>
+	/// Where in space this line-like starts.
+	/// </summary>
 	Location StartPoint { get; }
+	/// <summary>
+	/// Which direction in space this line-like travels along.
+	/// </summary>
 	Direction Direction { get; }
+	/// <summary>
+	/// If true, this line-like extends infinitely far in both its stated <see cref="Direction"/> and in the reverse direction.
+	/// </summary>
 	bool IsUnboundedInBothDirections { get; }
+	/// <summary>
+	/// If true, this line-like has a finite length. Otherwise it extends infinitely far in at least one direction (but not necessarily two).
+	/// </summary>
 	[MemberNotNullWhen(true, nameof(Length), nameof(LengthSquared), nameof(StartToEndVect), nameof(EndPoint))]
 	bool IsFiniteLength { get; }
+	/// <summary>
+	/// The length of this line-like, or <c>null</c> if its length is non-finite.
+	/// </summary>
 	[MemberNotNull(nameof(LengthSquared), nameof(StartToEndVect), nameof(EndPoint))]
 	float? Length { get; }
+	/// <summary>
+	/// The length of this line-like squared, or <c>null</c> if its length is non-finite.
+	/// </summary>
 	[MemberNotNull(nameof(Length), nameof(StartToEndVect), nameof(EndPoint))]
 	float? LengthSquared { get; }
+	/// <summary>
+	/// The <see cref="Vect"/> representing the displacement from the <see cref="StartPoint"/> of this line-like to its <see cref="EndPoint"/>,
+	/// or <c>null</c> if the line-like has non-finite length.
+	/// </summary>
 	[MemberNotNull(nameof(Length), nameof(LengthSquared), nameof(EndPoint))]
 	Vect? StartToEndVect { get; }
+	/// <summary>
+	/// Where in space this line-like ends, or <c>null</c> if it has no end point.
+	/// </summary>
 	[MemberNotNull(nameof(Length), nameof(LengthSquared), nameof(StartToEndVect))]
 	Location? EndPoint { get; }
 
+	/// <summary>
+	/// Determines whether the given distance along <see cref="Direction"/> from <see cref="StartPoint"/>
+	/// is within the bounds of this line.
+	/// </summary>
+	/// <remarks>
+	/// Specifically, this method measures <paramref name="signedDistanceFromStart"/> along the
+	/// line's <see cref="Direction"/>; where <c>0f</c> is assumed to be the line's <see cref="StartPoint"/>.
+	/// A positive value extends along <see cref="Direction"/>, a negative value extends in reverse.
+	/// </remarks>
+	/// <param name="signedDistanceFromStart">The distance along this line to travel. Positive, negative, zero, and infinite values are permitted.</param>
+	/// <returns>Whether the point at the given distance along the line extends beyond it.</returns>
 	bool DistanceIsWithinLineBounds(float signedDistanceFromStart);
+	/// <summary>
+	/// Clamps the given distance to the bounds of this line.
+	/// </summary>
+	/// <remarks>
+	/// Specifically, this method measures <paramref name="signedDistanceFromStart"/> along the
+	/// line's <see cref="Direction"/>; where <c>0f</c> is assumed to be the line's <see cref="StartPoint"/>.
+	/// A positive value extends along <see cref="Direction"/>, a negative value extends in reverse.
+	/// </remarks>
+	/// <param name="signedDistanceFromStart">The distance along this line to travel. Positive, negative, zero, and infinite values are permitted.</param>
+	/// <returns>If the calculated resultant point is beyond the extent of this line, the returned value will
+	/// be clamped to the nearest value that produces a point still on the line. Otherwise, <paramref name="signedDistanceFromStart"/>
+	/// is returned unaltered.</returns>
 	float BindDistance(float signedDistanceFromStart);
+	/// <summary>
+	/// Binds <paramref name="signedDistanceFromStart"/> via <see cref="BindDistance"/> (clamping the distance such that the resultant <see cref="Location"/>
+	/// is guaranteed to be within the bounds of this line); and then
+	/// returns the location of the point on this line found by travelling the bound distance from <see cref="StartPoint"/> along this line's <see cref="Direction"/>.
+	/// </summary>
+	/// <param name="signedDistanceFromStart">The distance along this line to travel. Positive, negative, and zero values are permitted.</param>
+	/// <seealso cref="UnboundedLocationAtDistance"/>
+	/// <seealso cref="LocationAtDistanceOrNull"/>
 	Location BoundedLocationAtDistance(float signedDistanceFromStart);
+	/// <summary>
+	/// Returns the location of the point on this line found by travelling the requested distance from <see cref="StartPoint"/> along this line's <see cref="Direction"/>. 
+	/// </summary>
+	/// <param name="signedDistanceFromStart">The distance along this line to travel. Positive, negative, and zero values are permitted.</param>
+	/// <seealso cref="BoundedLocationAtDistance"/>
+	/// <seealso cref="LocationAtDistanceOrNull"/>
 	Location UnboundedLocationAtDistance(float signedDistanceFromStart);
+	/// <summary>
+	/// Returns the same as <see cref="UnboundedLocationAtDistance"/> <i>unless</i> the given distance would return a location outside the extents of this line;
+	/// in which case <c>null</c> is returned instead.
+	/// </summary>
+	/// <param name="signedDistanceFromStart">The distance along this line to travel. Positive, negative, and zero values are permitted.</param>
+	/// <seealso cref="BoundedLocationAtDistance"/>
+	/// <seealso cref="UnboundedLocationAtDistance"/>
 	Location? LocationAtDistanceOrNull(float signedDistanceFromStart);
+	/// <summary>
+	/// Returns the distance along this line that specifies the location closest to the input <paramref name="point"/>.
+	/// If an endpoint of this line is closest to the point, the distance will indicate that endpoint. In other words,
+	/// the returned distance is guaranteed to be within the actual extents of this line.
+	/// </summary>
+	/// <param name="point">The point to get the distance on this line nearest to.</param>
+	/// <seealso cref="UnboundedDistanceAtPointClosestTo"/>
 	float BoundedDistanceAtPointClosestTo(Location point);
+	/// <summary>
+	/// Returns the distance along this line that specifies the location closest to the input <paramref name="point"/>.
+	/// Note that the returned distance may be beyond the extents of the line.
+	/// </summary>
+	/// <param name="point">The point to get the distance on this line nearest to.</param>
+	/// <seealso cref="BoundedDistanceAtPointClosestTo"/>
 	float UnboundedDistanceAtPointClosestTo(Location point);
 
 	Location PointClosestToOrigin();
@@ -122,7 +218,6 @@ public interface ILineLike<TSelf> : ILineLike,
 	IInvertible<TSelf>,
 	IInterpolatable<TSelf>,
 	ITranslatable<TSelf>,
-	IRotatable<TSelf>,
 	IPointRotatable<TSelf>,
 	IProjectable<TSelf, Plane>,
 	IParallelizable<TSelf, Plane>,

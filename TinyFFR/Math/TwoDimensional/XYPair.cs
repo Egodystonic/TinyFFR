@@ -7,6 +7,11 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Represents a pair of numbers that can be interpreted as a vector, location, direction,
+/// or simply as a pair of related values. 
+/// </summary>
+/// <typeparam name="T">The numeric type for the paired numbers (usually <see cref="float"/> or <see cref="int"/>).</typeparam>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : unmanaged, INumber<T> {
 	public static readonly XYPair<T> Zero = new(T.Zero, T.Zero);

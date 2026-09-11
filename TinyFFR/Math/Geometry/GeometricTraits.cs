@@ -270,11 +270,21 @@ interface IContainable<in TSelf, in TOther> : IContainable<TOther> where TOther 
 #endregion
 
 #region Closest point discoverable
+/// <summary>
+/// Trait interface used to mark a mathematical or geometric primitive as capable of calculating
+/// which point within it is closest to another element of type <typeparamref name="TOther"/>.
+/// </summary>
+/// <typeparam name="TOther">The other element type capable of being tested against.</typeparam>
 public interface IClosestEndogenousPointDiscoverable<in TOther> where TOther : allows ref struct {
 	Location PointClosestTo(TOther element);
 }
 public interface ILineClosestEndogenousPointDiscoverable : IClosestEndogenousPointDiscoverable<Line>, IClosestEndogenousPointDiscoverable<Ray>, IClosestEndogenousPointDiscoverable<BoundedRay>;
 interface IClosestEndogenousPointDiscoverable<in TSelf, in TOther> : IClosestEndogenousPointDiscoverable<TOther> where TOther : IClosestExogenousPointDiscoverable<TSelf>, allows ref struct where TSelf : allows ref struct;
+/// <summary>
+/// Trait interface used to mark a mathematical or geometric primitive as capable of calculating
+/// which point on another element of type <typeparamref name="TOther"/> is closest to it.
+/// </summary>
+/// <typeparam name="TOther">The other element type capable of being tested against.</typeparam>
 public interface IClosestExogenousPointDiscoverable<in TOther> where TOther : allows ref struct {
 	Location ClosestPointOn(TOther element);
 }
