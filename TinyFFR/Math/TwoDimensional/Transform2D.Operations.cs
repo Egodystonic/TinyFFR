@@ -15,6 +15,7 @@ partial struct Transform2D :
 
 	static Transform2D IMultiplicativeIdentity<Transform2D, Transform2D>.MultiplicativeIdentity => None;
 
+	/// <inheritdoc/>
 	public bool IsPhysicallyValid {
 		get {
 			var componentCopy = this;
@@ -27,8 +28,18 @@ partial struct Transform2D :
 		}
 	}
 
+	/// <summary>
+	/// Applies this transform to <paramref name="transformable"/>; equivalent to <c>transformable.TransformedBy(this)</c>.
+	/// </summary>
+	/// <typeparam name="T">The type of the value to transform.</typeparam>
+	/// <param name="transformable">The value to transform.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public T AppliedTo<T>(T transformable) where T : ITransformable2D<T> => transformable.TransformedBy(this);
+	/// <summary>
+	/// Applies the inverse of this transform to <paramref name="transformable"/>; equivalent to <c>transformable.TransformedByInverseOf(this)</c>.
+	/// </summary>
+	/// <typeparam name="T">The type of the value to transform.</typeparam>
+	/// <param name="transformable">The value to transform.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public T InverseAppliedTo<T>(T transformable) where T : ITransformable2D<T> => transformable.TransformedByInverseOf(this);
 
@@ -42,9 +53,18 @@ partial struct Transform2D :
 	Transform2D ITranslatable2D<Transform2D>.MovedBy(XYPair<float> v) => this * FromTranslationOnly(v);
 
 	static Transform2D IMultiplyOperators<Transform2D, Transform2D, Transform2D>.operator *(Transform2D left, Transform2D right) => left.TransformedBy(right);
+	/// <summary>
+	/// Combines <paramref name="left"/> and <paramref name="right"/> into a single transform; equivalent to <c>left.TransformedBy(right)</c>.
+	/// </summary>
+	/// <param name="left">The transform to apply first.</param>
+	/// <param name="right">The transform to apply on top of <paramref name="left"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform2D operator *(Transform2D left, Transform2D right) => left.TransformedBy(right);
 	static Transform2D ITransformable2D<Transform2D>.operator *(Transform2D left, Transform2D right) => left.TransformedBy(right);
+	/// <summary>
+	/// Combines this transform with <paramref name="transform"/>, applying <paramref name="transform"/> on top of this one.
+	/// </summary>
+	/// <param name="transform">The transform to apply on top of this one.</param>
 	public Transform2D TransformedBy(Transform2D transform) {
 		var canDoSimpleTranslationModification =
 			!IsInternallyRepresentedByMatrix &&
@@ -56,34 +76,66 @@ partial struct Transform2D :
 			? WithAdditionalTranslation(transform.Translation)
 			: ToMatrix() * transform.ToMatrix();
 	}
+	/// <summary>
+	/// Combines this transform with the inverse of <paramref name="transform"/>, applying that inverse on top of this one.
+	/// </summary>
+	/// <param name="transform">The transform whose inverse should be applied on top of this one.</param>
 	public Transform2D TransformedByInverseOf(Transform2D transform) {
 		return ToMatrix() * MathUtils.ForceInvertMatrix(transform.ToMatrix());
 	}
 	#endregion
 
 	#region Scaling
+	/// <summary>
+	/// Returns this transform with <paramref name="scalar"/> added to both axes of <see cref="Scaling"/>.
+	/// </summary>
+	/// <param name="scalar">The amount to add to <see cref="Scaling"/>'s X and Y components.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithScalingAdjustedBy(float scalar) => this with { Scaling = Scaling + new XYPair<float>(scalar) };
+	/// <summary>
+	/// Returns this transform with <paramref name="vect"/> added to <see cref="Scaling"/>, independently per axis.
+	/// </summary>
+	/// <param name="vect">The per-axis amounts to add to <see cref="Scaling"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithScalingAdjustedBy(XYPair<float> vect) => this with { Scaling = Scaling + vect };
 
+	/// <summary>
+	/// Returns this transform with <see cref="Scaling"/> multiplied uniformly by <paramref name="scalar"/>.
+	/// </summary>
+	/// <param name="scalar">The scale factor.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithScalingMultipliedBy(float scalar) => this with { Scaling = Scaling * scalar };
+	/// <summary>
+	/// Returns this transform with <see cref="Scaling"/> multiplied independently per axis by <paramref name="vect"/>'s corresponding component.
+	/// </summary>
+	/// <param name="vect">The per-axis scale factors.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithScalingMultipliedBy(XYPair<float> vect) => this with { Scaling = Scaling * vect };
 	#endregion
 
 	#region Rotation
+	/// <summary>
+	/// Returns this transform with <paramref name="rotation"/> added to <see cref="Rotation"/>.
+	/// </summary>
+	/// <remarks>
+	/// A positive <paramref name="rotation"/> turns anticlockwise, matching <see cref="Rotation"/>'s own convention.
+	/// </remarks>
+	/// <param name="rotation">The additional rotation to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithAdditionalRotation(Angle rotation) => this with { Rotation = Rotation + rotation };
 	#endregion
 
 	#region Translation
+	/// <summary>
+	/// Returns this transform with <paramref name="translation"/> added to <see cref="Translation"/>.
+	/// </summary>
+	/// <param name="translation">The additional translation to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithAdditionalTranslation(XYPair<float> translation) => this with { Translation = Translation + translation };
 	#endregion
 
 	#region Clamping and Interpolation
+	/// <inheritdoc/>
 	public static Transform2D Interpolate(Transform2D start, Transform2D end, float distance) {
 		CoerceToComponentRepresentation(ref start);
 		CoerceToComponentRepresentation(ref end);
@@ -94,6 +146,7 @@ partial struct Transform2D :
 		);
 	}
 
+	/// <inheritdoc/>
 	public Transform2D Clamp(Transform2D min, Transform2D max) {
 		CoerceToComponentRepresentation(ref min);
 		CoerceToComponentRepresentation(ref max);

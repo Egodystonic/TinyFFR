@@ -4,47 +4,71 @@
 namespace Egodystonic.TinyFFR;
 
 partial struct Sphere {
+	/// <inheritdoc/>
 	public bool IsPhysicallyValid => _radius.IsPositiveAndFinite();
-	
+
+	/// <summary>
+	/// The smallest axis-aligned <see cref="Cuboid"/>, centred on this sphere's own local origin, that fully encloses it.
+	/// </summary>
 	public Cuboid SmallestEnclosingCube {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(Diameter);
 	}
+	/// <summary>
+	/// The largest axis-aligned <see cref="Cuboid"/>, centred on this sphere's own local origin, that fits entirely within it.
+	/// </summary>
 	public Cuboid LargestEnclosedCube {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(Diameter * MathUtils.SquareRootOfThreeReciprocal);
 	}
 
 	#region Scaling
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Sphere operator *(Sphere descriptor, float scalar) => descriptor.ScaledBy(scalar);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Sphere operator /(Sphere descriptor, float scalar) => new(descriptor.Radius / scalar);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Sphere operator *(float scalar, Sphere descriptor) => descriptor.ScaledBy(scalar);
+	/// <summary>
+	/// Returns this sphere with its <see cref="Radius"/> multiplied by <paramref name="scalar"/>.
+	/// </summary>
+	/// <param name="scalar">The scale factor. Must be non-negative for the result to be physically valid.</param>
 	public Sphere ScaledBy(float scalar) => new(Radius * scalar);
 	#endregion
 
 	#region Distance From / Containment (Location & Line-Like)
+	/// <inheritdoc/>
 	public float DistanceFrom(Location location) => MathF.Max(0f, ((Vect) location).Length - Radius);
+	/// <inheritdoc/>
 	public float SurfaceDistanceFrom(Location location) => MathF.Abs(((Vect) location).Length - Radius);
 	float IDistanceMeasurable<Location>.DistanceSquaredFrom(Location location) { var sqrt = DistanceFrom(location); return sqrt * sqrt; }
 	float IConvexShape.SurfaceDistanceSquaredFrom(Location location) { var sqrt = SurfaceDistanceFrom(location); return sqrt * sqrt; }
 
+	/// <inheritdoc/>
 	public float DistanceFrom(Line line) => MathF.Max(0f, line.DistanceFromOrigin() - Radius);
+	/// <inheritdoc/>
 	public float DistanceFrom(Ray ray) => MathF.Max(0f, ray.DistanceFromOrigin() - Radius);
+	/// <inheritdoc/>
 	public float DistanceFrom(BoundedRay ray) => MathF.Max(0f, ray.DistanceFromOrigin() - Radius);
 	float IDistanceMeasurable<Line>.DistanceSquaredFrom(Line line) { var sqrt = DistanceFrom(line); return sqrt * sqrt; }
 	float IDistanceMeasurable<Ray>.DistanceSquaredFrom(Ray ray) { var sqrt = DistanceFrom(ray); return sqrt * sqrt; }
 	float IDistanceMeasurable<BoundedRay>.DistanceSquaredFrom(BoundedRay ray) { var sqrt = DistanceFrom(ray); return sqrt * sqrt; }
+	/// <inheritdoc/>
 	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFrom(line.PointClosestToSurfaceOf(this));
+	/// <inheritdoc/>
 	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFrom(ray.PointClosestToSurfaceOf(this));
+	/// <inheritdoc/>
 	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFrom(ray.PointClosestToSurfaceOf(this));
 	float IConvexShape.SurfaceDistanceSquaredFrom(Line line) { var sqrt = SurfaceDistanceFrom(line); return sqrt * sqrt; }
 	float IConvexShape.SurfaceDistanceSquaredFrom(Ray ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
 	float IConvexShape.SurfaceDistanceSquaredFrom(BoundedRay ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
 
+	/// <inheritdoc/>
 	public bool Contains(Location location) => ((Vect) location).LengthSquared <= RadiusSquared;
+	/// <inheritdoc/>
 	public bool Contains(BoundedRay ray) => Contains(ray.StartPoint) && Contains(ray.EndPoint);
 	#endregion
 
@@ -76,42 +100,63 @@ partial struct Sphere {
 		else return line.PointClosestTo(intersectionPointOne);
 	}
 
+	/// <inheritdoc/>
 	public Location PointClosestTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;
 		if (vectFromLocToCentre.LengthSquared <= RadiusSquared) return location;
 		else return location - vectFromLocToCentre.WithLengthDecreasedBy(Radius);
 	}
+	/// <inheritdoc/>
 	public Location SurfacePointClosestTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;
 		if (vectFromLocToCentre == Vect.Zero) return new(0f, Radius, 0f);
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
-	public Location FastSurfacePointClosestTo(Location location) { // TODO xmldoc that if location == Origin this will return Origin
+	/// <summary>
+	/// Executes the same function as <see cref="SurfacePointClosestTo(Location)"/> but skips the check for whether <paramref name="location"/> is exactly at this sphere's centre.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes <paramref name="location"/> is not exactly <see cref="Location.Origin"/>. If it is, this function returns <see cref="Location.Origin"/> itself (rather than an arbitrary point on the surface, as <see cref="SurfacePointClosestTo(Location)"/> would).
+	/// </remarks>
+	/// <param name="location">The location to measure from.</param>
+	public Location FastSurfacePointClosestTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Line line) => line.PointClosestToOrigin();
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Ray ray) => ray.PointClosestToOrigin();
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(BoundedRay ray) => ray.PointClosestToOrigin();
+	/// <inheritdoc/>
 	public Location PointClosestTo(Line line) => (Location) ((Vect) line.PointClosestToOrigin()).WithMaxLength(Radius);
+	/// <inheritdoc/>
 	public Location PointClosestTo(Ray ray) => (Location) ((Vect) ray.PointClosestToOrigin()).WithMaxLength(Radius);
+	/// <inheritdoc/>
 	public Location PointClosestTo(BoundedRay ray) => (Location) ((Vect) ray.PointClosestToOrigin()).WithMaxLength(Radius);
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location SurfacePointClosestTo(Line line) => SurfacePointClosestToLineLike(line);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location SurfacePointClosestTo(Ray ray) => SurfacePointClosestToLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location SurfacePointClosestTo(BoundedRay ray) => SurfacePointClosestToLineLike(ray);
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointToSurfaceOn(Line line) => ClosestPointToSurfaceOnLineLike(line);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointToSurfaceOn(Ray ray) => ClosestPointToSurfaceOnLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointToSurfaceOn(BoundedRay ray) => ClosestPointToSurfaceOnLineLike(ray);
 	#endregion
@@ -179,24 +224,45 @@ partial struct Sphere {
 		)!.Value;
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsIntersectedBy(Line line) => IsIntersectedByLineLike(line);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsIntersectedBy(Ray ray) => IsIntersectedByLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsIntersectedBy(BoundedRay ray) => IsIntersectedByLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith(Line line) => IntersectionWithLineLike(line);
+	/// <summary>
+	/// <inheritdoc/>
+	/// </summary>
+	/// <remarks>
+	/// Since <paramref name="ray"/> only extends in one direction, <see cref="ConvexShapeLineIntersection.First"/> (if present) is always the intersection point nearest <paramref name="ray"/>'s start.
+	/// </remarks>
+	/// <param name="ray">The ray to test against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray);
+	/// <summary>
+	/// <inheritdoc/>
+	/// </summary>
+	/// <remarks>
+	/// Since <paramref name="ray"/> only extends in one direction (from its start towards its end), <see cref="ConvexShapeLineIntersection.First"/> (if present) is always the intersection point nearest <paramref name="ray"/>'s start.
+	/// </remarks>
+	/// <param name="ray">The ray to test against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => FastIntersectionWithLineLike(line);
+	/// <inheritdoc cref="IntersectionWith(Ray)" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => FastIntersectionWithLineLike(ray);
+	/// <inheritdoc cref="IntersectionWith(BoundedRay)" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => FastIntersectionWithLineLike(ray);
 	#endregion
 
 	#region Incident Angle Measurement / Reflection (Line-Like)
@@ -239,23 +305,31 @@ partial struct Sphere {
 		return (reflectionPoint, new Plane(reflectionPoint.AsVect().Direction, Radius).FastReflectionOf(line.Direction));
 	}
 
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(Line line) => IncidentAngleToLineLike(line);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(Ray ray) => IncidentAngleToLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(BoundedRay ray) => IncidentAngleToLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle FastIncidentAngleWith(Line line) => FastIncidentAngleToLineLike(line);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle FastIncidentAngleWith(Ray ray) => FastIncidentAngleToLineLike(ray);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle FastIncidentAngleWith(BoundedRay ray) => FastIncidentAngleToLineLike(ray);
 
+	/// <inheritdoc/>
 	public Ray? ReflectionOf(Ray ray) {
 		var reflection = ReflectionOfLineLike(ray);
 		return reflection != null ? new Ray(reflection.Value.ReflectionPoint, reflection.Value.ReflectionDir) : null;
 	}
+	/// <inheritdoc/>
 	public BoundedRay? ReflectionOf(BoundedRay ray) {
 		var reflection = ReflectionOfLineLike(ray);
 		return reflection != null
@@ -263,10 +337,12 @@ partial struct Sphere {
 			: null;
 	}
 
+	/// <inheritdoc/>
 	public Ray FastReflectionOf(Ray ray) {
 		var reflection = FastReflectionOfLineLike(ray);
 		return new Ray(reflection.ReflectionPoint, reflection.ReflectionDir);
 	}
+	/// <inheritdoc/>
 	public BoundedRay FastReflectionOf(BoundedRay ray) {
 		var reflection = FastReflectionOfLineLike(ray);
 		return new Ray(reflection.ReflectionPoint, reflection.ReflectionDir).ToBoundedRay(ray.Length - ray.UnboundedDistanceAtPointClosestTo(reflection.ReflectionPoint));
@@ -274,27 +350,38 @@ partial struct Sphere {
 	#endregion
 
 	#region Distance From / Closest Point / Intersection (Plane)
+	/// <summary>
+	/// Calculates the radius of the circle formed by slicing this sphere with a plane at the given <paramref name="distanceFromCenter"/> from this sphere's centre.
+	/// </summary>
+	/// <param name="distanceFromCenter">The (unsigned) distance from this sphere's centre to the slicing plane.</param>
+	/// <returns><c>0f</c> if <paramref name="distanceFromCenter"/> is at least <see cref="Radius"/> (i.e. the plane does not intersect the sphere); the circle's radius otherwise.</returns>
 	public float GetCircleRadiusAtDistanceFromCenter(float distanceFromCenter) => GetCircleRadiusAtDistanceFromCenterSquared(distanceFromCenter * distanceFromCenter);
 	float GetCircleRadiusAtDistanceFromCenterSquared(float distanceFromCenterSquared) {
 		var resultSquared = RadiusSquared - distanceFromCenterSquared;
 		return MathF.Sqrt(MathF.Max(0f, resultSquared));
 	}
 
+	/// <inheritdoc/>
 	public Location PointClosestTo(Plane plane) => (Location) ((Vect) plane.PointClosestToOrigin).WithMaxLength(Radius);
+	/// <inheritdoc/>
 	public Location ClosestPointOn(Plane plane) => plane.PointClosestToOrigin;
 
+	/// <inheritdoc/>
 	public float SignedDistanceFrom(Plane plane) {
 		var distanceFromSphereCentre = plane.SignedDistanceFromOrigin();
 		var distanceFromSphereSurface = distanceFromSphereCentre - MathF.Sign(distanceFromSphereCentre) * Radius;
 		return MathF.Sign(distanceFromSphereCentre) == MathF.Sign(distanceFromSphereSurface) ? distanceFromSphereSurface : 0f;
 	}
+	/// <inheritdoc/>
 	public float DistanceFrom(Plane plane) => MathF.Max(0f, plane.DistanceFromOrigin() - Radius);
+	/// <inheritdoc/>
 	public PlaneObjectRelationship RelationshipTo(Plane plane) => SignedDistanceFrom(plane) switch {
 		> 0f => PlaneObjectRelationship.PlaneFacesTowardsObject,
 		< 0f => PlaneObjectRelationship.PlaneFacesAwayFromObject,
 		_ => PlaneObjectRelationship.PlaneIntersectsObject
 	};
 
+	/// <inheritdoc/>
 	public bool TrySplit(Plane plane, out Location circleCentrePoint, out float circleRadius) {
 		circleCentrePoint = plane.PointClosestToOrigin;
 		var vectToPlane = (Vect) circleCentrePoint;
@@ -307,6 +394,7 @@ partial struct Sphere {
 		return true;
 	}
 
+	/// <inheritdoc/>
 	public Location SurfacePointClosestTo(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the simple closest point
 		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return PointClosestTo(plane);
@@ -315,6 +403,7 @@ partial struct Sphere {
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
 		return circleCentrePoint + centrePointDirection.AnyOrthogonal() * circleRadius;
 	}
+	/// <inheritdoc/>
 	public Location ClosestPointToSurfaceOn(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the plane's closest point to the sphere
 		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return plane.PointClosestToOrigin;
@@ -328,7 +417,9 @@ partial struct Sphere {
 	#endregion
 
 	#region Clamping and Interpolation
+	/// <inheritdoc/>
 	public Sphere Clamp(Sphere min, Sphere max) => new(Radius.AsReal().Clamp(min.Radius, max.Radius));
+	/// <inheritdoc/>
 	public static Sphere Interpolate(Sphere start, Sphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
 	#endregion
 

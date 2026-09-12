@@ -3,6 +3,9 @@
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// An enumeration of standard colours that can be implicitly converted to a <see cref="ColorVect"/>.
+/// </summary>
 public enum StandardColor : uint { // RGB 24-bit format
 	// Dielectrics, Format RealWorld<Name>
 	RealWorldCoal = 0x323232,

@@ -151,23 +151,95 @@ public partial interface ILineLike :
 	/// <seealso cref="BoundedDistanceAtPointClosestTo"/>
 	float UnboundedDistanceAtPointClosestTo(Location point);
 
+	/// <summary>
+	/// Returns the point on this line-like that is closest to the world origin (<see cref="Location.Origin"/>).
+	/// </summary>
 	Location PointClosestToOrigin();
+	/// <summary>
+	/// Determines whether this line-like contains <paramref name="location"/>, treating the line as having the given <paramref name="lineThickness"/>.
+	/// </summary>
+	/// <param name="location">The location to test.</param>
+	/// <param name="lineThickness">How far <paramref name="location"/> is permitted to be from the mathematically exact line and still be considered "contained". See <see cref="DefaultLineThickness"/> for more on why this is necessary.</param>
 	bool Contains(Location location, float lineThickness);
+	/// <summary>
+	/// Calculates the distance between this line-like and the world origin (<see cref="Location.Origin"/>).
+	/// </summary>
 	float DistanceFromOrigin();
+	/// <summary>
+	/// Calculates the square of the distance between this line-like and the world origin (<see cref="Location.Origin"/>).
+	/// </summary>
+	/// <remarks>
+	/// This is faster than <see cref="DistanceFromOrigin"/> as it avoids a square root, and is sufficient when you only need to compare distances rather than know the exact value.
+	/// </remarks>
 	float DistanceSquaredFromOrigin();
 
+	/// <summary>
+	/// Converts this line-like to a <see cref="Line"/> with the same <see cref="StartPoint"/> and <see cref="Direction"/>, discarding any length/bounds information.
+	/// </summary>
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
+	/// <summary>
+	/// Converts this line-like to a <see cref="Ray"/> with the same <see cref="StartPoint"/> and <see cref="Direction"/>, discarding any end-point information.
+	/// </summary>
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
+	/// <summary>
+	/// Converts this line-like to a <see cref="BoundedRay"/> with the same <see cref="StartPoint"/> and <see cref="Direction"/>, but with the given <paramref name="length"/>.
+	/// </summary>
+	/// <param name="length">The desired length of the resultant ray. Can be negative, in which case the resultant ray points opposite to this line-like's <see cref="Direction"/>.</param>
 	sealed BoundedRay CoerceToBoundedRay(float length) => new(StartPoint, Direction * length);
 
+	/// <summary>
+	/// Determines whether this line-like is exactly colinear with <paramref name="line"/> (i.e. they lie along the same infinite line, regardless of any length/bounds).
+	/// </summary>
+	/// <param name="line">The line to compare to.</param>
+	/// <param name="lineThickness">How far apart the two lines are permitted to be and still be considered colinear. See <see cref="DefaultLineThickness"/> for more on why this is necessary.</param>
 	bool IsExactlyColinearWith(Line line, float lineThickness);
+	/// <summary>
+	/// Determines whether this line-like is exactly colinear with <paramref name="ray"/> (i.e. they lie along the same infinite line, regardless of any length/bounds).
+	/// </summary>
+	/// <param name="ray">The ray to compare to.</param>
+	/// <param name="lineThickness">How far apart the two lines are permitted to be and still be considered colinear. See <see cref="DefaultLineThickness"/> for more on why this is necessary.</param>
 	bool IsExactlyColinearWith(Ray ray, float lineThickness);
+	/// <summary>
+	/// Determines whether this line-like is exactly colinear with <paramref name="ray"/> (i.e. they lie along the same infinite line, regardless of any length/bounds).
+	/// </summary>
+	/// <param name="ray">The ray to compare to.</param>
+	/// <param name="lineThickness">How far apart the two lines are permitted to be and still be considered colinear. See <see cref="DefaultLineThickness"/> for more on why this is necessary.</param>
 	bool IsExactlyColinearWith(BoundedRay ray, float lineThickness);
+	/// <summary>
+	/// Determines whether this line-like is colinear with <paramref name="line"/>, within <see cref="DefaultLineThickness"/> and <see cref="DefaultParallelOrthogonalColinearTestApproximationDegrees"/>.
+	/// </summary>
+	/// <param name="line">The line to compare to.</param>
 	bool IsApproximatelyColinearWith(Line line);
+	/// <summary>
+	/// Determines whether this line-like is colinear with <paramref name="ray"/>, within <see cref="DefaultLineThickness"/> and <see cref="DefaultParallelOrthogonalColinearTestApproximationDegrees"/>.
+	/// </summary>
+	/// <param name="ray">The ray to compare to.</param>
 	bool IsApproximatelyColinearWith(Ray ray);
+	/// <summary>
+	/// Determines whether this line-like is colinear with <paramref name="ray"/>, within <see cref="DefaultLineThickness"/> and <see cref="DefaultParallelOrthogonalColinearTestApproximationDegrees"/>.
+	/// </summary>
+	/// <param name="ray">The ray to compare to.</param>
 	bool IsApproximatelyColinearWith(BoundedRay ray);
+	/// <summary>
+	/// Determines whether this line-like is colinear with <paramref name="line"/>, within a given <paramref name="lineThickness"/> and angular <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="line">The line to compare to.</param>
+	/// <param name="lineThickness">How far apart the two lines are permitted to be and still be considered colinear.</param>
+	/// <param name="tolerance">How far away from exactly parallel the two lines' directions are permitted to be.</param>
 	bool IsApproximatelyColinearWith(Line line, float lineThickness, Angle tolerance);
+	/// <summary>
+	/// Determines whether this line-like is colinear with <paramref name="ray"/>, within a given <paramref name="lineThickness"/> and angular <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="ray">The ray to compare to.</param>
+	/// <param name="lineThickness">How far apart the two lines are permitted to be and still be considered colinear.</param>
+	/// <param name="tolerance">How far away from exactly parallel the two lines' directions are permitted to be.</param>
 	bool IsApproximatelyColinearWith(Ray ray, float lineThickness, Angle tolerance);
+	/// <summary>
+	/// Determines whether this line-like is colinear with <paramref name="ray"/>, within a given <paramref name="lineThickness"/> and angular <paramref name="tolerance"/>.
+	/// </summary>
+	/// <param name="ray">The ray to compare to.</param>
+	/// <param name="lineThickness">How far apart the two lines are permitted to be and still be considered colinear.</param>
+	/// <param name="tolerance">How far away from exactly parallel the two lines' directions are permitted to be.</param>
 	bool IsApproximatelyColinearWith(BoundedRay ray, float lineThickness, Angle tolerance);
 
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
@@ -213,6 +285,10 @@ public partial interface ILineLike :
 		return (thisDist, otherDist);
 	}
 }
+/// <summary>
+/// Extension of <see cref="ILineLike"/> that includes a self type parameter allowing for more functional definitions.
+/// </summary>
+/// <typeparam name="TSelf">The type that is actually implementing this interface.</typeparam>
 public interface ILineLike<TSelf> : ILineLike,
 	IMathPrimitive<TSelf>,
 	IInvertible<TSelf>,
@@ -232,9 +308,32 @@ public interface ILineLike<TSelf> : ILineLike,
 	IOrthogonalizable<TSelf, Ray>,
 	IOrthogonalizable<TSelf, BoundedRay>
 	where TSelf : struct, ILineLike<TSelf> {
+	/// <summary>
+	/// Returns this line-like after being turned by <paramref name="rotation"/>, around the point found by travelling <paramref name="signedPivotDistance"/> along this line-like from its <see cref="ILineLike.StartPoint"/>.
+	/// </summary>
+	/// <param name="rotation">The rotation to apply.</param>
+	/// <param name="signedPivotDistance">The distance along this line-like, from <see cref="ILineLike.StartPoint"/>, of the point to pivot around.</param>
 	TSelf RotatedBy(Rotation rotation, float signedPivotDistance);
 }
+/// <summary>
+/// Extension of <see cref="ILineLike{TSelf}"/> for line-like types that can be split in to two pieces by a <see cref="Plane"/>.
+/// </summary>
+/// <typeparam name="TSelf">The type that is actually implementing this interface.</typeparam>
+/// <typeparam name="TSplitFirst">The type of the first piece resulting from a split.</typeparam>
+/// <typeparam name="TSplitSecond">The type of the second piece resulting from a split.</typeparam>
 public interface ILineLike<TSelf, TSplitFirst, TSplitSecond> : ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> {
+	/// <summary>
+	/// Splits this line-like in to two pieces at the point(s) where it crosses <paramref name="plane"/>.
+	/// </summary>
+	/// <param name="plane">The plane to split by.</param>
+	/// <returns><see langword="null"/> if this line-like does not cross <paramref name="plane"/> (i.e. it lies entirely on one side); the two resultant pieces otherwise.</returns>
 	Pair<TSplitFirst, TSplitSecond>? SplitBy(Plane plane);
+	/// <summary>
+	/// Executes the same function as <see cref="SplitBy"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes this line-like does cross <paramref name="plane"/>. The returned value of this function is undefined when that condition is broken.
+	/// </remarks>
+	/// <param name="plane">The plane to split by.</param>
 	Pair<TSplitFirst, TSplitSecond> FastSplitBy(Plane plane);
 }

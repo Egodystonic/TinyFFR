@@ -7,6 +7,10 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Interface representing any struct type in TinyFFR used to supply configuration to an API.
+/// </summary>
+/// <seealso cref="IConfigStruct{TSelf}"/>
 public interface IConfigStruct {
 	const int SerializationFieldCountSizeBytes = sizeof(int);
 
@@ -210,9 +214,55 @@ public interface IConfigStruct {
 		return hasValue ? value : null;
 	}
 }
+/// <summary>
+/// Interface representing any struct type in TinyFFR used to supply configuration to an API.
+/// </summary>
+/// <remarks>
+/// As many config struct types in TinyFFR are <c>ref struct</c>s they can not easily be stored on the heap or on other objects.
+/// This interface exposes static members that can be used to marshal a given config object to binary representation to be stored on
+/// the heap, and methods that marshal that data back in to the config struct type.
+/// <para>
+/// Note that the marshalled data is not safe to store to disc, send across a network, or even outlive the currently active
+/// <see cref="Egodystonic.TinyFFR.Factory.ITinyFfrFactory"/>. This is because it may or may not contain local-runtime-specific data (such as <see cref="GCHandle"/>s or
+/// <see cref="ResourceHandle"/>s to data only active for the current factory). 
+/// </para>
+/// </remarks>
+/// <typeparam name="TSelf">The config struct type.</typeparam>
 public interface IConfigStruct<TSelf> : IConfigStruct where TSelf : struct, IConfigStruct<TSelf>, allows ref struct {
+	/// <summary>
+	/// Returns the size in bytes required for a buffer to store the given config struct.
+	/// </summary>
+	/// <param name="src">The config struct you wish to potentially marshal to binary format.</param>
 	static abstract int GetHeapStorageFormattedLength(in TSelf src);
+	/// <summary>
+	/// Allocates internal handles if necessary and marshals the given <paramref name="src"/> struct to
+	/// binary format in to <paramref name="dest"/>. This data can then be stored on the heap (i.e. in an
+	/// array, Memory&lt;byte&gt;, List, etc).
+	/// </summary>
+	/// <remarks>
+	/// Note that you <b>must</b> invoke <see cref="DisposeAllocatedHeapStorage"/> on this binary data once
+	/// before disposing the currently-active <see cref="Egodystonic.TinyFFR.Factory.ITinyFfrFactory"/> or you
+	/// will risk leaking handle resources and/or memory.
+	/// </remarks>
+	/// <param name="dest">The destination buffer to write to. Its length must be at least enough to accomodate the data
+	/// (as exposed by <see cref="GetHeapStorageFormattedLength"/>).</param>
+	/// <param name="src">The config struct you wish to marshal to binary format.</param>
 	static abstract void AllocateAndConvertToHeapStorage(Span<byte> dest, in TSelf src);
+	/// <summary>
+	/// Converts previously-marshalled binary data of type <typeparamref name="TSelf"/> back in to its
+	/// struct representation.
+	/// </summary>
+	/// <param name="src">The binary data that was previously marshalled using <see cref="AllocateAndConvertToHeapStorage"/>.
+	/// The data must <b>not</b> have been disposed via <see cref="DisposeAllocatedHeapStorage"/>. This span is expected to
+	/// have a length <b>exactly</b> as large as the binary data.</param>
 	static abstract TSelf ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src);
+	/// <summary>
+	/// Disposes previously-allocated binary data.
+	/// This function must be invoked once and only once on the binary data returned by each invocation of
+	/// <see cref="AllocateAndConvertToHeapStorage"/>.
+	/// </summary>
+	/// <param name="src">The binary data that was previously marshalled using <see cref="AllocateAndConvertToHeapStorage"/>.
+	/// The data must <b>not</b> have been disposed already. This span is expected to
+	/// have a length <b>exactly</b> as large as the binary data.</param>
 	static abstract void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src);
 }

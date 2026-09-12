@@ -20,6 +20,9 @@ partial struct Polygon2D /*:
 	IDistanceMeasurable<Polygon2D, Vertex>,
 	IIntersectionDeterminable<Edge, Vertex>*/ {
 
+	/// <summary>
+	/// The average of all of <see cref="Vertices"/>.
+	/// </summary>
 	public Vertex Centroid {
 		get {
 			var result = Vertex.Zero;
@@ -166,6 +169,15 @@ partial struct Polygon2D /*:
 	// Vertex IIntersectionDeterminable<Edge, Vertex>.FastIntersectionWith(Edge edge) => IntersectionWith(edge) ?? default;
 
 	static readonly ThreadLocal<ArrayPoolBackedVector<int>> _threadStaticIndexList = new(() => new());
+	/// <summary>
+	/// Splits this polygon up into triangles (by index into <see cref="Vertices"/>), writing the result into <paramref name="dest"/>.
+	/// </summary>
+	/// <remarks>
+	/// <paramref name="dest"/> must be at least <see cref="TriangleCount"/> long. This relies on <see cref="IsWoundClockwise"/> correctly describing the actual winding order of <see cref="Vertices"/> (as seen in the standard 2D orientation, X to the right, Y up) — if it does not match, this method throws rather than silently producing an incorrect triangulation.
+	/// </remarks>
+	/// <param name="dest">The buffer to write the resultant triangles' vertex indices into.</param>
+	/// <exception cref="ArgumentException"><paramref name="dest"/> is too small to hold <see cref="TriangleCount"/> triangles.</exception>
+	/// <exception cref="InvalidOperationException">The polygon could not be triangulated, most likely because <see cref="IsWoundClockwise"/> does not match <see cref="Vertices"/>' actual winding order, or the polygon is degenerate/non-simple.</exception>
 	public void Triangulate(Span<VertexTriangle> dest) {
 		static bool CrossMatchesSign(Vertex centreVertex, Vertex previousVertex, Vertex nextVertex, int sign) {
 			var prevToCentre = centreVertex - previousVertex;

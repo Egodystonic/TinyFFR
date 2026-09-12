@@ -10,6 +10,14 @@ namespace Egodystonic.TinyFFR;
 partial struct ColorVect : 
 	IAdditive<ColorVect, ColorVect, ColorVect>,
 	IScalable<ColorVect> {
+	/// <summary>
+	/// Returns a new colour which is the same as this one but with its <see cref="Hue"/> set to <paramref name="newHue"/>.
+	/// </summary>
+	/// <remarks>
+	/// Every access to <see cref="WithHue"/>, <see cref="WithSaturation"/>, or <see cref="WithLightness"/> requires a full
+	/// RGB-&gt;HSL conversion <i>and back again</i>. Consider using <see cref="ToHueSaturationLightness"/> and <see cref="FromHueSaturationLightness(Angle, float, float)"/>
+	/// if you intend to modify more than one of these properties at the same time.
+	/// </remarks>
 	public ColorVect WithHue(Angle newHue) {
 		ToHueSaturationLightness(out _, out var s, out var l);
 		return FromHueSaturationLightness(newHue, s, l, Alpha);

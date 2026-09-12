@@ -10,28 +10,54 @@ using Edge = Egodystonic.TinyFFR.Pair<Egodystonic.TinyFFR.XYPair<float>, Egodyst
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Represents a simple (non-self-intersecting) 2D polygon defined by an ordered list of <see cref="Vertices"/>.
+/// </summary>
+/// <remarks>
+/// The vertices are expected to form a single closed loop in the order given, with an edge implicitly connecting the last vertex back to the first. The polygon does not need to be convex, but no two edges may cross each other.
+/// </remarks>
 public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	// readonly float _containmentRadius;
 	// readonly float _containmentRadiusSquared;
-	
+
+	/// <summary>
+	/// The vertices of this polygon, in the order they appear as you travel around its perimeter.
+	/// </summary>
 	public ReadOnlySpan<Vertex> Vertices { get; }
+	/// <summary>
+	/// Whether <see cref="Vertices"/> are wound clockwise (<see langword="true"/>) or anticlockwise (<see langword="false"/>), as seen in the standard 2D orientation (X to the right, Y up).
+	/// </summary>
 	public bool IsWoundClockwise { get; }
 
+	/// <summary>
+	/// The number of vertices in this polygon; equivalent to <c><see cref="Vertices"/>.Length</c>.
+	/// </summary>
 	public int VertexCount => Vertices.Length;
+	/// <summary>
+	/// The number of edges in this polygon.
+	/// </summary>
 	public int EdgeCount => VertexCount switch {
 		<= 1 => 0,
 		2 => 1,
 		_ => VertexCount
 	};
+	/// <summary>
+	/// The number of triangles this polygon would be divided into by triangulation.
+	/// </summary>
 	public int TriangleCount => Int32.Max(0, VertexCount - 2);
 
+	/// <summary>
+	/// Constructs a new <see cref="Polygon2D"/> from <paramref name="vertices"/>, assuming they are wound anticlockwise (see <see cref="Polygon.DefaultClockwiseExpectation"/>).
+	/// </summary>
+	/// <param name="vertices">The polygon's vertices, in order around its perimeter.</param>
 	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, isWoundClockwise: Polygon.DefaultClockwiseExpectation) { }
+	/// <summary>
+	/// Constructs a new <see cref="Polygon2D"/> from <paramref name="vertices"/> and <paramref name="isWoundClockwise"/>.
+	/// </summary>
+	/// <param name="vertices">The polygon's vertices, in order around its perimeter.</param>
+	/// <param name="isWoundClockwise">Whether <paramref name="vertices"/> are wound clockwise or anticlockwise, as seen in the standard 2D orientation (X to the right, Y up).</param>
 	public Polygon2D(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) : this(vertices, isWoundClockwise, skipPrecalculations: true) { }
 
-	// TODO xmldoc that the vertices are expected to form a complete enclosed polygon.
-	// TODO They should be specified in order they appear around the polygon, with the last and first comprising the final edge that closes the polygon.
-	// TODO Does not need to be convex, but no edges may intersect.
-	// TODO Officially this is called a simple polygon
 	internal Polygon2D(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise, bool skipPrecalculations) {
 		Vertices = vertices;
 		IsWoundClockwise = isWoundClockwise;
@@ -50,8 +76,10 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	#endregion
 
 	#region Equality
+	/// <inheritdoc/>
 	public bool Equals(Polygon2D other) => IsWoundClockwise == other.IsWoundClockwise && Vertices.SequenceEqual(other.Vertices);
 
+	/// <inheritdoc/>
 	public bool Equals(Polygon2D other, float tolerance) {
 		if (IsWoundClockwise != other.IsWoundClockwise) return false;
 		var thisVertices = Vertices;
@@ -65,12 +93,21 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 
 		return true;
 	}
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Polygon2D left, Polygon2D right) => left.Equals(right);
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(Polygon2D left, Polygon2D right) => !left.Equals(right);
+	/// <summary>
+	/// Always returns <see langword="false"/>.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="Polygon2D"/> is a <see langword="ref struct"/>, so it can never actually be boxed to <see cref="object"/> — this override exists only to satisfy the compiler's requirement to override <see cref="ValueType.Equals(object?)"/>, and is unreachable in practice. Use <see cref="Equals(Polygon2D)"/> instead.
+	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override bool Equals(object? obj) => false;
+	/// <inheritdoc/>
 	public override int GetHashCode() {
 		var result = new HashCode();
 		foreach (var vertex in Vertices) result.Add(vertex.GetHashCode());
@@ -78,5 +115,6 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	}
 	#endregion
 
+	/// <inheritdoc/>
 	public override string ToString() => $"Polygon2D ({VertexCount} vertices)";
 }

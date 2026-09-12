@@ -10,11 +10,40 @@ namespace Egodystonic.TinyFFR;
 
 // Maintainer's note: I mostly named this "ColorVect" rather than "Color" simply to differentiate it from all the other "Color" structs in various common libraries.
 // But it does also make it clearer immediately that this is stored in 4-float format.
+/// <summary>
+/// A four-channel vector of floating point values representing a colour.
+/// </summary>
+/// <remarks>
+/// The vector is laid out in RGBA format (i.e. <see cref="Red"/> = <c>X</c>, <see cref="Green"/> = <c>Y</c>, <see cref="Blue"/> = <c>Z</c>, <see cref="Alpha"/> = <c>W</c>).
+/// <para>
+/// Each component is expected in a normalized range (e.g. between 0 and 1) where 0 indicates a complete absense of intensity in that channel and 1 indicates a complete saturation.
+/// </para>
+/// <para>
+/// Some examples:
+/// <ul>
+/// <li>Opaque white: <c>new ColorVect(1f, 1f, 1f, 1f)</c></li>
+/// <li>Opaque red: <c>new ColorVect(1f, 0f, 0f, 1f)</c></li>
+/// <li>Opaque green: <c>new ColorVect(0f, 1f, 0f, 1f)</c></li>
+/// <li>Opaque blue: <c>new ColorVect(0f, 0f, 1f, 1f)</c></li>
+/// <li>Semi-translucent pink: <c>new ColorVect(1f, 0f, 1f, 0.5f)</c></li>
+/// </ul>
+/// </para>
+/// <para>
+/// Also note that there is an implicit conversion from <see cref="StandardColor"/> to ColorVect.
+/// </para>
+/// </remarks>
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct ColorVect : IVect<ColorVect> {
+	/// <summary>
+	/// When constructing a ColorVect via HSL representation (e.g. by invoking <see cref="FromHueSaturationLightness(Angle, float, float)"/>)
+	/// this value represents the "pure red" (R=1, G=0, B=0) angle on the colour wheel.
+	/// </summary>
 	public static readonly Angle RedHueAngle = 0f;
 	public static readonly Angle GreenHueAngle = 120f;
 	public static readonly Angle BlueHueAngle = 240f;
+	/// <summary>
+	/// Returns a ColorVect representing a fully-opaque white (<c>(R=1, G=1, B=1, A=1)</c>).
+	/// </summary>
 	public static readonly ColorVect WhiteOpaque = new(1f, 1f, 1f, 1f);
 	public static readonly ColorVect BlackOpaque = new(0f, 0f, 0f, 1f);
 	public static readonly ColorVect RedOpaque = new(1f, 0f, 0f, 1f);
@@ -34,6 +63,9 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 
 	internal readonly Vector4 AsVector4;
 
+	/// <summary>
+	/// The first component of this colour, typically a value between 0 and 1 indicating the intensity of the red channel.
+	/// </summary>
 	public float Red {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.X;
@@ -62,6 +94,13 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		init => AsVector4.W = value;
 	}
 
+	/// <summary>
+	/// Returns the hue angle after converting this colour vect from RGB to HSL representation.
+	/// </summary>
+	/// <remarks>
+	/// Every access to <see cref="Hue"/>, <see cref="Saturation"/>, or <see cref="Lightness"/> requires a full RGB-&gt;HSL conversion.
+	/// If you intend to extract all three properties, consider using <see cref="ToHueSaturationLightness"/> instead. 
+	/// </remarks>
 	public Angle Hue {
 		get {
 			ToHueSaturationLightness(out var result, out _, out _);
@@ -69,6 +108,13 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		}
 	}
 
+	/// <summary>
+	/// Returns the normalized saturation (0 to 1) after converting this colour vect from RGB to HSL representation.
+	/// </summary>
+	/// <remarks>
+	/// Every access to <see cref="Hue"/>, <see cref="Saturation"/>, or <see cref="Lightness"/> requires a full RGB-&gt;HSL conversion.
+	/// If you intend to extract all three properties, consider using <see cref="ToHueSaturationLightness"/> instead. 
+	/// </remarks>
 	public float Saturation {
 		get {
 			ToHueSaturationLightness(out _, out var result, out _);
@@ -76,6 +122,13 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		}
 	}
 
+	/// <summary>
+	/// Returns the normalized lightness (0 to 1) after converting this colour vect from RGB to HSL representation.
+	/// </summary>
+	/// <remarks>
+	/// Every access to <see cref="Hue"/>, <see cref="Saturation"/>, or <see cref="Lightness"/> requires a full RGB-&gt;HSL conversion.
+	/// If you intend to extract all three properties, consider using <see cref="ToHueSaturationLightness"/> instead. 
+	/// </remarks>
 	public float Lightness {
 		get {
 			ToHueSaturationLightness(out _, out _, out var result);
@@ -114,6 +167,13 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	public ColorVect(StandardColor c) { this = FromStandardColor(c); }
 
 	#region Factories and Conversions
+	/// <summary>
+	/// Returns this colour with its <see cref="Red"/>, <see cref="Green"/>, and <see cref="Blue"/> channels multiplied by <see cref="Alpha"/>.
+	/// Has no effect if <see cref="Alpha"/> is <c>1f</c>.
+	/// </summary>
+	/// <remarks>
+	/// Premultiplied alpha representation is required by many (but not all) texture or material parameter types in TinyFFR.
+	/// </remarks>
 	public ColorVect WithPremultipliedAlpha() => PremultiplyAlpha(this);
 	public static ColorVect PremultiplyAlpha(ColorVect nonpremultipliedInput) {
 		return new(
