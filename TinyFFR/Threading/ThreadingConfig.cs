@@ -7,8 +7,17 @@ namespace Egodystonic.TinyFFR.Threading;
 /// Object used to configure a <see cref="Egodystonic.TinyFFR.Factory.Local.LocalTinyFfrFactory"/>'s threading.
 /// </summary>
 public sealed class ThreadingConfig {
+	/// <summary>
+	/// The default value of <see cref="MaxShutdownWaitTime"/> if not explicitly set.
+	/// </summary>
 	public static readonly TimeSpan DefaultMaxShutdownWaitTime = TimeSpan.FromSeconds(300d);
+	/// <summary>
+	/// The maximum permitted value of <see cref="MaxShutdownWaitTime"/>.
+	/// </summary>
 	public static readonly TimeSpan MaxMaxShutdownWaitTime = TimeSpan.FromMilliseconds(Int32.MaxValue); // From Thread.Join constraint
+	/// <summary>
+	/// The default value of <see cref="HostPumpTimeCap"/> if not explicitly set.
+	/// </summary>
 	public static readonly TimeSpan DefaultHostPumpTimeCap = TimeSpan.FromMilliseconds(2d);
 	
 	/// <summary>
@@ -58,8 +67,22 @@ public sealed class ThreadingConfig {
 		}
 	} = DefaultMaxShutdownWaitTime;
 
+	/// <summary>
+	/// Whether the factory should actively wake up a host application's own message loop (e.g. a WPF, WinForms, or other UI framework's loop)
+	/// as soon as primary-thread factory work becomes available, rather than waiting for that host to next poll for it itself. Defaults to <c>true</c>.
+	/// </summary>
+	/// <remarks>
+	/// This only has an effect if a <see cref="System.Threading.SynchronizationContext"/> belonging to such a host is current at the point the factory is constructed.
+	/// When it does apply, <see cref="HostPumpTimeCap"/> limits how long each such wake-up is permitted to spend executing pending work before returning control to the host's message loop.
+	/// </remarks>
 	public bool WakeHostMessageLoopForPrimaryThreadWork { get; init; } = true;
 
+	/// <summary>
+	/// The maximum amount of time a single host-triggered wake-up (see <see cref="WakeHostMessageLoopForPrimaryThreadWork"/>) is permitted to spend executing pending
+	/// primary-thread factory work before returning control to the host's message loop.
+	/// Defaults to <see cref="DefaultHostPumpTimeCap"/>.
+	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if attempting to set a value less than or equal to <see cref="TimeSpan.Zero"/>.</exception>
 	public TimeSpan HostPumpTimeCap {
 		get;
 		init {
