@@ -14,7 +14,9 @@ namespace Egodystonic.TinyFFR;
 /// A four-channel vector of floating point values representing a colour.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The vector is laid out in RGBA format (i.e. <see cref="Red"/> = <c>X</c>, <see cref="Green"/> = <c>Y</c>, <see cref="Blue"/> = <c>Z</c>, <see cref="Alpha"/> = <c>W</c>).
+/// </para>
 /// <para>
 /// Each component is expected in a normalized range (e.g. between 0 and 1) where 0 indicates a complete absense of intensity in that channel and 1 indicates a complete saturation.
 /// </para>

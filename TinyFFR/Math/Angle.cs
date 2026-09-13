@@ -136,6 +136,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	/// Calculates the angle between <paramref name="d1"/> and <paramref name="d2"/>.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Note that this function does some small corrections to help fight floating-point inaccuracy:
 	/// <ul>
 	/// <li>Results that are very near 0° will be clamped to 0°.</li>
@@ -143,6 +144,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	/// <li>Results that are very near 180° will be clamped to 180°.</li>
 	/// </ul>
 	/// This clamping is done to help pre-emptively fix typical comparisons downstream (e.g. "<c>if (angleBetweenDirections == Angle.Zero)</c>" and similar). 
+	/// </para>
 	/// <para>
 	/// Furthermore, the linear algebra function used to calculate the value is clamped before trigonometric inversion
 	/// (i.e. <c>dot</c> is clamped before <c>acos</c>) to make sure floating-point inaccuracy does not accidentaly create

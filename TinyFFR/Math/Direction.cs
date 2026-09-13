@@ -13,7 +13,9 @@ namespace Egodystonic.TinyFFR;
 /// Represents a single direction in 3D space (e.g. "Left", "Forward", "None", etc).
 /// </summary>
 /// <remarks>
+/// <para>
 /// Direction is a specialized <see cref="IVect"/> that maintains itself as being unit-length (or <see cref="None"/>) at all times.
+/// </para>
 /// <para>
 /// Constructing a direction from direct component values (e.g. <c>new Direction(0.707f, 0f, 0.707f)</c>) is rarely useful;
 /// most of the time you'll want to construct a direction from a specific operation:
@@ -155,10 +157,11 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public Direction() : this(0f, 0f, 0f) { }
 	/// <summary>
 	/// Constructs a new <see cref="Direction"/> from the given <paramref name="x"/>, <paramref name="y"/>, and <paramref name="z"/> components.
+	/// The given components are normalized to unit length as part of construction; meaning their ratio is preserved but the actual resultant <see cref="X"/>, <see cref="Y"/>, and <see cref="Z"/>
+	/// properties will be normalized.
 	/// </summary>
 	/// <remarks>
-	/// The given components are normalized to unit length as part of construction. If all three components are <c>0f</c>
-	/// (or otherwise sum to a zero-length vector), the result is <see cref="None"/> rather than an invalid or <c>NaN</c> direction.
+	/// If all three components are <c>0f</c> (or otherwise sum to a zero-length vector), the result is <see cref="None"/>.
 	/// If you already know your components are unit-length and want to skip the normalization step, use <see cref="FromVector3PreNormalized(float,float,float)"/> instead.
 	/// </remarks>
 	/// <param name="x">The X component, prior to normalization.</param>
@@ -210,8 +213,10 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	/// Finds a <see cref="Direction"/> that is orthogonal (perpendicular) to both <paramref name="dirA"/> and <paramref name="dirB"/>.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// The result follows the right-hand rule: if the index finger of your right hand points along <paramref name="dirA"/>
 	/// and your middle finger points along <paramref name="dirB"/>, the result points in the same direction as your thumb.
+	/// </para>
 	/// <para>
 	/// If <paramref name="dirA"/> and <paramref name="dirB"/> are exactly parallel or exactly opposite (and neither is <see cref="None"/>),
 	/// there are infinitely many valid orthogonal directions; in that case this method returns an arbitrary but consistent

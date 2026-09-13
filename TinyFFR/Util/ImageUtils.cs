@@ -12,7 +12,17 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Record type detailing how a bitmap should be saved (used by various <c>SaveBitmap</c> functions in <see cref="ImageUtils"/>.
+/// </summary>
+/// <param name="IncludeAlphaChannel">If true, the bitmap will be saved in a 32-bit, 4-channel format including alpha-channel data.
+/// Otherwise, the bitmap will be saved in a 24-bit, 3-channel format and alpha data will discarded.</param>
+/// <param name="FlipVertical">If true, the bitmap will be flipped vertically.</param>
+/// <param name="FlipHorizontal">If true, the bitmap will be flipped horizontally.</param>
 public readonly record struct BitmapSaveConfig(bool IncludeAlphaChannel, bool FlipVertical, bool FlipHorizontal);
+/// <summary>
+/// Static class containing various utility methods for working with images/image files.
+/// </summary>
 public static class ImageUtils {
 	const int MaxFilePathLength = 1024;
 	static readonly ThreadLocal<InteropStringBuffer> _threadLocalStringBuffer = new(() => new InteropStringBuffer(MaxFilePathLength, true), trackAllValues: false);

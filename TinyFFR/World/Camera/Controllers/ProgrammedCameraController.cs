@@ -172,7 +172,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		_fovTrack.Clear();
 	}
 
-	void ICameraController.SetGlobalSmoothing(Strength newSmoothingStrength) { /* No-op */ }
+	void ICameraController.SetGlobalSmoothing(SmoothingStrength newSmoothingStrength) { /* No-op */ }
 
 	public void ResetParametersToDefault() {
 		_positionTrack.Reset();

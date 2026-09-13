@@ -56,11 +56,11 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		VeryStrong: 2f
 	);
 
-	public Strength PositionSmoothingStrength {
+	public SmoothingStrength PositionSmoothingStrength {
 		get => _positionSmoothingStrengthMap.From(_positionRelativeSetpoint.HalfLife);
 		set => _positionRelativeSetpoint.HalfLife = _positionSmoothingStrengthMap.From(value);
 	}
-	public Strength TrackingSmoothingStrength {
+	public SmoothingStrength TrackingSmoothingStrength {
 		get => _trackingSmoothingStrengthMap.From(_lookRelativeSetpoint.HalfLife);
 		set => _lookRelativeSetpoint.HalfLife = _trackingSmoothingStrengthMap.From(value);
 	}
@@ -149,7 +149,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	public void SetCustomTrackingSmoothingStrength(float smoothingHalfLife) {
 		_lookRelativeSetpoint.HalfLife = smoothingHalfLife;
 	}
-	public void SetGlobalSmoothing(Strength newSmoothingStrength) {
+	public void SetGlobalSmoothing(SmoothingStrength newSmoothingStrength) {
 		PositionSmoothingStrength = newSmoothingStrength;
 		TrackingSmoothingStrength = newSmoothingStrength;
 	}
@@ -186,7 +186,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		FollowLateralOffset = FollowLateralOffsetDefault;
 		_positionRelativeSetpoint.Reset(_positionRelativeSetpoint.TargetValue);
 		_lookRelativeSetpoint.Reset(_lookRelativeSetpoint.TargetValue);
-		SetGlobalSmoothing(Strength.VeryMild);
+		SetGlobalSmoothing(SmoothingStrength.VeryMild);
 	}
 	
 	void UpdatePositionOffset() {

@@ -6,6 +6,27 @@ namespace Egodystonic.TinyFFR;
 #pragma warning disable CA1815 // "Should implement IEquatable" -- It's not recommended to compare function pointers, so there's no real way to provide equality for this type (plus it's not particularly useful anyway)
 #pragma warning disable CA1710 // "Should end in collection-like suffix" -- I don't really want this used like a collection, I only implement IROL<> because we get it for free due to Count and indexer property already existing, so why not
 // Represents an enumerator that takes a copy of TIn and uses a pointer to a static indexer and count method to avoid accidental garbage generation
+/// <summary>
+/// An instance of an <see cref="IndirectEnumerable{TIn,TOut}"/> lets you enumerate, count, and copy all of the <typeparamref name="TOut"/>s in a <typeparamref name="TIn"/> according to some property/function.
+/// In most cases you can use this type like a pseudo-collection; it implements <see cref="IReadOnlyList{TOut}"/>
+/// </summary>
+/// <remarks>
+/// <para>
+/// This type is designed to take an input type <typeparamref name="TIn"/> and allow garbage-free iteration over some property or facet of that type,
+/// yielding a sequence of <typeparamref name="TOut"/> values, without exposing the memory or mechanism of generation for those values
+/// (which in some cases may be unmanaged or ad-hoc).
+/// </para>
+/// <para>
+/// This has some important restrictions -- because instances of <see cref="IndirectEnumerable{TIn,TOut}"/> do not themselves "contain" or "own" any actual memory, the
+/// <typeparamref name="TOut"/> collection must be enumerated before the owning <typeparamref name="TIn"/> instance is modified or disposed. Attempting to enumerate this
+/// instance after its 'parent' <typeparamref name="TIn"/> has been modified will usually result in an <see cref="InvalidOperationException"/> being thrown.
+/// </para>
+/// <para>
+/// In cases where you need a copy of the items beyond the lifetime of this <see cref="IndirectEnumerable{TIn,TOut}"/>, use <see cref="CopyTo"/>/<see cref="TryCopyTo"/>. 
+/// </para>
+/// </remarks>
+/// <typeparam name="TIn">The type of object that provides the enumerable items.</typeparam>
+/// <typeparam name="TOut">The item type to enumerate over.</typeparam>
 public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut> {
 	public struct Enumerator : IEnumerator<TOut> {
 		readonly TIn _input;
@@ -24,6 +45,7 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 			Reset();
 		}
 
+		/// <inheritdoc />
 		public TOut Current {
 			get {
 				ThrowIfInvalid();
@@ -32,11 +54,14 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 		}
 		object IEnumerator.Current => Current!;
 
+		/// <inheritdoc />
 		public bool MoveNext() {
 			_curIndex++;
 			return _curIndex < _count;
 		}
+		/// <inheritdoc />
 		public void Reset() => _curIndex = -1;
+		/// <inheritdoc />
 		public void Dispose() { /* no op */ }
 
 		void ThrowIfInvalid() {

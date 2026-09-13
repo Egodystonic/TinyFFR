@@ -52,8 +52,10 @@ public interface ITranslatedConvexShape<TSelf, TBase> : ITranslatedConvexShape<T
 /// around 3D space.
 /// </summary>
 /// <remarks>
+/// <para>
 /// All methods required by the <see cref="IShape{T}"/> interface are implemented,
 /// but recalculated when invoked to account for the given <see cref="Translation"/>.
+/// </para>
 /// <para>
 /// For example, a function calculating the distance to the <see cref="BaseShape"/> from a given <see cref="Line"/>
 /// will return the correct value accounting for the position of the shape.
@@ -277,9 +279,11 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 /// General purpose wrapper type that takes any <see cref="IConvexShape{T}"/> and allows it to be translated (moved) around 3D space.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This is the convex-shape-constrained counterpart to <see cref="TranslatedShape{T}"/>: because <typeparamref name="T"/>
 /// is guaranteed to be an <see cref="IConvexShape{T}"/>, this type additionally implements the full <see cref="IConvexShape"/>
 /// surface (closest-point, distance, intersection, and reflection queries), recalculated on every call to account for <see cref="Translation"/>.
+/// </para>
 /// <para>
 /// For more specialized implementations with concrete shape-specific members, see <see cref="PositionedSphere"/>, <see cref="PositionedCuboid"/>, etc.
 /// </para>

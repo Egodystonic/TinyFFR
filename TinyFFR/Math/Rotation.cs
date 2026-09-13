@@ -13,7 +13,9 @@ namespace Egodystonic.TinyFFR;
 /// Represents a three-dimensional rotation, encoded as an angle/axis pair.
 /// </summary>
 /// <remarks>
+/// <para>
 /// A rotation object is a description of <i>how to rotate</i> something; e.g. "72° around the Left axis".
+/// </para>
 /// <para>
 /// A Rotation does <b>not</b> represent any specific orientation/direction by itself, instead it represents the operation to apply to any existing direction/orientation to get a <i>new</i> direction/orientation.
 /// For example, "facing forward" is just a direction or orientation but "turn from forward to right" is a <i>Rotation</i> (in this case possibly encoded as "90° around the Down axis").

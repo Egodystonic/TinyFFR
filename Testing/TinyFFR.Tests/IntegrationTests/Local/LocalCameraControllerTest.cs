@@ -73,12 +73,12 @@ class LocalCameraControllerTest {
 		public FollowScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			Smoothing = Strength.VeryMild;
+			Smoothing = SmoothingStrength.VeryMild;
 			UseAlternativeControlScheme = false;
 			_instances = AddTestModelsToScene(100);
 			_targetInstance = AddTestModelToScene();			
 			_controller = Camera.CreateController<FollowCameraController>();
-			_controller.SetGlobalSmoothing(Strength.VeryMild);
+			_controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 			
 			foreach (var i in _instances) i.SetPosition(Location.Random(new Sphere(10f)));
 			_nextTargetLoc = Location.Origin;
@@ -144,11 +144,11 @@ class LocalCameraControllerTest {
 
 		public override void Start() {
 			const int NumInstancesPerPlane = 100;
-			Smoothing = Strength.VeryMild;
+			Smoothing = SmoothingStrength.VeryMild;
 			UseAlternativeControlScheme = false;
 			_instances = AddTestModelsToScene(NumInstancesPerPlane * 2);
 			_controller = Camera.CreateController<FirstPersonCameraController>();
-			_controller.SetGlobalSmoothing(Strength.VeryMild);
+			_controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 			
 			for (var i = 0; i < NumInstancesPerPlane; ++i) {
 				_instances[i].SetPosition(Location.Random(new PositionedCuboid(7f, 2f, 7f, (0f, 1.5f, 0f))));
@@ -205,11 +205,11 @@ class LocalCameraControllerTest {
 		public FreeFlyingScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			Smoothing = Strength.VeryMild;
+			Smoothing = SmoothingStrength.VeryMild;
 			UseAlternativeControlScheme = false;
 			_instances = AddTestModelsToScene(100);
 			_controller = Camera.CreateController<FreeFlyingCameraController>();
-			_controller.SetGlobalSmoothing(Strength.VeryMild);
+			_controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 			
 			foreach (var i in _instances) i.SetPosition(Location.Random(new Sphere(10f)));
 		}
@@ -267,7 +267,7 @@ class LocalCameraControllerTest {
 
 		public override void Start() {
 			_startFov = Camera.VerticalFieldOfView;
-			Smoothing = Strength.VeryMild;
+			Smoothing = SmoothingStrength.VeryMild;
 			UseAlternativeControlScheme = false;
 			_modelInstance = AddTestModelToScene();
 			_controller = Camera.CreateController<PanTiltZoomCameraController>();
@@ -338,7 +338,7 @@ class LocalCameraControllerTest {
 		public OrbitalScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			Smoothing = Strength.VeryMild;
+			Smoothing = SmoothingStrength.VeryMild;
 			UseAlternativeControlScheme = false;
 			_staticInstances = Enumerable.Range(0, 4).Select(_ => AddTestModelToScene()).ToArray();
 			_targetInstance = AddTestModelToScene();
@@ -416,7 +416,7 @@ class LocalCameraControllerTest {
 		public InspectorScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			Smoothing = Strength.VeryMild;
+			Smoothing = SmoothingStrength.VeryMild;
 			UseAlternativeControlScheme = false;
 			_staticInstances = Enumerable.Range(0, 4).Select(_ => AddTestModelToScene()).ToArray();
 			_targetInstance = AddTestModelToScene();
@@ -547,7 +547,7 @@ class LocalCameraControllerTest {
 		protected readonly Mesh TestMesh;
 		protected readonly Material TestMat;
 		protected readonly Scene Scene;
-		protected Strength Smoothing;
+		protected SmoothingStrength Smoothing;
 		protected bool UseAlternativeControlScheme;
 
 		protected CameraControllerScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) {
@@ -599,7 +599,7 @@ class LocalCameraControllerTest {
 			return options[0];
 		}
 		protected void CycleSmoothing() {
-			Smoothing = (Strength) ((int) Smoothing + 1);
+			Smoothing = (SmoothingStrength) ((int) Smoothing + 1);
 			if (!Enum.IsDefined(Smoothing)) Smoothing = 0;
 		}
 	}

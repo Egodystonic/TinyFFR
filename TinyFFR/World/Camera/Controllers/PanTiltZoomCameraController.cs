@@ -66,15 +66,15 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		VeryStrong: 0.5f
 	);
 
-	public Strength PanSmoothingStrength {
+	public SmoothingStrength PanSmoothingStrength {
 		get => _panSmoothingStrengthMap.From(_panSetpoint.HalfLife);
 		set => _panSetpoint.HalfLife = _panSmoothingStrengthMap.From(value);
 	}
-	public Strength TiltSmoothingStrength {
+	public SmoothingStrength TiltSmoothingStrength {
 		get => _tiltSmoothingStrengthMap.From(_tiltSetpoint.HalfLife);
 		set => _tiltSetpoint.HalfLife = _tiltSmoothingStrengthMap.From(value);
 	}
-	public Strength ZoomSmoothingStrength {
+	public SmoothingStrength ZoomSmoothingStrength {
 		get => _zoomSmoothingStrengthMap.From(_zoomSetpoint.HalfLife);
 		set => _zoomSetpoint.HalfLife = _zoomSmoothingStrengthMap.From(value);
 	}
@@ -194,7 +194,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	public void SetCustomZoomSmoothingStrength(float smoothingHalfLife) {
 		_zoomSetpoint.HalfLife = smoothingHalfLife;
 	}
-	public void SetGlobalSmoothing(Strength newSmoothingStrength) {
+	public void SetGlobalSmoothing(SmoothingStrength newSmoothingStrength) {
 		PanSmoothingStrength = newSmoothingStrength;
 		ZoomSmoothingStrength = newSmoothingStrength;
 		TiltSmoothingStrength = newSmoothingStrength;
@@ -228,7 +228,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		_panSetpoint.Reset(PanDefault);
 		_tiltSetpoint.Reset(TiltDefault);
 		_zoomSetpoint.Reset((MaxZoomOutFovDefault - MaxZoomInFovDefault) * ZoomDefault + MaxZoomInFovDefault);
-		SetGlobalSmoothing(Strength.VeryMild);
+		SetGlobalSmoothing(SmoothingStrength.VeryMild);
 	}
 
 	public void Progress(float deltaTime) {

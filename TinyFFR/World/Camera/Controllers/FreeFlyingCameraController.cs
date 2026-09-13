@@ -53,11 +53,11 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		VeryStrong: 0.2f
 	);
 
-	public Strength PositionSmoothingStrength {
+	public SmoothingStrength PositionSmoothingStrength {
 		get => _positionSmoothingStrengthMap.From(_positionSetpoint.HalfLife);
 		set => _positionSetpoint.HalfLife = _positionSmoothingStrengthMap.From(value);
 	}
-	public Strength RotationSmoothingStrength {
+	public SmoothingStrength RotationSmoothingStrength {
 		get => _rotationSmoothingStrengthMap.From(_yawSetpoint.HalfLife);
 		set {
 			_yawSetpoint.HalfLife = _rotationSmoothingStrengthMap.From(value);
@@ -113,7 +113,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		_yawSetpoint.HalfLife = smoothingHalfLife;
 		_pitchSetpoint.HalfLife = smoothingHalfLife;
 	}
-	public void SetGlobalSmoothing(Strength newSmoothingStrength) {
+	public void SetGlobalSmoothing(SmoothingStrength newSmoothingStrength) {
 		PositionSmoothingStrength = newSmoothingStrength;
 		RotationSmoothingStrength = newSmoothingStrength;
 	}
@@ -136,7 +136,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		_positionSetpoint.Reset(PositionDefault.AsVect());
 		_yawSetpoint.Reset(YawDefault);
 		_pitchSetpoint.Reset(PitchDefault);
-		SetGlobalSmoothing(Strength.VeryMild);
+		SetGlobalSmoothing(SmoothingStrength.VeryMild);
 	}
 
 	public void Progress(float deltaTime) {

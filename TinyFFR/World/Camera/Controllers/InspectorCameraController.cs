@@ -56,11 +56,11 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	);
 	Direction _worldForward;
 
-	public Strength DistanceSmoothingStrength {
+	public SmoothingStrength DistanceSmoothingStrength {
 		get => _distanceSmoothingStrengthMap.From(_distanceSetpoint.HalfLife);
 		set => _distanceSetpoint.HalfLife = _distanceSmoothingStrengthMap.From(value);
 	}
-	public Strength RotationSmoothingStrength {
+	public SmoothingStrength RotationSmoothingStrength {
 		get => _rotationSmoothingStrengthMap.From(_yawSetpoint.HalfLife);
 		set {
 			_yawSetpoint.HalfLife = _rotationSmoothingStrengthMap.From(value);
@@ -156,7 +156,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	public void SetCustomDistanceSmoothingStrength(float smoothingHalfLife) {
 		_distanceSetpoint.HalfLife = smoothingHalfLife;
 	}
-	public void SetGlobalSmoothing(Strength newSmoothingStrength) {
+	public void SetGlobalSmoothing(SmoothingStrength newSmoothingStrength) {
 		RotationSmoothingStrength = newSmoothingStrength;
 		DistanceSmoothingStrength = newSmoothingStrength;
 	}
@@ -170,7 +170,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 		_yawSetpoint.Reset(YawDefault);
 		_pitchSetpoint.Reset(PitchDefault);
 		_distanceSetpoint.Reset(DistanceDefault);
-		SetGlobalSmoothing(Strength.VeryMild);
+		SetGlobalSmoothing(SmoothingStrength.VeryMild);
 	}
 
 	public void Progress(float deltaTime) {

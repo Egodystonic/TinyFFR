@@ -1,9 +1,19 @@
 // Created on 2026-04-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using Egodystonic.TinyFFR.World;
 using static System.Single;
 
 namespace Egodystonic.TinyFFR;
+
+public enum InterpolationStrength {
+	None = 0,
+	VeryMild,
+	Mild,
+	Moderate,
+	Strong,
+	VeryStrong
+}
 
 #pragma warning disable CA1815 // "Should override Equals" -- Can't meaningfully compare function pointers
 public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatable<T> {
@@ -57,12 +67,12 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		return new(&Algorithm, new());
 	}
 
-	public static InterpolationAlgorithm<T> AccelerateFromSlow(Strength strength = Strength.Moderate) => AccelerateFromSlow(strength switch {
-		Strength.None => 1f,
-		Strength.VeryMild => 1.3f,
-		Strength.Mild => 1.75f,
-		Strength.Strong => 3f,
-		Strength.VeryStrong => 5f,
+	public static InterpolationAlgorithm<T> AccelerateFromSlow(InterpolationStrength strength = InterpolationStrength.Moderate) => AccelerateFromSlow(strength switch {
+		InterpolationStrength.None => 1f,
+		InterpolationStrength.VeryMild => 1.3f,
+		InterpolationStrength.Mild => 1.75f,
+		InterpolationStrength.Strong => 3f,
+		InterpolationStrength.VeryStrong => 5f,
 		_ => 2f
 	});
 	public static InterpolationAlgorithm<T> AccelerateFromSlow(float exponent) { // TODO xmldoc this is EaseIn; starts slow and accelerates up to 1.0
@@ -83,12 +93,12 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		};
 	}
 
-	public static InterpolationAlgorithm<T> DecelerateFromFast(Strength strength = Strength.Moderate) => DecelerateFromFast(strength switch {
-		Strength.None => 1f,
-		Strength.VeryMild => 1.3f,
-		Strength.Mild => 1.75f,
-		Strength.Strong => 3f,
-		Strength.VeryStrong => 5f,
+	public static InterpolationAlgorithm<T> DecelerateFromFast(InterpolationStrength strength = InterpolationStrength.Moderate) => DecelerateFromFast(strength switch {
+		InterpolationStrength.None => 1f,
+		InterpolationStrength.VeryMild => 1.3f,
+		InterpolationStrength.Mild => 1.75f,
+		InterpolationStrength.Strong => 3f,
+		InterpolationStrength.VeryStrong => 5f,
 		_ => 2f
 	});
 	public static InterpolationAlgorithm<T> DecelerateFromFast(float exponent) { // TODO xmldoc this is EaseOut; starts fast and decelerates to 1.0
@@ -111,12 +121,12 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		};
 	}
 
-	public static InterpolationAlgorithm<T> AccelerateFromSlowWithInitialReverse(Strength strength = Strength.Moderate) => AccelerateFromSlowWithInitialReverse(strength switch {
-		Strength.None => 0f,
-		Strength.VeryMild => 1f,
-		Strength.Mild => 1.3f,
-		Strength.Strong => 2.2f,
-		Strength.VeryStrong => 4f,
+	public static InterpolationAlgorithm<T> AccelerateFromSlowWithInitialReverse(InterpolationStrength strength = InterpolationStrength.Moderate) => AccelerateFromSlowWithInitialReverse(strength switch {
+		InterpolationStrength.None => 0f,
+		InterpolationStrength.VeryMild => 1f,
+		InterpolationStrength.Mild => 1.3f,
+		InterpolationStrength.Strong => 2.2f,
+		InterpolationStrength.VeryStrong => 4f,
 		_ => 1.70158f // Results in a ~10% undershoot, from Robert Penner's algorithms
 	});
 	public static InterpolationAlgorithm<T> AccelerateFromSlowWithInitialReverse(float coefficient) {
@@ -131,12 +141,12 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		return new(&Algorithm, new(coefficient + 1f, coefficient));
 	}
 
-	public static InterpolationAlgorithm<T> DecelerateFromFastWithOvershoot(Strength strength = Strength.Moderate) => DecelerateFromFastWithOvershoot(strength switch {
-		Strength.None => 0f,
-		Strength.VeryMild => 1f,
-		Strength.Mild => 1.3f,
-		Strength.Strong => 2.2f,
-		Strength.VeryStrong => 4f,
+	public static InterpolationAlgorithm<T> DecelerateFromFastWithOvershoot(InterpolationStrength strength = InterpolationStrength.Moderate) => DecelerateFromFastWithOvershoot(strength switch {
+		InterpolationStrength.None => 0f,
+		InterpolationStrength.VeryMild => 1f,
+		InterpolationStrength.Mild => 1.3f,
+		InterpolationStrength.Strong => 2.2f,
+		InterpolationStrength.VeryStrong => 4f,
 		_ => 1.70158f // Results in a ~10% overshoot, from Robert Penner's algorithms
 	});
 	public static InterpolationAlgorithm<T> DecelerateFromFastWithOvershoot(float coefficient) {

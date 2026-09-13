@@ -206,8 +206,10 @@ partial struct Angle :
 	/// Plots this angle according to the given triangle-wave <paramref name="peak"/> amplitude.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// When plotting <c>y = x.Triangularize(peak)</c> this function creates a triangle wave oscillating between
 	/// <c>peak</c> and <c>-peak</c>. The period of the wave is <c>peak * 4</c>.
+	/// </para>
 	/// <para>
 	/// Functions like this are useful for creating a linear oscillation with a fixed amplitude. For example you can make
 	/// something "bounce back and forward" over time, or calculate a "bounceback"/"overshoot" function.
@@ -228,8 +230,10 @@ partial struct Angle :
 	/// the x-axis.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// When plotting <c>y = x.Triangularize(peak)</c> this function creates a triangle wave oscillating between
 	/// <c>peak</c> and <c>0</c>. The period of the wave is <c>peak * 2</c>.
+	/// </para>
 	/// <para>
 	/// Functions like this are useful for creating a linear oscillation with a fixed amplitude. For example you can make
 	/// something "bounce back and forward" over time, or calculate a "bounceback"/"overshoot" function.
@@ -255,8 +259,10 @@ partial struct Angle :
 	/// taking the shortest path "around the circle" between them.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// This function differs from <see cref="Interpolate"/> in that it interpolates the shortest path around the circle from <paramref name="start"/> to <paramref name="end"/>,
 	/// rather than treating the two parameters purely numerically.
+	/// </para>
 	/// <para>
 	/// For example: <c>Angle.Interpolate(0f, 270f, 0.5f)</c> returns 135°. Conversely, <c>Angle.InterpolateShortestPath(0f, 270f, 0.5f)</c> returns 315°.
 	/// </para>

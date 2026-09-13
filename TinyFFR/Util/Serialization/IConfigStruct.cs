@@ -218,12 +218,14 @@ public interface IConfigStruct {
 /// Interface representing any struct type in TinyFFR used to supply configuration to an API.
 /// </summary>
 /// <remarks>
+/// <para>
 /// As many config struct types in TinyFFR are <c>ref struct</c>s they can not easily be stored on the heap or on other objects.
 /// This interface exposes static members that can be used to marshal a given config object to binary representation to be stored on
 /// the heap, and methods that marshal that data back in to the config struct type.
+/// </para>
 /// <para>
 /// Note that the marshalled data is not safe to store to disc, send across a network, or even outlive the currently active
-/// <see cref="Egodystonic.TinyFFR.Factory.ITinyFfrFactory"/>. This is because it may or may not contain local-runtime-specific data (such as <see cref="GCHandle"/>s or
+/// <see cref="Egodystonic.TinyFFR.Factory.ITinyFfrFactory">factory</see>. This is because it may or may not contain local-runtime-specific data (such as <see cref="GCHandle"/>s or
 /// <see cref="ResourceHandle"/>s to data only active for the current factory). 
 /// </para>
 /// </remarks>

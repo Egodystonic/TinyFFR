@@ -10,7 +10,7 @@ public interface ICameraController : IDisposable {
 	
 	void ResetParametersToDefault();
 	void Progress(float deltaTime); 
-	void SetGlobalSmoothing(Strength newSmoothingStrength);
+	void SetGlobalSmoothing(SmoothingStrength newSmoothingStrength);
 	void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime);
 	void AdjustAllViaDefaultControls(ILatestGameControllerInputRetriever input, float deltaTime);
 }

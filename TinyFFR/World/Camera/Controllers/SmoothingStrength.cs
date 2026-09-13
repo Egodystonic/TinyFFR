@@ -1,9 +1,11 @@
 // Created on 2026-04-17 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-namespace Egodystonic.TinyFFR;
+using System;
 
-public enum Strength {
+namespace Egodystonic.TinyFFR.World;
+
+public enum SmoothingStrength {
 	None = 0,
 	VeryMild,
 	Mild,

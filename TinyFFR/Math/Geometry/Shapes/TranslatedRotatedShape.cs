@@ -51,10 +51,12 @@ public interface ITranslatedRotatedConvexShape<TSelf, TBase> : ITranslatedRotate
 /// General purpose wrapper type that takes any <see cref="IShape{T}"/> and allows it to be both translated (moved) and rotated in 3D space.
 /// </summary>
 /// <remarks>
+/// <para>
 /// All methods required by the <see cref="IShape{T}"/> interface are implemented, but recalculated when invoked to
 /// account for the given <see cref="Translation"/> and <see cref="Rotation"/>. The shape is rotated first, around its
 /// own local origin, and the already-rotated result is then moved by <see cref="Translation"/> — so in practice the
 /// wrapped shape spins in place around its own position rather than around the world origin.
+/// </para>
 /// <para>
 /// Note that this type can not provide implementations for methods specific to the actual shape type <typeparamref name="T"/>. For more specialized
 /// implementations, see <see cref="TranslatedRotatedConvexShape{T}"/> or better yet <see cref="PositionedRotatedCuboid"/>.
@@ -324,9 +326,11 @@ public readonly struct TranslatedRotatedShape<T> : ITranslatedRotatedShape<Trans
 /// General purpose wrapper type that takes any <see cref="IConvexShape{T}"/> and allows it to be both translated (moved) and rotated in 3D space.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This is the convex-shape-constrained counterpart to <see cref="TranslatedRotatedShape{T}"/>: because <typeparamref name="T"/>
 /// is guaranteed to be an <see cref="IConvexShape{T}"/>, this type additionally implements the full <see cref="IConvexShape"/>
 /// surface (closest-point, distance, intersection, and reflection queries), recalculated on every call to account for <see cref="Translation"/> and <see cref="Rotation"/>.
+/// </para>
 /// <para>
 /// For more specialized implementations with concrete shape-specific members, see <see cref="PositionedRotatedCuboid"/>.
 /// </para>

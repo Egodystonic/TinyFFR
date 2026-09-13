@@ -8,9 +8,11 @@ namespace Egodystonic.TinyFFR;
 /// Trait interface used to mark a type as being able to provide a canonical, "normalized" version of any of its values.
 /// </summary>
 /// <remarks>
+/// <para>
 /// What "normalized" means is defined by the implementing type; for example an <see cref="Angle"/> normalizes into the
 /// range 0° to 360°, whereas a <see cref="Rotation"/> normalizes its internal representation without changing the
 /// rotation it represents.
+/// </para>
 /// <para>
 /// Generally speaking, a normalized version of a value is the one that uniquely represents that value within a smaller
 /// subset of unique values; where that subset is the smallest possible set of values that can be used to affect a typical operation.
@@ -168,8 +170,10 @@ public interface IInterpolatable<TSelf> :
 	/// Clamps this value between <paramref name="min"/> and <paramref name="max"/>.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Note that unlike most .NET clamp functions, TinyFFR allows you to swap <paramref name="min"/> and <paramref name="max"/> freely
 	/// and still get the same answer (i.e. <c>Clamp(4, 7)</c> is the same as <c>Clamp(7, 4)</c>).
+	/// </para>
 	/// <para>
 	/// This is a deliberate design choice given most clampable types in TinyFFR are not necessarily ordinal (i.e.
 	/// they do not have an obvious ordering; for example vectors, directions, shapes, rotations, etc).

@@ -12,9 +12,11 @@ namespace Egodystonic.TinyFFR;
 /// Represents a combination of a 2D translation, rotation and scaling that can be applied to an <see cref="XYPair{T}"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// By default a Transform2D is represented internally in-memory as its three separate operations (S, R, T) held distinctly.
 /// Using this approach allows anyone to get the initial <see cref="Scaling"/>/<see cref="Rotation"/>/<see cref="Translation"/>
 /// operations back out without degradation.
+/// </para>
 /// <para>
 /// In some cases it is unavoidable that a Transform must be represented internally by a <see cref="Matrix3x2"/>. When this
 /// is the case, reading the <see cref="Scaling"/> and <see cref="Rotation"/> require deconstructing the matrix and may

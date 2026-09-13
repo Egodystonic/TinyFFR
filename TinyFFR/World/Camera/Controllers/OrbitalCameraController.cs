@@ -64,15 +64,15 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		VeryStrong: 0.9f
 	);
 
-	public Strength AngleSmoothingStrength {
+	public SmoothingStrength AngleSmoothingStrength {
 		get => _angleSmoothingStrengthMap.From(_angleSetpoint.HalfLife);
 		set => _angleSetpoint.HalfLife = _angleSmoothingStrengthMap.From(value);
 	}
-	public Strength HeightSmoothingStrength {
+	public SmoothingStrength HeightSmoothingStrength {
 		get => _heightSmoothingStrengthMap.From(_heightSetpoint.HalfLife);
 		set => _heightSetpoint.HalfLife = _heightSmoothingStrengthMap.From(value);
 	}
-	public Strength DistanceSmoothingStrength {
+	public SmoothingStrength DistanceSmoothingStrength {
 		get => _distanceSmoothingStrengthMap.From(_distanceSetpoint.HalfLife);
 		set => _distanceSetpoint.HalfLife = _distanceSmoothingStrengthMap.From(value);
 	}
@@ -201,7 +201,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public void SetCustomDistanceSmoothingStrength(float smoothingHalfLife) {
 		_distanceSetpoint.HalfLife = smoothingHalfLife;
 	}
-	public void SetGlobalSmoothing(Strength newSmoothingStrength) {
+	public void SetGlobalSmoothing(SmoothingStrength newSmoothingStrength) {
 		AngleSmoothingStrength = newSmoothingStrength;
 		HeightSmoothingStrength = newSmoothingStrength;
 		DistanceSmoothingStrength = newSmoothingStrength;
@@ -235,7 +235,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		_angleSetpoint.Reset(AngleDefault);
 		_heightSetpoint.Reset(MinHeightDefault);
 		_distanceSetpoint.Reset(MinDistanceDefault);
-		SetGlobalSmoothing(Strength.VeryMild);
+		SetGlobalSmoothing(SmoothingStrength.VeryMild);
 	}
 
 	public void Progress(float deltaTime) {
