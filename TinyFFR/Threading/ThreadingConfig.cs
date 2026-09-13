@@ -7,7 +7,7 @@ namespace Egodystonic.TinyFFR.Threading;
 /// Object used to configure a <see cref="Egodystonic.TinyFFR.Factory.Local.LocalTinyFfrFactory"/>'s threading.
 /// </summary>
 public sealed class ThreadingConfig {
-	public static readonly TimeSpan DefaultMaxShutdownWaitTime = TimeSpan.FromSeconds(10d);
+	public static readonly TimeSpan DefaultMaxShutdownWaitTime = TimeSpan.FromSeconds(300d);
 	public static readonly TimeSpan MaxMaxShutdownWaitTime = TimeSpan.FromMilliseconds(Int32.MaxValue); // From Thread.Join constraint
 	public static readonly TimeSpan DefaultHostPumpTimeCap = TimeSpan.FromMilliseconds(2d);
 	
@@ -33,6 +33,21 @@ public sealed class ThreadingConfig {
 		}
 	} = null;
 	
+	/// <summary>
+	/// The maximum amount of time the factory should wait for worker threads to complete their <see cref="TinyFfrAsyncOperation"/>s when shutting down (being disposed).
+	/// Defaults to 5 minutes.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Invoking <c>Dispose()</c> on the factory can block the calling thread for up to this long in an attempt to gracefully wait for any ongoing async operations; after
+	/// which any ongoing operations will be forcibly cancelled.
+	/// </para>
+	/// <para>
+	/// Forcibly cancelling operations is generally undesirable as it creates a race condition where worker threads may attempt to access disposed resources or freed memory.
+	/// Therefore avoiding this by waiting for outstanding async operations before disposing the factory is advisable. 
+	/// </para>
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if attempting to set a negative value or a value greater than <see cref="MaxMaxShutdownWaitTime"/>.</exception>
 	public TimeSpan MaxShutdownWaitTime {
 		get;
 		init {
