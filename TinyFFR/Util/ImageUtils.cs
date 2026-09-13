@@ -29,9 +29,30 @@ public static class ImageUtils {
 	static readonly ArrayPool<byte> _dataBufferPool = TinyFfrArrayPool<byte>.Shared;
 	static ReadOnlySpan<byte> DummyFileData => "tinyffr"u8;
 
+	/// <summary>
+	/// Saves <paramref name="texels"/> to disk as a bitmap (<c>.bmp</c>) file at <paramref name="filePath"/>, using default save options.
+	/// </summary>
+	/// <remarks>
+	/// Equivalent to calling <see cref="SaveBitmap{TTexel}(ReadOnlySpan{char},XYPair{int},ReadOnlySpan{TTexel},BitmapSaveConfig)"/> with a <see cref="BitmapSaveConfig"/> that includes the alpha channel only if <typeparamref name="TTexel"/> has more than 3 channels, and does not flip the image in either direction.
+	/// </remarks>
+	/// <typeparam name="TTexel">The texel (pixel) type stored in <paramref name="texels"/>.</typeparam>
+	/// <param name="filePath">The path to save the file to. Must not already exist.</param>
+	/// <param name="dimensions">The width and height of the bitmap, in texels. Both components must be positive.</param>
+	/// <param name="texels">The texel data to save, in row-major order starting from the bottom-left corner. Must contain at least <c>dimensions.Area</c> elements.</param>
 	public static void SaveBitmap<TTexel>(ReadOnlySpan<char> filePath, XYPair<int> dimensions, ReadOnlySpan<TTexel> texels) where TTexel : unmanaged, ITexel<TTexel, byte> {
 		SaveBitmap(filePath, dimensions, texels, new(IncludeAlphaChannel: TTexel.ChannelCount > 3, FlipVertical: false, FlipHorizontal: false));
 	}
+	/// <summary>
+	/// Saves <paramref name="texels"/> to disk as a bitmap (<c>.bmp</c>) file at <paramref name="filePath"/>.
+	/// </summary>
+	/// <remarks>
+	/// A file is never overwritten by this method: if a file already exists at <paramref name="filePath"/>, this method throws before any data is written.
+	/// </remarks>
+	/// <typeparam name="TTexel">The texel (pixel) type stored in <paramref name="texels"/>.</typeparam>
+	/// <param name="filePath">The path to save the file to. Must not already exist, and (including the file name) be no more than 1024 characters long.</param>
+	/// <param name="dimensions">The width and height of the bitmap, in texels. Both components must be positive.</param>
+	/// <param name="texels">The texel data to save, in row-major order starting from the bottom-left corner. Must contain at least <c>dimensions.Area</c> elements.</param>
+	/// <param name="config">Options controlling how the bitmap is saved.</param>
 	public static unsafe void SaveBitmap<TTexel>(ReadOnlySpan<char> filePath, XYPair<int> dimensions, ReadOnlySpan<TTexel> texels, BitmapSaveConfig config) where TTexel : unmanaged, ITexel<TTexel, byte> {
 		if (dimensions.X <= 0 || dimensions.Y <= 0) {
 			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, "Texture must have positive width and height.");

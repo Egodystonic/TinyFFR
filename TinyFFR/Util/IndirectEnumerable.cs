@@ -28,6 +28,10 @@ namespace Egodystonic.TinyFFR;
 /// <typeparam name="TIn">The type of object that provides the enumerable items.</typeparam>
 /// <typeparam name="TOut">The item type to enumerate over.</typeparam>
 public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut> {
+	/// <summary>
+	/// The enumerator type returned by <see cref="IndirectEnumerable{TIn,TOut}.GetEnumerator"/>
+	/// (i.e. the type used via duck-typing in a <c>foreach</c> statement).
+	/// </summary>
 	public struct Enumerator : IEnumerator<TOut> {
 		readonly TIn _input;
 		readonly int _count;
@@ -76,6 +80,9 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 	readonly delegate* managed<TIn, int> _getVersionFunc;
 	readonly delegate* managed<TIn, int, TOut> _getItemFunc;
 	
+	/// <summary>
+	/// An <see cref="IndirectEnumerable{TIn,TOut}"/> with a <see cref="Count"/> of <c>0</c>.
+	/// </summary>
 	public static IndirectEnumerable<TIn, TOut> Empty {
 		get {
 			return new IndirectEnumerable<TIn, TOut>(
@@ -91,17 +98,47 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 	static int GetNegOneVer(TIn _) => -1;
 	static TOut ThrowIfAccessed(TIn _, int __) => throw new InvalidOperationException("This enumerable is empty.");
 
+	/// <summary>
+	/// The number of <typeparamref name="TOut"/> values exposed by this instance.
+	/// </summary>
+	/// <exception cref="InvalidOperationException">
+	/// Thrown if the underlying <typeparamref name="TIn"/> instance has been modified or disposed since this <see cref="IndirectEnumerable{TIn,TOut}"/> was created.
+	/// </exception>
 	public int Count {
 		get {
 			ThrowIfInvalid();
 			return _getCountFunc(_input);
 		}
 	}
+	/// <summary>
+	/// Gets the <typeparamref name="TOut"/> at the given <paramref name="index"/>; equivalent to <see cref="ElementAt"/>.
+	/// </summary>
+	/// <param name="index">The index of the item to retrieve. Must be <c>&gt;= 0</c> and <c>&lt; <see cref="Count"/></c>.</param>
+	/// <exception cref="InvalidOperationException">
+	/// Thrown if the underlying <typeparamref name="TIn"/> instance has been modified or disposed since this <see cref="IndirectEnumerable{TIn,TOut}"/> was created.
+	/// </exception>
 	public TOut this[int index] {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => ElementAt(index);
 	}
 
+	/// <summary>
+	/// Constructs a new <see cref="IndirectEnumerable{TIn,TOut}"/> that exposes the <typeparamref name="TOut"/> values yielded by <paramref name="input"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This constructor is intended for types that expose one of their own facets as an <see cref="IndirectEnumerable{TIn,TOut}"/> (for example, a shape exposing its corners or edges). It's left public
+	/// as a convenience for advanced API users that want to construct their own indirect enumerable; but this is not intended to be used in typical API usage scenarios.
+	/// </para>
+	/// <para>
+	/// The three function pointers must all be static/unmanaged-callable methods, and are invoked by this instance (and any <see cref="Enumerator"/>s created from it) instead of allocating a delegate or capturing state.
+	/// </para>
+	/// </remarks>
+	/// <param name="input">The value passed to each of <paramref name="getCountFunc"/>, <paramref name="getVersionFunc"/> and <paramref name="getItemFunc"/> to provide the count/version/items respectively.</param>
+	/// <param name="inputVersion">A version number for <paramref name="input"/> at the time of construction, used to detect subsequent modification of <paramref name="input"/> (see the type-level remarks).</param>
+	/// <param name="getCountFunc">A function that returns the current number of items in <paramref name="input"/>. Must not be <see langword="null"/>.</param>
+	/// <param name="getVersionFunc">A function that returns the current version of <paramref name="input"/>, matched against <paramref name="inputVersion"/> to detect modification. Must not be <see langword="null"/>.</param>
+	/// <param name="getItemFunc">A function that returns the item at a given index in <paramref name="input"/>. Must not be <see langword="null"/>.</param>
 	public IndirectEnumerable(TIn input, int inputVersion, delegate*<TIn, int> getCountFunc, delegate*<TIn, int> getVersionFunc, delegate*<TIn, int, TOut> getItemFunc) {
 		ArgumentNullException.ThrowIfNull(getCountFunc);
 		ArgumentNullException.ThrowIfNull(getVersionFunc);
@@ -114,18 +151,41 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 		_getItemFunc = getItemFunc;
 	}
 
+	/// <summary>
+	/// Gets the <typeparamref name="TOut"/> at the given <paramref name="index"/>.
+	/// </summary>
+	/// <param name="index">The index of the item to retrieve. Must be <c>&gt;= 0</c> and <c>&lt; <see cref="Count"/></c>.</param>
+	/// <exception cref="InvalidOperationException">
+	/// Thrown if the underlying <typeparamref name="TIn"/> instance has been modified or disposed since this <see cref="IndirectEnumerable{TIn,TOut}"/> was created.
+	/// </exception>
+	/// <seealso cref="this[]"/>
 	public TOut ElementAt(int index) {
 		ThrowIfInvalid();
 		if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count ({Count}).");
 		return _getItemFunc(_input, index);
 	}
 
+	/// <summary>
+	/// Copies every <typeparamref name="TOut"/> exposed by this instance into <paramref name="dest"/>, in order.
+	/// </summary>
+	/// <param name="dest">The destination span to copy into. Must be at least <see cref="Count"/> elements long.</param>
+	/// <exception cref="InvalidOperationException">
+	/// Thrown if the underlying <typeparamref name="TIn"/> instance has been modified or disposed since this <see cref="IndirectEnumerable{TIn,TOut}"/> was created.
+	/// </exception>
 	public void CopyTo(Span<TOut> dest) {
 		ThrowIfInvalid();
 		for (var i = 0; i < Count; ++i) {
 			dest[i] = this[i];
 		}
 	}
+	/// <summary>
+	/// Attempts to copy every <typeparamref name="TOut"/> exposed by this instance into <paramref name="dest"/>, in order.
+	/// </summary>
+	/// <param name="dest">The destination span to copy into.</param>
+	/// <returns><see langword="false"/> if <paramref name="dest"/> is shorter than <see cref="Count"/> (in which case nothing is copied); <see langword="true"/> otherwise.</returns>
+	/// <exception cref="InvalidOperationException">
+	/// Thrown if the underlying <typeparamref name="TIn"/> instance has been modified or disposed since this <see cref="IndirectEnumerable{TIn,TOut}"/> was created.
+	/// </exception>
 	public bool TryCopyTo(Span<TOut> dest) {
 		ThrowIfInvalid();
 		if (dest.Length < Count) return false;
@@ -133,6 +193,12 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 		return true;
 	}
 
+	/// <summary>
+	/// Returns an enumerator that iterates over every <typeparamref name="TOut"/> exposed by this instance.
+	/// </summary>
+	/// <exception cref="InvalidOperationException">
+	/// Thrown if the underlying <typeparamref name="TIn"/> instance has been modified or disposed since this <see cref="IndirectEnumerable{TIn,TOut}"/> was created.
+	/// </exception>
 	public Enumerator GetEnumerator() {
 		ThrowIfInvalid();
 		return new Enumerator(_input, _inputVersion, Count, _getItemFunc, _getVersionFunc);

@@ -485,4 +485,100 @@ public static class MathUtils {
 	public static Vector4 GetColumn(this Matrix4x4 @this, int columnIndex) {
 		return new Vector4(@this[0, columnIndex], @this[1, columnIndex], @this[2, columnIndex], @this[3, columnIndex]);
 	}
+	
+	/// <summary>
+	/// Calculates the coordinate of <paramref name="anchor"/> + <paramref name="anchorOffset"/> within a 2D grid specified by <paramref name="gridSize"/> and <paramref name="coordinateSystemOrigin"/>.
+	/// </summary>
+	/// <param name="gridSize">The total size of the grid.</param>
+	/// <param name="coordinateSystemOrigin">Which corner of the grid is defined as <c>&lt;0, 0&gt;</c> (or the centre if <see cref="DiagonalOrientation2D.None"/>).</param>
+	/// <param name="anchor">Which corner or edge of the grid <paramref name="anchorOffset"/> is measured from (or the centre if <see cref="Orientation2D.None"/>).</param>
+	/// <param name="anchorOffset">
+	/// An additional offset from the given <paramref name="anchor"/>.
+	/// A positive <see cref="XYPair{T}.X">X</see>/<see cref="XYPair{T}.Y">Y</see> component value moves the resulting point <i>in</i> to the grid, a negative component value <i>out</i> of the grid.
+	/// Ambiguous values (e.g. a non-zero Y component for a <see cref="Orientation2D.Left">Left</see>-edge <paramref name="anchor"/>) move rightward/upward for positive X/Y and leftward/downward for negative X/Y.
+	/// </param>
+	public static XYPair<int> FindAnchoredPointIn2DCoordinateSystem(XYPair<int> gridSize, DiagonalOrientation2D coordinateSystemOrigin, Orientation2D anchor, XYPair<int> anchorOffset) {
+		if (!Enum.IsDefined(coordinateSystemOrigin)) {
+			throw new ArgumentOutOfRangeException(nameof(coordinateSystemOrigin), coordinateSystemOrigin, $"Canvas origin must be {DiagonalOrientation2D.None} (indicating the canvas centre) or one of {DiagonalOrientation2D.DownLeft}, {DiagonalOrientation2D.DownRight}, {DiagonalOrientation2D.UpLeft} or {DiagonalOrientation2D.UpRight}.");
+		}
+
+		// Step 1: Determine the coord assuming the TinyFFR convention of bottom-left being (0, 0)
+		var downLeftOriginResult = new XYPair<int>(
+			anchor.GetHorizontalComponent() switch {
+				HorizontalOrientation2D.Right => gridSize.X - anchorOffset.X,
+				HorizontalOrientation2D.Left => anchorOffset.X,
+				_ => (gridSize.X / 2) + anchorOffset.X,
+			},
+			anchor.GetVerticalComponent() switch {
+				VerticalOrientation2D.Up => gridSize.Y - anchorOffset.Y,
+				VerticalOrientation2D.Down => anchorOffset.Y,
+				_ => (gridSize.Y / 2) + anchorOffset.Y,
+			}
+		);
+
+		// Step 2: Convert for the actually-requested origin point
+		return new XYPair<int>(
+			coordinateSystemOrigin.GetHorizontalComponent() switch {
+				HorizontalOrientation2D.Right => gridSize.X - downLeftOriginResult.X,
+				HorizontalOrientation2D.Left => downLeftOriginResult.X,
+				_ => downLeftOriginResult.X - (gridSize.X / 2)
+			},
+			coordinateSystemOrigin.GetVerticalComponent() switch {
+				VerticalOrientation2D.Up => gridSize.Y - downLeftOriginResult.Y,
+				VerticalOrientation2D.Down => downLeftOriginResult.Y,
+				_ => downLeftOriginResult.Y - (gridSize.Y / 2)
+			}
+		);
+	}
+	
+	/// <summary>
+	/// Equivalent to <see cref="FindAnchoredPointIn2DCoordinateSystem"/> but using a normalized floating-point grid size of <c>1.0 x 1.0</c> with no additional anchor offset.
+	/// </summary>
+	/// <param name="coordinateSystemOrigin">Which corner of the grid is defined as <c>&lt;0, 0&gt;</c> (or the centre if <see cref="DiagonalOrientation2D.None"/>).</param>
+	/// <param name="anchor">Which corner or edge of the grid to compute the normalized coordinate for (or the centre if <see cref="Orientation2D.None"/>).</param>
+	/// <returns>A normalized coordinate with each component in the range <c>[0, 1]</c>.</returns>
+	public static XYPair<float> FindAnchorInNormalized2DCoordinateSystem(DiagonalOrientation2D coordinateSystemOrigin, Orientation2D anchor) {
+		return FindAnchoredPointIn2DCoordinateSystem((2, 2), coordinateSystemOrigin, anchor, (0, 0)).Cast<float>().ScaledBy(0.5f);
+	}
+	
+	/// <summary>
+	/// Calculates the coordinate of the corner of a rectangular area (of size <paramref name="area"/>) nearest <paramref name="coordinateSystemOrigin"/>
+	/// within a 2D grid specified by <paramref name="gridSize"/>,
+	/// given that the area itself is anchored (via <paramref name="anchor"/> and <paramref name="anchorOffset"/>).
+	/// </summary>
+	/// <remarks>
+	/// This is mostly useful for 2D canvas anchoring calculations.
+	/// Use this once you already have an anchored point in mind (see <see cref="FindAnchoredPointIn2DCoordinateSystem"/>) and need to know where to actually start
+	/// drawing/measuring a rectangular element of a known size, such that the element appears to grow away from its anchor rather than overlap it.
+	/// </remarks>
+	/// <param name="gridSize">The total size of the grid.</param>
+	/// <param name="coordinateSystemOrigin">Which corner of the grid is defined as <c>&lt;0, 0&gt;</c> (or the centre if <see cref="DiagonalOrientation2D.None"/>).</param>
+	/// <param name="anchor">Which corner or edge of the grid <paramref name="anchorOffset"/> is measured from (or the centre if <see cref="Orientation2D.None"/>).</param>
+	/// <param name="anchorOffset">
+	/// An additional offset from the given <paramref name="anchor"/>.
+	/// A positive <see cref="XYPair{T}.X">X</see>/<see cref="XYPair{T}.Y">Y</see> component value moves the resulting point <i>in</i> to the grid, a negative component value <i>out</i> of the grid.
+	/// Ambiguous values (e.g. a non-zero Y component for a <see cref="Orientation2D.Left">Left</see>-edge <paramref name="anchor"/>) move rightward/upward for positive X/Y and leftward/downward for negative X/Y.
+	/// </param>
+	/// <param name="area">The size of the area being positioned.</param>
+	/// <returns>The coordinate of the area's corner nearest <paramref name="coordinateSystemOrigin"/>, measured from <paramref name="coordinateSystemOrigin"/>.</returns>
+	public static XYPair<int> FindAnchoredAreaIn2DCoordinateSystem(XYPair<int> gridSize, DiagonalOrientation2D coordinateSystemOrigin, Orientation2D anchor, XYPair<int> anchorOffset, XYPair<int> area) {
+		var anchorCoord = FindAnchoredPointIn2DCoordinateSystem(gridSize, coordinateSystemOrigin, anchor, anchorOffset);
+		var anchorH = anchor.GetHorizontalComponent();
+		var anchorV = anchor.GetVerticalComponent();
+		var canvasH = coordinateSystemOrigin == DiagonalOrientation2D.None ? HorizontalOrientation2D.Left : coordinateSystemOrigin.GetHorizontalComponent();
+		var canvasV = coordinateSystemOrigin == DiagonalOrientation2D.None ? VerticalOrientation2D.Down : coordinateSystemOrigin.GetVerticalComponent();
+		
+		return new XYPair<int>(
+			(anchorH, canvasH) switch {
+				(HorizontalOrientation2D.None, _) => anchorCoord.X - area.X / 2,
+				_ when anchorH != canvasH => anchorCoord.X - area.X,
+				_ => anchorCoord.X
+			},
+			(anchorV, canvasV) switch {
+				(VerticalOrientation2D.None, _) => anchorCoord.Y - area.Y / 2,
+				_ when anchorV != canvasV => anchorCoord.Y - area.Y,
+				_ => anchorCoord.Y
+			}
+		);
+	}
 }

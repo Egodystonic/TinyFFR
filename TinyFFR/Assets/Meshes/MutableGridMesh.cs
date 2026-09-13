@@ -66,7 +66,7 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	public XYPair<float> GetVertexCoordinateNormalized(int index) => GetVertexCoordinateNormalized(GetVertexCoordinate(index));
 	public XYPair<float> GetVertexCoordinateNormalized(XYPair<int> xy) {
 		var result = xy.Cast<float>() / (GridDimensions - XYPair<int>.One).Cast<float>();
-		return result - UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownLeft, Origin);
+		return result - MathUtils.FindAnchorInNormalized2DCoordinateSystem(DiagonalOrientation2D.DownLeft, Origin);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

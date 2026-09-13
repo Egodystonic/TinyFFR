@@ -525,7 +525,7 @@ public interface IMeshBuilder {
 			}
 		}
 
-		var gridOriginNormalizedOffset = UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownLeft, gridOrigin);
+		var gridOriginNormalizedOffset = MathUtils.FindAnchorInNormalized2DCoordinateSystem(DiagonalOrientation2D.DownLeft, gridOrigin);
 		var originTranslation = config.OriginTranslation + gridOriginNormalizedOffset.X * xDir + gridOriginNormalizedOffset.Y * yDir;
 		// ReSharper disable once CompareOfFloatsByEqualityOperator Explicit comparison against 1f is correct here
 		var doubleMaxHeight = maxHeightDisplacement * 2f;

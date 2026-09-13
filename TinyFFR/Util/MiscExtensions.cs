@@ -3,6 +3,9 @@ using System.Reflection.Metadata;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// A static class holding miscellaneous extension methods that don't have a more specific home elsewhere.
+/// </summary>
 public static class MiscExtensions {
 	/// <summary>
 	/// Converts this <see cref="TimeSpan"/> to a typical game-engine/render-loop "deltaTime"/"dT" value;

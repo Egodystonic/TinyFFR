@@ -43,7 +43,7 @@ public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IStri
 	}
 
 	public static Vect CalculateAnchorOffsetForStandardQuadMesh(XYPair<float> size, Orientation2D positionAnchor) {
-		var translatedAnchorPoint = (UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownRight, positionAnchor) - new XYPair<float>(0.5f)) * -size;
+		var translatedAnchorPoint = (MathUtils.FindAnchorInNormalized2DCoordinateSystem(DiagonalOrientation2D.DownRight, positionAnchor) - new XYPair<float>(0.5f)) * -size;
 		return new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f);
 	}
 

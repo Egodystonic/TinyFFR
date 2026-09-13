@@ -119,7 +119,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				sizePx = (rtSizeFloat * SizeFraction).CastWithRoundingIfNecessary<float, int>();
 			}
 			
-			var bottomLeftPx = UiUtils.GetAnchoredCanvasAreaStartCoord(
+			var bottomLeftPx = MathUtils.FindAnchoredAreaIn2DCoordinateSystem(
 				renderTargetSize,
 				DiagonalOrientation2D.DownLeft,
 				Anchor,
@@ -797,7 +797,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			pixelCoord = pixelCoord.ScaledByReal(curTargetSize.Cast<float>() / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
 		}
 
-		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(curTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
+		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(curTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
 
 		XYPair<int> viewportTopLeft;
 		if (viewport.LastCheckedRenderTargetSize == curTargetSize) {
@@ -865,7 +865,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize.Cast<float>());
 		}
 
-		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
+		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
 
 		var normalizedCoord = new XYPair<float>(
 			((Real) pixelCoord.X).RemapRange(new Pair<Real, Real>(0f, viewportSize.X), new Pair<Real, Real>(-1f, 1f)),
