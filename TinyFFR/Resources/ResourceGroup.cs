@@ -13,6 +13,23 @@ using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
 
+/// <summary>
+/// Represents a group of tightly-related resources.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Resource groups are meant for when you wish to group/relate small bundles of strongly-associated resources (e.g. a mesh and material that make up a model).
+/// They are not designed for storing large lists of resources and you may suffer performance penalties when using them this way.
+/// If you need broader "collection-like" functionality you could instead consider array-pool-backed collections exposed via the <see cref="Egodystonic.TinyFFR.Factory.IResourceAllocator">resource allocator</see>.
+/// </para>
+/// <para>
+/// Also: Resource groups create dependencies on the resources added to them, meaning you can not dispose a resource that's part of a group before firstly disposing the group.
+/// This is by design and makes sense when using groups for their intended purpose to "collate" or "tightly-group" related assets.
+/// </para>
+/// <para>
+/// The ResourceGroup is itself a resource (and can even be added to another resource group). Like all other resources it is just a handle + implementation reference and is cheap to copy/pass around.
+/// </para>
+/// </remarks>
 public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResourceGroupImplProvider> {
 	readonly ResourceHandle<ResourceGroup> _handle;
 	readonly IResourceGroupImplProvider _impl;

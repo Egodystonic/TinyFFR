@@ -23,6 +23,14 @@ public readonly unsafe struct ResourceHandle : IEquatable<ResourceHandle> {
 	public override string ToString() => $"Untyped Handle 0x{AsInteger:X16}";
 }
 
+/// <summary>
+/// The basic, core identifier of a resource of type <typeparamref name="TResource"/>.
+/// </summary>
+/// <remarks>
+/// This handle only has meaning to the <see cref="IResourceImplProvider{TResource}"/> that created it, and most user
+/// code should not need to use it.
+/// </remarks>
+/// <typeparam name="TResource">The type of resource this handle pertains to.</typeparam>
 public readonly unsafe struct ResourceHandle<TResource> : IEquatable<ResourceHandle<TResource>> where TResource : IResource<TResource> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;

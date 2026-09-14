@@ -49,7 +49,7 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 		Quality = config.Quality;
 	}
 
-	public Renderer RendererInstance => MockResourceFactory.Create<Renderer, IRendererImplProvider>(Handle, this);
+	public Renderer RendererInstance => ResourceUtils.CreateCustom<Renderer, IRendererImplProvider>(Handle, this);
 
 	public bool IsDisposed(ResourceHandle<Renderer> handle) => Disposed;
 	public void Dispose(ResourceHandle<Renderer> handle) => Disposed = true;
@@ -112,7 +112,7 @@ sealed class FakeRenderOutputBufferImplProvider : IRenderOutputBufferImplProvide
 		TextureDimensions = config.TextureDimensions;
 	}
 
-	public RenderOutputBuffer BufferInstance => MockResourceFactory.Create<RenderOutputBuffer, IRenderOutputBufferImplProvider>(Handle, this);
+	public RenderOutputBuffer BufferInstance => ResourceUtils.CreateCustom<RenderOutputBuffer, IRenderOutputBufferImplProvider>(Handle, this);
 
 	public bool IsDisposed(ResourceHandle<RenderOutputBuffer> handle) => Disposed;
 	public void Dispose(ResourceHandle<RenderOutputBuffer> handle) => Disposed = true;
@@ -154,7 +154,7 @@ sealed class FakeCompositorImplProvider : IRendererCompositorImplProvider {
 		Name = name;
 	}
 
-	public RendererCompositor CompositorInstance => MockResourceFactory.Create<RendererCompositor, IRendererCompositorImplProvider>(Handle, this);
+	public RendererCompositor CompositorInstance => ResourceUtils.CreateCustom<RendererCompositor, IRendererCompositorImplProvider>(Handle, this);
 
 	public bool IsDisposed(ResourceHandle<RendererCompositor> handle) => Disposed;
 	public void Dispose(ResourceHandle<RendererCompositor> handle) {
@@ -234,7 +234,7 @@ sealed class FakeResourceGroupImplProvider : IResourceGroupImplProvider {
 		_disposesContainedResources = disposesContainedResources;
 	}
 
-	public ResourceGroup GroupInstance => MockResourceFactory.Create<ResourceGroup, IResourceGroupImplProvider>(Handle, this);
+	public ResourceGroup GroupInstance => ResourceUtils.CreateCustom<ResourceGroup, IResourceGroupImplProvider>(Handle, this);
 
 	public bool IsDisposed(ResourceHandle<ResourceGroup> handle) => Disposed;
 	public void Dispose(ResourceHandle<ResourceGroup> handle) => Disposed = true;
@@ -471,10 +471,10 @@ sealed class FakeCameraImplProvider : ICameraImplProvider {
 }
 
 static class BindableRendererTestScaffold {
-	public static Scene CreateScene(nuint handleId = 1) => MockResourceFactory.Create<Scene, ISceneImplProvider>(handleId, new FakeSceneImplProvider());
+	public static Scene CreateScene(nuint handleId = 1) => ResourceUtils.CreateCustom<Scene, ISceneImplProvider>(handleId, new FakeSceneImplProvider());
 
 	public static (Camera Camera, FakeCameraImplProvider Impl) CreateCamera(nuint handleId = 1) {
 		var impl = new FakeCameraImplProvider();
-		return (MockResourceFactory.Create<Camera, ICameraImplProvider>(handleId, impl), impl);
+		return (ResourceUtils.CreateCustom<Camera, ICameraImplProvider>(handleId, impl), impl);
 	}
 }

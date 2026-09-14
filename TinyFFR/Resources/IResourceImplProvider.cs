@@ -2,6 +2,12 @@
 
 namespace Egodystonic.TinyFFR.Resources;
 
+/// <summary>
+/// Base interface for all resource implementation providers.
+/// </summary>
+/// <remarks>
+/// Implementation providers are the actual "meat" of what makes any given resource 'work'.
+/// </remarks>
 public interface IResourceImplProvider {
 	string GetNameAsNewStringObject(ResourceHandle handle);
 	int GetNameLength(ResourceHandle handle);
