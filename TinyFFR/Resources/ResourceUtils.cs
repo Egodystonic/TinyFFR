@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR.Resources;
 
 /// <summary>
-/// A static class that assists in creating custom resources, and accessing their .
+/// A static class that assists in creating custom resources, and accessing their handles and implementations.
 /// </summary>
 public static class ResourceUtils {
 	/// <summary>

@@ -66,6 +66,32 @@ public sealed class ThreadingConfig {
 			field = value;
 		}
 	} = DefaultMaxShutdownWaitTime;
+	
+	/// <summary>
+	/// If <c>true</c> (the default), TinyFFR will install its own <see cref="System.Threading.SynchronizationContext"/> on the thread that creates the factory;
+	/// <i>only</i> if one does not already exist at factory-creation-time. 
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The installed synchronization context marshalls posted continuations back on to the primary thread, allowing <c>async / await</c> workflows to work even outside
+	/// of UI framework contexts.
+	/// </para>
+	/// <para>
+	/// If set to <c>false</c>, posted continuations (e.g. those created via <c>async / await</c>) will be posted on the default task thread pool; and these threads are
+	/// not permitted to touch the factory, its builders, or any resource. 
+	/// Therefore, if you opt to set this to <c>false</c> you must either take care to not accidentally post continuations to the default thread pool OR re-marshal those
+	/// continuations manually (perhaps via another sync context) before touching any TinyFFR object.
+	/// </para>
+	/// <para>
+	/// If a synchronization context already exists, this setting has no effect either way (as it is assumed that the pre-existing context will correctly marshal
+	/// continuations for your application's setup, so the factory will not install its own).
+	/// Usually a pre-existing context indicates you're working within a UI framework (e.g. Avalonia, WPF, Windows Forms, etc). 
+	/// </para>
+	/// <para>
+	/// If the factory <i>does</i> a sync context, it will be uninstalled on teardown (e.g. when the factory is disposed).
+	/// </para>
+	/// </remarks>
+	public bool InstallTinyFfrSynchronizationContextIfNonePreExisting { get; init; } = true;
 
 	/// <summary>
 	/// Whether the factory should actively wake up a host application's own message loop (e.g. a WPF, WinForms, or other UI framework's loop)

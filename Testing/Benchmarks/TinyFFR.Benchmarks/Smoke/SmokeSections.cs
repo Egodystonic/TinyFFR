@@ -4,6 +4,7 @@
 using Egodystonic.TinyFFR.Benchmarks.Harness;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Benchmarks.Smoke;
 
