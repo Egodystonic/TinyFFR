@@ -11,6 +11,9 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 public readonly record struct PixelPickResult(ModelInstance ModelInstance, Location Position);
 
+/// <summary>
+/// A renderer is what actually produces a visualization of your target scene in a window or render buffer.
+/// </summary>
 public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplProvider> {
 	readonly ResourceHandle<Renderer> _handle;
 	readonly IRendererImplProvider _impl;
@@ -29,18 +32,30 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 		_impl = impl;
 	}
 	
+	/// <summary>
+	/// The <see cref="Scene"/> this renderer was created to capture.
+	/// </summary>
 	public Scene TargetScene {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetScene(_handle);
 	}
+	/// <summary>
+	/// The <see cref="Camera"/> this renderer uses to capture the <see cref="TargetScene"/>.
+	/// </summary>
 	public Camera TargetCamera {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetCamera(_handle);
 	}
+	/// <summary>
+	/// The <see cref="Window"/> this renderer renders in to, or <c>null</c> if it does not target a window.
+	/// </summary>
 	public Window? TargetWindow {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetWindow(_handle);
 	}
+	/// <summary>
+	/// The <see cref="RenderOutputBuffer"/> this renderer renders in to, or <c>null</c> if it does not target an output buffer. 
+	/// </summary>
 	public RenderOutputBuffer? TargetBuffer {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetBuffer(_handle);

@@ -9,7 +9,13 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+/// <summary>
+/// An <see cref="IResourceImplProvider{TResource}"/> for <see cref="Renderer"/> resources.
+/// </summary>
 public interface IRendererImplProvider : IDisposableResourceImplProvider<Renderer> {
+	/// <summary>
+	/// Invoked via <see cref="Renderer.TargetScene"/>.
+	/// </summary>
 	Scene GetScene(ResourceHandle<Renderer> handle);
 	Camera GetCamera(ResourceHandle<Renderer> handle);
 	Window? GetWindow(ResourceHandle<Renderer> handle);

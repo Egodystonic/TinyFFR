@@ -7,7 +7,13 @@ using System;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+/// <summary>
+/// An <see cref="IResourceImplProvider{TResource}"/> for <see cref="RenderOutputBuffer"/> resources.
+/// </summary>
 public unsafe interface IRenderOutputBufferImplProvider : IDisposableResourceImplProvider<RenderOutputBuffer> {
+	/// <summary>
+	/// Invoked via <see cref="RenderOutputBuffer.CreateDynamicTexture"/>.
+	/// </summary>
 	Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle);
 	XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle);
 	void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange);

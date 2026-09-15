@@ -5,7 +5,13 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+/// <summary>
+/// An <see cref="IResourceImplProvider{TResource}"/> for <see cref="RendererCompositor"/> resources.
+/// </summary>
 public interface IRendererCompositorImplProvider : IDisposableResourceImplProvider<RendererCompositor> {
+	/// <summary>
+	/// Invoked via <see cref="RendererCompositor.Add"/>.
+	/// </summary>
 	void Add(ResourceHandle<RendererCompositor> handle, Renderer renderer, RenderCompositionType compositionType);
 	void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState);
 	void SetRendererFrameRateCap(ResourceHandle<RendererCompositor> handle, Renderer renderer, int? maxFramesPerSecond);
