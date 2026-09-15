@@ -4,7 +4,8 @@
 namespace Egodystonic.TinyFFR.Resources;
 
 /// <summary>
-/// Represents a resource type (<typeparamref name="TSelf"/>) that is really just a more specific view over an existing resource of type <typeparamref name="TBase"/> (for example, a <c>CanvasTexture</c> is a specialization of a <c>ModelInstance</c>), rather than being backed by its own independent handle/implementation pair.
+/// Represents a resource type (<typeparamref name="TSelf"/>) that is really just a more specific view over an existing resource of type <typeparamref name="TBase"/>
+/// (for example, a <c>CanvasTexture</c> is a specialization of a <c>ModelInstance</c>), rather than being backed by its own independent handle/implementation pair.
 /// </summary>
 /// <typeparam name="TSelf">The specialized resource type.</typeparam>
 /// <typeparam name="TBase">The underlying resource type that <typeparamref name="TSelf"/> specializes.</typeparam>

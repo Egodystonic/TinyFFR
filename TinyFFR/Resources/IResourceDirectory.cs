@@ -63,13 +63,27 @@ public interface IResourceDirectory {
 /// </summary>
 /// <typeparam name="TResource">The type of resource this directory tracks.</typeparam>
 public interface IResourceDirectory<TResource> where TResource : struct, IResource {
+	/// <summary>
+	/// Default value passed to <c>FindByName</c> for <c>allowPartialMatch</c>. 
+	/// </summary>
 	protected const bool DefaultAllowPartialMatch = IResourceDirectory.DefaultAllowPartialMatch;
+	/// <summary>
+	/// Default value passed to <c>FindByName</c> for <c>comparisonType</c>. 
+	/// </summary>
 	protected const StringComparison DefaultComparisonType = IResourceDirectory.DefaultComparisonType;
 	
 	/// <summary>
 	/// An <see cref="IndirectEnumerable{TIn,TOut}"/> of all currently-live resources of type <typeparamref name="TResource"/>.
 	/// </summary>
 	IndirectEnumerable<object, TResource> AllActiveInstances { get; }
+	/// <summary>
+	/// Invoked by the owning interface to determine whether the given <paramref name="resource"/>'s name matches <paramref name="name"/>.
+	/// </summary>
+	/// <param name="resource">The reosource to check for.</param>
+	/// <param name="name">The name to check against.</param>
+	/// <param name="allowPartialMatch">Whether or not to allow partial matches.</param>
+	/// <param name="comparisonType">The string comparison type to use.</param>
+	/// <returns>True if matching, false if not.</returns>
 	protected bool ResourceNameMatchIsMatching(TResource resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType);
 
 	/// <inheritdoc cref="IResourceDirectory.FindByName{TResource}(ReadOnlySpan{char},bool,StringComparison)"/>

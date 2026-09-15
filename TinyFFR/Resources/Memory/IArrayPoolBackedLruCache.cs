@@ -7,7 +7,8 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 /// A fixed-capacity, pooled key/value cache that automatically evicts its least-recently-used entry whenever it is full and a new key is added.
 /// </summary>
 /// <remarks>
-/// "Used" includes both adding/updating a key and successfully retrieving one via <see cref="TryGet"/>. An optional eviction callback (supplied when the cache is created) can be invoked whenever a value leaves the cache, whether due to capacity-driven eviction, an explicit <see cref="Remove(TKey)"/>, or a <see cref="Clear"/>/<see cref="Dispose(bool)"/> that requests it.
+/// "Used" includes both adding/updating a key and successfully retrieving one via <see cref="TryGet"/>. An optional eviction callback (supplied when the cache is created) can be
+/// invoked whenever a value leaves the cache, whether due to capacity-driven eviction, an explicit <see cref="Remove(TKey)"/>, or a <see cref="Clear"/>/<see cref="Dispose(bool)"/> that requests it.
 /// </remarks>
 /// <typeparam name="TKey">The cache key.</typeparam>
 /// <typeparam name="TValue">The cache value.</typeparam>

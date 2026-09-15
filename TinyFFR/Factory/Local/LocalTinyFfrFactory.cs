@@ -24,7 +24,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Factory.Local;
 
 /// <summary>
-/// The default, native-backed implementation of <see cref="ILocalTinyFfrFactory"/>. This is TinyFFR's primary entry point for typical desktop applications.
+/// The default, host-system-backed, local-hardware-utilising implementation of <see cref="ILocalTinyFfrFactory"/>. This is TinyFFR's primary entry point for desktop applications.
 /// </summary>
 public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHoldingBufferAllocator {
 	static LocalTinyFfrFactory? _instance = null;
@@ -114,17 +114,18 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	}
 
 	/// <summary>
-	/// Constructs and initializes a new <see cref="LocalTinyFfrFactory"/>, including the underlying native rendering library.
+	/// Constructs and initializes a new <see cref="LocalTinyFfrFactory"/> and executes local initialization work.
 	/// </summary>
 	/// <remarks>
-	/// Only one <see cref="LocalTinyFfrFactory"/> may be live at any given time; disposing this instance (see <see cref="Dispose"/>) is required before another can be constructed. This must be constructed on, and subsequently used only from, whichever thread you intend to treat as the "primary" thread for TinyFFR's purposes.
+	/// Only one <see cref="LocalTinyFfrFactory"/> may be live at any given time; disposing this instance (see <see cref="Dispose"/>) is required before another can be constructed.
+	/// This must be constructed on, and subsequently used only from, whichever thread you intend to treat as the "primary" thread for TinyFFR's purposes.
 	/// </remarks>
 	/// <param name="factoryConfig">General factory-level configuration. Defaults to <see langword="new"/> <see cref="LocalTinyFfrFactoryConfig"/> if <see langword="null"/>.</param>
-	/// <param name="localLoopBuilderConfig">Configuration for the <see cref="ILocalApplicationLoopBuilder"/>. Defaults to <see langword="new"/> <see cref="LocalApplicationLoopBuilderConfig"/> if <see langword="null"/>.</param>
-	/// <param name="windowBuilderConfig">Configuration for the <see cref="IWindowBuilder"/>. Defaults to <see langword="new"/> <see cref="WindowBuilderConfig"/> if <see langword="null"/>.</param>
-	/// <param name="assetLoaderConfig">Configuration for the <see cref="ILocalAssetLoader"/>. Defaults to <see langword="new"/> <see cref="LocalAssetLoaderConfig"/> if <see langword="null"/>.</param>
-	/// <param name="rendererBuilderConfig">Configuration for the <see cref="IRendererBuilder"/>. Defaults to <see langword="new"/> <see cref="RendererBuilderConfig"/> if <see langword="null"/>.</param>
-	/// <param name="assetBakeryConfig">Configuration for the <see cref="IAssetBakery"/>. Defaults to <see langword="new"/> <see cref="AssetBakeryConfig"/> if <see langword="null"/>.</param>
+	/// <param name="localLoopBuilderConfig">Configuration for the <see cref="ILocalApplicationLoopBuilder"/>. Defaults to <see langword="new"/> <see cref="LocalApplicationLoopBuilderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="windowBuilderConfig">Configuration for the <see cref="IWindowBuilder"/>. Defaults to <see langword="new"/> <see cref="WindowBuilderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="assetLoaderConfig">Configuration for the <see cref="ILocalAssetLoader"/>. Defaults to <see langword="new"/> <see cref="LocalAssetLoaderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="rendererBuilderConfig">Configuration for the <see cref="IRendererBuilder"/>. Defaults to <see langword="new"/> <see cref="RendererBuilderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="assetBakeryConfig">Configuration for the <see cref="IAssetBakery"/>. Defaults to <see langword="new"/> <see cref="AssetBakeryConfig"/>() if <see langword="null"/>.</param>
 	/// <exception cref="InvalidOperationException">Thrown if another <see cref="LocalTinyFfrFactory"/> is already live.</exception>
 	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null, AssetBakeryConfig? assetBakeryConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
@@ -221,7 +222,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	/// Disposes this factory and every resource it still owns, along with the underlying native rendering library.
 	/// </summary>
 	/// <remarks>
-	/// Any resources created via this factory that have not already been disposed are immediately invalidated and must not be accessed afterwards. Must be called from the same (primary) thread this factory was constructed on.
+	/// Any resources created via this factory that have not already been disposed are immediately invalidated and must not be accessed afterwards.
+	/// Must be called from the same (primary) thread this factory was constructed on.
 	/// </remarks>
 	public void Dispose() {
 		// Maintainer's note: This is not simply accepting IDisposable because we want the flexibility

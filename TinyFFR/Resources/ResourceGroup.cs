@@ -15,6 +15,7 @@ namespace Egodystonic.TinyFFR.Resources;
 
 /// <summary>
 /// Represents a group of tightly-related resources.
+/// You can create a ResourceGroup via the factory's <see cref="IResourceAllocator"/>.
 /// </summary>
 /// <remarks>
 /// <para>

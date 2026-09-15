@@ -67,6 +67,7 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 	public Memory<T> CreatePooledMemoryBuffer<T>(int numElements) {
 		var arrayPool = GetArrayPool<T>();
 		var rentedArray = arrayPool.Rent(numElements);
+		Array.Clear(rentedArray);
 		return rentedArray.AsMemory(0, numElements);
 	}
 	public void ReturnPooledMemoryBuffer<T>(Memory<T> buffer) {

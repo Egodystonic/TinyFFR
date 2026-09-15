@@ -57,9 +57,13 @@ public readonly unsafe struct ResourceHandle : IEquatable<ResourceHandle> {
 	public override bool Equals(object? obj) => obj is ResourceHandle other && Equals(other);
 	/// <inheritdoc/>
 	public override int GetHashCode() => AsInteger.GetHashCode();
-	/// <inheritdoc/>
+	/// <summary>
+	/// <see cref="Equals(ResourceHandle"/>
+	/// </summary>
 	public static bool operator ==(ResourceHandle left, ResourceHandle right) => left.Equals(right);
-	/// <inheritdoc/>
+	/// <summary>
+	/// <see cref="Equals(ResourceHandle"/>
+	/// </summary>
 	public static bool operator !=(ResourceHandle left, ResourceHandle right) => !left.Equals(right);
 	/// <inheritdoc/>
 	public override string ToString() => $"Untyped Handle 0x{AsInteger:X16}";
@@ -142,9 +146,13 @@ public readonly unsafe struct ResourceHandle<TResource> : IEquatable<ResourceHan
 	public override bool Equals(object? obj) => obj is ResourceHandle<TResource> other && Equals(other);
 	/// <inheritdoc/>
 	public override int GetHashCode() => AsInteger.GetHashCode();
-	/// <inheritdoc/>
+	/// <summary>
+	/// <see cref="Equals(ResourceHandle{TResource}"/>
+	/// </summary>
 	public static bool operator ==(ResourceHandle<TResource> left, ResourceHandle<TResource> right) => left.Equals(right);
-	/// <inheritdoc/>
+	/// <summary>
+	/// <see cref="Equals(ResourceHandle{TResource}"/>
+	/// </summary>
 	public static bool operator !=(ResourceHandle<TResource> left, ResourceHandle<TResource> right) => !left.Equals(right);
 
 	/// <inheritdoc/>
