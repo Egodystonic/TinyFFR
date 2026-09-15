@@ -8,6 +8,9 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+/// <summary>
+/// An <see cref="IConfigStruct{TSelf}"/> passed to the <see cref="IRendererBuilder"/> when creating a <see cref="RenderOutputBuffer"/>.
+/// </summary>
 public readonly ref struct RenderOutputBufferCreationConfig : IConfigStruct<RenderOutputBufferCreationConfig> {
 	public static readonly XYPair<int> DefaultTextureDimensions = (2560, 1440);
 	public const int MaxTextureDimensionXY = 32_768;

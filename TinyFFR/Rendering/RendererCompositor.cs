@@ -61,28 +61,86 @@ public readonly struct RendererCompositor : IDisposableResource<RendererComposit
 	public void SetEnabledState(Renderer renderer, bool enabled) => Implementation.SetEnabledState(_handle, renderer, enabled);
 
 	/// <summary>
-	/// Sets an independent framerate cap on a previously-added <paramref name="renderer"/>. 
+	/// Sets an independent framerate cap on the given <paramref name="renderer"/>. 
 	/// </summary>
-	/// <param name="renderer"></param>
-	/// <param name="maxFramesPerSecond"></param>
+	/// <remarks>
+	/// <para>
+	/// Setting a framerate limit is useful as a performance optimisation. For example you may have a canvas scene that just prints debug information and you don't need that
+	/// rendered at the full framerate; or you may have a secondary view on a scene that doesn't update often and rendering at 60+ FPS is wasteful.
+	/// </para>
+	/// <para>
+	/// When the target <paramref name="renderer"/> would be skipped, its most recent previous frame output will be reshown in the final composited render instead.
+	/// </para>
+	/// <para>
+	/// Note that you can set both a framerate cap and a <see cref="SetRendererFrameRateRatio">ratio</see> simultaneously, and both will apply proscriptively.
+	/// </para>
+	/// </remarks>
+	/// <param name="renderer">The Renderer whose fraemrate you want to rate-limit.</param>
+	/// <param name="maxFramesPerSecond">Regardless of how many times <see cref="RenderAll"/> is invoked, the given <paramref name="renderer"/> will not be invoked more than
+	/// this many times per second. Setting this to <c>null</c> removes all limits (i.e. resets the default behaviour).</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="renderer"/> was never added to this compositor.</exception>
+	/// <seealso cref="SetRendererFrameRateRatio"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetRendererFrameRateCap(Renderer renderer, int? maxFramesPerSecond) => Implementation.SetRendererFrameRateCap(_handle, renderer, maxFramesPerSecond);
 
+	/// <summary>
+	/// Gets the current framerate cap for the given <paramref name="renderer"/>.
+	/// See <see cref="SetRendererFrameRateCap"/> for information on this value's meaning.
+	/// </summary>
+	/// <param name="renderer">The Renderer whose framerate you want to get the rate-limit for.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="renderer"/> was never added to this compositor.</exception>
+	/// <returns>The currently set framerate cap, or <c>null</c> if none is set.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int? GetRendererFrameRateCap(Renderer renderer) => Implementation.GetRendererFrameRateCap(_handle, renderer);
 
+	/// <summary>
+	/// Sets an independent framerate ratio on the given <paramref name="renderer"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Setting a framerate ratio is useful as a performance optimisation. For example you may have a canvas scene that just prints debug information and you don't need that
+	/// rendered at the full framerate; or you may have a secondary view on a scene that doesn't update often and rendering at 60+ FPS is wasteful.
+	/// </para>
+	/// <para>
+	/// When the target <paramref name="renderer"/> would be skipped, its most recent previous frame output will be reshown in the final composited render instead.
+	/// </para>
+	/// <para>
+	/// Note that you can set both a framerate ratio and a <see cref="SetRendererFrameRateCap">cap</see> simultaneously, and both will apply proscriptively.
+	/// </para>
+	/// </remarks>
+	/// <param name="renderer">The Renderer whose framerate you want to rate-limit.</param>
+	/// <param name="ratioDenominator">The reciprocal of the ratio of frame updates. For example, if <paramref name="ratioDenominator"/> is <c>4</c>, one in every four frames
+	/// will show an updated frame for the target <paramref name="renderer"/>.</param>
+	/// <seealso cref="SetRendererFrameRateCap"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetRendererFrameRateRatio(Renderer renderer, int ratioDenominator) => Implementation.SetRendererFrameRateRatio(_handle, renderer, ratioDenominator);
 
+	/// <summary>
+	/// Gets the current framerate ratio for the given <paramref name="renderer"/>.
+	/// See <see cref="SetRendererFrameRateRatio"/> for information on this value's meaning.
+	/// </summary>
+	/// <param name="renderer">The Renderer whose framerate you want to get the rate-limit for.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="renderer"/> was never added to this compositor.</exception>
+	/// <returns>The currently set framerate ratio, or <c>null</c> if none is set.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetRendererFrameRateRatio(Renderer renderer) => Implementation.GetRendererFrameRateRatio(_handle, renderer);
 
+	/// <summary>
+	/// Renders every added renderer and composites their output together on to the target window/buffer.
+	/// </summary>
+	/// <inheritdoc cref="Renderer.Render" />
+	/// <seealso cref="RenderAllAndWaitForGpu"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RenderAll() => Implementation.RenderAll(_handle);
 
+	/// <inheritdoc cref="Renderer.WaitForGpu" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void WaitForGpu() => Implementation.WaitForGpu(_handle);
 
+	/// <summary>
+	/// Renders every added renderer and composites their output together on to the target window/buffer.
+	/// </summary>
+	/// <inheritdoc cref="Renderer.RenderAndWaitForGpu" />
 	public void RenderAllAndWaitForGpu() {
 		RenderAll();
 		WaitForGpu();

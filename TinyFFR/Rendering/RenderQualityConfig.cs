@@ -4,8 +4,15 @@
 namespace Egodystonic.TinyFFR.Rendering;
 using static IConfigStruct;
 
+/// <summary>
+/// Enumeration used to select an anti-aliasing mode inside a <see cref="RenderQualityConfig"/>.
+/// </summary>
 public enum AntiAliasingMode {
+	/// <summary>
+	/// Disables anti-aliasing.
+	/// </summary>
 	None = 0,
+	
 	Fxaa = 1,
 	TaaBalanced = 2,
 	TaaReducedGhosting = 3,
@@ -13,13 +20,22 @@ public enum AntiAliasingMode {
 	TaaIncreasedSharpening = 5
 }
 
+/// <summary>
+/// Enumeration of default configuration layouts for <see cref="RenderQualityConfig"/>.
+/// </summary>
 public enum BuiltInQualityConfiguration {
-	Medium,
+	/// <summary>
+	/// A configuration representing a high-quality experience at the best quality-to-performance tradeoff for most users on reasonably modern hardware.
+	/// </summary>
+	/// <remarks>
+	/// This setting enables FXAA, enables most postprocessing effects at high quality presets, and renders at an internal resolution scaling of 100%.  
+	/// </remarks>
 	High,
+	Medium,
 	VeryHigh,
-	Ultra,
 	Low,
 	VeryLow,
+	Ultra,
 	Canvas,
 	DebugAndDiagnostic
 }

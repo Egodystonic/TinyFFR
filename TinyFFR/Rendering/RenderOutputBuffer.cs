@@ -6,6 +6,10 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+/// <summary>
+/// Represents a target buffer that a <see cref="Renderer"/> or <see cref="RendererCompositor"/> can render in to.
+/// The rendered data can then be used as a <see cref="Texture"/> inside a scene or read from/written to disc.
+/// </summary>
 public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOutputBuffer, IRenderOutputBufferImplProvider>, IRenderTarget {
 	readonly ResourceHandle<RenderOutputBuffer> _handle;
 	readonly IRenderOutputBufferImplProvider _impl;
@@ -19,6 +23,9 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	IResourceImplProvider IResource.Implementation => Implementation;
 	ResourceStub IResource.AsStub => new(Handle.Ident, Implementation);
 
+	/// <summary>
+	/// The dimensions of this output buffer.
+	/// </summary>
 	public XYPair<int> TextureDimensions {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTextureDimensions(_handle);
