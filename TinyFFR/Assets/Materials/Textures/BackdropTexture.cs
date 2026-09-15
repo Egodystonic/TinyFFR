@@ -44,7 +44,8 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 		return new BackdropTexture(handle, impl as IBackdropTextureImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<BackdropTexture> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<BackdropTexture> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<BackdropTexture> IResource<BackdropTexture>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

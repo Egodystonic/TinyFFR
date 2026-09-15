@@ -121,7 +121,8 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 		return new MeshAnimation(handle, impl as IMeshAnimationImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<MeshAnimation> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<MeshAnimation> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<MeshAnimation> IResource<MeshAnimation>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	internal bool IsDisposed {

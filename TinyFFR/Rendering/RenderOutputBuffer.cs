@@ -59,7 +59,8 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 		return new RenderOutputBuffer(handle, impl as IRenderOutputBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<RenderOutputBuffer> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<RenderOutputBuffer> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<RenderOutputBuffer> IResource<RenderOutputBuffer>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -71,7 +71,8 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 		return new Texture(handle, impl as ITextureImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<Texture> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<Texture> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<Texture> IResource<Texture>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

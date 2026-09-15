@@ -101,7 +101,8 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		return new Mesh(handle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<Mesh> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<Mesh> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<Mesh> IResource<Mesh>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

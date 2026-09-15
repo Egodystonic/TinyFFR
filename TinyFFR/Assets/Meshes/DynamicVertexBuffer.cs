@@ -87,7 +87,8 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 		return new DynamicVertexBuffer(handle, impl as IDynamicVertexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<DynamicVertexBuffer> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<DynamicVertexBuffer> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<DynamicVertexBuffer> IResource<DynamicVertexBuffer>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

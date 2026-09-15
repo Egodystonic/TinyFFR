@@ -73,7 +73,8 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 		return new Scene(handle, impl as ISceneImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<Scene> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<Scene> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<Scene> IResource<Scene>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(ModelInstance modelInstance) => Implementation.Add(_handle, modelInstance);

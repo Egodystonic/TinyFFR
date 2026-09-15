@@ -233,7 +233,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		return new ModelInstance(handle, impl as IModelInstanceImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<ModelInstance> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<ModelInstance> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<ModelInstance> IResource<ModelInstance>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
 	public void RotateBy(Rotation rotation) => Implementation.RotateBy(_handle, rotation);

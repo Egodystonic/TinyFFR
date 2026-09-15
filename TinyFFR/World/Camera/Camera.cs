@@ -174,7 +174,8 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 		return new Camera(handle, impl as ICameraImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<Camera> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<Camera> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<Camera> IResource<Camera>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetViewAndUpDirection(Direction newViewDirection, Direction newUpDirection, bool enforceOrthogonality = true) {

@@ -163,14 +163,9 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	static ResourceGroup IResource<ResourceGroup>.CreateFromHandleAndImpl(ResourceHandle<ResourceGroup> handle, IResourceImplProvider impl) {
 		return new(handle, impl as IResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
 	}
-	/// <summary>
-	/// Returns this group's handle without first checking whether it has already been disposed.
-	/// </summary>
-	/// <remarks>
-	/// This is primarily intended for internal library use in situations where validity has already been established some other way; prefer using this <see cref="ResourceGroup"/> value directly in most cases, as its other members all check for disposal first.
-	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<ResourceGroup> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<ResourceGroup> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<ResourceGroup> IResource<ResourceGroup>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	/// <summary>
 	/// Adds <paramref name="resource"/> to this group.

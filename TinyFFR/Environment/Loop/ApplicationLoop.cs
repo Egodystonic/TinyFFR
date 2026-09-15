@@ -105,7 +105,8 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 		return new ApplicationLoop(handle, impl as IApplicationLoopImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<ApplicationLoop> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<ApplicationLoop> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<ApplicationLoop> IResource<ApplicationLoop>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	public TimeSpan TotalIteratedTime {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

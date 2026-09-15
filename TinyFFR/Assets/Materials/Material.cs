@@ -75,7 +75,8 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 		return new Material(handle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<Material> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<Material> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<Material> IResource<Material>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

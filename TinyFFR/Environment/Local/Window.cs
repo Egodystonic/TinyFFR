@@ -110,7 +110,8 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 		return new Window(handle, impl as IWindowImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<Window> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<Window> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<Window> IResource<Window>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	internal bool IsDisposed {

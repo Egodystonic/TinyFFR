@@ -35,7 +35,8 @@ public readonly struct VertexBuffer : IDisposableResource<VertexBuffer, IVertexB
 		return new VertexBuffer(handle, impl as IVertexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ResourceHandle<VertexBuffer> GetHandleWithoutDisposeCheck() => _handle;
+	internal ResourceHandle<VertexBuffer> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<VertexBuffer> IResource<VertexBuffer>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
