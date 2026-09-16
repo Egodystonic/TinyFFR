@@ -32,7 +32,13 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
-	/// <inheritdoc cref="Plane.SignedAngleTo(Direction)" />
+	/// <summary>
+	/// Calculates the angle between this direction and <paramref name="plane"/>, signed according to which side of <paramref name="plane"/> this direction points towards.
+	/// </summary>
+	/// <remarks>
+	/// This is in the range <c>-90° &lt;= n &lt;= 90°</c>: positive when this direction points (at least partly) towards the side <paramref name="plane"/>'s <see cref="Plane.Normal"/> faces, negative when it points towards the opposite side, and (approximately) zero when it is parallel to <paramref name="plane"/>.
+	/// </remarks>
+	/// <param name="plane">The plane to measure against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle SignedAngleTo(Plane plane) => plane.SignedAngleTo(this);
 	/// <inheritdoc/>
@@ -82,7 +88,13 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
-	/// <inheritdoc cref="Plane.SignedAngleTo(Direction)" />
+	/// <summary>
+	/// Calculates the angle between this vector's direction and <paramref name="plane"/>, signed according to which side of <paramref name="plane"/> this vector points towards.
+	/// </summary>
+	/// <remarks>
+	/// This is in the range <c>-90° &lt;= n &lt;= 90°</c>: positive when this vector points (at least partly) towards the side <paramref name="plane"/>'s <see cref="Plane.Normal"/> faces, negative when it points towards the opposite side, and (approximately) zero when it is parallel to <paramref name="plane"/>.
+	/// </remarks>
+	/// <param name="plane">The plane to measure against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle SignedAngleTo(Plane plane) => plane.SignedAngleTo(this);
 	/// <inheritdoc/>

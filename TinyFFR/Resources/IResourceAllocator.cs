@@ -61,8 +61,25 @@ public interface IResourceAllocator {
 	/// Note: The leased span may not be zeroed (cleared); you should manually invoke <see cref="Span{T}.Clear"/> if necessary.</returns>
 	/// <seealso cref="CreatePooledMemoryBuffer"/>
 	ScopedSpanLease<T> BorrowSpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true);
-	/// <inheritdoc cref="BorrowSpan{T}"/>
-	/// <returns>A <see cref="ScopedReadOnlySpanLease{T}"/> that should be disposed when the borrowed memory is no longer needed.</returns>
+	/// <summary>
+	/// Borrows a temporary, read-only <typeparamref name="T"/> span of length <paramref name="numElements"/> from the memory pool.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Borrowing a span for a short-lived operation (rather than creating garbage) has a profoundly positive impact on performance; <i>especially</i> where you are borrowing multiple
+	/// spans or kilobytes+ of data every frame.
+	/// </para>
+	/// <para>
+	/// You must dispose the returned lease once you have finished using it, at which point the borrowed span should no longer be accessed.
+	/// Failing to do so will create a memory leak. For most short-lived operations it's recommended to use a <c>using</c> statement.
+	/// </para>
+	/// </remarks>
+	/// <param name="numElements">The number of elements the borrowed span should contain.</param>
+	/// <param name="clearMemoryOnLeaseEnd">Whether to clear (zero) the memory on lease disposal. Can be set to <c>false</c> if you
+	/// know your data contains no GC references and the performance hit of clearing the memory is costly.</param>
+	/// <returns>A <see cref="ScopedReadOnlySpanLease{T}"/> that should be disposed when the borrowed memory is no longer needed.
+	/// Note: The leased span may not be zeroed (cleared); you should not assume otherwise.</returns>
+	/// <seealso cref="CreatePooledMemoryBuffer"/>
 	ScopedReadOnlySpanLease<T> BorrowReadOnlySpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true);
 	
 	/// <summary>

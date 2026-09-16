@@ -155,28 +155,69 @@ partial struct Line {
 }
 
 partial struct Ray : IConvexShapeReflectable<Ray> {
-	/// <inheritdoc cref="Line.ClosestPointInsideOf{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point inside (or on the surface of) <paramref name="shape"/> that is closest to this ray.
+	/// </summary>
+	/// <remarks>
+	/// This is the same as this ray's own closest point on <paramref name="shape"/> if this ray already passes through <paramref name="shape"/>. For the closest point on the surface even when passing through the shape, see <see cref="ClosestPointOnSurfaceOf{TShape}"/>.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to find the closest point within.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointInsideOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.PointClosestTo(this);
-	/// <inheritdoc cref="Line.ClosestPointOnSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point on the surface of <paramref name="shape"/> that is closest to this ray.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to find the closest surface point on.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOnSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfacePointClosestTo(this);
-	/// <inheritdoc cref="Line.PointClosestTo{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point on this ray that is closest to <paramref name="shape"/>.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location PointClosestTo<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.ClosestPointOn(this);
-	/// <inheritdoc cref="Line.PointClosestToSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point on this ray that is closest to the surface of <paramref name="shape"/>.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location PointClosestToSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.ClosestPointToSurfaceOn(this);
-	/// <inheritdoc cref="Line.DistanceFrom{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the distance between this ray and the closest point inside (or on the surface of) <paramref name="shape"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is <c>0f</c> if this ray passes through <paramref name="shape"/>. For the distance to the surface even when passing through the shape, see <see cref="DistanceFromSurfaceOf{TShape}"/>.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceFrom(this);
-	/// <inheritdoc cref="Line.DistanceFromSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the distance between this ray and the closest point on the surface of <paramref name="shape"/>.
+	/// </summary>
+	/// <remarks>
+	/// Unlike <see cref="DistanceFrom{TShape}"/>, this is not clamped to <c>0f</c> when this ray passes through <paramref name="shape"/>.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceFrom(this);
-	/// <inheritdoc cref="Line.DistanceSquaredFrom{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the square of the distance between this ray and the closest point inside (or on the surface of) <paramref name="shape"/>. Cheaper than <see cref="DistanceFrom{TShape}"/> when only comparing distances.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceSquaredFrom(this);
-	/// <inheritdoc cref="Line.DistanceSquaredFromSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the square of the distance between this ray and the closest point on the surface of <paramref name="shape"/>. Cheaper than <see cref="DistanceFromSurfaceOf{TShape}"/> when only comparing distances.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceSquaredFrom(this);
 	/// <inheritdoc/>
@@ -191,37 +232,90 @@ partial struct Ray : IConvexShapeReflectable<Ray> {
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray FastReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastReflectionOf(this);
-	/// <inheritdoc cref="Line.IntersectionWith{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the intersection(s) between this ray and <paramref name="shape"/>, if any.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to test against.</typeparam>
+	/// <param name="shape">The shape to test against.</param>
+	/// <returns><see langword="null"/> if this ray does not intersect <paramref name="shape"/>; the intersection(s) otherwise.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.IntersectionWith(this);
-	/// <inheritdoc cref="Line.FastIntersectionWith{TShape}(TShape)" />
+	/// <summary>
+	/// Executes the same function as <see cref="IntersectionWith{TShape}"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes this ray does intersect <paramref name="shape"/>. The returned value of this function is undefined when that condition is broken.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to test against.</typeparam>
+	/// <param name="shape">The shape to test against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection FastIntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastIntersectionWith(this);
 }
 
 partial struct BoundedRay : IConvexShapeReflectable<BoundedRay> {
-	/// <inheritdoc cref="Line.ClosestPointInsideOf{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point inside (or on the surface of) <paramref name="shape"/> that is closest to this bounded ray.
+	/// </summary>
+	/// <remarks>
+	/// This is the same as this bounded ray's own closest point on <paramref name="shape"/> if this bounded ray already passes through <paramref name="shape"/>. For the closest point on the surface even when passing through the shape, see <see cref="ClosestPointOnSurfaceOf{TShape}"/>.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to find the closest point within.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointInsideOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.PointClosestTo(this);
-	/// <inheritdoc cref="Line.ClosestPointOnSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point on the surface of <paramref name="shape"/> that is closest to this bounded ray.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to find the closest surface point on.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOnSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfacePointClosestTo(this);
-	/// <inheritdoc cref="Line.PointClosestTo{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point on this bounded ray that is closest to <paramref name="shape"/>.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location PointClosestTo<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.ClosestPointOn(this);
-	/// <inheritdoc cref="Line.PointClosestToSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Returns the point on this bounded ray that is closest to the surface of <paramref name="shape"/>.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location PointClosestToSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.ClosestPointToSurfaceOn(this);
-	/// <inheritdoc cref="Line.DistanceFrom{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the distance between this bounded ray and the closest point inside (or on the surface of) <paramref name="shape"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is <c>0f</c> if this bounded ray passes through <paramref name="shape"/>. For the distance to the surface even when passing through the shape, see <see cref="DistanceFromSurfaceOf{TShape}"/>.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceFrom(this);
-	/// <inheritdoc cref="Line.DistanceFromSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the distance between this bounded ray and the closest point on the surface of <paramref name="shape"/>.
+	/// </summary>
+	/// <remarks>
+	/// Unlike <see cref="DistanceFrom{TShape}"/>, this is not clamped to <c>0f</c> when this bounded ray passes through <paramref name="shape"/>.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceFrom(this);
-	/// <inheritdoc cref="Line.DistanceSquaredFrom{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the square of the distance between this bounded ray and the closest point inside (or on the surface of) <paramref name="shape"/>. Cheaper than <see cref="DistanceFrom{TShape}"/> when only comparing distances.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceSquaredFrom(this);
-	/// <inheritdoc cref="Line.DistanceSquaredFromSurfaceOf{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the square of the distance between this bounded ray and the closest point on the surface of <paramref name="shape"/>. Cheaper than <see cref="DistanceFromSurfaceOf{TShape}"/> when only comparing distances.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to measure against.</typeparam>
+	/// <param name="shape">The shape to measure the distance to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceSquaredFrom(this);
 	/// <inheritdoc/>
@@ -236,10 +330,22 @@ partial struct BoundedRay : IConvexShapeReflectable<BoundedRay> {
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay FastReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastReflectionOf(this);
-	/// <inheritdoc cref="Line.IntersectionWith{TShape}(TShape)" />
+	/// <summary>
+	/// Calculates the intersection(s) between this bounded ray and <paramref name="shape"/>, if any.
+	/// </summary>
+	/// <typeparam name="TShape">The type of the convex shape to test against.</typeparam>
+	/// <param name="shape">The shape to test against.</param>
+	/// <returns><see langword="null"/> if this bounded ray does not intersect <paramref name="shape"/>; the intersection(s) otherwise.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.IntersectionWith(this);
-	/// <inheritdoc cref="Line.FastIntersectionWith{TShape}(TShape)" />
+	/// <summary>
+	/// Executes the same function as <see cref="IntersectionWith{TShape}"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes this bounded ray does intersect <paramref name="shape"/>. The returned value of this function is undefined when that condition is broken.
+	/// </remarks>
+	/// <typeparam name="TShape">The type of the convex shape to test against.</typeparam>
+	/// <param name="shape">The shape to test against.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection FastIntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastIntersectionWith(this);
 }

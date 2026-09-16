@@ -99,10 +99,13 @@ public readonly partial struct Ray : IPhysicalValidityDeterminable {
 
 	/// <inheritdoc/>
 	public Ray RotatedAroundOriginBy(Rotation rot) => new(StartPoint.AsVect().RotatedBy(rot).AsLocation(), Direction.RotatedBy(rot));
-	/// <inheritdoc cref="RotatedBy(Rotation)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around its own <see cref="StartPoint"/>, which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray RotatedBy(Quaternion rotationQuaternion) => new(StartPoint, Direction.RotatedBy(rotationQuaternion));
-	/// <inheritdoc cref="RotatedAroundOriginBy(Rotation)" />
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray RotatedAroundOriginBy(Quaternion rotQuat) => new(StartPoint.AsVect().RotatedBy(rotQuat).AsLocation(), Direction.RotatedBy(rotQuat));
 
@@ -126,9 +129,17 @@ public readonly partial struct Ray : IPhysicalValidityDeterminable {
 		var rotatedRay = boundedRay.RotatedBy(rotation, pivot);
 		return new Ray(rotatedRay.StartPoint, Direction * rotation);
 	}
-	/// <inheritdoc cref="RotatedBy(Rotation,float)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around the point on this ray at <paramref name="signedPivotDistance"/> (see <see cref="UnboundedLocationAtDistance"/>), which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
+	/// <param name="signedPivotDistance">The signed distance along this ray (from <see cref="StartPoint"/>, in the direction of <see cref="Direction"/>) of the point to pivot around.</param>
 	public Ray RotatedBy(Quaternion rotationQuaternion, float signedPivotDistance) => RotatedBy(rotationQuaternion, UnboundedLocationAtDistance(signedPivotDistance));
-	/// <inheritdoc cref="RotatedBy(Rotation,Location)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around <paramref name="pivot"/>, which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
+	/// <param name="pivot">The point to rotate around. Does not need to lie on this ray.</param>
 	public Ray RotatedBy(Quaternion rotationQuaternion, Location pivot) {
 		var boundedRay = new BoundedRay(StartPoint, UnboundedLocationAtDistance(UnboundedDistanceAtPointClosestTo(pivot)));
 		var rotatedRay = boundedRay.RotatedBy(rotationQuaternion, pivot);

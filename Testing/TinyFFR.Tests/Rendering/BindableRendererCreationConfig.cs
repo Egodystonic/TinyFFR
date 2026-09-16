@@ -38,7 +38,7 @@ class BindableRendererCreationConfigTest {
 			Assert.AreEqual(expected.AutoUpdateCameraAspectRatio, actual.AutoUpdateCameraAspectRatio);
 			Assert.AreEqual(expected.GpuSynchronizationFrameBufferCount, actual.GpuSynchronizationFrameBufferCount);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
-			Assert.AreEqual(expected.Quality.ShadowQuality, actual.Quality.ShadowQuality);
+			Assert.AreEqual(expected.Quality?.ShadowQuality, actual.Quality?.ShadowQuality);
 			Assert.AreEqual(expected.DefaultBufferSize, actual.DefaultBufferSize);
 		}
 

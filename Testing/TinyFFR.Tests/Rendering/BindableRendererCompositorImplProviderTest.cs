@@ -34,7 +34,7 @@ class BindableRendererCompositorImplProviderTest {
 	static void NoopFrameHandler(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) { }
 
 	Renderer CreateBindableRenderer(in BindableRendererCreationConfig config) => _builder.CreateBindableRenderer(_scene, _camera, _allocator, in config);
-	Renderer CreateBindableRenderer() => CreateBindableRenderer(new BindableRendererCreationConfig { Quality = RenderQualityConfig.Default });
+	Renderer CreateBindableRenderer() => CreateBindableRenderer(new BindableRendererCreationConfig());
 
 	FakeCompositorImplProvider LatestInnerCompositor => _builder.CreatedCompositors[^1];
 	FakeRendererImplProvider LatestInnerRenderer => _builder.CreatedRenderers[^1];
@@ -61,7 +61,7 @@ class BindableRendererCompositorImplProviderTest {
 	[Test]
 	public void ShouldRejectNonBindableRenderersInAdd() {
 		var compositor = _builder.CreateBindableCompositor();
-		var nonBindableRenderer = new FakeRendererImplProvider(9999, _scene, _camera, LatestBuffer.BufferInstance, new RendererCreationConfig { Quality = RenderQualityConfig.Default }).RendererInstance;
+		var nonBindableRenderer = new FakeRendererImplProvider(9999, _scene, _camera, LatestBuffer.BufferInstance, new RendererCreationConfig()).RendererInstance;
 
 		Assert.Throws<ArgumentException>(() => compositor.Add(nonBindableRenderer, RenderCompositionType.Standard));
 	}
@@ -279,7 +279,7 @@ class BindableRendererCompositorImplProviderTest {
 		var compositor = _builder.CreateBindableCompositor();
 		var sharedBuffer = LatestBuffer;
 		var innerCompositor = LatestInnerCompositor;
-		var renderer = CreateBindableRenderer(new BindableRendererCreationConfig { DefaultBufferSize = (222, 111), Quality = RenderQualityConfig.Default });
+		var renderer = CreateBindableRenderer(new BindableRendererCreationConfig { DefaultBufferSize = (222, 111) });
 		compositor.Add(renderer, RenderCompositionType.Standard);
 		var attachedInnerRenderer = LatestInnerRenderer;
 

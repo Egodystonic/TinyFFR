@@ -262,15 +262,27 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		return new(newStartPoint, newVect);
 	}
 
-	/// <inheritdoc cref="RotatedAroundStartBy(Rotation)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around its own <see cref="StartPoint"/>, which therefore stays fixed.
+	/// </summary>
+	/// <remarks>
+	/// This is the pivot used by the various operator overloads and by the explicit <see cref="IRotatable{TSelf}"/> implementation, matching the equivalent default on <see cref="Ray"/>.
+	/// </remarks>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay RotatedAroundStartBy(Quaternion rotationQuaternion) => new(_startPoint, _vect.RotatedBy(rotationQuaternion));
-	/// <inheritdoc cref="RotatedAroundEndBy(Rotation)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around its own <see cref="EndPoint"/>, which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
 	public BoundedRay RotatedAroundEndBy(Quaternion rotationQuaternion) {
 		var endPoint = _startPoint + _vect;
 		return new(endPoint + _vect.Reversed.RotatedBy(rotationQuaternion), endPoint);
 	}
-	/// <inheritdoc cref="RotatedAroundMiddleBy(Rotation)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around its own <see cref="MiddlePoint"/>, which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
 	public BoundedRay RotatedAroundMiddleBy(Quaternion rotationQuaternion) {
 		var newVect = _vect.RotatedBy(rotationQuaternion);
 		var newStartPoint = _startPoint + ((_vect * 0.5f) - (newVect * 0.5f));
@@ -303,7 +315,10 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		return new(pivot + (pivot >> StartPoint) * rotation, pivot + (pivot >> EndPoint) * rotation);
 	}
 
-	/// <inheritdoc cref="RotatedAroundOriginBy(Rotation)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotQuat"/> around the world origin (<c>(0f, 0f, 0f)</c>), moving both <see cref="StartPoint"/> and <see cref="EndPoint"/> as if they were vectors from the origin.
+	/// </summary>
+	/// <param name="rotQuat">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
 	public BoundedRay RotatedAroundOriginBy(Quaternion rotQuat) {
 		return new BoundedRay(
 			StartPoint.AsVect().RotatedBy(rotQuat).AsLocation(),
@@ -311,9 +326,17 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		);
 	}
 	BoundedRay IRotatable<BoundedRay>.RotatedBy(Quaternion rotQuat) => RotatedAroundStartBy(rotQuat); // We choose AroundStart as the "default" rotation because it keeps thing consistent with Ray
-	/// <inheritdoc cref="RotatedBy(Rotation,float)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around the point found by travelling <paramref name="signedPivotDistance"/> along this ray from <see cref="StartPoint"/>.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
+	/// <param name="signedPivotDistance">The distance along this ray, from <see cref="StartPoint"/>, of the point to rotate around. Can be outside the bounds of this ray.</param>
 	public BoundedRay RotatedBy(Quaternion rotationQuaternion, float signedPivotDistance) => RotatedBy(rotationQuaternion, UnboundedLocationAtDistance(signedPivotDistance));
-	/// <inheritdoc cref="RotatedBy(Rotation,Location)" />
+	/// <summary>
+	/// Returns this ray rotated by <paramref name="rotationQuaternion"/> around <paramref name="pivot"/>, which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
+	/// <param name="pivot">The point to rotate around. Does not need to lie on this ray.</param>
 	public BoundedRay RotatedBy(Quaternion rotationQuaternion, Location pivot) {
 		return new(pivot + (pivot >> StartPoint).RotatedBy(rotationQuaternion), pivot + (pivot >> EndPoint).RotatedBy(rotationQuaternion));
 	}
@@ -802,13 +825,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		var newVect = StartToEndVect.ParallelizedWith(direction);
 		return newVect == null ? null : new(StartPoint, newVect.Value);
 	}
-	/// <inheritdoc cref="ParallelizedAroundStartWith(Direction)" />
+	/// <summary>
+	/// Attempts to parallelize this ray with <paramref name="direction"/>, pivoting around its own <see cref="MiddlePoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="direction">The target direction.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly orthogonal to <paramref name="direction"/>); the parallelized result otherwise.</returns>
 	public BoundedRay? ParallelizedAroundMiddleWith(Direction direction) {
 		var newDir = Direction.ParallelizedWith(direction);
 		if (newDir == null) return null;
 		return RotatedAroundMiddleBy(Direction >> newDir.Value);
 	}
-	/// <inheritdoc cref="ParallelizedAroundStartWith(Direction)" />
+	/// <summary>
+	/// Attempts to parallelize this ray with <paramref name="direction"/>, pivoting around its own <see cref="EndPoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="direction">The target direction.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly orthogonal to <paramref name="direction"/>); the parallelized result otherwise.</returns>
 	public BoundedRay? ParallelizedAroundEndWith(Direction direction) {
 		var newVect = StartToEndVect.ParallelizedWith(direction);
 		return newVect == null ? null : new(EndPoint - newVect.Value, newVect.Value);
@@ -832,9 +863,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// </remarks>
 	/// <param name="direction">The target direction.</param>
 	public BoundedRay FastParallelizedAroundStartWith(Direction direction) => new(StartPoint, StartToEndVect.FastParallelizedWith(direction));
-	/// <inheritdoc cref="FastParallelizedAroundStartWith(Direction)" />
+	/// <summary>
+	/// Executes the same function as <see cref="ParallelizedAroundMiddleWith(Direction)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes <paramref name="direction"/> is not <see cref="Direction.None"/>, that this ray is not already exactly orthogonal to it, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when any of those conditions are broken.
+	/// </remarks>
+	/// <param name="direction">The target direction.</param>
 	public BoundedRay FastParallelizedAroundMiddleWith(Direction direction) => RotatedAroundMiddleBy(Direction >> Direction.FastParallelizedWith(direction));
-	/// <inheritdoc cref="FastParallelizedAroundStartWith(Direction)" />
+	/// <summary>
+	/// Executes the same function as <see cref="ParallelizedAroundEndWith(Direction)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes <paramref name="direction"/> is not <see cref="Direction.None"/>, that this ray is not already exactly orthogonal to it, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when any of those conditions are broken.
+	/// </remarks>
+	/// <param name="direction">The target direction.</param>
 	public BoundedRay FastParallelizedAroundEndWith(Direction direction) {
 		var newVect = StartToEndVect.FastParallelizedWith(direction);
 		return new(EndPoint - newVect, newVect);
@@ -863,13 +906,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		var newVect = StartToEndVect.OrthogonalizedAgainst(direction);
 		return newVect == null ? null : new(StartPoint, newVect.Value);
 	}
-	/// <inheritdoc cref="OrthogonalizedAroundStartAgainst(Direction)" />
+	/// <summary>
+	/// Attempts to orthogonalize this ray against <paramref name="direction"/>, pivoting around its own <see cref="MiddlePoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="direction">The target direction.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly parallel or exactly opposite to <paramref name="direction"/>); the orthogonalized result otherwise.</returns>
 	public BoundedRay? OrthogonalizedAroundMiddleAgainst(Direction direction) {
 		var newDir = Direction.OrthogonalizedAgainst(direction);
 		if (newDir == null) return null;
 		return RotatedAroundMiddleBy(Direction >> newDir.Value);
 	}
-	/// <inheritdoc cref="OrthogonalizedAroundStartAgainst(Direction)" />
+	/// <summary>
+	/// Attempts to orthogonalize this ray against <paramref name="direction"/>, pivoting around its own <see cref="EndPoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="direction">The target direction.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly parallel or exactly opposite to <paramref name="direction"/>); the orthogonalized result otherwise.</returns>
 	public BoundedRay? OrthogonalizedAroundEndAgainst(Direction direction) {
 		var newVect = StartToEndVect.OrthogonalizedAgainst(direction);
 		return newVect == null ? null : new(EndPoint - newVect.Value, newVect.Value);
@@ -893,9 +944,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// </remarks>
 	/// <param name="direction">The target direction.</param>
 	public BoundedRay FastOrthogonalizedAroundStartAgainst(Direction direction) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(direction));
-	/// <inheritdoc cref="FastOrthogonalizedAroundStartAgainst(Direction)" />
+	/// <summary>
+	/// Executes the same function as <see cref="OrthogonalizedAroundMiddleAgainst(Direction)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes <paramref name="direction"/> is not <see cref="Direction.None"/>, that this ray is not already exactly parallel or exactly opposite to it, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when any of those conditions are broken.
+	/// </remarks>
+	/// <param name="direction">The target direction.</param>
 	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Direction direction) => RotatedAroundMiddleBy(Direction >> Direction.FastOrthogonalizedAgainst(direction));
-	/// <inheritdoc cref="FastOrthogonalizedAroundStartAgainst(Direction)" />
+	/// <summary>
+	/// Executes the same function as <see cref="OrthogonalizedAroundEndAgainst(Direction)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes <paramref name="direction"/> is not <see cref="Direction.None"/>, that this ray is not already exactly parallel or exactly opposite to it, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when any of those conditions are broken.
+	/// </remarks>
+	/// <param name="direction">The target direction.</param>
 	public BoundedRay FastOrthogonalizedAroundEndAgainst(Direction direction) {
 		var newVect = StartToEndVect.FastOrthogonalizedAgainst(direction);
 		return new(EndPoint - newVect, newVect);
@@ -1253,13 +1316,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		if (newVect == null) return null;
 		return new BoundedRay(StartPoint, newVect.Value);
 	}
-	/// <inheritdoc cref="ParallelizedAroundStartWith(Plane)" />
+	/// <summary>
+	/// Attempts to parallelize this ray with <paramref name="plane"/> (i.e. rotate it so it lies flat within the plane), pivoting around its own <see cref="MiddlePoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="plane">The target plane.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly orthogonal to <paramref name="plane"/>); the parallelized result otherwise.</returns>
 	public BoundedRay? ParallelizedAroundMiddleWith(Plane plane) {
 		var newDir = Direction.ParallelizedWith(plane);
 		if (newDir == null) return null;
 		return RotatedAroundMiddleBy(Direction >> newDir.Value);
 	}
-	/// <inheritdoc cref="ParallelizedAroundStartWith(Plane)" />
+	/// <summary>
+	/// Attempts to parallelize this ray with <paramref name="plane"/> (i.e. rotate it so it lies flat within the plane), pivoting around its own <see cref="EndPoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="plane">The target plane.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly orthogonal to <paramref name="plane"/>); the parallelized result otherwise.</returns>
 	public BoundedRay? ParallelizedAroundEndWith(Plane plane) {
 		var newVect = StartToEndVect.ParallelizedWith(plane);
 		if (newVect == null) return null;
@@ -1284,9 +1355,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// </remarks>
 	/// <param name="plane">The target plane.</param>
 	public BoundedRay FastParallelizedAroundStartWith(Plane plane) => new(StartPoint, StartToEndVect.FastParallelizedWith(plane));
-	/// <inheritdoc cref="FastParallelizedAroundStartWith(Plane)" />
+	/// <summary>
+	/// Executes the same function as <see cref="ParallelizedAroundMiddleWith(Plane)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes this ray is not already exactly orthogonal to <paramref name="plane"/>, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when either condition is broken.
+	/// </remarks>
+	/// <param name="plane">The target plane.</param>
 	public BoundedRay FastParallelizedAroundMiddleWith(Plane plane) => RotatedAroundMiddleBy(Direction >> Direction.FastParallelizedWith(plane));
-	/// <inheritdoc cref="FastParallelizedAroundStartWith(Plane)" />
+	/// <summary>
+	/// Executes the same function as <see cref="ParallelizedAroundEndWith(Plane)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes this ray is not already exactly orthogonal to <paramref name="plane"/>, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when either condition is broken.
+	/// </remarks>
+	/// <param name="plane">The target plane.</param>
 	public BoundedRay FastParallelizedAroundEndWith(Plane plane) => new(EndPoint - StartToEndVect.FastParallelizedWith(plane), EndPoint);
 	/// <summary>
 	/// Executes the same function as <see cref="ParallelizedWith(Plane,float)"/> but skips some correctness checks, trading safety for speed.
@@ -1317,13 +1400,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		if (newVect == null) return null;
 		return new BoundedRay(StartPoint, newVect.Value);
 	}
-	/// <inheritdoc cref="OrthogonalizedAroundStartAgainst(Plane)" />
+	/// <summary>
+	/// Attempts to orthogonalize this ray against <paramref name="plane"/> (i.e. rotate it so it points directly along <see cref="Plane.Normal"/>), pivoting around its own <see cref="MiddlePoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="plane">The target plane.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly parallel to <paramref name="plane"/>); the orthogonalized result otherwise.</returns>
 	public BoundedRay? OrthogonalizedAroundMiddleAgainst(Plane plane) {
 		var newDir = Direction.OrthogonalizedAgainst(plane);
 		if (newDir == null) return null;
 		return RotatedAroundMiddleBy(Direction >> newDir.Value);
 	}
-	/// <inheritdoc cref="OrthogonalizedAroundStartAgainst(Plane)" />
+	/// <summary>
+	/// Attempts to orthogonalize this ray against <paramref name="plane"/> (i.e. rotate it so it points directly along <see cref="Plane.Normal"/>), pivoting around its own <see cref="EndPoint"/> (which therefore stays fixed) and keeping its <see cref="Length"/> unchanged.
+	/// </summary>
+	/// <param name="plane">The target plane.</param>
+	/// <returns><see langword="null"/> if there is no single answer (i.e. this ray is already exactly parallel to <paramref name="plane"/>); the orthogonalized result otherwise.</returns>
 	public BoundedRay? OrthogonalizedAroundEndAgainst(Plane plane) {
 		var newVect = StartToEndVect.OrthogonalizedAgainst(plane);
 		if (newVect == null) return null;
@@ -1348,9 +1439,21 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// </remarks>
 	/// <param name="plane">The target plane.</param>
 	public BoundedRay FastOrthogonalizedAroundStartAgainst(Plane plane) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(plane));
-	/// <inheritdoc cref="FastOrthogonalizedAroundStartAgainst(Plane)" />
+	/// <summary>
+	/// Executes the same function as <see cref="OrthogonalizedAroundMiddleAgainst(Plane)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes this ray is not already exactly parallel to <paramref name="plane"/>, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when either condition is broken.
+	/// </remarks>
+	/// <param name="plane">The target plane.</param>
 	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Plane plane) => RotatedAroundMiddleBy(Direction >> Direction.FastOrthogonalizedAgainst(plane));
-	/// <inheritdoc cref="FastOrthogonalizedAroundStartAgainst(Plane)" />
+	/// <summary>
+	/// Executes the same function as <see cref="OrthogonalizedAroundEndAgainst(Plane)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <remarks>
+	/// This function assumes this ray is not already exactly parallel to <paramref name="plane"/>, and that <see cref="StartToEndVect"/> is not zero-length. The returned value of this function is undefined when either condition is broken.
+	/// </remarks>
+	/// <param name="plane">The target plane.</param>
 	public BoundedRay FastOrthogonalizedAroundEndAgainst(Plane plane) => new(EndPoint - StartToEndVect.FastOrthogonalizedAgainst(plane), EndPoint);
 	/// <summary>
 	/// Executes the same function as <see cref="OrthogonalizedAgainst(Plane,float)"/> but skips some correctness checks, trading safety for speed.

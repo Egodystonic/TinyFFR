@@ -101,10 +101,13 @@ public readonly partial struct Line : IPhysicalValidityDeterminable {
 
 	/// <inheritdoc/>
 	public Line RotatedAroundOriginBy(Rotation rot) => new(PointOnLine.AsVect().RotatedBy(rot).AsLocation(), Direction.RotatedBy(rot));
-	/// <inheritdoc cref="RotatedBy(Rotation)" />
+	/// <summary>
+	/// Returns this line rotated by <paramref name="rotationQuaternion"/> around its own <see cref="PointOnLine"/>, which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line RotatedBy(Quaternion rotationQuaternion) => new(PointOnLine, Direction.RotatedBy(rotationQuaternion));
-	/// <inheritdoc cref="RotatedAroundOriginBy(Rotation)" />
+	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line RotatedAroundOriginBy(Quaternion rotQuat) => new(PointOnLine.AsVect().RotatedBy(rotQuat).AsLocation(), Direction.RotatedBy(rotQuat));
 
@@ -126,9 +129,17 @@ public readonly partial struct Line : IPhysicalValidityDeterminable {
 	public Line RotatedBy(Rotation rotation, Location pivot) {
 		return new(pivot + (pivot >> PointClosestTo(pivot)) * rotation, Direction * rotation);
 	}
-	/// <inheritdoc cref="RotatedBy(Rotation,float)" />
+	/// <summary>
+	/// Returns this line rotated by <paramref name="rotationQuaternion"/> around the point on this line at <paramref name="signedPivotDistance"/> (see <see cref="LocationAtDistance"/>), which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
+	/// <param name="signedPivotDistance">The signed distance along this line (from <see cref="PointOnLine"/>, in the direction of <see cref="Direction"/>) of the point to pivot around.</param>
 	public Line RotatedBy(Quaternion rotationQuaternion, float signedPivotDistance) => RotatedBy(rotationQuaternion, LocationAtDistance(signedPivotDistance));
-	/// <inheritdoc cref="RotatedBy(Rotation,Location)" />
+	/// <summary>
+	/// Returns this line rotated by <paramref name="rotationQuaternion"/> around <paramref name="pivot"/>, which therefore stays fixed.
+	/// </summary>
+	/// <param name="rotationQuaternion">The rotation, as a raw <see cref="Quaternion"/>, to apply.</param>
+	/// <param name="pivot">The point to rotate around. Does not need to lie on this line.</param>
 	public Line RotatedBy(Quaternion rotationQuaternion, Location pivot) {
 		return new(pivot + (pivot >> PointClosestTo(pivot)).RotatedBy(rotationQuaternion), Direction.RotatedBy(rotationQuaternion));
 	}

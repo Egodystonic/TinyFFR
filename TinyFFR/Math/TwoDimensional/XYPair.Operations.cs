@@ -577,7 +577,9 @@ public static class XYPairExtensions {
 	/// <param name="xy">The 2D coordinate to flatten.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int Index(this XYPair<int> @this, XYPair<int> xy) => @this.X * xy.Y + xy.X;
-	/// <inheritdoc cref="Index(XYPair{int},XYPair{int})" />
+	/// <summary>
+	/// Treats this pair as the dimensions of a 2D grid and (<paramref name="x"/>, <paramref name="y"/>) as a coordinate within it, returning the equivalent flattened 1D index (row-major, with <see cref="XYPair{T}.X"/> as the row length).
+	/// </summary>
 	/// <param name="this">The dimensions of the grid.</param>
 	/// <param name="x">The X component of the 2D coordinate to flatten.</param>
 	/// <param name="y">The Y component of the 2D coordinate to flatten.</param>
@@ -591,7 +593,9 @@ public static class XYPairExtensions {
 	/// <param name="xy">The 2D coordinate to clamp and flatten.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int IndexClamped(this XYPair<int> @this, XYPair<int> xy) => @this.Index(xy.Clamp(XYPair<int>.Zero, @this - XYPair<int>.One));
-	/// <inheritdoc cref="IndexClamped(XYPair{int},XYPair{int})" />
+	/// <summary>
+	/// Equivalent to <see cref="Index(XYPair{int},int,int)"/>, but first clamps (<paramref name="x"/>, <paramref name="y"/>) to lie within the grid described by this pair.
+	/// </summary>
 	/// <param name="this">The dimensions of the grid.</param>
 	/// <param name="x">The X component of the 2D coordinate to clamp and flatten.</param>
 	/// <param name="y">The Y component of the 2D coordinate to clamp and flatten.</param>

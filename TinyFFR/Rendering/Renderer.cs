@@ -245,7 +245,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation. This is useful if you've already pre-adjusted for DPI
 	/// before invoking this method; but in most cases this should be left at its default value of <c>false</c>.</param>
 	/// <seealso cref="CreateRayFromRenderSurface"/>
-	/// <seealso cref="PickModelInstanceFromRenderSubAreaSurface"/>
+	/// <seealso cref="PickModelInstanceFromRenderSurface"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CreateRayFromRenderSubAreaSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CreateRayFromViewportSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
 	

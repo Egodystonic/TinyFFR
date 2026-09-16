@@ -85,9 +85,10 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	} = DefaultGpuSynchronizationFrameBufferCount;
 
 	/// <summary>
-	/// The initial quality configuration for the created <see cref="Renderer"/>. Defaults to <c>new RenderQualityConfig()</c>.
+	/// The initial quality configuration for the created <see cref="Renderer"/>, or <c>null</c> to use the recommended
+	/// config for your scene &amp; render target.
 	/// </summary>
-	public RenderQualityConfig Quality { get; init; } = new();
+	public RenderQualityConfig? Quality { get; init; } = null;
 
 	/// <summary>
 	/// The name given to the new <see cref="Renderer"/>.
@@ -107,23 +108,30 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	public static int GetHeapStorageFormattedLength(in RendererCreationConfig src) {
 		return	SerializationSizeOfBool() // AutoUpdateCameraAspectRatio
 			+	SerializationSizeOfInt() // GpuSynchronizationFrameBufferCount
-			+	SerializationSizeOfSubConfig(src.Quality) // Quality
+			+	SerializationSizeOfBool() // Quality.HasValue
+			+	SerializationSizeOfSubConfig(src.Quality ?? new()) // Quality
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	/// <inheritdoc />
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RendererCreationConfig src) {
 		SerializationWriteBool(ref dest, src.AutoUpdateCameraAspectRatio);
 		SerializationWriteInt(ref dest, src.GpuSynchronizationFrameBufferCount);
-		SerializationWriteSubConfig(ref dest, src.Quality);
+		SerializationWriteBool(ref dest, src.Quality.HasValue);
+		SerializationWriteSubConfig(ref dest, src.Quality ?? new());
 		SerializationWriteString(ref dest, src.Name);
 	}
 	/// <inheritdoc />
 	public static RendererCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		var autoUpdateCameraAspectRatio = SerializationReadBool(ref src);
+		var gpuSynchronizationFrameBufferCount = SerializationReadInt(ref src);
+		var qualityHasValue = SerializationReadBool(ref src);
+		var quality = SerializationReadSubConfig<RenderQualityConfig>(ref src);
+		var name = SerializationReadString(ref src);
 		return new() {
-			AutoUpdateCameraAspectRatio = SerializationReadBool(ref src),
-			GpuSynchronizationFrameBufferCount = SerializationReadInt(ref src),
-			Quality = SerializationReadSubConfig<RenderQualityConfig>(ref src),
-			Name = SerializationReadString(ref src)
+			AutoUpdateCameraAspectRatio = autoUpdateCameraAspectRatio,
+			GpuSynchronizationFrameBufferCount = gpuSynchronizationFrameBufferCount,
+			Quality = qualityHasValue ? quality : null,
+			Name = name
 		};
 	}
 	/// <inheritdoc />

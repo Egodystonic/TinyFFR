@@ -15,7 +15,7 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 
 	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
 
-	public RendererCreationConfig BaseConfig { get; init; } = new() { Quality = RenderQualityConfig.Default };
+	public RendererCreationConfig BaseConfig { get; init; } = new();
 
 	public bool AutoUpdateCameraAspectRatio {
 		get => BaseConfig.AutoUpdateCameraAspectRatio;
@@ -25,7 +25,7 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 		get => BaseConfig.GpuSynchronizationFrameBufferCount;
 		init => BaseConfig = BaseConfig with { GpuSynchronizationFrameBufferCount = value };
 	}
-	public required RenderQualityConfig Quality {
+	public RenderQualityConfig? Quality {
 		get => BaseConfig.Quality;
 		init => BaseConfig = BaseConfig with { Quality = value };
 	} 

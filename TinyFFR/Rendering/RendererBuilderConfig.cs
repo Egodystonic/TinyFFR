@@ -5,10 +5,28 @@ using System;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+/// <summary>
+/// Specifies which underlying graphics API TinyFFR should use to render, via <see cref="RendererBuilderConfig.RenderingApi"/>.
+/// </summary>
+/// <remarks>
+/// Platform availability is limited: see the remarks on <see cref="RendererBuilderConfig.RenderingApi"/> for exactly which values are supported on which operating system.
+/// </remarks>
 public enum RenderingBackendApi {
+	/// <summary>
+	/// Lets TinyFFR choose the most appropriate API for the current operating system.
+	/// </summary>
 	SystemRecommended = 0,
+	/// <summary>
+	/// OpenGL.
+	/// </summary>
 	OpenGl = 1,
+	/// <summary>
+	/// Vulkan.
+	/// </summary>
 	Vulkan = 2,
+	/// <summary>
+	/// Apple's Metal API.
+	/// </summary>
 	Metal = 3
 }
 

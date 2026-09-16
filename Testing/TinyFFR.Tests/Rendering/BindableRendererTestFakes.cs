@@ -25,7 +25,7 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public RenderOutputBuffer TargetBuffer { get; }
 	public string Name { get; }
 	public bool AutoUpdateCameraAspectRatio { get; }
-	public RenderQualityConfig Quality { get; private set; }
+	public RenderQualityConfig? Quality { get; private set; }
 	public bool Disposed { get; private set; }
 	public int RenderCount { get; private set; }
 	public int WaitForGpuCount { get; private set; }

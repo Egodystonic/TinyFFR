@@ -143,7 +143,11 @@ partial struct ColorVect :
 	/// <param name="right">The divisor.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect operator /(ColorVect left, float right) => new(left.AsVector4 / right);
-	/// <inheritdoc cref="operator *(ColorVect,float)"/>
+	/// <summary>
+	/// Scales <paramref name="right"/> by <paramref name="left"/> (excluding <see cref="Alpha"/>), clamping the result to <c>[0, 1]</c>; equivalent to <c>right.ScaledBy(left)</c>.
+	/// </summary>
+	/// <param name="left">The scale factor.</param>
+	/// <param name="right">The colour to scale.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect operator *(float left, ColorVect right) => right.ScaledBy(left);
 	/// <summary>

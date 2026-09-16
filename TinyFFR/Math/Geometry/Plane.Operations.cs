@@ -74,7 +74,7 @@ partial struct Plane :
 	/// <inheritdoc/>
 	public Plane RotatedAroundOriginBy(Rotation rot) => new(Normal * rot, PointClosestToOrigin.AsVect().RotatedBy(rot).AsLocation());
 	Plane IRotatable<Plane>.RotatedBy(Quaternion rotQuat) => RotatedAroundOriginBy(rotQuat);
-	/// <inheritdoc cref="RotatedAroundOriginBy(Rotation)" />
+	/// <inheritdoc/>
 	public Plane RotatedAroundOriginBy(Quaternion rotQuat) => new(Normal.RotatedBy(rotQuat), PointClosestToOrigin.AsVect().RotatedBy(rotQuat).AsLocation());
 
 	/// <inheritdoc/>
@@ -135,7 +135,13 @@ partial struct Plane :
 	/// </remarks>
 	/// <param name="direction">The direction to measure against.</param>
 	public Angle SignedAngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(Normal.Dot(direction)));
-	/// <inheritdoc cref="SignedAngleTo(Direction)" />
+	/// <summary>
+	/// Calculates the angle between this plane and <paramref name="vect"/>'s direction, signed according to which side of this plane <paramref name="vect"/> points towards.
+	/// </summary>
+	/// <remarks>
+	/// This is in the range <c>-90° &lt;= n &lt;= 90°</c>: positive when <paramref name="vect"/> points (at least partly) towards the side <see cref="Normal"/> faces, negative when it points towards the opposite side, and (approximately) zero when it is parallel to this plane.
+	/// </remarks>
+	/// <param name="vect">The vector to measure against.</param>
 	public Angle SignedAngleTo(Vect vect) => SignedAngleTo(vect.Direction);
 	#endregion
 
@@ -300,7 +306,13 @@ partial struct Plane :
 	/// </remarks>
 	/// <param name="other">The other plane.</param>
 	public float DistanceFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
-	/// <inheritdoc cref="DistanceFrom(Plane)" />
+	/// <summary>
+	/// <inheritdoc/>
+	/// </summary>
+	/// <remarks>
+	/// Two non-parallel planes always intersect somewhere, so this returns <c>0f</c> for any pair of planes that aren't parallel to each other; a meaningful non-zero (squared) distance is only ever returned between two parallel planes.
+	/// </remarks>
+	/// <param name="other">The other plane.</param>
 	public float DistanceSquaredFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceSquaredFrom(other.PointClosestToOrigin) : 0f;
 
 	/// <summary>
@@ -350,13 +362,35 @@ partial struct Plane :
 	/// <param name="location">The location to test.</param>
 	/// <param name="planeThickness">How close to the plane <paramref name="location"/> can be while still being considered "on" it (and therefore facing neither way).</param>
 	public bool FacesAwayFrom(Location location, float planeThickness) => SignedDistanceFrom(location) < -planeThickness;
-	/// <inheritdoc cref="FacesTowards(Location)" />
+	/// <summary>
+	/// Determines whether the world origin (<c>(0f, 0f, 0f)</c>) is on the side of this plane that <see cref="Normal"/> points towards, using <see cref="DefaultPlaneThickness"/>.
+	/// </summary>
+	/// <remarks>
+	/// An origin that lies on the plane itself (within <see cref="DefaultPlaneThickness"/>) returns <see langword="false"/> from both this method and <see cref="FacesAwayFromOrigin()"/>.
+	/// </remarks>
 	public bool FacesTowardsOrigin() => FacesTowardsOrigin(DefaultPlaneThickness);
-	/// <inheritdoc cref="FacesAwayFrom(Location)" />
+	/// <summary>
+	/// Determines whether the world origin (<c>(0f, 0f, 0f)</c>) is on the side of this plane that <see cref="Normal"/> points away from, using <see cref="DefaultPlaneThickness"/>.
+	/// </summary>
+	/// <remarks>
+	/// An origin that lies on the plane itself (within <see cref="DefaultPlaneThickness"/>) returns <see langword="false"/> from both this method and <see cref="FacesTowardsOrigin()"/>.
+	/// </remarks>
 	public bool FacesAwayFromOrigin() => FacesAwayFromOrigin(DefaultPlaneThickness);
-	/// <inheritdoc cref="FacesTowards(Location,float)" />
+	/// <summary>
+	/// Determines whether the world origin (<c>(0f, 0f, 0f)</c>) is on the side of this plane that <see cref="Normal"/> points towards.
+	/// </summary>
+	/// <remarks>
+	/// An origin that lies on the plane itself (within <paramref name="planeThickness"/>) returns <see langword="false"/> from both this method and <see cref="FacesAwayFromOrigin(float)"/>.
+	/// </remarks>
+	/// <param name="planeThickness">How close to the plane the origin can be while still being considered "on" it (and therefore facing neither way).</param>
 	public bool FacesTowardsOrigin(float planeThickness) => SignedDistanceFromOrigin() > planeThickness;
-	/// <inheritdoc cref="FacesAwayFrom(Location,float)" />
+	/// <summary>
+	/// Determines whether the world origin (<c>(0f, 0f, 0f)</c>) is on the side of this plane that <see cref="Normal"/> points away from.
+	/// </summary>
+	/// <remarks>
+	/// An origin that lies on the plane itself (within <paramref name="planeThickness"/>) returns <see langword="false"/> from both this method and <see cref="FacesTowardsOrigin(float)"/>.
+	/// </remarks>
+	/// <param name="planeThickness">How close to the plane the origin can be while still being considered "on" it (and therefore facing neither way).</param>
 	public bool FacesAwayFromOrigin(float planeThickness) => SignedDistanceFromOrigin() < -planeThickness;
 
 	/// <inheritdoc/>

@@ -27,16 +27,14 @@ class RendererCreationConfigTest {
 			AutoUpdateCameraAspectRatio = false,
 			GpuSynchronizationFrameBufferCount = 1,
 			Name = "BBBbbb",
-			Quality = new() {
-				ShadowQuality = Quality.VeryLow
-			}
+			Quality = null
 		};
 
 		static void ComparisonFunc(RendererCreationConfig expected, RendererCreationConfig actual) {
 			Assert.AreEqual(expected.AutoUpdateCameraAspectRatio, actual.AutoUpdateCameraAspectRatio);
 			Assert.AreEqual(expected.GpuSynchronizationFrameBufferCount, actual.GpuSynchronizationFrameBufferCount);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
-			Assert.AreEqual(expected.Quality.ShadowQuality, actual.Quality.ShadowQuality);
+			Assert.AreEqual(expected.Quality?.ShadowQuality, actual.Quality?.ShadowQuality);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
@@ -45,6 +43,7 @@ class RendererCreationConfigTest {
 		AssertHeapSerializationWithObjects<RendererCreationConfig>()
 			.Bool(true)
 			.Int(3)
+			.Bool(true)
 			.SubConfig(new RenderQualityConfig { ShadowQuality = Quality.VeryHigh })
 			.String("Aa Aa")
 			.For(testConfigA);
@@ -52,7 +51,8 @@ class RendererCreationConfigTest {
 		AssertHeapSerializationWithObjects<RendererCreationConfig>()
 			.Bool(false)
 			.Int(1)
-			.SubConfig(new RenderQualityConfig { ShadowQuality = Quality.VeryLow })
+			.Bool(false)
+			.SubConfig(new RenderQualityConfig())
 			.String("BBBbbb")
 			.For(testConfigB);
 

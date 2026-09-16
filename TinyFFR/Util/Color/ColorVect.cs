@@ -314,7 +314,10 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		) * Multiplicand);
 	}
 
-	/// <inheritdoc cref="FromRgba32(uint)"/>
+	/// <summary>
+	/// Converts a packed 32-bit integer, in <c>0xRRGGBBAA</c> byte order, to a <see cref="ColorVect"/>.
+	/// </summary>
+	/// <param name="rgba">The packed colour value (reinterpreted as unsigned), with red in the most-significant byte and alpha in the least-significant byte.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromRgba32(int rgba) => FromRgba32((uint) rgba);
 
@@ -337,7 +340,10 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromRgb24(uint rgb) => FromRgba32((rgb << 8) | Byte.MaxValue);
 
-	/// <inheritdoc cref="FromRgb24(uint)"/>
+	/// <summary>
+	/// Converts a packed 24-bit integer, in <c>0xRRGGBB</c> byte order, to a fully-opaque <see cref="ColorVect"/>.
+	/// </summary>
+	/// <param name="rgb">The packed colour value (reinterpreted as unsigned), with red in the most-significant byte and blue in the least-significant byte. Only the lowest 24 bits are used.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromRgb24(int rgb) => FromRgb24((uint) rgb);
 
@@ -364,7 +370,12 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	/// <param name="lightness">The lightness, clamped to <c>[0, 1]</c>; <c>0</c> is black, <c>1</c> is white, with the most saturated colours at <c>0.5</c>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromHueSaturationLightness(Angle hue, float saturation, float lightness) => FromHueSaturationLightness(hue, saturation, lightness, 1f);
-	/// <inheritdoc cref="FromHueSaturationLightness(Angle,float,float)"/>
+	/// <summary>
+	/// Constructs a <see cref="ColorVect"/> from a hue/saturation/lightness (HSL) representation, with an explicit alpha.
+	/// </summary>
+	/// <param name="hue">The hue angle. Any value is accepted and wrapped to a full turn; see <see cref="RedHueAngle"/>, <see cref="GreenHueAngle"/>, and <see cref="BlueHueAngle"/> for reference points on the colour wheel.</param>
+	/// <param name="saturation">The saturation, clamped to <c>[0, 1]</c>; <c>0</c> is a shade of grey, <c>1</c> is fully saturated.</param>
+	/// <param name="lightness">The lightness, clamped to <c>[0, 1]</c>; <c>0</c> is black, <c>1</c> is white, with the most saturated colours at <c>0.5</c>.</param>
 	/// <param name="alpha">The value for <see cref="Alpha"/>, clamped to <c>[0, 1]</c>.</param>
 	public static ColorVect FromHueSaturationLightness(Angle hue, float saturation, float lightness, float alpha) {
 		const float SixthCircleRads = MathF.Tau / 6f;
