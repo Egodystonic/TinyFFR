@@ -3,7 +3,7 @@
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 /// <summary>
-/// Stratification of displacement levels for a <see cref="GameControllerTriggerPosition"/>.
+/// Stratification of displacement levels for a <see cref="GameControllerTriggerPosition"/> or <see cref="GameControllerStickPosition"/>.
 /// </summary>
 public enum AnalogDisplacementLevel {
 	/// <summary>
