@@ -3,6 +3,10 @@
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
+/// <inheritdoc/>
+/// <remarks>
+/// Specialization of <see cref="IApplicationLoopBuilder"/> for local factories.
+/// </remarks>
 public interface ILocalApplicationLoopBuilder : IApplicationLoopBuilder {
 	ApplicationLoop IApplicationLoopBuilder.CreateLoop(in ApplicationLoopCreationConfig config) => CreateLoop(new LocalApplicationLoopCreationConfig(config));
 

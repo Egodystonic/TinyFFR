@@ -6,6 +6,9 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
+/// <summary>
+/// A builder interface used for creating desktop <see cref="Window"/>s.
+/// </summary>
 public interface IWindowBuilder {
 	Window CreateWindow(Display display, WindowFullscreenStyle? fullscreenStyle = null, XYPair<int>? size = null, XYPair<int>? position = null, ReadOnlySpan<char> title = default) {
 		return CreateWindow(new() {

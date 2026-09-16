@@ -5,6 +5,9 @@ using System.Globalization;
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
+/// <summary>
+/// Representation of the current position of one of the analog sticks on a gamepad.
+/// </summary>
 public readonly struct GameControllerStickPosition : IEquatable<GameControllerStickPosition> {
 	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 1E-5f; // Just slightly over the raw trigger level for 'slight'
 

@@ -15,8 +15,14 @@ namespace Egodystonic.TinyFFR.Environment.Input;
  * At the end of this enum is some mouse buttons defined.
  */
 public enum KeyboardOrMouseKey : int {
+	/// <summary>
+	/// Unknown or unrecognised key.
+	/// </summary>
 	Unknown = 0,
 
+	/// <summary>
+	/// Return key (sometimes known as 'Enter'). 
+	/// </summary>
 	Return = '\r' | CharBasedValueBit,
 	Escape = '\x1B' | CharBasedValueBit,
 	Backspace = '\b' | CharBasedValueBit,
@@ -24,6 +30,9 @@ public enum KeyboardOrMouseKey : int {
 	Space = ' ' | CharBasedValueBit,
 	ExclamationMark = '!' | CharBasedValueBit,
 	DoubleQuote = '"' | CharBasedValueBit,
+	/// <summary>
+	/// <c>#</c> key.
+	/// </summary>
 	Hash = '#' | CharBasedValueBit,
 	Percent = '%' | CharBasedValueBit,
 	Dollar = '$' | CharBasedValueBit,

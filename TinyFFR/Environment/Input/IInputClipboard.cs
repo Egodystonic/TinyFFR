@@ -5,6 +5,9 @@ using Egodystonic.TinyFFR.Interop;
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
+/// <summary>
+/// Provides controls to access the system clipboard.
+/// </summary>
 public interface IInputClipboard { 
 	int GetClipboardTextLength();
 	int CopyClipboardText(Span<char> destinationBuffer);

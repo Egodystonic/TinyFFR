@@ -9,6 +9,9 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment;
 
+/// <summary>
+/// A resource that helps maintain a target framerate by tracking loop timing states, and helps collect/iterate local input values.
+/// </summary>
 public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IApplicationLoopImplProvider> {
 	readonly ResourceHandle<ApplicationLoop> _handle;
 	readonly IApplicationLoopImplProvider _impl;
@@ -59,6 +62,7 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTargetFrameRate(int? newValue) => TargetFrameRate = newValue;
 	
+	// TODO use the xmldoc from LocalAppLoopCreationConf.TargetPerFrameAsyncCooperativeTaskTimeFraction (if it's written smartly we could even inheritdoc)
 	public float? TargetPerFrameAsyncCooperativeTaskTimeFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTargetPerFrameAsyncCooperativeTaskTimeFraction(_handle);

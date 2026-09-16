@@ -8,6 +8,9 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
+/// <summary>
+/// Represents one of the displays (monitors) connected to the local machine.
+/// </summary>
 public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 	readonly ResourceHandle<Display> _handle;
 	readonly IDisplayImplProvider _impl;

@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
@@ -9,6 +10,9 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
+/// <summary>
+/// Represents a live desktop window.
+/// </summary>
 public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>, IRenderTarget {
 	readonly ResourceHandle<Window> _handle;
 	readonly IWindowImplProvider _impl;

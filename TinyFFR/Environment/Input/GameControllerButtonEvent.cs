@@ -3,6 +3,9 @@
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
+/// <summary>
+/// Represents a <see cref="GameControllerButton"/> either being pressed or released.
+/// </summary>
 public readonly struct GameControllerButtonEvent : IEquatable<GameControllerButtonEvent> {
 	readonly GameControllerButton _button;
 	readonly bool _buttonDown;

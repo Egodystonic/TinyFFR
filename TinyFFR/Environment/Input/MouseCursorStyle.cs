@@ -1,7 +1,9 @@
 // Created on 2026-08-11 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-namespace Egodystonic.TinyFFR.Environment;
+using System;
+
+namespace Egodystonic.TinyFFR.Environment.Input;
 
 public enum MouseCursorStyle {
 	Arrow = 0,

@@ -6,6 +6,9 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
+/// <summary>
+/// Discovery interface that lets you enumerate all of the <see cref="Display"/>s connected to this device.
+/// </summary>
 public interface IDisplayDiscoverer {
 	ReadOnlySpan<Display> All { get; }
 	Display? Primary { get; }

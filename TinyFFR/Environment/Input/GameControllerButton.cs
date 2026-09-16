@@ -7,6 +7,9 @@ namespace Egodystonic.TinyFFR.Environment.Input;
 
 /* Made to map directly to SDL's SDL_GameControllerButton, but each value is +1 so we can define "unknown" as 0.
  */
+/// <summary>
+/// Enumeration of supported gamepad controller buttons.
+/// </summary>
 public enum GameControllerButton : int {
 	Unknown = 0,
 	A = RawLocalGameControllerEventType.A + 1,

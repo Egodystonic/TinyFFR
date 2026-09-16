@@ -16,7 +16,7 @@ public interface ILatestKeyboardAndMouseInputRetriever {
 	XYPair<int> MouseCursorDelta { get; }
 	int MouseScrollWheelDelta { get; } // TODO document that down is positive, up is negative
 
-	ReadOnlySpan<char> TranscribedText { get; }
+	ReadOnlySpan<char> TranscribedText { get; } // TODO explain that this is empty unless ApplicationLoop.EnableInputTextTranscription is true; in which case standard key events may be subsumed
 
 	bool KeyIsCurrentlyDown(KeyboardOrMouseKey key);
 	bool KeyWasPressedThisIteration(KeyboardOrMouseKey key);

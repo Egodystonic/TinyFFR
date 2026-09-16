@@ -58,11 +58,11 @@ public readonly unsafe struct ResourceHandle : IEquatable<ResourceHandle> {
 	/// <inheritdoc/>
 	public override int GetHashCode() => AsInteger.GetHashCode();
 	/// <summary>
-	/// <see cref="Equals(ResourceHandle"/>
+	/// <see cref="Equals(ResourceHandle)"/>
 	/// </summary>
 	public static bool operator ==(ResourceHandle left, ResourceHandle right) => left.Equals(right);
 	/// <summary>
-	/// <see cref="Equals(ResourceHandle"/>
+	/// <see cref="Equals(ResourceHandle)"/>
 	/// </summary>
 	public static bool operator !=(ResourceHandle left, ResourceHandle right) => !left.Equals(right);
 	/// <inheritdoc/>
@@ -147,11 +147,11 @@ public readonly unsafe struct ResourceHandle<TResource> : IEquatable<ResourceHan
 	/// <inheritdoc/>
 	public override int GetHashCode() => AsInteger.GetHashCode();
 	/// <summary>
-	/// <see cref="Equals(ResourceHandle{TResource}"/>
+	/// <see cref="Equals(ResourceHandle{TResource})"/>
 	/// </summary>
 	public static bool operator ==(ResourceHandle<TResource> left, ResourceHandle<TResource> right) => left.Equals(right);
 	/// <summary>
-	/// <see cref="Equals(ResourceHandle{TResource}"/>
+	/// <see cref="Equals(ResourceHandle{TResource})"/>
 	/// </summary>
 	public static bool operator !=(ResourceHandle<TResource> left, ResourceHandle<TResource> right) => !left.Equals(right);
 

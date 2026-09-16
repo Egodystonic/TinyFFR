@@ -2,10 +2,25 @@
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
+/// <summary>
+/// Stratification of displacement levels for a <see cref="GameControllerTriggerPosition"/>.
+/// </summary>
 public enum AnalogDisplacementLevel {
+	/// <summary>
+	/// Zero or near-zero displacement. 
+	/// </summary>
 	None = 0,
+	/// <summary>
+	/// Slight displacement (roughly 15% to 40%).
+	/// </summary>
 	Slight = 4_915, // 15%
+	/// <summary>
+	/// Moderate displacement (roughly 40% to 75%).
+	/// </summary>
 	Moderate = 13_107, // 40%
+	/// <summary>
+	/// Full displacement (over 75%).
+	/// </summary>
 	Full = 24_576 // 75%
 }
 

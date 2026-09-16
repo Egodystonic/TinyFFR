@@ -1,6 +1,8 @@
 ﻿// Created on 2024-01-29 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Environment.Local;
+
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 16)]
@@ -12,6 +14,9 @@ public readonly struct MouseClickEvent : IEquatable<MouseClickEvent> {
 	[FieldOffset(12)]
 	readonly int _consecutiveClickCount;
 
+	/// <summary>
+	/// The location of this mouse click relative to the target <see cref="Window"/>'s top-left corner.
+	/// </summary>
 	public XYPair<int> Location => _location;
 	public MouseKey Key => _key;
 	public int ConsecutiveClickCount => _consecutiveClickCount;

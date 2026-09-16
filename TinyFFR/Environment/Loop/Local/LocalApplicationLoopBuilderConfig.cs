@@ -51,6 +51,7 @@ public sealed record LocalApplicationLoopBuilderConfig {
 	//TODO xmldoc TryIterateOnce() executes pending work on every call, including calls that return false because the next frame is
 	//TODO xmldoc not yet due. Pass executePendingPrimaryThreadCooperativeTasks: false to either method to skip executing pending work
 	//TODO xmldoc entirely.
+	// TODO this also needs to be documented on the mutable property on ApplicationLoop
 	public float? TargetPerFrameAsyncCooperativeTaskTimeFraction {
 		get;
 		init {

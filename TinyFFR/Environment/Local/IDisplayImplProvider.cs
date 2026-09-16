@@ -5,6 +5,9 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
+/// <summary>
+/// An <see cref="IResourceImplProvider{TResource}"/> for <see cref="Display"/> resources.
+/// </summary>
 public interface IDisplayImplProvider : IResourceImplProvider<Display> {
 	bool GetIsPrimary(ResourceHandle<Display> handle);
 	ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(ResourceHandle<Display> handle);
