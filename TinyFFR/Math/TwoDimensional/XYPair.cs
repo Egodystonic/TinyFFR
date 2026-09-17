@@ -101,7 +101,7 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 	/// Constructs the <see cref="XYPair{T}"/> that points in the direction of <paramref name="orientation"/> and has the given <paramref name="length"/>.
 	/// </summary>
 	/// <param name="orientation">The desired orientation.</param>
-	/// <param name="length">The desired length (see <see cref="XYPairExtensions.Length"/>).</param>
+	/// <param name="length">The desired length (see <see cref="XYPair{T}.Length"/>).</param>
 	/// <returns><see cref="Zero"/> if <paramref name="orientation"/> is <see cref="Orientation2D.None"/>; the constructed pair otherwise.</returns>
 	public static XYPair<T> FromOrientationAndLength(Orientation2D orientation, float length) {
 		var angle = orientation.ToPolarAngle();
@@ -121,7 +121,7 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 	/// Constructs the <see cref="XYPair{T}"/> at the given <paramref name="angle"/> around the circle (see <see cref="FromPolarAngle"/>), scaled to <paramref name="length"/>.
 	/// </summary>
 	/// <param name="angle">The angle around the circle.</param>
-	/// <param name="length">The desired length (see <see cref="XYPairExtensions.Length"/>).</param>
+	/// <param name="length">The desired length (see <see cref="XYPair{T}.Length"/>).</param>
 	public static XYPair<T> FromPolarAngleAndLength(Angle angle, float length) => FromPolarAngle(angle).WithLength(length);
 
 	/// <summary>

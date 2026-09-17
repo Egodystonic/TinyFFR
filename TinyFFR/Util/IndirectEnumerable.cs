@@ -158,7 +158,7 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 	/// <exception cref="InvalidOperationException">
 	/// Thrown if the underlying <typeparamref name="TIn"/> instance has been modified or disposed since this <see cref="IndirectEnumerable{TIn,TOut}"/> was created.
 	/// </exception>
-	/// <seealso cref="this[]"/>
+	/// <seealso cref="this[int]"/>
 	public TOut ElementAt(int index) {
 		ThrowIfInvalid();
 		if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count ({Count}).");

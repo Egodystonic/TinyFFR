@@ -6,7 +6,7 @@ using System;
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 /// <summary>
-/// Enumeration of the shapes the mouse cursor can be given while it is over a window (see <see cref="Local.Window.CursorStyle"/>).
+/// Enumeration of the shapes the mouse cursor can be given while it is over a window (see <see cref="Egodystonic.TinyFFR.Environment.Local.Window.CursorStyle"/>).
 /// </summary>
 /// <remarks>
 /// These are the host operating system's own standard cursors, so their exact appearance varies by platform and user theme; the descriptions below

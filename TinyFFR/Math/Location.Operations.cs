@@ -103,7 +103,7 @@ partial struct Location :
 	/// Returns the square of the distance between this location and <paramref name="otherLocation"/>.
 	/// </summary>
 	/// <remarks>
-	/// This is faster than <see cref="DistanceFrom"/> as it avoids a square root, and is sufficient when you only need
+	/// This is faster than <see cref="DistanceFrom(Location)"/> as it avoids a square root, and is sufficient when you only need
 	/// to compare distances rather than know the exact value.
 	/// </remarks>
 	/// <param name="otherLocation">The location to measure the distance to.</param>

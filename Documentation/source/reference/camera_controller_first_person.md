@@ -26,7 +26,7 @@ controller.Progress(deltaTime); // (5)!
 ```
 
 1.	This creates the controller, attached to the given `camera`.
-2.	This sets the up direction of the camera. When `Pitch` is increased, the camera will tilt towards this direction. Movement will be constrained to be parallel to the plane that is orthogonal to this direction.
+2.	This sets the up direction of the camera. When `Pitch` is increased, the camera will tilt *away* from this direction. Movement will be constrained to be parallel to the plane that is orthogonal to this direction.
 
 3.	This manipulates the camera according to the default keyboard and mouse scheme. The position/yaw/pitch properties will change according to any registered user inputs for this frame.
 
@@ -60,7 +60,7 @@ controller.Progress(deltaTime); // (5)!
 
 :   Sets the up/down turn amount of the camera.
 	
-	A value of `0°` means the camera is looking horizontally; positive values tilt upward, negative values tilt downward.
+	A value of `0°` means the camera is looking horizontally; positive values tilt downward, negative values tilt upward.
 	
 	Pitch is automatically clamped to ±90° during `Progress()` so that the camera never flips upside-down.
 	
@@ -74,7 +74,7 @@ controller.Progress(deltaTime); // (5)!
 
 	Changing `Yaw` rotates the camera around this direction.
 
-	Increasing `Pitch` tilts the camera towards this direction, decreasing it tilts the camera in the opposite direction.
+	Increasing `Pitch` tilts the camera away from this direction, decreasing it tilts the camera towards it.
 
 	Movement adjustments are projected onto a plane with this direction as its normal.
 

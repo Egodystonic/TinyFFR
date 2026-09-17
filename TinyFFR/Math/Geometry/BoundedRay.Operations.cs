@@ -611,7 +611,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// <inheritdoc cref="ILineLike.DistanceSquaredFromOrigin" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromOrigin() => ((Vect) PointClosestToOrigin()).LengthSquared;
-	/// <inheritdoc cref="ILineLike.Contains(Location)" />
+	/// <inheritdoc cref="ILineLike.Contains(Location, float)" />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location) => Contains(location, ILineLike.DefaultLineThickness);
 	/// <inheritdoc cref="ILineLike.Contains(Location,float)" />

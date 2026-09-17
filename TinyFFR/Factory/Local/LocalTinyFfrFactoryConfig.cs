@@ -79,7 +79,7 @@ public sealed class LocalTinyFfrFactoryConfig {
 	/// <summary>
 	/// If true, under certain conditions where TinyFFR encounters an error (usually when loading asset data) that may
 	/// leave memory in an uncertain condition, rather than attempt to recover (which may, in crafted scenarios, leak memory/data),
-	/// it instead opts to <see cref="Environment.FailFast(string)">fail fast</see>.
+	/// it instead opts to <see cref="System.Environment.FailFast(string)">fail fast</see>.
 	/// Defaults to <see cref="DefaultEnhanceSecurity"/>.
 	/// </summary>
 	public bool EnhanceSecurity { get; init; } = DefaultEnhanceSecurity;

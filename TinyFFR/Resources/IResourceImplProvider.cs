@@ -10,15 +10,15 @@ namespace Egodystonic.TinyFFR.Resources;
 /// </remarks>
 public interface IResourceImplProvider {
 	/// <summary>
-	/// Invoked via every <see cref="IResource"/>'s own <see cref="IStringSpanNameEnabled.GetNameAsNewStringObject"/> implementation.
+	/// Invoked via every <see cref="IResource"/>'s own <see cref="Memory.IStringSpanNameEnabled.GetNameAsNewStringObject"/> implementation.
 	/// </summary>
 	string GetNameAsNewStringObject(ResourceHandle handle);
 	/// <summary>
-	/// Invoked via every <see cref="IResource"/>'s own <see cref="IStringSpanNameEnabled.GetNameLength"/> implementation.
+	/// Invoked via every <see cref="IResource"/>'s own <see cref="Memory.IStringSpanNameEnabled.GetNameLength"/> implementation.
 	/// </summary>
 	int GetNameLength(ResourceHandle handle);
 	/// <summary>
-	/// Invoked via every <see cref="IResource"/>'s own <see cref="IStringSpanNameEnabled.CopyName"/> implementation.
+	/// Invoked via every <see cref="IResource"/>'s own <see cref="Memory.IStringSpanNameEnabled.CopyName"/> implementation.
 	/// </summary>
 	void CopyName(ResourceHandle handle, Span<char> destinationBuffer);
 }
