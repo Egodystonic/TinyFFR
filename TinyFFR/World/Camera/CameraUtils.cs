@@ -104,7 +104,7 @@ public static class CameraUtils {
 	/// Calculates how large an area of the world a perspective camera sees at a given distance, from pre-computed field-of-view tangents.
 	/// </summary>
 	/// <remarks>
-	/// Equivalent to <see cref="CalculatePerspectiveViewportWorldSizeAtDistance"/>, but skipping the trigonometry when the tangents are already to hand — worth using when calculating this every frame.
+	/// Equivalent to <see cref="CalculatePerspectiveViewportWorldSizeAtDistance"/>, but skipping the trigonometry when the tangents are already to hand. This is worth using when calculating this every frame.
 	/// </remarks>
 	/// <param name="halfHorizontalFieldOfViewTangent">The tangent of half the horizontal field of view.</param>
 	/// <param name="halfVerticalFieldOfViewTangent">The tangent of half the vertical field of view.</param>

@@ -10,8 +10,8 @@ namespace Egodystonic.TinyFFR.World;
 /// Holds a camera at a fixed position and aims it by panning, tilting and zooming, in the manner of a mounted security or television camera.
 /// </summary>
 /// <remarks>
-/// Unlike the other controllers, this one never moves the camera: <see cref="Position"/> is set once and the camera stays there. What changes is where it looks —
-/// <see cref="Pan"/> swings it left and right, <see cref="Tilt"/> swings it up and down — and how tightly it is framed, via <see cref="Zoom"/>. Each of the three is
+/// Unlike the other controllers, this one never moves the camera: <see cref="Position"/> is set once and the camera stays there. What changes is where it looks
+/// (<see cref="Pan"/> swings it left and right, <see cref="Tilt"/> swings it up and down) and how tightly it is framed, via <see cref="Zoom"/>. Each of the three is
 /// bounded, so the camera can be restricted to a realistic range of movement.
 /// </remarks>
 public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomCameraController> {
@@ -263,7 +263,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	/// How far the camera is tilted upward from <see cref="ZeroPanTiltDirection"/>, towards <see cref="UpDirection"/>. Defaults to <see cref="TiltDefault"/>.
 	/// </summary>
 	/// <remarks>
-	/// <b>Increasing this tilts the camera upward and decreasing it tilts downward</b> — note that this is the opposite sense to the <c>Pitch</c> of
+	/// <b>Increasing this tilts the camera upward and decreasing it tilts downward</b>. Note that this is the opposite sense to the <c>Pitch</c> of
 	/// <see cref="FirstPersonCameraController"/> and <see cref="FreeFlyingCameraController"/>. Values are clamped to between the negative of
 	/// <see cref="MaxTiltDown"/> and <see cref="MaxTiltUp"/> as they are set, so reading this back may not return what you assigned; the value read back is
 	/// normalized to the range <c>-180° &lt; n &lt;= 180°</c>. This is a target rather than the camera's current tilt: the camera eases towards it according to

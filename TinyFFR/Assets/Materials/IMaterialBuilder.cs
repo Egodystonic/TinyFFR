@@ -101,7 +101,7 @@ public interface IMaterialBuilder {
 	/// </summary>
 	/// <remarks>
 	/// Only the colour map is required. Each further map supplied makes the material more expensive to render, so supply only
-	/// those actually needed — colour, normal and ORM covers most surfaces.
+	/// those actually needed; colour, normal and ORM covers most surfaces.
 	/// </remarks>
 	/// <param name="colorMap">The texture supplying the surface's base colour.</param>
 	/// <param name="normalMap">The texture describing the surface's small-scale bumps and grooves, or <see langword="null"/> for a perfectly smooth surface.</param>

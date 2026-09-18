@@ -427,7 +427,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	/// Produces a random direction lying within <paramref name="plane"/>.
 	/// </summary>
 	/// <remarks>
-	/// Equivalent to <c>Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle)</c> — i.e. every direction within the plane is equally likely.
+	/// Equivalent to <c>Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle)</c>, i.e. every direction within the plane is equally likely.
 	/// </remarks>
 	/// <param name="plane">The plane the resultant direction should lie in.</param>
 	public static Direction Random(Plane plane) => Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);

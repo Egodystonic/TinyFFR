@@ -12,9 +12,9 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 /// A single element of a texture's data, holding three one-byte channels and no alpha.
 /// </summary>
 /// <remarks>
-/// This is the compact texel type, used wherever a texture has no transparency to record — most normal maps, ORM maps and
-/// opaque colour maps. Its three channels do not necessarily mean colour: in an ORM map they hold three unrelated surface
-/// properties that merely happen to be stored where red, green and blue would be.
+/// This is the compact texel type, used wherever a texture has no transparency to record (most normal maps, ORM maps and
+/// opaque colour maps). Its three channels do not necessarily mean colour: in an ORM map they hold three unrelated
+/// surface properties that merely happen to be stored where red, green and blue would be.
 /// </remarks>
 /// <param name="R">The first channel's value.</param>
 /// <param name="G">The second channel's value.</param>

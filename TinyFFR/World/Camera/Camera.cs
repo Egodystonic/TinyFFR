@@ -315,7 +315,7 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// longer shutter speed or a higher sensitivity each brightens the image. Use this where you want image brightness to track a physically-plausible camera setup;
 	/// use <see cref="Exposure"/> where you simply want the picture brighter or darker.
 	/// </remarks>
-	/// <param name="aperture">How wide the lens opening is, as an f-number — smaller numbers mean a wider opening and a brighter image. Clamped to between <see cref="ApertureMin"/> and <see cref="ApertureMax"/>.</param>
+	/// <param name="aperture">How wide the lens opening is, as an f-number, where smaller numbers mean a wider opening and a brighter image. Clamped to between <see cref="ApertureMin"/> and <see cref="ApertureMax"/>.</param>
 	/// <param name="shutterSpeed">How long the shutter stays open, in seconds; longer means brighter. Clamped to between <see cref="ShutterSpeedMin"/> and <see cref="ShutterSpeedMax"/>.</param>
 	/// <param name="sensitivity">How sensitive the sensor is to light, as an ISO value; higher means brighter. Clamped to between <see cref="SensitivityMin"/> and <see cref="SensitivityMax"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -326,8 +326,8 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// Setting a non-null value enables the depth-of-field effect. Defaults to <c>null</c>.
 	/// </summary>
 	/// <remarks>
-	/// Setting this makes objects nearer or further than the given distance blur, in the way a real lens does — the effect usually called depth of field.
-	/// It is what makes a shot feel photographic rather than computer-generated, but it costs rendering time, so leave it <see langword="null"/> where you do not want it.
+	/// Setting this makes objects nearer or further than the given distance blur, in the way a real lens does. This is the effect usually called depth of field. It is
+	/// what makes a shot feel photographic rather than computer-generated, but it costs rendering time, so leave it <see langword="null"/> where you do not want it.
 	/// </remarks>
 	public float? FocusDistance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -524,7 +524,7 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// Returns a ray travelling straight forward from the centre of the near plane of this camera.
 	/// </summary>
 	/// <remarks>
-	/// Useful for working out what is directly in front of the camera — for example to find what the crosshair of a first-person view is pointing at.
+	/// Useful for working out what is directly in front of the camera, for example to find what the crosshair of a first-person view is pointing at.
 	/// If you want to translate a user click to a ray, see <see cref="Renderer.CreateRayFromRenderSurface"/>.
 	/// </remarks>
 	public Ray CreateRayFromNearPlane() => new(Position + ViewDirection * NearPlaneDistance, ViewDirection);

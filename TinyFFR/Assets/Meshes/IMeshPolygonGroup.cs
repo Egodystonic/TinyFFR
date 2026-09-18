@@ -85,7 +85,7 @@ public interface IMeshPolygonGroup : IDisposable {
 	/// first. This does that for the whole group at once.
 	/// </para>
 	/// <para>
-	/// The cost of cutting a single polygon grows steeply with its vertex count — roughly with the cube of it — so a few
+	/// The cost of cutting a single polygon grows steeply with its vertex count (roughly with the cube of it), so a few
 	/// hundred vertices is comfortable but several thousand in one polygon is not. Split very complex outlines in to several
 	/// polygons, or supply vertices and triangles directly, rather than relying on this for them.
 	/// </para>

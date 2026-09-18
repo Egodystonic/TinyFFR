@@ -47,7 +47,7 @@ sealed class BenchmarkRenderTarget : IDisposable {
 	}
 
 	public Renderer CreateRenderer(Scene scene, Camera camera) {
-		return CreateRenderer(scene, camera, new RendererCreationConfig { Quality = RenderQualityConfig.Default });
+		return CreateRenderer(scene, camera, new RendererCreationConfig());
 	}
 
 	public Renderer CreateRenderer(CanvasScene scene, in RendererCreationConfig config) {

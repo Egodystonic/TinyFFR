@@ -12,7 +12,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Nodes are named, so a particular joint — a hand, say — can be found by name and its position read back after an animation has
+/// Nodes are named, so a particular joint (a hand, say) can be found by name and its position read back after an animation has
 /// been applied, which is how an object is made to follow a character's grip.
 /// </para>
 /// <para>

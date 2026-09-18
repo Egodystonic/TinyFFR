@@ -13,10 +13,10 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	/// The default "deadzone" size used by the methods on this type that accept one: a displacement at or below this value is treated as no input at all by default.
 	/// </summary>
 	/// <remarks>
-	/// Analog sticks rarely rest at exactly centre — most report a small non-zero displacement even when untouched, and that resting value drifts as a controller
+	/// Analog sticks rarely rest at exactly centre. Most report a small non-zero displacement even when untouched, and that resting value drifts as a controller
 	/// ages. A deadzone is the threshold below which such readings are discarded, preventing a stick the user isn't touching from slowly nudging your camera.
-	/// This value sits just above <see cref="AnalogDisplacementLevel.Slight"/>, which suits most controllers; pass a larger value to the relevant methods
-	/// if you find a particular controller still drifts or a lower value for more sensitivity.
+	/// This value sits just above <see cref="AnalogDisplacementLevel.Slight"/>, which suits most controllers; pass a larger value to the relevant methods if you
+	/// find a particular controller still drifts or a lower value for more sensitivity.
 	/// </remarks>
 	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 1E-5f; // Just slightly over the raw trigger level for 'slight'
 

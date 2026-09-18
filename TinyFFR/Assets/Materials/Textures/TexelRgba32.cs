@@ -11,8 +11,8 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 /// A single element of a texture's data, holding four one-byte channels.
 /// </summary>
 /// <remarks>
-/// This is the texel type for textures that need a fourth channel — a colour map with transparency, or a map such as ORMR that
-/// simply has four values to store. Its channels do not necessarily mean colour and alpha: in an ORMR map the fourth channel
+/// This is the texel type for textures that need a fourth channel (a colour map with transparency, or a map such as ORMR that
+/// simply has four values to store). Its channels do not necessarily mean colour and alpha: in an ORMR map the fourth channel
 /// holds reflectance, which merely happens to be stored where alpha would be.
 /// </remarks>
 /// <param name="R">The first channel's value.</param>

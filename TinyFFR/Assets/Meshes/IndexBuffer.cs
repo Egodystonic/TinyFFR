@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// A block of video memory holding the triangles that join the vertices of one or more meshes.
 /// </summary>
 /// <remarks>
-/// Several meshes commonly share one buffer — this is how the sub-meshes of a loaded model are stored — so buffers are
+/// Several meshes commonly share one buffer (this is how the sub-meshes of a loaded model are stored), so buffers are
 /// managed by the library rather than being created directly.
 /// </remarks>
 public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBufferImplProvider> {

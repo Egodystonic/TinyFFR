@@ -415,7 +415,7 @@ public readonly partial struct Ray : IPhysicalValidityDeterminable {
 	/// <inheritdoc/>
 	/// </summary>
 	/// <remarks>
-	/// <see cref="StartPoint"/> moves to its closest point on <paramref name="plane"/> and <see cref="Direction"/> is parallelized with <paramref name="plane"/> (see <see cref="ParallelizedWith(Plane)"/>) — so, unlike parallelizing alone, this also relocates the ray to actually lie within <paramref name="plane"/>.
+	/// <see cref="StartPoint"/> moves to its closest point on <paramref name="plane"/> and <see cref="Direction"/> is parallelized with <paramref name="plane"/> (see <see cref="ParallelizedWith(Plane)"/>), so, unlike parallelizing alone, this also relocates the ray to actually lie within <paramref name="plane"/>.
 	/// </remarks>
 	/// <param name="plane">The plane to project onto.</param>
 	public Ray? ProjectedOnTo(Plane plane) {

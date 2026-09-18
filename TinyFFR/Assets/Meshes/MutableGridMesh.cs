@@ -143,7 +143,7 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	/// </summary>
 	/// <remarks>
 	/// The result runs from <c>0</c> to <c>1</c> across the grid, shifted so that <see cref="Origin"/> is at zero. That makes
-	/// it directly usable as an input to any function of position across the grid — a wave, a slope or a noise field.
+	/// it directly usable as an input to any function of position across the grid, such as a wave, a slope or a noise field.
 	/// </remarks>
 	/// <param name="index">A position in the vertex list, in the range <c>0 &lt;= index &lt; GridDimensions.Area</c>.</param>
 	public XYPair<float> GetVertexCoordinateNormalized(int index) => GetVertexCoordinateNormalized(GetVertexCoordinate(index));

@@ -30,6 +30,7 @@
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="..\package_logo.png" Pack="true" PackagePath="\" />
     <None Include="..\..\build_output\Release\TinyFFR.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+    <None Include="..\..\build_output\Release\TinyFFR.xml" Pack="true" PackagePath="lib\$(TargetFramework)\" />
     <None Include="prebuilt_binaries\win-x64\*.*" Pack="true" PackagePath="\runtimes\win-x64\native\" />
     <None Include="prebuilt_binaries\linux-x64\*.*" Pack="true" PackagePath="\runtimes\linux-x64\native\" />
     <None Include="prebuilt_binaries\osx-arm64\*.*" Pack="true" PackagePath="\runtimes\osx-arm64\native\" />

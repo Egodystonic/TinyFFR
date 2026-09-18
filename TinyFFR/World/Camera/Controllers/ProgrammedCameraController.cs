@@ -15,7 +15,7 @@ namespace Egodystonic.TinyFFR.World;
 /// cinematics, cut-scenes, fly-throughs and replays.
 /// </para>
 /// <para>
-/// The camera is driven by three independent tracks — position, orientation and field of view — each a sequence of keyframes. A keyframe names a value to reach, how
+/// The camera is driven by three independent tracks (position, orientation and field of view), each a sequence of keyframes. A keyframe names a value to reach, how
 /// long to take getting there, and how to ease between the two. The tracks advance together on one clock (<see cref="CurrentTimestampSeconds"/>) but are otherwise
 /// unrelated, so a camera can be mid-way through a long sweep of movement whilst its field of view snaps between several values.
 /// </para>
@@ -58,7 +58,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	/// One step of a scripted camera path: a location to arrive at, how long to take getting there, and how to ease along the way.
 	/// </summary>
 	/// <param name="LengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the camera jump straight to <paramref name="TargetValue"/>.</param>
-	/// <param name="Algorithm">How to interpolate from the previous keyframe's location to this one's — for example linearly, or easing in and out.</param>
+	/// <param name="Algorithm">How to interpolate from the previous keyframe's location to this one's (for example linearly, or easing in and out).</param>
 	/// <param name="TargetValue">Where the camera should be by the time this keyframe finishes. Must be physically valid.</param>
 	public readonly record struct PositionKeyframe(float LengthSeconds, InterpolationAlgorithm<Location> Algorithm, Location TargetValue) : ITimeKeyedItem {
 		internal void ThrowIfInvalid() {
@@ -77,7 +77,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	/// One step of a scripted camera path: an orientation to arrive at, how long to take getting there, and how to ease along the way.
 	/// </summary>
 	/// <param name="LengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the camera snap straight to the target orientation.</param>
-	/// <param name="Algorithm">How to interpolate from the previous keyframe's orientation to this one's — for example linearly, or easing in and out.</param>
+	/// <param name="Algorithm">How to interpolate from the previous keyframe's orientation to this one's (for example linearly, or easing in and out).</param>
 	/// <param name="TargetViewDirection">Which way the camera should be looking by the time this keyframe finishes. Must be physically valid and not <see cref="Direction.None"/>.</param>
 	/// <param name="TargetUpDirection">Which way should be "up" for the camera by the time this keyframe finishes; this is what lets a scripted shot roll. Must be physically valid and not <see cref="Direction.None"/>.</param>
 	public readonly record struct OrientationKeyframe(float LengthSeconds, InterpolationAlgorithm<Direction> Algorithm, Direction TargetViewDirection, Direction TargetUpDirection) : ITimeKeyedItem {
@@ -100,7 +100,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	/// One step of a scripted camera path: a field of view to arrive at, how long to take getting there, and how to ease along the way.
 	/// </summary>
 	/// <param name="LengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the field of view jump straight to <paramref name="TargetValue"/>.</param>
-	/// <param name="Algorithm">How to interpolate from the previous keyframe's field of view to this one's — for example linearly, or easing in and out.</param>
+	/// <param name="Algorithm">How to interpolate from the previous keyframe's field of view to this one's (for example linearly, or easing in and out).</param>
 	/// <param name="TargetValue">The vertical field of view the camera should have by the time this keyframe finishes. Must be physically valid and between <see cref="Camera.FieldOfViewMin"/> and <see cref="Camera.FieldOfViewMax"/>.</param>
 	public readonly record struct FieldOfViewKeyframe(float LengthSeconds, InterpolationAlgorithm<Angle> Algorithm, Angle TargetValue) : ITimeKeyedItem {
 		internal void ThrowIfInvalid() {

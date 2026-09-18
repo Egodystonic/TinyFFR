@@ -36,7 +36,7 @@ public enum TexelType {
 /// </summary>
 /// <remarks>
 /// A "texel" is to a texture what a pixel is to an image; the distinction is that a texel's channels do not necessarily
-/// represent colour at all — e.g. in an ORM map they hold three unrelated surface properties.
+/// represent colour at all (e.g. in an ORM map they hold three unrelated surface properties).
 /// </remarks>
 public interface ITexel {
 	/// <summary>

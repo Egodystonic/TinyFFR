@@ -103,7 +103,7 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	/// Creates a <see cref="Texture"/> that mirrors this buffer's live output, for use as a material's texture input.
 	/// </summary>
 	/// <remarks>
-	/// Unlike a texture loaded from an image file, the returned texture updates automatically every time this buffer is rendered to again — there is no need to re-create or refresh it per frame.
+	/// Unlike a texture loaded from an image file, the returned texture updates automatically every time this buffer is rendered to again. There is no need to re-create or refresh it per frame.
 	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Texture CreateDynamicTexture() => Implementation.CreateDynamicTexture(_handle);

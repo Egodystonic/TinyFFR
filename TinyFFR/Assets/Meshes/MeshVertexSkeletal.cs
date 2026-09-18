@@ -15,7 +15,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// surface bend smoothly across a joint instead of creasing sharply at it.
 /// </para>
 /// <para>
-/// The position stored here is the mesh's <i>bind pose</i> — where the vertex sits before any animation is applied.
+/// The position stored here is the mesh's <i>bind pose</i>: where the vertex sits before any animation is applied.
 /// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = ExpectedSerializedSize)]

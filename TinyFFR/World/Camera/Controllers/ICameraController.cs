@@ -11,7 +11,7 @@ namespace Egodystonic.TinyFFR.World;
 /// <remarks>
 /// <para>
 /// A camera controller saves you from positioning and aiming a camera by hand. Instead of setting the camera's position and view direction yourself each frame, you
-/// set higher-level values on the controller — how far it should be from its target, which way it is facing, and so on — and it works out the camera parameters that
+/// set higher-level values on the controller (how far it should be from its target, which way it is facing, and so on) and it works out the camera parameters that
 /// follow from them.
 /// </para>
 /// <para>
@@ -39,7 +39,7 @@ public interface ICameraController : IDisposable {
 	/// </summary>
 	/// <remarks>
 	/// This must be called once per frame; it is the only thing that actually moves the camera. Setting properties or calling any of the <c>Adjust</c> methods only
-	/// records where the camera should be heading — this is what takes it there, easing towards the target values according to the controller's smoothing settings.
+	/// records where the camera should be heading. This is what takes it there, easing towards the target values according to the controller's smoothing settings.
 	/// </remarks>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
 	void Progress(float deltaTime);

@@ -11,7 +11,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A backdrop does both jobs at once, which is what makes objects lit by one look as though they genuinely belong in it — a
+/// A backdrop does both jobs at once, which is what makes objects lit by one look as though they genuinely belong in it. A
 /// scene set at sunset picks up warm light from the side without any light being placed by hand.
 /// </para>
 /// <para>

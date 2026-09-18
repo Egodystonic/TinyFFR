@@ -419,7 +419,7 @@ public partial interface IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The colour channels hold the absorption — what the surface takes out of the light passing through it — and the fourth
+	/// The colour channels hold the absorption (what the surface takes out of the light passing through it) and the fourth
 	/// channel how much light gets through at all. Only transmissive materials use this.
 	/// </para>
 	/// <para>
@@ -450,7 +450,7 @@ public partial interface IAssetLoader {
 	/// takes the largest width and height of any of the 2 sources.
 	/// </para>
 	/// <para>
-	/// The colour channels hold the absorption — what the surface takes out of the light passing through it — and the fourth
+	/// The colour channels hold the absorption (what the surface takes out of the light passing through it) and the fourth
 	/// channel how much light gets through at all. Only transmissive materials use this.
 	/// </para>
 	/// <para>
@@ -489,7 +489,7 @@ public partial interface IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// The colour channels hold the absorption — what the surface takes out of the light passing through it — and the fourth
+	/// The colour channels hold the absorption (what the surface takes out of the light passing through it) and the fourth
 	/// channel how much light gets through at all. Only transmissive materials use this.
 	/// </para>
 	/// <para>
@@ -520,7 +520,7 @@ public partial interface IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// The colour channels hold the absorption — what the surface takes out of the light passing through it — and the fourth
+	/// The colour channels hold the absorption (what the surface takes out of the light passing through it) and the fourth
 	/// channel how much light gets through at all. Only transmissive materials use this.
 	/// </para>
 	/// <para>
@@ -737,7 +737,7 @@ public partial interface IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -764,7 +764,7 @@ public partial interface IAssetLoader {
 	/// takes the largest width and height of any of the 2 sources.
 	/// </para>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels.
 	/// </para>
@@ -802,7 +802,7 @@ public partial interface IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -829,7 +829,7 @@ public partial interface IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -866,7 +866,7 @@ public partial interface IAssetLoader {
 	/// Use this to convert an angle-formatted texture ahead of time.
 	/// </para>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -907,7 +907,7 @@ public partial interface IAssetLoader {
 	/// Use this to convert an angle-formatted texture ahead of time.
 	/// </para>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -945,7 +945,7 @@ public partial interface IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -983,7 +983,7 @@ public partial interface IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -1031,7 +1031,7 @@ public partial interface IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>
@@ -1073,7 +1073,7 @@ public partial interface IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Anisotropy describes surfaces that reflect light unevenly in different directions — brushed metal, whose highlights
+	/// Anisotropy describes surfaces that reflect light unevenly in different directions, as brushed metal does: its highlights
 	/// stretch along the direction of the brushing rather than forming a round spot. Vector-formatted maps store the direction as a
 	/// vector across the surface in the first two channels, and the strength of the effect in the third.
 	/// </para>

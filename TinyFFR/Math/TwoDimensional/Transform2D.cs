@@ -240,7 +240,7 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 	/// Converts this 2D transform to an equivalent 3D <see cref="Transform"/>, using <paramref name="dimensionConverter"/> to map the 2D translation/scaling into 3D space.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="Rotation"/> is bridged to 3D by rotating around <paramref name="dimensionConverter"/>'s <see cref="DimensionConverter.ZBasis"/> — since a positive 2D rotation is anticlockwise when the (implicit) 2D Z axis points towards the viewer, and a positive 3D <see cref="TinyFFR.Rotation"/> is anticlockwise when its axis points towards the viewer, using <see cref="DimensionConverter.ZBasis"/> as that axis preserves the same apparent rotation.
+	/// <see cref="Rotation"/> is bridged to 3D by rotating around <paramref name="dimensionConverter"/>'s <see cref="DimensionConverter.ZBasis"/>. This works because a positive 2D rotation is anticlockwise when the (implicit) 2D Z axis points towards the viewer, and a positive 3D <see cref="TinyFFR.Rotation"/> is anticlockwise when its axis points towards the viewer, using <see cref="DimensionConverter.ZBasis"/> as that axis preserves the same apparent rotation.
 	/// </remarks>
 	/// <param name="dimensionConverter">The converter describing how the 2D plane sits within 3D space.</param>
 	public Transform To3D(DimensionConverter dimensionConverter) {

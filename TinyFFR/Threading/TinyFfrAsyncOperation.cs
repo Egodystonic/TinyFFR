@@ -695,7 +695,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOpe
 	/// If <see cref="IsCompleted"/> is <c>true</c> this method returns immediately.
 	/// </summary>
 	/// <remarks>
-	/// Must be called from the primary thread. This is one of the two valid ways to consume this operation (the other being to <see langword="await"/> it) — see the type-level remarks.
+	/// Must be called from the primary thread. This is one of the two valid ways to consume this operation (the other being to <see langword="await"/> it); see the type-level remarks.
 	/// </remarks>
 	/// <exception cref="InvalidOperationException">Thrown if this operation has already been disposed/consumed (i.e. <see cref="IsDisposed"/> is <c>true</c>).</exception>
 	public T GetResultAndDisposeOperation() {
@@ -706,7 +706,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOpe
 	/// Blocks the calling thread until this operation completes or <paramref name="timeout"/> elapses; if it completed in time, consumes it and outputs its result.
 	/// </summary>
 	/// <remarks>
-	/// Must be called from the primary thread. If this returns <see langword="true"/>, the operation has been consumed — see the type-level remarks. If it returns <see langword="false"/>, the operation has <i>not</i> been consumed and must still be consumed later, once it completes.
+	/// Must be called from the primary thread. If this returns <see langword="true"/>, the operation has been consumed; see the type-level remarks. If it returns <see langword="false"/>, the operation has <i>not</i> been consumed and must still be consumed later, once it completes.
 	/// </remarks>
 	/// <param name="timeout">The maximum amount of time to wait. Use <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.</param>
 	/// <param name="result">Set to the operation's result if this method returns <see langword="true"/>; otherwise set to <see langword="default"/>.</param>
@@ -717,7 +717,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOpe
 	/// Blocks the calling thread until this operation completes, then consumes it and returns its result.
 	/// </summary>
 	/// <remarks>
-	/// Must be called from the primary thread. This is one of the two valid ways to consume this operation (the other being to <see langword="await"/> it) — see the type-level remarks.
+	/// Must be called from the primary thread. This is one of the two valid ways to consume this operation (the other being to <see langword="await"/> it); see the type-level remarks.
 	/// </remarks>
 	/// <param name="cancellationToken">A token that can be used to stop waiting early. If cancelled before the operation completes, the operation is <i>not</i> consumed and must still be consumed later, once it completes.</param>
 	/// <exception cref="InvalidOperationException">Thrown if this operation has already been disposed/consumed (i.e. <see cref="IsDisposed"/> is <c>true</c>).</exception>
@@ -729,7 +729,7 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOpe
 	/// Blocks the calling thread until this operation completes, until <paramref name="timeout"/> elapses, or until <paramref name="cancellationToken"/> is cancelled; if it completed in time, consumes it and outputs its result.
 	/// </summary>
 	/// <remarks>
-	/// Must be called from the primary thread. If this returns <see langword="true"/>, the operation has been consumed — see the type-level remarks. If it returns <see langword="false"/>, the operation has <i>not</i> been consumed and must still be consumed later, once it completes.
+	/// Must be called from the primary thread. If this returns <see langword="true"/>, the operation has been consumed; see the type-level remarks. If it returns <see langword="false"/>, the operation has <i>not</i> been consumed and must still be consumed later, once it completes.
 	/// </remarks>
 	/// <param name="timeout">The maximum amount of time to wait. Use <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.</param>
 	/// <param name="cancellationToken">A token that can be used to stop waiting early.</param>

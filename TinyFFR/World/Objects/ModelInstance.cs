@@ -41,7 +41,7 @@ public readonly record struct MaterialEffectController {
 	/// Sets how the effect's textures are positioned, rotated and scaled across the object's surface.
 	/// </summary>
 	/// <remarks>
-	/// Animating this is how an effect is made to move over a surface — scrolling water, drifting cloud shadows and the like.
+	/// Animating this is how an effect is made to move over a surface, such as scrolling water or drifting cloud shadows.
 	/// </remarks>
 	/// <param name="newTransform">The transform to apply to the effect's textures.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,7 +166,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// </summary>
 	/// <remarks>
 	/// Paired with <see cref="SetWorldMatrixWithoutUpdatingTransform"/> to let the reported transform and the rendered placement deliberately diverge. This is a
-	/// specialist tool — it is what camera-locked objects use to report a sensible size whilst being drawn at a screen-derived one — and is easy to misuse.
+	/// specialist tool (it is what camera-locked objects use to report a sensible size whilst being drawn at a screen-derived one) and is easy to misuse.
 	/// </remarks>
 	/// <param name="newTransform">The transform to record.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -177,7 +177,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// </summary>
 	/// <remarks>
 	/// Paired with <see cref="SetTransformWithoutUpdatingWorldMatrix"/> to let the reported transform and the rendered placement deliberately diverge. This is a
-	/// specialist tool — it is what camera-locked objects use to report a sensible size whilst being drawn at a screen-derived one — and is easy to misuse.
+	/// specialist tool (it is what camera-locked objects use to report a sensible size whilst being drawn at a screen-derived one) and is easy to misuse.
 	/// </remarks>
 	/// <param name="worldMatrix">The matrix to draw this instance with.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -394,7 +394,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// <remarks>
 	/// Only usable when <see cref="AllowsVertexMutation"/> is <see langword="true"/>. Dispose the returned lease as soon as you are done with it; the vertices are
 	/// not uploaded for rendering until you do. Moving vertices changes the shape but not the cached bounds, which is why the bounds should generally be
-	/// recalculated afterwards — a stale bounding box makes an object vanish when it should be on screen, and makes scene queries miss it.
+	/// recalculated afterwards. A stale bounding box makes an object vanish when it should be on screen, and makes scene queries miss it.
 	/// </remarks>
 	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to recalculate this instance's bounding box when the lease is disposed.
 	/// Pass <see langword="false"/> only if you intend to set the bounds yourself (with <see cref="TriggerManualBoundingBoxRecalculation"/> or <see cref="SetModelSpaceBoundingBox"/>)
@@ -410,7 +410,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// <remarks>
 	/// Only usable when <see cref="AllowsVertexMutation"/> is <see langword="true"/>. Dispose the returned lease as soon as you are done with it; the vertices are
 	/// not uploaded for rendering until you do. Moving vertices changes the shape but not the cached bounds, which is why the bounds should generally be
-	/// recalculated afterwards — a stale bounding box makes an object vanish when it should be on screen, and makes scene queries miss it.
+	/// recalculated afterwards. A stale bounding box makes an object vanish when it should be on screen, and makes scene queries miss it.
 	/// </remarks>
 	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to recalculate this instance's bounding box when the lease is disposed.
 	/// Pass <see langword="false"/> only if you intend to set the bounds yourself (with <see cref="TriggerManualBoundingBoxRecalculation"/> or <see cref="SetModelSpaceBoundingBox"/>)
@@ -569,8 +569,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// Sets one of the colours used when this object is painted with a colour-keyed material.
 	/// </summary>
 	/// <remarks>
-	/// A colour-keyed material uses the red, green and blue channels of its texture as masks rather than as colours, letting one texture be recoloured per instance
-	/// — the usual way to give a team or faction its own livery without authoring a texture for each.
+	/// A colour-keyed material uses the red, green and blue channels of its texture as masks rather than as colours, letting one texture be recoloured per
+	/// instance. This is the usual way to give a team or faction its own livery without authoring a texture for each.
 	/// </remarks>
 	/// <param name="key">Which of the texture's channels to recolour.</param>
 	/// <param name="color">The colour to use for that channel.</param>

@@ -142,7 +142,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimTimePointSeconds">How far in to the start animation to set its pose, in seconds.</param>
 	/// <param name="endAnimTimePointSeconds">How far in to the end animation to set its pose, in seconds.</param>
@@ -158,7 +158,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimTimePointSeconds">How far in to the start animation to set its pose, in seconds.</param>
 	/// <param name="endAnimTimePointSeconds">How far in to the end animation to set its pose, in seconds.</param>
@@ -174,7 +174,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimTimePointSeconds">How far in to the start animation to set its pose, in seconds.</param>
 	/// <param name="endAnimTimePointSeconds">How far in to the end animation to set its pose, in seconds.</param>
@@ -209,7 +209,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimTimePointSeconds">How far in to the start animation to set its pose, in seconds.</param>
 	/// <param name="startWrapStyle">What to do when the start animation's given point falls outside its duration.</param>
@@ -235,7 +235,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimTimePointSeconds">How far in to the start animation to set its pose, in seconds.</param>
 	/// <param name="startWrapStyle">What to do when the start animation's given point falls outside its duration.</param>
@@ -261,7 +261,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimTimePointSeconds">How far in to the start animation to set its pose, in seconds.</param>
 	/// <param name="startWrapStyle">What to do when the start animation's given point falls outside its duration.</param>
@@ -300,7 +300,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimFraction">How far through the start animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="endAnimFraction">How far through the end animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
@@ -316,7 +316,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimFraction">How far through the start animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="endAnimFraction">How far through the end animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
@@ -332,7 +332,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimFraction">How far through the start animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="endAnimFraction">How far through the end animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
@@ -367,7 +367,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimFraction">How far through the start animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="startWrapStyle">What to do when the start animation's given point falls outside its duration.</param>
@@ -393,7 +393,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimFraction">How far through the start animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="startWrapStyle">What to do when the start animation's given point falls outside its duration.</param>
@@ -419,7 +419,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="startAnimFraction">How far through the start animation to set its pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="startWrapStyle">What to do when the start animation's given point falls outside its duration.</param>

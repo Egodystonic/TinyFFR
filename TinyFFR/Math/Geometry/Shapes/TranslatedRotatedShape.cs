@@ -54,7 +54,7 @@ public interface ITranslatedRotatedConvexShape<TSelf, TBase> : ITranslatedRotate
 /// <para>
 /// All methods required by the <see cref="IShape{T}"/> interface are implemented, but recalculated when invoked to
 /// account for the given <see cref="Translation"/> and <see cref="Rotation"/>. The shape is rotated first, around its
-/// own local origin, and the already-rotated result is then moved by <see cref="Translation"/> — so in practice the
+/// own local origin, and the already-rotated result is then moved by <see cref="Translation"/>, so in practice the
 /// wrapped shape spins in place around its own position rather than around the world origin.
 /// </para>
 /// <para>

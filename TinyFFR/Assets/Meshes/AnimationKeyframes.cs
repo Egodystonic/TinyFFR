@@ -88,7 +88,7 @@ public readonly record struct SkeletalAnimationRotationKeyframe(float TimeKeySec
 /// Maps one joint of a skeleton to the runs of keyframes that drive it.
 /// </summary>
 /// <remarks>
-/// An animation's keyframes are supplied as three flat lists — one each for scaling, rotation and translation — covering every
+/// An animation's keyframes are supplied as three flat lists (one each for scaling, rotation and translation) covering every
 /// joint the animation touches. One of these descriptors per joint says which stretch of each list belongs to it, which is what
 /// allows the whole animation to be handed over without one list per joint.
 /// </remarks>

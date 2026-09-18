@@ -94,7 +94,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow — minutes rather than seconds for a large image —
+	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow (minutes rather than seconds for a large image)
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>
@@ -118,7 +118,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow — minutes rather than seconds for a large image —
+	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow (minutes rather than seconds for a large image)
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>
@@ -144,7 +144,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow — minutes rather than seconds for a large image —
+	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow (minutes rather than seconds for a large image)
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>
@@ -172,7 +172,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// must be consumed exactly once; see <see cref="Threading.TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow — minutes rather than seconds for a large image —
+	/// Deriving a backdrop from a high-dynamic-range image is <b>very</b> slow (minutes rather than seconds for a large image)
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>

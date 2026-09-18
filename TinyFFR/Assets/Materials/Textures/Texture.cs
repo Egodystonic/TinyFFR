@@ -87,7 +87,7 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 	/// Replaces this texture's entire contents. <see cref="AllowsDynamicWrites"/> must be <c>true</c> or this method will throw an exception.
 	/// </summary>
 	/// <remarks>
-	/// This is the way to feed changing imagery — a video frame, or a procedurally-generated pattern — to the GPU without
+	/// This is the way to feed changing imagery (a video frame, or a procedurally-generated pattern) to the GPU without
 	/// creating a new texture each time.
 	/// </remarks>
 	/// <typeparam name="TTexel">The type of the texels being supplied.</typeparam>

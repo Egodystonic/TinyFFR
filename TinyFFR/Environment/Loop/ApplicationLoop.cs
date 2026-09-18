@@ -185,7 +185,7 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	/// <remarks>
 	/// This and the other <c>FramesPerSecondRecent</c> properties are calculated over a rolling window of the most recently completed iterations (256 of them by
 	/// default; configurable when the loop is built). Because it is a mean of frame times rather than of frame rates, an occasional long frame moves it less than
-	/// you might expect — consult <see cref="FramesPerSecondRecentMin"/> for the worst case.
+	/// you might expect; consult <see cref="FramesPerSecondRecentMin"/> for the worst case.
 	/// </remarks>
 	public float FramesPerSecondRecentAverage {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

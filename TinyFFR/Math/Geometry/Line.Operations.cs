@@ -216,7 +216,7 @@ public readonly partial struct Line : IPhysicalValidityDeterminable {
 	public float DistanceSquaredFromOrigin() => ((Vect) PointClosestToOrigin()).LengthSquared;
 
 	/// <summary>
-	/// Determines whether <paramref name="other"/> passes within <paramref name="distance"/> of this line and points in a similar enough direction (within <paramref name="angle"/> of this line's <see cref="Direction"/>, in either sense — see <see cref="Equals(Line)"/>).
+	/// Determines whether <paramref name="other"/> passes within <paramref name="distance"/> of this line and points in a similar enough direction (within <paramref name="angle"/> of this line's <see cref="Direction"/>, in either sense; see <see cref="Equals(Line)"/>).
 	/// </summary>
 	/// <param name="other">The other line to compare to.</param>
 	/// <param name="distance">The maximum permitted distance between the two lines.</param>
@@ -498,7 +498,7 @@ public readonly partial struct Line : IPhysicalValidityDeterminable {
 	/// <inheritdoc/>
 	/// </summary>
 	/// <remarks>
-	/// <see cref="PointOnLine"/> moves to its closest point on <paramref name="plane"/> and <see cref="Direction"/> is parallelized with <paramref name="plane"/> (see <see cref="ParallelizedWith(Plane)"/>) — so, unlike parallelizing alone, this also relocates the line to actually lie within <paramref name="plane"/>.
+	/// <see cref="PointOnLine"/> moves to its closest point on <paramref name="plane"/> and <see cref="Direction"/> is parallelized with <paramref name="plane"/> (see <see cref="ParallelizedWith(Plane)"/>), so, unlike parallelizing alone, this also relocates the line to actually lie within <paramref name="plane"/>.
 	/// </remarks>
 	/// <param name="plane">The plane to project onto.</param>
 	public Line? ProjectedOnTo(Plane plane) {

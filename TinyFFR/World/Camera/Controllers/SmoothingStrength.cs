@@ -10,8 +10,8 @@ namespace Egodystonic.TinyFFR.World;
 /// </summary>
 /// <remarks>
 /// Camera controllers do not snap straight to the values you give them; they ease towards them over the following frames, which makes the camera feel like a
-/// physical object rather than something teleporting around. This enum selects how much easing is applied. Each value corresponds to a "half-life" — the time the
-/// camera takes to cover half the remaining distance to its target — so stronger smoothing looks more fluid but adds more lag between setting a value and the camera
+/// physical object rather than something teleporting around. This enum selects how much easing is applied. Each value corresponds to a "half-life" (the time the
+/// camera takes to cover half the remaining distance to its target), so stronger smoothing looks more fluid but adds more lag between setting a value and the camera
 /// actually getting there. The exact half-life each value maps to varies per controller and per property; use the controller's <c>SetCustom...SmoothingStrength</c>
 /// methods to specify one directly instead.
 /// </remarks>

@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// Identifies the GPU buffers a <see cref="Mesh"/> is drawn from, and the region of the index buffer that belongs to it.
 /// </summary>
 /// <remarks>
-/// Several meshes can share one pair of buffers — this is how the sub-meshes of a loaded model are stored — which is why a mesh
+/// Several meshes can share one pair of buffers (this is how the sub-meshes of a loaded model are stored), which is why a mesh
 /// is identified by a range within the index buffer rather than by the buffer alone.
 /// </remarks>
 /// <param name="VertexBufferHandle">The vertex buffer holding this mesh's vertices.</param>

@@ -13,9 +13,9 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Use this for text that genuinely belongs in the world and should be seen edge-on when viewed from the side — a sign on a
-/// wall, or writing on the ground. For text that should always face the camera, use <see cref="CameraLockedTextInstance"/>
-/// instead.
+/// Use this for text that genuinely belongs in the world and should be seen edge-on when viewed from the side, such as a
+/// sign on a wall or writing on the ground. For text that should always face the camera, use
+/// <see cref="CameraLockedTextInstance"/> instead.
 /// </para>
 /// <para>
 /// Use <see cref="SetTransform(Location, Direction, Direction?, TextLayout)"/> to easily set the position + scale of this

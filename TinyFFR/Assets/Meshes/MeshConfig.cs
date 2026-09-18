@@ -20,7 +20,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 	/// Whether to attempt to repair common faults in exported mesh data. Defaults to <see langword="true"/>.
 	/// </summary>
 	/// <remarks>
-	/// Exported meshes frequently carry small defects — normals pointing inwards, triangles with no area — which this cleans up
+	/// Exported meshes frequently carry small defects (normals pointing inwards, triangles with no area) which this cleans up
 	/// as the file is read. Turn it off only if the repairs are themselves damaging a mesh.
 	/// </remarks>
 	public bool FixCommonExportErrors { get; init; } = true;
@@ -163,7 +163,7 @@ public readonly ref struct MeshGenerationConfig : IConfigStruct<MeshGenerationCo
 /// </summary>
 /// <remarks>
 /// The defaults suit a mesh authored in metres under TinyFFR's own conventions. The rest exist to reconcile a mesh authored
-/// under different conventions, and to enable the optional features — vertex mutation and wireframe drawing — that cost memory
+/// under different conventions, and to enable the optional features (vertex mutation and wireframe drawing) that cost memory
 /// when switched on.
 /// </remarks>
 public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig> {

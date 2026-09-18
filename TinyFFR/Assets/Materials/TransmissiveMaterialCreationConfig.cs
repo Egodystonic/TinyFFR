@@ -37,8 +37,8 @@ public enum TransmissiveMaterialQuality {
 /// This only matters for materials whose colour map actually has an alpha channel; a fully opaque map looks the same either way.
 /// </para>
 /// <para>
-/// Note that this has nothing to do with the see-through effect a transmissive
-/// material produces — that comes from the absorption-transmission map, not from alpha on the colour map.
+/// Note that this has nothing to do with the see-through effect a transmissive material produces. That
+/// comes from the absorption-transmission map, not from alpha on the colour map.
 /// </para>
 /// </remarks>
 public enum TransmissiveMaterialAlphaMode {
@@ -70,7 +70,7 @@ public enum TransmissiveMaterialAlphaMode {
 /// </para>
 /// <para>
 /// Transmissive materials are markedly more expensive to render than standard ones, and stacking several transmissive objects
-/// in front of each other is not currently supported — doing so tends to make one or more of them disappear behind the others.
+/// in front of each other is not currently supported. Doing so tends to make one or more of them disappear behind the others.
 /// </para>
 /// </remarks>
 public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<TransmissiveMaterialCreationConfig> {
@@ -159,7 +159,7 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 	/// The texture describing how light passes through the surface: Which colours it absorbs, and how much light gets through at all. This property is required.
 	/// </summary>
 	/// <remarks>
-	/// The colour channels give the absorption, so what is <i>not</i> absorbed is what is seen through the surface — an absorption
+	/// The colour channels give the absorption, so what is <i>not</i> absorbed is what is seen through the surface; an absorption
 	/// of pure yellow lets only blue light through. The fourth channel gives how much light gets through at all, where the maximum
 	/// value is fully transparent and zero is opaque.
 	/// </remarks>
@@ -197,7 +197,7 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 	/// <remarks>
 	/// Together with <see cref="AbsorptionTransmissionMap"/> this determines how much light is lost passing through: the further
 	/// light has to travel through the material, the more of it is absorbed. Set it to roughly how far a typical ray would travel
-	/// inside the object before emerging — metres to centimetres for something solid like an acrylic block, centimetres to
+	/// inside the object before emerging: metres to centimetres for something solid like an acrylic block, centimetres to
 	/// millimetres for something thin like a pane of glass.
 	/// </remarks>
 	public float RefractionThickness { get; init; } = DefaultRefractionThickness;

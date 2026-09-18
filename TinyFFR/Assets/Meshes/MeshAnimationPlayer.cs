@@ -13,8 +13,8 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// <remarks>
 /// <para>
 /// A player does not advance by itself: each frame you tell it how far through the animation to be, and it poses the object
-/// accordingly. That keeps the timeline yours to control — to pause it, run it backwards, or drive it from something other than
-/// elapsed time.
+/// accordingly. That keeps the timeline yours to control, so you can pause it, run it backwards, or drive it from something
+/// other than elapsed time.
 /// </para>
 /// <para>
 /// This is an ordinary value, not a resource: It is cheap to construct, needs no disposal, and there is no harm in making one
@@ -107,7 +107,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="timePointSeconds">How far in to the animation to set the pose, in seconds.</param>
 	/// <param name="node">The node whose resulting position is wanted.</param>
@@ -121,7 +121,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="timePointSeconds">How far in to the animation to set the pose, in seconds.</param>
 	/// <param name="nodes">The nodes whose resulting positions are wanted.</param>
@@ -135,7 +135,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="timePointSeconds">How far in to the animation to set the pose, in seconds.</param>
 	/// <param name="nodeIndices">The indices of the nodes whose resulting positions are wanted. Indices can be put on the stack where the nodes themselves can not.</param>
@@ -159,7 +159,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="timePointSeconds">How far in to the animation to set the pose, in seconds.</param>
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>
@@ -174,7 +174,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="timePointSeconds">How far in to the animation to set the pose, in seconds.</param>
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>
@@ -189,7 +189,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="timePointSeconds">How far in to the animation to set the pose, in seconds.</param>
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>
@@ -218,7 +218,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="fraction">How far through the animation to set the pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="node">The node whose resulting position is wanted.</param>
@@ -232,7 +232,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="fraction">How far through the animation to set the pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="nodes">The nodes whose resulting positions are wanted.</param>
@@ -246,7 +246,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="fraction">How far through the animation to set the pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="nodeIndices">The indices of the nodes whose resulting positions are wanted. Indices can be put on the stack where the nodes themselves can not.</param>
@@ -270,7 +270,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="fraction">How far through the animation to set the pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>
@@ -285,7 +285,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="fraction">How far through the animation to set the pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>
@@ -300,7 +300,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="fraction">How far through the animation to set the pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>

@@ -11,7 +11,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// <remarks>
 /// <para>
 /// A skeletal mesh is animated by moving a small number of joints and letting each vertex follow the joints it is attached to.
-/// The joints form a tree — moving an elbow carries the forearm and hand with it — and each node here is one entry in that tree,
+/// The joints form a tree (moving an elbow carries the forearm and hand with it) and each node here is one entry in that tree,
 /// identifying its parent by index.
 /// </para>
 /// <para>

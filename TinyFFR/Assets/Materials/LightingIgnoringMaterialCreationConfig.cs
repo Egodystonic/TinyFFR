@@ -12,8 +12,8 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Because nothing about the lighting matters, a surface using one of these looks the same however the scene is lit — which makes
-/// it the right choice for diagnostic overlays, non-realistic workflows, and anything that must stay legible regardless of what is
+/// Because nothing about the lighting matters, a surface using one of these looks the same however the scene is lit. That makes it
+/// the right choice for diagnostic overlays, non-realistic workflows, and anything that must stay legible regardless of what is
 /// going on around it.
 /// </para>
 /// <para>

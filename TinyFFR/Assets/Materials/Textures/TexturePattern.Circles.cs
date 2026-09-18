@@ -60,7 +60,7 @@ public static unsafe partial class TexturePattern {
 	/// </summary>
 	/// <remarks>
 	/// The four border values are placed at the right, top, left and bottom of each ring and blended between, which produces a
-	/// ring whose value varies smoothly with direction — the form a normal map of a dome takes.
+	/// ring whose value varies smoothly with direction, which is the form a normal map of a dome takes.
 	/// </remarks>
 	/// <typeparam name="T">The type of value this pattern produces at each texel. Must support interpolation, since this pattern blends between the values given.</typeparam>
 	/// <param name="interiorValue">The value inside each circle.</param>

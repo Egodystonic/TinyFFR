@@ -92,7 +92,7 @@ public sealed record LocalAssetLoaderConfig {
 	/// How long to allow for converting a high-dynamic-range image in to a backdrop before giving up. Defaults to <see cref="DefaultMaxHdrProcessingTime"/>: 15 minutes.
 	/// </summary>
 	/// <remarks>
-	/// That conversion is slow — minutes rather than seconds for a large image — which is why the limit is generous. Must be
+	/// That conversion is slow (minutes rather than seconds for a large image), which is why the limit is generous. Must be
 	/// positive.
 	/// </remarks>
 	public TimeSpan MaxHdrProcessingTime {

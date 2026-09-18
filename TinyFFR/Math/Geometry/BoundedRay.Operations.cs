@@ -81,7 +81,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// Returns this ray with its <see cref="Length"/> set to <paramref name="newLength"/>, scaling around the point found by travelling <paramref name="scalingOriginSignedDistance"/> along this ray from <see cref="StartPoint"/>.
 	/// </summary>
 	/// <remarks>
-	/// Unlike <see cref="WithLength(float)"/>, this can move <see cref="StartPoint"/> as well as <see cref="EndPoint"/> — both ends move away from (or towards) the pivot as the length changes.
+	/// Unlike <see cref="WithLength(float)"/>, this can move <see cref="StartPoint"/> as well as <see cref="EndPoint"/>. Both ends move away from (or towards) the pivot as the length changes.
 	/// </remarks>
 	/// <param name="newLength">The new length.</param>
 	/// <param name="scalingOriginSignedDistance">The distance along this ray, from <see cref="StartPoint"/>, of the pivot point around which the ray is scaled. Can be outside the bounds of this ray.</param>
@@ -123,7 +123,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// Returns this ray with its <see cref="Length"/> set to <paramref name="newLength"/>, scaling around <paramref name="scalingOrigin"/>.
 	/// </summary>
 	/// <remarks>
-	/// Unlike <see cref="WithLength(float)"/>, this can move <see cref="StartPoint"/> as well as <see cref="EndPoint"/> — both ends move away from (or towards) <paramref name="scalingOrigin"/> as the length changes.
+	/// Unlike <see cref="WithLength(float)"/>, this can move <see cref="StartPoint"/> as well as <see cref="EndPoint"/>. Both ends move away from (or towards) <paramref name="scalingOrigin"/> as the length changes.
 	/// </remarks>
 	/// <param name="newLength">The new length.</param>
 	/// <param name="scalingOrigin">The point around which the ray is scaled. Does not need to lie on this ray.</param>
@@ -1471,7 +1471,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	/// Returns this ray projected onto <paramref name="plane"/>, i.e. with <see cref="StartPoint"/> and <see cref="EndPoint"/> each moved to their closest point on <paramref name="plane"/>.
 	/// </summary>
 	/// <remarks>
-	/// Unlike parallelizing, this does not preserve <see cref="Length"/> — the projected ray can end up shorter than the original (or even zero-length, if this ray was exactly orthogonal to <paramref name="plane"/>).
+	/// Unlike parallelizing, this does not preserve <see cref="Length"/>. The projected ray can end up shorter than the original (or even zero-length, if this ray was exactly orthogonal to <paramref name="plane"/>).
 	/// </remarks>
 	/// <param name="plane">The plane to project onto.</param>
 	public BoundedRay ProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane));

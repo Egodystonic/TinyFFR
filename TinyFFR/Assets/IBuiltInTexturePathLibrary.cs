@@ -13,8 +13,8 @@ namespace Egodystonic.TinyFFR.Assets;
 /// effectively free.
 /// </para>
 /// <para>
-/// The usual reason to want these is that a downloaded material supplies only some of the maps a material type needs — a
-/// roughness map but no metallic map, say — and the missing one has to be filled with something sensible.
+/// The usual reason to want these is that a downloaded material supplies only some of the maps a material type needs (a
+/// roughness map but no metallic map, say) and the missing one has to be filled with something sensible.
 /// </para>
 /// </remarks>
 public interface IBuiltInTexturePathLibrary {

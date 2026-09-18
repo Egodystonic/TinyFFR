@@ -55,9 +55,9 @@ public readonly record struct TextureRenderingConfig {
 	/// <see cref="Quality.Standard"/>.
 	/// </summary>
 	/// <remarks>
-	/// A texture on a surface receding away from the camera — a road stretching to the horizon, for example — otherwise turns to
-	/// a blur in the distance. Raising this keeps such surfaces legible much further away, at some cost in performance; it has
-	/// no effect at all when <see cref="DisableTexelBlending"/> is <see langword="true"/>.
+	/// A texture on a surface receding away from the camera (a road stretching to the horizon, for example) otherwise turns to a
+	/// blur in the distance. Raising this keeps such surfaces legible much further away, at some cost in performance; it has no
+	/// effect at all when <see cref="DisableTexelBlending"/> is <see langword="true"/>.
 	/// </remarks>
 	public Quality AnisotropicFilteringQuality {
 		get;
@@ -239,7 +239,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 	/// </summary>
 	/// <remarks>
 	/// Canvas textures are drawn without the postprocessing pipeline a scene's objects go through, so they are treated as plain
-	/// data, never tiled, and sampled without anisotropic filtering — a canvas element is always viewed face-on, so there is
+	/// data, never tiled, and sampled without anisotropic filtering. A canvas element is always viewed face-on, so there is
 	/// nothing for that filtering to improve.
 	/// </remarks>
 	/// <param name="name">The name to give the texture. May be left empty.</param>
@@ -633,8 +633,8 @@ public readonly struct TexelProcessingFunction : IEquatable<TexelProcessingFunct
 /// </summary>
 /// <remarks>
 /// <para>
-/// This exists mostly to reconcile texture files authored under a different convention from the one TinyFFR expects — a map
-/// whose green channel is inverted, or whose rows run the other way up — without having to edit the file itself.
+/// This exists mostly to reconcile texture files authored under a different convention from the one TinyFFR expects (a map
+/// whose green channel is inverted, or whose rows run the other way up) without having to edit the file itself.
 /// </para>
 /// <para>
 /// The steps are applied in a fixed order: flips first, then channel inversions, then alpha premultiplication, then channel
@@ -673,9 +673,9 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 	/// <see langword="false"/>.
 	/// </summary>
 	/// <remarks>
-	/// This is chiefly useful for maps whose channels carry data rather than colour and were authored with the opposite meaning
-	/// — turning a "glossiness" map, where <c>1</c> means smooth, in to the roughness map TinyFFR expects, where <c>1</c> means
-	/// rough.
+	/// This is chiefly useful for maps whose channels carry data rather than colour and were authored with the opposite
+	/// meaning, such as turning a "glossiness" map (where <c>1</c> means smooth) in to the roughness map TinyFFR expects (where
+	/// <c>1</c> means rough).
 	/// </remarks>
 	public bool InvertXRedChannel {
 		get;

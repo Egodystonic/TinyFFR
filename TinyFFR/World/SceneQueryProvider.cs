@@ -54,7 +54,7 @@ public readonly record struct SceneQueryProvider {
 	/// Writes every object the given ray strikes in to <paramref name="resultsDest"/>, nearest first, and returns how many were written.
 	/// </summary>
 	/// <remarks>
-	/// The return value is the number of objects <i>written</i>, which is capped at the length of <paramref name="resultsDest"/> — it is not the total number of
+	/// The return value is the number of objects <i>written</i>, which is capped at the length of <paramref name="resultsDest"/>. It is not the total number of
 	/// objects hit. A caller therefore cannot tell from the result alone whether the buffer was too small, so size it generously if that matters.
 	/// </remarks>
 	/// <param name="ray">The ray to test against the scene.</param>
@@ -85,7 +85,7 @@ public readonly record struct SceneQueryProvider {
 	/// Writes every object the given ray strikes in to <paramref name="resultsDest"/>, nearest first, and returns how many were written.
 	/// </summary>
 	/// <remarks>
-	/// The return value is the number of objects <i>written</i>, which is capped at the length of <paramref name="resultsDest"/> — it is not the total number of
+	/// The return value is the number of objects <i>written</i>, which is capped at the length of <paramref name="resultsDest"/>. It is not the total number of
 	/// objects hit. A caller therefore cannot tell from the result alone whether the buffer was too small, so size it generously if that matters.
 	/// </remarks>
 	/// <param name="ray">The ray to test against the scene.</param>
@@ -102,7 +102,7 @@ public readonly record struct SceneQueryProvider {
 	/// Returns one of the objects overlapping the given box, or <see langword="null"/> if none do.
 	/// </summary>
 	/// <remarks>
-	/// Which object is returned when several overlap is unspecified — unlike the ray queries, shape queries are not ordered, so there is no meaningful "first". Use
+	/// Which object is returned when several overlap is unspecified. Unlike the ray queries, shape queries are not ordered, so there is no meaningful "first". Use
 	/// this where you only need to know whether <i>anything</i> is in a region.
 	/// </remarks>
 	/// <param name="shape">The box to test against the scene.</param>
@@ -116,7 +116,7 @@ public readonly record struct SceneQueryProvider {
 	/// </summary>
 	/// <remarks>
 	/// The results are in no particular order. The return value is the number of objects <i>written</i>, which is capped at the length of
-	/// <paramref name="resultsDest"/> — it is not the total number of objects overlapping, so a caller cannot tell from the result alone whether the buffer was too
+	/// <paramref name="resultsDest"/>. It is not the total number of objects overlapping, so a caller cannot tell from the result alone whether the buffer was too
 	/// small.
 	/// </remarks>
 	/// <param name="shape">The box to test against the scene.</param>
@@ -132,7 +132,7 @@ public readonly record struct SceneQueryProvider {
 	/// Returns one of the objects overlapping the given axis-aligned box, or <see langword="null"/> if none do.
 	/// </summary>
 	/// <remarks>
-	/// Which object is returned when several overlap is unspecified — unlike the ray queries, shape queries are not ordered, so there is no meaningful "first". Use
+	/// Which object is returned when several overlap is unspecified. Unlike the ray queries, shape queries are not ordered, so there is no meaningful "first". Use
 	/// this where you only need to know whether <i>anything</i> is in a region.
 	/// </remarks>
 	/// <param name="shape">The axis-aligned box to test against the scene.</param>
@@ -146,7 +146,7 @@ public readonly record struct SceneQueryProvider {
 	/// </summary>
 	/// <remarks>
 	/// The results are in no particular order. The return value is the number of objects <i>written</i>, which is capped at the length of
-	/// <paramref name="resultsDest"/> — it is not the total number of objects overlapping, so a caller cannot tell from the result alone whether the buffer was too
+	/// <paramref name="resultsDest"/>. It is not the total number of objects overlapping, so a caller cannot tell from the result alone whether the buffer was too
 	/// small.
 	/// </remarks>
 	/// <param name="shape">The axis-aligned box to test against the scene.</param>
@@ -162,7 +162,7 @@ public readonly record struct SceneQueryProvider {
 	/// Returns one of the objects overlapping the given sphere, or <see langword="null"/> if none do.
 	/// </summary>
 	/// <remarks>
-	/// Which object is returned when several overlap is unspecified — unlike the ray queries, shape queries are not ordered, so there is no meaningful "first". Use
+	/// Which object is returned when several overlap is unspecified. Unlike the ray queries, shape queries are not ordered, so there is no meaningful "first". Use
 	/// this where you only need to know whether <i>anything</i> is in a region.
 	/// </remarks>
 	/// <param name="shape">The sphere to test against the scene.</param>
@@ -176,7 +176,7 @@ public readonly record struct SceneQueryProvider {
 	/// </summary>
 	/// <remarks>
 	/// The results are in no particular order. The return value is the number of objects <i>written</i>, which is capped at the length of
-	/// <paramref name="resultsDest"/> — it is not the total number of objects overlapping, so a caller cannot tell from the result alone whether the buffer was too
+	/// <paramref name="resultsDest"/>. It is not the total number of objects overlapping, so a caller cannot tell from the result alone whether the buffer was too
 	/// small.
 	/// </remarks>
 	/// <param name="shape">The sphere to test against the scene.</param>

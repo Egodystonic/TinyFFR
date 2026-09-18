@@ -119,7 +119,7 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane p1, Plane p2) => p1.AngleTo(p2);
 	/// <summary>
-	/// Calculates the (unsigned) angle between this plane and <paramref name="other"/>, i.e. the angle between their two <see cref="Normal"/>s (or its complement, whichever is smaller — this is always in the range <c>0° &lt;= n &lt;= 90°</c>).
+	/// Calculates the (unsigned) angle between this plane and <paramref name="other"/>, i.e. the angle between their two <see cref="Normal"/>s (or its complement, whichever is smaller; this is always in the range <c>0° &lt;= n &lt;= 90°</c>).
 	/// </summary>
 	/// <param name="other">The other plane.</param>
 	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(OrthogonalityWith(other.Normal)));
@@ -494,7 +494,7 @@ partial struct Plane :
 	/// Creates a <see cref="DimensionConverter"/> that maps between this plane's surface and a 2D coordinate space, with the 2D origin at <see cref="PointClosestToOrigin"/> and arbitrarily-chosen (but consistent) X/Y axes lying within the plane.
 	/// </summary>
 	/// <remarks>
-	/// The returned converter is only valid for this specific plane — constructed from an arbitrary orthogonal basis of <see cref="Normal"/>, it has no meaning relative to any other plane.
+	/// The returned converter is only valid for this specific plane. Constructed from an arbitrary orthogonal basis of <see cref="Normal"/>, it has no meaning relative to any other plane.
 	/// </remarks>
 	public DimensionConverter CreateDimensionConverter() {
 		var xBasis = Normal.AnyOrthogonal();
@@ -506,7 +506,7 @@ partial struct Plane :
 	/// Creates a <see cref="DimensionConverter"/> that maps between this plane's surface and a 2D coordinate space, with the 2D origin at <paramref name="twoDimensionalCoordinateOrigin"/>'s closest point on this plane and arbitrarily-chosen (but consistent) X/Y axes lying within the plane.
 	/// </summary>
 	/// <remarks>
-	/// The returned converter is only valid for this specific plane — constructed from an arbitrary orthogonal basis of <see cref="Normal"/>, it has no meaning relative to any other plane.
+	/// The returned converter is only valid for this specific plane. Constructed from an arbitrary orthogonal basis of <see cref="Normal"/>, it has no meaning relative to any other plane.
 	/// </remarks>
 	/// <param name="twoDimensionalCoordinateOrigin">The point (not necessarily on this plane) whose closest point on this plane becomes the 2D coordinate space's origin.</param>
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {

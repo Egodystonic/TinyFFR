@@ -62,7 +62,7 @@ public enum AnisotropyRadialAngleRange {
 /// <remarks>
 /// <para>
 /// Every <c>Load...</c> method returns a resource that must be disposed when it is no longer needed, and resources must be
-/// disposed in dependency order — a material before the textures it uses, for example.
+/// disposed in dependency order (a material before the textures it uses, for example).
 /// </para>
 /// <para>
 /// Each method has an <c>...Async</c> counterpart that returns a <see cref="TinyFfrAsyncOperation{T}"/> instead of blocking.

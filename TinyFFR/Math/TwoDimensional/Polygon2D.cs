@@ -103,7 +103,7 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	/// Always returns <see langword="false"/>.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="Polygon2D"/> is a <see langword="ref struct"/>, so it can never actually be boxed to <see cref="object"/> — this override exists only to satisfy the compiler's requirement to override <see cref="ValueType.Equals(object?)"/>, and is unreachable in practice. Use <see cref="Equals(Polygon2D)"/> instead.
+	/// <see cref="Polygon2D"/> is a <see langword="ref struct"/>, so it can never actually be boxed to <see cref="object"/>. This override exists only to satisfy the compiler's requirement to override <see cref="ValueType.Equals(object?)"/>, and is unreachable in practice. Use <see cref="Equals(Polygon2D)"/> instead.
 	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override bool Equals(object? obj) => false;

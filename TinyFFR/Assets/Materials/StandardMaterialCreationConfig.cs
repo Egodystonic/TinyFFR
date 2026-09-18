@@ -41,7 +41,7 @@ public enum StandardMaterialAlphaMode {
 /// <para>
 /// Only <see cref="ColorMap"/> is required; every other map refines how the surface responds to light and may be left
 /// <see langword="null"/>. Each map supplied makes the material more expensive to render, so supply only those that are
-/// actually needed — colour, normal and ORM covers most surfaces.
+/// actually needed; colour, normal and ORM covers most surfaces.
 /// </para>
 /// <para>
 /// Every map type is supported except absorption-transmission, which is what <see cref="TransmissiveMaterialCreationConfig"/>
@@ -134,8 +134,8 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 	/// The texture describing the surface's small-scale bumps and grooves, or <see langword="null"/> for a perfectly smooth surface. Defaults to <see langword="null"/>.
 	/// </summary>
 	/// <remarks>
-	/// This is what makes light catch on detail that the geometry itself does not have — the mortar lines in brickwork, say,
-	/// without modelling each brick.
+	/// This is what makes light catch on detail that the geometry itself does not have (the mortar lines in brickwork, say,
+	/// without modelling each brick).
 	/// </remarks>
 	public Texture? NormalMap { get; init; }
 	/// <summary>

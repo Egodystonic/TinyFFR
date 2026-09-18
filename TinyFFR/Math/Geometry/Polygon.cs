@@ -77,7 +77,7 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 	/// Calculates the most likely normal for a polygon with the given <paramref name="vertices"/>, assuming they are coplanar and wound anticlockwise as seen from the front.
 	/// </summary>
 	/// <remarks>
-	/// This works by sampling the normal formed by consecutive triples of vertices (via <see cref="Plane.FromTriangleOnSurface(Location,Location,Location)"/>) and returning whichever of the (at most two) distinct normals found was sampled the most — this makes the result robust to a handful of duplicate/degenerate vertices, but assumes the vertices are otherwise genuinely coplanar; if they are not, the result is not meaningful.
+	/// This works by sampling the normal formed by consecutive triples of vertices (via <see cref="Plane.FromTriangleOnSurface(Location,Location,Location)"/>) and returning whichever of the (at most two) distinct normals found was sampled the most. This makes the result robust to a handful of duplicate/degenerate vertices, but assumes the vertices are otherwise genuinely coplanar; if they are not, the result is not meaningful.
 	/// </remarks>
 	/// <param name="vertices">The candidate polygon's vertices, in order around its perimeter. Must contain at least three vertices.</param>
 	public static Direction CalculateNormalForAnticlockwiseCoplanarVertices(ReadOnlySpan<Location> vertices) {
@@ -136,7 +136,7 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 	/// Always returns <see langword="false"/>.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="Polygon"/> is a <see langword="ref struct"/>, so it can never actually be boxed to <see cref="object"/> — this override exists only to satisfy the compiler's requirement to override <see cref="ValueType.Equals(object?)"/>, and is unreachable in practice. Use <see cref="Equals(Polygon)"/> instead.
+	/// <see cref="Polygon"/> is a <see langword="ref struct"/>, so it can never actually be boxed to <see cref="object"/>. This override exists only to satisfy the compiler's requirement to override <see cref="ValueType.Equals(object?)"/>, and is unreachable in practice. Use <see cref="Equals(Polygon)"/> instead.
 	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override bool Equals(object? obj) => false;

@@ -151,8 +151,8 @@ public interface IQuadInstance : IDisposable, IStringSpanNameEnabled;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Use this for a flat surface that genuinely belongs in the world and should be seen edge-on when viewed from the side — a
-/// poster on a wall, or a patch of ground. For a quad that should always face the camera, use
+/// Use this for a flat surface that genuinely belongs in the world and should be seen edge-on when viewed from the side,
+/// such as a poster on a wall or a patch of ground. For a quad that should always face the camera, use
 /// <see cref="CameraLockedQuadInstance"/> instead.
 /// </para>
 /// <para>
@@ -310,8 +310,8 @@ public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<Qua
 	/// Places, orients and sizes this quad in one call.
 	/// </summary>
 	/// <remarks>
-	/// This is the convenient way to position a quad, as it works in terms a flat object actually has — a size and a facing
-	/// direction — rather than requiring a full transform to be assembled first.
+	/// This is the convenient way to position a quad, as it works in terms a flat object actually has (a size and a facing
+	/// direction) rather than requiring a full transform to be assembled first.
 	/// </remarks>
 	/// <param name="position">Where to put the quad.</param>
 	/// <param name="size">How large the quad should be, in world units (metres).</param>

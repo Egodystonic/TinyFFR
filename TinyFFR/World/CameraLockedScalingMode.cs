@@ -12,7 +12,7 @@ namespace Egodystonic.TinyFFR.World;
 /// <para>
 /// By default such an object is sized in world units, so it shrinks as the camera moves away from it, exactly like any other object in the scene. The
 /// <c>ViewportFractional</c> modes instead size it as a fraction of the rendered image, so it keeps the same apparent size on screen no matter how far away it is
-/// or what resolution the image is rendered at — which is what you want for labels, markers and other user-interface-like elements.
+/// or what resolution the image is rendered at. That is what you want for labels, markers and other user-interface-like elements.
 /// </para>
 /// <para>
 /// In the fractional modes a scaling value of <c>1f</c> means "the full width (or height) of the screen/image/viewport", so <c>0.25f</c> means "a quarter of the screen/image/viewport".

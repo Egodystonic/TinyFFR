@@ -12,7 +12,7 @@ namespace Egodystonic.TinyFFR.World;
 /// <remarks>
 /// <para>
 /// The camera is placed with <see cref="Position"/> and aimed with <see cref="Yaw"/> (turning left and right) and <see cref="Pitch"/> (looking up and down).
-/// Movement is confined to the plane at right angles to <see cref="WorldUp"/>, so walking never lifts the camera off the ground however far it is tilted — which is
+/// Movement is confined to the plane at right angles to <see cref="WorldUp"/>, so walking never lifts the camera off the ground however far it is tilted. That is
 /// what distinguishes this from <see cref="FreeFlyingCameraController"/>, where movement follows wherever the camera is looking.
 /// </para>
 /// <para>

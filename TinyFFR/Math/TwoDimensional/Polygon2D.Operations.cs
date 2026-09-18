@@ -173,7 +173,7 @@ partial struct Polygon2D /*:
 	/// Splits this polygon up into triangles (by index into <see cref="Vertices"/>), writing the result into <paramref name="dest"/>.
 	/// </summary>
 	/// <remarks>
-	/// <paramref name="dest"/> must be at least <see cref="TriangleCount"/> long. This relies on <see cref="IsWoundClockwise"/> correctly describing the actual winding order of <see cref="Vertices"/> (as seen in the standard 2D orientation, X to the right, Y up) — if it does not match, this method throws rather than silently producing an incorrect triangulation.
+	/// <paramref name="dest"/> must be at least <see cref="TriangleCount"/> long. This relies on <see cref="IsWoundClockwise"/> correctly describing the actual winding order of <see cref="Vertices"/> (as seen in the standard 2D orientation, X to the right, Y up). If it does not match, this method throws rather than silently producing an incorrect triangulation.
 	/// </remarks>
 	/// <param name="dest">The buffer to write the resultant triangles' vertex indices into.</param>
 	/// <exception cref="ArgumentException"><paramref name="dest"/> is too small to hold <see cref="TriangleCount"/> triangles.</exception>

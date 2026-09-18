@@ -137,7 +137,7 @@ public readonly partial struct Line : ILineLike<Line, Ray, Ray>, IPrecomputation
 	/// Determines whether this line describes the exact same infinite line as <paramref name="other"/>.
 	/// </summary>
 	/// <remarks>
-	/// Because a line has no start/end or canonical position, this returns <see langword="true"/> whenever the two lines are colinear and parallel — <paramref name="other"/>'s <see cref="Direction"/> may point the same way or the exact opposite way, and its <see cref="PointOnLine"/> may be a different point altogether, so long as it still lies on this line.
+	/// Because a line has no start/end or canonical position, this returns <see langword="true"/> whenever the two lines are colinear and parallel. <paramref name="other"/>'s <see cref="Direction"/> may point the same way or the exact opposite way, and its <see cref="PointOnLine"/> may be a different point altogether, so long as it still lies on this line.
 	/// </remarks>
 	/// <param name="other">The other value.</param>
 	public bool Equals(Line other) => DistanceFrom(other) == 0f && (Direction.Equals(other.Direction) || Direction.Equals(-other.Direction));

@@ -66,7 +66,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in the animation to evaluate, in seconds.</param>
 	/// <param name="node">The node whose resulting position is wanted.</param>
@@ -82,7 +82,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in the animation to evaluate, in seconds.</param>
 	/// <param name="nodes">The nodes whose resulting positions are wanted.</param>
@@ -97,7 +97,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in the animation to evaluate, in seconds.</param>
 	/// <param name="nodeIndices">The indices of the nodes whose resulting positions are wanted. Indices can be put on the stack where the nodes themselves can not.</param>
@@ -125,7 +125,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose.</param>
 	/// <param name="targetTimePointSeconds">The moment in the animation to apply, in seconds.</param>
@@ -142,7 +142,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose.</param>
 	/// <param name="targetTimePointSeconds">The moment in the animation to apply, in seconds.</param>
@@ -158,7 +158,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose.</param>
 	/// <param name="targetTimePointSeconds">The moment in the animation to apply, in seconds.</param>
@@ -174,7 +174,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
@@ -193,7 +193,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
@@ -211,7 +211,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
@@ -228,7 +228,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// Poses the given object as a blend of this animation and another.
 	/// </summary>
 	/// <remarks>
-	/// Blending is what makes one animation give way to another smoothly — a character easing from a walk in to a run —
+	/// Blending is what makes one animation give way to another smoothly (a character easing from a walk in to a run)
 	/// rather than snapping between poses.
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose.</param>
@@ -246,7 +246,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose.</param>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
@@ -266,7 +266,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose.</param>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
@@ -285,7 +285,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </summary>
 	/// <remarks>
 	/// The transforms are relative to the model's own origin, so multiplying one by the object's own transform gives a
-	/// world-space position — which is how a sword is made to follow a character's hand.
+	/// world-space position. That is how a sword is made to follow a character's hand.
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose.</param>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>

@@ -13,7 +13,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
-/// Builder interface that allows you to create the objects placed in a <see cref="Scene"/> — model instances, quads, grids and text.
+/// Builder interface that allows you to create the objects placed in a <see cref="Scene"/>: model instances, quads, grids and text.
 /// </summary>
 public interface IObjectBuilder {
 	/// <summary>
@@ -350,7 +350,7 @@ public interface IObjectBuilder {
 	/// <summary>
 	/// Creates a new instance of text drawn in the world; using a pre-created <see cref="FontPen"/> and <see cref="FontString"/> derived from a loaded <see cref="Font"/>.
 	/// </summary>
-	/// <param name="pen">How the text should be drawn — colour, thickness and similar.</param>
+	/// <param name="pen">How the text should be drawn (colour, thickness and similar).</param>
 	/// <param name="string">The text to draw.</param>
 	/// <param name="position">Where the new object should be. If <see langword="null"/>, the origin is used.</param>
 	/// <param name="facingDirection">Which direction the text faces.</param>
@@ -367,7 +367,7 @@ public interface IObjectBuilder {
 	/// <summary>
 	/// Creates a new instance of text drawn in the world; using a pre-created <see cref="FontPen"/> and <see cref="FontString"/> derived from a loaded <see cref="Font"/>.
 	/// </summary>
-	/// <param name="pen">How the text should be drawn — colour, thickness and similar.</param>
+	/// <param name="pen">How the text should be drawn (colour, thickness and similar).</param>
 	/// <param name="string">The text to draw.</param>
 	/// <param name="layout">How the text should be laid out, such as how its lines are aligned.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
@@ -391,9 +391,9 @@ public interface IObjectBuilder {
 	/// Creates a new piece of text in the world that permanently faces the camera; using a pre-created <see cref="FontPen"/> and <see cref="FontString"/> derived from a loaded <see cref="Font"/>.
 	/// </summary>
 	/// <remarks>
-	/// Camera-locked ("billboarded") text always faces the viewer, so it stays legible from any angle — the usual way to draw a name or marker above an object in the world.
+	/// Camera-locked ("billboarded") text always faces the viewer, so it stays legible from any angle. This is the usual way to draw a name or marker above an object in the world.
 	/// </remarks>
-	/// <param name="pen">How the text should be drawn — colour, thickness and similar.</param>
+	/// <param name="pen">How the text should be drawn (colour, thickness and similar).</param>
 	/// <param name="string">The text to draw.</param>
 	/// <param name="position">Where the new object should be. If <see langword="null"/>, the origin is used.</param>
 	/// <param name="lockedUprightDirection">Which direction the object should keep as its "up". Pass <see cref="Direction.None"/> to let the object turn freely on every axis so that it always faces the camera squarely;
@@ -421,9 +421,9 @@ public interface IObjectBuilder {
 	/// Creates a new piece of text in the world that permanently faces the camera; using a pre-created <see cref="FontPen"/> and <see cref="FontString"/> derived from a loaded <see cref="Font"/>.
 	/// </summary>
 	/// <remarks>
-	/// Camera-locked ("billboarded") text always faces the viewer, so it stays legible from any angle — the usual way to draw a name or marker above an object in the world.
+	/// Camera-locked ("billboarded") text always faces the viewer, so it stays legible from any angle. This is the usual way to draw a name or marker above an object in the world.
 	/// </remarks>
-	/// <param name="pen">How the text should be drawn — colour, thickness and similar.</param>
+	/// <param name="pen">How the text should be drawn (colour, thickness and similar).</param>
 	/// <param name="string">The text to draw.</param>
 	/// <param name="lockedUprightDirection">Which direction the object should keep as its "up". Pass <see cref="Direction.None"/> to let the object turn freely on every axis so that it always faces the camera squarely;
 	/// pass any other direction to make it turn only about that axis, so that it stays upright as a tree or a signpost would.</param>

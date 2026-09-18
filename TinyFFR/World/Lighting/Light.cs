@@ -170,7 +170,7 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 	/// Reinterprets this light as a specific kind of light.
 	/// </summary>
 	/// <remarks>
-	/// This is a reinterpretation, not a conversion: the result refers to the same underlying light. Check <see cref="Type"/> first — asking for the wrong kind
+	/// This is a reinterpretation, not a conversion: the result refers to the same underlying light. Check <see cref="Type"/> first; asking for the wrong kind
 	/// throws an exception.
 	/// </remarks>
 	/// <typeparam name="TLight">The kind of light to reinterpret this as, such as <see cref="PointLight"/>.</typeparam>

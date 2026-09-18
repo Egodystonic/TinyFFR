@@ -13,7 +13,7 @@ namespace Egodystonic.TinyFFR.World;
 /// </summary>
 /// <remarks>
 /// A directional light has no position and no falloff: it is treated as coming from infinitely far away, so every object in the scene is lit from the same angle
-/// with the same intensity. This is what makes it the right way to model the sun or moon. It can also draw a visible disc in the sky — see
+/// with the same intensity. This is what makes it the right way to model the sun or moon. It can also draw a visible disc in the sky; see
 /// <see cref="SetSunDiscParameters"/>.
 /// </remarks>
 public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSceneObject {

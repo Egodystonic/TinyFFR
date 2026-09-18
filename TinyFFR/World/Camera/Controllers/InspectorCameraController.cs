@@ -224,11 +224,11 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	/// </summary>
 	/// <remarks>
 	/// At <c>0°</c> the camera is level with the target. <b>Increasing this raises the camera above the target so that it looks down at it, and decreasing it lowers
-	/// the camera below the target so that it looks up</b> — note that this is the opposite sense to the <c>Pitch</c> of
-	/// <see cref="FirstPersonCameraController"/> and <see cref="FreeFlyingCameraController"/>, where the angle aims the camera rather than placing it. Unless
-	/// <see cref="AllowUpsideDownFlip"/> is <see langword="true"/>, the value is clamped to <c>-90° &lt;= n &lt;= 90°</c>
-	/// during <see cref="Progress(float)"/>. This is a target rather than the camera's current angle: the camera eases towards it according to
-	/// <see cref="RotationSmoothingStrength"/>. Values that are not physically valid are ignored rather than throwing.
+	/// the camera below the target so that it looks up</b>. Note that this is the opposite sense to the <c>Pitch</c> of <see cref="FirstPersonCameraController"/>
+	/// and <see cref="FreeFlyingCameraController"/>, where the angle aims the camera rather than placing it. Unless <see cref="AllowUpsideDownFlip"/> is
+	/// <see langword="true"/>, the value is clamped to <c>-90° &lt;= n &lt;= 90°</c> during <see cref="Progress(float)"/>. This is a target rather than the camera's
+	/// current angle: the camera eases towards it according to <see cref="RotationSmoothingStrength"/>. Values that are not physically valid are ignored rather than
+	/// throwing.
 	/// </remarks>
 	public Angle Pitch {
 		get => _pitchSetpoint.TargetValue;

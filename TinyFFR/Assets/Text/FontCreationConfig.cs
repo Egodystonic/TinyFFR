@@ -22,7 +22,8 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 	/// </summary>
 	/// <remarks>
 	/// This spans basic and extended Latin, Greek letters, common punctuation and quotation marks, currency and mathematical
-	/// symbols, arrows and box-drawing characters — enough for most Latin-derived languages and for user interface work.
+	/// symbols, arrows and box-drawing characters, which is enough for most Latin-derived languages and for user interface
+	/// work.
 	/// </remarks>
 	public static ReadOnlySpan<Rune> DefaultSupportedRunes => _defaultSupportedRunes;
 	/// <summary>

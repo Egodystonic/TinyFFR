@@ -15,8 +15,8 @@ namespace Egodystonic.TinyFFR.World;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A scene's backdrop is what fills the parts of the image no object covers, and it also supplies the ambient light that objects pick up from their surroundings —
-/// which is why a scene with a backdrop set tends to look markedly more natural than one without.
+/// A scene's backdrop is what fills the parts of the image no object covers, and it also supplies the ambient light that objects pick up from their surroundings.
+/// That is why a scene with a backdrop set tends to look markedly more natural than one without.
 /// </para>
 /// <para>
 /// In the interest of keeping TinyFFR's delivered NuGet package size down the supplied backdrops are somewhat lower-resolution and are just provided to help you "get something going".

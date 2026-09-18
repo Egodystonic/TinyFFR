@@ -208,7 +208,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateColorMap</c> performs, exposed separately so that texels can be produced
-	/// without touching the builder — on a worker thread, for example.
+	/// without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="colorPattern">The pattern supplying each texel's colour.</param>
 	/// <param name="destinationBuffer">The buffer to write in to. Must be at least as long as the pattern's area.</param>
@@ -218,7 +218,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateColorMap</c> performs, exposed separately so that texels can be produced
-	/// without touching the builder — on a worker thread, for example.
+	/// without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="colorPattern">The pattern supplying each texel's colour.</param>
 	/// <param name="destinationBuffer">The buffer to write in to. Must be at least as long as the pattern's area.</param>
@@ -302,7 +302,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateCanvasTexture</c> performs, exposed separately so that texels can be
-	/// produced without touching the builder — on a worker thread, for example.
+	/// produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="colorPattern">The pattern supplying each texel's colour.</param>
 	/// <param name="destinationBuffer">The buffer to write in to. Must be at least as long as the pattern's area.</param>
@@ -312,7 +312,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateCanvasTexture</c> performs, exposed separately so that texels can be
-	/// produced without touching the builder — on a worker thread, for example.
+	/// produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="colorPattern">The pattern supplying each texel's colour.</param>
 	/// <param name="destinationBuffer">The buffer to write in to. Must be at least as long as the pattern's area.</param>
@@ -415,7 +415,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateNormalMap</c> performs, exposed separately so that texels can be produced
-	/// without touching the builder — on a worker thread, for example.
+	/// without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="normalPattern">The pattern supplying each texel's surface offset.</param>
 	/// <param name="destinationBuffer">The buffer to write in to. Must be at least as long as the pattern's area.</param>
@@ -513,7 +513,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateOcclusionRoughnessMetallicMap</c> performs, exposed separately so that
-	/// texels can be produced without touching the builder — on a worker thread, for example.
+	/// texels can be produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="occlusionPattern">The pattern supplying each texel's occlusion value.</param>
 	/// <param name="roughnessPattern">The pattern supplying each texel's roughness value.</param>
@@ -541,7 +541,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateOcclusionRoughnessMetallicReflectanceMap</c> performs, exposed separately
-	/// so that texels can be produced without touching the builder — on a worker thread, for example.
+	/// so that texels can be produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="occlusionPattern">The pattern supplying each texel's occlusion value.</param>
 	/// <param name="roughnessPattern">The pattern supplying each texel's roughness value.</param>
@@ -712,7 +712,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateAbsorptionTransmissionMap</c> performs, exposed separately so that texels
-	/// can be produced without touching the builder — on a worker thread, for example.
+	/// can be produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="absorptionPattern">The pattern supplying each texel's absorption colour.</param>
 	/// <param name="transmissionPattern">The pattern supplying each texel's transmission value.</param>
@@ -809,7 +809,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateEmissiveMap</c> performs, exposed separately so that texels can be
-	/// produced without touching the builder — on a worker thread, for example.
+	/// produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="colorPattern">The pattern supplying each texel's emitted colour.</param>
 	/// <param name="intensityPattern">The pattern supplying each texel's intensity.</param>
@@ -913,7 +913,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateAnisotropyMap</c> performs, exposed separately so that texels can be
-	/// produced without touching the builder — on a worker thread, for example.
+	/// produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="radialAnglePattern">The pattern supplying each texel's angle.</param>
 	/// <param name="strengthPattern">The pattern supplying each texel's strength.</param>
@@ -926,8 +926,8 @@ public unsafe interface ITextureBuilder {
 	/// Creates an anisotropy map from the given patterns.
 	/// </summary>
 	/// <remarks>
-	/// An anisotropy map describes surfaces that reflect light unevenly in different directions — brushed metal, for
-	/// instance, whose highlights stretch along the direction of the brushing rather than forming a round spot.
+	/// An anisotropy map describes surfaces that reflect light unevenly in different directions, as brushed metal
+	/// does: its highlights stretch along the direction of the brushing rather than forming a round spot.
 	/// </remarks>
 	/// <param name="radialAnglePattern">The pattern supplying each texel's angle.</param>
 	/// <param name="strengthPattern">The pattern supplying each texel's strength.</param>
@@ -1010,7 +1010,7 @@ public unsafe interface ITextureBuilder {
 	/// </summary>
 	/// <remarks>
 	/// This is the same texel generation <c>CreateClearCoatMap</c> performs, exposed separately so that texels can be
-	/// produced without touching the builder — on a worker thread, for example.
+	/// produced without touching the builder (on a worker thread, for example).
 	/// </remarks>
 	/// <param name="thicknessPattern">The pattern supplying each texel's thickness.</param>
 	/// <param name="roughnessPattern">The pattern supplying each texel's roughness.</param>

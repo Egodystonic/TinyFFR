@@ -788,7 +788,7 @@ public interface IMeshBuilder {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The vertices given here are the mesh's <i>bind pose</i> — the shape it takes before any animation is applied.
+	/// The vertices given here are the mesh's <i>bind pose</i>: the shape it takes before any animation is applied.
 	/// </para>
 	/// <para>
 	/// Animations are attached afterwards with <see cref="AttachAnimation"/>, which means the mesh's bounding box is derived
@@ -819,7 +819,7 @@ public interface IMeshBuilder {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The vertices given here are the mesh's <i>bind pose</i> — the shape it takes before any animation is applied.
+	/// The vertices given here are the mesh's <i>bind pose</i>: the shape it takes before any animation is applied.
 	/// </para>
 	/// <para>
 	/// Animations are attached afterwards with <see cref="AttachAnimation"/>, which means the mesh's bounding box is derived
@@ -843,7 +843,7 @@ public interface IMeshBuilder {
 	/// Gives one of a skeletal mesh's joints a name, so that it can be looked up by name later.
 	/// </summary>
 	/// <remarks>
-	/// Naming the joints you care about is what allows a particular one — a hand, say — to be found and its position read back
+	/// Naming the joints you care about is what allows a particular one (a hand, say) to be found and its position read back
 	/// after an animation has been applied.
 	/// </remarks>
 	/// <param name="mesh">The skeletal mesh whose joint is being named.</param>

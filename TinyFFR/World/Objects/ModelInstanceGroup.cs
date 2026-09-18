@@ -15,8 +15,8 @@ namespace Egodystonic.TinyFFR.World;
 /// A set of <see cref="ModelInstance"/>s that can be moved, rotated and scaled together as though they were one object.
 /// </summary>
 /// <remarks>
-/// Useful wherever several instances make up one conceptual thing — a vehicle assembled from separate parts, say. Transforming the group applies the same change to
-/// every instance in it.
+/// Useful wherever several instances make up one conceptual thing, such as a vehicle assembled from separate parts. Transforming the group applies the same change
+/// to every instance in it.
 /// </remarks>
 public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
 #pragma warning restore CA1710

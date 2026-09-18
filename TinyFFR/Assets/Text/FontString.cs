@@ -15,7 +15,7 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// <remarks>
 /// <para>
 /// Preparing a string works out where each character sits and builds the geometry to draw it, which is why it is done once and
-/// kept rather than repeated every frame. Text that changes constantly — a frame counter, say — is better served by a small set
+/// kept rather than repeated every frame. Text that changes constantly (a frame counter, say) is better served by a small set
 /// of prepared strings than by preparing a new one each frame.
 /// </para>
 /// <para>

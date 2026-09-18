@@ -109,9 +109,9 @@ public interface IResourceAllocator {
 	/// Returns a scratch (temporary, reusable) collection. The returned collection is reused/recycled (i.e. every invocation of this function returns the same object when passing the same type parameters).
 	/// </summary>
 	/// <remarks>
-	/// Because the returned instance is shared, never hold on to it (or otherwise keep using it) across any call that might request the same <typeparamref name="T"/>/<paramref name="bufferIndex"/> pair again —
-	/// for example, a reentrant or recursive call — as both call sites would receive (and mutate) the very same underlying list.
-	/// Use a different <paramref name="bufferIndex"/> per call site if you need more than one scratch collection of the same element type live at once.
+	/// Because the returned instance is shared, never hold on to it (or otherwise keep using it) across any call that might request the same <typeparamref name="T"/>/<paramref name="bufferIndex"/> pair again
+	/// (for example, a reentrant or recursive call) as both call sites would receive (and mutate) the very same underlying list. Use a different <paramref name="bufferIndex"/> per call site if you need more
+	/// than one scratch collection of the same element type live at once.
 	/// </remarks>
 	/// <param name="bufferIndex">Can be used to create/reuse a different collection instance. Each value of this parameter identifies a separate, new buffer. On first invocation of
 	/// this method with a new <c>bufferIndex</c> a new collection will be created, each subsequent invocation returns the same buffer. Can be any value but each new value creates a new buffer that

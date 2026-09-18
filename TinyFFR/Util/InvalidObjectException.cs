@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 namespace Egodystonic.TinyFFR;
 
 /// <summary>
-/// Thrown when an operation is given an object that is not in a valid state to be used for that operation — most commonly, an uninitialized (<see langword="default"/>) value of a type whose default value is not usable.
+/// Thrown when an operation is given an object that is not in a valid state to be used for that operation. Most commonly this is an uninitialized (<see langword="default"/>) value of a type whose default value is not usable.
 /// </summary>
 public class InvalidObjectException : InvalidOperationException {
 	/// <summary>

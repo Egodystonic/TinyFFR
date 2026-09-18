@@ -12,7 +12,7 @@ namespace Egodystonic.TinyFFR.World;
 /// <remarks>
 /// <para>
 /// This is the classic third-person "chase camera" used for vehicles and characters. Rather than positioning the camera yourself, you tell the controller where the
-/// followed object is each frame — via <see cref="Target"/>, and optionally <see cref="TargetForward"/> and <see cref="TargetUp"/> — and it places the camera behind
+/// followed object is each frame (via <see cref="Target"/>, and optionally <see cref="TargetForward"/> and <see cref="TargetUp"/>) and it places the camera behind
 /// and above it, aimed at a point slightly ahead of it.
 /// </para>
 /// <para>
@@ -308,7 +308,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// Updates where the followed object is and how the camera is framed relative to it, then advances this controller, all in one call.
 	/// </summary>
 	/// <remarks>
-	/// As the shorter overload, but also sets the three framing properties — useful for a camera that pulls back or rises as the target speeds up.
+	/// As the shorter overload, but also sets the three framing properties. This is useful for a camera that pulls back or rises as the target speeds up.
 	/// </remarks>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
 	/// <param name="target">The value to assign to <see cref="Target"/>.</param>

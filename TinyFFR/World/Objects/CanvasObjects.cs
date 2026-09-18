@@ -61,7 +61,7 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 	/// Returns whether the given canvas coordinate, in pixels, falls inside this object.
 	/// </summary>
 	/// <remarks>
-	/// The purpose-built way to hit-test a canvas element — pair it with <see cref="CanvasScene.ConvertRenderTargetCoordToLocal"/> to find out whether the user
+	/// The purpose-built way to hit-test a canvas element. Pair it with <see cref="CanvasScene.ConvertRenderTargetCoordToLocal"/> to find out whether the user
 	/// clicked on this object.
 	/// </remarks>
 	/// <param name="canvasLocalPixelCoord">The coordinate to test, in canvas pixels.</param>
@@ -201,8 +201,8 @@ public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecializ
 /// </summary>
 /// <remarks>
 /// As well as the placement members every canvas object has, this offers control over which part of its source image is shown (the texture offset and extent
-/// properties) and how much of its own area is filled (<see cref="FillFraction"/>) — between them enough to build icons from a packed sheet, progress bars and
-/// similar interface elements without separate images for each.
+/// properties) and how much of its own area is filled (<see cref="FillFraction"/>). Between them these are enough to build icons from a packed sheet, progress
+/// bars and similar interface elements without separate images for each.
 /// </remarks>
 public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, ModelInstance> {
 	/// <inheritdoc />
@@ -454,7 +454,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	/// How much of this object’s area is actually filled with its image, from <c>0f</c> to <c>1f</c> on each axis.
 	/// </summary>
 	/// <remarks>
-	/// Reducing this reveals only part of the object, anchored at its edge — the usual way to build a progress bar without resizing the element itself.
+	/// Reducing this reveals only part of the object, anchored at its edge. This is the usual way to build a progress bar without resizing the element itself.
 	/// </remarks>
 	public XYPair<float> FillFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -717,7 +717,7 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 	/// </summary>
 	/// <remarks>
 	/// By default a text element gets taller as its text wraps on to more lines, which is what you want for a label that should always show all its text. Set this to
-	/// <see langword="true"/> where the element must keep a fixed height instead — for a button, say — accepting that multi-line text may be squashed.
+	/// <see langword="true"/> where the element must keep a fixed height instead (for a button, say), accepting that multi-line text may be squashed.
 	/// </remarks>
 	public bool DisableAutomaticLineCountBasedHeightScaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

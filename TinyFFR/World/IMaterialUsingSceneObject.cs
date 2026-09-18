@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.World;
 /// Represents a scene object that is rendered with a <see cref="Material"/>.
 /// </summary>
 /// <remarks>
-/// A material describes what an object's surface is made of — its colour, how rough or shiny it is, how metallic it looks, and so on — and is therefore what
+/// A material describes what an object's surface is made of (its colour, how rough or shiny it is, how metallic it looks, and so on) and is therefore what
 /// determines how the object responds to the lights around it.
 /// </remarks>
 public interface IMaterialUsingSceneObject {
