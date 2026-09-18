@@ -171,7 +171,9 @@ while (!loop.Input.UserQuitRequested) {
 		ImGui.Text("Offscreen scene sampled as an ImGui image:");
 		var available = ImGui.GetContentRegionAvail();
 		var imageHeight = MathF.Max(available.Y - 4f, 32f);
-		TinyFfrImGuiExtensions.Image(viewportTextureId, new Vector2(available.X, imageHeight));
+		unsafe {
+			ImGui.Image(new ImTextureRef(null, viewportTextureId), new Vector2(available.X, imageHeight));
+		}
 	}
 	ImGui.End();
 

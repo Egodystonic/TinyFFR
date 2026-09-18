@@ -43,19 +43,6 @@ public static class TinyFfrImGuiExtensions {
 	}
 
 	/// <summary>
-	/// Draws a TinyFFR texture as an image inside the current ImGui window.
-	/// </summary>
-	/// <remarks>
-	/// The texture must first have been registered with <see cref="ImGuiScene.RegisterTexture"/>, which is where the identifier
-	/// comes from.
-	/// </remarks>
-	/// <param name="textureId">The identifier of the registered texture to draw.</param>
-	/// <param name="size">How large to draw the image, in ImGui's units.</param>
-	public static unsafe void Image(ImTextureID textureId, Vector2 size) {
-		Hexa.NET.ImGui.ImGui.Image(new ImTextureRef(null, textureId), size);
-	}
-
-	/// <summary>
 	/// Creates a renderer for an ImGui interface, already configured for drawing a user interface.
 	/// </summary>
 	/// <remarks>

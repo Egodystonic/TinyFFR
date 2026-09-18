@@ -550,7 +550,7 @@ static class HeadlessDpiCheck {
 		return failures == 0 ? 0 : 1;
 	}
 
-	public static int RunImGuiTextureCheck() {
+	public static unsafe int RunImGuiTextureCheck() {
 		Console.WriteLine("ImGui external texture check:");
 		var failures = 0;
 
@@ -618,7 +618,7 @@ static class HeadlessDpiCheck {
 					ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
 					| ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBackground
 				);
-				TinyFfrImGuiExtensions.Image(splitId, new Vector2(ImageW, ImageH));
+				ImGui.Image(new ImTextureRef(null, splitId), new Vector2(ImageW, ImageH));
 				ImGui.End();
 
 				ImGui.SetNextWindowPos(new Vector2(Margin, Margin + ImageH + Margin));
@@ -628,8 +628,8 @@ static class HeadlessDpiCheck {
 					ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
 					| ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBackground
 				);
-				TinyFfrImGuiExtensions.Image(viewportId, new Vector2(ImageW, ImageH));
-				TinyFfrImGuiExtensions.Image(bogusId, new Vector2(8f, 8f));
+				ImGui.Image(new ImTextureRef(null, splitId), new Vector2(ImageW, ImageH));
+				ImGui.Image(new ImTextureRef(null, splitId), new Vector2(8f, 8f));
 				ImGui.End();
 				ImGui.PopStyleVar();
 

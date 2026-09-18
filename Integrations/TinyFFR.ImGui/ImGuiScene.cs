@@ -438,8 +438,9 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// Registers a texture so that it can be drawn inside an ImGui widget, returning the identifier ImGui refers to it by.
 	/// </summary>
 	/// <remarks>
-	/// Pass the returned identifier to <see cref="TinyFfrImGuiExtensions.Image"/>. The texture is not owned by this scene and
-	/// must still be disposed by you, but unregister it first.
+	/// Pass the returned identifier to <see cref="Hexa.NET.ImGui.ImGui.Image(ImTextureRef, Vector2)"/>
+	/// (e.g. <c>ImGui.Image(new ImTextureRef(null, registeredTexture), ...)</c>).
+	/// The texture is not owned by this scene and must still be disposed by you, but unregister it first.
 	/// </remarks>
 	/// <param name="texture">The texture to make available to ImGui.</param>
 	public ImTextureID RegisterTexture(Texture texture) {
