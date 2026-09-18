@@ -70,8 +70,7 @@
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-    <!-- We will generate documentation for v1.0+ -->
-    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
 

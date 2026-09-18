@@ -159,12 +159,10 @@ static unsafe partial class SmokeSections {
 		foregroundScene.Add(instance);
 
 		using var backgroundRenderer = Target.CreateRenderer(backgroundScene, camera, new RendererCreationConfig {
-			Name = "Benchmark Compositing Background Renderer",
-			Quality = RenderQualityConfig.Default
+			Name = "Benchmark Compositing Background Renderer"
 		});
 		using var foregroundRenderer = Target.CreateRenderer(foregroundScene, camera, new RendererCreationConfig {
-			Name = "Benchmark Compositing Foreground Renderer",
-			Quality = RenderQualityConfig.Default
+			Name = "Benchmark Compositing Foreground Renderer"
 		});
 		using var compositor = Target.CreateCompositor("Benchmark Compositor");
 

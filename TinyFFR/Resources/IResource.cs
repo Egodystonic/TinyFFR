@@ -23,6 +23,27 @@ readonly record struct ResourceStub(ResourceIdent Ident, IResourceImplProvider I
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(Handle, destinationBuffer);
 }
 
+/// <summary>
+/// Interface representing any resource (generally those created by the factory and its builders).
+/// </summary>
+/// <remarks>
+/// <para>
+/// Every resource type in TinyFFR is an opaque handle; i.e. an immutable struct that represents but does not actually contain the resource data.
+/// For example, a <see cref="Egodystonic.TinyFFR.World.Camera" /> instance does not actually contain any mutable state or camera data,
+/// it only ultimately wraps a pointer to the camera data and a reference to the interface that provides the implementation for that pointer.
+/// </para>
+/// <para>
+/// In other words, resource types contain just two fields internally:
+/// <ul>
+/// <li>A pointer/handle;</li>
+/// <li>A reference to the implementation for operations using that pointer/handle.</li>
+/// </ul>
+/// </para>
+/// <para>
+/// It's possible to extract the handle and implementation via the <see cref="ResourceUtils"/> class
+/// (<see cref="ResourceUtils.ExtractHandle"/> / <see cref="ResourceUtils.ExtractImplementation"/>).
+/// </para>
+/// </remarks>
 public unsafe interface IResource : IStringSpanNameEnabled {
 	internal static readonly int SerializedLengthBytes = sizeof(IntPtr) + sizeof(nuint);
 
@@ -42,6 +63,8 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static nuint ReadHandleFromSerializedResource(ReadOnlySpan<byte> src) => BinaryPrimitives.ReadUIntPtrLittleEndian(src[sizeof(IntPtr)..]);
 }
+/// <inheritdoc cref="IResource" />
+/// <typeparam name="TSelf">The type implementing this interface.</typeparam>
 public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : IResource<TSelf> {
 	internal new ResourceHandle<TSelf> Handle { get; }
 	ResourceHandle IResource.Handle => Handle;
@@ -58,6 +81,10 @@ public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : I
 		return result;
 	}
 }
+
+/// <inheritdoc cref="IResource{TSelf}" />
+/// <typeparam name="TSelf">The type implementing this interface.</typeparam>
+/// <typeparam name="TImpl">The type that provides the actual implementation for this resource type.</typeparam>
 public interface IResource<TSelf, out TImpl> : IResource<TSelf>
 	where TSelf : IResource<TSelf> 
 	where TImpl : class, IResourceImplProvider {
@@ -78,6 +105,12 @@ public interface IResource<TSelf, out TImpl> : IResource<TSelf>
 
 
 
+/// <inheritdoc cref="IResource" />
+/// This type additionally implements <see cref="IDisposable"/>.
 public interface IDisposableResource : IResource, IDisposable;
+/// <inheritdoc cref="IResource{TSelf}" />
+/// This type additionally implements <see cref="IDisposable"/>.
 public interface IDisposableResource<TSelf> : IDisposableResource, IResource<TSelf> where TSelf : IDisposableResource<TSelf>;
+/// <inheritdoc cref="IResource{TSelf, TImpl}" />
+/// This type additionally implements <see cref="IDisposable"/>.
 public interface IDisposableResource<TSelf, out TImpl>: IDisposableResource<TSelf>, IResource<TSelf, TImpl> where TSelf : IDisposableResource<TSelf> where TImpl : class, IDisposableResourceImplProvider;

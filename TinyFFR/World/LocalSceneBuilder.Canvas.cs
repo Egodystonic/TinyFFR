@@ -365,14 +365,14 @@ sealed partial class LocalSceneBuilder {
 			renderTargetCoord = renderTargetCoord.ScaledByReal(sceneData.RenderTargetSize.Cast<float>() / cursorSpaceSize.Cast<float>());
 		}
 
-		var topLeftCoord = UiUtils.TranslateAnchoredCanvasOffset(sceneData.RenderTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), renderTargetCoord);
+		var topLeftCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(sceneData.RenderTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), renderTargetCoord);
 
 		var topLeftResult = new XYPair<int>(
 			topLeftCoord.X - sceneData.ViewportBottomLeftOffset.X,
 			topLeftCoord.Y - (sceneData.RenderTargetSize.Y - (sceneData.ViewportBottomLeftOffset.Y + sceneData.ViewportSize.Y))
 		);
 
-		return UiUtils.TranslateAnchoredCanvasOffset(sceneData.ViewportSize, coordOrigin, Orientation2D.UpLeft, topLeftResult);
+		return MathUtils.FindAnchoredPointIn2DCoordinateSystem(sceneData.ViewportSize, coordOrigin, Orientation2D.UpLeft, topLeftResult);
 	}
 
 	public XYPair<int> GetCanvasSizePixels(ResourceHandle<Scene> handle) {
@@ -414,7 +414,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	static XYPair<float> CalculateCanvasCenterRelativeCoord(XYPair<int> canvasSizePixels, Orientation2D anchor, XYPair<int> anchorOffset) {
-		return UiUtils.TranslateAnchoredCanvasOffset(canvasSizePixels, DiagonalOrientation2D.None, anchor, anchorOffset).Cast<float>();
+		return MathUtils.FindAnchoredPointIn2DCoordinateSystem(canvasSizePixels, DiagonalOrientation2D.None, anchor, anchorOffset).Cast<float>();
 	}
 
 	CanvasSceneData GetCanvasSceneData(ResourceHandle<Scene> handle) {

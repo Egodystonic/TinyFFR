@@ -510,4 +510,33 @@ class PositionedCuboidTest {
 			new PositionedRotatedCuboid(4f, 2f, 6f, new Location(-3f, 4f, 0f), Rotation.None)
 		);
 	}
+
+	[Test]
+	public void ShouldCorrectlyConstructFromFactoryMethods() {
+		AssertToleranceEquals(
+			new PositionedCuboid(6f, 8f, 10f, Location.Origin),
+			PositionedCuboid.FromOppositeCorners((-3f, -4f, -5f), (3f, 4f, 5f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new PositionedCuboid(6f, 8f, 10f, Location.Origin),
+			PositionedCuboid.FromOppositeCorners((3f, 4f, 5f), (-3f, -4f, -5f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new PositionedCuboid(6f, 8f, 10f, (3f, 4f, 5f)),
+			PositionedCuboid.FromOppositeCorners((0f, 0f, 0f), (6f, 8f, 10f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new PositionedCuboid(6f, 8f, 10f, (3f, 4f, 5f)),
+			PositionedCuboid.FromOppositeCorners((6f, 8f, 10f), (0f, 0f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new PositionedCuboid(0f, 0f, 0f, (3f, 4f, 5f)),
+			PositionedCuboid.FromOppositeCorners((3f, 4f, 5f), (3f, 4f, 5f)),
+			TestTolerance
+		);
+	}
 }

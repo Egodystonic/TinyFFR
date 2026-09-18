@@ -16,12 +16,16 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
+/// <summary>
+/// The default, host-system-backed, local-hardware-utilising implementation of <see cref="ILocalTinyFfrFactory"/>. This is TinyFFR's primary entry point for desktop applications.
+/// </summary>
 public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHoldingBufferAllocator {
 	static LocalTinyFfrFactory? _instance = null;
 
@@ -48,22 +52,37 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly LocalResourceAllocator _resourceAllocator;
 	readonly ResourceDirectory _resourceDirectory;
 
+	/// <inheritdoc/>
 	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _displayDiscoverer;
+	/// <inheritdoc/>
 	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;
+	/// <inheritdoc/>
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _applicationLoopBuilder;
+	/// <inheritdoc/>
 	public ILocalAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
+	/// <inheritdoc/>
 	public IAssetBakery AssetBakery => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetBakery;
+	/// <inheritdoc/>
 	public IMeshBuilder MeshBuilder => AssetLoader.MeshBuilder;
+	/// <inheritdoc/>
 	public IMaterialBuilder MaterialBuilder => AssetLoader.MaterialBuilder;
+	/// <inheritdoc/>
 	public ITextureBuilder TextureBuilder => AssetLoader.TextureBuilder;
+	/// <inheritdoc/>
 	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _cameraBuilder;
+	/// <inheritdoc/>
 	public ILightBuilder LightBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _lightBuilder;
+	/// <inheritdoc/>
 	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;
+	/// <inheritdoc/>
 	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _sceneBuilder;
+	/// <inheritdoc/>
 	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
+	/// <inheritdoc/>
 	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceAllocator;
 	FixedByteBufferPool ILocalGpuHoldingBufferAllocator.GpuHoldingBufferPool => _gpuHoldingBufferPool;
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
+	/// <inheritdoc/>
 	public IResourceDirectory ResourceDirectory => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceDirectory;
 
 	ResourceDirectory ConstructResourceDirectory() {
@@ -94,6 +113,20 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		});
 	}
 
+	/// <summary>
+	/// Constructs and initializes a new <see cref="LocalTinyFfrFactory"/> and executes local initialization work.
+	/// </summary>
+	/// <remarks>
+	/// Only one <see cref="LocalTinyFfrFactory"/> may be live at any given time; disposing this instance (see <see cref="Dispose"/>) is required before another can be constructed.
+	/// This must be constructed on, and subsequently used only from, whichever thread you intend to treat as the "primary" thread for TinyFFR's purposes.
+	/// </remarks>
+	/// <param name="factoryConfig">General factory-level configuration. Defaults to <see langword="new"/> <see cref="LocalTinyFfrFactoryConfig"/> if <see langword="null"/>.</param>
+	/// <param name="localLoopBuilderConfig">Configuration for the <see cref="ILocalApplicationLoopBuilder"/>. Defaults to <see langword="new"/> <see cref="LocalApplicationLoopBuilderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="windowBuilderConfig">Configuration for the <see cref="IWindowBuilder"/>. Defaults to <see langword="new"/> <see cref="WindowBuilderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="assetLoaderConfig">Configuration for the <see cref="ILocalAssetLoader"/>. Defaults to <see langword="new"/> <see cref="LocalAssetLoaderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="rendererBuilderConfig">Configuration for the <see cref="IRendererBuilder"/>. Defaults to <see langword="new"/> <see cref="RendererBuilderConfig"/>() if <see langword="null"/>.</param>
+	/// <param name="assetBakeryConfig">Configuration for the <see cref="IAssetBakery"/>. Defaults to <see langword="new"/> <see cref="AssetBakeryConfig"/>() if <see langword="null"/>.</param>
+	/// <exception cref="InvalidOperationException">Thrown if another <see cref="LocalTinyFfrFactory"/> is already live.</exception>
 	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null, AssetBakeryConfig? assetBakeryConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
@@ -126,7 +159,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			TextureCompressor.AscertainCompressionSupport();
 
 			_threadPool = new CooperativeThreadPool(factoryConfig.ThreadingConfig);
-			if (SynchronizationContext.Current == null && factoryConfig.InstallTinyFfrSynchronizationContextIfNonePreExisting) {
+			if (SynchronizationContext.Current == null && factoryConfig.ThreadingConfig.InstallTinyFfrSynchronizationContextIfNonePreExisting) {
 				SynchronizationContext.SetSynchronizationContext(new TinyFfrSynchronizationContext(_threadPool));
 			}
 			var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
@@ -176,11 +209,22 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		}
 	}
 
+	/// <inheritdoc/>
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
-	
+
 	#region Disposal
+	/// <summary>
+	/// Whether this factory has been disposed.
+	/// </summary>
 	public bool IsDisposed { get; private set; }
 
+	/// <summary>
+	/// Disposes this factory and every resource it still owns, along with the underlying native rendering library.
+	/// </summary>
+	/// <remarks>
+	/// Any resources created via this factory that have not already been disposed are immediately invalidated and must not be accessed afterwards.
+	/// Must be called from the same (primary) thread this factory was constructed on.
+	/// </remarks>
 	public void Dispose() {
 		// Maintainer's note: This is not simply accepting IDisposable because we want the flexibility
 		// to make the factory objects disposable in future without forgetting to dispose them here.

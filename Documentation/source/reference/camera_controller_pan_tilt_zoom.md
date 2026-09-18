@@ -114,7 +114,7 @@ controller.Progress(deltaTime); // (7)!
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `MaxTiltDown`
 
-:   Can be set to any value between `0°` and `180°` to set the maximum amount the camera is permitted to tilt upward from its `ZeroPanTiltDirection`.
+:   Can be set to any value between `0°` and `180°` to set the maximum amount the camera is permitted to tilt downward from its `ZeroPanTiltDirection`.
 	
 	Defaults to `55°`.
 	

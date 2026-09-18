@@ -68,7 +68,7 @@ controller.Progress(deltaTime); // (7)!
 
 :	Sets the up/down turn amount of the camera.
 	
-	A value of `0°` means the camera is looking horizontally; positive values tilt upward, negative values tilt downward.
+	A value of `0°` means the camera is looking horizontally; positive values tilt downward, negative values tilt upward.
 	
 	Unless `AllowUpsideDownFlip` is `true`, `Pitch` is automatically clamped to ±90° during `Progress()` so that the camera never flips upside-down.
 	

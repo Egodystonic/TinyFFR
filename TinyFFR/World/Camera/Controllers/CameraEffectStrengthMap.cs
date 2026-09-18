@@ -4,25 +4,25 @@
 namespace Egodystonic.TinyFFR.World;
 
 readonly record struct CameraEffectStrengthMap(float None, float VeryMild, float Mild, float Standard, float Strong, float VeryStrong) {
-	public float From(Strength s) {
+	public float From(SmoothingStrength s) {
 		return s switch {
-			Strength.None => None,
-			Strength.VeryMild => VeryMild,
-			Strength.Mild => Mild,
-			Strength.Strong => Strong,
-			Strength.VeryStrong => VeryStrong,
+			SmoothingStrength.None => None,
+			SmoothingStrength.VeryMild => VeryMild,
+			SmoothingStrength.Mild => Mild,
+			SmoothingStrength.Strong => Strong,
+			SmoothingStrength.VeryStrong => VeryStrong,
 			_ => Standard
 		};
 	}
 	
-	public Strength From(float f) {
+	public SmoothingStrength From(float f) {
 		var dist = Single.MaxValue;
-		var result = Strength.Moderate;
+		var result = SmoothingStrength.Moderate;
 		ReadOnlySpan<float> values = stackalloc float[] { None, VeryMild, Mild, Standard, Strong, VeryStrong };
 		for (var i = 0; i < 6; ++i) {
 			var thisValueDist = MathF.Abs(values[i] - f);
 			if (thisValueDist < dist) {
-				result = (Strength) i;
+				result = (SmoothingStrength) i;
 				dist = thisValueDist;
 			}
 		}

@@ -17,6 +17,19 @@ using Hexa.NET.ImGui;
 
 namespace Egodystonic.TinyFFR.DearImGui;
 
+/// <summary>
+/// Hosts a Dear ImGui interface, drawing it over a TinyFFR scene.
+/// </summary>
+/// <remarks>
+/// <para>
+/// An interface is a separate scene with its own renderer, composited over your three-dimensional pass in the same way a canvas is.
+/// Add the interface's renderer to the compositor last, with a composition type that retains the scenes drawn before it, so that
+/// your scene shows through translucent panels.
+/// </para>
+/// <para>
+/// Each frame, call one of the <c>BeginFrame</c> overloads, make your ImGui calls, then call <see cref="EndFrame"/>.
+/// </para>
+/// </remarks>
 public sealed unsafe class ImGuiScene : IDisposable {
 	const int InitialVertexCapacity = 4096;
 	const int InitialIndexCapacity = 8192;
@@ -47,8 +60,28 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	XYPair<int> _fullTargetSize;
 	bool _isDisposed;
 
+	/// <summary>
+	/// The scene this interface's geometry is placed in.
+	/// </summary>
+	/// <remarks>
+	/// Pass this to the renderer builder when creating a renderer for the interface, or use the <c>CreateRenderer</c> overload
+	/// that takes an <see cref="ImGuiScene"/> directly and does it for you.
+	/// </remarks>
 	public Scene UnderlyingScene { get; }
+	/// <summary>
+	/// The camera the interface is viewed through.
+	/// </summary>
+	/// <remarks>
+	/// This is an orthographic camera spanning the whole render target, maintained automatically as the target is resized. There
+	/// is no reason to move it.
+	/// </remarks>
 	public Camera Camera { get; }
+	/// <summary>
+	/// The ImGui context this scene owns, for passing to ImGui functions that take one explicitly.
+	/// </summary>
+	/// <remarks>
+	/// The context is made current at the start of every frame, so ordinary widget calls need not reference it.
+	/// </remarks>
 	public ImGuiContextPtr Context => _context;
 
 	internal XYPair<int> LastFrameSubAreaOffset { get; private set; }
@@ -104,16 +137,45 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		_pristineStyle = *ImGui.GetStyle().Handle;
 	}
 
+	/// <summary>
+	/// Starts an ImGui frame sized to the given window.
+	/// </summary>
+	/// <remarks>
+	/// Every ImGui call must be made between this and <see cref="EndFrame"/>. Note that ImGui text fields need real typed
+	/// characters rather than raw key codes, so set the application loop's <c>EnableInputTextTranscription</c> to
+	/// <see langword="true"/> or text boxes will not accept input; it is off by default.
+	/// </remarks>
+	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
+	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="window">The window being drawn to, whose size and framebuffer dimensions are used for the display size.</param>
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, Window window) {
 		var framebufferSize = ((IRenderTarget) window).ViewportDimensions;
 		BeginFrame(deltaTime, input, window.Size, framebufferSize, XYPair<int>.Zero, framebufferSize, window);
 	}
 
+	/// <summary>
+	/// Starts an ImGui frame sized to the given window, confined to the region the given renderer draws in to.
+	/// </summary>
+	/// <remarks>
+	/// Use this where the interface should occupy only part of the window, as set by the renderer's render sub-area.
+	/// </remarks>
+	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
+	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="window">The window being drawn to, whose size and framebuffer dimensions are used for the display size.</param>
+	/// <param name="renderer">The renderer this interface will be drawn with. Its sub-area is adopted as the region the interface occupies, and the renderer is told that the sub-area is being applied here rather than by it.</param>
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, Window window, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
 		BeginFrame(deltaTime, input, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window);
 	}
 
+	/// <summary>
+	/// Starts an ImGui frame for a drawing area of the given size, confined to the region the given renderer draws in to.
+	/// </summary>
+	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
+	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="logicalSize">The size of the drawing area in the operating system's own units. Together with <paramref name="framebufferSize"/> this is what tells ImGui the display's scaling factor.</param>
+	/// <param name="framebufferSize">The size of the drawing area in real pixels.</param>
+	/// <param name="renderer">The renderer this interface will be drawn with. Its sub-area is adopted as the region the interface occupies, and the renderer is told that the sub-area is being applied here rather than by it.</param>
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
 		BeginFrame(deltaTime, input, logicalSize, framebufferSize, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), null);
@@ -132,10 +194,30 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	// rectangles are offset into the sub-area instead.
 	static void AdoptSubAreaFrom(Renderer renderer) => renderer.MarkSubAreaAsHandledDownstream(true);
 
+	/// <summary>
+	/// Starts an ImGui frame for a drawing area of the given size.
+	/// </summary>
+	/// <remarks>
+	/// This is the windowless form, for drawing to a render output buffer or when hosted inside another user interface
+	/// framework, where the sizes must be supplied rather than read from a window.
+	/// </remarks>
+	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
+	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="logicalSize">The size of the drawing area in the operating system's own units. Together with <paramref name="framebufferSize"/> this is what tells ImGui the display's scaling factor.</param>
+	/// <param name="framebufferSize">The size of the drawing area in real pixels.</param>
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize) {
 		BeginFrame(deltaTime, input, logicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, null);
 	}
 
+	/// <summary>
+	/// Starts an ImGui frame for a drawing area of the given size, confined to an explicit sub-area of it.
+	/// </summary>
+	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
+	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="logicalSize">The size of the drawing area in the operating system's own units. Together with <paramref name="framebufferSize"/> this is what tells ImGui the display's scaling factor.</param>
+	/// <param name="framebufferSize">The size of the drawing area in real pixels.</param>
+	/// <param name="subAreaOffsetFromTopLeft">Where the interface's region begins, in pixels from the top-left of the drawing area.</param>
+	/// <param name="subAreaDimensions">How large the interface's region is, in pixels.</param>
 	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffsetFromTopLeft, XYPair<int> subAreaDimensions) {
 		BeginFrame(deltaTime, input, logicalSize, framebufferSize, subAreaOffsetFromTopLeft, subAreaDimensions, null);
 	}
@@ -177,6 +259,13 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		_appliedStyleScale = newScale;
 	}
 
+	/// <summary>
+	/// Ends the ImGui frame and turns the widgets drawn since <c>BeginFrame</c> in to renderable geometry.
+	/// </summary>
+	/// <remarks>
+	/// Nothing appears until this is called. The geometry is placed in <see cref="UnderlyingScene"/>, so the interface is drawn
+	/// by whichever renderer targets that scene.
+	/// </remarks>
 	public void EndFrame() {
 		ThrowIfDisposed();
 		ImGui.SetCurrentContext(_context);
@@ -345,6 +434,15 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		return _parkingTexture;
 	}
 
+	/// <summary>
+	/// Registers a texture so that it can be drawn inside an ImGui widget, returning the identifier ImGui refers to it by.
+	/// </summary>
+	/// <remarks>
+	/// Pass the returned identifier to <see cref="Hexa.NET.ImGui.ImGui.Image(ImTextureRef, Vector2)"/>
+	/// (e.g. <c>ImGui.Image(new ImTextureRef(null, registeredTexture), ...)</c>).
+	/// The texture is not owned by this scene and must still be disposed by you, but unregister it first.
+	/// </remarks>
+	/// <param name="texture">The texture to make available to ImGui.</param>
 	public ImTextureID RegisterTexture(Texture texture) {
 		ThrowIfDisposed();
 		var id = _nextUserTextureId--;
@@ -352,6 +450,13 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		return new ImTextureID(id);
 	}
 
+	/// <summary>
+	/// Unregisters a texture previously made available to ImGui.
+	/// </summary>
+	/// <remarks>
+	/// Do this before disposing the texture itself. Unregistering an identifier that is not registered does nothing.
+	/// </remarks>
+	/// <param name="id">The identifier returned when the texture was registered.</param>
 	public void UnregisterTexture(ImTextureID id) {
 		ThrowIfDisposed();
 		if (!_userTextures.Remove((int) id.Handle, out var texture)) return;
@@ -414,6 +519,12 @@ public sealed unsafe class ImGuiScene : IDisposable {
 
 	void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, typeof(ImGuiScene));
 
+	/// <summary>
+	/// Disposes this scene, releasing its ImGui context and every resource it created for drawing.
+	/// </summary>
+	/// <remarks>
+	/// Any renderer targeting <see cref="UnderlyingScene"/> must be disposed first.
+	/// </remarks>
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {

@@ -3,6 +3,9 @@
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
+/// <summary>
+/// A broad grouping of <see cref="KeyboardOrMouseKey"/> values by the kind of key they represent (see <see cref="KeyboardOrMouseKeyExtensions.GetCategory"/>).
+/// </summary>
 public enum KeyboardOrMouseKeyCategory {
 	/// <summary>
 	/// Represents buttons that are not contained in any other category.

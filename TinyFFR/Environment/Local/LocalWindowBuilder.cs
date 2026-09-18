@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Security;
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;

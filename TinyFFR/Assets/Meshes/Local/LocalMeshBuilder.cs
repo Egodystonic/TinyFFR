@@ -209,7 +209,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	// Maintainer's note: Do not replace this with the CalculateBoundingBox override that takes a margin parameter;
 	// the code below applies the margin to the user's override if there is one.
 	internal static PositionedCuboid CalculateMeshBoundingBox<TVertex>(ReadOnlySpan<TVertex> transformedVertices, in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
-		return (config.BoundingBoxOverride ?? MathUtils.CalculateBoundingBox(transformedVertices))
+		return (config.BoundingBoxOverride ?? PositionedCuboid.FromBoundingBoxCalculation(transformedVertices))
 			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
 	}
 
@@ -746,7 +746,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			usesImGuiVertices,
 			vertexMirror,
 			indexMirror,
-			vertexMirror is { } mirror ? MathUtils.CalculateBoundingBox(mirror.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) : default
+			vertexMirror is { } mirror ? PositionedCuboid.FromBoundingBoxCalculation(mirror.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) : default
 		));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultDynamicVertexBufferName);
 		return HandleToInstance(handle);
@@ -911,7 +911,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	}
 	void RecalculateBoundingBox(ResourceHandle<DynamicVertexBuffer> handle, bool overwriteChildMeshBoundingBoxes) {
 		var data = GetMirroredBufferDataOrThrow(handle);
-		SetBoundingBox(handle, MathUtils.CalculateBoundingBox(data.Vertices!.Value.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin), overwriteChildMeshBoundingBoxes);
+		SetBoundingBox(handle, PositionedCuboid.FromBoundingBoxCalculation(data.Vertices!.Value.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin), overwriteChildMeshBoundingBoxes);
 	}
 
 	public void SetBoundingBox(ResourceHandle<DynamicVertexBuffer> handle, PositionedCuboid newBoundingBox, bool overwriteChildMeshBoundingBoxes) {

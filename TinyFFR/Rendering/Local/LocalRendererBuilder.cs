@@ -119,7 +119,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				sizePx = (rtSizeFloat * SizeFraction).CastWithRoundingIfNecessary<float, int>();
 			}
 			
-			var bottomLeftPx = UiUtils.GetAnchoredCanvasAreaStartCoord(
+			var bottomLeftPx = MathUtils.FindAnchoredAreaIn2DCoordinateSystem(
 				renderTargetSize,
 				DiagonalOrientation2D.DownLeft,
 				Anchor,
@@ -247,6 +247,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		var qualityConfig = config.Quality ?? RenderQualityConfig.SceneDefault;
 
 		var rtu = AllocateOrRetrieveRenderTargetUnion(renderTarget);
 		
@@ -260,7 +261,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(scene, camera, rtu, viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0, config.Quality, null));
+		_loadedRenderers.Add(handle, new(scene, camera, rtu, viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0, qualityConfig, null));
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRendererName);
 
@@ -273,13 +274,15 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			LocalFrameSynchronizationManager.RegisterRenderer(handle, config.GpuSynchronizationFrameBufferCount); 
 		}
 
-		SetQualityConfig(handle, config.Quality);
+		SetQualityConfig(handle, qualityConfig);
 
 		return result;
 	}
 
 	public Renderer CreateRenderer<TRenderTarget>(CanvasScene scene, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
-		return CreateRenderer(scene.UnderlyingScene, scene.Camera, renderTarget, in config);
+		var actualConfig = config;
+		if (actualConfig.Quality == null) actualConfig = actualConfig with { Quality = RenderQualityConfig.CanvasSceneDefault };
+		return CreateRenderer(scene.UnderlyingScene, scene.Camera, renderTarget, in actualConfig);
 	}
 
 	public RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
@@ -797,7 +800,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			pixelCoord = pixelCoord.ScaledByReal(curTargetSize.Cast<float>() / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
 		}
 
-		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(curTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
+		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(curTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
 
 		XYPair<int> viewportTopLeft;
 		if (viewport.LastCheckedRenderTargetSize == curTargetSize) {
@@ -865,7 +868,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize.Cast<float>());
 		}
 
-		pixelCoord = UiUtils.TranslateAnchoredCanvasOffset(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
+		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
 
 		var normalizedCoord = new XYPair<float>(
 			((Real) pixelCoord.X).RemapRange(new Pair<Real, Real>(0f, viewportSize.X), new Pair<Real, Real>(-1f, 1f)),

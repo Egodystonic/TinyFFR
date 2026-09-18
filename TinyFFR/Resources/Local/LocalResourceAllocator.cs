@@ -1,18 +1,13 @@
 ﻿// Created on 2024-01-22 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System;
 using System.Buffers;
-using System.Buffers.Binary;
-using Egodystonic.TinyFFR.Assets;
-using Egodystonic.TinyFFR.Environment;
-using Egodystonic.TinyFFR.Environment.Local;
-using Egodystonic.TinyFFR.Rendering;
-using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
-using Egodystonic.TinyFFR.World;
 
-namespace Egodystonic.TinyFFR.Factory.Local;
+namespace Egodystonic.TinyFFR.Resources.Local;
 
 sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 	readonly record struct ArrayPoolLeaseData(object ArrayPool, object Array, bool ClearMemory);
@@ -72,6 +67,7 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 	public Memory<T> CreatePooledMemoryBuffer<T>(int numElements) {
 		var arrayPool = GetArrayPool<T>();
 		var rentedArray = arrayPool.Rent(numElements);
+		Array.Clear(rentedArray);
 		return rentedArray.AsMemory(0, numElements);
 	}
 	public void ReturnPooledMemoryBuffer<T>(Memory<T> buffer) {

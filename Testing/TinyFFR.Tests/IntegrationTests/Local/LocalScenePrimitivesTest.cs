@@ -38,10 +38,10 @@ class LocalScenePrimitivesTest {
 			primitives.Add(p);
 			return p;
 		}
-		void Label(float x, string text, ColorVect color) => Track(scene.AddPrimitiveString(new Location(x, 0.2f, 0f), text, new PrimitivePaintbrush(color, ColorVect.BlackOpaque), Magnitude.Small));
+		void Label(float x, string text, ColorVect color) => Track(scene.AddPrimitiveString(new Location(x, 0.2f, 0f), text, new PrimitivePaintbrush(color, ColorVect.BlackOpaque), ScenePrimitiveSize.Small));
 
 		// 1. Point (2D billboarded marker, constant screen size)
-		Track(scene.AddPrimitivePoint(new Location(-5.25f, Y, 0f), new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.BlackOpaque), Magnitude.VeryLarge));
+		Track(scene.AddPrimitivePoint(new Location(-5.25f, Y, 0f), new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.BlackOpaque), ScenePrimitiveSize.VeryLarge));
 		Label(-5.25f, "Point", ColorVect.RedOpaque);
 
 		// 2. Cuboid (filled)
@@ -61,15 +61,15 @@ class LocalScenePrimitivesTest {
 		Label(0.75f, "Sphere (wire)", cyan);
 
 		// 6. BoundedRay (finite line segment with drawn endpoints)
-		Track(scene.AddPrimitiveShape(new BoundedRay(new Location(2.25f, Y - 0.6f, 0f), new Location(2.25f, Y + 0.6f, 0f)), new PrimitivePaintbrush(ColorVect.YellowOpaque, ColorVect.RedOpaque), Magnitude.Large, includeEndpoints: true));
+		Track(scene.AddPrimitiveShape(new BoundedRay(new Location(2.25f, Y - 0.6f, 0f), new Location(2.25f, Y + 0.6f, 0f)), new PrimitivePaintbrush(ColorVect.YellowOpaque, ColorVect.RedOpaque), ScenePrimitiveSize.Large, includeEndpoints: true));
 		Label(2.25f, "BoundedRay", ColorVect.YellowOpaque);
 
 		// 7. Ray (infinite half-line with drawn start point)
-		Track(scene.AddPrimitiveShape(new Ray(new Location(3.75f, Y - 0.6f, 0f), Direction.Up), new PrimitivePaintbrush(ColorVect.PinkOpaque, ColorVect.WhiteOpaque), Magnitude.Large, includeStartPoint: true));
+		Track(scene.AddPrimitiveShape(new Ray(new Location(3.75f, Y - 0.6f, 0f), Direction.Up), new PrimitivePaintbrush(ColorVect.PinkOpaque, ColorVect.WhiteOpaque), ScenePrimitiveSize.Large, includeStartPoint: true));
 		Label(3.75f, "Ray", ColorVect.PinkOpaque);
 
 		// 8. Line (infinite in both directions)
-		Track(scene.AddPrimitiveShape(new Line(new Location(5.25f, Y, 0f), Direction.Up), new PrimitivePaintbrush(orange), Magnitude.Large));
+		Track(scene.AddPrimitiveShape(new Line(new Location(5.25f, Y, 0f), Direction.Up), new PrimitivePaintbrush(orange), ScenePrimitiveSize.Large));
 		Label(5.25f, "Line", orange);
 
 		// 9. Plane (semi-transparent back wall)
@@ -79,7 +79,7 @@ class LocalScenePrimitivesTest {
 		Track(scene.AddPrimitiveGrid(Location.Origin, gridSize: 14f));
 
 		// 11. String (title billboard)
-		Track(scene.AddPrimitiveString(new Location(0f, 3f, 0f), "Scene Primitives", new PrimitivePaintbrush(ColorVect.WhiteOpaque, ColorVect.BlackOpaque), Magnitude.VeryLarge));
+		Track(scene.AddPrimitiveString(new Location(0f, 3f, 0f), "Scene Primitives", new PrimitivePaintbrush(ColorVect.WhiteOpaque, ColorVect.BlackOpaque), ScenePrimitiveSize.VeryLarge));
 
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		renderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.DebugAndDiagnostic));

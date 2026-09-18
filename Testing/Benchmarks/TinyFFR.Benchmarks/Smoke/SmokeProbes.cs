@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Benchmarks.Harness;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 using static Egodystonic.TinyFFR.Benchmarks.Harness.AllocationProbe;
 

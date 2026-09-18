@@ -16,7 +16,7 @@ sealed class ResourceDirectory : IResourceDirectory, IDisposable {
 
 	public void Dispose() => _typedDirectoryMap.Dispose();
 
-	public IResourceDirectory<TResource> GetDirectoryForType<TResource>() where TResource : struct, IResource {
+	public IResourceDirectory<TResource> ForType<TResource>() where TResource : struct, IResource {
 		if (!_typedDirectoryMap.TryGetValue(typeof(TResource), out var obj)) {
 			throw new InvalidOperationException($"This resource directory does not support resources of type '{typeof(TResource).Name}'.");
 		}

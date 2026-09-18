@@ -71,6 +71,7 @@ readonly unsafe struct ThreadJob {
 		catch (Exception e) {
 #pragma warning restore CA1031
 			Console.WriteLine($"Could not cleanly cancel job {JobId}: {e.GetAllMessages()}.");
+			Console.WriteLine(e.StackTrace);
 		}
 		finally {
 			completionRegistrar?.NotifyCompletion(JobId);

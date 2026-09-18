@@ -33,6 +33,7 @@
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="..\package_logo.png" Pack="true" PackagePath="\" />
     <None Include="..\..\Integrations\TinyFFR.ImGui\bin\Release\TinyFFR.ImGui.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+    <None Include="..\..\Integrations\TinyFFR.ImGui\bin\Release\TinyFFR.ImGui.xml" Pack="true" PackagePath="lib\$(TargetFramework)\" />
 
     <PackageReference Include="$(TffrPackageId)" Version="$(TffrVersion)$(TffrVersionSuffix)" />
     <PackageReference Include="Hexa.NET.ImGui" Version="$(HexaImGuiDependencyVersion)" />

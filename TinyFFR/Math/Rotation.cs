@@ -9,24 +9,79 @@ using static Egodystonic.TinyFFR.MathUtils;
 
 namespace Egodystonic.TinyFFR;
 
+/// <summary>
+/// Represents a three-dimensional rotation, encoded as an angle/axis pair.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A rotation object is a description of <i>how to rotate</i> something; e.g. "72° around the Left axis".
+/// </para>
+/// <para>
+/// A Rotation does <b>not</b> represent any specific orientation/direction by itself, instead it represents the operation to apply to any existing direction/orientation to get a <i>new</i> direction/orientation.
+/// For example, "facing forward" is just a direction or orientation but "turn from forward to right" is a <i>Rotation</i> (in this case possibly encoded as "90° around the Down axis").
+/// </para>
+/// <para>
+/// You can construct a rotation like so:
+/// <ul>
+/// <li>From its angle &amp; axis directly (<c>new Rotation(72f, Direction.Left)</c>)</li>
+/// <li>From the transition between two directions (<c>Rotation.FromStartAndEndDirection(Direction.Up, Direction.Right)</c>)</li>
+/// <li>By combining multiple rotations (<c>rotationOne + rotationTwo + rotationThree</c>)</li>
+/// <li>...And a few various other mechanisms</li>
+/// </ul>
+/// </para>
+/// <para>
+/// You can then apply a rotation like so:
+/// <ul>
+/// <li>To a direction or vect (<c>var newDir = direction * rotation;</c></li>
+/// <li>To a geometric primitive (<c>var newPlane = plane * rotation;</c></li>
+/// <li>To a model instance or camera (<c>camOrInstance.RotateBy(rotation);</c></li>
+/// <li>...And a few other places</li>
+/// </ul>
+/// </para>
+/// <para>
+/// A note on Quaternions:
+/// Angle / axis representation was chosen as it is the most user friendly &amp; least error-prone. However in some circumstances
+/// it can be slow for certain operations required frequently or in bulk. Therefore, some APIs in TinyFFR accept both a Rotation and a <see cref="Quaternion"/>.
+/// In these cases you may wish to work with Quaternions directly; Rotation has many built-in static members that help you convert between the two with ease.
+/// </para>
+/// </remarks>
 [DebuggerDisplay("{ToStringDescriptive()}")]
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
+[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)]
 public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptiveStringProvider {
+	/// <summary>
+	/// The text inserted between the angle and axis in the string representation of a rotation (i.e. <c>" around "</c>).
+	/// </summary>
 	public const string ToStringMiddleSection = " around ";
+	/// <summary>
+	/// A rotation that has no effect (an angle of <see cref="Angle.Zero"/> around <see cref="Direction.None"/>).
+	/// </summary>
 	public static readonly Rotation None = new(Angle.Zero, Direction.None);
 
 	readonly Vector4 _axis3dAndAngleRadians;
-	
-	// TODO indicate this is clockwise looking along the axis direction
+
+	/// <summary>
+	/// The angle of this rotation.
+	/// </summary>
+	/// <remarks>
+	/// The angle is measured anticlockwise when <see cref="Axis"/> points towards you.
+	/// </remarks>
 	public Angle Angle {
 		get => Angle.FromRadians(_axis3dAndAngleRadians.W);
 		init => _axis3dAndAngleRadians.W = value.Radians;
-	} 
+	}
+	/// <summary>
+	/// The axis this rotation rotates around.
+	/// </summary>
 	public Direction Axis {
 		get => Direction.FromVector3PreNormalized(_axis3dAndAngleRadians.AsVector3());
 		init => _axis3dAndAngleRadians = new Vector4(value.ToVector3(), _axis3dAndAngleRadians.W);
 	}
 
+	/// <summary>
+	/// Constructs a new <see cref="Rotation"/> from the given <paramref name="angle"/> and <paramref name="axis"/>.
+	/// </summary>
+	/// <param name="angle">The angle of the rotation.</param>
+	/// <param name="axis">The axis of the rotation.</param>
 	public Rotation(Angle angle, Direction axis) : this(new Vector4(axis.ToVector3(), angle.Radians)) { }
 
 	Rotation(Vector4 axis3DAndAngleRadians) {
@@ -34,17 +89,25 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	}
 
 	#region Factories and Conversions
+	/// <summary>
+	/// Returns the rotation that would turn <paramref name="startDirection"/> into <paramref name="endDirection"/>.
+	/// </summary>
+	/// <param name="startDirection">The direction to rotate from.</param>
+	/// <param name="endDirection">The direction to rotate to.</param>
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
-		// var dot = Vector4.Dot(startDirection.AsVector4, endDirection.AsVector4);
-		// if (dot > -0.9999f) return FromQuaternion(new(Vector3.Cross(startDirection.ToVector3(), endDirection.ToVector3()), dot + 1f));
-		//
-		// // If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
-		// // Therefore we just pick any perpendicular vector and rotate around that.
-		// var perpVec = startDirection.AnyOrthogonal();
-		// return new(Angle.HalfCircle, perpVec);
 		return new(startDirection.AngleTo(endDirection), Direction.FromDualOrthogonalization(startDirection, endDirection));
 	}
-	
+
+	/// <summary>
+	/// Returns the rotation that would turn a starting forward/up orientation pair into an ending forward/up orientation pair.
+	/// This is useful for aligning a full orientation (e.g. a camera or object with both a facing direction and an "up"
+	/// direction) rather than a single direction.
+	/// </summary>
+	/// <param name="startingForwardDirection">The starting forward direction.</param>
+	/// <param name="startingUpDirection">The starting up direction.</param>
+	/// <param name="endForwardDirection">The ending forward direction.</param>
+	/// <param name="endUpDirection">The ending up direction.</param>
+	/// <param name="enforceOrthogonality">Whether to first orthogonalize each up direction against its corresponding forward direction (<see langword="true"/>, the default), or use the up directions exactly as given (<see langword="false"/>).</param>
 	public static Rotation FromStartAndEndOrientation(Direction startingForwardDirection, Direction startingUpDirection, Direction endForwardDirection, Direction endUpDirection, bool enforceOrthogonality = true) {
 		const float MinAngleRadiansForNearAntiparallelUpCorrection = 178f * (MathF.Tau / 360f);
 
@@ -60,15 +123,36 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		return forwardRot + (carriedUp >> endUpDirection);
 	}
 
+	/// <summary>
+	/// Converts this rotation to a raw <see cref="Quaternion"/>.
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Quaternion ToQuaternion() {
 		if (Angle == Angle.Zero || Axis == Direction.None) return Identity;
 		else return CreateFromAxisAngle(Axis.ToVector3(), Angle.Radians);
 	}
 
+	/// <summary>
+	/// Converts a raw <see cref="Quaternion"/> to a <see cref="Rotation"/>, normalizing it first.
+	/// </summary>
+	/// <remarks>
+	/// If you already know <paramref name="q"/> is unit-length, <see cref="FromQuaternionPreNormalized"/> is a faster alternative that skips normalization.
+	/// </remarks>
+	/// <param name="q">The quaternion to convert.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation FromQuaternion(Quaternion q) => FromQuaternionPreNormalized(NormalizeOrIdentity(q));
 
+	/// <summary>
+	/// Converts an already-normalized raw <see cref="Quaternion"/> to a <see cref="Rotation"/>, skipping normalization.
+	/// </summary>
+	/// <remarks>
+	/// This is a faster alternative to <see cref="FromQuaternion"/> for when you already know the
+	/// components describe a unit-length vector.
+	/// Be warned that if the components are not actually unit-length, the resultant <see cref="Rotation"/> will not behave correctly
+	/// in most interactions that use it, potentially causing difficult-to-track mathematical errors throughout your application;
+	/// so if in doubt opt to use <see cref="FromQuaternion"/> instead.
+	/// </remarks>
+	/// <param name="q">The already-normalized quaternion to convert.</param>
 	public static Rotation FromQuaternionPreNormalized(Quaternion q) {
 		return new(
 			Angle.FromRadians(MathF.Acos(q.W) * 2f),
@@ -76,6 +160,11 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		);
 	}
 
+	/// <summary>
+	/// Deconstructs this rotation in to its individual <paramref name="angle"/> and <paramref name="axis"/> components.
+	/// </summary>
+	/// <param name="angle">Will be set to the value of <see cref="Angle"/>.</param>
+	/// <param name="axis">Will be set to the value of <see cref="Axis"/>.</param>
 	public void Deconstruct(out Angle angle, out Direction axis) {
 		angle = Angle;
 		axis = Axis;
@@ -83,16 +172,27 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	#endregion
 
 	#region Random
+	/// <summary>
+	/// Produces a random rotation: a uniformly random angle between 0° and 360°, around a uniformly random axis.
+	/// </summary>
 	public static Rotation Random() => new(Angle.Random(), Direction.Random());
 
+	/// <summary>
+	/// Produces a random rotation, with an angle in the range <c>[minInclusive.Angle, maxExclusive.Angle)</c> and an
+	/// axis somewhere on the shortest arc between <c>minInclusive.Axis</c> and <c>maxExclusive.Axis</c>.
+	/// </summary>
+	/// <param name="minInclusive">The lower bound for the resultant rotation's angle, and one end of the arc its axis is picked from.</param>
+	/// <param name="maxExclusive">The exclusive ceiling for the resultant rotation's angle, and the other end of the arc its axis is picked from.</param>
 	public static Rotation Random(Rotation minInclusive, Rotation maxExclusive) {
 		return new(Angle.Random(minInclusive.Angle, maxExclusive.Angle), Direction.Random(minInclusive.Axis, maxExclusive.Axis));
 	}
 	#endregion
 
 	#region Span Conversions
+	/// <inheritdoc />
 	public static int SerializationByteSpanLength { get; } = sizeof(float) * 4;
 
+	/// <inheritdoc />
 	public static void SerializeToBytes(Span<byte> dest, Rotation src) {
 		BinaryPrimitives.WriteSingleLittleEndian(dest, src._axis3dAndAngleRadians.X);
 		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..], src._axis3dAndAngleRadians.Y);
@@ -100,6 +200,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 3)..], src._axis3dAndAngleRadians.W);
 	}
 
+	/// <inheritdoc />
 	public static Rotation DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		return new(new Vector4(
 			BinaryPrimitives.ReadSingleLittleEndian(src),
@@ -111,12 +212,16 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	#endregion
 
 	#region String Conversion
+	/// <inheritdoc />
 	public string ToStringDescriptive() => $"{Angle}{ToStringMiddleSection}{Axis.ToStringDescriptive()}";
-	
+
+	/// <inheritdoc />
 	public override string ToString() => ToString(null, null);
 
+	/// <inheritdoc />
 	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Angle.ToString(format, formatProvider)}{ToStringMiddleSection}{Axis.ToString(format, formatProvider)}";
 
+	/// <inheritdoc />
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		var (angle, axis) = this;
 		charsWritten = 0;
@@ -143,9 +248,12 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		return writeSuccess;
 	}
 
+	/// <inheritdoc />
 	public static Rotation Parse(string s, IFormatProvider? provider = null) => Parse(s.AsSpan(), provider);
+	/// <inheritdoc />
 	public static bool TryParse(string? s, IFormatProvider? provider, out Rotation result) => TryParse(s.AsSpan(), provider, out result);
 
+	/// <inheritdoc />
 	public static Rotation Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
 		var indexOfMiddlePart = s.IndexOf(ToStringMiddleSection);
 		var angle = Angle.Parse(s[..indexOfMiddlePart], provider);
@@ -153,6 +261,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		return new(angle, axis);
 	}
 
+	/// <inheritdoc />
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Rotation result) {
 		result = default;
 
@@ -169,11 +278,30 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	#endregion
 
 	#region Equality
+	/// <summary>
+	/// Determines whether this rotation and <paramref name="other"/> always produce the same end result when
+	/// applied to anything regardless of the target's starting direction/orientation.
+	/// </summary>
+	/// <remarks>
+	/// Unlike a standard <see cref="Equals(Rotation)"/> check, this method takes in to account rotations
+	/// that are exact "mirrors" of each other (i.e. <c>90° around Left</c> vs <c>-90° around Right</c>)
+	/// or those that differ only by multiples of 360°, etc.
+	/// </remarks>
+	/// <param name="other">The other rotation to compare to.</param>
 	public bool IsEquivalentForAllDirectionsTo(Rotation other) {
 		var thisQuat = ToQuaternion();
 		var otherQuat = other.ToQuaternion();
 		return thisQuat.Equals(otherQuat) || thisQuat.Equals(-otherQuat);
 	}
+	/// <summary>
+	/// Determines whether this rotation and <paramref name="other"/> always produce the same end result when
+	/// applied to anything regardless of the target's starting direction/orientation, within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <remarks>
+	/// See <see cref="IsEquivalentForAllDirectionsTo(Rotation)"/> for a description of what "equivalent for all directions" means.
+	/// </remarks>
+	/// <param name="other">The other rotation to compare to.</param>
+	/// <param name="tolerance">The tolerance to allow between the two rotations' underlying quaternion components.</param>
 	public bool IsEquivalentForAllDirectionsTo(Rotation other, float tolerance) {
 		static bool CompareQuats(Quaternion a, Quaternion b, float t) {
 			return MathF.Abs(a.X - b.X) <= t
@@ -187,29 +315,66 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		return CompareQuats(thisQuat, otherQuat, tolerance) || CompareQuats(thisQuat, -otherQuat, tolerance);
 	}
 
+	/// <summary>
+	/// Determines whether this rotation and <paramref name="other"/> produce the same result when
+	/// applied to the given <paramref name="targetDirection"/>.
+	/// </summary>
+	/// <remarks>
+	/// This function essentially helps you determine if this rotation and <paramref name="other"/>
+	/// are ineffective or have the same effect against a specific direction (e.g. perhaps their
+	/// rotation axis is colinear with it). 
+	/// </remarks>
+	/// <param name="other">The other rotation to compare to.</param>
+	/// <param name="targetDirection">The direction to apply both rotations to for the comparison.</param>
 	public bool IsEquivalentForSingleDirectionTo(Rotation other, Direction targetDirection) {
 		var thisResult = Rotate(targetDirection);
 		var otherResult = other.Rotate(targetDirection);
 		return thisResult.Equals(otherResult);
 	}
+	/// <summary>
+	/// Determines whether this rotation and <paramref name="other"/> produce the same result, within a given <paramref name="tolerance"/>, when
+	/// applied to the given <paramref name="targetDirection"/>.
+	/// </summary>
+	/// <remarks>
+	/// See <see cref="IsEquivalentForSingleDirectionTo(Rotation,Direction)"/> for a description of what "equivalent for a single direction" means.
+	/// </remarks>
+	/// <param name="other">The other rotation to compare to.</param>
+	/// <param name="targetDirection">The direction to apply both rotations to for the comparison.</param>
+	/// <param name="tolerance">The tolerance to allow between the two resultant directions.</param>
 	public bool IsEquivalentForSingleDirectionTo(Rotation other, Direction targetDirection, float tolerance) {
 		var thisResult = Rotate(targetDirection);
 		var otherResult = other.Rotate(targetDirection);
 		return thisResult.Equals(otherResult, tolerance);
 	}
 
+	/// <summary>
+	/// Determines whether this rotation is equal to <paramref name="other"/> within a given <paramref name="tolerance"/>.
+	/// </summary>
+	/// <remarks>
+	/// This compares the raw <see cref="Angle"/> and <see cref="Axis"/> components independently; it does not account
+	/// for rotations that are equivalent in effect but represented differently (e.g. a rotation and its "mirror" around
+	/// the negated axis). For that, use <see cref="IsEquivalentForAllDirectionsTo(Rotation)"/> or <see cref="IsEquivalentForSingleDirectionTo(Rotation,Direction)"/> instead.
+	/// </remarks>
+	/// <param name="other">The other value.</param>
+	/// <param name="tolerance">The tolerance value.</param>
+	/// <returns>True if equal within tolerance, false if not.</returns>
 	public bool Equals(Rotation other, float tolerance) {
 		return Angle.Equals(other.Angle, tolerance) && Axis.Equals(other.Axis, tolerance);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Rotation other) => _axis3dAndAngleRadians.Equals(other._axis3dAndAngleRadians);
+	/// <inheritdoc />
 	public override bool Equals(object? obj) => obj is Rotation other && Equals(other);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => _axis3dAndAngleRadians.GetHashCode();
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Rotation left, Rotation right) => left.Equals(right);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(Rotation left, Rotation right) => !left.Equals(right);
 	#endregion

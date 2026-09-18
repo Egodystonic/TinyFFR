@@ -51,7 +51,7 @@ controller.Progress(deltaTime); // (6)!
 
 :   Sets how far around the target the camera has rotated, around the `WorldUp` axis.
 
-	Increasing this value turns the camera clockwise around the target; decreasing turns anticlockwise.
+	Increasing this value turns the camera anticlockwise around the target (when `WorldUp` is pointing towards you); decreasing turns clockwise.
 
 	Defaults to `0°`.
 	
@@ -59,7 +59,7 @@ controller.Progress(deltaTime); // (6)!
 
 :   Sets how high or low the camera is tilted relative to the target.
 	
-	A value of `0°` places the camera level with the target on the horizontal plane; positive values tilt upward, negative values tilt downward.
+	A value of `0°` places the camera level with the target on the horizontal plane; positive values raise the camera above the target (looking down at it), negative values lower it below the target (looking up at it).
 	
 	By default, this value is automatically clamped to ±90° during `Progress()` so that the camera never flips upside-down. Set `AllowUpsideDownFlip` to `true` to disable this behavior.
 	
@@ -264,7 +264,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the angle to add to `Yaw` when the trigger is fully displaced. If null, `DefaultYawSensitivityControllerTrigger` will be used.
 	
-	If `leftTriggerYawsClockwise` is true, the left trigger will yaw anticlockwise and the right trigger yaw clockwise; otherwise these directions will be reversed. Defaults to `true`.
+	If `leftTriggerYawsClockwise` is true, the left trigger will yaw clockwise and the right trigger yaw anticlockwise; otherwise these directions will be reversed. Defaults to `true`.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustYawViaButtonPress(...)`
 

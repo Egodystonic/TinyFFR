@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Benchmarks.Harness;

@@ -117,6 +117,8 @@ Embed TinyFFR rendering into UI frameworks (WPF, Avalonia, WinForms). Each provi
 - **Platforms**: x64, ARM64.
 - **Solution format**: Modern `.slnx`.
 
+
 ## Documentation
 
 Additional documentation in markdown format is in the `Documentation` folder. Consult this if necessary for additional context.
+Do not modify the documentation in the `Documentation` folder or add/modify XMLDoc without permission-- this will often be the last step after validation of a session's output. Writing/changing documentation before final validation is wasteful as the changeset will likely be in churn.

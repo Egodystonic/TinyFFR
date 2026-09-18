@@ -178,7 +178,7 @@ class LocalFogAndShadowingTest {
 					fogIndex++;
 					if (fogIndex >= FogCycle.Length) fogIndex = -1;
 					if (fogIndex < 0) scene.RemoveFog();
-					else scene.AddFog(FogCycle[fogIndex]);
+					else scene.AddFog(FogCycle[fogIndex], StandardColor.LightingSunRiseSet);
 				}
 
 				if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.G)) {

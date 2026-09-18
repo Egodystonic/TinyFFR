@@ -5,4 +5,7 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
+/// <summary>
+/// Provides the implementation behind <see cref="VertexBuffer"/>.
+/// </summary>
 public interface IVertexBufferImplProvider : IDisposableResourceImplProvider<VertexBuffer>;

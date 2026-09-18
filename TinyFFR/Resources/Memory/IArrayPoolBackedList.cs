@@ -3,4 +3,8 @@
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
+/// <summary>
+/// Represents an <see cref="IList{T}"/> whose underlying heap storage is pooled, reducing GC churn.
+/// </summary>
+/// <typeparam name="T">The list element type.</typeparam>
 public interface IArrayPoolBackedList<T> : IList<T>, IDisposable;

@@ -5,4 +5,7 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
+/// <summary>
+/// Provides the implementation behind <see cref="IndexBuffer"/>.
+/// </summary>
 public interface IIndexBufferImplProvider : IDisposableResourceImplProvider<IndexBuffer>;
