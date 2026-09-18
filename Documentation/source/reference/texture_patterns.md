@@ -8,7 +8,7 @@ You can use the built-in texture pattern generators to create interesting color 
 ??? example "Continuing "Hello Cube""
 	In the "Hello Cube" example we created a simple color map with a maroon colour:
 	
-	`#!csharp using var colorMap = materialBuilder.CreateColorMap(StandardColor.Maroon);`
+	`#!csharp using var colorMap = textureBuilder.CreateColorMap(StandardColor.Maroon);`
 
 	You can try out the examples below by simply replacing the `colorMap` with some more interesting patterns!
 
@@ -53,7 +53,7 @@ Examples using each of these types follow below:
 	For this first example, we will create a color map using a `ChequerboardBordered` texture pattern:
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.ChequerboardBordered(
 			borderValue: ColorVect.FromRgb24(0x880000), // (1)!
 			borderWidth: 8, // (2)!
@@ -91,7 +91,7 @@ Examples using each of these types follow below:
 	///
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.ChequerboardBordered(
 			borderValue: ColorVect.RandomOpaque(),
 			borderWidth: 16,
@@ -115,7 +115,7 @@ Examples using each of these types follow below:
 	///
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(TexturePattern.Chequerboard(
+	using var colorMap = textureBuilder.CreateColorMap(TexturePattern.Chequerboard(
 		firstValue: ColorVect.FromStandardColor(StandardColor.Red), // (1)!
 		secondValue: ColorVect.FromStandardColor(StandardColor.Green),
 		thirdValue: ColorVect.FromStandardColor(StandardColor.Blue),
@@ -139,7 +139,7 @@ Examples using each of these types follow below:
 	In this example, we create a 3x3 'grid' of bordered circles. We specify each colour in [HSL](https://en.wikipedia.org/wiki/HSL_and_HSV) format with the static method `ColorVect.FromHueSaturationLightness()`. The first argument to `FromHueSaturationLightness()` is a hue angle in degrees, the second is a saturation (from 0.0 to 1.0), and the third is a lightness (also from 0.0 to 1.0):
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(TexturePattern.Circles(
+	using var colorMap = textureBuilder.CreateColorMap(TexturePattern.Circles(
 		interiorValue: ColorVect.FromHueSaturationLightness(180f, 0.6f, 0.33f), // (1)!
 		borderValue: ColorVect.FromHueSaturationLightness(-70f, 1f, 0.5f), // (2)!
 		paddingValue: ColorVect.FromHueSaturationLightness(240f, 0.3f, 0.7f), // (3)!
@@ -159,7 +159,7 @@ Examples using each of these types follow below:
 	A single bordered circle with interpolated colouring
 	///
 
-	Some of the overloads for `TexturePattern.Circle()` work with interpolatable values (`ColorVect` is interpolatable). In the following example, we will set colour values for the top, left, right, and bottom of the border and interior of a circle, and the texture pattern will interpolate values around the circle between those four "stops".
+	Some of the overloads for `TexturePattern.Circles()` work with interpolatable values (`ColorVect` is interpolatable). In the following example, we will set colour values for the top, left, right, and bottom of the border and interior of a circle, and the texture pattern will interpolate values around the circle between those four "stops".
 
 	This example also uses some slightly more complicated constructions for `ColorVect`s:
 	
@@ -173,7 +173,7 @@ Examples using each of these types follow below:
 	var leftAngle = Orientation2D.Left.ToPolarAngle()!.Value;
 	var bottomAngle = Orientation2D.Down.ToPolarAngle()!.Value;
 
-	using var colorMap = materialBuilder.CreateColorMap(TexturePattern.Circles(
+	using var colorMap = textureBuilder.CreateColorMap(TexturePattern.Circles(
 		interiorValueRight: ColorVect.FromHueSaturationLightness(rightAngle, 1f, 0.3f),
 		interiorValueTop: ColorVect.FromHueSaturationLightness(topAngle, 1f, 0.3f),
 		interiorValueLeft: ColorVect.FromHueSaturationLightness(leftAngle, 1f, 0.3f),
@@ -203,7 +203,7 @@ Examples using each of these types follow below:
 	This example shows how to generate a rectangles pattern using only two arguments. If desired, it's also possible to specify a `borderValue`, but this is optional:
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.Rectangles(
 			interiorValue: new ColorVect(1f, 0f, 0f),
 			paddingValue: new ColorVect(0f, 1f, 0f)
@@ -221,7 +221,7 @@ Examples using each of these types follow below:
 	Not only can you specify a border for each "rectangle", but you can actually specify a different value for the top, left, bottom and right sides (optionally):
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.Rectangles(
 			interiorSize: (64, 64),
 			borderSize: (8, 8),
@@ -284,7 +284,7 @@ Examples using each of these types follow below:
 	For this first example, we will create a normal map that gives the impression of rectangular 'studs' sticking out of our surface by using the `Rectangles` texture pattern:
 
 	```csharp
-	using var normalMap = materialBuilder.CreateNormalMap(TexturePattern.Rectangles(
+	using var normalMap = textureBuilder.CreateNormalMap(TexturePattern.Rectangles(
 		interiorSize: (64, 64),
 		borderSize: (8, 8),
 		paddingSize: (32, 32),
@@ -306,10 +306,10 @@ Examples using each of these types follow below:
 
 		We then make these border texels point exactly 45° out from the surface by setting their `PolarOffset`s to 45°.
 
-	To use it, the `normalMap` is supplied to `CreateOpaqueMaterial()` alongside your `colorMap`:
+	To use it, the `normalMap` is supplied to `CreateStandardMaterial()` alongside your `colorMap`:
 
 	```csharp
-	using var material = materialBuilder.CreateOpaqueMaterial(
+	using var material = materialBuilder.CreateStandardMaterial(
 		colorMap: colorMap, 
 		normalMap: normalMap
 	);
@@ -325,7 +325,7 @@ Examples using each of these types follow below:
 	Like with the [Interpolated Circle example above](#__tabbed_2_2) we use the interpolatable functionality of `SphericalTranslation` to create a smooth interpolated circle:
 
 	```csharp
-	using var normalMap = materialBuilder.CreateNormalMap(TexturePattern.Circles(
+	using var normalMap = textureBuilder.CreateNormalMap(TexturePattern.Circles(
 		interiorValue: new SphericalTranslation(0f, 0f), // (1)!
 		borderValueRight: new SphericalTranslation(180f, 45f), // (2)!
 		borderValueTop: new SphericalTranslation(270f, 45f),
@@ -365,9 +365,9 @@ Examples using each of these types follow below:
 		numRepeats: 5 // (5)!
 	);
 
-	using var ormMap = materialBuilder.CreateOrmMap(metallicPattern: metallicPattern); // (6)!
+	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap(metallicPattern: metallicPattern); // (6)!
 
-	using var material = materialBuilder.CreateOpaqueMaterial( // (7)!
+	using var material = materialBuilder.CreateStandardMaterial( // (7)!
 		colorMap: colorMap, 
 		ormMap: ormMap
 	);
@@ -398,7 +398,7 @@ Examples using each of these types follow below:
 
 		If you just want to specify a metallic pattern like we're doing here, you can explicitly name the `metallicPattern` argument. The library will fill in sensible defaults for you for the roughness and occlusion.
 
-	7.	Finally we pass our `ormMap` to `CreateOpaqueMaterial()` just like we did with the `colorMap` and `normalMap`. 
+	7.	Finally we pass our `ormMap` to `CreateStandardMaterial()` just like we did with the `colorMap` and `normalMap`. 
 	
 		If you're not passing in a `normalMap` make sure you explicitly name the arguments to the method like we're doing here to make sure you don't accidentally pass your `ormMap` as a `normalMap`.
 
@@ -462,7 +462,7 @@ Examples using each of these types follow below:
 		perturbationFrequency: -0.3f
 	);
 
-	using var ormMap = materialBuilder.CreateOrmMap( // (2)!
+	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap( // (2)!
 		roughnessPattern: roughnessPattern, 
 		metallicPattern: metallicPattern
 	);
@@ -472,7 +472,7 @@ Examples using each of these types follow below:
 
 		`Line` patterns can have up to ten values.
 
-	2.	In this example we're passing in a roughness and metallic map to `CreateOrmMap()`. Make sure you name the arguments to avoid accidentally specifying the wrong type of pattern or map.
+	2.	In this example we're passing in a roughness and metallic map to `CreateOcclusionRoughnessMetallicMap()`. Make sure you name the arguments to avoid accidentally specifying the wrong type of pattern or map.
 
 === "Occluded Circular Divots"
 
@@ -486,7 +486,7 @@ Examples using each of these types follow below:
 	As a reminder, the actual surface geometry has not changed (it's still a plain cube mesh); but by clever usage of normal and occlusion mapping we can give the strong "effect" of surface detail.
 
 	```csharp
-	var normalMap = MaterialBuilder.CreateNormalMap(TexturePattern.Circles( // (1)!
+	var normalMap = TextureBuilder.CreateNormalMap(TexturePattern.Circles( // (1)!
 		interiorValue: new SphericalTranslation(0f, 0f),
 		borderValueRight: new SphericalTranslation(180f, 45f),
 		borderValueTop: new SphericalTranslation(270f, 45f),
@@ -496,7 +496,7 @@ Examples using each of these types follow below:
 		repetitions: (6, 6)
 	));
 
-	var ormMap = MaterialBuilder.CreateOrmMap( // (2)!
+	var ormMap = TextureBuilder.CreateOcclusionRoughnessMetallicMap( // (2)!
 		occlusionPattern: TexturePattern.Circles<Real>(
 			interiorValue: 0.5f,
 			borderValue: 0.75f,
@@ -526,12 +526,12 @@ Examples using each of these types follow below:
 	In this example we will use a `PlainFill` to create a fully metallic surface, and then use a `GradientVertical` to vary the roughness from top-to-bottom:
 
 	```csharp
-	using var ormMap = materialBuilder.CreateOrmMap(
+	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap(
 		roughnessPattern: TexturePattern.GradientVertical<Real>(0f, 1f), // (1)!
 		metallicPattern: TexturePattern.PlainFill<Real>(1f) // (2)!
 	);
 
-	using var material = materialBuilder.CreateOpaqueMaterial(
+	using var material = materialBuilder.CreateStandardMaterial(
 		colorMap: colorMap, 
 		ormMap: ormMap
 	);
@@ -550,7 +550,7 @@ Examples using each of these types follow below:
 	This example shows how to use the `Gradient()` pattern to create a rainbow color map. We're adjusting the hue angle for each colour by 45 degrees as we go around the 'circle' of the gradient:
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.Gradient(
 			right:			ColorVect.FromHueSaturationLightness(0f, 1f, 0.5f),
 			topRight:		ColorVect.FromHueSaturationLightness(45f, 1f, 0.5f),
@@ -563,7 +563,7 @@ Examples using each of these types follow below:
 			centre:			ColorVect.White
 		)
 	);
-	using var material = materialBuilder.CreateOpaqueMaterial(colorMap);
+	using var material = materialBuilder.CreateStandardMaterial(colorMap);
 	```
 
 ??? info "Gradient and Plain Fill Pattern Types"
@@ -620,7 +620,7 @@ Finally, every texture pattern (except `PlainFill`) takes a `Transform2D` parame
 We will start off with this untransformed color map:
 
 ```csharp
-using var colorMap = materialBuilder.CreateColorMap(
+using var colorMap = textureBuilder.CreateColorMap(
 	TexturePattern.ChequerboardBordered<ColorVect>(
 		borderValue: StandardColor.Black,
 		firstValue: StandardColor.Red,
@@ -654,7 +654,7 @@ The  tabs below show the three different transformation types being applied to i
 	In this example we apply a scaling transformation of 50% in the horizontal direction and 200% in the vertical direction:
 	
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.ChequerboardBordered<ColorVect>(
 			borderValue: StandardColor.Black,
 			firstValue: StandardColor.Red,
@@ -694,7 +694,7 @@ The  tabs below show the three different transformation types being applied to i
 	In this example we apply an anticlockwise rotation transform of 10°:
 	
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.ChequerboardBordered<ColorVect>(
 			borderValue: StandardColor.Black,
 			firstValue: StandardColor.Red,
@@ -724,7 +724,7 @@ The  tabs below show the three different transformation types being applied to i
 	In this example we shift the pattern right by 1/8 and down by 1/4:
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
+	using var colorMap = textureBuilder.CreateColorMap(
 		TexturePattern.ChequerboardBordered<ColorVect>(
 			borderValue: StandardColor.Black,
 			firstValue: StandardColor.Red,

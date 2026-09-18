@@ -14,9 +14,15 @@ namespace Egodystonic.TinyFFR.World;
 /// Adjusts the per-instance material effects of a single <see cref="ModelInstance"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Per-instance effects let one object's appearance be altered without affecting anything else that shares its material.
 /// Obtained from <see cref="ModelInstance.MaterialEffects"/>, which returns <see langword="null"/> when the object's material does
 /// not support effects.
+/// </para>
+/// <para>
+/// Only materials created with effects enabled expose a controller at all, and only the map types the material was actually
+/// created with respond to being set; asking to blend a map the material does not have does nothing.
+/// </para>
 /// </remarks>
 public readonly record struct MaterialEffectController {
 	readonly ModelInstance _attachedModelInstance;
@@ -47,9 +53,15 @@ public readonly record struct MaterialEffectController {
 	/// Sets the texture blended over this object for one of the effect's map types.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Texture blending allows you to linearly blend between the material's default texture for the given <paramref name="mapType"/>
 	/// and the given <paramref name="texture"/>.
 	/// Adjust the distance between the start and end texture using <see cref="SetBlendDistance"/>.
+	/// </para>
+	/// <para>
+	/// Only the map types the material was actually
+	/// created with respond to being set; asking to blend a map the material does not have does nothing.
+	/// </para>
 	/// </remarks>
 	/// <param name="mapType">Which aspect of the surface this texture affects.</param>
 	/// <param name="texture">The texture to blend over the object.</param>
@@ -103,7 +115,12 @@ public enum DefaultMaterialShadingStyle {
 	/// Only the edges of the object's triangles are drawn, leaving its faces empty.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Chiefly a diagnostic view: it shows how an object is actually constructed, which makes it useful for checking geometry that looks wrong when shaded normally.
+	/// </para>
+	/// <para>
+	/// Note that the target <see cref="Mesh"/> must have been created with <see cref="Mesh.SupportsWireframeRendering"/> being <c>true</c>.
+	/// </para>
 	/// </remarks>
 	Wireframe = LocalShaderPackageConstants.DefaultMaterialShaderConstants.ShadingModeVariant.Wireframe
 }

@@ -7,16 +7,49 @@ using System;
 using System.Buffers;
 using System.Globalization;
 using System.Threading;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Rendering;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
+/// <summary>
+/// Creates meshes from shape descriptions, from polygons, or directly from vertices and triangles.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This is the counterpart to loading geometry from a file. The shape overloads are the quickest way to get something on screen;
+/// the polygon overloads suit flat-faced geometry described by its outlines; and the vertex overloads are for geometry your own
+/// code produces.
+/// </para>
+/// <para>
+/// Every mesh must be disposed when nothing uses it any more.
+/// </para>
+/// </remarks>
 public interface IMeshBuilder {
+	/// <summary>
+	/// The greatest number of bones a skeletal mesh may have: <c>255</c>.
+	/// </summary>
 	public const int MaxSkeletalBoneCount = 255;
 	private static readonly Lock _staticMutationLock = new();
 	
 	#region Cuboid
+	/// <summary>
+	/// Creates a box-shaped mesh.
+	/// </summary>
+	/// <param name="cuboidDesc">The box's dimensions. All three extents must be positive.</param>
+	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
+	/// <param name="centreTextureOrigin">Whether each face's texture is centred on that face rather than starting at its corner.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="cuboidDesc"/> has a non-positive extent.</exception>
 	Mesh CreateMesh(Cuboid cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, centreTextureOrigin, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	/// <summary>
+	/// Creates a box-shaped mesh, using the given configs.
+	/// </summary>
+	/// <param name="cuboidDesc">The box's dimensions. All three extents must be positive.</param>
+	/// <param name="centreTextureOrigin">Whether each face's texture is centred on that face rather than starting at its corner.</param>
+	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="cuboidDesc"/> has a non-positive extent.</exception>
 	Mesh CreateMesh(Cuboid cuboidDesc, bool centreTextureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		if (!cuboidDesc.IsPhysicallyValid) {
 			throw new ArgumentException("Given cuboid must be physically valid (all extents should be positive).", nameof(cuboidDesc));
@@ -107,7 +140,37 @@ public interface IMeshBuilder {
 	private static readonly ArrayPoolBackedVector<MeshVertex[]> _nonTransformedFixedSeamVertexCache = new();
 	private static readonly HeapPool _sphereVertexPool = new();
 
+	/// <summary>
+	/// Creates a sphere-shaped mesh.
+	/// </summary>
+	/// <remarks>
+	/// A sphere is built by repeatedly subdividing a twenty-sided solid, so each extra subdivision level roughly quadruples
+	/// the triangle count. Level <c>4</c> looks round at ordinary distances; higher levels are rarely worth their cost.
+	/// </remarks>
+	/// <param name="sphereDesc">The sphere's radius, which must be positive.</param>
+	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
+	/// <param name="subdivisionLevel">How many times to subdivide, and so how round the result is.
+	/// Must not be negative, and is capped at <c>7</c>. Defaults to <c>4</c>. Higher levels take longer to compute
+	/// (first invocation only) and cost more to render, but look smoother.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="sphereDesc"/> has a non-positive radius.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="subdivisionLevel"/> is negative.</exception>
 	Mesh CreateMesh(Sphere sphereDesc, Transform2D? textureTransform = null, int subdivisionLevel = 4, ReadOnlySpan<char> name = default) => CreateMesh(sphereDesc, subdivisionLevel, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	/// <summary>
+	/// Creates a sphere-shaped mesh, using the given configs.
+	/// </summary>
+	/// <remarks>
+	/// A sphere is built by repeatedly subdividing a twenty-sided solid, so each extra subdivision level roughly quadruples
+	/// the triangle count. Level <c>4</c> looks round at ordinary distances; higher levels are rarely worth their cost.
+	/// </remarks>
+	/// <param name="sphereDesc">The sphere's radius, which must be positive.</param>
+	/// <param name="subdivisionLevel">How many times to subdivide, and so how round the result is.
+	/// Must not be negative, and is capped at <c>7</c>. Defaults to <c>4</c>. Higher levels take longer to compute
+	/// (first invocation only) and cost more to render, but look smoother.</param>
+	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="sphereDesc"/> has a non-positive radius.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="subdivisionLevel"/> is negative.</exception>
 	Mesh CreateMesh(Sphere sphereDesc, int subdivisionLevel, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		static void CreateFixedSeamVertexCacheForLatestMeshLevel() {
 			var latestMeshLevelTuple = _sphereMeshes[^1];
@@ -331,8 +394,23 @@ public interface IMeshBuilder {
 	#endregion
 
 	#region Polygon(s)
+	/// <summary>
+	/// Obtains an empty polygon group for assembling a group of polygons that can then be passed to a <c>CreateMesh</c> overload that consumes them.
+	/// </summary>
+	/// <remarks>
+	/// Dispose the group when finished with it, or clear and refill it to build another mesh without allocating again.
+	/// </remarks>
 	IMeshPolygonGroup AllocateNewPolygonGroup();
 	
+	/// <summary>
+	/// Creates a mesh from a single polygon.
+	/// </summary>
+	/// <param name="polygon">The polygon to build the mesh from. Its vertices must be given in anticlockwise order as seen from its front face.</param>
+	/// <param name="textureUDirection">The direction across the polygon in which the texture's horizontal coordinate increases, or <see langword="null"/> to derive one.</param>
+	/// <param name="textureVDirection">The direction across the polygon in which the texture's vertical coordinate increases, or <see langword="null"/> to derive one.</param>
+	/// <param name="textureOrigin">The point on the polygon that maps to the texture's origin, or <see langword="null"/> to derive one.</param>
+	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	Mesh CreateMesh(Polygon polygon, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
 		polygon.FillInMissingTriangulationParameters(ref textureUDirection, ref textureVDirection, ref textureOrigin);
 		return CreateMesh(
@@ -344,13 +422,42 @@ public interface IMeshBuilder {
 			new MeshCreationConfig { Name = name }
 		);
 	}
+	/// <summary>
+	/// Creates a mesh from a single polygon, using the given configs.
+	/// </summary>
+	/// <param name="polygon">The polygon to build the mesh from. Its vertices must be given in anticlockwise order as seen from its front face.</param>
+	/// <param name="textureUDirection">The direction across the polygon in which the texture's horizontal coordinate increases.</param>
+	/// <param name="textureVDirection">The direction across the polygon in which the texture's vertical coordinate increases.</param>
+	/// <param name="textureOrigin">The point on the polygon that maps to the texture's origin.</param>
+	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
 	Mesh CreateMesh(Polygon polygon, Direction textureUDirection, Direction textureVDirection, Location textureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		using var polyGroup = AllocateNewPolygonGroup();
 		polyGroup.Add(polygon, textureUDirection, textureVDirection, textureOrigin);
 		return CreateMesh(polyGroup, in generationConfig, in config);
 	}
 
+	/// <summary>
+	/// Creates a mesh from a group of polygons.
+	/// </summary>
+	/// <remarks>
+	/// The cost of triangulating a single polygon grows steeply with its vertex count, so prefer several simple polygons to
+	/// one very complex outline.
+	/// </remarks>
+	/// <param name="polygons">The polygons to build the mesh from.</param>
+	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change..</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(polygons, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	/// <summary>
+	/// Creates a mesh from a group of polygons, using the given configs.
+	/// </summary>
+	/// <remarks>
+	/// The cost of triangulating a single polygon grows steeply with its vertex count, so prefer several simple polygons to
+	/// one very complex outline.
+	/// </remarks>
+	/// <param name="polygons">The polygons to build the mesh from.</param>
+	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
 	Mesh CreateMesh(IMeshPolygonGroup polygons, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		ArgumentNullException.ThrowIfNull(polygons);
 		polygons.Triangulate(generationConfig.TextureTransform, out var vertices, out var triangles);
@@ -359,6 +466,18 @@ public interface IMeshBuilder {
 	#endregion
 	
 	#region Grid / Quad
+	/// <summary>
+	/// Creates a flat rectangular mesh.
+	/// </summary>
+	/// <remarks>
+	/// A quad mesh is a one-by-one square centred on its own origin, which is then scaled and rotated in to place. It is what
+	/// billboards, sprites, labels and canvas panels are drawn on.
+	/// </remarks>
+	/// <param name="twoSided">Whether the quad is visible from behind as well as in front.
+	/// Leaving this <see langword="true"/> avoids the quad vanishing when seen from the wrong side; which may or may not be what you want.</param>
+	/// <param name="backSideInvertsTextures">Whether the back face mirrors its texture, so that the quad reads the same way round from either side rather than appearing reversed from behind.</param>
+	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	QuadMesh CreateQuadMesh(bool twoSided = true, bool backSideInvertsTextures = false, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
 		return CreateQuadMesh(
 			twoSided,
@@ -367,6 +486,18 @@ public interface IMeshBuilder {
 			new MeshCreationConfig { Name = name }
 		);
 	}
+	/// <summary>
+	/// Creates a flat rectangular mesh, using the given configs.
+	/// </summary>
+	/// <remarks>
+	/// A quad mesh is a one-by-one square centred on its own origin, which is then scaled and rotated in to place. It is what
+	/// billboards, sprites, labels and canvas panels are drawn on.
+	/// </remarks>
+	/// <param name="twoSided">Whether the quad is visible from behind as well as in front.
+	/// Leaving this <see langword="true"/> avoids the quad vanishing when seen from the wrong side; which may or may not be what you want.</param>
+	/// <param name="backSideInvertsTextures">Whether the back face mirrors its texture, so that the quad reads the same way round from either side rather than appearing reversed from behind.</param>
+	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
 	QuadMesh CreateQuadMesh(bool twoSided, bool backSideInvertsTextures, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		Span<MeshVertex> vertices = stackalloc MeshVertex[twoSided ? 8 : 4];
 		Span<VertexTriangle> triangles = stackalloc VertexTriangle[twoSided ? 4 : 2];
@@ -438,9 +569,28 @@ public interface IMeshBuilder {
 		return new QuadMesh(CreateMesh(vertices, triangles, in config));
 	}
 	
+	/// <summary>
+	/// The direction a mutable grid's first axis runs in when none is specified: <see cref="Direction.Right"/>.
+	/// </summary>
 	public static readonly Direction DefaultMutableGridMeshXDir = Direction.Right;
+	/// <summary>
+	/// The direction a mutable grid's second axis runs in when none is specified: <see cref="Direction.Forward"/>.
+	/// </summary>
 	public static readonly Direction DefaultMutableGridMeshYDir = Direction.Forward;
+	/// <summary>
+	/// The direction a mutable grid's vertices are raised in when none is specified: <see cref="Direction.Up"/>.
+	/// </summary>
 	public static readonly Direction DefaultMutableGridMeshUpDir = Direction.Up;
+	/// <summary>
+	/// Creates a flat grid sheet mesh whose vertices can be displaced at runtime, at one of the preset densities.
+	/// </summary>
+	/// <remarks>
+	/// A mutable grid is a flat sheet of vertices that objects created from it can displace at runtime, which is how effects like rippling
+	/// water, rolling terrain and waving cloth can be made. Mutable grids are also useful for mathematical or diagnostic manifold/plane visualizations.
+	/// Often (but not always) paired with a dynamic <see cref="Texture"/> (i.e. one created with <see cref="Texture.AllowsDynamicWrites"/> set to <c>true</c>).
+	/// </remarks>
+	/// <param name="meshDensity">How finely the grid is divided. Denser grids deform more smoothly but cost more to draw and to update.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	MutableGridMesh CreateMutableGridMesh(Quality meshDensity, ReadOnlySpan<char> name = default) {
 		var gridDimensions = meshDensity switch {
 			Quality.VeryLow => new XYPair<int>(32, 32),
@@ -452,6 +602,24 @@ public interface IMeshBuilder {
 		
 		return CreateMutableGridMesh(gridDimensions, name: name);
 	}
+	/// <summary>
+	/// Creates a flat grid sheet mesh whose vertices can be displaced at runtime.
+	/// </summary>
+	/// <remarks>
+	/// A mutable grid is a flat sheet of vertices that objects created from it can displace at runtime, which is how effects like rippling
+	/// water, rolling terrain and waving cloth can be made. Mutable grids are also useful for mathematical or diagnostic manifold/plane visualizations.
+	/// Often (but not always) paired with a dynamic <see cref="Texture"/> (i.e. one created with <see cref="Texture.AllowsDynamicWrites"/> set to <c>true</c>).
+	/// </remarks>
+	/// <param name="gridDimensions">How many vertices the grid has across and down. Both components must be at least <c>2</c>.</param>
+	/// <param name="maxHeightDisplacement">The furthest any vertex will be displaced, in metres. This is not enforced later, but
+	/// sizes the mesh's bounding box now so that a deformed grid is not wrongly judged to be off screen.</param>
+	/// <param name="twoSided">Whether the grid is visible from underneath as well as from above.</param>
+	/// <param name="xDir">The direction the grid's first axis runs in, or <see langword="null"/> for <see cref="DefaultMutableGridMeshXDir"/>.</param>
+	/// <param name="yDir">The direction the grid's second axis runs in, or <see langword="null"/> for <see cref="DefaultMutableGridMeshYDir"/>.</param>
+	/// <param name="upDir">The direction vertices are raised in, or <see langword="null"/> for <see cref="DefaultMutableGridMeshUpDir"/>.</param>
+	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
+	/// <param name="gridOrigin">Which corner of the grid its own origin sits at (or the centre if <see cref="Orientation2D.None"/>).</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, float maxHeightDisplacement = 1f, bool twoSided = true, Direction? xDir = null, Direction? yDir = null, Direction? upDir = null, Transform2D? textureTransform = null, Orientation2D gridOrigin = Orientation2D.None, ReadOnlySpan<char> name = default) {
 		return CreateMutableGridMesh(
 			gridDimensions,
@@ -465,6 +633,24 @@ public interface IMeshBuilder {
 			new MeshCreationConfig { Name = name }
 		);
 	}
+	/// <summary>
+	/// Creates a flat grid sheet mesh whose vertices can be displaced at runtime.
+	/// </summary>
+	/// <remarks>
+	/// A mutable grid is a flat sheet of vertices that objects created from it can displace at runtime, which is how effects like rippling
+	/// water, rolling terrain and waving cloth can be made. Mutable grids are also useful for mathematical or diagnostic manifold/plane visualizations.
+	/// Often (but not always) paired with a dynamic <see cref="Texture"/> (i.e. one created with <see cref="Texture.AllowsDynamicWrites"/> set to <c>true</c>).
+	/// </remarks>
+	/// <param name="gridDimensions">How many vertices the grid has across and down. Both components must be at least <c>2</c>.</param>
+	/// <param name="maxHeightDisplacement">The furthest any vertex will be displaced, in metres. This is not enforced later, but
+	/// sizes the mesh's bounding box now so that a deformed grid is not wrongly judged to be off screen.</param>
+	/// <param name="twoSided">Whether the grid is visible from underneath as well as from above.</param>
+	/// <param name="xDir">The direction the grid's first axis runs in.</param>
+	/// <param name="yDir">The direction the grid's second axis runs in.</param>
+	/// <param name="upDir">The direction vertices are raised in.</param>
+	/// <param name="gridOrigin">Which corner of the grid its own origin sits at (or the centre if <see cref="Orientation2D.None"/>).</param>
+	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
 	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, float maxHeightDisplacement, bool twoSided, Direction xDir, Direction yDir, Direction upDir, Orientation2D gridOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		if (gridDimensions.X < 2 || gridDimensions.Y < 2) {
 			throw new ArgumentOutOfRangeException(nameof(gridDimensions), gridDimensions, "Vertex count X and Y must be at least 2.");
@@ -549,14 +735,75 @@ public interface IMeshBuilder {
 	#endregion
 
 	#region Vertices
+	/// <summary>
+	/// Obtains a scratch buffer of vertices for assembling mesh data, returned to a pool when the lease is disposed.
+	/// </summary>
+	/// <param name="vertexCount">How many vertices the buffer must hold.</param>
 	protected ScopedSpanLease<MeshVertex> GetPooledVertexBuffer(int vertexCount);
+	/// <summary>
+	/// Obtains a scratch buffer of triangles for assembling mesh data, returned to a pool when the lease is disposed.
+	/// </summary>
+	/// <param name="triangleCount">How many triangles the buffer must hold.</param>
 	protected ScopedSpanLease<VertexTriangle> GetPooledTriangleBuffer(int triangleCount);
 	
+	/// <summary>
+	/// Creates a buffer of vertices and indices that can be rewritten at any time, from which meshes can be carved out.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Unlike an ordinary mesh, a dynamic buffer's contents are expected to change; it is what geometry generated afresh each
+	/// frame is written in to. Meshes created from it are views on to a range of its indices rather than copies of its data.
+	/// </para>
+	/// <para>
+	/// The buffer grows as needed, but growing it is not free, so give capacities close to what will actually be used.
+	/// </para>
+	/// </remarks>
+	/// <param name="initialVertexCapacity">How many vertices the buffer should initially hold.</param>
+	/// <param name="initialIndexCapacity">How many indices the buffer should initially hold.</param>
+	/// <param name="name">The name to give the buffer. May be left empty.</param>
 	DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, ReadOnlySpan<char> name = default);
 
+	/// <summary>
+	/// Creates a mesh directly from vertices and triangles.
+	/// </summary>
+	/// <remarks>
+	/// This is the most direct way to build a mesh, and the one to use for geometry produced by your own code rather than
+	/// described as a shape or a set of polygons.
+	/// </remarks>
+	/// <param name="vertices">The mesh's vertices.</param>
+	/// <param name="triangles">The triangles joining those vertices, each given as three indices in to <paramref name="vertices"/>.
+	/// Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
+	/// <summary>
+	/// Creates a mesh directly from vertices and triangles, using the given config.
+	/// </summary>
+	/// <param name="vertices">The mesh's vertices.</param>
+	/// <param name="triangles">The triangles joining those vertices, each given as three indices in to <paramref name="vertices"/>. Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
 
+	/// <summary>
+	/// Creates a skeletal mesh, whose vertices are moved by a tree of joints.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The vertices given here are the mesh's <i>bind pose</i> — the shape it takes before any animation is applied.
+	/// </para>
+	/// <para>
+	/// Animations are attached afterwards with <see cref="AttachAnimation"/>, which means the mesh's bounding box is derived
+	/// from the bind pose alone and does not know about poses that move vertices further out. Where an animation does that,
+	/// supply a large enough box through the creation config.
+	/// </para>
+	/// <para>
+	/// Node names can be set afterwards with <see cref="SetSkeletonNodeName"/>.
+	/// </para>
+	/// </remarks>
+	/// <param name="vertices">The mesh's vertices.</param>
+	/// <param name="triangles">The triangles joining those vertices, each given as three indices in to <paramref name="vertices"/>.
+	/// Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
+	/// <param name="skeletalNodes">The skeleton's joints, in the order the vertices' bone indices refer to them. Must hold no more than <see cref="MaxSkeletalBoneCount"/> bones.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, ReadOnlySpan<char> name = default) {
 		return CreateMesh(
 			vertices,
@@ -567,16 +814,67 @@ public interface IMeshBuilder {
 			}
 		);
 	}
+	/// <summary>
+	/// Creates a skeletal mesh, whose vertices are moved by a tree of joints, using the given config.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The vertices given here are the mesh's <i>bind pose</i> — the shape it takes before any animation is applied.
+	/// </para>
+	/// <para>
+	/// Animations are attached afterwards with <see cref="AttachAnimation"/>, which means the mesh's bounding box is derived
+	/// from the bind pose alone and does not know about poses that move vertices further out. Where an animation does that,
+	/// supply a large enough box through the creation config.
+	/// </para>
+	/// <para>
+	/// Node names can be set afterwards with <see cref="SetSkeletonNodeName"/>.
+	/// </para>
+	/// </remarks>
+	/// <param name="vertices">The mesh's vertices.</param>
+	/// <param name="triangles">The triangles joining those vertices, each given as three indices in to <paramref name="vertices"/>.
+	/// Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
+	/// <param name="skeletalNodes">The skeleton's joints, in the order the vertices' bone indices refer to them. Must hold no more than <see cref="MaxSkeletalBoneCount"/> bones.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
 	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config);
 	#endregion
 
 	#region Nodes & Animations
+	/// <summary>
+	/// Gives one of a skeletal mesh's joints a name, so that it can be looked up by name later.
+	/// </summary>
+	/// <remarks>
+	/// Naming the joints you care about is what allows a particular one — a hand, say — to be found and its position read back
+	/// after an animation has been applied.
+	/// </remarks>
+	/// <param name="mesh">The skeletal mesh whose joint is being named.</param>
+	/// <param name="nodeIndex">Which joint to name, as an index in to the skeleton's node list.</param>
+	/// <param name="name">The name to give the joint.</param>
 	void SetSkeletonNodeName(
 		Mesh mesh,
 		int nodeIndex,
 		ReadOnlySpan<char> name
 	);
 	
+	/// <summary>
+	/// Attaches an animation to a skeletal mesh previously created through this builder.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The keyframes are supplied as three flat lists covering every joint the animation touches, with one mutation descriptor
+	/// per joint saying which stretch of each list belongs to it.
+	/// </para>
+	/// <para>
+	/// Keyframes within each run must be ordered by time, ascending. The three lists need not have the same length or the same
+	/// time points as one another.
+	/// </para>
+	/// </remarks>
+	/// <param name="mesh">The skeletal mesh to attach the animation to.</param>
+	/// <param name="scalingKeyframes">Every scaling keyframe in the animation. Must hold at least one entry.</param>
+	/// <param name="rotationKeyframes">Every rotation keyframe in the animation. Must hold at least one entry.</param>
+	/// <param name="translationKeyframes">Every translation keyframe in the animation. Must hold at least one entry.</param>
+	/// <param name="boneMutations">Which stretch of each keyframe list drives which joint.</param>
+	/// <param name="defaultCompletionTimeSeconds">How long the animation takes to play from start to finish at its authored speed, in seconds.</param>
+	/// <param name="name">The name to give the animation. Must be unique among the mesh's animations.</param>
 	MeshAnimation AttachAnimation(
 		Mesh mesh, 
 		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 

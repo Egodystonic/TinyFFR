@@ -7,7 +7,16 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets;
 
+/// <summary>
+/// Provides the implementation behind <see cref="Model"/>.
+/// </summary>
 public interface IModelImplProvider : IDisposableResourceImplProvider<Model> {
+	/// <summary>
+	/// Invoked via <see cref="Model.Mesh"/>.
+	/// </summary>
 	Mesh GetMesh(ResourceHandle<Model> handle);
+	/// <summary>
+	/// Invoked via <see cref="Model.Material"/>.
+	/// </summary>
 	Material GetMaterial(ResourceHandle<Model> handle);
 }

@@ -7,14 +7,55 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
+/// <summary>
+/// Controls how a font is prepared when it is loaded (such as which characters it covers and how its lines are spaced).
+/// </summary>
+/// <remarks>
+/// A font is prepared by drawing every character it supports in to a texture once, up front, so that text can then be assembled
+/// from that texture cheaply. That is why the set of supported characters is fixed at load time rather than being discovered as
+/// text is drawn.
+/// </remarks>
 public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig> {
 	static readonly Rune[] _defaultSupportedRunes = BuildDefaultRuneSet();
+	/// <summary>
+	/// The characters a font covers when no other set is specified.
+	/// </summary>
+	/// <remarks>
+	/// This spans basic and extended Latin, Greek letters, common punctuation and quotation marks, currency and mathematical
+	/// symbols, arrows and box-drawing characters — enough for most Latin-derived languages and for user interface work.
+	/// </remarks>
 	public static ReadOnlySpan<Rune> DefaultSupportedRunes => _defaultSupportedRunes;
+	/// <summary>
+	/// Which characters the font should be able to draw. Defaults to <see cref="DefaultSupportedRunes"/>.
+	/// </summary>
+	/// <remarks>
+	/// Every character listed here is rendered in advance in to the font's texture, so a larger set costs more video memory and
+	/// more time to prepare. Narrow it where you know only a few characters are needed. Must not be empty.
+	/// </remarks>
 	public ReadOnlySpan<Rune> SupportedRunes { get; init; } = DefaultSupportedRunes;
+	/// <summary>
+	/// Which character starts a new line. Defaults to <c>'\n'</c>.
+	/// </summary>
+	/// <remarks>
+	/// This character is treated as a line break rather than being drawn, and does not itself need to appear in
+	/// <see cref="SupportedRunes"/>.
+	/// </remarks>
 	public Rune LineBreakRune { get; init; } = new Rune('\n');
+	/// <summary>
+	/// How far apart consecutive lines of text sit, where <c>1f</c> is the font's own spacing. Defaults to <c>1f</c>.
+	/// </summary>
+	/// <remarks>
+	/// Must be finite and not negative. Values below <c>1f</c> pull lines closer together; values above push them apart.
+	/// </remarks>
 	public float LineSpacingMultiplier { get; init; } = 1f;
+	/// <summary>
+	/// The name to give the font. May be left empty.
+	/// </summary>
 	public ReadOnlySpan<char> Name { get; init; }
 
+	/// <summary>
+	/// Constructs a new <see cref="FontCreationConfig"/> with default values for every property.
+	/// </summary>
 	public FontCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
@@ -26,18 +67,21 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 		}
 	}
 
+	/// <inheritdoc />
 	public static int GetHeapStorageFormattedLength(in FontCreationConfig src) {
 		return SerializationSizeOfSpan(src.SupportedRunes) // SupportedRunes
 			+ SerializationSizeOfInt() // LineBreakRune
 			+ SerializationSizeOfFloat() // LineSpacingMultiplier
 			+ SerializationSizeOfString(src.Name); // Name
 	}
+	/// <inheritdoc />
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in FontCreationConfig src) {
 		SerializationWriteSpan(ref dest, src.SupportedRunes);
 		SerializationWriteInt(ref dest, src.LineBreakRune.Value);
 		SerializationWriteFloat(ref dest, src.LineSpacingMultiplier);
 		SerializationWriteString(ref dest, src.Name);
 	}
+	/// <inheritdoc />
 	public static FontCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new FontCreationConfig {
 			SupportedRunes = SerializationReadSpan<Rune>(ref src),
@@ -46,6 +90,7 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 			Name = SerializationReadString(ref src)
 		};
 	}
+	/// <inheritdoc />
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		/* no-op */
 	}

@@ -27,24 +27,34 @@ public static class SpanUtils {
 	/// <param name="b">The second span.</param>
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b) => a.Length + b.Length;
 	/// <inheritdoc cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c) => a.Length + b.Length + c.Length;
 	/// <inheritdoc cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c, ReadOnlySpan<T> d) => a.Length + b.Length + c.Length + d.Length;
 	/// <inheritdoc cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c, ReadOnlySpan<T> d, ReadOnlySpan<T> e) => a.Length + b.Length + c.Length + d.Length + e.Length;
 	/// <inheritdoc cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>
 	/// <param name="f">The sixth span.</param>
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c, ReadOnlySpan<T> d, ReadOnlySpan<T> e, ReadOnlySpan<T> f) => a.Length + b.Length + c.Length + d.Length + e.Length + f.Length;
 	/// <inheritdoc cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>
@@ -52,6 +62,8 @@ public static class SpanUtils {
 	/// <param name="g">The seventh span.</param>
 	public static int GetConcatenatedLength<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c, ReadOnlySpan<T> d, ReadOnlySpan<T> e, ReadOnlySpan<T> f, ReadOnlySpan<T> g) => a.Length + b.Length + c.Length + d.Length + e.Length + f.Length + g.Length;
 	/// <inheritdoc cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>
@@ -71,6 +83,9 @@ public static class SpanUtils {
 		b.CopyTo(dest);
 	}
 	/// <inheritdoc cref="Concatenate{T}(Span{T},ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="dest">The destination to write into. Must be at least as long as the corresponding <see cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/> overload would report for the same spans.</param>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	public static void Concatenate<T>(Span<T> dest, ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c) {
 		a.CopyTo(dest); dest = dest[a.Length..];
@@ -78,6 +93,9 @@ public static class SpanUtils {
 		c.CopyTo(dest);
 	}
 	/// <inheritdoc cref="Concatenate{T}(Span{T},ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="dest">The destination to write into. Must be at least as long as the corresponding <see cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/> overload would report for the same spans.</param>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	public static void Concatenate<T>(Span<T> dest, ReadOnlySpan<T> a, ReadOnlySpan<T> b, ReadOnlySpan<T> c, ReadOnlySpan<T> d) {
@@ -87,6 +105,9 @@ public static class SpanUtils {
 		d.CopyTo(dest);
 	}
 	/// <inheritdoc cref="Concatenate{T}(Span{T},ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="dest">The destination to write into. Must be at least as long as the corresponding <see cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/> overload would report for the same spans.</param>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>
@@ -98,6 +119,9 @@ public static class SpanUtils {
 		e.CopyTo(dest);
 	}
 	/// <inheritdoc cref="Concatenate{T}(Span{T},ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="dest">The destination to write into. Must be at least as long as the corresponding <see cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/> overload would report for the same spans.</param>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>
@@ -111,6 +135,9 @@ public static class SpanUtils {
 		f.CopyTo(dest);
 	}
 	/// <inheritdoc cref="Concatenate{T}(Span{T},ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="dest">The destination to write into. Must be at least as long as the corresponding <see cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/> overload would report for the same spans.</param>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>
@@ -126,6 +153,9 @@ public static class SpanUtils {
 		g.CopyTo(dest);
 	}
 	/// <inheritdoc cref="Concatenate{T}(Span{T},ReadOnlySpan{T},ReadOnlySpan{T})"/>
+	/// <param name="dest">The destination to write into. Must be at least as long as the corresponding <see cref="GetConcatenatedLength{T}(ReadOnlySpan{T},ReadOnlySpan{T})"/> overload would report for the same spans.</param>
+	/// <param name="a">The first span.</param>
+	/// <param name="b">The second span.</param>
 	/// <param name="c">The third span.</param>
 	/// <param name="d">The fourth span.</param>
 	/// <param name="e">The fifth span.</param>

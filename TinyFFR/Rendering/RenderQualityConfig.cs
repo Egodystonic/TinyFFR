@@ -177,6 +177,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 	public float AmbientOcclusionStrength { get; init; } = 1f;
 	/// <summary>
 	/// Whether post-processing effects (such as HDR mapping, SSRO, bloom, etc) are applied at all.
+	/// This also includes colour-space mapping (e.g. the sRGB/linear conversion pipeline).
 	/// </summary>
 	public bool PostProcessingEnabled { get; init; } = true;
 	/// <summary>

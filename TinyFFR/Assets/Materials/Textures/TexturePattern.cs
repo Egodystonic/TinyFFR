@@ -8,6 +8,15 @@ using System.Globalization;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
+/// <summary>
+/// Factory methods for the built-in texture patterns: chequerboards, stripes, circles, rectangles, grids and gradients.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Every pattern here is generic in the value it produces, so the same chequerboard can serve as a colour map, a roughness map
+/// or anything else. Hand the result to the <see cref="ITextureBuilder"/>, or print it in to a buffer of your own via <see cref="TexturePatternPrinter"/>.
+/// </para>
+/// </remarks>
 public static unsafe partial class TexturePattern {
 	internal const int MaxDimensionWidth = 16_384;
 	internal const int MaxDimensionHeight = MaxDimensionWidth;
@@ -48,14 +57,35 @@ public static unsafe partial class TexturePattern {
 #pragma warning disable CA1815 // "TexturePattern<T> should implement equality members" -- There's no reasonable equality comparison for two instances, function pointers can not be compared
 [InlineArray(ArgsLengthMax)]
 struct TexturePatternArgData { public const int ArgsLengthMax = 256; byte _; }
+/// <summary>
+/// A materialized texture pattern, ready to print.
+/// </summary>
+/// <remarks>
+/// Create one from the factory methods on <see cref="TexturePattern"/>, then either
+/// hand the result to the <see cref="ITextureBuilder"/>, or print it in to a buffer of your own via <see cref="TexturePatternPrinter"/>.
+/// </remarks>
+/// <typeparam name="T">The type of value this pattern produces at each texel.</typeparam>
 public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 	readonly XYPair<int> _dimensions;
 	readonly delegate* managed<ReadOnlySpan<byte>, XYPair<int>, XYPair<int>, T> _generationFunc;
 	readonly TexturePatternArgData _argsBuffer;
 	readonly Transform2D? _transform;
 
+	/// <summary>
+	/// The width and height of this pattern, in texels.
+	/// </summary>
 	public XYPair<int> Dimensions => _dimensions;
 
+	/// <summary>
+	/// Evaluates this pattern at the given position.
+	/// </summary>
+	/// <remarks>
+	/// Patterns are computed on demand rather than stored, so reading a position costs a little arithmetic rather than a memory
+	/// lookup.
+	/// </remarks>
+	/// <param name="x">The horizontal position, in the range <c>0 &lt;= x &lt; Dimensions.X</c>.</param>
+	/// <param name="y">The vertical position, in the range <c>0 &lt;= y &lt; Dimensions.Y</c>.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when either coordinate falls outside the pattern.</exception>
 	public T this[int x, int y] {
 		get {
 			if (_generationFunc == null) throw InvalidObjectException.InvalidDefault<TexturePattern<T>>();
@@ -69,6 +99,13 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 		}
 	}
 
+	/// <summary>
+	/// Constructs a new <see cref="TexturePattern{T}"/> that is a single texel of the default value.
+	/// </summary>
+	/// <remarks>
+	/// This exists so that the type has a usable default; construct patterns through the factory methods on
+	/// <see cref="TexturePattern"/> instead.
+	/// </remarks>
 	public TexturePattern() {
 		this = TexturePattern.PlainFill<T>(default);
 	}

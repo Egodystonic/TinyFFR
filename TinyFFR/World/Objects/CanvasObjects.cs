@@ -717,7 +717,7 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 	/// </summary>
 	/// <remarks>
 	/// By default a text element gets taller as its text wraps on to more lines, which is what you want for a label that should always show all its text. Set this to
-	/// <see langword="true"/> where the element must keep a fixed height instead — for a button, say — accepting that longer text may overflow it.
+	/// <see langword="true"/> where the element must keep a fixed height instead — for a button, say — accepting that multi-line text may be squashed.
 	/// </remarks>
 	public bool DisableAutomaticLineCountBasedHeightScaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

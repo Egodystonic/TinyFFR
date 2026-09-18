@@ -6,22 +6,86 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
+/// <summary>
+/// Static class containing utility methods for working with textures. 
+/// </summary>
 public static partial class TextureUtils {
 	static readonly HeapPool _postProcessCoercionPool = new(); 
 	
+	/// <summary>
+	/// Mirrors a texture in memory, around its vertical centre, its horizontal centre, or both.
+	/// </summary>
+	/// <typeparam name="TTexel">The texel type being altered.</typeparam>
+	/// <param name="buffer">The texels to alter, in place, laid out row by row.</param>
+	/// <param name="dimensions">The width and height the texels represent. The buffer must hold at least <c>dimensions.X * dimensions.Y</c> entries.</param>
+	/// <param name="aroundVerticalCentre">Whether to mirror the texture left-to-right.</param>
+	/// <param name="aroundHorizontalCentre">Whether to mirror the texture top-to-bottom.</param>
 	public static void FlipTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, bool aroundVerticalCentre, bool aroundHorizontalCentre) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Flip(aroundVerticalCentre, aroundHorizontalCentre));
 	}
+	/// <summary>
+	/// Inverts one or more of a texture's channels in memory, so that each channel's strongest values become its weakest.
+	/// </summary>
+	/// <typeparam name="TTexel">The texel type being altered.</typeparam>
+	/// <param name="buffer">The texels to alter, in place, laid out row by row.</param>
+	/// <param name="dimensions">The width and height the texels represent. The buffer must hold at least <c>dimensions.X * dimensions.Y</c> entries.</param>
+	/// <param name="includeRedChannel">Whether to invert the red channel.</param>
+	/// <param name="includeGreenChannel">Whether to invert the green channel.</param>
+	/// <param name="includeBlueChannel">Whether to invert the blue channel.</param>
+	/// <param name="includeAlphaChannel">Whether to invert the alpha channel.</param>
 	public static void NegateTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, bool includeRedChannel = true, bool includeGreenChannel = true, bool includeBlueChannel = true, bool includeAlphaChannel = true) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Invert(includeRedChannel, includeGreenChannel, includeBlueChannel, includeAlphaChannel));
 	}
+	/// <summary>
+	/// Rearranges a texture's channels in memory.
+	/// </summary>
+	/// <remarks>
+	/// Each parameter names the source channel for one output channel, so passing <see cref="ColorChannel.G"/> as
+	/// <paramref name="redSource"/> copies green in to red. All channels are read before any is written, so they can be
+	/// exchanged.
+	/// </remarks>
+	/// <typeparam name="TTexel">The texel type being altered.</typeparam>
+	/// <param name="buffer">The texels to alter, in place, laid out row by row.</param>
+	/// <param name="dimensions">The width and height the texels represent. The buffer must hold at least <c>dimensions.X * dimensions.Y</c> entries.</param>
+	/// <param name="redSource">Which channel supplies the output's red channel.</param>
+	/// <param name="greenSource">Which channel supplies the output's green channel.</param>
+	/// <param name="blueSource">Which channel supplies the output's blue channel.</param>
+	/// <param name="alphaSource">Which channel supplies the output's alpha channel.</param>
 	public static void SwizzleTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, ColorChannel redSource = ColorChannel.R, ColorChannel greenSource = ColorChannel.G, ColorChannel blueSource = ColorChannel.B, ColorChannel alphaSource = ColorChannel.A) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Swizzle(redSource, greenSource, blueSource, alphaSource));
 	}
+	/// <summary>
+	/// Multiplies each of a texture's texels' colour channels by its alpha channel, in memory.
+	/// </summary>
+	/// <remarks>
+	/// Materials that blend with the scene expect their colour data in this form; without it, partially-transparent edges
+	/// typically show a dark fringe.
+	/// </remarks>
+	/// <typeparam name="TTexel">The texel type being altered.</typeparam>
+	/// <param name="buffer">The texels to alter, in place, laid out row by row.</param>
+	/// <param name="dimensions">The width and height the texels represent. The buffer must hold at least <c>dimensions.X * dimensions.Y</c> entries.</param>
 	public static void PremultiplyAlphaForTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.PremultiplyAlpha());
 	}
 
+	/// <summary>
+	/// Applies a whole processing config to a texture in memory.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The steps run in a fixed order: flips first, then channel inversions, then alpha premultiplication, then channel copies,
+	/// and finally the config's post-processing function if it has one.
+	/// </para>
+	/// <para>
+	/// A post-processing function written for a different texel type is not rejected: the texels are converted to the type it
+	/// expects, the function runs, and the result is converted back.
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TTexel">The texel type being altered.</typeparam>
+	/// <param name="buffer">The texels to alter, in place, laid out row by row.</param>
+	/// <param name="dimensions">The width and height the texels represent. The buffer must hold at least <c>dimensions.X * dimensions.Y</c> entries.</param>
+	/// <param name="config">The alterations to apply. A config that requires no processing returns immediately.</param>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="buffer"/> is too small for <paramref name="dimensions"/>.</exception>
 	public static unsafe void ProcessTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		const int MaxTextureWidthForStackRowSwap = 65_536;
 		config.ThrowIfInvalid();
@@ -140,6 +204,14 @@ public static partial class TextureUtils {
 		throw GetUnusableTexelTypeException(postProcessingFunction.TexelTypeHandle);
 	}
 	
+	/// <summary>
+	/// Converts a buffer of texels to another texel type.
+	/// </summary>
+	/// <typeparam name="TTexelIn">The texel type being converted from.</typeparam>
+	/// <typeparam name="TTexelOut">The texel type being converted to.</typeparam>
+	/// <param name="inputBuffer">The texels to convert.</param>
+	/// <param name="outputBuffer">The buffer to write the converted texels in to. Must be at least as long as <paramref name="inputBuffer"/>.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="outputBuffer"/> was smaller than <paramref name="inputBuffer"/>.</exception>
 	public static void Convert<TTexelIn, TTexelOut>(ReadOnlySpan<TTexelIn> inputBuffer, Span<TTexelOut> outputBuffer) where TTexelIn : unmanaged, IConversionSupplyingTexel<TTexelIn, TTexelOut> {
 		if (outputBuffer.Length < inputBuffer.Length) throw new ArgumentException($"Output buffer length ({outputBuffer.Length}) must be at least as high as input buffer length ({inputBuffer.Length}).", nameof(outputBuffer));
 		for (var i = 0; i < inputBuffer.Length; ++i) {

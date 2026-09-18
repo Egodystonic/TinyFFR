@@ -6,6 +6,18 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
+/// <summary>
+/// The surroundings of a scene: the sky visible behind it, and the ambient light that sky casts on everything in it.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A backdrop does both jobs at once, which is what makes objects lit by one look as though they genuinely belong in it — a
+/// scene set at sunset picks up warm light from the side without any light being placed by hand.
+/// </para>
+/// <para>
+/// Backdrops are loaded from high-dynamic-range images by the asset loader.
+/// </para>
+/// </remarks>
 public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IBackdropTextureImplProvider> {
 	readonly ResourceHandle<BackdropTexture> _handle;
 	readonly IBackdropTextureImplProvider _impl;
@@ -33,10 +45,13 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 		_impl = impl;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
@@ -48,6 +63,12 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 	ResourceHandle<BackdropTexture> IResource<BackdropTexture>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
+	/// <summary>
+	/// Disposes this backdrop, releasing its video memory.
+	/// </summary>
+	/// <remarks>
+	/// Every scene using this backdrop must have stopped using it first.
+	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
 
@@ -57,13 +78,27 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 	}
 	#endregion
 
+	/// <inheritdoc />
 	public override string ToString() => $"Environment Cubemap {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
+	/// <inheritdoc />
 	public bool Equals(BackdropTexture other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
+	/// <inheritdoc />
 	public override bool Equals(object? obj) => obj is BackdropTexture other && Equals(other);
+	/// <inheritdoc />
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
+	/// <summary>
+	/// Returns whether the two given backdrop textures are the same backdrop texture.
+	/// </summary>
+	/// <param name="left">The first backdrop texture to compare.</param>
+	/// <param name="right">The second backdrop texture to compare.</param>
 	public static bool operator ==(BackdropTexture left, BackdropTexture right) => left.Equals(right);
+	/// <summary>
+	/// Returns whether the two given backdrop textures are different backdrop textures.
+	/// </summary>
+	/// <param name="left">The first backdrop texture to compare.</param>
+	/// <param name="right">The second backdrop texture to compare.</param>
 	public static bool operator !=(BackdropTexture left, BackdropTexture right) => !left.Equals(right);
 	#endregion
 }

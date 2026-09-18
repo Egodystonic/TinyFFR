@@ -6,6 +6,13 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
+/// <summary>
+/// A block of video memory holding the triangles that join the vertices of one or more meshes.
+/// </summary>
+/// <remarks>
+/// Several meshes commonly share one buffer — this is how the sub-meshes of a loaded model are stored — so buffers are
+/// managed by the library rather than being created directly.
+/// </remarks>
 public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBufferImplProvider> {
 	readonly ResourceHandle<IndexBuffer> _handle;
 	readonly IIndexBufferImplProvider _impl;
@@ -24,10 +31,13 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 		_impl = impl;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
@@ -39,6 +49,9 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 	ResourceHandle<IndexBuffer> IResource<IndexBuffer>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal
+	/// <summary>
+	/// Disposes this buffer, releasing its video memory.
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
 
@@ -48,13 +61,27 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 	}
 	#endregion
 
+	/// <inheritdoc />
 	public override string ToString() => $"Index Buffer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
+	/// <inheritdoc />
 	public bool Equals(IndexBuffer other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
+	/// <inheritdoc />
 	public override bool Equals(object? obj) => obj is IndexBuffer other && Equals(other);
+	/// <inheritdoc />
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
+	/// <summary>
+	/// Returns whether the two given index buffers are the same index buffer.
+	/// </summary>
+	/// <param name="left">The first index buffer to compare.</param>
+	/// <param name="right">The second index buffer to compare.</param>
 	public static bool operator ==(IndexBuffer left, IndexBuffer right) => left.Equals(right);
+	/// <summary>
+	/// Returns whether the two given index buffers are different index buffers.
+	/// </summary>
+	/// <param name="left">The first index buffer to compare.</param>
+	/// <param name="right">The second index buffer to compare.</param>
 	public static bool operator !=(IndexBuffer left, IndexBuffer right) => !left.Equals(right);
 	#endregion
 }

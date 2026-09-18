@@ -15,6 +15,13 @@ public static partial class TextureUtils {
 		return result;
 	}
 
+	/// <summary>
+	/// Returns how many successively smaller copies a texture of the given size has, including the full-size original.
+	/// </summary>
+	/// <remarks>
+	/// Each level is half the width and height of the one before, down to a single texel.
+	/// </remarks>
+	/// <param name="dimensions">The texture's full width and height, in texels.</param>
 	public static int GetMipLevelCount(XYPair<int> dimensions) {
 		if (dimensions.X < 1 || dimensions.Y < 1) {
 			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, "Dimensions X and Y must both be positive.");
@@ -22,6 +29,11 @@ public static partial class TextureUtils {
 		return Int32.Log2(Int32.Max(dimensions.X, dimensions.Y)) + 1;
 	}
 
+	/// <summary>
+	/// Returns the width and height of one of a texture's successively smaller copies.
+	/// </summary>
+	/// <param name="baseDimensions">The texture's full width and height, in texels.</param>
+	/// <param name="level">Which copy, where <c>0</c> is the full-size original.</param>
 	public static XYPair<int> GetMipLevelDimensions(XYPair<int> baseDimensions, int level) {
 		if (level < 0) throw new ArgumentOutOfRangeException(nameof(level), level, "Level can not be negative.");
 		return new XYPair<int>(
@@ -30,6 +42,18 @@ public static partial class TextureUtils {
 		);
 	}
 
+	/// <summary>
+	/// Produces the next smaller copy of a texture from the one before it.
+	/// </summary>
+	/// <remarks>
+	/// The result is half the width and height of the source. Where the data represents direction vectors rather than colour,
+	/// the reduced texels are re-normalised rather than simply averaged, since the average of two unit vectors is not itself a
+	/// unit vector.
+	/// </remarks>
+	/// <param name="source">The texels of the larger copy.</param>
+	/// <param name="sourceDimensions">The width and height of the larger copy, in texels.</param>
+	/// <param name="destination">The buffer to write the smaller copy in to. Must be at least a quarter the length of <paramref name="source"/>.</param>
+	/// <param name="dataType">What the texels represent, which determines how they are combined.</param>
 	public static void GenerateNextMipLevel(ReadOnlySpan<TexelRgba32> source, XYPair<int> sourceDimensions, Span<TexelRgba32> destination, TextureDataType dataType) {
 		var destDimensions = new XYPair<int>(
 			Int32.Max(1, sourceDimensions.X >> 1),

@@ -13,6 +13,7 @@ public class ResourceGroupSealedException : InvalidOperationException {
 	/// Constructs a new <see cref="ResourceGroupSealedException"/> with no message.
 	/// </summary>
 	public ResourceGroupSealedException() { }
+	/// <inheritdoc />
 	[Obsolete("Obsolete")]
 	protected ResourceGroupSealedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 	/// <summary>

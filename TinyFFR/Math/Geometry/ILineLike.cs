@@ -242,6 +242,17 @@ public partial interface ILineLike :
 	/// <param name="tolerance">How far away from exactly parallel the two lines' directions are permitted to be.</param>
 	bool IsApproximatelyColinearWith(BoundedRay ray, float lineThickness, Angle tolerance);
 
+	/// <summary>
+	/// Calculates how far along the first line the two lines come closest to crossing, or <see langword="null"/> if they are parallel.
+	/// </summary>
+	/// <remarks>
+	/// Both lines are treated as infinitely long, ignoring wherever they actually start and end, so the caller is responsible
+	/// for checking that the result falls within each line's own extent.
+	/// </remarks>
+	/// <typeparam name="TThis">The type of the first line-like.</typeparam>
+	/// <typeparam name="TOther">The type of the second line-like.</typeparam>
+	/// <param name="this">The line-like to measure the distance along.</param>
+	/// <param name="other">The line-like to intersect with.</param>
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
 		const float ParallelTolerance = 1E-7f;
 
@@ -262,6 +273,17 @@ public partial interface ILineLike :
 		return (dot * otherOrientationStartDiffDot - localOrientationStartDiffDot) / oneMinusDotSquared;
 	}
 
+	/// <summary>
+	/// Calculates how far along each of the two lines they come closest to crossing, or <see langword="null"/> if they are parallel.
+	/// </summary>
+	/// <remarks>
+	/// Both lines are treated as infinitely long, ignoring wherever they actually start and end, so the caller is responsible
+	/// for checking that the result falls within each line's own extent.
+	/// </remarks>
+	/// <typeparam name="TThis">The type of the first line-like.</typeparam>
+	/// <typeparam name="TOther">The type of the second line-like.</typeparam>
+	/// <param name="this">The line-like to measure the distance along.</param>
+	/// <param name="other">The line-like to intersect with.</param>
 	protected internal static (float ThisDistance, float OtherDistance)? CalculateUnboundedIntersectionDistancesOnBothLines<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
 		const float ParallelTolerance = 1E-7f;
 

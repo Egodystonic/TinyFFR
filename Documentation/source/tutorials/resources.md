@@ -102,7 +102,7 @@ Dependencies between any resources you create are automatically tracked behind-t
 
 ```csharp
 var mesh = meshBuilder.CreateMesh(new Cuboid(1f), name: "My Cube");
-var material = materialBuilder.CreateOpaqueMaterial(redColorMap);
+var material = materialBuilder.CreateStandardMaterial(redColorMap);
 var modelInstance = objectBuilder.CreateModelInstance(mesh, material, name: "Red Cube");
 
 mesh.Dispose(); // Exception thrown here (1)

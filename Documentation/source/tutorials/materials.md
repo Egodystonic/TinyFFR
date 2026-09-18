@@ -433,10 +433,10 @@ Many method overloads on the `AssetLoader` and `TextureBuilder` take a `TextureC
 
 	This is a `TextureDataType` that indicates how the texture's texels should be interpreted. It determines the colourspace the data is read in, how mipmap levels are filtered, and which compressed format (if any) the texture is uploaded in.
 
-	* `StandardRgb` -- the texels are colour data in sRGB colourspace. Use this for colour maps, absorption-transmission maps, and emissive maps.
-	* `Linear` -- the texels are data in a linear colourspace. Use this for ORM maps and anisotropy maps.
-	* `LinearUnitVector` -- the texels are linear data encoding unit vectors, such as a normal map. Mipmap levels are re-normalized rather than simply averaged.
-	* `LinearTwoChannelMax` -- the texels are linear data that only uses the red and green channels, such as a clearcoat map.
+	* `ColorSrgb` -- the texels are colour data in sRGB colourspace. Use this for colour maps, absorption-transmission maps, and emissive maps.
+	* `LinearData` -- the texels are data in a linear colourspace. Use this for ORM maps and anisotropy maps.
+	* `LinearDataUnitVector` -- the texels are linear data encoding unit vectors, such as a normal map. Mipmap levels are re-normalized rather than simply averaged.
+	* `LinearDataTwoChannelMax` -- the texels are linear data that only uses the red and green channels, such as a clearcoat map.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `ProcessingToApply`
 

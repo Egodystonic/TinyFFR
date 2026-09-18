@@ -226,7 +226,7 @@ The `IMeshBuilder` interface offers overloads for `CreateMesh()` that accept a s
 
 Each `MeshVertexSkeletal` requires the standard vertex data as defined in [Meshes](meshes.md#meshvertex), as well as the following additional properties:
 
-* __BoneIndices__ :material-arrow-right: This is an [inline array](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-12.0/inline-arrays) of four bytes, each one indexes a bone in the skeleton's array of bones (bones are nodes, but not all nodes are bones). Each index is paired with a `BoneWeight`, together they are used to define how this vertex will be transformed in model space when applying animations to the target nodes.
+* __BoneIndices__ :material-arrow-right: This is an [inline array](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-12.0/inline-arrays) of four bytes, each one indexes a bone in the skeleton's array of bones (bones are nodes, but not all nodes are bones). Each index is paired with a `BoneWeights` entry, together they are used to define how this vertex will be transformed in model space when applying animations to the target nodes.
 * __BoneWeights__ :material-arrow-right: This is an [inline array](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-12.0/inline-arrays) of four floats, each one defines how much 'weight' or 'pull' its corresponding bone has on this vertex. These four weights should usually sum to `1f`.
 
 It's possible to easily create a `BoneIndexArray` or `BoneWeightArray` using the static utility functions defined on those types:
