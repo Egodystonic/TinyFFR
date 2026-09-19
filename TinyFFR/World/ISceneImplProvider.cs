@@ -150,6 +150,10 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// Invoked via <see cref="ScenePrimitive.SetGeometryGrid"/>.
 	/// </summary>
 	void SetPrimitiveGeometryGrid(ResourceHandle<Scene> handle, nuint primitiveHandle, Location gridCentre, Direction gridNormal, Direction gridX, float gridSize, float majorGridLineSpacing, float minorGridLineSpacing);
+	/// <summary>
+	/// Invoked via <see cref="ScenePrimitive.SetGeometryArrow(Location, Direction, float, bool)"/>.
+	/// </summary>
+	void SetPrimitiveGeometryArrow(ResourceHandle<Scene> handle, nuint primitiveHandle, Location tail, Direction direction, float size, bool constantScreenSize);
 	
 	/// <summary>
 	/// Invoked via <see cref="Scene.ContainedModelInstances"/>.

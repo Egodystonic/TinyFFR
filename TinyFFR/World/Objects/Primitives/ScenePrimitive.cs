@@ -41,7 +41,7 @@ public enum ScenePrimitiveSize {
 }
 
 /// <summary>
-/// A simple shape or object drawn in a scene to help you see what your code is doing or add diagnostic scene details: Some examples include a point marker, a line, a box, a grid or a piece of text.
+/// A simple shape or object drawn in a scene to help you see what your code is doing or add diagnostic scene details: Some examples include a point marker, a line, an arrow, a box, a grid or a piece of text.
 /// </summary>
 /// <remarks>
 /// Primitives are diagnostic aids or for adding extra context to a scene; and are not considered scene content in themselves.
@@ -64,6 +64,11 @@ public readonly record struct ScenePrimitive : IDisposable {
 	public const ScenePrimitiveSize DefaultSize = ScenePrimitiveSize.Small;
 	internal const float PointToLineSizeRatio = 0.2f;
 	internal const float PointToLineSizeRatioReciprocal = 1f / PointToLineSizeRatio;
+	internal const float PointToArrowSizeRatio = 3f;
+	internal const float ArrowStemLengthFraction = 0.65f;
+	internal const float ArrowStemRadiusFraction = 0.115f;
+	internal const float ArrowHeadLengthFraction = 1f - ArrowStemLengthFraction;
+	internal const float ArrowHeadRadiusFraction = 0.23f;
 	internal const float DefaultGridSize = 2f;
 	internal const float DefaultGridMajorLines = 8f;
 	internal const float DefaultGridMinorLines = 64f;
@@ -72,9 +77,13 @@ public readonly record struct ScenePrimitive : IDisposable {
 	/// </summary>
 	public static readonly PrimitivePaintbrush DefaultPaintbrush2d = new(ColorVect.WhiteOpaque, ColorVect.BlackOpaque);
 	/// <summary>
-	/// The colours used for solid primitives (boxes and spheres) unless others are given: plain white.
+	/// The colours used for solid primitives (boxes, spheres) unless others are given: plain white.
 	/// </summary>
 	public static readonly PrimitivePaintbrush DefaultPaintbrush3d = new(ColorVect.WhiteOpaque);
+	/// <summary>
+	/// The colours used for arrows: grey to white..
+	/// </summary>
+	public static readonly PrimitivePaintbrush DefaultPaintbrushArrow = new(ColorVect.WhiteOpaque.WithLightnessAdjustedBy(-0.5f), ColorVect.WhiteOpaque);
 	/// <summary>
 	/// The colours used for grid primitives unless others are given: red axes, white major lines and grey minor lines.
 	/// </summary>
@@ -119,6 +128,11 @@ public readonly record struct ScenePrimitive : IDisposable {
 	/// </summary>
 	/// <param name="m">The size to convert.</param>
 	public static float ConvertLinePrimitiveSize(ScenePrimitiveSize m) => ConvertPointPrimitiveSize(m) * PointToLineSizeRatio;
+	/// <summary>
+	/// Returns the concrete size, in metres, that a <see cref="ScenePrimitiveSize"/> corresponds to for an arrow's tail-to-head length.
+	/// </summary>
+	/// <param name="m">The size to convert.</param>
+	public static float ConvertArrowPrimitiveSize(ScenePrimitiveSize m) => ConvertPointPrimitiveSize(m) * PointToArrowSizeRatio;
 
 	/// <summary>
 	/// Sets the colours this primitive is drawn with.
@@ -278,6 +292,43 @@ public readonly record struct ScenePrimitive : IDisposable {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetGeometryShape(Plane plane) => _parentScene.Implementation.SetPrimitiveGeometryShape(_parentScene.GetHandleWithoutDisposeCheck(), _primitiveHandle, plane);
 	
+	/// <summary>
+	/// Sets this primitive to draw an arrow.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Replaces whatever geometry this primitive was drawing before.
+	/// </para>
+	/// <para>
+	/// The arrow's stem and head are proportioned automatically from its length. Its paintbrush's primary colour is used at the tail and its secondary colour at
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// </para>
+	/// </remarks>
+	/// <param name="tail">Where the tail of the arrow sits.</param>
+	/// <param name="direction">Which way the arrow points, from its tail to its head.</param>
+	/// <param name="size">How large to draw the primitive; this sets the arrow's tail-to-head length.</param>
+	/// <param name="constantScreenSize">If <see langword="true"/>, the primitive keeps the same apparent size on screen regardless of how far away it is, which keeps it visible at any distance.</param>
+	public void SetGeometryArrow(Location tail, Direction direction, ScenePrimitiveSize size = DefaultSize, bool constantScreenSize = DefaultConstantScreenSizeFlag) => SetGeometryArrow(tail, direction, ConvertArrowPrimitiveSize(size), constantScreenSize);
+	/// <summary>
+	/// Sets this primitive to draw an arrow.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Replaces whatever geometry this primitive was drawing before.
+	/// </para>
+	/// <para>
+	/// The arrow's stem and head are proportioned automatically from its length. Its paintbrush's primary colour is used at the tail and its secondary colour at
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// </para>
+	/// </remarks>
+	/// <param name="tail">Where the tail of the arrow sits.</param>
+	/// <param name="direction">Which way the arrow points, from its tail to its head.</param>
+	/// <param name="size">How large to draw the primitive; this sets the arrow's tail-to-head length. When <paramref name="constantScreenSize"/> is <see langword="true"/>
+	/// this is a fraction of the viewport's height rather than a length in metres.</param>
+	/// <param name="constantScreenSize">If <see langword="true"/>, the primitive keeps the same apparent size on screen regardless of how far away it is, which keeps it visible at any distance.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetGeometryArrow(Location tail, Direction direction, float size, bool constantScreenSize = DefaultConstantScreenSizeFlag) => _parentScene.Implementation.SetPrimitiveGeometryArrow(_parentScene.GetHandleWithoutDisposeCheck(), _primitiveHandle, tail, direction, size, constantScreenSize);
+
 	/// <summary>
 	/// Sets this primitive to draw a reference grid.
 	/// </summary>
@@ -579,6 +630,65 @@ partial struct Scene {
 		var result = AddPrimitive();
 		result.SetPaintbrush(in paintbrush);
 		result.SetGeometryShape(plane);
+		return result;
+	}
+	
+	/// <summary>
+	/// Creates a new primitive in this scene drawing an arrow.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Primitives are diagnostic aids rather than scene content: they are deliberately excluded from scene queries, so one drawn along a ray will not itself register as a hit. Dispose the returned primitive to remove it.
+	/// </para>
+	/// <para>
+	/// The arrow's stem and head are proportioned automatically from its length.
+	/// </para>
+	/// </remarks>
+	/// <param name="tail">Where the tail of the arrow sits.</param>
+	/// <param name="direction">Which way the arrow points, from its tail to its head.</param>
+	/// <param name="size">How large to draw the primitive; this sets the arrow's tail-to-head length.</param>
+	/// <param name="constantScreenSize">If <see langword="true"/>, the primitive keeps the same apparent size on screen regardless of how far away it is, which keeps it visible at any distance.</param>
+	public ScenePrimitive AddPrimitiveArrow(Location tail, Direction direction, ScenePrimitiveSize size = DefaultSize, bool constantScreenSize = DefaultConstantScreenSizeFlag) => AddPrimitiveArrow(tail, direction, in DefaultPaintbrushArrow, ConvertArrowPrimitiveSize(size), constantScreenSize);
+	/// <summary>
+	/// Creates a new primitive in this scene drawing an arrow.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Primitives are diagnostic aids rather than scene content: they are deliberately excluded from scene queries, so one drawn along a ray will not itself register as a hit. Dispose the returned primitive to remove it.
+	/// </para>
+	/// <para>
+	/// The arrow's stem and head are proportioned automatically from its length. The paintbrush's primary colour is used at the tail and its secondary colour at
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// </para>
+	/// </remarks>
+	/// <param name="tail">Where the tail of the arrow sits.</param>
+	/// <param name="direction">Which way the arrow points, from its tail to its head.</param>
+	/// <param name="paintbrush">The colours to draw this primitive with.</param>
+	/// <param name="size">How large to draw the primitive; this sets the arrow's tail-to-head length.</param>
+	/// <param name="constantScreenSize">If <see langword="true"/>, the primitive keeps the same apparent size on screen regardless of how far away it is, which keeps it visible at any distance.</param>
+	public ScenePrimitive AddPrimitiveArrow(Location tail, Direction direction, in PrimitivePaintbrush paintbrush, ScenePrimitiveSize size = DefaultSize, bool constantScreenSize = DefaultConstantScreenSizeFlag) => AddPrimitiveArrow(tail, direction, in paintbrush, ConvertArrowPrimitiveSize(size), constantScreenSize);
+	/// <summary>
+	/// Creates a new primitive in this scene drawing an arrow.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Primitives are diagnostic aids rather than scene content: they are deliberately excluded from scene queries, so one drawn along a ray will not itself register as a hit. Dispose the returned primitive to remove it.
+	/// </para>
+	/// <para>
+	/// The arrow's stem and head are proportioned automatically from its length. The paintbrush's primary colour is used at the tail and its secondary colour at
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// </para>
+	/// </remarks>
+	/// <param name="tail">Where the tail of the arrow sits.</param>
+	/// <param name="direction">Which way the arrow points, from its tail to its head.</param>
+	/// <param name="paintbrush">The colours to draw this primitive with.</param>
+	/// <param name="size">How large to draw the primitive; this sets the arrow's tail-to-head length. When <paramref name="constantScreenSize"/> is <see langword="true"/>
+	/// this is a fraction of the viewport's height rather than a length in metres.</param>
+	/// <param name="constantScreenSize">If <see langword="true"/>, the primitive keeps the same apparent size on screen regardless of how far away it is, which keeps it visible at any distance.</param>
+	public ScenePrimitive AddPrimitiveArrow(Location tail, Direction direction, in PrimitivePaintbrush paintbrush, float size, bool constantScreenSize) {
+		var result = AddPrimitive();
+		result.SetPaintbrush(in paintbrush);
+		result.SetGeometryArrow(tail, direction, size, constantScreenSize);
 		return result;
 	}
 	

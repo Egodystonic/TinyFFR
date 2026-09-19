@@ -15,11 +15,14 @@ sealed partial class LocalSceneBuilder {
 	enum PrimitiveLineExtent { Bounded, Ray, Line }
 	readonly record struct PrimitiveLineBodyData(PrimitiveLineExtent Extent, Location Anchor, Direction Direction, float BoundedLength, float Width, bool ConstantScreenSize);
 	readonly record struct PrimitiveLineData(ModelInstance? StartPoint, ModelInstance? EndPoint, PrimitiveLineBodyData Line);
+	readonly record struct PrimitiveArrowData(Location Tail, float Size, bool ConstantScreenSize);
 	readonly record struct PrimitiveData(ModelInstance? ModelInstance, TextInstance? TextInstance, PrimitiveLineData? LinePoints, Plane? Plane, PrimitivePaintbrush? Paintbrush) {
 		public ResourceGroup? OwnedResources { get; init; }
+		public PrimitiveArrowData? Arrow { get; init; }
 	}
 	
 	const float PlaneSize = 200f;
+	const int ArrowSegmentCount = 32;
 	static readonly float[] LineBandCrossSectionXFractions = { -1f, -0.6f, -0.6f, 0.6f, 0.6f, 1f };
 	static readonly float[] LineBandCrossSectionUCoords = { 0.9f, 0.9f, 0.5f, 0.5f, 0.1f, 0.1f };
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<nuint, PrimitiveData>> _primitiveMap = new();
@@ -33,6 +36,7 @@ sealed partial class LocalSceneBuilder {
 	ResourceGroup? _primitiveSphereResources;
 	ResourceGroup? _primitiveLineResources;
 	ResourceGroup? _primitivePlaneResources;
+	ResourceGroup? _primitiveArrowResources;
 	nuint _prevPrimitiveHandleId = 0U;
 
 	public ScenePrimitive CreatePrimitive(ResourceHandle<Scene> handle) {
@@ -105,6 +109,11 @@ sealed partial class LocalSceneBuilder {
 		_primitiveMap[handle].Add(primitiveHandle, data);
 		AddPrimitiveInstance(handle, modelInstance);
 	}
+	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in ModelInstance modelInstance, PrimitiveArrowData arrowData, in PrimitivePaintbrush paintbrush) {
+		var data = new PrimitiveData(modelInstance, null, null, null, paintbrush) { Arrow = arrowData };
+		_primitiveMap[handle].Add(primitiveHandle, data);
+		AddPrimitiveInstance(handle, modelInstance);
+	}
 	void RegisterPrimitive(ResourceHandle<Scene> handle, nuint primitiveHandle, in CameraLockedTextInstance text, in PrimitivePaintbrush paintbrush) {
 		var data = new PrimitiveData(null, text.UnderlyingTextInstance, null, null, paintbrush);
 		_primitiveMap[handle].Add(primitiveHandle, data);
@@ -171,6 +180,9 @@ sealed partial class LocalSceneBuilder {
 		if (data.ModelInstance is { } mi) {
 			if (data.LinePoints is not null) {
 				mi.SetMaterial(PaintbrushRequiresBlending(in paintbrush) ? GetSharedLineResources().Materials[1] : GetSharedLineResources().Materials[0]);
+			}
+			else if (data.Arrow is not null) {
+				mi.SetMaterial(PaintbrushRequiresBlending(in paintbrush) ? GetSharedArrowResources().Materials[1] : GetSharedArrowResources().Materials[0]);
 			}
 			mi.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
 			mi.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
@@ -505,6 +517,7 @@ sealed partial class LocalSceneBuilder {
 		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.TertiaryColor ?? paintbrush.PrimaryColor);
 		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetDrawOrderDeferralAmount(1);
 		
 		var endPointInstance = ((IObjectBuilder) _objectBuilder).CreateCameraLockedQuadInstance(
 			GetSharedQuadMesh(),
@@ -518,6 +531,7 @@ sealed partial class LocalSceneBuilder {
 		endPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.TertiaryColor ?? paintbrush.PrimaryColor);
 		endPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 		endPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+		endPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetDrawOrderDeferralAmount(1);
 
 		RegisterPrimitive(handle, primitiveHandle, in lineInstance, new PrimitiveLineBodyData(PrimitiveLineExtent.Bounded, ray.StartPoint, ray.Direction, ray.Length, size, constantScreenSize), startPointInstance, endPointInstance, in paintbrush);
 	}
@@ -556,6 +570,7 @@ sealed partial class LocalSceneBuilder {
 		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.TertiaryColor ?? paintbrush.PrimaryColor);
 		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
 		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+		startPointInstance.UnderlyingQuadInstance.UnderlyingModelInstance.SetDrawOrderDeferralAmount(1);
 
 		RegisterPrimitive(handle, primitiveHandle, in lineInstance, new PrimitiveLineBodyData(PrimitiveLineExtent.Ray, ray.StartPoint, ray.Direction, 0f, size, constantScreenSize), startPointInstance, in paintbrush);
 	}
@@ -576,6 +591,77 @@ sealed partial class LocalSceneBuilder {
 		lineInstance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
 
 		RegisterPrimitive(handle, primitiveHandle, in lineInstance, new PrimitiveLineBodyData(PrimitiveLineExtent.Line, line.PointOnLine, line.Direction, 0f, size, constantScreenSize), in paintbrush);
+	}
+
+	ResourceGroup GetSharedArrowResources() {
+		if (_primitiveArrowResources != null) return _primitiveArrowResources.Value;
+		var arrowMesh = _assetLoader.MeshBuilder.CreateMesh(
+			ScenePrimitive.ArrowStemLengthFraction,
+			ScenePrimitive.ArrowStemRadiusFraction,
+			ScenePrimitive.ArrowHeadLengthFraction,
+			ScenePrimitive.ArrowHeadRadiusFraction,
+			ArrowMeshOrigin.Tail,
+			ArrowSegmentCount,
+			new MeshGenerationConfig { TextureTransform = Transform2D.None },
+			new MeshCreationConfig { Name = "Primitive Arrow Mesh" }
+		);
+		var arrowTex = _assetLoader.TextureBuilder.CreateColorMap(
+			TexturePattern.GradientVertical(
+				top: ColorVect.GreenOpaque,
+				bottom: ColorVect.RedOpaque,
+				resolution: (4, 256)
+			),
+			includeAlpha: false,
+			new TextureCreationConfig {
+				DataType = TextureDataType.LinearData,
+				GenerateMipMaps = false,
+				Name = "Primitive Arrow Texture",
+				RenderingConfig = new() {
+					DisableTextureRepeat = true
+				}
+			}
+		);
+		var arrowMatStandard = _assetLoader.MaterialBuilder.CreateColorKeyedMaterial(
+			arrowTex,
+			blendOutputAlphaWithScene: false,
+			name: "Primitive Arrow (Standard) Material"
+		);
+		var arrowMatBlended = _assetLoader.MaterialBuilder.CreateColorKeyedMaterial(
+			arrowTex,
+			blendOutputAlphaWithScene: true,
+			name: "Primitive Arrow (Blended) Material"
+		);
+		_primitiveArrowResources = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: 4);
+		_primitiveArrowResources.Value.Add(arrowMesh);
+		_primitiveArrowResources.Value.Add(arrowTex);
+		_primitiveArrowResources.Value.Add(arrowMatStandard);
+		_primitiveArrowResources.Value.Add(arrowMatBlended);
+		_primitiveArrowResources.Value.Seal();
+		return _primitiveArrowResources.Value;
+	}
+
+	public void SetPrimitiveGeometryArrow(ResourceHandle<Scene> handle, nuint primitiveHandle, Location tail, Direction direction, float size, bool constantScreenSize) {
+		if (direction == Direction.None) {
+			direction = Direction.Forward;
+			size = 0f;
+		}
+		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
+
+		var resources = GetSharedArrowResources();
+
+		var instance = ((IObjectBuilder) _objectBuilder).CreateModelInstance(
+			resources.Meshes[0],
+			PaintbrushRequiresBlending(in paintbrush) ? resources.Materials[1] : resources.Materials[0],
+			new ModelInstanceCreationConfig {
+				InitialTransform = new Transform(tail.AsVect(), Direction.Forward >> direction, new Vect(size)),
+				Name = "Primitive Arrow"
+			}
+		);
+		instance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
+		instance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
+		instance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+
+		RegisterPrimitive(handle, primitiveHandle, in instance, new PrimitiveArrowData(tail, size, constantScreenSize), in paintbrush);
 	}
 
 	public void PrepareCameraSensitivePrimitivesForRender(ResourceHandle<Scene> handle, Camera targetCamera) {
@@ -661,6 +747,19 @@ sealed partial class LocalSceneBuilder {
 		}
 
 		foreach (var data in _primitiveMap[handle].Values) {
+			if (data.Arrow is { } arrow) {
+				if (arrow.ConstantScreenSize && data.ModelInstance is { } arrowInstance) {
+					var screenHeight = screenScaling.ProjectionType == CameraProjectionType.Orthographic
+						? CameraUtils.CalculateOrthographicViewportWorldSize(screenScaling.OrthographicHeight, screenScaling.AspectRatio).Y
+						: CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistanceFromFovTangents(
+							screenScaling.HalfHorizontalFovTangent,
+							screenScaling.HalfVerticalFovTangent,
+							(arrow.Tail - screenScaling.CameraPosition).Dot(screenScaling.CameraViewDirection)
+						).Y;
+					arrowInstance.SetScaling(arrow.Size * screenHeight);
+				}
+				continue;
+			}
 			if (data.Plane is { } plane) {
 				var orientation = Direction.Backward >> plane.Normal;
 				var converter = new DimensionConverter(
@@ -736,6 +835,7 @@ sealed partial class LocalSceneBuilder {
 		_primitiveSphereResources?.Dispose();
 		_primitiveLineResources?.Dispose();
 		_primitivePlaneResources?.Dispose();
+		_primitiveArrowResources?.Dispose();
 		_primitiveSharedQuadMesh?.Dispose();
 		_primitiveSharedMutableLineStripMesh?.Dispose();
 		_primitiveMap.Dispose();

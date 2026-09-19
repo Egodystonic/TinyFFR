@@ -393,6 +393,173 @@ public interface IMeshBuilder {
 	}
 	#endregion
 
+	#region Arrow
+	/// <summary>
+	/// The number of segments an arrow mesh is divided in to around its tail-to-head axis when none is specified: <c>32</c>.
+	/// </summary>
+	public const int DefaultArrowSegmentCount = 32;
+	/// <summary>
+	/// The fewest segments an arrow mesh may be divided in to around its tail-to-head axis: <c>3</c>.
+	/// </summary>
+	public const int MinArrowSegmentCount = 3;
+
+	/// <summary>
+	/// Creates an arrow-shaped mesh: A round stem capped at its tail, topped by a cone-shaped head that is at least as wide as the stem.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The arrow points along <see cref="Direction.Forward"/>, with its tail at the mesh's origin unless <paramref name="origin"/> says otherwise.
+	/// </para>
+	/// <para>
+	/// The texture wraps once around the arrow along its horizontal (U) axis, and runs from <c>0</c> at the tail to <c>1</c> at the tip of the head along its
+	/// vertical (V) axis, in proportion to the distance along the arrow. The flat end of the stem and the flat back of the head therefore each sample a single
+	/// row of the texture, which makes the mesh well suited to textures that vary from tail to head, such as gradients.
+	/// </para>
+	/// </remarks>
+	/// <param name="stemLength">The length of the stem, from the tail to the back of the head. Must be positive.</param>
+	/// <param name="stemRadius">The radius of the stem. Must be positive.</param>
+	/// <param name="headLength">The length of the head, from its flat back to its tip. Must be positive.</param>
+	/// <param name="headRadius">The radius of the flat back of the head. Must be positive and no smaller than <paramref name="stemRadius"/>.</param>
+	/// <param name="origin">Which point along the arrow becomes the mesh's origin. Defaults to <see cref="ArrowMeshOrigin.Tail"/>.</param>
+	/// <param name="segmentCount">How many segments to divide the arrow in to around its tail-to-head axis, and so how round it looks.
+	/// Must be at least <see cref="MinArrowSegmentCount"/>. Defaults to <see cref="DefaultArrowSegmentCount"/>.</param>
+	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
+	/// <param name="name">The name to give the mesh. May be left empty.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when any length or radius is not positive, or when <paramref name="segmentCount"/> is less than <see cref="MinArrowSegmentCount"/>.</exception>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="headRadius"/> is smaller than <paramref name="stemRadius"/>.</exception>
+	Mesh CreateMesh(float stemLength, float stemRadius, float headLength, float headRadius, ArrowMeshOrigin origin = ArrowMeshOrigin.Tail, int segmentCount = DefaultArrowSegmentCount, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
+		return CreateMesh(
+			stemLength,
+			stemRadius,
+			headLength,
+			headRadius,
+			origin,
+			segmentCount,
+			new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None },
+			new MeshCreationConfig { Name = name }
+		);
+	}
+	/// <summary>
+	/// Creates an arrow-shaped mesh: A round stem capped at its tail, topped by a cone-shaped head that is at least as wide as the stem; using the given configs.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The arrow points along <see cref="Direction.Forward"/>, with its tail at the mesh's origin unless <paramref name="origin"/> says otherwise.
+	/// Any <see cref="MeshCreationConfig.OriginTranslation"/> in <paramref name="config"/> is applied on top of the origin chosen by <paramref name="origin"/>.
+	/// </para>
+	/// <para>
+	/// The texture wraps once around the arrow along its horizontal (U) axis, and runs from <c>0</c> at the tail to <c>1</c> at the tip of the head along its
+	/// vertical (V) axis, in proportion to the distance along the arrow. The flat end of the stem and the flat back of the head therefore each sample a single
+	/// row of the texture, which makes the mesh well suited to textures that vary from tail to head, such as gradients.
+	/// </para>
+	/// </remarks>
+	/// <param name="stemLength">The length of the stem, from the tail to the back of the head. Must be positive.</param>
+	/// <param name="stemRadius">The radius of the stem. Must be positive.</param>
+	/// <param name="headLength">The length of the head, from its flat back to its tip. Must be positive.</param>
+	/// <param name="headRadius">The radius of the flat back of the head. Must be positive and no smaller than <paramref name="stemRadius"/>.</param>
+	/// <param name="origin">Which point along the arrow becomes the mesh's origin.</param>
+	/// <param name="segmentCount">How many segments to divide the arrow in to around its tail-to-head axis, and so how round it looks.
+	/// Must be at least <see cref="MinArrowSegmentCount"/>.</param>
+	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
+	/// <param name="config">Controls how the mesh is created.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when any length or radius is not positive, or when <paramref name="segmentCount"/> is less than <see cref="MinArrowSegmentCount"/>.</exception>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="headRadius"/> is smaller than <paramref name="stemRadius"/>.</exception>
+	Mesh CreateMesh(float stemLength, float stemRadius, float headLength, float headRadius, ArrowMeshOrigin origin, int segmentCount, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+		if (!(stemLength > 0f)) throw new ArgumentOutOfRangeException(nameof(stemLength), stemLength, "Stem length must be positive.");
+		if (!(stemRadius > 0f)) throw new ArgumentOutOfRangeException(nameof(stemRadius), stemRadius, "Stem radius must be positive.");
+		if (!(headLength > 0f)) throw new ArgumentOutOfRangeException(nameof(headLength), headLength, "Head length must be positive.");
+		if (!(headRadius > 0f)) throw new ArgumentOutOfRangeException(nameof(headRadius), headRadius, "Head radius must be positive.");
+		if (headRadius < stemRadius) throw new ArgumentException("Head radius can not be smaller than stem radius.", nameof(headRadius));
+		if (segmentCount < MinArrowSegmentCount) throw new ArgumentOutOfRangeException(nameof(segmentCount), segmentCount, $"Segment count must be at least {MinArrowSegmentCount}.");
+
+		var n = segmentCount;
+		var totalLength = stemLength + headLength;
+		var headBaseV = stemLength / totalLength;
+		var texTransform = generationConfig.TextureTransform;
+
+		using var vertexBuffer = GetPooledVertexBuffer(GetArrowMeshVertexCount(n));
+		using var triangleBuffer = GetPooledTriangleBuffer(GetArrowMeshTriangleCount(n));
+		var vertices = vertexBuffer.Span;
+		var triangles = triangleBuffer.Span;
+
+		var slantMagnitudeReciprocal = 1f / MathF.Sqrt(headLength * headLength + headRadius * headRadius);
+		var slantAxial = headRadius * slantMagnitudeReciprocal;
+		var slantRadial = headLength * slantMagnitudeReciprocal;
+
+		var tailCapCentreStart = 0;
+		var tailCapRingStart = tailCapCentreStart + n;
+		var stemTailRingStart = tailCapRingStart + (n + 1);
+		var stemHeadRingStart = stemTailRingStart + (n + 1);
+		var shoulderInnerRingStart = stemHeadRingStart + (n + 1);
+		var shoulderOuterRingStart = shoulderInnerRingStart + (n + 1);
+		var coneBaseRingStart = shoulderOuterRingStart + (n + 1);
+		var coneTipStart = coneBaseRingStart + (n + 1);
+
+		for (var i = 0; i <= n; ++i) {
+			var u = i == n ? 1f : (float) i / n;
+			var (sin, cos) = i == n ? (0f, 1f) : MathF.SinCos(u * MathF.Tau);
+			var radial = new Direction(cos, sin, 0f);
+			var tangent = new Direction(-sin, cos, 0f);
+
+			vertices[tailCapRingStart + i] = new MeshVertex(new Location(cos * stemRadius, sin * stemRadius, 0f), new XYPair<float>(u, 0f) * texTransform, tangent, radial, Direction.Backward);
+			vertices[stemTailRingStart + i] = new MeshVertex(new Location(cos * stemRadius, sin * stemRadius, 0f), new XYPair<float>(u, 0f) * texTransform, tangent, Direction.Forward, radial);
+			vertices[stemHeadRingStart + i] = new MeshVertex(new Location(cos * stemRadius, sin * stemRadius, stemLength), new XYPair<float>(u, headBaseV) * texTransform, tangent, Direction.Forward, radial);
+			vertices[shoulderInnerRingStart + i] = new MeshVertex(new Location(cos * stemRadius, sin * stemRadius, stemLength), new XYPair<float>(u, headBaseV) * texTransform, tangent, radial, Direction.Backward);
+			vertices[shoulderOuterRingStart + i] = new MeshVertex(new Location(cos * headRadius, sin * headRadius, stemLength), new XYPair<float>(u, headBaseV) * texTransform, tangent, radial, Direction.Backward);
+			vertices[coneBaseRingStart + i] = new MeshVertex(
+				new Location(cos * headRadius, sin * headRadius, stemLength),
+				new XYPair<float>(u, headBaseV) * texTransform,
+				tangent,
+				new Direction(-cos * slantAxial, -sin * slantAxial, slantRadial),
+				new Direction(cos * slantRadial, sin * slantRadial, slantAxial)
+			);
+		}
+
+		for (var i = 0; i < n; ++i) {
+			var u = (i + 0.5f) / n;
+			var (sin, cos) = MathF.SinCos(u * MathF.Tau);
+			var tangent = new Direction(-sin, cos, 0f);
+
+			vertices[tailCapCentreStart + i] = new MeshVertex(Location.Origin, new XYPair<float>(u, 0f) * texTransform, tangent, new Direction(cos, sin, 0f), Direction.Backward);
+			vertices[coneTipStart + i] = new MeshVertex(
+				new Location(0f, 0f, totalLength),
+				new XYPair<float>(u, 1f) * texTransform,
+				tangent,
+				new Direction(-cos * slantAxial, -sin * slantAxial, slantRadial),
+				new Direction(cos * slantRadial, sin * slantRadial, slantAxial)
+			);
+		}
+
+		var t = 0;
+		for (var i = 0; i < n; ++i) {
+			triangles[t++] = new VertexTriangle(tailCapCentreStart + i, tailCapRingStart + i + 1, tailCapRingStart + i);
+
+			triangles[t++] = new VertexTriangle(stemTailRingStart + i, stemTailRingStart + i + 1, stemHeadRingStart + i);
+			triangles[t++] = new VertexTriangle(stemTailRingStart + i + 1, stemHeadRingStart + i + 1, stemHeadRingStart + i);
+
+			triangles[t++] = new VertexTriangle(shoulderInnerRingStart + i, shoulderInnerRingStart + i + 1, shoulderOuterRingStart + i);
+			triangles[t++] = new VertexTriangle(shoulderInnerRingStart + i + 1, shoulderOuterRingStart + i + 1, shoulderOuterRingStart + i);
+
+			triangles[t++] = new VertexTriangle(coneBaseRingStart + i, coneBaseRingStart + i + 1, coneTipStart + i);
+		}
+
+		var originOffset = origin switch {
+			ArrowMeshOrigin.HeadTip => totalLength,
+			ArrowMeshOrigin.Centre => totalLength * 0.5f,
+			_ => 0f
+		};
+
+		return CreateMesh(
+			vertices,
+			triangles,
+			config with { OriginTranslation = config.OriginTranslation + new Vect(0f, 0f, originOffset) }
+		);
+	}
+
+	internal static int GetArrowMeshVertexCount(int segmentCount) => segmentCount * 8 + 6;
+	internal static int GetArrowMeshTriangleCount(int segmentCount) => segmentCount * 6;
+	#endregion
+
 	#region Polygon(s)
 	/// <summary>
 	/// Obtains an empty polygon group for assembling a group of polygons that can then be passed to a <c>CreateMesh</c> overload that consumes them.

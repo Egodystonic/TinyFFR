@@ -41,7 +41,7 @@ class LocalScenePrimitivesTest {
 		void Label(float x, string text, ColorVect color) => Track(scene.AddPrimitiveString(new Location(x, 0.2f, 0f), text, new PrimitivePaintbrush(color, ColorVect.BlackOpaque), ScenePrimitiveSize.Small));
 
 		// 1. Point (2D billboarded marker, constant screen size)
-		Track(scene.AddPrimitivePoint(new Location(-5.25f, Y, 0f), new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.BlackOpaque), ScenePrimitiveSize.VeryLarge));
+		Track(scene.AddPrimitivePoint(new Location(-5.25f, Y, 0f), new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.BlackOpaque), ScenePrimitiveSize.Small));
 		Label(-5.25f, "Point", ColorVect.RedOpaque);
 
 		// 2. Cuboid (filled)
@@ -61,15 +61,15 @@ class LocalScenePrimitivesTest {
 		Label(0.75f, "Sphere (wire)", cyan);
 
 		// 6. BoundedRay (finite line segment with drawn endpoints)
-		Track(scene.AddPrimitiveShape(new BoundedRay(new Location(2.25f, Y - 0.6f, 0f), new Location(2.25f, Y + 0.6f, 0f)), new PrimitivePaintbrush(ColorVect.YellowOpaque, ColorVect.RedOpaque), ScenePrimitiveSize.Large, includeEndpoints: true));
+		Track(scene.AddPrimitiveShape(new BoundedRay(new Location(2.25f, Y - 0.6f, 0f), new Location(2.25f, Y + 0.6f, 0f)), new PrimitivePaintbrush(ColorVect.YellowOpaque, ColorVect.RedOpaque), ScenePrimitiveSize.Small, includeEndpoints: true));
 		Label(2.25f, "BoundedRay", ColorVect.YellowOpaque);
 
 		// 7. Ray (infinite half-line with drawn start point)
-		Track(scene.AddPrimitiveShape(new Ray(new Location(3.75f, Y - 0.6f, 0f), Direction.Up), new PrimitivePaintbrush(ColorVect.PinkOpaque, ColorVect.WhiteOpaque), ScenePrimitiveSize.Large, includeStartPoint: true));
+		Track(scene.AddPrimitiveShape(new Ray(new Location(3.75f, Y - 0.6f, 0f), Direction.Up), new PrimitivePaintbrush(ColorVect.PinkOpaque, ColorVect.WhiteOpaque), ScenePrimitiveSize.Small, includeStartPoint: true));
 		Label(3.75f, "Ray", ColorVect.PinkOpaque);
 
 		// 8. Line (infinite in both directions)
-		Track(scene.AddPrimitiveShape(new Line(new Location(5.25f, Y, 0f), Direction.Up), new PrimitivePaintbrush(orange), ScenePrimitiveSize.Large));
+		Track(scene.AddPrimitiveShape(new Line(new Location(5.25f, Y, 0f), Direction.Up), new PrimitivePaintbrush(orange), ScenePrimitiveSize.Small));
 		Label(5.25f, "Line", orange);
 
 		// 9. Plane (semi-transparent back wall)
@@ -80,6 +80,39 @@ class LocalScenePrimitivesTest {
 
 		// 11. String (title billboard)
 		Track(scene.AddPrimitiveString(new Location(0f, 3f, 0f), "Scene Primitives", new PrimitivePaintbrush(ColorVect.WhiteOpaque, ColorVect.BlackOpaque), ScenePrimitiveSize.VeryLarge));
+
+		const float ArrowRowY = 0.9f;
+		const float ArrowRowZ = -2.5f;
+		const float ArrowLength = 0.8f;
+		Location ArrowSlot(float x) => new(x, ArrowRowY, ArrowRowZ);
+		Location CentredArrowTail(float x, Direction d) => ArrowSlot(x) - d * (ArrowLength * 0.5f);
+		void ArrowLabel(float x, string text, ColorVect color) => Track(scene.AddPrimitiveString(new Location(x, ArrowRowY - 0.65f, ArrowRowZ), text, new PrimitivePaintbrush(color, ColorVect.BlackOpaque), ScenePrimitiveSize.Small));
+
+		// 12. Arrow (solid, world size)
+		Track(scene.AddPrimitiveArrow(CentredArrowTail(-5f, Direction.Up), Direction.Up, new PrimitivePaintbrush(orange), ArrowLength, constantScreenSize: false));
+		ArrowLabel(-5f, "Arrow (solid)", orange);
+
+		// 13. Arrow (gradient tail->head, world size)
+		var gradientDir = new Direction(-1f, 1f, 0f);
+		Track(scene.AddPrimitiveArrow(CentredArrowTail(-3f, gradientDir), gradientDir, new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.GreenOpaque), ArrowLength, constantScreenSize: false));
+		ArrowLabel(-3f, "Arrow (gradient)", ColorVect.GreenOpaque);
+
+		// 14. Arrow (paintbrush switched to translucent after creation)
+		var translucentArrow = Track(scene.AddPrimitiveArrow(CentredArrowTail(-1f, Direction.Up), Direction.Up, new PrimitivePaintbrush(cyan), ArrowLength, constantScreenSize: false));
+		translucentArrow.SetPaintbrush(new PrimitivePaintbrush(glass, cyan));
+		ArrowLabel(-1f, "Arrow (translucent)", cyan);
+
+		// 15. Arrow (not screen size)
+		Track(scene.AddPrimitiveArrow(ArrowSlot(1f) - Direction.Up * 0.3f, new Direction(0f, 1f, -1f), new PrimitivePaintbrush(ColorVect.YellowOpaque, ColorVect.PinkOpaque), ScenePrimitiveSize.VeryLarge, constantScreenSize: false));
+		ArrowLabel(1f, "Arrow (not screen size)", ColorVect.YellowOpaque);
+
+		// 16. Arrow (default paintbrush and size, tail at the slot)
+		Track(scene.AddPrimitiveArrow(ArrowSlot(3f), Direction.Right));
+		ArrowLabel(3f, "Arrow (defaults)", ColorVect.WhiteOpaque);
+
+		// 17. Arrow with non dir
+		Track(scene.AddPrimitiveArrow(ArrowSlot(5f), Direction.None));
+		ArrowLabel(5f, "Arrow (none dir)", lime);
 
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		renderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.DebugAndDiagnostic));

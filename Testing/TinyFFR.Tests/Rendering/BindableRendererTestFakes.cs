@@ -332,6 +332,7 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Line line, float size, bool constantScreenSize) { }
 	public void SetPrimitiveGeometryShape(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Plane plane) { }
 	public void SetPrimitiveGeometryGrid(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location gridCentre, Direction gridNormal, Direction gridX, float gridSize, float majorGridLineSpacing, float minorGridLineSpacing) { }
+	public void SetPrimitiveGeometryArrow(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location tail, Direction direction, float size, bool constantScreenSize) { }
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) { }
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) { }

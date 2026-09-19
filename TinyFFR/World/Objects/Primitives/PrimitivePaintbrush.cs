@@ -7,8 +7,9 @@ namespace Egodystonic.TinyFFR.World;
 /// The set of colours a debug primitive is drawn with.
 /// </summary>
 /// <remarks>
-/// How many of the colours are used depends on the primitive: a point uses the primary for its body and the secondary for its outline, whilst a grid uses all three
-/// for its axes, major lines and minor lines respectively.
+/// How many of the colours are used depends on the primitive: a point uses the primary for its body and the secondary for its outline, an arrow blends from the primary
+/// at its tail to the secondary at its head (or is drawn solidly in the primary when there is no secondary), whilst a grid uses all three for its axes, major lines and
+/// minor lines respectively.
 /// </remarks>
 /// <param name="PrimaryColor">The main colour of the primitive.</param>
 /// <param name="SecondaryColor">The secondary colour, where the primitive uses one, or <see langword="null"/> to leave it at the default.</param>
