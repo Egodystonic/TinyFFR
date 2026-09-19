@@ -245,15 +245,32 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation. This is useful if you've already pre-adjusted for DPI
 	/// before invoking this method; but in most cases this should be left at its default value of <c>false</c>.</param>
 	/// <seealso cref="CreateRayFromRenderSurface"/>
-	/// <seealso cref="PickModelInstanceFromRenderSurface"/>
+	/// <seealso cref="PickModelInstanceFromRenderSubAreaSurface"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CreateRayFromRenderSubAreaSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CreateRayFromViewportSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
 	
 	/// <summary>
-	/// Attempts to determine which <see cref="ModelInstance"/> was rendered under the selected <paramref name="pixelCoord"/> (in the most recently-rendered frame).
+	/// Determines which <see cref="ModelInstance"/> (if any) is rendered at the selected <paramref name="pixelCoord"/>, according to the <i>current</i> state
+	/// of the <see cref="TargetScene"/> and <see cref="TargetCamera"/>.
 	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Picking performs its own additional render: The <see cref="TargetScene"/> is rendered again from the <see cref="TargetCamera"/> in to a private off-screen
+	/// buffer and the pick result is read back immediately. Therefore the result reflects the state of the scene at the time this method is invoked, <i>not</i>
+	/// the most recently-rendered or displayed frame. If you've moved/added/removed objects or moved the camera since the last frame was rendered, the pick will
+	/// "see" those changes.
+	/// </para>
+	/// <para>
+	/// This method blocks the caller until the GPU has completed that additional render, meaning every invocation incurs roughly a frame's worth of rendering time
+	/// plus a GPU pipeline stall. It is intended for discrete events (such as handling a mouse click) and should generally not be invoked every frame.
+	/// </para>
+	/// <para>
+	/// Nothing is written to the <see cref="TargetWindow"/>/<see cref="TargetBuffer"/> when picking, so it is safe to pick using renderers that are part of a
+	/// <see cref="RendererCompositor"/> (including rate-limited renderers and those with a <see cref="RendererCreationConfig.GpuSynchronizationFrameBufferCount"/> of <c>-1</c>).
+	/// </para>
+	/// </remarks>
 	/// <param name="pixelCoord">The co-ordinate of the pixel on the target window/buffer to pick.
-	/// The co-ordinate is specified relative to the target window/buffer's dimensions; use <see cref="CreateRayFromRenderSubAreaSurface"/>
+	/// The co-ordinate is specified relative to the target window/buffer's dimensions; use <see cref="PickModelInstanceFromRenderSubAreaSurface"/>
 	/// to specify an offset within the render sub-area specifically.</param>
 	/// <param name="includeTransparentObjects">If <c>true</c> objects with alpha transparency will also be considered for picking.
 	/// <c>false</c> by default as it has a performance cost and you may often actually wish to ignore objects with transparency.</param>
@@ -262,9 +279,29 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// before invoking this method; but in most cases this should be left at its default value of <c>false</c>.</param>
 	/// <returns>A <see cref="PixelPickResult"/> detailing which <see cref="ModelInstance"/> was picked (and where in the <see cref="TargetScene"/> the picked pixel
 	/// lies); or <c>null</c> if no <see cref="ModelInstance"/> was found at that pixel location.</returns>
+	/// <seealso cref="PickModelInstanceFromRenderSubAreaSurface"/>
+	/// <seealso cref="CreateRayFromRenderSurface"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PixelPickResult? PickModelInstanceFromRenderSurface(XYPair<int> pixelCoord, bool includeTransparentObjects = false, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.PickModelInstanceFromRenderSurface(_handle, pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment);
 
+	/// <summary>
+	/// Executes the same function as <see cref="PickModelInstanceFromRenderSurface"/> but the requested <paramref name="pixelCoord"/> is specified relative to
+	/// the render sub-area of this Renderer. If no sub-area has been set (or the sub-area is exactly 100% of the target window/buffer), this function
+	/// produces an identical result.
+	/// </summary>
+	/// <inheritdoc cref="PickModelInstanceFromRenderSurface" path="/remarks"/>
+	/// <param name="pixelCoord">The co-ordinate of the pixel in this renderer's render sub-area to pick.
+	/// The co-ordinate is specified relative to the sub-area; use <see cref="PickModelInstanceFromRenderSurface"/>
+	/// to specify an offset within the entire target window/buffer.</param>
+	/// <param name="includeTransparentObjects">If <c>true</c> objects with alpha transparency will also be considered for picking.
+	/// <c>false</c> by default as it has a performance cost and you may often actually wish to ignore objects with transparency.</param>
+	/// <param name="coordOrigin">Which corner of the sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation. This is useful if you've already pre-adjusted for DPI
+	/// before invoking this method; but in most cases this should be left at its default value of <c>false</c>.</param>
+	/// <returns>A <see cref="PixelPickResult"/> detailing which <see cref="ModelInstance"/> was picked (and where in the <see cref="TargetScene"/> the picked pixel
+	/// lies); or <c>null</c> if no <see cref="ModelInstance"/> was found at that pixel location (including when <paramref name="pixelCoord"/> lies outside the sub-area).</returns>
+	/// <seealso cref="PickModelInstanceFromRenderSurface"/>
+	/// <seealso cref="CreateRayFromRenderSubAreaSurface"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PixelPickResult? PickModelInstanceFromRenderSubAreaSurface(XYPair<int> pixelCoord, bool includeTransparentObjects = false, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.PickModelInstanceFromViewportSurface(_handle, pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment);
 

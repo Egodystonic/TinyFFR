@@ -11,6 +11,21 @@ namespace Egodystonic.TinyFFR.Rendering;
 /// A renderer compositor <i>composites</i> (combines) multiple <see cref="Renderer"/>'s outputs in to a single final result on
 /// a target <see cref="Window"/> or <see cref="RenderOutputBuffer"/>. 
 /// </summary>
+/// <remarks>
+/// <para>
+/// When rendering via <see cref="RenderAll"/>, the lowest non-negative <see cref="RendererCreationConfig.GpuSynchronizationFrameBufferCount"/> among all added renderers is selected
+/// as the value for this compositor's synchronization frame count. If you want to be sure of the sync count used by this compositor, set every added renderer's
+/// <c>GpuSynchronizationFrameBufferCount</c> to the desired value. 
+/// </para>
+/// <para>
+/// If no enabled renderer has a non-negative <see cref="RendererCreationConfig.GpuSynchronizationFrameBufferCount"/>, no synchronization takes place at all; which is not recommended
+/// (see the caveats documented on <see cref="RendererCreationConfig.GpuSynchronizationFrameBufferCount"/>).
+/// </para>
+/// <para>
+/// Rate-limiting (via <see cref="SetRendererFrameRateCap"/> or <see cref="SetRendererFrameRateRatio"/>) does not affect this selection: If the selected renderer is rate-limited,
+/// synchronization still occurs on every invocation of <see cref="RenderAll"/>, even when that renderer's output is being reused rather than re-rendered.
+/// </para>
+/// </remarks>
 public readonly struct RendererCompositor : IDisposableResource<RendererCompositor, IRendererCompositorImplProvider> {
 	readonly ResourceHandle<RendererCompositor> _handle;
 	readonly IRendererCompositorImplProvider _impl;
@@ -36,10 +51,16 @@ public readonly struct RendererCompositor : IDisposableResource<RendererComposit
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetAddedRenderers(_handle);
 	}
+	/// <summary>
+	/// The <see cref="Window"/> this compositor renders in to, or <c>null</c> if it does not target a window.
+	/// </summary>
 	public Window? TargetWindow {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetWindow(_handle);
 	}
+	/// <summary>
+	/// The <see cref="RenderOutputBuffer"/> this compositor renders in to, or <c>null</c> if it does not target an output buffer.
+	/// </summary>
 	public RenderOutputBuffer? TargetBuffer {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetBuffer(_handle);

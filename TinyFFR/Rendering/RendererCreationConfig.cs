@@ -60,8 +60,15 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	/// </para>
 	/// <para>
 	/// A value of -1 disables synchronization entirely. This means Render() will never block the calling thread; but over time commands submitted to the GPU may exceed the GPU's capability to keep up,
-	/// resulting in stuttering or even errors. Setting this value is only recommended when using a multi-renderer setup (set all renderers except your last/"primary" renderer to -1).
+	/// resulting in stuttering or even errors. Setting this value is only recommended when using a multi-renderer setup where another renderer still synchronizes:
 	/// </para>
+	/// <ul>
+	/// <li>When rendering multiple renderers via a <see cref="RendererCompositor"/>, the compositor automatically selects one enabled renderer to synchronize with
+	/// (the one with the lowest non-negative value; see <see cref="RendererCompositor"/> for details). You only need to ensure at least one added renderer has a non-negative value;
+	/// setting the others to -1 is optional.</li>
+	/// <li>When invoking Render() on multiple renderers individually, every renderer with a non-negative value synchronizes independently. In this case you should set all renderers
+	/// to -1 except one that is guaranteed to render every frame (usually the last/"primary" renderer).</li>
+	/// </ul>
 	/// <para>
 	/// <b>It should be noted that setting this property to -1 without fulfilling these constraints can result in crashes or exceptions being thrown seemingly at random.</b>
 	/// </para>

@@ -38,7 +38,13 @@ public interface IRendererCompositorImplProvider : IDisposableResourceImplProvid
 	/// Invoked via <see cref="RendererCompositor.AddedRenderers"/>.
 	/// </summary>
 	IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle);
+	/// <summary>
+	/// Invoked via <see cref="RendererCompositor.TargetWindow"/>.
+	/// </summary>
 	Window? GetWindow(ResourceHandle<RendererCompositor> handle);
+	/// <summary>
+	/// Invoked via <see cref="RendererCompositor.TargetBuffer"/>.
+	/// </summary>
 	RenderOutputBuffer? GetBuffer(ResourceHandle<RendererCompositor> handle);
 	/// <summary>
 	/// Invoked via <see cref="RendererCompositor.RenderAll"/>.
