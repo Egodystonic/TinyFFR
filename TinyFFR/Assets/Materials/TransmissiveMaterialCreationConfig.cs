@@ -188,7 +188,8 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 	/// The texture describing where the surface appears to glow with its own light, or <see langword="null"/> for none. Defaults to <see langword="null"/>.
 	/// </summary>
 	/// <remarks>
-	/// Must be a four-channel texture, the fourth channel being how strongly each texel glows.
+	/// Either a three-channel or a four-channel texture is accepted. A four-channel texture's fourth channel sets how strongly
+	/// each texel glows; a three-channel texture glows at full strength wherever it is not black.
 	/// </remarks>
 	public Texture? EmissiveMap { get; init; }
 	/// <summary>
@@ -260,7 +261,6 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 		if (AbsorptionTransmissionMap == default) throw InvalidObjectException.InvalidDefault<Texture>(nameof(AbsorptionTransmissionMap));
 		if (!Enum.IsDefined(Quality)) throw new ArgumentOutOfRangeException(nameof(Quality), Quality, null);
 		if (!Enum.IsDefined(AlphaMode)) throw new ArgumentOutOfRangeException(nameof(AlphaMode), AlphaMode, null);
-		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(EmissiveMap, TexelType.Rgba32);
 		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(OcclusionRoughnessMetallicReflectanceMap, TexelType.Rgba32);
 	}
 

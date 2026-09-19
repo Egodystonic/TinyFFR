@@ -165,7 +165,8 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 	/// The texture describing where the surface appears to glow with its own light, or <see langword="null"/> for none. Defaults to <see langword="null"/>.
 	/// </summary>
 	/// <remarks>
-	/// Can be a four-channel texture, in which case the fourth channel being how strongly each texel glows.
+	/// Either a three-channel or a four-channel texture is accepted. A four-channel texture's fourth channel sets how strongly
+	/// each texel glows; a three-channel texture glows at full strength wherever it is not black.
 	/// </remarks>
 	public Texture? EmissiveMap { get; init; }
 	/// <summary>
@@ -223,7 +224,6 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 	internal void ThrowIfInvalid() {
 		BaseConfig.ThrowIfInvalid();
 		if (ColorMap == default) throw InvalidObjectException.InvalidDefault<Texture>(nameof(ColorMap));
-		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(EmissiveMap, TexelType.Rgba32);
 		if (!Enum.IsDefined(AlphaMode)) throw new ArgumentOutOfRangeException(nameof(AlphaMode), AlphaMode, null);
 	}
 
