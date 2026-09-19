@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -206,6 +207,17 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		ThrowIfDisposed();
 		_actualCompositor.WaitForGpu();
+	}
+
+	public Window? GetWindow(ResourceHandle<RendererCompositor> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		ThrowIfDisposed();
+		return _actualCompositor.TargetWindow;
+	}
+	public RenderOutputBuffer? GetBuffer(ResourceHandle<RendererCompositor> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		ThrowIfDisposed();
+		return _actualCompositor.TargetBuffer;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<RendererCompositor> handle) {

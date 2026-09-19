@@ -38,6 +38,7 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	public readonly List<(XYPair<int> PixelCoord, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> RenderSurfaceRayCalls = new();
 	public readonly List<(XYPair<int> PixelCoord, bool IncludeTransparentObjects, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> PickAtCalls = new();
 	public readonly List<(XYPair<int> PixelCoord, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> ViewportSurfaceRayCalls = new();
+	public readonly List<(XYPair<int> PixelCoord, bool IncludeTransparentObjects, DiagonalOrientation2D CoordOrigin, bool DisableDpiScalingAdjustment)> ViewportSurfacePickCalls = new();
 
 	public FakeRendererImplProvider(ResourceHandle<Renderer> handle, Scene scene, Camera camera, RenderOutputBuffer targetBuffer, in RendererCreationConfig config) {
 		Handle = handle;
@@ -88,6 +89,10 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 	}
 	public Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ViewportSurfaceRayCalls.Add((pixelCoord, coordOrigin, disableDpiScalingAdjustment));
+		return default;
+	}
+	public PixelPickResult? PickModelInstanceFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		ViewportSurfacePickCalls.Add((pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment));
 		return default;
 	}
 
@@ -187,6 +192,8 @@ sealed class FakeCompositorImplProvider : IRendererCompositorImplProvider {
 		return 1;
 	}
 	public IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle) => throw new NotSupportedException();
+	public Window? GetWindow(ResourceHandle<RendererCompositor> handle) => null;
+	public RenderOutputBuffer? GetBuffer(ResourceHandle<RendererCompositor> handle) => Target;
 	public void RenderAll(ResourceHandle<RendererCompositor> handle) => RenderAllCount++;
 	public void WaitForGpu(ResourceHandle<RendererCompositor> handle) => WaitForGpuCount++;
 }

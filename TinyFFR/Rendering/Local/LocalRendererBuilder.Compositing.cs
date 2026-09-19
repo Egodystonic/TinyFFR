@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
@@ -22,6 +23,7 @@ sealed partial class LocalRendererBuilder {
 	}
 	readonly record struct RendererCompositorData(RenderTargetUnion RenderTarget, ArrayPoolBackedVector<CompositedRenderer> AddedRenderers, int NumRenderersCurrentlyEnabled, int FirstEnabledRendererIndex, int LastEnabledRendererIndex) {
 		public int NumEnabledRateLimitedRenderers { get; init; } = 0;
+		public int FenceEmittingRendererIndex { get; init; } = 0;
 	}
 	const string DefaultCompositorName = "Unnamed Renderer Compositor";
 	const string RateLimitBufferName = "Frame Rate Limit Buffer";
@@ -53,6 +55,8 @@ sealed partial class LocalRendererBuilder {
 		var first = -1;
 		var last = -1;
 		var rateLimitedCount = 0;
+		var fenceEmitter = -1;
+		var fenceEmitterBufferCount = 0;
 
 		for (var i = 0; i < compositorData.AddedRenderers.Count; ++i) {
 			var rendererData = compositorData.AddedRenderers[i];
@@ -62,13 +66,25 @@ sealed partial class LocalRendererBuilder {
 			if (first == -1) first = i;
 			last = i;
 			if (rendererData.IsRateLimited) rateLimitedCount++;
+
+			// We select the renderer in the composite scene that has the lowest non-negative fence count.
+			// Chosen like this to provide requested input latency (often e.g. users may set the "main" renderer to a lower
+			// value but not any other renderer). In the case the main scene is actually higher than default (e.g. > 3) this
+			// produces an incorrect result unless every other sub-renderer is also set correctly, but the impact of that
+			// error is much less noticable than the inverse.
+			var bufferCount = _loadedRenderers[rendererData.Renderer.GetHandleWithoutDisposeCheck()].GpuSynchronizationFrameBufferCount;
+			if (bufferCount >= 0 && (fenceEmitter == -1 || bufferCount <= fenceEmitterBufferCount)) {
+				fenceEmitter = i;
+				fenceEmitterBufferCount = bufferCount;
+			}
 		}
 
 		_loadedCompositors[handle] = _loadedCompositors[handle] with {
 			NumRenderersCurrentlyEnabled = count,
 			FirstEnabledRendererIndex = first,
 			LastEnabledRendererIndex = last,
-			NumEnabledRateLimitedRenderers = rateLimitedCount
+			NumEnabledRateLimitedRenderers = rateLimitedCount,
+			FenceEmittingRendererIndex = fenceEmitter == -1 ? last : fenceEmitter
 		};
 	}
 
@@ -148,24 +164,26 @@ sealed partial class LocalRendererBuilder {
 
 		if (compositorData.NumEnabledRateLimitedRenderers > 0) RenderAllRateLimitedRenderers(handle);
 
+		var fenceEmittingHandle = compositorData.AddedRenderers[compositorData.FenceEmittingRendererIndex].Renderer.Handle;
+
 		if (compositorData.NumRenderersCurrentlyEnabled == 1) {
 			var sole = compositorData.AddedRenderers[compositorData.FirstEnabledRendererIndex];
-			RenderInternal(GetCompositedRenderHandle(in sole), RenderOrdering.Standalone, sole.CompositionType, sole.Renderer.Handle);
+			RenderInternal(GetCompositedRenderHandle(in sole), RenderOrdering.Standalone, sole.CompositionType, fenceEmittingHandle);
 			return;
 		}
 
 		var first = compositorData.AddedRenderers[compositorData.FirstEnabledRendererIndex];
 		var last = compositorData.AddedRenderers[compositorData.LastEnabledRendererIndex];
-		RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, first.Renderer.Handle);
+		RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, fenceEmittingHandle);
 		try {
 			for (var i = compositorData.FirstEnabledRendererIndex + 1; i < compositorData.LastEnabledRendererIndex; ++i) {
 				var middle = compositorData.AddedRenderers[i];
 				if (!middle.IsEnabled) continue;
-				RenderInternal(GetCompositedRenderHandle(in middle), RenderOrdering.Middle, middle.CompositionType, middle.Renderer.Handle);
+				RenderInternal(GetCompositedRenderHandle(in middle), RenderOrdering.Middle, middle.CompositionType, fenceEmittingHandle);
 			}
 		}
 		finally {
-			RenderInternal(GetCompositedRenderHandle(in last), RenderOrdering.Last, last.CompositionType, last.Renderer.Handle);
+			RenderInternal(GetCompositedRenderHandle(in last), RenderOrdering.Last, last.CompositionType, fenceEmittingHandle);
 		}
 	}
 
@@ -173,8 +191,26 @@ sealed partial class LocalRendererBuilder {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var compositorData = _loadedCompositors[handle];
 		if (compositorData.NumRenderersCurrentlyEnabled == 0) return;
-		
-		WaitForGpu(compositorData.AddedRenderers[compositorData.LastEnabledRendererIndex].Renderer.Handle);
+
+		var fenceEmittingHandle = compositorData.AddedRenderers[compositorData.FenceEmittingRendererIndex].Renderer.Handle;
+		if (_loadedRenderers[fenceEmittingHandle].EmitFences) {
+			WaitForGpu(fenceEmittingHandle);
+		}
+		else {
+			LocalFrameSynchronizationManager.StallForPendingCallbacksHeadless();
+			CollectGpuGarbage();
+		}
+	}
+
+	public Window? GetWindow(ResourceHandle<RendererCompositor> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var renderTarget = _loadedCompositors[handle].RenderTarget;
+		return renderTarget.IsWindow ? renderTarget.AsWindow : null;
+	}
+	public RenderOutputBuffer? GetBuffer(ResourceHandle<RendererCompositor> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var renderTarget = _loadedCompositors[handle].RenderTarget;
+		return renderTarget.IsBuffer ? renderTarget.AsBuffer : null;
 	}
 
 	#region Rate Limiting

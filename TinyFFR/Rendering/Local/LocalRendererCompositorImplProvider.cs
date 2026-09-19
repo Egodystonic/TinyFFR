@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering.Local;
@@ -24,6 +25,8 @@ sealed class LocalRendererCompositorImplProvider : IRendererCompositorImplProvid
 	public void Dispose(ResourceHandle<RendererCompositor> handle) => Owner.Dispose(handle);
 	public void Dispose(ResourceHandle<RendererCompositor> handle, bool disposeContainedRenderers) => Owner.Dispose(handle, disposeContainedRenderers);
 	public IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle) => Owner.GetAddedRenderers(handle);
+	public Window? GetWindow(ResourceHandle<RendererCompositor> handle) => Owner.GetWindow(handle);
+	public RenderOutputBuffer? GetBuffer(ResourceHandle<RendererCompositor> handle) => Owner.GetBuffer(handle);
 	public void Add(ResourceHandle<RendererCompositor> handle, Renderer renderer, RenderCompositionType compositionType) => Owner.Add(handle, renderer, compositionType);
 	public void SetEnabledState(ResourceHandle<RendererCompositor> handle, Renderer renderer, bool newEnabledState) => Owner.SetEnabledState(handle, renderer, newEnabledState);
 	public void RenderAll(ResourceHandle<RendererCompositor> handle) => Owner.RenderAll(handle);

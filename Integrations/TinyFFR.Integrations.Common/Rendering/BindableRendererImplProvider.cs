@@ -332,6 +332,12 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		return _actualRenderer.CreateRayFromRenderSubAreaSurface(pixelCoord, coordOrigin, true);
 	}
 
+	public PixelPickResult? PickModelInstanceFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		if (!disableDpiScalingAdjustment) pixelCoord = pixelCoord.ScaledByReal(CursorCoordinateScaling);
+		return _actualRenderer.PickModelInstanceFromRenderSubAreaSurface(pixelCoord, includeTransparentObjects, coordOrigin, true);
+	}
+
 	public Scene GetScene(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		return _actualRenderer.TargetScene;

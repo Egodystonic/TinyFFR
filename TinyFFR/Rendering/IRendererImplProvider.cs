@@ -69,6 +69,7 @@ public interface IRendererImplProvider : IDisposableResourceImplProvider<Rendere
 	/// Invoked via <see cref="Renderer.CreateRayFromRenderSubAreaSurface"/>.
 	/// </summary>
 	Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment);
+	PixelPickResult? PickModelInstanceFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment);
 	/// <summary>
 	/// Invoked via <see cref="Renderer.SetRenderSubAreaFraction"/>.
 	/// </summary>

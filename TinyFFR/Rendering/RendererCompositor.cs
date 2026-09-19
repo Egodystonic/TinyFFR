@@ -36,6 +36,14 @@ public readonly struct RendererCompositor : IDisposableResource<RendererComposit
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetAddedRenderers(_handle);
 	}
+	public Window? TargetWindow {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetWindow(_handle);
+	}
+	public RenderOutputBuffer? TargetBuffer {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetBuffer(_handle);
+	}
 
 	/// <summary>
 	/// Add a <see cref="Renderer"/> to this compositor, meaning its output will be combined with others in to the final result.

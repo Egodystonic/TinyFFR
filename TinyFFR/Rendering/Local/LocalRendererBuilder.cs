@@ -136,7 +136,9 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed, XYPair<int> LastObservedRenderTargetSize);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions, bool SubAreaIsHandledDownstream = false);
-	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode, RenderCompositionType CompositionType = RenderCompositionType.Standard);
+	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, int GpuSynchronizationFrameBufferCount, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode, RenderCompositionType CompositionType = RenderCompositionType.Standard) {
+		public bool EmitFences => GpuSynchronizationFrameBufferCount >= 0;
+	}
 	readonly unsafe struct OutputBufferCallbackData {
 		public static OutputBufferCallbackData None => new(false, null, null);
 
@@ -261,7 +263,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(scene, camera, rtu, viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0, qualityConfig, null));
+		_loadedRenderers.Add(handle, new(scene, camera, rtu, viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount, qualityConfig, null));
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRendererName);
 
@@ -380,7 +382,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();
 				// These next three lines ensure we don't hold on to the VRAM represented by this swap chain
 				// while allocating the next. If it's a 4K double back buffer that's a lot of memory.
-				if (rendererData.EmitFences) LocalFrameSynchronizationManager.FlushAllPendingFences(handle);
+				if (_loadedRenderers[fenceEmittingHandle].EmitFences) LocalFrameSynchronizationManager.FlushAllPendingFences(fenceEmittingHandle);
 				LocalFrameSynchronizationManager.StallForPendingCallbacksHeadless();
 				CollectGpuGarbage();
 				AllocateSwapChain(
@@ -828,29 +830,65 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 	public PixelPickResult? PickModelInstanceFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		return PickModelInstanceAtPhysicalViewportCoord(handle, ConvertRenderSurfaceCoordToViewportCoord(handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment), includeTransparentObjects);
+	}
 
-		var viewportCoord = ConvertRenderSurfaceCoordToViewportCoord(handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
+	public PixelPickResult? PickModelInstanceFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		var rendererData = _loadedRenderers[handle];
+		var viewportSize = GetViewportPixelSize(handle);
+		var applyDpiScaling = rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment;
+		var curTargetSize = rendererData.RenderTarget.ViewportDimensions.Cast<float>();
+
+		if (applyDpiScaling) {
+			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize);
+		}
+
+		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
+
+		if (applyDpiScaling) {
+			pixelCoord = pixelCoord.ScaledByReal(curTargetSize / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
+		}
+
+		return PickModelInstanceAtPhysicalViewportCoord(handle, pixelCoord, includeTransparentObjects);
+	}
+
+	PixelPickResult? PickModelInstanceAtPhysicalViewportCoord(ResourceHandle<Renderer> handle, XYPair<int> viewportCoord, bool includeTransparentObjects) {
 		var viewportSize = GetViewportPixelSize(handle);
 		if (viewportCoord.X < 0 || viewportCoord.Y < 0 || viewportCoord.X >= viewportSize.X || viewportCoord.Y >= viewportSize.Y) return default;
 
-		var pickId = ++_previousPickId;
-		SubmitViewPick(
-			_loadedRenderers[handle].Viewport.Handle,
-			(uint) viewportCoord.X,
-			(uint) (viewportSize.Y - 1 - viewportCoord.Y),
-			pickId,
-			includeTransparentObjects
-		).ThrowIfFailure();
+		var rendererData = _loadedRenderers[handle];
+		var (buffer, pickRenderer) = SetUpScreenshotCapture(rendererData, viewportSize);
+		try {
+			var pickRendererHandle = pickRenderer.Handle;
+			var pickRendererData = _loadedRenderers[pickRendererHandle];
+			var pickViewportData = pickRendererData.Viewport;
+			RefreshViewportDimensionsIfRenderTargetSizeChanged(pickRendererHandle, ref pickRendererData, ref pickViewportData);
 
-		Render(handle);
-		LocalFrameSynchronizationManager.StallForPendingCallbacks(handle);
+			var pickId = ++_previousPickId;
+			SubmitViewPick(
+				pickViewportData.Handle,
+				(uint) viewportCoord.X,
+				(uint) (viewportSize.Y - 1 - viewportCoord.Y),
+				pickId,
+				includeTransparentObjects
+			).ThrowIfFailure();
 
-		TryGetPickResult(pickId, out var pickedInstanceHandle, out var depth, out var worldPosition, out var found).ThrowIfFailure();
-		if (!found) return null;
-		var matchingModelInstance = _sceneBuilder.TryResolvePickedModelInstance(_loadedRenderers[handle].Scene.GetHandleWithoutDisposeCheck(), pickedInstanceHandle);
-		if (matchingModelInstance is not { } mi) return null;
+			Render(pickRendererHandle);
+			LocalFrameSynchronizationManager.StallForPendingCallbacks(pickRendererHandle);
 
-		return new PixelPickResult(mi, Location.FromVector3(worldPosition));
+			TryGetPickResult(pickId, out var pickedInstanceHandle, out _, out var worldPosition, out var found).ThrowIfFailure();
+			if (!found) return null;
+			var matchingModelInstance = _sceneBuilder.TryResolvePickedModelInstance(rendererData.Scene.GetHandleWithoutDisposeCheck(), pickedInstanceHandle);
+			if (matchingModelInstance is not { } mi) return null;
+
+			return new PixelPickResult(mi, Location.FromVector3(worldPosition));
+		}
+		finally {
+			pickRenderer.Dispose();
+			buffer.Dispose();
+		}
 	}
 
 	public Ray CreateRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment) {

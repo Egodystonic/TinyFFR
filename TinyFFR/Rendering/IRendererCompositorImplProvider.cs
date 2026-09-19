@@ -1,6 +1,7 @@
 // Created on 2026-05-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering;
@@ -37,6 +38,8 @@ public interface IRendererCompositorImplProvider : IDisposableResourceImplProvid
 	/// Invoked via <see cref="RendererCompositor.AddedRenderers"/>.
 	/// </summary>
 	IndirectEnumerable<RendererCompositor, Renderer> GetAddedRenderers(ResourceHandle<RendererCompositor> handle);
+	Window? GetWindow(ResourceHandle<RendererCompositor> handle);
+	RenderOutputBuffer? GetBuffer(ResourceHandle<RendererCompositor> handle);
 	/// <summary>
 	/// Invoked via <see cref="RendererCompositor.RenderAll"/>.
 	/// </summary>

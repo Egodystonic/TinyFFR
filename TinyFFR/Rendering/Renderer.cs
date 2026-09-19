@@ -265,6 +265,9 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PixelPickResult? PickModelInstanceFromRenderSurface(XYPair<int> pixelCoord, bool includeTransparentObjects = false, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.PickModelInstanceFromRenderSurface(_handle, pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PixelPickResult? PickModelInstanceFromRenderSubAreaSurface(XYPair<int> pixelCoord, bool includeTransparentObjects = false, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.PickModelInstanceFromViewportSurface(_handle, pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment);
+
 	/// <summary>
 	/// Sets the sub-area of the <see cref="TargetWindow"/> or <see cref="TargetBuffer"/> this renderer should actually render in to.
 	/// This is useful for creating picture-in-picture effects or splitscreen effects, often when using this renderer inside a <see cref="RendererCompositor"/>.

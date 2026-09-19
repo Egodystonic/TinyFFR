@@ -187,6 +187,32 @@ class BindableRendererImplProviderTest {
 	}
 
 	[Test]
+	public void ShouldScaleSubAreaPickCoordsAndForwardArguments() {
+		var renderer = CreateRenderer();
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (1600, 900), (800, 450), NoopFrameHandler);
+
+		_ = renderer.PickModelInstanceFromRenderSubAreaSurface((100, 50), true, DiagonalOrientation2D.DownRight);
+
+		var actualRenderer = _builder.CreatedRenderers[^1];
+		Assert.AreEqual(1, actualRenderer.ViewportSurfacePickCalls.Count);
+		Assert.AreEqual(0, actualRenderer.PickAtCalls.Count);
+		Assert.AreEqual(new XYPair<int>(200, 100), actualRenderer.ViewportSurfacePickCalls[0].PixelCoord);
+		Assert.AreEqual(true, actualRenderer.ViewportSurfacePickCalls[0].IncludeTransparentObjects);
+		Assert.AreEqual(DiagonalOrientation2D.DownRight, actualRenderer.ViewportSurfacePickCalls[0].CoordOrigin);
+		Assert.AreEqual(true, actualRenderer.ViewportSurfacePickCalls[0].DisableDpiScalingAdjustment);
+	}
+
+	[Test]
+	public void ShouldNotScaleSubAreaPickCoordsWhenAdjustmentDisabled() {
+		var renderer = CreateRenderer();
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (1600, 900), (800, 450), NoopFrameHandler);
+
+		_ = renderer.PickModelInstanceFromRenderSubAreaSurface((100, 50), disableDpiScalingAdjustment: true);
+
+		Assert.AreEqual(new XYPair<int>(100, 50), _builder.CreatedRenderers[^1].ViewportSurfacePickCalls[0].PixelCoord);
+	}
+
+	[Test]
 	public void ShouldNotScaleRayCastCoordsBeforeFrameHandlingStarts() {
 		var renderer = CreateRenderer();
 

@@ -217,6 +217,19 @@ class BindableRendererCompositorImplProviderTest {
 	}
 
 	[Test]
+	public void ShouldForwardTargetWindowAndTargetBufferFromCurrentSharedBuffer() {
+		var compositor = _builder.CreateBindableCompositor();
+
+		Assert.AreEqual(null, compositor.TargetWindow);
+		Assert.AreEqual(LatestBuffer.BufferInstance, compositor.TargetBuffer);
+
+		BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositor, (400, 100), (400, 100), NoopFrameHandler);
+
+		Assert.AreEqual(null, compositor.TargetWindow);
+		Assert.AreEqual(LatestBuffer.BufferInstance, compositor.TargetBuffer);
+	}
+
+	[Test]
 	public void ShouldRecreateEverythingWhenHandlingFramesStarts() {
 		var compositor = _builder.CreateBindableCompositor();
 		var originalSharedBuffer = LatestBuffer;
