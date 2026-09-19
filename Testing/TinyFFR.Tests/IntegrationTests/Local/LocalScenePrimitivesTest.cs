@@ -61,15 +61,15 @@ class LocalScenePrimitivesTest {
 		Label(0.75f, "Sphere (wire)", cyan);
 
 		// 6. BoundedRay (finite line segment with drawn endpoints)
-		Track(scene.AddPrimitiveShape(new BoundedRay(new Location(2.25f, Y - 0.6f, 0f), new Location(2.25f, Y + 0.6f, 0f)), new PrimitivePaintbrush(ColorVect.YellowOpaque, ColorVect.RedOpaque), ScenePrimitiveSize.Small, includeEndpoints: true));
+		Track(scene.AddPrimitiveShape(new BoundedRay(new Location(2.25f, Y - 0.6f, 0f), new Location(2.25f, Y + 0.6f, 0f)), new PrimitivePaintbrush(ColorVect.YellowOpaque, ColorVect.RedOpaque), ScenePrimitiveSize.VerySmall, includeEndpoints: true));
 		Label(2.25f, "BoundedRay", ColorVect.YellowOpaque);
 
 		// 7. Ray (infinite half-line with drawn start point)
-		Track(scene.AddPrimitiveShape(new Ray(new Location(3.75f, Y - 0.6f, 0f), Direction.Up), new PrimitivePaintbrush(ColorVect.PinkOpaque, ColorVect.WhiteOpaque), ScenePrimitiveSize.Small, includeStartPoint: true));
+		Track(scene.AddPrimitiveShape(new Ray(new Location(3.75f, Y - 0.6f, 0f), Direction.Up), new PrimitivePaintbrush(ColorVect.PinkOpaque, ColorVect.WhiteOpaque), ScenePrimitiveSize.Large, includeStartPoint: true, constantScreenSize: false));
 		Label(3.75f, "Ray", ColorVect.PinkOpaque);
 
 		// 8. Line (infinite in both directions)
-		Track(scene.AddPrimitiveShape(new Line(new Location(5.25f, Y, 0f), Direction.Up), new PrimitivePaintbrush(orange), ScenePrimitiveSize.Small));
+		Track(scene.AddPrimitiveShape(new Line(new Location(5.25f, Y, 0f), Direction.Up), new PrimitivePaintbrush(orange), ScenePrimitiveSize.Large, constantScreenSize: false));
 		Label(5.25f, "Line", orange);
 
 		// 9. Plane (semi-transparent back wall)
