@@ -182,13 +182,13 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	int FindIntersections(ResourceHandle<Scene> handle, PositionedSphere shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes);
 
 	/// <summary>
-	/// Invoked via <see cref="CanvasScene.Add(Texture)"/>.
+	/// Invoked via <see cref="CanvasScene.Add(Texture, ReadOnlySpan{char})"/>.
 	/// </summary>
-	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture);
+	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name);
 	/// <summary>
-	/// Invoked via <see cref="CanvasScene.Add(Material)"/>.
+	/// Invoked via <see cref="CanvasScene.Add(Material, ReadOnlySpan{char})"/>.
 	/// </summary>
-	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material);
+	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name);
 	/// <summary>
 	/// Invoked via <see cref="CanvasScene.Add(FontString, FontPen)"/>.
 	/// </summary>
@@ -397,6 +397,9 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// Invoked via <see cref="ICanvasObject.Contains(XYPair{int}, DiagonalOrientation2D)"/>.
 	/// </summary>
 	bool CanvasObjectContainsPixelCoord(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> coord, DiagonalOrientation2D coordOrigin);
+	Ray? GetCanvasQueryRay(ResourceHandle<Scene> handle, XYPair<int> localCoord, DiagonalOrientation2D coordOrigin);
+	Span<ModelInstance> GetCanvasQueryScratchBuffer(ResourceHandle<Scene> handle);
+	bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance>;
 	/// <summary>
 	/// Invoked via <see cref="ICanvasObject.ActualSizePixels"/>.
 	/// </summary>

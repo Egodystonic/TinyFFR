@@ -61,6 +61,11 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 		get => UnderlyingScene.Implementation.GetCanvasCamera(UnderlyingScene.GetHandleWithoutDisposeCheck());
 	}
 
+	public CanvasSceneQueryProvider QueryProvider {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(this);
+	}
+
 	internal CanvasScene(Scene underlyingScene) {
 		UnderlyingScene = underlyingScene;
 	}
@@ -93,7 +98,7 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 	/// </summary>
 	/// <param name="t">The texture to draw.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public CanvasTexture Add(Texture t) => Implementation.AddCanvasObject(SceneHandle, t);
+	public CanvasTexture Add(Texture t, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, t, name);
 	/// <summary>
 	/// Adds an image to this canvas, drawn with the given material.
 	/// </summary>
@@ -102,7 +107,7 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 	/// </remarks>
 	/// <param name="m">The material to draw with.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public CanvasTexture Add(Material m) => Implementation.AddCanvasObject(SceneHandle, m);
+	public CanvasTexture Add(Material m, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, m, name);
 	/// <summary>
 	/// Adds a pre-built piece of text to this canvas.
 	/// </summary>

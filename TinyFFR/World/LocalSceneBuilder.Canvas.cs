@@ -93,6 +93,7 @@ sealed partial class LocalSceneBuilder {
 	readonly MapPool<ResourceHandle<ModelInstance>, CanvasItemData> _canvasItemMapPool;
 	readonly MapPool<ResourceHandle<ModelInstance>, CanvasTextureData> _canvasTextureDataMapPool;
 	readonly MapPool<ResourceHandle<ModelInstance>, CanvasTextData> _canvasTextDataMapPool;
+	ModelInstance[] _canvasQueryScratchBuffer = TinyFfrArrayPool<ModelInstance>.Shared.Rent(4);
 
 	public CanvasScene CreateCanvasScene(in CanvasSceneCreationConfig config) {
 		ThrowIfThisIsDisposed();
@@ -126,12 +127,12 @@ sealed partial class LocalSceneBuilder {
 
 	public bool IsCanvasScene(ResourceHandle<Scene> handle) => _canvasSceneDataMap.ContainsKey(handle);
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture) {
+	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
 		var material = CreateCanvasTextureMaterial(texture);
-		var quad = ((IObjectBuilder) _objectBuilder).CreateQuadInstance(GetSharedQuadMesh(), material);
+		var quad = CreateCanvasQuadInstance(material, texture, name);
 
 		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasTextureData { Texture = texture, OwnedMaterial = material, TextureDimensions = texture.Dimensions };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
@@ -140,11 +141,11 @@ sealed partial class LocalSceneBuilder {
 		return new CanvasTexture(new CanvasScene(HandleToInstance(handle)), quad);
 	}
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material) {
+	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
-		var quad = ((IObjectBuilder) _objectBuilder).CreateQuadInstance(GetSharedQuadMesh(), material);
+		var quad = CreateCanvasQuadInstance(material, material, name);
 
 		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasTextureData { TextureDimensions = ResolveCanvasMaterialTextureDimensions(material) };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
@@ -172,6 +173,14 @@ sealed partial class LocalSceneBuilder {
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), text), sceneData.ViewportSize);
 
 		return new CanvasText(new CanvasScene(HandleToInstance(handle)), text);
+	}
+
+	QuadInstance CreateCanvasQuadInstance<TNameSource>(Material material, TNameSource nameSource, ReadOnlySpan<char> name) where TNameSource : IStringSpanNameEnabled {
+		if (!name.IsEmpty) return ((IObjectBuilder) _objectBuilder).CreateQuadInstance(GetSharedQuadMesh(), material, name: name);
+
+		using var nameBuffer = _globals.HeapPool.Borrow<char>(nameSource.GetNameLength());
+		nameSource.CopyName(nameBuffer.Span);
+		return ((IObjectBuilder) _objectBuilder).CreateQuadInstance(GetSharedQuadMesh(), material, name: nameBuffer.Span);
 	}
 
 	void AddCanvasItem(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> viewportSize) {
@@ -407,6 +416,36 @@ sealed partial class LocalSceneBuilder {
 		if (rect.Rotation != Angle.Zero) delta = delta.RotatedAroundOriginBy(-rect.Rotation);
 
 		return Single.Abs(delta.X) <= rect.Size.X * 0.5f && Single.Abs(delta.Y) <= rect.Size.Y * 0.5f;
+	}
+
+	public Ray? GetCanvasQueryRay(ResourceHandle<Scene> handle, XYPair<int> localCoord, DiagonalOrientation2D coordOrigin) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var viewportSize = GetCanvasSceneData(handle).ViewportSize;
+		if (viewportSize.X <= 0 || viewportSize.Y <= 0) return null;
+
+		var centreRelativeCoord = CalculateCanvasCenterRelativeCoord(viewportSize, coordOrigin.AsGeneralOrientation(), localCoord);
+		if (Single.Abs(centreRelativeCoord.X) > viewportSize.X * 0.5f || Single.Abs(centreRelativeCoord.Y) > viewportSize.Y * 0.5f) return null;
+
+		return new Ray(CanvasDimensionConverter.ConvertLocation(centreRelativeCoord, CanvasScene.LayerMax + 1f), -CanvasElementFacingDirection);
+	}
+
+	public Span<ModelInstance> GetCanvasQueryScratchBuffer(ResourceHandle<Scene> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		var instanceCount = _modelInstanceMap[handle].Count;
+		if (_canvasQueryScratchBuffer.Length < instanceCount) {
+			TinyFfrArrayPool<ModelInstance>.Shared.Return(_canvasQueryScratchBuffer, clearArray: true);
+			_canvasQueryScratchBuffer = TinyFfrArrayPool<ModelInstance>.Shared.Rent(instanceCount * 2);
+		}
+		Array.Clear(_canvasQueryScratchBuffer);
+		return _canvasQueryScratchBuffer.AsSpan(0, instanceCount);
+	}
+
+	public bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (typeof(TCanvasObject) == typeof(CanvasTexture)) return _canvasTextureDataMap[handle].ContainsKey(modelInstance.Handle);
+		if (typeof(TCanvasObject) == typeof(CanvasText)) return _canvasTextDataMap[handle].ContainsKey(modelInstance.Handle);
+		return false;
 	}
 
 	public static Location CalculateCanvasLocation(XYPair<int> canvasSizePixels, Orientation2D anchor, XYPair<int> anchorOffset, int layer) {
@@ -878,5 +917,6 @@ sealed partial class LocalSceneBuilder {
 		_canvasItemMapPool.Dispose();
 		_canvasTextureDataMapPool.Dispose();
 		_canvasTextDataMapPool.Dispose();
+		TinyFfrArrayPool<ModelInstance>.Shared.Return(_canvasQueryScratchBuffer);
 	}
 }

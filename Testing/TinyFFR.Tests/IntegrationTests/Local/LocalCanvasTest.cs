@@ -36,11 +36,13 @@ class LocalCanvasTest {
 		using var canvasRenderer = factory.RendererBuilder.CreateRenderer(canvas, window);
 		
 		using var uvTex = factory.AssetLoader.LoadCanvasTexture(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture);
+		using var pinkTex = factory.TextureBuilder.CreateColorMap(new ColorVect(1f, 0f, 1f, 1f), includeAlpha: false, name: "pinktex");
 		using var blendTex = factory.TextureBuilder.CreateCanvasTexture(
 			TexturePattern.GradientHorizontal(ColorVect.RedOpaque, ColorVect.RedTransparent),
 			includeAlpha: true
 		);
 		using var canvasTex = canvas.Add(uvTex);
+		using var secondCanvasTex = canvas.Add(pinkTex);
 		var arrowsAdjustPixelPos = true;
 		var sizeStates = new (float? Fraction, int? Pixels, string Label)[] {
 			(0.05f, null, "Frac 5%"),
@@ -79,6 +81,7 @@ class LocalCanvasTest {
 		canvasTex.CanvasAnchor = Orientation2D.None;
 		canvasTex.PositionPixels = XYPair<int>.Zero;
 		canvasTex.Rotation = Angle.Zero;
+		secondCanvasTex.SetPlacementFraction(Orientation2D.DownRight, (0.1f, 0.1f), (0.1f, 0.1f));
 		ApplyWidthState();
 		ApplyHeightState();
 		ApplyLayerState();
@@ -288,6 +291,24 @@ class LocalCanvasTest {
 			0.02f
 		);
 
+		var queryTextureResults = new CanvasTexture[16];
+		var queryTextResults = new CanvasText[16];
+		using var queryResultText = canvas.Add("[LMB] Query Hits: <none>", fontPen);
+		queryResultText.SetPlacementFraction(
+			Orientation2D.UpLeft,
+			(0.01f, 0.61f),
+			0.02f
+		);
+		string BuildQueryResultText(XYPair<int> renderTargetCoord) {
+			var textureHitCount = canvas.QueryProvider.FindObjectsUnderRenderTargetCoord(renderTargetCoord, queryTextureResults.AsSpan(), hitTestOrigin);
+			var textHitCount = canvas.QueryProvider.FindObjectsUnderRenderTargetCoord(renderTargetCoord, queryTextResults.AsSpan(), hitTestOrigin);
+			if (textureHitCount == 0 && textHitCount == 0) return "[LMB] Query Hits: <none>";
+			var names = new List<string>();
+			for (var i = 0; i < textureHitCount; ++i) names.Add("Texture '" + queryTextureResults[i].GetNameAsNewStringObject() + "'");
+			for (var i = 0; i < textHitCount; ++i) names.Add("Text '" + queryTextResults[i].GetNameAsNewStringObject() + "'");
+			return "[LMB] Query Hits: " + String.Join(", ", names);
+		}
+
 		using var compositor = factory.RendererBuilder.CreateCompositor(window);
 		compositor.Add(renderer, RenderCompositionType.Standard);
 		compositor.Add(canvasRenderer, RenderCompositionType.RetainPreviousScenes);
@@ -425,6 +446,9 @@ class LocalCanvasTest {
 				cursorOverTexture = overTexture;
 				cursorOverChild = overChild;
 				hitTestText.SetText(BuildHitTestText());
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.MouseLeft)) {
+				queryResultText.SetText(BuildQueryResultText(cursorPos));
 			}
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.G)) {
 				hitTestOrigin = hitTestOrigin == DiagonalOrientation2D.UpLeft ? DiagonalOrientation2D.DownLeft : DiagonalOrientation2D.UpLeft;
