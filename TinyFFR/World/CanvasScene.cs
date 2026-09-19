@@ -61,6 +61,9 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 		get => UnderlyingScene.Implementation.GetCanvasCamera(UnderlyingScene.GetHandleWithoutDisposeCheck());
 	}
 
+	/// <summary>
+	/// Returns the <see cref="CanvasSceneQueryProvider"/> for this canvas (that is an object that helps find which canvas objects lie under a given pixel, e.g. for hit-testing the mouse cursor).
+	/// </summary>
 	public CanvasSceneQueryProvider QueryProvider {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(this);
@@ -97,6 +100,7 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 	/// Adds an image to this canvas.
 	/// </summary>
 	/// <param name="t">The texture to draw.</param>
+	/// <param name="name">Optional name for the new object. If omitted, the object takes the name of <paramref name="t"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public CanvasTexture Add(Texture t, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, t, name);
 	/// <summary>
@@ -106,6 +110,7 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 	/// Use this rather than the <see cref="Texture"/> overload where the element needs a material's own behaviour, such as transparency or a custom shader.
 	/// </remarks>
 	/// <param name="m">The material to draw with.</param>
+	/// <param name="name">Optional name for the new object. If omitted, the object takes the name of <paramref name="m"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public CanvasTexture Add(Material m, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, m, name);
 	/// <summary>

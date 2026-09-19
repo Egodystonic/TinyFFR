@@ -397,8 +397,17 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// Invoked via <see cref="ICanvasObject.Contains(XYPair{int}, DiagonalOrientation2D)"/>.
 	/// </summary>
 	bool CanvasObjectContainsPixelCoord(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> coord, DiagonalOrientation2D coordOrigin);
+	/// <summary>
+	/// Invoked via <see cref="CanvasSceneQueryProvider.FindObjectsUnderLocalCoord{TCanvasObject}"/>.
+	/// </summary>
 	Ray? GetCanvasQueryRay(ResourceHandle<Scene> handle, XYPair<int> localCoord, DiagonalOrientation2D coordOrigin);
+	/// <summary>
+	/// Invoked via <see cref="CanvasSceneQueryProvider.FindObjectsUnderLocalCoord{TCanvasObject}"/>.
+	/// </summary>
 	Span<ModelInstance> GetCanvasQueryScratchBuffer(ResourceHandle<Scene> handle);
+	/// <summary>
+	/// Invoked via <see cref="CanvasSceneQueryProvider.FindObjectsUnderLocalCoord{TCanvasObject}"/>.
+	/// </summary>
 	bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance>;
 	/// <summary>
 	/// Invoked via <see cref="ICanvasObject.ActualSizePixels"/>.

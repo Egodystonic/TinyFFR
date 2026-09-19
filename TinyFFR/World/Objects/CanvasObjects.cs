@@ -62,7 +62,7 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 	/// </summary>
 	/// <remarks>
 	/// The purpose-built way to hit-test a canvas element. Pair it with <see cref="CanvasScene.ConvertRenderTargetCoordToLocal"/> to find out whether the user
-	/// clicked on this object.
+	/// clicked on this object. To instead find <i>which</i> objects lie under a coordinate, use <see cref="CanvasScene.QueryProvider"/>.
 	/// </remarks>
 	/// <param name="canvasLocalPixelCoord">The coordinate to test, in canvas pixels.</param>
 	/// <param name="coordOrigin">Which corner of the canvas the coordinate is measured from (or the centre if <see cref="DiagonalOrientation2D.None"/>). Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>

@@ -917,6 +917,6 @@ sealed partial class LocalSceneBuilder {
 		_canvasItemMapPool.Dispose();
 		_canvasTextureDataMapPool.Dispose();
 		_canvasTextDataMapPool.Dispose();
-		TinyFfrArrayPool<ModelInstance>.Shared.Return(_canvasQueryScratchBuffer);
+		TinyFfrArrayPool<ModelInstance>.Shared.Return(_canvasQueryScratchBuffer, clearArray: true);
 	}
 }

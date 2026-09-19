@@ -18,7 +18,8 @@ namespace Egodystonic.TinyFFR.World;
 /// If you want actual vertex-perfect hit-detection, you must implement that yourself (or use <see cref="Renderer.PickModelInstanceFromRenderSurface"/>).
 /// </para>
 /// <para>
-/// Canvas objects and camera-locked objects are <i>not</i> excluded, so querying a canvas scene will return them.
+/// Canvas objects and camera-locked objects are <i>not</i> excluded, so querying a canvas scene will return them. To hit-test a canvas in pixel terms, use
+/// <see cref="CanvasScene.QueryProvider"/> instead.
 /// </para>
 /// </remarks>
 public readonly record struct SceneQueryProvider {
