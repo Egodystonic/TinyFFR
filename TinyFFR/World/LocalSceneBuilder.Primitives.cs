@@ -22,7 +22,7 @@ sealed partial class LocalSceneBuilder {
 	}
 	
 	const float PlaneSize = 200f;
-	const int ArrowSegmentCount = 32;
+	const int ArrowSegmentCount = 256;
 	static readonly float[] LineBandCrossSectionXFractions = { -1f, -0.6f, -0.6f, 0.6f, 0.6f, 1f };
 	static readonly float[] LineBandCrossSectionUCoords = { 0.9f, 0.9f, 0.5f, 0.5f, 0.1f, 0.1f };
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<nuint, PrimitiveData>> _primitiveMap = new();
@@ -181,14 +181,18 @@ sealed partial class LocalSceneBuilder {
 			if (data.LinePoints is not null) {
 				mi.SetMaterial(PaintbrushRequiresBlending(in paintbrush) ? GetSharedLineResources().Materials[1] : GetSharedLineResources().Materials[0]);
 			}
-			else if (data.Arrow is not null) {
-				mi.SetMaterial(PaintbrushRequiresBlending(in paintbrush) ? GetSharedArrowResources().Materials[1] : GetSharedArrowResources().Materials[0]);
+			if (data.Arrow is not null) {
+				ApplyArrowPaintbrush(mi, in paintbrush);
 			}
-			mi.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
-			mi.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
-			mi.SetKeyedMaterialColor(ColorChannel.B, paintbrush.TertiaryColor ?? paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
-			mi.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
-			mi.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
+			else if (mi.Material == _assetLoader.MaterialBuilder.DefaultMaterial) {
+				mi.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
+			}
+			else {
+				mi.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
+				mi.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
+				mi.SetKeyedMaterialColor(ColorChannel.B, paintbrush.TertiaryColor ?? paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
+				mi.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+			}
 		}
 		if (data.LinePoints?.StartPoint is { } lsp) {
 			lsp.SetKeyedMaterialColor(ColorChannel.R, paintbrush.TertiaryColor ?? paintbrush.PrimaryColor);
@@ -640,6 +644,26 @@ sealed partial class LocalSceneBuilder {
 		return _primitiveArrowResources.Value;
 	}
 
+	Material GetArrowMaterial(in PrimitivePaintbrush paintbrush) {
+		if (paintbrush.SecondaryColor is null) return _assetLoader.MaterialBuilder.DefaultMaterial;
+		var resources = GetSharedArrowResources();
+		return PaintbrushRequiresBlending(in paintbrush) ? resources.Materials[1] : resources.Materials[0];
+	}
+
+	void ApplyArrowPaintbrush(ModelInstance instance, in PrimitivePaintbrush paintbrush) {
+		if (paintbrush.SecondaryColor is not { } secondaryColor) {
+			instance.SetDefaultMaterialBaseColor(paintbrush.PrimaryColor);
+			instance.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain3D);
+			return;
+		}
+
+		var material = GetArrowMaterial(in paintbrush);
+		if (instance.Material != material) instance.SetMaterial(material);
+		instance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
+		instance.SetKeyedMaterialColor(ColorChannel.G, secondaryColor);
+		instance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+	}
+
 	public void SetPrimitiveGeometryArrow(ResourceHandle<Scene> handle, nuint primitiveHandle, Location tail, Direction direction, float size, bool constantScreenSize) {
 		if (direction == Direction.None) {
 			direction = Direction.Forward;
@@ -647,19 +671,15 @@ sealed partial class LocalSceneBuilder {
 		}
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 
-		var resources = GetSharedArrowResources();
-
 		var instance = ((IObjectBuilder) _objectBuilder).CreateModelInstance(
-			resources.Meshes[0],
-			PaintbrushRequiresBlending(in paintbrush) ? resources.Materials[1] : resources.Materials[0],
+			GetSharedArrowResources().Meshes[0],
+			GetArrowMaterial(in paintbrush),
 			new ModelInstanceCreationConfig {
 				InitialTransform = new Transform(tail.AsVect(), Direction.Forward >> direction, new Vect(size)),
 				Name = "Primitive Arrow"
 			}
 		);
-		instance.SetKeyedMaterialColor(ColorChannel.R, paintbrush.PrimaryColor);
-		instance.SetKeyedMaterialColor(ColorChannel.G, paintbrush.SecondaryColor ?? paintbrush.PrimaryColor);
-		instance.SetKeyedMaterialColor(ColorChannel.A, ColorVect.BlackTransparent);
+		ApplyArrowPaintbrush(instance, in paintbrush);
 
 		RegisterPrimitive(handle, primitiveHandle, in instance, new PrimitiveArrowData(tail, size, constantScreenSize), in paintbrush);
 	}

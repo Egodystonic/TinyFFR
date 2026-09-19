@@ -64,11 +64,11 @@ public readonly record struct ScenePrimitive : IDisposable {
 	public const ScenePrimitiveSize DefaultSize = ScenePrimitiveSize.Small;
 	internal const float PointToLineSizeRatio = 0.2f;
 	internal const float PointToLineSizeRatioReciprocal = 1f / PointToLineSizeRatio;
-	internal const float PointToArrowSizeRatio = 3f;
-	internal const float ArrowStemLengthFraction = 0.65f;
-	internal const float ArrowStemRadiusFraction = 0.115f;
+	internal const float PointToArrowSizeRatio = 5f;
+	internal const float ArrowStemLengthFraction = 0.55f;
+	internal const float ArrowStemRadiusFraction = 0.085f;
 	internal const float ArrowHeadLengthFraction = 1f - ArrowStemLengthFraction;
-	internal const float ArrowHeadRadiusFraction = 0.23f;
+	internal const float ArrowHeadRadiusFraction = 0.19f;
 	internal const float DefaultGridSize = 2f;
 	internal const float DefaultGridMajorLines = 8f;
 	internal const float DefaultGridMinorLines = 64f;
@@ -77,13 +77,9 @@ public readonly record struct ScenePrimitive : IDisposable {
 	/// </summary>
 	public static readonly PrimitivePaintbrush DefaultPaintbrush2d = new(ColorVect.WhiteOpaque, ColorVect.BlackOpaque);
 	/// <summary>
-	/// The colours used for solid primitives (boxes, spheres) unless others are given: plain white.
+	/// The colours used for solid primitives (boxes, spheres, arrows) unless others are given: plain white.
 	/// </summary>
 	public static readonly PrimitivePaintbrush DefaultPaintbrush3d = new(ColorVect.WhiteOpaque);
-	/// <summary>
-	/// The colours used for arrows: grey to white..
-	/// </summary>
-	public static readonly PrimitivePaintbrush DefaultPaintbrushArrow = new(ColorVect.WhiteOpaque.WithLightnessAdjustedBy(-0.5f), ColorVect.WhiteOpaque);
 	/// <summary>
 	/// The colours used for grid primitives unless others are given: red axes, white major lines and grey minor lines.
 	/// </summary>
@@ -301,7 +297,7 @@ public readonly record struct ScenePrimitive : IDisposable {
 	/// </para>
 	/// <para>
 	/// The arrow's stem and head are proportioned automatically from its length. Its paintbrush's primary colour is used at the tail and its secondary colour at
-	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour, shaded the same way as the box and sphere primitives.
 	/// </para>
 	/// </remarks>
 	/// <param name="tail">Where the tail of the arrow sits.</param>
@@ -318,7 +314,7 @@ public readonly record struct ScenePrimitive : IDisposable {
 	/// </para>
 	/// <para>
 	/// The arrow's stem and head are proportioned automatically from its length. Its paintbrush's primary colour is used at the tail and its secondary colour at
-	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour, shaded the same way as the box and sphere primitives.
 	/// </para>
 	/// </remarks>
 	/// <param name="tail">Where the tail of the arrow sits.</param>
@@ -648,7 +644,7 @@ partial struct Scene {
 	/// <param name="direction">Which way the arrow points, from its tail to its head.</param>
 	/// <param name="size">How large to draw the primitive; this sets the arrow's tail-to-head length.</param>
 	/// <param name="constantScreenSize">If <see langword="true"/>, the primitive keeps the same apparent size on screen regardless of how far away it is, which keeps it visible at any distance.</param>
-	public ScenePrimitive AddPrimitiveArrow(Location tail, Direction direction, ScenePrimitiveSize size = DefaultSize, bool constantScreenSize = DefaultConstantScreenSizeFlag) => AddPrimitiveArrow(tail, direction, in DefaultPaintbrushArrow, ConvertArrowPrimitiveSize(size), constantScreenSize);
+	public ScenePrimitive AddPrimitiveArrow(Location tail, Direction direction, ScenePrimitiveSize size = DefaultSize, bool constantScreenSize = DefaultConstantScreenSizeFlag) => AddPrimitiveArrow(tail, direction, in DefaultPaintbrush3d, ConvertArrowPrimitiveSize(size), constantScreenSize);
 	/// <summary>
 	/// Creates a new primitive in this scene drawing an arrow.
 	/// </summary>
@@ -658,7 +654,7 @@ partial struct Scene {
 	/// </para>
 	/// <para>
 	/// The arrow's stem and head are proportioned automatically from its length. The paintbrush's primary colour is used at the tail and its secondary colour at
-	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour, shaded the same way as the box and sphere primitives.
 	/// </para>
 	/// </remarks>
 	/// <param name="tail">Where the tail of the arrow sits.</param>
@@ -676,7 +672,7 @@ partial struct Scene {
 	/// </para>
 	/// <para>
 	/// The arrow's stem and head are proportioned automatically from its length. The paintbrush's primary colour is used at the tail and its secondary colour at
-	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour.
+	/// the tip of the head, blending smoothly between the two along the arrow; give a paintbrush with no secondary colour to draw the arrow in one solid colour, shaded the same way as the box and sphere primitives.
 	/// </para>
 	/// </remarks>
 	/// <param name="tail">Where the tail of the arrow sits.</param>

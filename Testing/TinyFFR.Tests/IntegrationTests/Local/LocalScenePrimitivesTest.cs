@@ -94,12 +94,12 @@ class LocalScenePrimitivesTest {
 
 		// 13. Arrow (gradient tail->head, world size)
 		var gradientDir = new Direction(-1f, 1f, 0f);
-		Track(scene.AddPrimitiveArrow(CentredArrowTail(-3f, gradientDir), gradientDir, new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.GreenOpaque), ArrowLength, constantScreenSize: false));
+		Track(scene.AddPrimitiveArrow(CentredArrowTail(-3f, gradientDir), gradientDir, new PrimitivePaintbrush(ColorVect.RedOpaque, ColorVect.GreenOpaque), ScenePrimitiveSize.VeryLarge, constantScreenSize: true));
 		ArrowLabel(-3f, "Arrow (gradient)", ColorVect.GreenOpaque);
 
 		// 14. Arrow (paintbrush switched to translucent after creation)
 		var translucentArrow = Track(scene.AddPrimitiveArrow(CentredArrowTail(-1f, Direction.Up), Direction.Up, new PrimitivePaintbrush(cyan), ArrowLength, constantScreenSize: false));
-		translucentArrow.SetPaintbrush(new PrimitivePaintbrush(glass, cyan));
+		translucentArrow.SetPaintbrush(new PrimitivePaintbrush(glass));
 		ArrowLabel(-1f, "Arrow (translucent)", cyan);
 
 		// 15. Arrow (not screen size)
