@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
-/// Represents a viewpoint on a scene: where it is viewed from, which way it is facing, and how the three-dimensional scene is flattened in to a two-dimensional image.
+/// Represents a viewpoint on a scene: where it is viewed from, which way it is facing, and how the three-dimensional scene is flattened in to a two-dimensional image. Created via the factory's <see cref="ICameraBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>

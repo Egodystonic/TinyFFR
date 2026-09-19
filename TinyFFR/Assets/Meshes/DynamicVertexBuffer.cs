@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 /// <summary>
 /// A buffer of vertices and indices whose contents can be rewritten at any time; and in to which "views" or "ranges" of
-/// vertices can be used to create dynamically-alterable <see cref="Mesh"/>es.
+/// vertices can be used to create dynamically-alterable <see cref="Mesh"/>es. Created via the factory's <see cref="IMeshBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>

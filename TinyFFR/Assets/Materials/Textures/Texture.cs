@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 /// <summary>
-/// An image held in video memory, for use as one of a material's maps or on a <see cref="CanvasScene"/>.
+/// An image held in video memory, for use as one of a material's maps or on a <see cref="CanvasScene"/>. Created via the factory's <see cref="ITextureBuilder"/> or loaded via its <see cref="IAssetLoader"/>.
 /// </summary>
 /// <remarks>
 /// <para>

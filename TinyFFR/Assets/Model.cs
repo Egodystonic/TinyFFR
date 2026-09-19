@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 namespace Egodystonic.TinyFFR.Assets;
 
 /// <summary>
-/// One mesh paired with one material; everything needed to describe an object, short of putting it somewhere.
+/// One mesh paired with one material; everything needed to describe an object, short of putting it somewhere. Created via the factory's <see cref="IAssetLoader"/>.
 /// </summary>
 /// <remarks>
 /// <para>

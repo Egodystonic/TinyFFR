@@ -11,7 +11,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 /// <summary>
-/// Represents a live desktop window.
+/// Represents a live desktop window. Created via the factory's <see cref="IWindowBuilder"/>.
 /// </summary>
 public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>, IRenderTarget {
 	readonly ResourceHandle<Window> _handle;

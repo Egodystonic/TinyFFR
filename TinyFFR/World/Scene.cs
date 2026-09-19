@@ -40,7 +40,7 @@ public enum BuiltInSceneBackdrop {
 }
 
 /// <summary>
-/// A collection of everything that can be rendered together: the objects in a world, the lights that illuminate them, the backdrop behind them and any fog between.
+/// A collection of everything that can be rendered together: the objects in a world, the lights that illuminate them, the backdrop behind them and any fog between. Created via the factory's <see cref="ISceneBuilder"/>.
 /// </summary>
 /// <remarks>
 /// Objects and lights must be explicitly added to a scene before they appear in it, and a single object or light may belong to several scenes at once.

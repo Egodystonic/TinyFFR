@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 /// <summary>
-/// A string of text placed in a scene, free to be positioned and oriented in the 3D world like any other object.
+/// A string of text placed in a scene, free to be positioned and oriented in the 3D world like any other object. Created via the factory's <see cref="IObjectBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>

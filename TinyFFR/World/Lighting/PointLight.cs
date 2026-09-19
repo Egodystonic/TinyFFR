@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
-/// A light that radiates outward in every direction from a single point, like a bare bulb.
+/// A light that radiates outward in every direction from a single point, like a bare bulb. Created via the factory's <see cref="ILightBuilder"/>.
 /// </summary>
 /// <remarks>
 /// Point lights are the workhorse of scene lighting: lamps, fires, torches and glowing objects are all point lights. Their brightness falls away with distance, and

@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 /// <summary>
-/// The appearance of a surface: i.e. which textures it uses and thus how it responds to light.
+/// The appearance of a surface: i.e. which textures it uses and thus how it responds to light. Created via the factory's <see cref="IMaterialBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>

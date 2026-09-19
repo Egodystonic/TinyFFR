@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 /// <summary>
-/// A particular combination of colours for drawing text with: Fill, outline, background.
+/// A particular combination of colours for drawing text with: Fill, outline, background. Created via <see cref="Font.CreatePen(ColorVect)"/>.
 /// </summary>
 /// <remarks>
 /// <para>

@@ -39,7 +39,7 @@ public enum BuiltInFontPenStyle {
 }
 
 /// <summary>
-/// A typeface loaded and prepared for drawing text.
+/// A typeface loaded and prepared for drawing text. Loaded via the factory's <see cref="IAssetLoader"/>.
 /// </summary>
 /// <remarks>
 /// <para>

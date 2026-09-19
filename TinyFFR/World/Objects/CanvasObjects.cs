@@ -197,7 +197,7 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecialization<TSelf, TBase> where TSelf : struct, ICanvasObject<TSelf, TBase> where TBase : IResource<TBase>;
 
 /// <summary>
-/// An image drawn flat on a <see cref="CanvasScene"/>.
+/// An image drawn flat on a <see cref="CanvasScene"/>. Created by adding a texture or material to a <see cref="CanvasScene"/>.
 /// </summary>
 /// <remarks>
 /// As well as the placement members every canvas object has, this offers control over which part of its source image is shown (the texture offset and extent
@@ -619,7 +619,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 }
 
 /// <summary>
-/// A piece of text drawn flat on a <see cref="CanvasScene"/>.
+/// A piece of text drawn flat on a <see cref="CanvasScene"/>. Created by adding text to a <see cref="CanvasScene"/>.
 /// </summary>
 /// <remarks>
 /// By default the height of the element grows with the number of lines the text occupies; set

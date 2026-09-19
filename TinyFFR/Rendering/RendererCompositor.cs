@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 /// <summary>
 /// A renderer compositor <i>composites</i> (combines) multiple <see cref="Renderer"/>'s outputs in to a single final result on
-/// a target <see cref="Window"/> or <see cref="RenderOutputBuffer"/>. 
+/// a target <see cref="Window"/> or <see cref="RenderOutputBuffer"/>. Created via the factory's <see cref="IRendererBuilder"/>. 
 /// </summary>
 /// <remarks>
 /// <para>

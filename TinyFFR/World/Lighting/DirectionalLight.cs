@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
-/// A light that arrives from one direction across the entire scene, like sunlight.
+/// A light that arrives from one direction across the entire scene, like sunlight. Created via the factory's <see cref="ILightBuilder"/>.
 /// </summary>
 /// <remarks>
 /// A directional light has no position and no falloff: it is treated as coming from infinitely far away, so every object in the scene is lit from the same angle

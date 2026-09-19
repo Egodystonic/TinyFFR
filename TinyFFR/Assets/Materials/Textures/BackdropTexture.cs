@@ -7,7 +7,7 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 /// <summary>
-/// The surroundings of a scene: the sky visible behind it, and the ambient light that sky casts on everything in it.
+/// The surroundings of a scene: the sky visible behind it, and the ambient light that sky casts on everything in it. Loaded via the factory's <see cref="IAssetLoader"/>.
 /// </summary>
 /// <remarks>
 /// <para>

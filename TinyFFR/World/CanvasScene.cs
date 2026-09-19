@@ -11,7 +11,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
-/// A scene used for flat, two-dimensional content drawn over the screen/render: text, images and other user-interface elements.
+/// A scene used for flat, two-dimensional content drawn over the screen/render: text, images and other user-interface elements. Created via the factory's <see cref="ISceneBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>

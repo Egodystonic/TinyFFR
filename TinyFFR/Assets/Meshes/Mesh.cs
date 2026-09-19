@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 /// <summary>
-/// The geometry of an object, i.e. its vertices and the triangles that join them.
+/// The geometry of an object, i.e. its vertices and the triangles that join them. Created via the factory's <see cref="IMeshBuilder"/> or loaded via its <see cref="IAssetLoader"/>.
 /// </summary>
 /// <remarks>
 /// <para>

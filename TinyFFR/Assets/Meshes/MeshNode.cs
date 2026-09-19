@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 /// <summary>
-/// One joint in a mesh's skeleton, which animations move and vertices follow.
+/// One joint in a mesh's skeleton, which animations move and vertices follow. Obtained via a mesh's <see cref="Mesh.Skeleton"/>.
 /// </summary>
 /// <remarks>
 /// <para>

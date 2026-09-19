@@ -11,7 +11,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 /// <summary>
-/// A string of text placed in a scene that continually turns to face the camera, so that it is always readable.
+/// A string of text placed in a scene that continually turns to face the camera, so that it is always readable. Created via the factory's <see cref="IObjectBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>

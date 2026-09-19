@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
-/// A light that radiates from a single point but is confined to a cone, like a torch or a stage spotlight.
+/// A light that radiates from a single point but is confined to a cone, like a torch or a stage spotlight. Created via the factory's <see cref="ILightBuilder"/>.
 /// </summary>
 /// <remarks>
 /// A spot light is a <see cref="PointLight"/> with a direction and a cone: <see cref="ConeDirection"/> aims it, <see cref="ConeAngle"/> sets how wide the pool of

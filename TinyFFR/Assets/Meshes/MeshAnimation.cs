@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 /// <summary>
-/// One named animation belonging to a mesh, which can pose any object using that mesh at any moment in its timeline.
+/// One named animation belonging to a mesh, which can pose any object using that mesh at any moment in its timeline. Obtained via a mesh's <see cref="Mesh.Animations"/>.
 /// </summary>
 /// <remarks>
 /// <para>

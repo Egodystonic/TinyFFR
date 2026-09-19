@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 /// <summary>
 /// Represents a target buffer that a <see cref="Renderer"/> or <see cref="RendererCompositor"/> can render in to.
-/// The rendered data can then be used as a <see cref="Texture"/> inside a scene or read from/written to disc.
+/// The rendered data can then be used as a <see cref="Texture"/> inside a scene or read from/written to disc. Created via the factory's <see cref="IRendererBuilder"/>.
 /// </summary>
 public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOutputBuffer, IRenderOutputBufferImplProvider>, IRenderTarget {
 	readonly ResourceHandle<RenderOutputBuffer> _handle;

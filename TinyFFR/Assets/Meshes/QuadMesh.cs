@@ -11,7 +11,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 /// <summary>
-/// A mesh that is a single flat rectangle, presented as its own type so that it can be used without restating that it is flat.
+/// A mesh that is a single flat rectangle, presented as its own type so that it can be used without restating that it is flat. Created via the factory's <see cref="IMeshBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -147,7 +147,7 @@ public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IStri
 public interface IQuadInstance : IDisposable, IStringSpanNameEnabled;
 
 /// <summary>
-/// An instance of a <see cref="QuadMesh"/>: One flat rectangle placed in a scene, free to be positioned and oriented like any other object.
+/// An instance of a <see cref="QuadMesh"/>: One flat rectangle placed in a scene, free to be positioned and oriented like any other object. Created via the factory's <see cref="IObjectBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -401,7 +401,7 @@ public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<Qua
 }
 
 /// <summary>
-/// An instance of a <see cref="QuadMesh"/>: One flat rectangle placed in a scene that continually turns to face the camera, so that it never appears edge-on.
+/// An instance of a <see cref="QuadMesh"/>: One flat rectangle placed in a scene that continually turns to face the camera, so that it never appears edge-on. Created via the factory's <see cref="IObjectBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>

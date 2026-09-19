@@ -17,7 +17,7 @@ namespace Egodystonic.TinyFFR.Rendering;
 public readonly record struct PixelPickResult(ModelInstance ModelInstance, Location Position);
 
 /// <summary>
-/// A renderer is what actually produces a visualization of your target scene in a window or render buffer.
+/// A renderer is what actually produces a visualization of your target scene in a window or render buffer. Created via the factory's <see cref="IRendererBuilder"/>.
 /// </summary>
 public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplProvider> {
 	readonly ResourceHandle<Renderer> _handle;

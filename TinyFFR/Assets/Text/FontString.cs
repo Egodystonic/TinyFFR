@@ -10,7 +10,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 /// <summary>
-/// A string of text that has been laid out with a particular font, ready to be rendered.
+/// A string of text that has been laid out with a particular font, ready to be rendered. Created via <see cref="Font.CreateString"/>.
 /// </summary>
 /// <remarks>
 /// <para>

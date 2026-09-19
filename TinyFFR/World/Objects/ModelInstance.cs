@@ -127,7 +127,7 @@ public enum DefaultMaterialShadingStyle {
 
 /// <summary>
 /// A single occurrence of a model in a scene: a <see cref="Assets.Meshes.Mesh"/> giving its shape, a <see cref="Assets.Materials.Material"/> giving its surface,
-/// and a transform (<see cref="Position"/>/<see cref="Scaling"/>/<see cref="Rotation"/> and/or <see cref="Transform"/>) placing it in the world.
+/// and a transform (<see cref="Position"/>/<see cref="Scaling"/>/<see cref="Rotation"/> and/or <see cref="Transform"/>) placing it in the world. Created via the factory's <see cref="IObjectBuilder"/>.
 /// </summary>
 /// <remarks>
 /// The mesh and material are shared resources, whilst the instance is cheap; this is what lets a scene contain a thousand copies of the same tree without holding a

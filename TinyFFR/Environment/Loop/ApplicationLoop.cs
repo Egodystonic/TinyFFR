@@ -11,7 +11,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.Environment;
 
 /// <summary>
-/// A resource that helps maintain a target framerate by tracking loop timing states, and helps collect/iterate local input values.
+/// A resource that helps maintain a target framerate by tracking loop timing states, and helps collect/iterate local input values. Created via the factory's <see cref="IApplicationLoopBuilder"/>.
 /// </summary>
 public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IApplicationLoopImplProvider> {
 	readonly ResourceHandle<ApplicationLoop> _handle;

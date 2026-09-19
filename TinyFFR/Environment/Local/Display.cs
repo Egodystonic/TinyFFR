@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 /// <summary>
-/// Represents one of the displays (monitors) connected to the local machine.
+/// Represents one of the displays (monitors) connected to the local machine. Obtained via the factory's <see cref="IDisplayDiscoverer"/>.
 /// </summary>
 public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 	readonly ResourceHandle<Display> _handle;
