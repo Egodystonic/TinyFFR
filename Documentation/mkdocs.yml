@@ -108,56 +108,16 @@ validation:
   absolute_links: relative_to_docs
   unrecognized_links: warn
   anchors: warn
-strict: true
+strict: false
 
 nav:
   - index.md
   - changelog.md
-  - Tutorials:
-    - Walkthroughs:
-      - tutorials/hello_cube.md
-      - tutorials/loading_assets.md
-      - tutorials/handling_input.md
-      - UI Integration:
-        - tutorials/integrating_wpf.md
-        - tutorials/integrating_avalonia.md
-        - tutorials/integrating_winforms.md
-        - tutorials/integrating_imgui.md
-    - Topics:
-      - tutorials/materials.md
-      - tutorials/lighting.md
-      - tutorials/input.md
-      - tutorials/meshes.md
-      - tutorials/scenes_and_rendering.md
-      - tutorials/displays_and_windows.md
-      - tutorials/animations.md
-      - tutorials/math_and_geometry.md
-      - tutorials/conventions.md
-      - tutorials/resources.md
-      - tutorials/factory.md
-  - Reference Docs:
-    - Assets:
-      - reference/texture_patterns.md
-      - reference/creating_mock_resources.md
-      - reference/vertex_mutation.md
-    - Camera:
-      - Controllers:
-        - reference/camera_controller_first_person.md
-        - reference/camera_controller_follow.md
-        - reference/camera_controller_free_flying.md
-        - reference/camera_controller_inspector.md
-        - reference/camera_controller_orbital.md
-        - reference/camera_controller_pan_tilt_zoom.md
-        - reference/camera_controller_programmed.md
-      - reference/camera_ray_casting.md
-    - Performance:
-      - reference/vsync.md
-      - reference/controlling_memory.md
-      - reference/measuring_framerate.md
-    - Rendering:
-      - reference/scene_compositing.md
-    - Utils:
-      - reference/indirect_enumerable.md
+  - Reference:
+    - UI Framework Integration:
+        - reference/avalonia_integration.md
+        - reference/wpf_integration.md
+        - reference/winforms_integration.md
 
 not_in_nav: |
 

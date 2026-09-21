@@ -41,7 +41,7 @@ static partial class TestMain {
 		//			Some values depend on others; for example if you set "builder.Context.Factory = null;" no other resources will be created by default.
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
-
+		var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { HeadlessMode = true });
 	}
 
 	public static void StartTest(TestContext context) {
