@@ -23,7 +23,7 @@ static partial class SmokeSections {
 					new Cuboid(0.8f),
 					centreTextureOrigin: false,
 					new MeshGenerationConfig { TextureTransform = Transform2D.None },
-					new MeshCreationConfig { Name = "Benchmark Configured Cuboid Mesh", GenerateWireframeData = true }
+					new MeshCreationConfig { Name = "Benchmark Configured Cuboid Mesh", WireframeGenerationMode = WireframeGenerationMode.Enabled }
 				);
 
 				using var polygonGroup = Factory.MeshBuilder.AllocateNewPolygonGroup();

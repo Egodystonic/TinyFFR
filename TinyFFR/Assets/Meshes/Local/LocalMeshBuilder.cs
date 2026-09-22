@@ -49,7 +49,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshWireframeBufferData = new();
-	readonly ArrayPoolBackedMap<(int LowerIndex, int HigherIndex), int> _wireframeEdgeScratchMap = new();
+	readonly ArrayPoolBackedMap<(Location Lower, Location Higher), int> _wireframeEdgeScratchMap = new();
 	readonly ArrayPoolBackedObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
 	readonly ArrayPoolBackedObjectPool<LocalMeshAnimationTable, LocalMeshBuilder> _meshAnimationTablePool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshAnimationTable> _activeMeshAnimationTables = new();
@@ -180,14 +180,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		}
 	}
 
-	internal static bool GetShouldGenerateWireframeData<TVertex>(in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
-		return config.GenerateWireframeData
-			&& !config.AllowsPerInstanceVertexMutation
-			&& typeof(TVertex) == typeof(MeshVertex);
-	}
-
-	internal static bool GetShouldHideCoplanarWireframeEdges<TVertex>(in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
-		return GetShouldGenerateWireframeData<TVertex>(in config) && config.WireframeHidesCoplanarEdges;
+	internal static WireframeGenerationMode GetEffectiveWireframeGenerationMode<TVertex>(in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
+		if (config.AllowsPerInstanceVertexMutation || typeof(TVertex) != typeof(MeshVertex)) return WireframeGenerationMode.Disabled;
+		return config.WireframeGenerationMode;
 	}
 
 	internal static void FlipTriangleWindings(Span<VertexTriangle> triangles) {
@@ -241,8 +236,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ValidateMeshData(vertices, triangles, in config);
 
-		var generateWireframeData = GetShouldGenerateWireframeData<TVertex>(in config);
-		var hideCoplanarWireframeEdges = GetShouldHideCoplanarWireframeEdges<TVertex>(in config);
+		var wireframeMode = GetEffectiveWireframeGenerationMode<TVertex>(in config);
 
 		_prevHandleId++;
 		var handle = new ResourceHandle<Mesh>(_prevHandleId);
@@ -270,14 +264,13 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			triangles.Length,
 			boundingBox,
 			config.AllowsPerInstanceVertexMutation,
-			generateWireframeData,
-			hideCoplanarWireframeEdges,
+			wireframeMode,
 			config.Name,
 			boneCount
 		);
 	}
 
-	internal Mesh CreateMeshFromPreValidatedAndTransformedData<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, bool hideCoplanarWireframeEdges, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
+	internal Mesh CreateMeshFromPreValidatedAndTransformedData<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, WireframeGenerationMode wireframeMode, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
@@ -295,18 +288,17 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			triangles.Length,
 			boundingBox,
 			allowsPerInstanceVertexMutation,
-			generateWireframeData,
-			hideCoplanarWireframeEdges,
+			wireframeMode,
 			name,
 			boneCount
 		);
 	}
 
-	Mesh CompleteMeshCreation<TVertex>(ResourceHandle<Mesh> handle, TemporaryLoadSpaceBuffer tempVertexBuffer, TemporaryLoadSpaceBuffer tempIndexBuffer, int vertexCount, int triangleCount, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, bool hideCoplanarWireframeEdges, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
+	Mesh CompleteMeshCreation<TVertex>(ResourceHandle<Mesh> handle, TemporaryLoadSpaceBuffer tempVertexBuffer, TemporaryLoadSpaceBuffer tempIndexBuffer, int vertexCount, int triangleCount, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, WireframeGenerationMode wireframeMode, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		var indexBufferCount = checked(triangleCount * 3);
 
-		if (generateWireframeData) {
-			GenerateAndStoreWireframeBuffers(handle, tempVertexBuffer.AsSpan<MeshVertex>(), tempIndexBuffer.AsSpan<VertexTriangle>(), hideCoplanarWireframeEdges);
+		if (wireframeMode != WireframeGenerationMode.Disabled) {
+			GenerateAndStoreWireframeBuffers(handle, tempVertexBuffer.AsSpan<MeshVertex>(), tempIndexBuffer.AsSpan<VertexTriangle>(), wireframeMode);
 		}
 
 		var bakeryVertexBufferCopy = GetBakeryBufferCopyIfEnabled(MemoryMarshal.AsBytes(tempVertexBuffer.AsSpan<TVertex>()[..vertexCount]));
@@ -336,7 +328,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		if (bakeryVertexBufferCopy is { } bvbc && bakeryIndexBufferCopy is { } bibc) {
 			try {
-				RegisterInBakery<TVertex>(result, bvbc.Span, bibc.Span, vertexCount, triangleCount, boundingBox, boneCount, allowsPerInstanceVertexMutation, generateWireframeData, hideCoplanarWireframeEdges, name);
+				RegisterInBakery<TVertex>(result, bvbc.Span, bibc.Span, vertexCount, triangleCount, boundingBox, boneCount, allowsPerInstanceVertexMutation, wireframeMode, name);
 			}
 			finally {
 				bvbc.Dispose();
@@ -354,7 +346,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return result;
 	}
 
-	void RegisterInBakery<TVertex>(Mesh resource, ReadOnlySpan<byte> vertexData, ReadOnlySpan<byte> indexData, int vertexCount, int triangleCount, PositionedCuboid boundingBox, int boneCount, bool allowsPerInstanceVertexMutation, bool generateWireframeData, bool hideCoplanarWireframeEdges, ReadOnlySpan<char> name) where TVertex : unmanaged, IMeshVertex {
+	void RegisterInBakery<TVertex>(Mesh resource, ReadOnlySpan<byte> vertexData, ReadOnlySpan<byte> indexData, int vertexCount, int triangleCount, PositionedCuboid boundingBox, int boneCount, bool allowsPerInstanceVertexMutation, WireframeGenerationMode wireframeMode, ReadOnlySpan<char> name) where TVertex : unmanaged, IMeshVertex {
 		var bakery = _globals.Bakery;
 
 		bakery.StartResourceBake(resource);
@@ -365,8 +357,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoundingBox, boundingBox);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoneCount, boneCount);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.AllowsPerInstanceVertexMutation, allowsPerInstanceVertexMutation);
-		bakery.AddResourceBakeValue(resource, MeshBakingSchema.GeneratesWireframeData, generateWireframeData);
-		bakery.AddResourceBakeValue(resource, MeshBakingSchema.WireframeHidesCoplanarEdges, hideCoplanarWireframeEdges);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.WireframeGenerationMode, wireframeMode);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.VertexData, vertexData);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.IndexData, indexData);
 		bakery.CompleteResourceBakePendingFinalization(resource, this, &FinalizeBake);
@@ -436,7 +427,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return _activeMeshWireframeBufferData.TryGetValue(handle, out var data) ? data : null;
 	}
 
-	void GenerateAndStoreWireframeBuffers(ResourceHandle<Mesh> handle, ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, bool hideCoplanarEdges) {
+	void GenerateAndStoreWireframeBuffers(ResourceHandle<Mesh> handle, ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, WireframeGenerationMode mode) {
 		var numIndices = checked(triangles.Length * 3);
 		var wireframeVerticesBuffer = _globals.CreateGpuHoldingBuffer<MeshVertexPrimitive>(numIndices);
 		var wireframeTrianglesBuffer = _globals.CreateGpuHoldingBuffer<VertexTriangle>(triangles.Length);
@@ -446,9 +437,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		PooledHeapMemory<byte>? hiddenEdgeMasks = null;
 		try {
-			if (hideCoplanarEdges && triangles.Length > 0) {
+			if (mode is WireframeGenerationMode.EnabledWithEdgeDeduplication or WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing && triangles.Length > 0) {
 				hiddenEdgeMasks = _globals.HeapPool.Borrow<byte>(triangles.Length);
-				CalculateCoplanarSharedEdgeMasks(vertices, triangles, hiddenEdgeMasks.Value.Span);
+				CalculateSharedEdgeMasks(vertices, triangles, hiddenEdgeMasks.Value.Span, mode);
 			}
 
 			for (var i = 0; i < triangles.Length; ++i) {
@@ -491,7 +482,29 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	internal const byte WireframeEdgeMaskCa = 0b100;
 	const float WireframeCoplanarNormalDotThreshold = 0.9999f;
 
-	void CalculateCoplanarSharedEdgeMasks(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, Span<byte> masks) {
+	void CalculateSharedEdgeMasks(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, Span<byte> masks, WireframeGenerationMode mode) {
+		static bool IsLexicographicallyLower(Location a, Location b) {
+			// ReSharper disable CompareOfFloatsByEqualityOperator Deliberate comparison to prevent degenerate answers
+			if (a.X != b.X) return a.X < b.X;
+			if (a.Y != b.Y) return a.Y < b.Y;
+			return a.Z < b.Z;
+			// ReSharper restore CompareOfFloatsByEqualityOperator
+		}
+		
+		static Direction CalculateTriangleNormal(ReadOnlySpan<MeshVertex> vertices, VertexTriangle triangle) {
+			var a = vertices[triangle.IndexA].Location;
+			var b = vertices[triangle.IndexB].Location;
+			var c = vertices[triangle.IndexC].Location;
+			return (a >> b).Cross(a >> c).Direction;
+		}
+		
+		static bool AreTrianglesCoplanarAndSameFacing(ReadOnlySpan<MeshVertex> vertices, VertexTriangle a, VertexTriangle b) {
+			var normalA = CalculateTriangleNormal(vertices, a);
+			var normalB = CalculateTriangleNormal(vertices, b);
+			if (normalA == Direction.None || normalB == Direction.None) return false;
+			return normalA.Dot(normalB) >= WireframeCoplanarNormalDotThreshold;
+		}
+		
 		masks.Clear();
 		_wireframeEdgeScratchMap.Clear();
 		try {
@@ -503,14 +516,24 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 						1 => (triangle.IndexB, triangle.IndexC),
 						_ => (triangle.IndexC, triangle.IndexA)
 					};
-					var key = startIndex < endIndex ? (startIndex, endIndex) : (endIndex, startIndex);
+					var startLocation = vertices[startIndex].Location;
+					var endLocation = vertices[endIndex].Location;
+					var key = IsLexicographicallyLower(startLocation, endLocation) ? (startLocation, endLocation) : (endLocation, startLocation);
 					if (!_wireframeEdgeScratchMap.TryGetValue(key, out var owner)) {
 						_wireframeEdgeScratchMap.Add(key, t * 3 + e);
 						continue;
 					}
 
+					if (mode == WireframeGenerationMode.EnabledWithEdgeDeduplication) {
+						masks[t] |= (byte) (1 << e);
+						continue;
+					}
+
 					var ownerTriangleIndex = owner / 3;
-					if (!AreTrianglesCoplanarAndSameFacing(vertices, triangle, triangles[ownerTriangleIndex])) continue;
+					if (!AreTrianglesCoplanarAndSameFacing(vertices, triangle, triangles[ownerTriangleIndex])) {
+						if (mode == WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing) masks[t] |= (byte) (1 << e);
+						continue;
+					}
 					masks[t] |= (byte) (1 << e);
 					masks[ownerTriangleIndex] |= (byte) (1 << (owner % 3));
 				}
@@ -519,23 +542,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		finally {
 			_wireframeEdgeScratchMap.Clear();
 		}
-	}
-
-	static bool AreTrianglesCoplanarAndSameFacing(ReadOnlySpan<MeshVertex> vertices, VertexTriangle a, VertexTriangle b) {
-		var normalA = CalculateTriangleNormal(vertices, a);
-		var normalB = CalculateTriangleNormal(vertices, b);
-		if (normalA is not { } nA || normalB is not { } nB) return false;
-		return Vector3.Dot(nA, nB) >= WireframeCoplanarNormalDotThreshold;
-	}
-
-	static Vector3? CalculateTriangleNormal(ReadOnlySpan<MeshVertex> vertices, VertexTriangle triangle) {
-		var a = vertices[triangle.IndexA].Location.ToVector3();
-		var b = vertices[triangle.IndexB].Location.ToVector3();
-		var c = vertices[triangle.IndexC].Location.ToVector3();
-		var cross = Vector3.Cross(b - a, c - a);
-		var lengthSquared = cross.LengthSquared();
-		if (!Single.IsNormal(lengthSquared)) return null;
-		return cross / MathF.Sqrt(lengthSquared);
 	}
 
 	public PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle) {

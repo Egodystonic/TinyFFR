@@ -305,9 +305,9 @@ public interface IMeshBuilder {
 			var b = baseVertices[baseTriangle.IndexB].Location;
 			var c = baseVertices[baseTriangle.IndexC].Location;
 			
-			var ab = (a + (a >> b).ScaledBy(0.5f)).AsVect().AsUnitLength.AsLocation();
-			var bc = (b + (b >> c).ScaledBy(0.5f)).AsVect().AsUnitLength.AsLocation();
-			var ca = (c + (c >> a).ScaledBy(0.5f)).AsVect().AsUnitLength.AsLocation();
+			var ab = (a.AsVect() + b.AsVect()).AsUnitLength.AsLocation();
+			var bc = (b.AsVect() + c.AsVect()).AsUnitLength.AsLocation();
+			var ca = (c.AsVect() + a.AsVect()).AsUnitLength.AsLocation();
 
 			var aUv = baseVertices[baseTriangle.IndexA].TextureCoords;
 			var bUv = baseVertices[baseTriangle.IndexB].TextureCoords;

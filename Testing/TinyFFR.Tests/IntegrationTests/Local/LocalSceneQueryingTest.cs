@@ -68,13 +68,13 @@ class LocalSceneQueryingTest {
 			new Cuboid(0.8f),
 			centreTextureOrigin: false,
 			new MeshGenerationConfig { TextureTransform = Transform2D.None },
-			new MeshCreationConfig { Name = "Query Test Cuboid", GenerateWireframeData = true }
+			new MeshCreationConfig { Name = "Query Test Cuboid", WireframeGenerationMode = WireframeGenerationMode.Enabled }
 		);
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(
 			new Sphere(0.45f),
 			subdivisionLevel: 4,
 			new MeshGenerationConfig { TextureTransform = Transform2D.None },
-			new MeshCreationConfig { Name = "Query Test Sphere", GenerateWireframeData = true }
+			new MeshCreationConfig { Name = "Query Test Sphere", WireframeGenerationMode = WireframeGenerationMode.Enabled }
 		);
 
 		var instances = new List<ModelInstance>();

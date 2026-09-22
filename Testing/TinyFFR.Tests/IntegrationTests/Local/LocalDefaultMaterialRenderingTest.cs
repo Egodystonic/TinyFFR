@@ -36,8 +36,8 @@ class LocalDefaultMaterialRenderingTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Default Mat Rendering Test (Space / S / 0 / 1 / 2)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 3, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
-		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
+		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 3, config: new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing }, generationConfig: new());
+		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, config: new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing }, generationConfig: new());
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Starfield);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		using var camController = camera.CreateController<InspectorCameraController>();

@@ -116,8 +116,7 @@ class MeshConfigTest {
 			BoundingBoxOverride = null,
 			BoundingBoxAdditionalMargin = 0f,
 			AllowsPerInstanceVertexMutation = true,
-			GenerateWireframeData = false,
-			WireframeHidesCoplanarEdges = true,
+			WireframeGenerationMode = WireframeGenerationMode.Enabled,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new MeshCreationConfig {
@@ -129,8 +128,7 @@ class MeshConfigTest {
 			BoundingBoxOverride = PositionedCuboid.FromHalfDimensions(1f, 2f, 3f, new Location(4f, 5f, 6f)),
 			BoundingBoxAdditionalMargin = 0.5f,
 			AllowsPerInstanceVertexMutation = false,
-			GenerateWireframeData = true,
-			WireframeHidesCoplanarEdges = false,
+			WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplication,
 			Name = "BBBbbb"
 		};
 
@@ -143,8 +141,7 @@ class MeshConfigTest {
 			Assert.AreEqual(expected.BoundingBoxOverride, actual.BoundingBoxOverride);
 			Assert.AreEqual(expected.BoundingBoxAdditionalMargin, actual.BoundingBoxAdditionalMargin);
 			Assert.AreEqual(expected.AllowsPerInstanceVertexMutation, actual.AllowsPerInstanceVertexMutation);
-			Assert.AreEqual(expected.GenerateWireframeData, actual.GenerateWireframeData);
-			Assert.AreEqual(expected.WireframeHidesCoplanarEdges, actual.WireframeHidesCoplanarEdges);
+			Assert.AreEqual(expected.WireframeGenerationMode, actual.WireframeGenerationMode);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -161,8 +158,7 @@ class MeshConfigTest {
 			.Obj(default(PositionedCuboid))
 			.Float(0f)
 			.Bool(true)
-			.Bool(false)
-			.Bool(true)
+			.Int((int) WireframeGenerationMode.Enabled)
 			.String("Aa Aa")
 			.For(testConfigA);
 
@@ -176,8 +172,7 @@ class MeshConfigTest {
 			.Obj(PositionedCuboid.FromHalfDimensions(1f, 2f, 3f, new Location(4f, 5f, 6f)))
 			.Float(0.5f)
 			.Bool(false)
-			.Bool(true)
-			.Bool(false)
+			.Int((int) WireframeGenerationMode.EnabledWithEdgeDeduplication)
 			.String("BBBbbb")
 			.For(testConfigB);
 
@@ -190,8 +185,7 @@ class MeshConfigTest {
 			.Including(nameof(MeshCreationConfig.BoundingBoxOverride))
 			.Including(nameof(MeshCreationConfig.BoundingBoxAdditionalMargin))
 			.Including(nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation))
-			.Including(nameof(MeshCreationConfig.GenerateWireframeData))
-			.Including(nameof(MeshCreationConfig.WireframeHidesCoplanarEdges))
+			.Including(nameof(MeshCreationConfig.WireframeGenerationMode))
 			.Including(nameof(MeshCreationConfig.Name))
 			.End();
 	}
@@ -208,8 +202,7 @@ class MeshConfigTest {
 				BoundingBoxOverride = null,
 				BoundingBoxAdditionalMargin = 0.1f,
 				AllowsPerInstanceVertexMutation = true,
-				GenerateWireframeData = false,
-				WireframeHidesCoplanarEdges = true,
+				WireframeGenerationMode = WireframeGenerationMode.Enabled,
 				Name = "test mesh"
 			},
 			ReadConfig = new MeshReadConfig {
@@ -231,8 +224,7 @@ class MeshConfigTest {
 			Assert.AreEqual(expected.CreationConfig.BoundingBoxOverride, actual.CreationConfig.BoundingBoxOverride);
 			Assert.AreEqual(expected.CreationConfig.BoundingBoxAdditionalMargin, actual.CreationConfig.BoundingBoxAdditionalMargin);
 			Assert.AreEqual(expected.CreationConfig.AllowsPerInstanceVertexMutation, actual.CreationConfig.AllowsPerInstanceVertexMutation);
-			Assert.AreEqual(expected.CreationConfig.GenerateWireframeData, actual.CreationConfig.GenerateWireframeData);
-			Assert.AreEqual(expected.CreationConfig.WireframeHidesCoplanarEdges, actual.CreationConfig.WireframeHidesCoplanarEdges);
+			Assert.AreEqual(expected.CreationConfig.WireframeGenerationMode, actual.CreationConfig.WireframeGenerationMode);
 			Assert.IsTrue(expected.CreationConfig.Name.SequenceEqual(actual.CreationConfig.Name));
 			Assert.AreEqual(expected.ReadConfig.FixCommonExportErrors, actual.ReadConfig.FixCommonExportErrors);
 			Assert.AreEqual(expected.ReadConfig.OptimizeForGpu, actual.ReadConfig.OptimizeForGpu);

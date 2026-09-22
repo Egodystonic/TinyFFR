@@ -68,8 +68,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		public int BoneCount { get; set; } = 0;
 		public bool IsSkeletal { get; set; } = false;
 		public bool AllowsPerInstanceVertexMutation { get; set; } = false;
-		public bool GenerateWireframeData { get; set; } = false;
-		public bool WireframeHidesCoplanarEdges { get; set; } = false;
+		public WireframeGenerationMode WireframeGenerationMode { get; set; } = WireframeGenerationMode.Disabled;
 		public PositionedCuboid BoundingBox { get; set; } = default;
 		public Vect OriginTranslation { get; set; } = Vect.Zero;
 		public float LinearRescalingFactor { get; set; } = 1f;
@@ -94,8 +93,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			BoneCount = 0;
 			IsSkeletal = false;
 			AllowsPerInstanceVertexMutation = false;
-			GenerateWireframeData = false;
-			WireframeHidesCoplanarEdges = false;
+			WireframeGenerationMode = WireframeGenerationMode.Disabled;
 			BoundingBox = default;
 			OriginTranslation = Vect.Zero;
 			LinearRescalingFactor = 1f;
@@ -349,8 +347,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		buffers.VertexCount = vertexCount;
 		buffers.TriangleCount = triangleCount;
 		buffers.AllowsPerInstanceVertexMutation = meshConfig.AllowsPerInstanceVertexMutation;
-		buffers.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<TVertex>(in meshConfig);
-		buffers.WireframeHidesCoplanarEdges = LocalMeshBuilder.GetShouldHideCoplanarWireframeEdges<TVertex>(in meshConfig);
+		buffers.WireframeGenerationMode = LocalMeshBuilder.GetEffectiveWireframeGenerationMode<TVertex>(in meshConfig);
 
 		fixed (byte* vertexBufferPtr = vertexData.Span)
 		fixed (byte* triangleBufferPtr = triangleData.Span) {
@@ -437,8 +434,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				triangles,
 				buffers.BoundingBox,
 				buffers.AllowsPerInstanceVertexMutation,
-				buffers.GenerateWireframeData,
-			buffers.WireframeHidesCoplanarEdges,
+				buffers.WireframeGenerationMode,
 				name,
 				0
 			);
@@ -454,8 +450,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			triangles,
 			buffers.BoundingBox,
 			buffers.AllowsPerInstanceVertexMutation,
-			buffers.GenerateWireframeData,
-			buffers.WireframeHidesCoplanarEdges,
+			buffers.WireframeGenerationMode,
 			name,
 			boneCount == 0 ? 1 : boneCount
 		);

@@ -153,7 +153,7 @@ class LocalModelLoadingTest {
 				Console.WriteLine(_filesToLoad[curFileIndex]);
 				loadedResources = factory.AssetLoader.LoadAll(
 					CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), 
-					new ModelCreationConfig() { MeshConfig = new() { GenerateWireframeData = true }}, 
+					new ModelCreationConfig() { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing }}, 
 					new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }
 				);
 				Console.WriteLine("\tMeshes:");

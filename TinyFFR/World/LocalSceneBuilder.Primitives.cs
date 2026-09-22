@@ -300,7 +300,7 @@ sealed partial class LocalSceneBuilder {
 				Cuboid.UnitCube, 
 				true, 
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
-				new MeshCreationConfig { GenerateWireframeData = true, WireframeHidesCoplanarEdges = true, Name = "Primitive Cuboid Mesh" }
+				new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing, Name = "Primitive Cuboid Mesh" }
 			);
 			resources = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: 1);
 			resources.Add(mesh);
@@ -329,13 +329,13 @@ sealed partial class LocalSceneBuilder {
 				Sphere.UnitSphere, 
 				6,
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
-				new MeshCreationConfig { GenerateWireframeData = true, Name = "Primitive Sphere (Solid) Mesh" }
+				new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.Disabled, Name = "Primitive Sphere (Solid) Mesh" }
 			);
 			var wireframeMesh = _assetLoader.MeshBuilder.CreateMesh(
 				Sphere.UnitSphere, 
 				2,
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
-				new MeshCreationConfig { GenerateWireframeData = true, Name = "Primitive Sphere (Wireframe) Mesh" }
+				new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplication, Name = "Primitive Sphere (Wireframe) Mesh" }
 			);
 			resources = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: 2);
 			resources.Add(solidMesh);
