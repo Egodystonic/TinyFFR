@@ -1,5 +1,5 @@
 docs_dir: source
-site_name: TinyFFR Manual
+site_name: TinyFFR || Realtime .NET 3D &bull; Development Guide
 site_url: https://tinyffr.dev
 site_dir: output
 repo_url: https://github.com/Egodystonic/TinyFFR
@@ -115,6 +115,7 @@ nav:
   - changelog.md
   - Reference:
     - UI Framework Integration:
+        - reference/imgui_integration.md
         - reference/avalonia_integration.md
         - reference/wpf_integration.md
         - reference/winforms_integration.md

@@ -3,7 +3,15 @@ title: Windows Forms Integration
 description: Tutorial on integrating TinyFFR with Windows Forms.
 ---
 
-It's possible to render TinyFFR scenes as a Windows Forms control.
+<div class="grid cards" markdown>
+
+-   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
+
+    * You can render TinyFFR scenes in WinForms using a `TinyFfrSceneView` control, provided as part of the `Egodystonic.TinyFFR.WinForms` NuGet package. :material-arrow-right: [Installation & Initialization](#installation-initialization)
+    * All API interaction should be done on the primary/UI thread, just as you would with Winforms itself. :material-arrow-right: [Looping](#looping)
+    * You can use Winforms' input event system as normal; simultaneously using TinyFFR's for specific controls only via opt-in. :material-arrow-right: [Input](#input)
+
+</div>
 
 ## Installation & Initialization
 
@@ -46,8 +54,6 @@ sceneView.Renderer = myBindableRenderer;
 ```
 
 1. The control lives in the `Egodystonic.TinyFFR.WinForms` namespace.
-
-* Windows Forms has no XAML-style markup or data binding, so unlike the [Avalonia](avalonia_integration.md) and [WPF](wpf_integration.md) integrations these are plain properties: assign to them directly (or via the designer) whenever you want to change them.
 
 * The `FallbackBrush` property is optional and can be used to set the fill brush of the control when no renderer has been set and/or when no scene has been rendered. It is a `System.Drawing.Brush`.
 

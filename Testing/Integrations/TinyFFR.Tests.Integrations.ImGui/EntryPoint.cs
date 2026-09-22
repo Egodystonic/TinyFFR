@@ -22,6 +22,7 @@ if (args.Length > 0 && args[0] == "--headless-gamepad-check") return HeadlessDpi
 if (args.Length > 0 && args[0] == "--headless-subarea-check") return HeadlessDpiCheck.RunSubAreaCheck();
 if (args.Length > 0 && args[0] == "--headless-imgui-texture-check") return HeadlessDpiCheck.RunImGuiTextureCheck();
 if (args.Length > 0 && args[0] == "--headless-subarea-compositor-check") return HeadlessDpiCheck.RunSubAreaCompositorCheck();
+if (args.Length > 0 && args[0] == "--headless-text-transcription-check") return HeadlessDpiCheck.RunTextTranscriptionCheck();
 
 using var factory = new LocalTinyFfrFactory();
 var display = factory.DisplayDiscoverer.Primary!.Value;
@@ -40,8 +41,8 @@ using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, 
 
 using var viewportBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((640, 480));
 
-using var imgui = factory.SceneBuilder.CreateImGuiScene(factory, new ImGuiSceneCreationConfig { EnableGamepadNavigation = true });
-using var imguiRenderer = factory.RendererBuilder.CreateRenderer(imgui, window);
+using var imguiScene = factory.SceneBuilder.CreateImGuiScene(factory, new ImGuiSceneCreationConfig { EnableGamepadNavigation = true });
+using var imguiRenderer = factory.RendererBuilder.CreateRenderer(imguiScene, window);
 
 var useCompositor = !args.Contains("--no-compositor");
 var compositor = useCompositor ? factory.RendererBuilder.CreateCompositor(window) : default;
@@ -56,10 +57,9 @@ using var viewportCamera = factory.CameraBuilder.CreateCamera(initialPosition: n
 using var viewportScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 viewportScene.Add(viewportCube);
 using var viewportRenderer = factory.RendererBuilder.CreateRenderer(viewportScene, viewportCamera, viewportBuffer);
-var viewportTextureId = imgui.RegisterTexture(viewportBuffer.CreateDynamicTexture());
+var viewportTextureId = imguiScene.RegisterTexture(viewportBuffer.CreateDynamicTexture());
 
 using var loop = factory.ApplicationLoopBuilder.CreateLoop();
-loop.EnableInputTextTranscription = true;
 
 var rotationSpeed = 1.5f;
 var showDemoWindow = true;
@@ -83,11 +83,11 @@ var subAreaModes = new (string Name, Orientation2D Anchor, XYPair<float> Offset,
 Console.WriteLine("[F3] cycle sub-area modes");
 
 while (!loop.Input.UserQuitRequested) {
-	var deltaTime = loop.IterateOnce();
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
 	var kbm = loop.Input.KeyboardAndMouse;
 	if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) break;
 
-	totalRotation += rotationSpeed * (float) deltaTime.TotalSeconds;
+	totalRotation += rotationSpeed * deltaTime;
 	cube.SetRotation(new Rotation(totalRotation * 60f, Direction.Up));
 	viewportCube.SetRotation(new Rotation(totalRotation * -45f, Direction.Up));
 
@@ -102,7 +102,7 @@ while (!loop.Input.UserQuitRequested) {
 
 	viewportRenderer.Render();
 
-	imgui.BeginFrame(deltaTime, loop.Input, window, imguiRenderer);
+	imguiScene.BeginFrame(deltaTime, loop, window, imguiRenderer);
 
 	if (showDemoWindow) ImGui.ShowDemoWindow(ref showDemoWindow);
 
@@ -166,7 +166,7 @@ while (!loop.Input.UserQuitRequested) {
 	ImGui.End();
 
 	ImGui.SetNextWindowPos(new Vector2(20f, 360f), ImGuiCond.FirstUseEver);
-	ImGui.SetNextWindowSize(new Vector2(340f, 300f), ImGuiCond.FirstUseEver);
+	ImGui.SetNextWindowSize(new Vector2(640f, 480f), ImGuiCond.FirstUseEver);
 	if (ImGui.Begin("Scene View", ImGuiWindowFlags.NoSavedSettings)) {
 		ImGui.Text("Offscreen scene sampled as an ImGui image:");
 		var available = ImGui.GetContentRegionAvail();
@@ -177,15 +177,15 @@ while (!loop.Input.UserQuitRequested) {
 	}
 	ImGui.End();
 
-	imgui.EndFrame();
+	imguiScene.EndFrame();
 
-	secondsSinceLastReport += (float) deltaTime.TotalSeconds;
+	secondsSinceLastReport += deltaTime;
 	if (modeChanged || secondsSinceLastReport >= 30f) {
 		secondsSinceLastReport = 0f;
 		Console.WriteLine(
 			$"[{subAreaModes[subAreaMode].Name}] " +
 			$"target={((IRenderTarget) window).ViewportDimensions} logical={window.Size} " +
-			$"subArea={imgui.LastFrameSubAreaSize}@{imgui.LastFrameSubAreaOffset} | " +
+			$"subArea={imguiScene.LastFrameSubAreaSize}@{imguiScene.LastFrameSubAreaOffset} | " +
 			$"controls={controlsRect.Size.X:N0}x{controlsRect.Size.Y:N0}@{controlsRect.Pos.X:N0},{controlsRect.Pos.Y:N0} " +
 			$"gamepad={gamepadRect.Size.X:N0}x{gamepadRect.Size.Y:N0}@{gamepadRect.Pos.X:N0},{gamepadRect.Pos.Y:N0}"
 		);
@@ -202,7 +202,7 @@ while (!loop.Input.UserQuitRequested) {
 	window.SetTitle($"FPS: {loop.FramesPerSecondRecentAverage:N0}");
 }
 
-imgui.UnregisterTexture(viewportTextureId);
+imguiScene.UnregisterTexture(viewportTextureId);
 viewportScene.Remove(viewportCube);
 
 if (useCompositor) compositor.Dispose();

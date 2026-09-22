@@ -10,6 +10,7 @@ using Egodystonic.TinyFFR.DearImGui.Input;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.World;
 using Hexa.NET.ImGui;
 
 namespace Egodystonic.TinyFFR;
@@ -41,8 +42,8 @@ static class HeadlessDpiCheck {
 		TexelRgba32[]? captured = null;
 
 		for (var frame = 0; frame < 5; ++frame) {
-			var deltaTime = loop.IterateOnce();
-			imgui.BeginFrame(deltaTime, loop.Input, logicalSize, framebufferSize);
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			imgui.BeginFrame(deltaTime, loop, logicalSize, framebufferSize);
 
 			var displaySize = ImGui.GetIO().DisplaySize;
 			var placements = new[] {
@@ -130,8 +131,8 @@ static class HeadlessDpiCheck {
 		var checkboxValue = true;
 
 		for (var frame = 0; frame < 6; ++frame) {
-			var deltaTime = loop.IterateOnce();
-			imgui.BeginFrame(deltaTime, loop.Input, logicalSize, framebufferSize);
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			imgui.BeginFrame(deltaTime, loop, logicalSize, framebufferSize);
 
 			var displaySize = ImGui.GetIO().DisplaySize;
 			ImGui.SetNextWindowPos(new Vector2(displaySize.X * 0.03f, displaySize.Y * 0.04f));
@@ -190,8 +191,8 @@ static class HeadlessDpiCheck {
 			}
 			var framebufferSize = new XYPair<int>((int) (logicalSize.X * scale), (int) (logicalSize.Y * scale));
 
-			var deltaTime = loop.IterateOnce();
-			imgui.BeginFrame(deltaTime, loop.Input, logicalSize, framebufferSize);
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			imgui.BeginFrame(deltaTime, loop, logicalSize, framebufferSize);
 
 			var displaySize = ImGui.GetIO().DisplaySize;
 			ImGui.SetNextWindowPos(new Vector2(displaySize.X * 0.05f, displaySize.Y * 0.05f));
@@ -366,6 +367,25 @@ static class HeadlessDpiCheck {
 			failures += Expect(threw, "an out-of-range deadzone is rejected");
 		}
 
+		var configOriginal = new ImGuiSceneCreationConfig {
+			EnableDocking = false,
+			EnableKeyboardNavigation = true,
+			EnableGamepadNavigation = true,
+			AutoManageTextInputTranscription = false,
+			GamepadStickDeadzone = 0.25f,
+			GamepadTriggerDeadzone = 0.75f
+		};
+		var configBuffer = new byte[ImGuiSceneCreationConfig.GetHeapStorageFormattedLength(configOriginal)];
+		ImGuiSceneCreationConfig.AllocateAndConvertToHeapStorage(configBuffer, configOriginal);
+		var roundTripped = ImGuiSceneCreationConfig.ConvertFromAllocatedHeapStorage(configBuffer);
+		failures += Expect(!roundTripped.EnableDocking, "config round-trip preserves EnableDocking");
+		failures += Expect(roundTripped.EnableKeyboardNavigation, "config round-trip preserves EnableKeyboardNavigation");
+		failures += Expect(roundTripped.EnableGamepadNavigation, "config round-trip preserves EnableGamepadNavigation");
+		failures += Expect(!roundTripped.AutoManageTextInputTranscription, "config round-trip preserves AutoManageTextInputTranscription");
+		failures += Expect(MathF.Abs(roundTripped.GamepadStickDeadzone - 0.25f) < 0.0001f, $"config round-trip preserves GamepadStickDeadzone (got {roundTripped.GamepadStickDeadzone:N3})");
+		failures += Expect(MathF.Abs(roundTripped.GamepadTriggerDeadzone - 0.75f) < 0.0001f, $"config round-trip preserves GamepadTriggerDeadzone (got {roundTripped.GamepadTriggerDeadzone:N3})");
+		ImGuiSceneCreationConfig.DisposeAllocatedHeapStorage(configBuffer);
+
 		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
 		return failures == 0 ? 0 : 1;
 	}
@@ -405,8 +425,8 @@ static class HeadlessDpiCheck {
 		TexelRgba32[]? captured = null;
 
 		for (var frame = 0; frame < 5; ++frame) {
-			var deltaTime = loop.IterateOnce();
-			imgui.BeginFrame(deltaTime, loop.Input, logicalSize, targetSize, renderer);
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			imgui.BeginFrame(deltaTime, loop, logicalSize, targetSize, renderer);
 
 			var displaySize = ImGui.GetIO().DisplaySize;
 			if (frame == 0) {
@@ -503,8 +523,8 @@ static class HeadlessDpiCheck {
 		TexelRgba32[]? captured = null;
 
 		for (var frame = 0; frame < 5; ++frame) {
-			var deltaTime = loop.IterateOnce();
-			imgui.BeginFrame(deltaTime, loop.Input, targetSize / 2, targetSize, imguiRenderer);
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			imgui.BeginFrame(deltaTime, loop, targetSize / 2, targetSize, imguiRenderer);
 
 			ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(1f, 0f, 0f, 1f));
 			ImGui.SetNextWindowPos(new Vector2(Margin, Margin));
@@ -606,9 +626,9 @@ static class HeadlessDpiCheck {
 
 		try {
 			for (var frame = 0; frame < 5; ++frame) {
-				var deltaTime = loop.IterateOnce();
+				var deltaTime = loop.IterateOnce().AsDeltaTime();
 				viewportRenderer.Render();
-				imgui.BeginFrame(deltaTime, loop.Input, targetSize, targetSize);
+				imgui.BeginFrame(deltaTime, loop, targetSize, targetSize);
 
 				ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0f, 0f));
 				ImGui.SetNextWindowPos(new Vector2(Margin, Margin));
@@ -723,6 +743,65 @@ static class HeadlessDpiCheck {
 			}
 		}
 		return count;
+	}
+
+	public static int RunTextTranscriptionCheck() {
+		Console.WriteLine("ImGui text transcription check:");
+		var failures = 0;
+
+		var targetSize = new XYPair<int>(400, 300);
+
+		using var factory = new LocalTinyFfrFactory();
+		using var buffer = factory.RendererBuilder.CreateRenderOutputBuffer(targetSize);
+
+		failures += CheckTranscriptionScenario(factory, buffer, targetSize, autoManage: true);
+		failures += CheckTranscriptionScenario(factory, buffer, targetSize, autoManage: false);
+
+		Console.WriteLine(failures == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({failures} assertion(s))");
+		return failures == 0 ? 0 : 1;
+	}
+
+	static int CheckTranscriptionScenario(LocalTinyFfrFactory factory, RenderOutputBuffer buffer, XYPair<int> targetSize, bool autoManage) {
+		var failures = 0;
+		var label = autoManage ? "managed" : "unmanaged";
+
+		using var imgui = factory.SceneBuilder.CreateImGuiScene(factory, new ImGuiSceneCreationConfig { AutoManageTextInputTranscription = autoManage });
+		using var renderer = factory.RendererBuilder.CreateRenderer(imgui, buffer);
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
+
+		var textBuffer = String.Empty;
+
+		failures += Expect(!loop.EnableInputTextTranscription, $"[{label}] transcription starts off");
+
+		for (var frame = 0; frame < 4; ++frame) {
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			imgui.BeginFrame(deltaTime, loop, targetSize, targetSize);
+			if (ImGui.Begin("Transcription", ImGuiWindowFlags.NoSavedSettings)) {
+				if (frame == 0) ImGui.SetKeyboardFocusHere();
+				ImGui.InputText("##text", ref textBuffer, 128);
+			}
+			ImGui.End();
+			imgui.EndFrame();
+			renderer.Render();
+		}
+
+		failures += Expect(
+			loop.EnableInputTextTranscription == autoManage,
+			$"[{label}] transcription is {(autoManage ? "switched on" : "left off")} whilst a text field is focused"
+		);
+
+		for (var frame = 0; frame < 4; ++frame) {
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			imgui.BeginFrame(deltaTime, loop, targetSize, targetSize);
+			if (ImGui.Begin("Transcription", ImGuiWindowFlags.NoSavedSettings)) ImGui.Text("no text field here");
+			ImGui.End();
+			imgui.EndFrame();
+			renderer.Render();
+		}
+
+		failures += Expect(!loop.EnableInputTextTranscription, $"[{label}] transcription is off once no text field is focused");
+
+		return failures;
 	}
 
 	static int ExpectExtent(PositionedCuboid box, float expectedHalfExtent, string description) {

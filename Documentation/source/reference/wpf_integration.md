@@ -3,7 +3,15 @@ title: WPF Integration
 description: Tutorial on integrating TinyFFR with WPF (Windows Presentation Foundation).
 ---
 
-It's possible to render TinyFFR scenes as a WPF control.
+<div class="grid cards" markdown>
+
+-   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
+
+    * You can render TinyFFR scenes in WPF using a `TinyFfrSceneView` control, provided as part of the `Egodystonic.TinyFFR.Wpf` NuGet package. :material-arrow-right: [Installation & Initialization](#installation-initialization)
+    * All API interaction should be done on the primary/UI thread, just as you would with WPF itself. :material-arrow-right: [Looping](#looping)
+    * You can use WPF's input event system as normal; simultaneously using TinyFFR's for specific controls only via opt-in. :material-arrow-right: [Input](#input)
+
+</div>
 
 ## Installation & Initialization
 
