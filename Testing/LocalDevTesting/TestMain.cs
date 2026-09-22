@@ -41,17 +41,6 @@ static partial class TestMain {
 		//			Some values depend on others; for example if you set "builder.Context.Factory = null;" no other resources will be created by default.
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
-		
-		var factory = builder.Context.Factory!;
-		
-		var primaryDisplay = factory.DisplayDiscoverer.Primary;
-		Console.WriteLine($"Primary display: {primaryDisplay?.ToString() ?? "<no display connected>"}");
-		foreach (var display in factory.DisplayDiscoverer.All) {
-			Console.WriteLine($"{display.GetNameAsNewStringObject()}, max res mode = {display.HighestSupportedResolutionMode}");
-			foreach (var displayMode in display.SupportedDisplayModes) {
-				Console.WriteLine($"\t{displayMode.Resolution} @ {displayMode.RefreshRateHz}Hz");
-			}
-		}
 	}
 
 	public static void StartTest(TestContext context) {

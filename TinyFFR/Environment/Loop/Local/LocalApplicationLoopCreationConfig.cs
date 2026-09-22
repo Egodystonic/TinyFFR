@@ -52,14 +52,20 @@ public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<Lo
 	}
 
 	/// <summary>
-	/// Whether each iteration of this loop should poll the operating system for new input, refreshing <see cref="ApplicationLoop.Input"/>. Defaults to <see langword="true"/>.
+	/// Whether each iteration of this loop should poll the operating system for new input, refreshing <see cref="ApplicationLoop.Input"/>. Defaults to <see langword="null"/>,
+	/// meaning the loop polls input only if no other application loop is active at the moment it is created.
 	/// </summary>
 	/// <remarks>
-	/// Input is polled once per iteration for the whole application rather than per-loop, so this should only be set to <see langword="false"/> where something
-	/// else is responsible for supplying input: either another loop that is polling it, or a host UI framework that delivers its own input events (as the WPF,
-	/// Avalonia and WinForms integrations do). A loop created with this disabled still keeps time and still executes pending primary-thread work as normal.
+	/// Input is polled once per iteration for the whole application rather than per-loop, so only one loop should normally have this enabled. Leaving this as
+	/// <see langword="null"/> gives the first-created loop that role and disables it on any loop created while another is still active (such as a sub-tick loop),
+	/// which suits the common case where the first loop is the primary one.
+	/// <para>
+	/// Set this explicitly to override that choice: <see langword="true"/> to always poll, or <see langword="false"/> where something else is responsible for
+	/// supplying input, such as a host UI framework that delivers its own input events (as the WPF, Avalonia and WinForms integrations do). A loop that does not
+	/// poll input still keeps time and still executes pending primary-thread work as normal.
+	/// </para>
 	/// </remarks>
-	public bool IterationShouldRefreshGlobalInputStates { get; init; } = true;
+	public bool? IterationShouldPumpSystemEventQueue { get; init; } = null;
 
 	/// <summary>
 	/// Constructs a new <see cref="LocalApplicationLoopCreationConfig"/> with default values for every setting.
@@ -79,20 +85,20 @@ public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<Lo
 	public static int GetHeapStorageFormattedLength(in LocalApplicationLoopCreationConfig src) {
 		return	SerializationSizeOfSubConfig(src.BaseConfig) // BaseConfig
 			+	SerializationSizeOfLong() // FrameTimingPrecisionBusyWaitTime
-			+	SerializationSizeOfBool(); // IterationShouldRefreshGlobalInputStates
+			+	SerializationSizeOfNullableBool(); // IterationShouldRefreshGlobalInputStates
 	}
 	/// <inheritdoc/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in LocalApplicationLoopCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
 		SerializationWriteLong(ref dest, src.FrameTimingPrecisionBusyWaitTime.Ticks);
-		SerializationWriteBool(ref dest, src.IterationShouldRefreshGlobalInputStates);
+		SerializationWriteNullableBool(ref dest, src.IterationShouldPumpSystemEventQueue);
 	}
 	/// <inheritdoc/>
 	public static LocalApplicationLoopCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new() {
 			BaseConfig = SerializationReadSubConfig<ApplicationLoopCreationConfig>(ref src),
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.FromTicks(SerializationReadLong(ref src)),
-			IterationShouldRefreshGlobalInputStates = SerializationReadBool(ref src)
+			IterationShouldPumpSystemEventQueue = SerializationReadNullableBool(ref src)
 		};
 	}
 	/// <inheritdoc/>

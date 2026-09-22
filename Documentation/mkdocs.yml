@@ -116,6 +116,11 @@ nav:
   - Reference:
     - Windows & Input:
         - reference/display_discovery.md
+        - reference/creating_and_managing_windows.md
+        - reference/application_loops.md
+        - reference/keyboard_and_mouse_input.md
+        - reference/gamepad_input.md
+        - reference/clipboard_access.md
     - UI Framework Integration:
         - reference/imgui_integration.md
         - reference/avalonia_integration.md

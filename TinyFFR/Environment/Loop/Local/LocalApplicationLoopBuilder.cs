@@ -66,7 +66,15 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) (++_prevHandleId);
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates && !_globals.InHeadlessEnvironment, false, _defaultCooperativeTaskTimeFractionPerIteration));
+		var existingLoopIteratesInput = false;
+		foreach (var existingLoop in _handleDataMap.Values) {
+			if (existingLoop.ShouldIterateInput) {
+				existingLoopIteratesInput = true;
+				break;
+			}
+		}
+		var shouldIterateInput = (config.IterationShouldPumpSystemEventQueue ?? !existingLoopIteratesInput) && !_globals.InHeadlessEnvironment;
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, shouldIterateInput, false, _defaultCooperativeTaskTimeFractionPerIteration));
 		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		return new(handle, this);
