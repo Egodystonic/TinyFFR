@@ -29,12 +29,12 @@ It is possible to create windows using an `IWindowBuilder`; accessed via the `Wi
 
 The `IWindowBuilder` only offers one method; `CreateWindow()`. The only required parameter for `CreateWindow()` is the `Display` on which to initially show the window.
 
-??? info "Headless Mode"
+??? failure "Not Supported in Headless Mode"
 	The window builder only works when the factory is __not__ created in "headless mode", e.g.:
 	
 	```csharp
 	var factory = new LocalTinyFfrFactory(
-		// ⚠️ Enabling "HeadlessMode" like this disables display discovery
+		// ⚠️ Enabling "HeadlessMode" like this disables window creation
 		factoryConfig: new LocalTinyFfrFactoryConfig { HeadlessMode = true }
 	);
 	```

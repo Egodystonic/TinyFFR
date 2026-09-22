@@ -40,10 +40,9 @@ var loopTerminationDisposable = factory.ApplicationLoopBuilder.StartAvaloniaUiLo
 void Tick(TimeSpan tickIterationTime, ILatestInputRetriever input) {
 	var deltaTime = tickIterationTime.AsDeltaTime();
 
-	var input = loop.Input;
 	var kbm = input.KeyboardAndMouse;
 	if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-		Console.WriteLine("Spacebar pressed!")
+		Console.WriteLine("Spacebar pressed!");
 	}
 	
 	// ... Use input data as desired, render frames, etc
@@ -59,11 +58,14 @@ Every time the application loop is successfully iterated, the state of every inp
 
 ## ILatestKeyboardAndMouseInputRetriever
 
-The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `input.KeyboardAndMouse` property) is how you can access keyboard and mouse input updates. It provides the following members:
+The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `input.KeyboardAndMouse` property) is how you can access keyboard and mouse input updates. It provides the following members.
+
+All of the `New[...]` event collections enumerate their events in the order they occurred.
+
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewKeyEvents`
 
-:   This returns an enumerable of `KeyboardOrMouseKeyEvent`s that  all the new mouse/keyboard events in this loop iteration.
+:   This returns an enumerable of `KeyboardOrMouseKeyEvent`s that can be used to discover all the new mouse/keyboard events in this loop iteration.
 
 	Each `KeyboardOrMouseKeyEvent` contains two properties:  
 
@@ -109,8 +111,10 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `input.K
 	Each `MouseClickEvent` contains the following properties:
 
 	* __Location__: An `XYPair<int>` indicating the pixel position of the cursor relative to the window when the click was made;
-	* __MouseKey__: Which key was clicked;
+	* __Key__: Which `MouseKey` was clicked;
 	* __ConsecutiveClickCount__: The number of consecutive clicks made with this button. For example, if this value is '2', this click can be considered a "double-click" operation. The timing of what makes a click "consecutive" is defined by the operating system.
+	
+		Note that a double-click produces *two* separate events (one with a `ConsecutiveClickCount` of `1`, followed by one with a count of `2`), rather than a single event with a count of `2`.
 
 	If no mouse buttons have been clicked in this loop iteration, this iterator will be empty (0 `Count`).
 
@@ -132,6 +136,12 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `input.K
 
 	Positive values indicate scrolling down, negative for up.
 
+<span class="def-icon">:material-card-bulleted-outline:</span> `TranscribedText`
+
+:   This returns a `ReadOnlySpan<char>` containing the text the user typed this loop iteration.
+
+	This is empty unless text transcription has been enabled on the loop (see [Text Input](#text-input) below).
+
 <span class="def-icon">:material-code-block-parentheses:</span> `KeyIsCurrentlyDown(KeyboardOrMouseKey key)`
 
 :   This convenience method lets you quickly know whether a specific key is currently being pressed/held-down.
@@ -143,6 +153,21 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `input.K
 <span class="def-icon">:material-code-block-parentheses:</span> `KeyWasReleasedThisIteration(KeyboardOrMouseKey key)`
 
 :   This convenience method lets you quickly know whether a specific key was released this loop iteration.
+
+### Text Input
+
+```csharp
+loop.EnableInputTextTranscription = true;
+// ...
+var typedText = loop.Input.KeyboardAndMouse.TranscribedText;
+if (typedText.Length > 0) myTextBox.Append(typedText);
+```
+
+If you want to let the user type text into your application (e.g. a chat box, a name entry field), you should not attempt to reconstruct text from individual key events. Instead, set `EnableInputTextTranscription` to `true` on your `ApplicationLoop` and read `TranscribedText` each iteration.
+
+Text transcription asks the operating system for the characters the user's keystrokes actually produce, taking in to account their keyboard layout, modifier keys, and any input method editor (used to type languages whose character set is larger than a keyboard).
+
+Whilst transcription is enabled, some keystrokes may be reported *only* as transcribed text and not as key events, because the operating system's text input handling can consume them. Therefore, it is recommended to only enable transcription while the user is actually typing (e.g. while a text field has focus), and disable it again afterwards.
 
 ### KeyboardOrMouseKey Enum
 
@@ -169,11 +194,13 @@ There are some extension methods defined on `KeyboardOrMouseKey` as follows:
 
 <span class="def-icon">:material-code-block-parentheses:</span> `GetCharacterValue()`
 
-:   Returns a `char?` indicating the character value of the key (e.g. `'A'` for the __A__ key, `' '` for __Space__, etc).
+:   Returns a `char?` indicating the character value of the key (e.g. `'a'` for the __A__ key, `' '` for __Space__, etc).
+
+	Letter keys always return their lowercase form, as this reflects the key itself rather than any modifier (e.g. Shift) held at the time it was pressed.
 
 	If the given key has no character representation, this method returns `null` instead.
 
-	You can also reverse this method (i.e. convert a `char` to a `KeyboardOrMouseKey`) using the static method `InputUtils.KeyFromCharacterValue()`.
+	You can also reverse this method (i.e. convert a `char` to a `KeyboardOrMouseKey`) using the static method `InputUtils.KeyFromCharacterValue()`. Note that letters must be given in lowercase to match (e.g. `'a'` returns `KeyboardOrMouseKey.A`, but `'A'` returns `null`).
 
 <span class="def-icon">:material-code-block-parentheses:</span> `GetCategory()`
 
@@ -198,3 +225,19 @@ There are some extension methods defined on `KeyboardOrMouseKey` as follows:
 The `MouseKey` enum is a subset of the `KeyboardOrMouseKey` enum that contains only mouse "keys" (i.e. buttons). This enum is only really used for `MouseClickEvent`s; you shouldn't use it anywhere else.
 
 You can convert a `MouseKey` to a `KeyboardOrMouseKey` by using the `ToKeyboardOrMouseKey()` extension method.
+
+## InputUtils
+
+The static `InputUtils` class also offers the following members:
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `AllKeys`
+
+:   A `ReadOnlySpan<KeyboardOrMouseKey>` of every supported key (excluding `Unknown`). Useful, for example, when building a control rebinding UI.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `AllCategories`
+
+:   A `ReadOnlySpan<KeyboardOrMouseKeyCategory>` of every key category (excluding `Other`).
+
+<span class="def-icon">:material-code-block-parentheses:</span> `KeyToNumericValue()` / `KeyToCharacterValue()` / `KeyFromNumericValue()` / `KeyFromCharacterValue()`
+
+:   Static equivalents of (and inverses of) the `GetNumericValue()` and `GetCharacterValue()` extension methods described above. The `KeyFrom[...]()` methods return `null` if no key corresponds to the given value.

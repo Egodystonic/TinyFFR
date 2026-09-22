@@ -41,12 +41,12 @@ The `HighestResolution` and `HighestRefreshRate` properties return the display w
 
 Otherwise, the `All` property returns a `ReadOnlySpan<Display>`. Use this property to iterate/discover all displays connected to the system. The span may be empty (0 length) if there are no displays connected, but can not be `null`. The convenience property `AtLeastOneDisplayConnected` can be used to determine if any displays are connected.
 
-??? info "Headless Mode"
-	The display discoverer only works when the factory is __not__ created in "headless mode", e.g.:
+??? failure "Not Supported in Headless Mode"
+	The display discoverer will report no connected displays when the factory is created in "headless mode", e.g.:
 	
 	```csharp
 	var factory = new LocalTinyFfrFactory(
-		// ⚠️ Enabling "HeadlessMode" like this disables display discovery
+		// ⚠️ Enabling "HeadlessMode" like this means no displays will be discovered
 		factoryConfig: new LocalTinyFfrFactoryConfig { HeadlessMode = true }
 	);
 	```
@@ -63,9 +63,11 @@ In a similar vein, there are no settable/mutable properties on the `Display` typ
 
 :   Indicates whether this is the primary display or not.
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `Name`
+<span class="def-icon">:material-code-block-parentheses:</span> `GetNameAsNewStringObject()` / `GetNameLength()` / `CopyName(Span<char>)`
 
-:   Returns the system name of the display as a `ReadOnlySpan<char>`.
+:   These methods return the system name of the display.
+
+	`GetNameAsNewStringObject()` allocates a new `string`; alternatively use `GetNameLength()` and `CopyName()` to copy the name into a buffer of your own without allocating.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `SupportedDisplayModes`
 

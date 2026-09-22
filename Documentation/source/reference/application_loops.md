@@ -8,7 +8,7 @@ description: Information on how to create and manage application loops (frame ti
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
     * `ApplicationLoop`s are built via the `factory.ApplicationLoopBuilder` and help set & maintain a target framerate. :material-arrow-right: [Purpose](#purpose)
-    * You can set a framerate cap via their `TargetFramerate` property. :material-arrow-right: [Controlling Framerate](#controlling-framerate)
+    * You can set a framerate cap via their `TargetFrameRate` property. :material-arrow-right: [Controlling Framerate](#controlling-framerate)
     * Multiple `ApplicationLoop`s can be used to set up sub-loops at varying tickrates. :material-arrow-right: [Multiplexing Loops](#multiplexing-loops)
 
 </div>
@@ -83,9 +83,92 @@ By default, `ApplicationLoop`s set an unlimited framerate, resulting in your app
 
 	Setting this to `null` removes the limit entirely (in practice, this means your framerate will be capped by the target display's current refresh rate, known as 'vsync'; this [can also be disabled](controlling_render_behaviour.md) for a truly-unlimited framerate).
 
+## Total Iterated Time
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TotalIteratedTime`
+
+:   Returns a `TimeSpan` that is the sum of every frame delta the loop has returned so far; i.e. how long the loop has been running, as measured by the loop itself.
+
+	Because this value only advances when the loop is iterated, it is a good clock for anything that should stay in step with your application's simulation (e.g. animation phases, timed events, shader time inputs).
+
+	This property is settable, meaning you can offset or rewind the clock as desired.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `ResetTotalIteratedTime()`
+
+:   Sets `TotalIteratedTime` back to `TimeSpan.Zero`.
+
+## Framerate Statistics
+
+Every `ApplicationLoop` keeps a record of how long each of its most recent iterations took, and offers the following properties for inspecting its recent framerate. Each returns `0f` if the loop has not yet been iterated.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondRecentAverage`
+
+:   The mean framerate across the most recent iterations.
+
+	Because this is calculated as a mean of frame *times* rather than of frame *rates*, an occasional long frame moves it less than you might expect. Consult `FramesPerSecondRecentMin` for the worst case.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondRecentMin`
+
+:   The lowest framerate observed across the most recent iterations (i.e. derived from the single longest iteration).
+
+	This is usually the most informative figure when judging perceived smoothness, as it reflects the worst stutter a user would have noticed.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondRecentMax`
+
+:   The highest framerate observed across the most recent iterations (i.e. derived from the single shortest iteration).
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondLatest`
+
+:   The framerate implied by the single most recent iteration (i.e. the reciprocal of the last frame delta).
+
+	This fluctuates from iteration to iteration and is rarely what you want to show a user directly; `FramesPerSecondRecentAverage` is the steadier figure.
+
+??? info "Configuring the Statistics Window"
+	By default, the `FramesPerSecondRecentXyz` properties are calculated over the most recent 256 iterations. This can be changed when creating the factory by setting `FrameRateBufferSizeLog2` on a `LocalApplicationLoopBuilderConfig`:
+
+	```csharp
+	var factory = new LocalTinyFfrFactory(
+		localLoopBuilderConfig: new LocalApplicationLoopBuilderConfig { 
+			FrameRateBufferSizeLog2 = 10 // 2^10 = 1024 iterations
+		}
+	);
+	```
+
+	The value is the base-2 logarithm of the number of iterations retained, and must be between `1` and `16` (i.e. 2 to 65,536 iterations). A larger window gives steadier figures that react more slowly to changes in performance.
+
 ## Multiplexing Loops
 
-Claude: Please show example using TryIterateOnce to create a sub-tick inside the primary loop for some subsystem e.g. physics and networking
+Sometimes you may want certain subsystems of your application to tick at a different (usually lower) rate than your render loop; for example, stepping a physics simulation 30 times per second or sending network updates 10 times per second, whilst still rendering as fast as the display allows.
+
+One way to achieve this is to create additional "sub-loops" with their own framerate caps, and poll them with `TryIterateOnce()` from inside your primary loop:
+
+```csharp
+var loop = factory.ApplicationLoopBuilder.CreateLoop();
+var physicsLoop = factory.ApplicationLoopBuilder.CreateLoop(frameRateCapHz: 30);
+var networkLoop = factory.ApplicationLoopBuilder.CreateLoop(frameRateCapHz: 10);
+
+while (!loop.Input.UserQuitRequested) {
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
+
+	if (physicsLoop.TryIterateOnce(out var physicsDelta)) {
+		physicsWorld.Step(physicsDelta));
+	}
+	if (networkLoop.TryIterateOnce(out _)) {
+		networkClient.SendStateUpdate();
+	}
+
+	UpdateWorld(deltaTime);
+	
+	renderer.Render();
+}
+```
+
+Some things to note about this pattern:
+
+* `TryIterateOnce()` never blocks, so the primary loop (and its `IterateOnce()` call) remains in charge of the overall frame pacing. Each sub-loop simply returns `true` whenever its own interval has elapsed, and passes back the delta since *it* last returned `true`.
+* Because each sub-loop is only polled once per primary iteration, it can tick *at most* once per frame. Its framerate cap should therefore be at or below the primary loop's framerate. 
+* Sub-loops do not "catch up" on missed ticks: if a frame takes long enough that a sub-loop's interval elapses twice, it will still only tick once (with a correspondingly larger delta). If you need a strictly fixed timestep (e.g. for a deterministic physics simulation), accumulate the primary loop's delta yourself and step the simulation in a `while` loop instead.
+* Because the sub-loops are created after the primary loop, they will not pump the system event queue (see below); all input is still gathered by the primary loop.
 
 ???+ tip "Multiple loops and IterationShouldPumpSystemEventQueue"
 	When creating an `ApplicationLoop` with `CreateLoop(...)` you can optionally provide a config object and set its `IterationShouldPumpSystemEventQueue` property.
