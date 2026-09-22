@@ -69,6 +69,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		public bool IsSkeletal { get; set; } = false;
 		public bool AllowsPerInstanceVertexMutation { get; set; } = false;
 		public bool GenerateWireframeData { get; set; } = false;
+		public bool WireframeHidesCoplanarEdges { get; set; } = false;
 		public PositionedCuboid BoundingBox { get; set; } = default;
 		public Vect OriginTranslation { get; set; } = Vect.Zero;
 		public float LinearRescalingFactor { get; set; } = 1f;
@@ -94,6 +95,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			IsSkeletal = false;
 			AllowsPerInstanceVertexMutation = false;
 			GenerateWireframeData = false;
+			WireframeHidesCoplanarEdges = false;
 			BoundingBox = default;
 			OriginTranslation = Vect.Zero;
 			LinearRescalingFactor = 1f;
@@ -348,6 +350,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		buffers.TriangleCount = triangleCount;
 		buffers.AllowsPerInstanceVertexMutation = meshConfig.AllowsPerInstanceVertexMutation;
 		buffers.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<TVertex>(in meshConfig);
+		buffers.WireframeHidesCoplanarEdges = LocalMeshBuilder.GetShouldHideCoplanarWireframeEdges<TVertex>(in meshConfig);
 
 		fixed (byte* vertexBufferPtr = vertexData.Span)
 		fixed (byte* triangleBufferPtr = triangleData.Span) {
@@ -435,6 +438,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				buffers.BoundingBox,
 				buffers.AllowsPerInstanceVertexMutation,
 				buffers.GenerateWireframeData,
+			buffers.WireframeHidesCoplanarEdges,
 				name,
 				0
 			);
@@ -451,6 +455,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			buffers.BoundingBox,
 			buffers.AllowsPerInstanceVertexMutation,
 			buffers.GenerateWireframeData,
+			buffers.WireframeHidesCoplanarEdges,
 			name,
 			boneCount == 0 ? 1 : boneCount
 		);

@@ -300,7 +300,7 @@ sealed partial class LocalSceneBuilder {
 				Cuboid.UnitCube, 
 				true, 
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
-				new MeshCreationConfig { GenerateWireframeData = true, Name = "Primitive Cuboid Mesh" }
+				new MeshCreationConfig { GenerateWireframeData = true, WireframeHidesCoplanarEdges = true, Name = "Primitive Cuboid Mesh" }
 			);
 			resources = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: 1);
 			resources.Add(mesh);

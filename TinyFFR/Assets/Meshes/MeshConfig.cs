@@ -267,6 +267,26 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	/// </remarks>
 	public bool GenerateWireframeData { get; init; } = false;
 	/// <summary>
+	/// Whether this mesh's wireframe should leave out edges that lie between two triangles on the same flat surface.
+	/// Defaults to <see langword="false"/>. Has no effect unless <see cref="GenerateWireframeData"/> is also <see langword="true"/>
+	/// (and wireframe data is actually generated for the mesh).
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Flat faces with more than three corners must be split into triangles, and a plain wireframe shows every one of those splits
+	/// (for example, the diagonal across each face of a box). Setting this to <see langword="true"/> hides any edge that is shared by
+	/// two triangles facing the same direction, so the wireframe shows the outline of each flat face instead.
+	/// </para>
+	/// <para>
+	/// An edge is only treated as shared when both triangles use the very same two vertices for it. Edges between triangles that
+	/// merely touch, each using their own copies of the vertices, are always drawn.
+	/// </para>
+	/// <para>
+	/// This costs nothing extra in video memory or at render time; the work is done once when the mesh is created.
+	/// </para>
+	/// </remarks>
+	public bool WireframeHidesCoplanarEdges { get; init; } = false;
+	/// <summary>
 	/// The name to give the mesh. May be left empty.
 	/// </summary>
 	public ReadOnlySpan<char> Name { get; init; }
@@ -293,6 +313,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			+	SerializationSizeOfFloat() // BoundingBoxAdditionalMargin
 			+	SerializationSizeOfBool() // AllowPerInstanceVertexMutation
 			+	SerializationSizeOfBool() // GenerateWireframeData
+			+	SerializationSizeOfBool() // WireframeHidesCoplanarEdges
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	/// <inheritdoc />
@@ -306,6 +327,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 		SerializationWriteFloat(ref dest, src.BoundingBoxAdditionalMargin);
 		SerializationWriteBool(ref dest, src.AllowsPerInstanceVertexMutation);
 		SerializationWriteBool(ref dest, src.GenerateWireframeData);
+		SerializationWriteBool(ref dest, src.WireframeHidesCoplanarEdges);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	/// <inheritdoc />
@@ -320,6 +342,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			BoundingBoxAdditionalMargin = SerializationReadFloat(ref src),
 			AllowsPerInstanceVertexMutation = SerializationReadBool(ref src),
 			GenerateWireframeData = SerializationReadBool(ref src),
+			WireframeHidesCoplanarEdges = SerializationReadBool(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

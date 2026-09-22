@@ -102,6 +102,7 @@ unsafe partial class LocalAssetLoader {
 		public bool IsSkeletal { get; set; } = false;
 		public bool AllowsPerInstanceVertexMutation { get; set; } = false;
 		public bool GenerateWireframeData { get; set; } = false;
+		public bool WireframeHidesCoplanarEdges { get; set; } = false;
 		public PositionedCuboid BoundingBox { get; set; } = default;
 		public Vect OriginTranslation { get; set; } = Vect.Zero;
 		public float LinearRescalingFactor { get; set; } = 1f;
@@ -131,6 +132,7 @@ unsafe partial class LocalAssetLoader {
 			IsSkeletal = false;
 			AllowsPerInstanceVertexMutation = false;
 			GenerateWireframeData = false;
+			WireframeHidesCoplanarEdges = false;
 			BoundingBox = default;
 			OriginTranslation = Vect.Zero;
 			LinearRescalingFactor = 1f;
@@ -212,6 +214,7 @@ unsafe partial class LocalAssetLoader {
 
 			if (loadSkeletalAnimationData) {
 				context.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<MeshVertexSkeletal>(in creationConfig);
+				context.WireframeHidesCoplanarEdges = LocalMeshBuilder.GetShouldHideCoplanarWireframeEdges<MeshVertexSkeletal>(in creationConfig);
 				GatherMeshDataOnWorker<MeshVertexSkeletal>(context, assetHandle, metadata, in readConfig, in creationConfig);
 				GatherSkeletalDataOnWorker(context, assetHandle, skeletalSubMeshIndex, in readConfig);
 				if (context.VertexData is { } skeletalVertexData && context.TriangleData is { } skeletalTriangleData && context.SkeletalNodes is { } gatheredSkeletalNodes) {
@@ -232,6 +235,7 @@ unsafe partial class LocalAssetLoader {
 			}
 			else {
 				context.GenerateWireframeData = LocalMeshBuilder.GetShouldGenerateWireframeData<MeshVertex>(in creationConfig);
+				context.WireframeHidesCoplanarEdges = LocalMeshBuilder.GetShouldHideCoplanarWireframeEdges<MeshVertex>(in creationConfig);
 				GatherMeshDataOnWorker<MeshVertex>(context, assetHandle, metadata, in readConfig, in creationConfig);
 			}
 
@@ -454,6 +458,7 @@ unsafe partial class LocalAssetLoader {
 				context.BoundingBox,
 				context.AllowsPerInstanceVertexMutation,
 				context.GenerateWireframeData,
+			context.WireframeHidesCoplanarEdges,
 				context.Name,
 				0
 			);
@@ -470,6 +475,7 @@ unsafe partial class LocalAssetLoader {
 			context.BoundingBox,
 			context.AllowsPerInstanceVertexMutation,
 			context.GenerateWireframeData,
+			context.WireframeHidesCoplanarEdges,
 			context.Name,
 			boneCount == 0 ? 1 : boneCount
 		);
@@ -915,6 +921,7 @@ unsafe partial class LocalAssetLoader {
 		var boneCount = assetData.Extract<int>(MeshBakingSchema.BoneCount);
 		var allowsPerInstanceVertexMutation = assetData.Extract<bool>(MeshBakingSchema.AllowsPerInstanceVertexMutation);
 		var generateWireframeData = assetData.Extract<bool>(MeshBakingSchema.GeneratesWireframeData);
+		var hideCoplanarWireframeEdges = assetData.Extract<bool>(MeshBakingSchema.WireframeHidesCoplanarEdges, false);
 		var triangles = assetData.ExtractSpan<VertexTriangle>(MeshBakingSchema.IndexData)[..triangleCount];
 
 		Mesh result;
@@ -925,6 +932,7 @@ unsafe partial class LocalAssetLoader {
 				boundingBox,
 				allowsPerInstanceVertexMutation,
 				generateWireframeData,
+				hideCoplanarWireframeEdges,
 				name,
 				boneCount
 			);
@@ -936,6 +944,7 @@ unsafe partial class LocalAssetLoader {
 				boundingBox,
 				allowsPerInstanceVertexMutation,
 				generateWireframeData,
+				hideCoplanarWireframeEdges,
 				name,
 				boneCount
 			);

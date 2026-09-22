@@ -117,6 +117,7 @@ class MeshConfigTest {
 			BoundingBoxAdditionalMargin = 0f,
 			AllowsPerInstanceVertexMutation = true,
 			GenerateWireframeData = false,
+			WireframeHidesCoplanarEdges = true,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new MeshCreationConfig {
@@ -129,6 +130,7 @@ class MeshConfigTest {
 			BoundingBoxAdditionalMargin = 0.5f,
 			AllowsPerInstanceVertexMutation = false,
 			GenerateWireframeData = true,
+			WireframeHidesCoplanarEdges = false,
 			Name = "BBBbbb"
 		};
 
@@ -142,6 +144,7 @@ class MeshConfigTest {
 			Assert.AreEqual(expected.BoundingBoxAdditionalMargin, actual.BoundingBoxAdditionalMargin);
 			Assert.AreEqual(expected.AllowsPerInstanceVertexMutation, actual.AllowsPerInstanceVertexMutation);
 			Assert.AreEqual(expected.GenerateWireframeData, actual.GenerateWireframeData);
+			Assert.AreEqual(expected.WireframeHidesCoplanarEdges, actual.WireframeHidesCoplanarEdges);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -159,6 +162,7 @@ class MeshConfigTest {
 			.Float(0f)
 			.Bool(true)
 			.Bool(false)
+			.Bool(true)
 			.String("Aa Aa")
 			.For(testConfigA);
 
@@ -173,6 +177,7 @@ class MeshConfigTest {
 			.Float(0.5f)
 			.Bool(false)
 			.Bool(true)
+			.Bool(false)
 			.String("BBBbbb")
 			.For(testConfigB);
 
@@ -186,6 +191,7 @@ class MeshConfigTest {
 			.Including(nameof(MeshCreationConfig.BoundingBoxAdditionalMargin))
 			.Including(nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation))
 			.Including(nameof(MeshCreationConfig.GenerateWireframeData))
+			.Including(nameof(MeshCreationConfig.WireframeHidesCoplanarEdges))
 			.Including(nameof(MeshCreationConfig.Name))
 			.End();
 	}
@@ -203,6 +209,7 @@ class MeshConfigTest {
 				BoundingBoxAdditionalMargin = 0.1f,
 				AllowsPerInstanceVertexMutation = true,
 				GenerateWireframeData = false,
+				WireframeHidesCoplanarEdges = true,
 				Name = "test mesh"
 			},
 			ReadConfig = new MeshReadConfig {
@@ -225,6 +232,7 @@ class MeshConfigTest {
 			Assert.AreEqual(expected.CreationConfig.BoundingBoxAdditionalMargin, actual.CreationConfig.BoundingBoxAdditionalMargin);
 			Assert.AreEqual(expected.CreationConfig.AllowsPerInstanceVertexMutation, actual.CreationConfig.AllowsPerInstanceVertexMutation);
 			Assert.AreEqual(expected.CreationConfig.GenerateWireframeData, actual.CreationConfig.GenerateWireframeData);
+			Assert.AreEqual(expected.CreationConfig.WireframeHidesCoplanarEdges, actual.CreationConfig.WireframeHidesCoplanarEdges);
 			Assert.IsTrue(expected.CreationConfig.Name.SequenceEqual(actual.CreationConfig.Name));
 			Assert.AreEqual(expected.ReadConfig.FixCommonExportErrors, actual.ReadConfig.FixCommonExportErrors);
 			Assert.AreEqual(expected.ReadConfig.OptimizeForGpu, actual.ReadConfig.OptimizeForGpu);

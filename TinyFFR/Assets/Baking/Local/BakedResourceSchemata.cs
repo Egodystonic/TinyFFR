@@ -183,6 +183,7 @@ static class BakedResourceSchemata {
 		public const string BoneCount = "bone_count";
 		public const string AllowsPerInstanceVertexMutation = "allows_per_instance_vertex_mutation";
 		public const string GeneratesWireframeData = "generates_wireframe_data";
+		public const string WireframeHidesCoplanarEdges = "wireframe_hides_coplanar_edges";
 
 		public const string SkeletonNodeCount = "skeleton_node_count";
 		public const string SkeletonFirstParentedNodeIndex = "skeleton_first_parented_node_index";

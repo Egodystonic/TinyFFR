@@ -49,6 +49,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshWireframeBufferData = new();
+	readonly ArrayPoolBackedMap<(int LowerIndex, int HigherIndex), int> _wireframeEdgeScratchMap = new();
 	readonly ArrayPoolBackedObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
 	readonly ArrayPoolBackedObjectPool<LocalMeshAnimationTable, LocalMeshBuilder> _meshAnimationTablePool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshAnimationTable> _activeMeshAnimationTables = new();
@@ -185,6 +186,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			&& typeof(TVertex) == typeof(MeshVertex);
 	}
 
+	internal static bool GetShouldHideCoplanarWireframeEdges<TVertex>(in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
+		return GetShouldGenerateWireframeData<TVertex>(in config) && config.WireframeHidesCoplanarEdges;
+	}
+
 	internal static void FlipTriangleWindings(Span<VertexTriangle> triangles) {
 		for (var i = 0; i < triangles.Length; ++i) {
 			triangles[i] = new VertexTriangle(triangles[i].IndexB, triangles[i].IndexA, triangles[i].IndexC);
@@ -237,6 +242,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		ValidateMeshData(vertices, triangles, in config);
 
 		var generateWireframeData = GetShouldGenerateWireframeData<TVertex>(in config);
+		var hideCoplanarWireframeEdges = GetShouldHideCoplanarWireframeEdges<TVertex>(in config);
 
 		_prevHandleId++;
 		var handle = new ResourceHandle<Mesh>(_prevHandleId);
@@ -265,12 +271,13 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			boundingBox,
 			config.AllowsPerInstanceVertexMutation,
 			generateWireframeData,
+			hideCoplanarWireframeEdges,
 			config.Name,
 			boneCount
 		);
 	}
 
-	internal Mesh CreateMeshFromPreValidatedAndTransformedData<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
+	internal Mesh CreateMeshFromPreValidatedAndTransformedData<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, bool hideCoplanarWireframeEdges, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
@@ -289,16 +296,17 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			boundingBox,
 			allowsPerInstanceVertexMutation,
 			generateWireframeData,
+			hideCoplanarWireframeEdges,
 			name,
 			boneCount
 		);
 	}
 
-	Mesh CompleteMeshCreation<TVertex>(ResourceHandle<Mesh> handle, TemporaryLoadSpaceBuffer tempVertexBuffer, TemporaryLoadSpaceBuffer tempIndexBuffer, int vertexCount, int triangleCount, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
+	Mesh CompleteMeshCreation<TVertex>(ResourceHandle<Mesh> handle, TemporaryLoadSpaceBuffer tempVertexBuffer, TemporaryLoadSpaceBuffer tempIndexBuffer, int vertexCount, int triangleCount, PositionedCuboid boundingBox, bool allowsPerInstanceVertexMutation, bool generateWireframeData, bool hideCoplanarWireframeEdges, ReadOnlySpan<char> name, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		var indexBufferCount = checked(triangleCount * 3);
 
 		if (generateWireframeData) {
-			GenerateAndStoreWireframeBuffers(handle, tempVertexBuffer.AsSpan<MeshVertex>(), tempIndexBuffer.AsSpan<VertexTriangle>());
+			GenerateAndStoreWireframeBuffers(handle, tempVertexBuffer.AsSpan<MeshVertex>(), tempIndexBuffer.AsSpan<VertexTriangle>(), hideCoplanarWireframeEdges);
 		}
 
 		var bakeryVertexBufferCopy = GetBakeryBufferCopyIfEnabled(MemoryMarshal.AsBytes(tempVertexBuffer.AsSpan<TVertex>()[..vertexCount]));
@@ -328,7 +336,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		if (bakeryVertexBufferCopy is { } bvbc && bakeryIndexBufferCopy is { } bibc) {
 			try {
-				RegisterInBakery<TVertex>(result, bvbc.Span, bibc.Span, vertexCount, triangleCount, boundingBox, boneCount, allowsPerInstanceVertexMutation, generateWireframeData, name);
+				RegisterInBakery<TVertex>(result, bvbc.Span, bibc.Span, vertexCount, triangleCount, boundingBox, boneCount, allowsPerInstanceVertexMutation, generateWireframeData, hideCoplanarWireframeEdges, name);
 			}
 			finally {
 				bvbc.Dispose();
@@ -346,7 +354,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return result;
 	}
 
-	void RegisterInBakery<TVertex>(Mesh resource, ReadOnlySpan<byte> vertexData, ReadOnlySpan<byte> indexData, int vertexCount, int triangleCount, PositionedCuboid boundingBox, int boneCount, bool allowsPerInstanceVertexMutation, bool generateWireframeData, ReadOnlySpan<char> name) where TVertex : unmanaged, IMeshVertex {
+	void RegisterInBakery<TVertex>(Mesh resource, ReadOnlySpan<byte> vertexData, ReadOnlySpan<byte> indexData, int vertexCount, int triangleCount, PositionedCuboid boundingBox, int boneCount, bool allowsPerInstanceVertexMutation, bool generateWireframeData, bool hideCoplanarWireframeEdges, ReadOnlySpan<char> name) where TVertex : unmanaged, IMeshVertex {
 		var bakery = _globals.Bakery;
 
 		bakery.StartResourceBake(resource);
@@ -358,6 +366,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.BoneCount, boneCount);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.AllowsPerInstanceVertexMutation, allowsPerInstanceVertexMutation);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.GeneratesWireframeData, generateWireframeData);
+		bakery.AddResourceBakeValue(resource, MeshBakingSchema.WireframeHidesCoplanarEdges, hideCoplanarWireframeEdges);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.VertexData, vertexData);
 		bakery.AddResourceBakeValue(resource, MeshBakingSchema.IndexData, indexData);
 		bakery.CompleteResourceBakePendingFinalization(resource, this, &FinalizeBake);
@@ -427,7 +436,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return _activeMeshWireframeBufferData.TryGetValue(handle, out var data) ? data : null;
 	}
 
-	void GenerateAndStoreWireframeBuffers(ResourceHandle<Mesh> handle, ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles) {
+	void GenerateAndStoreWireframeBuffers(ResourceHandle<Mesh> handle, ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, bool hideCoplanarEdges) {
 		var numIndices = checked(triangles.Length * 3);
 		var wireframeVerticesBuffer = _globals.CreateGpuHoldingBuffer<MeshVertexPrimitive>(numIndices);
 		var wireframeTrianglesBuffer = _globals.CreateGpuHoldingBuffer<VertexTriangle>(triangles.Length);
@@ -435,15 +444,30 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		var wireframeVertices = wireframeVerticesBuffer.AsSpan<MeshVertexPrimitive>();
 		var wireframeTriangles = wireframeTrianglesBuffer.AsSpan<VertexTriangle>();
 
-		for (var i = 0; i < triangles.Length; ++i) {
-			var vertA = vertices[triangles[i].IndexA];
-			var vertB = vertices[triangles[i].IndexB];
-			var vertC = vertices[triangles[i].IndexC];
-			wireframeVertices[i * 3 + 0] = new MeshVertexPrimitive(vertA.Location, new(1f, 0f, 0f, 1f), vertA.TangentRotation);
-			wireframeVertices[i * 3 + 1] = new MeshVertexPrimitive(vertB.Location, new(0f, 1f, 0f, 1f), vertB.TangentRotation);
-			wireframeVertices[i * 3 + 2] = new MeshVertexPrimitive(vertC.Location, new(0f, 0f, 1f, 1f), vertC.TangentRotation);
-			
-			wireframeTriangles[i] = new VertexTriangle(i * 3, i * 3 + 1, i * 3 + 2);
+		PooledHeapMemory<byte>? hiddenEdgeMasks = null;
+		try {
+			if (hideCoplanarEdges && triangles.Length > 0) {
+				hiddenEdgeMasks = _globals.HeapPool.Borrow<byte>(triangles.Length);
+				CalculateCoplanarSharedEdgeMasks(vertices, triangles, hiddenEdgeMasks.Value.Span);
+			}
+
+			for (var i = 0; i < triangles.Length; ++i) {
+				var vertA = vertices[triangles[i].IndexA];
+				var vertB = vertices[triangles[i].IndexB];
+				var vertC = vertices[triangles[i].IndexC];
+				var mask = hiddenEdgeMasks is { } masks ? masks.Span[i] : (byte) 0;
+				var hideAb = (mask & WireframeEdgeMaskAb) != 0 ? 1f : 0f;
+				var hideBc = (mask & WireframeEdgeMaskBc) != 0 ? 1f : 0f;
+				var hideCa = (mask & WireframeEdgeMaskCa) != 0 ? 1f : 0f;
+				wireframeVertices[i * 3 + 0] = new MeshVertexPrimitive(vertA.Location, new(1f, hideCa, hideAb, 1f), vertA.TangentRotation);
+				wireframeVertices[i * 3 + 1] = new MeshVertexPrimitive(vertB.Location, new(hideBc, 1f, hideAb, 1f), vertB.TangentRotation);
+				wireframeVertices[i * 3 + 2] = new MeshVertexPrimitive(vertC.Location, new(hideBc, hideCa, 1f, 1f), vertC.TangentRotation);
+				
+				wireframeTriangles[i] = new VertexTriangle(i * 3, i * 3 + 1, i * 3 + 2);
+			}
+		}
+		finally {
+			hiddenEdgeMasks?.Dispose();
 		}
 
 		AllocateVertexBufferPrimitive(
@@ -460,6 +484,58 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		).ThrowIfFailure();
 
 		_activeMeshWireframeBufferData.Add(handle, new MeshBufferData(vbHandle, ibHandle, 0, numIndices, 0));
+	}
+
+	internal const byte WireframeEdgeMaskAb = 0b001;
+	internal const byte WireframeEdgeMaskBc = 0b010;
+	internal const byte WireframeEdgeMaskCa = 0b100;
+	const float WireframeCoplanarNormalDotThreshold = 0.9999f;
+
+	void CalculateCoplanarSharedEdgeMasks(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, Span<byte> masks) {
+		masks.Clear();
+		_wireframeEdgeScratchMap.Clear();
+		try {
+			for (var t = 0; t < triangles.Length; ++t) {
+				var triangle = triangles[t];
+				for (var e = 0; e < 3; ++e) {
+					var (startIndex, endIndex) = e switch {
+						0 => (triangle.IndexA, triangle.IndexB),
+						1 => (triangle.IndexB, triangle.IndexC),
+						_ => (triangle.IndexC, triangle.IndexA)
+					};
+					var key = startIndex < endIndex ? (startIndex, endIndex) : (endIndex, startIndex);
+					if (!_wireframeEdgeScratchMap.TryGetValue(key, out var owner)) {
+						_wireframeEdgeScratchMap.Add(key, t * 3 + e);
+						continue;
+					}
+
+					var ownerTriangleIndex = owner / 3;
+					if (!AreTrianglesCoplanarAndSameFacing(vertices, triangle, triangles[ownerTriangleIndex])) continue;
+					masks[t] |= (byte) (1 << e);
+					masks[ownerTriangleIndex] |= (byte) (1 << (owner % 3));
+				}
+			}
+		}
+		finally {
+			_wireframeEdgeScratchMap.Clear();
+		}
+	}
+
+	static bool AreTrianglesCoplanarAndSameFacing(ReadOnlySpan<MeshVertex> vertices, VertexTriangle a, VertexTriangle b) {
+		var normalA = CalculateTriangleNormal(vertices, a);
+		var normalB = CalculateTriangleNormal(vertices, b);
+		if (normalA is not { } nA || normalB is not { } nB) return false;
+		return Vector3.Dot(nA, nB) >= WireframeCoplanarNormalDotThreshold;
+	}
+
+	static Vector3? CalculateTriangleNormal(ReadOnlySpan<MeshVertex> vertices, VertexTriangle triangle) {
+		var a = vertices[triangle.IndexA].Location.ToVector3();
+		var b = vertices[triangle.IndexB].Location.ToVector3();
+		var c = vertices[triangle.IndexC].Location.ToVector3();
+		var cross = Vector3.Cross(b - a, c - a);
+		var lengthSquared = cross.LengthSquared();
+		if (!Single.IsNormal(lengthSquared)) return null;
+		return cross / MathF.Sqrt(lengthSquared);
 	}
 
 	public PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle) {
@@ -1326,6 +1402,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			_dynamicIndexLeaseTracker.Dispose();
 			_defaultMutableVerticesMap.Dispose();
 			_activeMeshWireframeBufferData.Dispose();
+			_wireframeEdgeScratchMap.Dispose();
 			_activeMeshes.Dispose();
 			_activeMeshAnimationTables.Dispose();
 			_activeDynamicVertexBuffers.Dispose();
