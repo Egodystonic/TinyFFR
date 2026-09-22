@@ -114,6 +114,8 @@ nav:
   - index.md
   - changelog.md
   - Reference:
+    - Windows & Input:
+        - reference/display_discovery.md
     - UI Framework Integration:
         - reference/imgui_integration.md
         - reference/avalonia_integration.md
