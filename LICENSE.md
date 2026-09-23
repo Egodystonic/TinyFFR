@@ -4,13 +4,13 @@
 
 > [!NOTE]
 > This license is intended to allow all commercial and non-commercial uses of TinyFFR and its source code except those that may directly compete with TinyFFR (in either a commercial or non-commercial context). It is permitted to otherwise use TinyFFR in any commercial or non-commercial context without restriction.
-> It is generally permitted to use TinyFFR to make: 
+> It is generally permitted to use TinyFFR to make (free or commercial): 
 > * ✅ Video games
 > * ✅ Game engines & editors
 > * ✅ Modding tools
 > * ✅ Control/visualization/robotics software
 > * ✅ Digital-content-creation software
-> * ✅ Archtectural or engineering software
+> * ✅ Architectural or engineering software
 > * ✅ CAD/BIM software
 > * ✅ Simulation or digital-twin platforms 
 
@@ -66,14 +66,14 @@ service that:
 
 3. offers the same or substantially similar functionality as the Software; or
 
-4. makes publicly available a repository, fork, or codebase that
-   is derived from the Software (and its source code) and competes with the Software (and its source code) (deliberately or incidentally).
+4. makes publicly available a product, repository, fork, or codebase that
+   is derived from the Software (and its source code) and competes with the Software (and its source code) (deliberately or incidentally); or
 
-5. makes publicly available a repository, fork, or codebase that
-   is derived from the Software (and its source code) and substitutes wholly or partly for the software (including-but-not-limited-to making available features or integrations not otherwise provided by the software) (deliberately or incidentally).
+5. makes publicly available a product, repository, fork, or codebase that
+   is derived from the Software (and its source code) and substitutes wholly or partly for the software (including-but-not-limited-to making available features or integrations not otherwise provided by the software) (deliberately or incidentally); or
    
-6. makes publicly available a repository, fork, or codebase that
-   is generated with the assistance of an LLM/AI explicitly or implicitly instructed to use TinyFFR as a reference or training data, even if the resultant code does not resemble that of TinyFFR
+6. makes publicly available a product, repository, fork, or codebase that
+   is generated with the assistance of an LLM/AI explicitly or implicitly instructed to use TinyFFR as a reference or training data, even if the resultant code does not resemble that of TinyFFR.
    
 
 Permitted Purposes specifically include using the Software:

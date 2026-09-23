@@ -483,9 +483,13 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public override bool Equals(object? obj) => obj is ResourceGroup other && Equals(other);
 	/// <inheritdoc/>
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
-	/// <inheritdoc/>
+	/// <summary>
+	/// <see cref="Equals(ResourceGroup)"/>
+	/// </summary>
 	public static bool operator ==(ResourceGroup left, ResourceGroup right) => left.Equals(right);
-	/// <inheritdoc/>
+	/// <summary>
+	/// <see cref="Equals(ResourceGroup)"/>
+	/// </summary>
 	public static bool operator !=(ResourceGroup left, ResourceGroup right) => !left.Equals(right);
 	#endregion
 }

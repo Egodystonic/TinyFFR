@@ -92,7 +92,6 @@
 .md-typeset h1 {
 	font-size: 3em;
 	font-variant: small-caps;
-	line-height: 0.5;
 }
 [data-md-color-scheme="default"] .tffr-affirmative {
 	color: #538153;
@@ -134,7 +133,7 @@
 .md-typeset .grid > .card {
 	border-color: transparent;
 	box-shadow: var(--md-shadow-z2);
-	margin-bottom: 1.3em;
+	margin-bottom: 0.6em;
 	position: relative;
 	top: -0.9em;
 }

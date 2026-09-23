@@ -126,6 +126,10 @@ nav:
         - reference/avalonia_integration.md
         - reference/wpf_integration.md
         - reference/winforms_integration.md
+    - Asset Loading & Creation:
+        - reference/bundled_assets.md
+        - Meshes:
+            - reference/loading_meshes.md
 
 not_in_nav: |
 

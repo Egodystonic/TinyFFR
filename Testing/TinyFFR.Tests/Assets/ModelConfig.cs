@@ -26,7 +26,7 @@ class ModelConfigTest {
 				ForceWAlphaChannelPresence = true
 			},
 			HandleUriEscapedStrings = true,
-			GltfEmissiveStrengthScalar = 1f,
+			EmissiveStrengthScalar = 1f,
 			EmissiveStrengthCap = 0.5f,
 			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
 		};
@@ -40,7 +40,7 @@ class ModelConfigTest {
 				ForceWAlphaChannelPresence = false
 			},
 			HandleUriEscapedStrings = false,
-			GltfEmissiveStrengthScalar = 0.3f,
+			EmissiveStrengthScalar = 0.3f,
 			EmissiveStrengthCap = 0f,
 			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale
 		};
@@ -51,7 +51,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.TextureConfig.IncludeWAlphaChannel, actual.TextureConfig.IncludeWAlphaChannel);
 			Assert.AreEqual(expected.TextureConfig.ForceWAlphaChannelPresence, actual.TextureConfig.ForceWAlphaChannelPresence);
 			Assert.AreEqual(expected.HandleUriEscapedStrings, actual.HandleUriEscapedStrings);
-			Assert.AreEqual(expected.GltfEmissiveStrengthScalar, actual.GltfEmissiveStrengthScalar);
+			Assert.AreEqual(expected.EmissiveStrengthScalar, actual.EmissiveStrengthScalar);
 			Assert.AreEqual(expected.EmissiveStrengthCap, actual.EmissiveStrengthCap);
 			Assert.AreEqual(expected.EmbeddedTextureMapScalingStrategy, actual.EmbeddedTextureMapScalingStrategy);
 		}
@@ -81,7 +81,7 @@ class ModelConfigTest {
 			.Including(nameof(ModelReadConfig.MeshConfig))
 			.Including(nameof(ModelReadConfig.TextureConfig))
 			.Including(nameof(ModelReadConfig.HandleUriEscapedStrings))
-			.Including(nameof(ModelReadConfig.GltfEmissiveStrengthScalar))
+			.Including(nameof(ModelReadConfig.EmissiveStrengthScalar))
 			.Including(nameof(ModelReadConfig.EmissiveStrengthCap))
 			.Including(nameof(ModelReadConfig.EmbeddedTextureMapScalingStrategy))
 			.End();
@@ -189,7 +189,7 @@ class ModelConfigTest {
 					ForceWAlphaChannelPresence = true
 				},
 				HandleUriEscapedStrings = true,
-				GltfEmissiveStrengthScalar = 0.25f,
+				EmissiveStrengthScalar = 0.25f,
 				EmissiveStrengthCap = 0.75f,
 				EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
 			}
@@ -210,7 +210,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.ReadConfig.TextureConfig.IncludeWAlphaChannel, actual.ReadConfig.TextureConfig.IncludeWAlphaChannel);
 			Assert.AreEqual(expected.ReadConfig.TextureConfig.ForceWAlphaChannelPresence, actual.ReadConfig.TextureConfig.ForceWAlphaChannelPresence);
 			Assert.AreEqual(expected.ReadConfig.HandleUriEscapedStrings, actual.ReadConfig.HandleUriEscapedStrings);
-			Assert.AreEqual(expected.ReadConfig.GltfEmissiveStrengthScalar, actual.ReadConfig.GltfEmissiveStrengthScalar);
+			Assert.AreEqual(expected.ReadConfig.EmissiveStrengthScalar, actual.ReadConfig.EmissiveStrengthScalar);
 			Assert.AreEqual(expected.ReadConfig.EmissiveStrengthCap, actual.ReadConfig.EmissiveStrengthCap);
 			Assert.AreEqual(expected.ReadConfig.EmbeddedTextureMapScalingStrategy, actual.ReadConfig.EmbeddedTextureMapScalingStrategy);
 		});

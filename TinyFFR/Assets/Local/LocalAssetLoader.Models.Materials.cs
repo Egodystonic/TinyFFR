@@ -146,13 +146,13 @@ unsafe partial class LocalAssetLoader {
 		public readonly TextureCreationConfig Config;
 		public readonly ref readonly byte AssetRootDirStrRef;
 		public readonly bool UriUnescapeEmbeddedResourceStrings;
-		public readonly float GltfEmissiveStrengthScalar;
+		public readonly float EmissiveStrengthScalar;
 		public readonly float EmissiveStrengthCap;
 		public readonly TextureCombinationScalingStrategy TextureCombinationStrategy;
 		public readonly ModelLoadMaterialTextureRegistry TextureRegistry;
 		public readonly ThreadSafeHeapPoolWrapper HeapPool;
 
-		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, Span<char> subResourceNameBuffer, int matNameLength, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy, ModelLoadMaterialTextureRegistry textureRegistry, ThreadSafeHeapPoolWrapper heapPool) {
+		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, Span<char> subResourceNameBuffer, int matNameLength, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float emissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy, ModelLoadMaterialTextureRegistry textureRegistry, ThreadSafeHeapPoolWrapper heapPool) {
 			AssetHandle = assetHandle;
 			MaterialIndex = materialIndex;
 			TextureRegistry = textureRegistry;
@@ -163,7 +163,7 @@ unsafe partial class LocalAssetLoader {
 			Config = config;
 			AssetRootDirStrRef = ref assetRootDirStrRef;
 			UriUnescapeEmbeddedResourceStrings = uriUnescapeEmbeddedResourceStrings;
-			GltfEmissiveStrengthScalar = gltfEmissiveStrengthScalar;
+			EmissiveStrengthScalar = emissiveStrengthScalar;
 			EmissiveStrengthCap = emissiveStrengthCap;
 			TextureCombinationStrategy = textureCombinationStrategy;
 		}
@@ -846,7 +846,7 @@ unsafe partial class LocalAssetLoader {
 				creationParams.UriUnescapeEmbeddedResourceStrings,
 				creationParams.HeapPool
 			);
-			ScaleAndCapEmissiveIntensity(embeddedTex.TexelSpan, true, creationParams.GltfEmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
+			ScaleAndCapEmissiveIntensity(embeddedTex.TexelSpan, true, creationParams.EmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
 			return creationParams.TextureRegistry.Add(
 				embeddedTex.TexelSpan,
 				embeddedTex.Dimensions,
@@ -869,10 +869,10 @@ unsafe partial class LocalAssetLoader {
 			out var colorEmbeddedTex
 		);
 		var modifiedIntensityParam = (*intensityParamPtr) with {
-			NumericalValueR = Single.Clamp(intensityParamPtr->NumericalValueR * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
-			NumericalValueG = Single.Clamp(intensityParamPtr->NumericalValueG * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
-			NumericalValueB = Single.Clamp(intensityParamPtr->NumericalValueB * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
-			NumericalValueA = Single.Clamp(intensityParamPtr->NumericalValueA * creationParams.GltfEmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap)
+			NumericalValueR = Single.Clamp(intensityParamPtr->NumericalValueR * creationParams.EmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
+			NumericalValueG = Single.Clamp(intensityParamPtr->NumericalValueG * creationParams.EmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
+			NumericalValueB = Single.Clamp(intensityParamPtr->NumericalValueB * creationParams.EmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap),
+			NumericalValueA = Single.Clamp(intensityParamPtr->NumericalValueA * creationParams.EmissiveStrengthScalar, 0f, creationParams.EmissiveStrengthCap)
 		};
 		var intensityTexels = AbstractTexelSpanFromParamPtr(
 			&modifiedIntensityParam,
@@ -885,7 +885,7 @@ unsafe partial class LocalAssetLoader {
 			out var intensityEmbeddedTex
 		);
 		if (intensityParamPtr->Format == AssetMaterialParamDataFormat.TextureMap) {
-			ScaleAndCapEmissiveIntensity(intensityTexels, false, creationParams.GltfEmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
+			ScaleAndCapEmissiveIntensity(intensityTexels, false, creationParams.EmissiveStrengthScalar, (byte) (creationParams.EmissiveStrengthCap * Byte.MaxValue));
 		}
 
 		try {
@@ -1042,7 +1042,7 @@ unsafe partial class LocalAssetLoader {
 			config,
 			in assetRootDirStrRef,
 			readConfig.HandleUriEscapedStrings,
-			readConfig.GltfEmissiveStrengthScalar,
+			readConfig.EmissiveStrengthScalar,
 			readConfig.EmissiveStrengthCap,
 			readConfig.EmbeddedTextureMapScalingStrategy,
 			textureRegistry,

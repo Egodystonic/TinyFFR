@@ -126,7 +126,7 @@ public enum DefaultMaterialShadingStyle {
 }
 
 /// <summary>
-/// A single occurrence of a model in a scene: a <see cref="Assets.Meshes.Mesh"/> giving its shape, a <see cref="Assets.Materials.Material"/> giving its surface,
+/// A single occurrence of a model in a scene: a <see cref="Mesh"/> giving its shape, a <see cref="Material"/> giving its surface,
 /// and a transform (<see cref="Position"/>/<see cref="Scaling"/>/<see cref="Rotation"/> and/or <see cref="Transform"/>) placing it in the world. Created via the factory's <see cref="IObjectBuilder"/>.
 /// </summary>
 /// <remarks>

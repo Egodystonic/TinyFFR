@@ -41,6 +41,15 @@ static partial class TestMain {
 		//			Some values depend on others; for example if you set "builder.Context.Factory = null;" no other resources will be created by default.
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
+		
+		var factory = builder.Context.Factory!;
+		var scene = builder.Context.Scene!.Value;
+		
+		using var crateMesh = factory.AssetLoader.LoadMesh(@"Assets/crate.obj");
+		using var crateColorTex = factory.AssetLoader.LoadColorMap(@"Assets/crate_albedo.bmp");
+		using var crateMat = factory.MaterialBuilder.CreateStandardMaterial(crateColorTex);
+		using var crateInstance = factory.ObjectBuilder.CreateModelInstance(crateMesh, crateMat);
+		scene.Add(crateInstance);
 	}
 
 	public static void StartTest(TestContext context) {

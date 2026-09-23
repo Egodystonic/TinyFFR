@@ -24,9 +24,9 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// </summary>
 	public static readonly bool DefaultHandleUriEscapedStrings = false;
 	/// <summary>
-	/// The default value for <see cref="ModelReadConfig.GltfEmissiveStrengthScalar"/>: <c>0.05f</c>.
+	/// The default value for <see cref="ModelReadConfig.EmissiveStrengthScalar"/>: <c>0.05f</c>.
 	/// </summary>
-	public static readonly float DefaultGltfEmissiveStrengthScalar = 0.05f;
+	public static readonly float DefaultEmissiveStrengthScalar = 0.05f;
 	/// <summary>
 	/// The default value for <see cref="ModelReadConfig.EmissiveStrengthCap"/>: <c>1f</c>.
 	/// </summary>
@@ -52,14 +52,14 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// </remarks>
 	public bool HandleUriEscapedStrings { get; init; } = DefaultHandleUriEscapedStrings;
 	/// <summary>
-	/// A factor applied to emissive strengths read from glTF files. Defaults to <see cref="DefaultGltfEmissiveStrengthScalar"/>: <c>0.05f</c>.
+	/// A factor applied to emissive strengths read from the file. Defaults to <see cref="DefaultEmissiveStrengthScalar"/>: <c>0.05f</c>.
 	/// </summary>
 	/// <remarks>
-	/// glTF records emissive strength on a scale that does not correspond to TinyFFR's, so a file's values are scaled down to
-	/// keep glowing surfaces from overwhelming the scene. Raise this if imported emissive surfaces look too dim; lower it if
-	/// they seem too bright.
+	/// Some formats (most notably glTF) record emissive strength on a scale that does not correspond to TinyFFR's, so a file's values
+	/// are scaled down to keep glowing surfaces from overwhelming the scene. Raise this if imported emissive surfaces look too dim;
+	/// lower it if they seem too bright.
 	/// </remarks>
-	public float GltfEmissiveStrengthScalar { get; init; } = DefaultGltfEmissiveStrengthScalar;
+	public float EmissiveStrengthScalar { get; init; } = DefaultEmissiveStrengthScalar;
 	/// <summary>
 	/// The largest emissive strength any imported material may take. Defaults to <see cref="DefaultEmissiveStrengthCap"/>: <c>1f</c>.
 	/// </summary>
@@ -94,7 +94,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
 			+	SerializationSizeOfBool() // HandleUriEscapedStrings
-			+	SerializationSizeOfFloat() // GltfEmissiveStrengthScalar
+			+	SerializationSizeOfFloat() // EmissiveStrengthScalar
 			+	SerializationSizeOfFloat() // EmissiveStrengthCap
 			+	SerializationSizeOfInt(); // EmbeddedTextureMapScalingStrategy
 	}
@@ -103,7 +103,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
 		SerializationWriteBool(ref dest, src.HandleUriEscapedStrings);
-		SerializationWriteFloat(ref dest, src.GltfEmissiveStrengthScalar);
+		SerializationWriteFloat(ref dest, src.EmissiveStrengthScalar);
 		SerializationWriteFloat(ref dest, src.EmissiveStrengthCap);
 		SerializationWriteInt(ref dest, (int) src.EmbeddedTextureMapScalingStrategy);
 	}
@@ -113,7 +113,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 			MeshConfig = SerializationReadSubConfig<MeshReadConfig>(ref src),
 			TextureConfig = SerializationReadSubConfig<TextureReadConfig>(ref src),
 			HandleUriEscapedStrings = SerializationReadBool(ref src),
-			GltfEmissiveStrengthScalar = SerializationReadFloat(ref src),
+			EmissiveStrengthScalar = SerializationReadFloat(ref src),
 			EmissiveStrengthCap = SerializationReadFloat(ref src),
 			EmbeddedTextureMapScalingStrategy = (TextureCombinationScalingStrategy) SerializationReadInt(ref src)
 		};
