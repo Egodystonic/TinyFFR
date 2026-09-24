@@ -39,7 +39,7 @@ class LocalDiscsRenderTest {
 				Location.Origin
 			);
 		} 
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(polyGroup, new Transform2D(scaling: new(2f), rotation: 45f));
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateFromPolygonGroup(polyGroup, new Transform2D(scaling: new(2f), rotation: 45f));
 		using var colorMap = factory.AssetLoader.TextureBuilder.CreateColorMap(
 			TexturePattern.Lines(ColorVect.FromStandardColor(StandardColor.White), ColorVect.FromStandardColor(StandardColor.Silver), true, perturbationMagnitude: 0.1f), includeAlpha: false
 		);

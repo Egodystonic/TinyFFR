@@ -136,7 +136,7 @@ sealed partial class LocalSceneBuilder {
 	
 	QuadMesh GetSharedQuadMesh() {
 		if (_primitiveSharedQuadMesh is { } qm) return qm;
-		return (_primitiveSharedQuadMesh = _assetLoader.MeshBuilder.CreateQuadMesh(twoSided: true)).Value;
+		return (_primitiveSharedQuadMesh = _assetLoader.MeshBuilder.CreateQuad(twoSided: true)).Value;
 	}
 
 	Mesh GetSharedMutableLineStripMesh() {
@@ -164,7 +164,7 @@ sealed partial class LocalSceneBuilder {
 			triangles[t++] = new VertexTriangle(fbr, ftr, ftl);
 		}
 
-		return (_primitiveSharedMutableLineStripMesh = _assetLoader.MeshBuilder.CreateMesh(
+		return (_primitiveSharedMutableLineStripMesh = _assetLoader.MeshBuilder.CreateFromVertices(
 			vertices,
 			triangles,
 			new MeshCreationConfig { AllowsPerInstanceVertexMutation = true, Name = "Primitive Line Band" }
@@ -296,7 +296,7 @@ sealed partial class LocalSceneBuilder {
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitiveCuboidResources is not { } resources) {
-			var mesh = _assetLoader.MeshBuilder.CreateMesh(
+			var mesh = _assetLoader.MeshBuilder.CreateCuboid(
 				Cuboid.UnitCube, 
 				true, 
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
@@ -325,13 +325,13 @@ sealed partial class LocalSceneBuilder {
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitiveSphereResources is not { } resources) {
-			var solidMesh = _assetLoader.MeshBuilder.CreateMesh(
+			var solidMesh = _assetLoader.MeshBuilder.CreateSphere(
 				Sphere.UnitSphere, 
 				6,
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
 				new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.Disabled, Name = "Primitive Sphere (Solid) Mesh" }
 			);
-			var wireframeMesh = _assetLoader.MeshBuilder.CreateMesh(
+			var wireframeMesh = _assetLoader.MeshBuilder.CreateSphere(
 				Sphere.UnitSphere, 
 				2,
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
@@ -361,7 +361,7 @@ sealed partial class LocalSceneBuilder {
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitivePlaneResources is not { } resources) {
-			var mesh = _assetLoader.MeshBuilder.CreateQuadMesh(
+			var mesh = _assetLoader.MeshBuilder.CreateQuad(
 				twoSided: true, 
 				backSideInvertsTextures: false,
 				new MeshGenerationConfig { TextureTransform = Transform2D.FromScalingOnly(PlaneSize) }, 
@@ -599,7 +599,7 @@ sealed partial class LocalSceneBuilder {
 
 	ResourceGroup GetSharedArrowResources() {
 		if (_primitiveArrowResources != null) return _primitiveArrowResources.Value;
-		var arrowMesh = _assetLoader.MeshBuilder.CreateMesh(
+		var arrowMesh = _assetLoader.MeshBuilder.CreateArrow(
 			ScenePrimitive.ArrowStemLengthFraction,
 			ScenePrimitive.ArrowStemRadiusFraction,
 			ScenePrimitive.ArrowHeadLengthFraction,

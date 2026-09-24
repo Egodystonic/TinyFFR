@@ -46,7 +46,7 @@ static partial class SmokeSections {
 		using var testMaterial = Factory.MaterialBuilder.CreateTestMaterial();
 		using var testMaterialUnlit = Factory.MaterialBuilder.CreateTestMaterial(ignoresLighting: true);
 
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Default Material Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Default Material Mesh");
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, name: "Benchmark Default Material Instance");
 		instance.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain3D);
 		instance.SetDefaultMaterialBaseColor(StandardColor.Yellow);
@@ -62,7 +62,7 @@ static partial class SmokeSections {
 		using var colorMap = Factory.TextureBuilder.CreateColorMap(BenchmarkAssets.ColorPattern, includeAlpha: false, "Benchmark Effects Color Map");
 		using var blendMap = Factory.TextureBuilder.CreateColorMap(BenchmarkAssets.AlphaColorPattern, includeAlpha: true, "Benchmark Effects Blend Map");
 		using var material = Factory.MaterialBuilder.CreateStandardMaterial(colorMap, enablePerInstanceEffects: true, name: "Benchmark Effects Material");
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Effects Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Effects Mesh");
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, name: "Benchmark Effects Instance");
 
 		if (instance.MaterialEffects is { } effects) {

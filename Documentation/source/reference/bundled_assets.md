@@ -7,7 +7,7 @@ description: Information on how to load composite asset files (including glTF/gl
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * You can load entire assets via `LoadAll(@"my_file.gltf")`. :material-arrow-right: [Bundled/Composite Asset Files](#bundledcomposite-asset-files)
+    * You can load entire assets via `assetLoader.LoadAll(@"my_file.gltf")`. :material-arrow-right: [Bundled/Composite Asset Files](#bundledcomposite-asset-files)
     * Every component texture, mesh, material, and model definition are returned together as a `ResourceGroup`. :material-arrow-right: [ResourceGroups](#resourcegroups)
     * It's possible to customize exactly how the resources are loaded. :material-arrow-right: [Customizing the Load Operation](#customizing-the-load-operation)
 

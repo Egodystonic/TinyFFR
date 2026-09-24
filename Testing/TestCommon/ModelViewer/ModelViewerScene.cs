@@ -272,7 +272,7 @@ public sealed class ModelViewerScene : IDisposable {
 
 		var overlayCamera = _factory.CameraBuilder.CreateCamera(Location.Origin);
 		var overlayScene = _factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.None);
-		var overlayMesh = _factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		var overlayMesh = _factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		var overlayMaterial = _factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(overlayTexture);
 		var overlayInstance = _factory.ObjectBuilder.CreateModelInstance(
 			overlayMesh,

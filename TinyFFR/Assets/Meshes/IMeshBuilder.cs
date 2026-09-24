@@ -41,7 +41,7 @@ public interface IMeshBuilder {
 	/// <param name="centreTextureOrigin">Whether each face's texture is centred on that face rather than starting at its corner.</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="cuboidDesc"/> has a non-positive extent.</exception>
-	Mesh CreateMesh(Cuboid cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, centreTextureOrigin, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	Mesh CreateCuboid(Cuboid cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateCuboid(cuboidDesc, centreTextureOrigin, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
 	/// <summary>
 	/// Creates a box-shaped mesh, using the given configs.
 	/// </summary>
@@ -50,7 +50,7 @@ public interface IMeshBuilder {
 	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
 	/// <param name="config">Controls how the mesh is created.</param>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="cuboidDesc"/> has a non-positive extent.</exception>
-	Mesh CreateMesh(Cuboid cuboidDesc, bool centreTextureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	Mesh CreateCuboid(Cuboid cuboidDesc, bool centreTextureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		if (!cuboidDesc.IsPhysicallyValid) {
 			throw new ArgumentException("Given cuboid must be physically valid (all extents should be positive).", nameof(cuboidDesc));
 		}
@@ -130,7 +130,7 @@ public interface IMeshBuilder {
 			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Down) : polyVertexSpan[3]
 		);
 
-		return CreateMesh(polyGroup, in generationConfig, in config);
+		return CreateFromPolygonGroup(polyGroup, in generationConfig, in config);
 	}
 	#endregion
 
@@ -155,7 +155,7 @@ public interface IMeshBuilder {
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="sphereDesc"/> has a non-positive radius.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="subdivisionLevel"/> is negative.</exception>
-	Mesh CreateMesh(Sphere sphereDesc, Transform2D? textureTransform = null, int subdivisionLevel = 4, ReadOnlySpan<char> name = default) => CreateMesh(sphereDesc, subdivisionLevel, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	Mesh CreateSphere(Sphere sphereDesc, Transform2D? textureTransform = null, int subdivisionLevel = 4, ReadOnlySpan<char> name = default) => CreateSphere(sphereDesc, subdivisionLevel, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
 	/// <summary>
 	/// Creates a sphere-shaped mesh, using the given configs.
 	/// </summary>
@@ -171,7 +171,7 @@ public interface IMeshBuilder {
 	/// <param name="config">Controls how the mesh is created.</param>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="sphereDesc"/> has a non-positive radius.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="subdivisionLevel"/> is negative.</exception>
-	Mesh CreateMesh(Sphere sphereDesc, int subdivisionLevel, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	Mesh CreateSphere(Sphere sphereDesc, int subdivisionLevel, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		static void CreateFixedSeamVertexCacheForLatestMeshLevel() {
 			var latestMeshLevelTuple = _sphereMeshes[^1];
 			var fixedSeamVertices = new MeshVertex[latestMeshLevelTuple.Vertices.Length];
@@ -213,7 +213,7 @@ public interface IMeshBuilder {
 		try {
 			var configWithScaling = config with { LinearRescalingFactor = config.LinearRescalingFactor * sphereDesc.Radius };
 			if (verticesMemory == null) {
-				return CreateMesh(fixedVertices, triangles, in configWithScaling);
+				return CreateFromVertices(fixedVertices, triangles, in configWithScaling);
 			}
 			else {
 				var texTransform = generationConfig.TextureTransform with { Scaling = generationConfig.TextureTransform.Scaling.Reciprocal ?? XYPair<float>.Zero };
@@ -221,7 +221,7 @@ public interface IMeshBuilder {
 					verticesMemory.Value.Span[i] = defaultVertices[i] with { TextureCoords = defaultVertices[i].TextureCoords * texTransform };
 				}
 				FixIcosphereSeams(verticesMemory.Value.Span, triangles, verticesMemory.Value.Span, texTransform.Scaling.X);
-				return CreateMesh(verticesMemory.Value.Span, triangles, in configWithScaling);
+				return CreateFromVertices(verticesMemory.Value.Span, triangles, in configWithScaling);
 			}
 		}
 		finally {
@@ -427,8 +427,8 @@ public interface IMeshBuilder {
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown when any length or radius is not positive, or when <paramref name="segmentCount"/> is less than <see cref="MinArrowSegmentCount"/>.</exception>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="headRadius"/> is smaller than <paramref name="stemRadius"/>.</exception>
-	Mesh CreateMesh(float stemLength, float stemRadius, float headLength, float headRadius, ArrowMeshOrigin origin = ArrowMeshOrigin.Tail, int segmentCount = DefaultArrowSegmentCount, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
-		return CreateMesh(
+	Mesh CreateArrow(float stemLength, float stemRadius, float headLength, float headRadius, ArrowMeshOrigin origin = ArrowMeshOrigin.Tail, int segmentCount = DefaultArrowSegmentCount, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
+		return CreateArrow(
 			stemLength,
 			stemRadius,
 			headLength,
@@ -464,7 +464,7 @@ public interface IMeshBuilder {
 	/// <param name="config">Controls how the mesh is created.</param>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown when any length or radius is not positive, or when <paramref name="segmentCount"/> is less than <see cref="MinArrowSegmentCount"/>.</exception>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="headRadius"/> is smaller than <paramref name="stemRadius"/>.</exception>
-	Mesh CreateMesh(float stemLength, float stemRadius, float headLength, float headRadius, ArrowMeshOrigin origin, int segmentCount, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	Mesh CreateArrow(float stemLength, float stemRadius, float headLength, float headRadius, ArrowMeshOrigin origin, int segmentCount, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		if (!(stemLength > 0f)) throw new ArgumentOutOfRangeException(nameof(stemLength), stemLength, "Stem length must be positive.");
 		if (!(stemRadius > 0f)) throw new ArgumentOutOfRangeException(nameof(stemRadius), stemRadius, "Stem radius must be positive.");
 		if (!(headLength > 0f)) throw new ArgumentOutOfRangeException(nameof(headLength), headLength, "Head length must be positive.");
@@ -549,7 +549,7 @@ public interface IMeshBuilder {
 			_ => 0f
 		};
 
-		return CreateMesh(
+		return CreateFromVertices(
 			vertices,
 			triangles,
 			config with { OriginTranslation = config.OriginTranslation + new Vect(0f, 0f, originOffset) }
@@ -578,9 +578,9 @@ public interface IMeshBuilder {
 	/// <param name="textureOrigin">The point on the polygon that maps to the texture's origin, or <see langword="null"/> to derive one.</param>
 	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
-	Mesh CreateMesh(Polygon polygon, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
+	Mesh CreateFromPolygon(Polygon polygon, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
 		polygon.FillInMissingTriangulationParameters(ref textureUDirection, ref textureVDirection, ref textureOrigin);
-		return CreateMesh(
+		return CreateFromPolygon(
 			polygon,
 			textureUDirection.Value,
 			textureVDirection.Value,
@@ -598,10 +598,10 @@ public interface IMeshBuilder {
 	/// <param name="textureOrigin">The point on the polygon that maps to the texture's origin.</param>
 	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
 	/// <param name="config">Controls how the mesh is created.</param>
-	Mesh CreateMesh(Polygon polygon, Direction textureUDirection, Direction textureVDirection, Location textureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	Mesh CreateFromPolygon(Polygon polygon, Direction textureUDirection, Direction textureVDirection, Location textureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		using var polyGroup = AllocateNewPolygonGroup();
 		polyGroup.Add(polygon, textureUDirection, textureVDirection, textureOrigin);
-		return CreateMesh(polyGroup, in generationConfig, in config);
+		return CreateFromPolygonGroup(polyGroup, in generationConfig, in config);
 	}
 
 	/// <summary>
@@ -614,7 +614,7 @@ public interface IMeshBuilder {
 	/// <param name="polygons">The polygons to build the mesh from.</param>
 	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change..</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
-	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(polygons, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	Mesh CreateFromPolygonGroup(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateFromPolygonGroup(polygons, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
 	/// <summary>
 	/// Creates a mesh from a group of polygons, using the given configs.
 	/// </summary>
@@ -625,10 +625,10 @@ public interface IMeshBuilder {
 	/// <param name="polygons">The polygons to build the mesh from.</param>
 	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
 	/// <param name="config">Controls how the mesh is created.</param>
-	Mesh CreateMesh(IMeshPolygonGroup polygons, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	Mesh CreateFromPolygonGroup(IMeshPolygonGroup polygons, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		ArgumentNullException.ThrowIfNull(polygons);
 		polygons.Triangulate(generationConfig.TextureTransform, out var vertices, out var triangles);
-		return CreateMesh(vertices, triangles, config);
+		return CreateFromVertices(vertices, triangles, config);
 	}
 	#endregion
 	
@@ -645,8 +645,8 @@ public interface IMeshBuilder {
 	/// <param name="backSideInvertsTextures">Whether the back face mirrors its texture, so that the quad reads the same way round from either side rather than appearing reversed from behind.</param>
 	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
-	QuadMesh CreateQuadMesh(bool twoSided = true, bool backSideInvertsTextures = false, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
-		return CreateQuadMesh(
+	QuadMesh CreateQuad(bool twoSided = true, bool backSideInvertsTextures = false, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
+		return CreateQuad(
 			twoSided,
 			backSideInvertsTextures,
 			new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None },
@@ -665,7 +665,7 @@ public interface IMeshBuilder {
 	/// <param name="backSideInvertsTextures">Whether the back face mirrors its texture, so that the quad reads the same way round from either side rather than appearing reversed from behind.</param>
 	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
 	/// <param name="config">Controls how the mesh is created.</param>
-	QuadMesh CreateQuadMesh(bool twoSided, bool backSideInvertsTextures, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	QuadMesh CreateQuad(bool twoSided, bool backSideInvertsTextures, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		Span<MeshVertex> vertices = stackalloc MeshVertex[twoSided ? 8 : 4];
 		Span<VertexTriangle> triangles = stackalloc VertexTriangle[twoSided ? 4 : 2];
 		
@@ -733,7 +733,7 @@ public interface IMeshBuilder {
 			triangles[3] = new VertexTriangle(5, 6, 7);
 		}
 		
-		return new QuadMesh(CreateMesh(vertices, triangles, in config));
+		return new QuadMesh(CreateFromVertices(vertices, triangles, in config));
 	}
 	
 	/// <summary>
@@ -758,7 +758,7 @@ public interface IMeshBuilder {
 	/// </remarks>
 	/// <param name="meshDensity">How finely the grid is divided. Denser grids deform more smoothly but cost more to draw and to update.</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
-	MutableGridMesh CreateMutableGridMesh(Quality meshDensity, ReadOnlySpan<char> name = default) {
+	MutableGridMesh CreateMutableGrid(Quality meshDensity, ReadOnlySpan<char> name = default) {
 		var gridDimensions = meshDensity switch {
 			Quality.VeryLow => new XYPair<int>(32, 32),
 			Quality.Low => new XYPair<int>(64, 64),
@@ -767,7 +767,7 @@ public interface IMeshBuilder {
 			_ => new XYPair<int>(128, 128)
 		};
 		
-		return CreateMutableGridMesh(gridDimensions, name: name);
+		return CreateMutableGrid(gridDimensions, name: name);
 	}
 	/// <summary>
 	/// Creates a flat grid sheet mesh whose vertices can be displaced at runtime.
@@ -787,8 +787,8 @@ public interface IMeshBuilder {
 	/// <param name="textureTransform">How to scale, rotate and shift the generated texture coordinates, or <see langword="null"/> for no change.</param>
 	/// <param name="gridOrigin">Which corner of the grid its own origin sits at (or the centre if <see cref="Orientation2D.None"/>).</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
-	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, float maxHeightDisplacement = 1f, bool twoSided = true, Direction? xDir = null, Direction? yDir = null, Direction? upDir = null, Transform2D? textureTransform = null, Orientation2D gridOrigin = Orientation2D.None, ReadOnlySpan<char> name = default) {
-		return CreateMutableGridMesh(
+	MutableGridMesh CreateMutableGrid(XYPair<int> gridDimensions, float maxHeightDisplacement = 1f, bool twoSided = true, Direction? xDir = null, Direction? yDir = null, Direction? upDir = null, Transform2D? textureTransform = null, Orientation2D gridOrigin = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateMutableGrid(
 			gridDimensions,
 			maxHeightDisplacement,
 			twoSided,
@@ -818,7 +818,7 @@ public interface IMeshBuilder {
 	/// <param name="gridOrigin">Which corner of the grid its own origin sits at (or the centre if <see cref="Orientation2D.None"/>).</param>
 	/// <param name="generationConfig">Controls how the vertices are produced, chiefly how textures lie across them.</param>
 	/// <param name="config">Controls how the mesh is created.</param>
-	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, float maxHeightDisplacement, bool twoSided, Direction xDir, Direction yDir, Direction upDir, Orientation2D gridOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	MutableGridMesh CreateMutableGrid(XYPair<int> gridDimensions, float maxHeightDisplacement, bool twoSided, Direction xDir, Direction yDir, Direction upDir, Orientation2D gridOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		if (gridDimensions.X < 2 || gridDimensions.Y < 2) {
 			throw new ArgumentOutOfRangeException(nameof(gridDimensions), gridDimensions, "Vertex count X and Y must be at least 2.");
 		}
@@ -888,7 +888,7 @@ public interface IMeshBuilder {
 			MathF.Abs(xDir.Z) + MathF.Abs(yDir.Z) + doubleMaxHeight * MathF.Abs(upDir.Z),
 			(xDir * 0.5f + yDir * 0.5f).AsLocation() - originTranslation
 		);
-		var mesh = CreateMesh(
+		var mesh = CreateFromVertices(
 			vertexBuffer.Span, 
 			triangleBuffer.Span, 
 			config with {
@@ -941,14 +941,14 @@ public interface IMeshBuilder {
 	/// <param name="triangles">The triangles joining those vertices, each given as three indices in to <paramref name="vertices"/>.
 	/// Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
-	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
+	Mesh CreateFromVertices(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateFromVertices(vertices, triangles, new MeshCreationConfig { Name = name });
 	/// <summary>
 	/// Creates a mesh directly from vertices and triangles, using the given config.
 	/// </summary>
 	/// <param name="vertices">The mesh's vertices.</param>
 	/// <param name="triangles">The triangles joining those vertices, each given as three indices in to <paramref name="vertices"/>. Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
 	/// <param name="config">Controls how the mesh is created.</param>
-	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
+	Mesh CreateFromVertices(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
 
 	/// <summary>
 	/// Creates a skeletal mesh, whose vertices are moved by a tree of joints.
@@ -971,8 +971,8 @@ public interface IMeshBuilder {
 	/// Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
 	/// <param name="skeletalNodes">The skeleton's joints, in the order the vertices' bone indices refer to them. Must hold no more than <see cref="MaxSkeletalBoneCount"/> bones.</param>
 	/// <param name="name">The name to give the mesh. May be left empty.</param>
-	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, ReadOnlySpan<char> name = default) {
-		return CreateMesh(
+	Mesh CreateFromVertices(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, ReadOnlySpan<char> name = default) {
+		return CreateFromVertices(
 			vertices,
 			triangles,
 			skeletalNodes,
@@ -1002,7 +1002,7 @@ public interface IMeshBuilder {
 	/// Each triangle's indices must be in anticlockwise order as seen from its front face.</param>
 	/// <param name="skeletalNodes">The skeleton's joints, in the order the vertices' bone indices refer to them. Must hold no more than <see cref="MaxSkeletalBoneCount"/> bones.</param>
 	/// <param name="config">Controls how the mesh is created.</param>
-	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config);
+	Mesh CreateFromVertices(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config);
 	#endregion
 
 	#region Nodes & Animations

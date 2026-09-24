@@ -23,7 +23,7 @@ class LocalCameraControllerTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "press space | Space to change scenario, num keys to change params");
 		window.LockCursor = true;
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere);
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateSphere(Sphere.OneMeterCubedVolumeSphere);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);

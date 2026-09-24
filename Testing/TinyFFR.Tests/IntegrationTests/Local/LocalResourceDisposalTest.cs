@@ -111,7 +111,7 @@ class LocalResourceDisposalTest {
 		AssertUseAfterDisposalThrowsException(cameraBuilder.CreateCamera(), objectIsAlreadyDisposed: false, cameraActions);
 		var assetLoader = factory.AssetLoader;
 		var meshBuilder = assetLoader.MeshBuilder;
-		var mesh = meshBuilder.CreateMesh(new Cuboid(1f));
+		var mesh = meshBuilder.CreateCuboid(new Cuboid(1f));
 		var meshActions = new Action<Mesh>[] {
 			v => _ = v.Handle,
 			v => _ = v.GetNameAsNewStringObject(),
@@ -119,7 +119,7 @@ class LocalResourceDisposalTest {
 			v => v.CopyName(_nameDestinationBuffer),
 			v => _ = v.BufferData
 		};
-		AssertUseAfterDisposalThrowsException(meshBuilder.CreateMesh(new Cuboid(1f)), objectIsAlreadyDisposed: false, meshActions);
+		AssertUseAfterDisposalThrowsException(meshBuilder.CreateCuboid(new Cuboid(1f)), objectIsAlreadyDisposed: false, meshActions);
 		var textureBuilder = assetLoader.TextureBuilder;
 		var texture = textureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false);
 		var textureActions = new Action<Texture>[] {
@@ -394,7 +394,7 @@ class LocalResourceDisposalTest {
 		);
 		AssertUseAfterDisposalThrowsException(
 			meshBuilder, objectIsAlreadyDisposed: true,
-			v => _ = v.CreateMesh(new Cuboid(1f))
+			v => _ = v.CreateCuboid(new Cuboid(1f))
 		);
 		AssertUseAfterDisposalThrowsException(
 			textureBuilder, objectIsAlreadyDisposed: true,

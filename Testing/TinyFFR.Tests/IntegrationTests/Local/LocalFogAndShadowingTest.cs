@@ -69,8 +69,8 @@ class LocalFogAndShadowingTest {
 		};
 
 		// --- Geometry ---
-		var floorMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f, 0.05f, 1f), name: "Floor Tile");
-		var columnMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Column");
+		var floorMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(1f, 0.05f, 1f), name: "Floor Tile");
+		var columnMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Column");
 		resGroup.Add(floorMesh);
 		resGroup.Add(columnMesh);
 

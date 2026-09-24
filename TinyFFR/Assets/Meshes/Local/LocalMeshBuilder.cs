@@ -104,11 +104,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return _globals.HeapPool.CreateSpanLease<VertexTriangle>(triangleCount);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
+	public Mesh CreateFromVertices(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
 		return ProcessVerticesAndCreateMesh(vertices, triangles, in config, 0);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config) {
+	public Mesh CreateFromVertices(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config) {
 		var boneCount = CalculateAndValidateBoneCount(skeletalNodes);
 
 		// If there are 0 bones we'll create a mesh with a default value for a single bone instead.
@@ -124,7 +124,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 				0
 			);
 
-			return CreateMesh(
+			return CreateFromVertices(
 				vertices,
 				triangles,
 				new ReadOnlySpan<SkeletalAnimationNode>(in defaultNode),

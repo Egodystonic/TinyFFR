@@ -64,13 +64,13 @@ class LocalSceneQueryingTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		scene.Add(sunlight);
 
-		using var cuboidMesh = factory.MeshBuilder.CreateMesh(
+		using var cuboidMesh = factory.MeshBuilder.CreateCuboid(
 			new Cuboid(0.8f),
 			centreTextureOrigin: false,
 			new MeshGenerationConfig { TextureTransform = Transform2D.None },
 			new MeshCreationConfig { Name = "Query Test Cuboid", WireframeGenerationMode = WireframeGenerationMode.Enabled }
 		);
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(
+		using var sphereMesh = factory.MeshBuilder.CreateSphere(
 			new Sphere(0.45f),
 			subdivisionLevel: 4,
 			new MeshGenerationConfig { TextureTransform = Transform2D.None },

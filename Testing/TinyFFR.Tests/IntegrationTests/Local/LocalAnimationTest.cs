@@ -68,7 +68,7 @@ class LocalAnimationTest {
 			new(Matrix4x4.CreateTranslation(0f, 0f, 3f), Matrix4x4.Identity, 0, 1),	
 		};
 		
-		var mesh = factory.MeshBuilder.CreateMesh(
+		var mesh = factory.MeshBuilder.CreateFromVertices(
 			vertices,
 			triangles,
 			nodes
@@ -123,7 +123,7 @@ class LocalAnimationTest {
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
-		using var nodeHighlightMesh = factory.MeshBuilder.CreateMesh(new Cuboid(0.1f, 0.4f, 0.1f));
+		using var nodeHighlightMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(0.1f, 0.4f, 0.1f));
 		using var nodeHighlightMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(factory.TextureBuilder.CreateColorMap(StandardColor.Red, includeAlpha: false));
 		using var nodeHighlighter = factory.ObjectBuilder.CreateModelInstance(nodeHighlightMesh, nodeHighlightMat); 
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);

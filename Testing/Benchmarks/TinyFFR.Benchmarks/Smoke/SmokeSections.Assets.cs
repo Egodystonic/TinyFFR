@@ -67,7 +67,7 @@ static partial class SmokeSections {
 	static void BakeOneAssetSet() {
 		Factory.AssetBakery.Enabled = true;
 
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Bake Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Bake Mesh");
 		using var texture = Factory.TextureBuilder.CreateColorMap(BenchmarkAssets.ColorPattern, includeAlpha: false, "Benchmark Bake Texture");
 		using var material = Factory.MaterialBuilder.CreateStandardMaterial(texture, name: "Benchmark Bake Material");
 

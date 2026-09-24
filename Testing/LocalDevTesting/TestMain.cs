@@ -45,19 +45,17 @@ static partial class TestMain {
 		var factory = builder.Context.Factory!;
 		var scene = builder.Context.Scene!.Value;
 		
-		using var crateMesh = factory.AssetLoader.LoadMesh(
-			@"Assets/crate.obj", 
-			new MeshCreationConfig() {
-				WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplication
-			},
-			new MeshReadConfig {
-				CorrectFlippedOrientation = true
-			}
-		);
-		using var crateColorTex = factory.AssetLoader.LoadColorMap(@"Assets/crate_albedo.bmp");
-		using var crateMat = factory.MaterialBuilder.CreateStandardMaterial(crateColorTex);
-		using var crateInstance = factory.ObjectBuilder.CreateModelInstance(crateMesh, crateMat);
-		scene.Add(crateInstance);
+		using var cubeMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+		using var sphereMesh = factory.MeshBuilder.CreateSphere(Sphere.OneMeterCubedVolumeSphere);
+		using var arrowMesh = factory.MeshBuilder.CreateArrow(0.65f, 0.2f, 0.35f, 0.45f);
+		
+		using var polygons = factory.MeshBuilder.AllocateNewPolygonGroup();
+		AssemblePolygons(polygons);
+		using var polyMesh = factory.MeshBuilder.CreateFromPolygonGroup(polygons);
+		
+using var vertexLease = factory.ResourceAllocator.BorrowSpan<MeshVertex>(4);
+using var triangleLease = factory.ResourceAllocator.BorrowSpan<VertexTriangle>(2);
+		using var vertMesh = factory.MeshBuilder.CreateFromVertices(vertices);
 	}
 
 	public static void StartTest(TestContext context) {

@@ -40,7 +40,7 @@ static class SmokeProbes {
 	const int LiveInstanceCount = 2_000;
 
 	static void ProbeLiveInstances() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Probe Live Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Probe Live Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 
 		Measure($"hold {LiveInstanceCount} live instances, no scene", () => {
@@ -146,8 +146,8 @@ static class SmokeProbes {
 	}
 
 	static void ProbeQuads() {
-		using var quadMesh = Factory.MeshBuilder.CreateQuadMesh(name: "Probe Quad Mesh");
-		using var cuboidMesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Probe Cuboid Mesh");
+		using var quadMesh = Factory.MeshBuilder.CreateQuad(name: "Probe Quad Mesh");
+		using var cuboidMesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Probe Cuboid Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var scene = Factory.SceneBuilder.CreateScene(name: "Probe Quad Scene");
 
@@ -232,13 +232,13 @@ static class SmokeProbes {
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 
 		Measure($"CreateMesh(UnitCube) + Dispose x{CreateCount}", static () => {
-			for (var i = 0; i < CreateCount; ++i) Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Probe Grouped Mesh").Dispose();
+			for (var i = 0; i < CreateCount; ++i) Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Probe Grouped Mesh").Dispose();
 		}, CreateCount);
 
 		using var group = Allocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true, "Probe Resource Group", CreateCount * 2);
 		var meshes = Allocator.GetSharedScratchList<Mesh>();
 		for (var i = 0; i < CreateCount; ++i) {
-			var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Probe Grouped Mesh");
+			var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Probe Grouped Mesh");
 			var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, name: "Probe Grouped Instance");
 			group.Add(mesh);
 			group.Add(instance);
@@ -312,11 +312,11 @@ static class SmokeProbes {
 
 	static void ProbeResourceNamingAndDirectory() {
 		Measure($"CreateMesh(named) + Dispose x{CreateCount}", static () => {
-			for (var i = 0; i < CreateCount; ++i) Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: ProbeMeshName).Dispose();
+			for (var i = 0; i < CreateCount; ++i) Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: ProbeMeshName).Dispose();
 		}, CreateCount);
 
 		var meshes = Allocator.GetSharedScratchList<Mesh>();
-		for (var i = 0; i < CreateCount; ++i) meshes.Add(Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: ProbeMeshName));
+		for (var i = 0; i < CreateCount; ++i) meshes.Add(Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: ProbeMeshName));
 
 		try {
 			Measure($"mesh.GetNameLength x{CreateCount}", () => {
@@ -362,7 +362,7 @@ static class SmokeProbes {
 	static void BakeOneSet() {
 		Factory.AssetBakery.Enabled = true;
 
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Probe Bake Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Probe Bake Mesh");
 		using var texture = Factory.TextureBuilder.CreateColorMap(BenchmarkAssets.ColorPattern, includeAlpha: false, "Probe Bake Texture");
 		using var material = Factory.MaterialBuilder.CreateStandardMaterial(texture, name: "Probe Bake Material");
 
@@ -373,7 +373,7 @@ static class SmokeProbes {
 	}
 
 	static void CreateOneBakeableSet() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Probe Bake Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Probe Bake Mesh");
 		using var texture = Factory.TextureBuilder.CreateColorMap(BenchmarkAssets.ColorPattern, includeAlpha: false, "Probe Bake Texture");
 		using var material = Factory.MaterialBuilder.CreateStandardMaterial(texture, name: "Probe Bake Material");
 	}

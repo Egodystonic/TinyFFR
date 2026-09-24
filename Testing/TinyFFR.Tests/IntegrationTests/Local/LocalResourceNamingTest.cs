@@ -45,7 +45,7 @@ class LocalResourceNamingTest {
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.LoadFont(name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
-		TestNameStorageAndRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
+		TestNameStorageAndRetrieval(n => factory.AssetLoader.MeshBuilder.CreateCuboid(new Cuboid(1f), name: n));
 		TestNameStorageAndRetrieval(n => factory.MeshBuilder.CreateDynamicVertexBuffer(3, 3, name: n));
 		TestNameStorageAndRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
@@ -62,7 +62,7 @@ class LocalResourceNamingTest {
 		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreateSpotLight(name: n));
 		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreateDirectionalLight(name: n));
 		TestNameStorageAndRetrieval(n => factory.SceneBuilder.CreateScene(name: n));
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(new Cuboid(1f));
 		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: n));
 		TestNameStorageAndRetrieval(n => factory.RendererBuilder.CreateRenderOutputBuffer(name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.CreateModel(mesh, mat, name: n));
@@ -78,7 +78,7 @@ class LocalResourceNamingTest {
 			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
 			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
 		};
-		using var skeletalMesh = factory.MeshBuilder.CreateMesh(skeletalVertices, new VertexTriangle[] { new(0, 1, 2) }, skeletalNodes);
+		using var skeletalMesh = factory.MeshBuilder.CreateFromVertices(skeletalVertices, new VertexTriangle[] { new(0, 1, 2) }, skeletalNodes);
 		TestNameStorageAndRetrieval(n => factory.MeshBuilder.AttachAnimation(
 			skeletalMesh,
 			ReadOnlySpan<SkeletalAnimationScalingKeyframe>.Empty,

@@ -53,7 +53,7 @@ class LocalRenderOutputBufferTest {
 
 	unsafe void TestRenderTargetAsTexture() {
 		using var factory = new LocalTinyFfrFactory();
-		using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 
 		// RenderBuffer Scene
@@ -144,7 +144,7 @@ class LocalRenderOutputBufferTest {
 			repetitions: (8, 8)
 		), "normal");
 		using var mat = factory.MaterialBuilder.CreateStandardMaterial(colorTex, normalTex, name: "mat");
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		using var cube = factory.ObjectBuilder.CreateModelInstance(
 			mesh,
 			mat,

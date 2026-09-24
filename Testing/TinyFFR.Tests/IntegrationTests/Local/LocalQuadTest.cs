@@ -31,10 +31,10 @@ class LocalQuadTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Quad Test (key: 1/2/3/4 X/Y)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var twoSidedInvertQuadMesh = factory.MeshBuilder.CreateQuadMesh(twoSided: true, backSideInvertsTextures: true);
-		using var oneSidedInvertQuadMesh = factory.MeshBuilder.CreateQuadMesh(twoSided: false, backSideInvertsTextures: true);
-		using var twoSidedNonInvertQuadMesh = factory.MeshBuilder.CreateQuadMesh(twoSided: true, backSideInvertsTextures: false);
-		using var oneSidedNonInvertQuadMesh = factory.MeshBuilder.CreateQuadMesh(twoSided: false, backSideInvertsTextures: false);
+		using var twoSidedInvertQuadMesh = factory.MeshBuilder.CreateQuad(twoSided: true, backSideInvertsTextures: true);
+		using var oneSidedInvertQuadMesh = factory.MeshBuilder.CreateQuad(twoSided: false, backSideInvertsTextures: true);
+		using var twoSidedNonInvertQuadMesh = factory.MeshBuilder.CreateQuad(twoSided: true, backSideInvertsTextures: false);
+		using var oneSidedNonInvertQuadMesh = factory.MeshBuilder.CreateQuad(twoSided: false, backSideInvertsTextures: false);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		using var twoSidedInvertQuadInst = factory.ObjectBuilder.CreateQuadInstance(twoSidedInvertQuadMesh, mat);
 		using var oneSidedInvertQuadInst = factory.ObjectBuilder.CreateQuadInstance(oneSidedInvertQuadMesh, mat);

@@ -46,7 +46,7 @@ class LocalResourceDirectoryTest {
 		TestDirectoryRetrieval(n => factory.AssetLoader.LoadFont(name: n));
 		using (var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: "bbbbb")) {
 			TestDirectoryRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
-			using (var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f))) {
+			using (var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(new Cuboid(1f))) {
 				using (var mat = factory.MaterialBuilder.CreateStandardMaterial(tex, name: "bbbbb")) {
 					TestDirectoryRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: n));
 					TestDirectoryRetrieval(n => factory.AssetLoader.CreateModel(mesh, mat, name: n));
@@ -54,7 +54,7 @@ class LocalResourceDirectoryTest {
 			}
 		}
 		TestDirectoryRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
-		TestDirectoryRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
+		TestDirectoryRetrieval(n => factory.AssetLoader.MeshBuilder.CreateCuboid(new Cuboid(1f), name: n));
 		TestDirectoryRetrieval(n => factory.MeshBuilder.CreateDynamicVertexBuffer(3, 3, name: n));
 		TestDirectoryRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
@@ -87,7 +87,7 @@ class LocalResourceDirectoryTest {
 			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
 			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
 		};
-		using var skeletalMesh = factory.MeshBuilder.CreateMesh(skeletalVertices, new VertexTriangle[] { new(0, 1, 2) }, skeletalNodes);
+		using var skeletalMesh = factory.MeshBuilder.CreateFromVertices(skeletalVertices, new VertexTriangle[] { new(0, 1, 2) }, skeletalNodes);
 		TestDirectoryRetrieval(n => factory.MeshBuilder.AttachAnimation(
 			skeletalMesh,
 			ReadOnlySpan<SkeletalAnimationScalingKeyframe>.Empty,

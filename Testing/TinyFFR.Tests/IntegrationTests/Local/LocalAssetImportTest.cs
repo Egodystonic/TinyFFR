@@ -170,7 +170,7 @@ class LocalAssetImportTest {
 	}
 
 	void ExecuteMapLoadTests(LocalTinyFfrFactory factory, Window window, ApplicationLoop loop, Camera camera, Scene scene, Renderer renderer) {
-		var cube = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		var cube = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		var defaultMat = factory.MaterialBuilder.CreateTestMaterial(false);
 		var instance = factory.ObjectBuilder.CreateModelInstance(cube, defaultMat);
 		var lights = new List<PointLight>();

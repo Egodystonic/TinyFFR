@@ -281,7 +281,7 @@ class LocalAssetBakingTest {
 			}
 			else throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
 
-			_mesh = factory.MeshBuilder.CreateMesh(new Cuboid(CubeSize), name: "Baked Material Cuboid");
+			_mesh = factory.MeshBuilder.CreateCuboid(new Cuboid(CubeSize), name: "Baked Material Cuboid");
 		}
 
 		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {
@@ -719,7 +719,7 @@ class LocalAssetBakingTest {
 			}
 			else throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
 
-			_mesh = factory.MeshBuilder.CreateMesh(new Cuboid(CubeSize), name: "Shared Map Cuboid");
+			_mesh = factory.MeshBuilder.CreateCuboid(new Cuboid(CubeSize), name: "Shared Map Cuboid");
 		}
 
 		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {

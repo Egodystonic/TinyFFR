@@ -565,7 +565,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			text,
 			NameEndingString
 		);
-		var mesh = _meshBuilder.CreateMesh(
+		var mesh = _meshBuilder.CreateFromVertices(
 			textData.Vertices.Span, 
 			textData.Triangles.Span, 
 			new MeshCreationConfig {

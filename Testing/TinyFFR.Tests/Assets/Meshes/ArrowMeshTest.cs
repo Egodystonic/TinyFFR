@@ -25,13 +25,13 @@ class ArrowMeshTest {
 		ScopedSpanLease<MeshVertex> IMeshBuilder.GetPooledVertexBuffer(int vertexCount) => _pool.CreateSpanLease<MeshVertex>(vertexCount);
 		ScopedSpanLease<VertexTriangle> IMeshBuilder.GetPooledTriangleBuffer(int triangleCount) => _pool.CreateSpanLease<VertexTriangle>(triangleCount);
 		public DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, ReadOnlySpan<char> name = default) => throw new NotSupportedException();
-		public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
+		public Mesh CreateFromVertices(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
 			Vertices = vertices.ToArray();
 			Triangles = triangles.ToArray();
 			OriginTranslation = config.OriginTranslation;
 			return default;
 		}
-		public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config) => throw new NotSupportedException();
+		public Mesh CreateFromVertices(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config) => throw new NotSupportedException();
 		public void SetSkeletonNodeName(Mesh mesh, int nodeIndex, ReadOnlySpan<char> name) => throw new NotSupportedException();
 		public MeshAnimation AttachAnimation(Mesh mesh, ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor> boneMutations, float defaultCompletionTimeSeconds, ReadOnlySpan<char> name) => throw new NotSupportedException();
 		public void Dispose() => _pool.Dispose();
@@ -52,7 +52,7 @@ class ArrowMeshTest {
 
 	[Test]
 	public void WindingConventionShouldMatchQuadMesh() {
-		_ = Builder.CreateQuadMesh(twoSided: false);
+		_ = Builder.CreateQuad(twoSided: false);
 		var t = _builder.Triangles[0];
 		var faceNormal = Vector3.Normalize(FaceNormal(_builder.Vertices[t.IndexA], _builder.Vertices[t.IndexB], _builder.Vertices[t.IndexC]));
 		Assert.AreEqual(-1f, faceNormal.Z, Tolerance);
@@ -63,7 +63,7 @@ class ArrowMeshTest {
 	[TestCase(8)]
 	[TestCase(32)]
 	public void ShouldGenerateExpectedVertexAndTriangleCounts(int segmentCount) {
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius, segmentCount: segmentCount);
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius, segmentCount: segmentCount);
 		Assert.AreEqual(segmentCount * 8 + 6, _builder.Vertices.Length);
 		Assert.AreEqual(segmentCount * 6, _builder.Triangles.Length);
 		foreach (var t in _builder.Triangles) {
@@ -75,7 +75,7 @@ class ArrowMeshTest {
 
 	[Test]
 	public void ShouldBeBoundedByGivenDimensions() {
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius);
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius);
 		var tipCount = 0;
 		foreach (var v in _builder.Vertices) {
 			var l = v.Location;
@@ -93,7 +93,7 @@ class ArrowMeshTest {
 
 	[Test]
 	public void TextureCoordsShouldWrapAroundAndRunTailToHead() {
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius);
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius);
 		var sawUZero = false;
 		var sawUOne = false;
 		foreach (var v in _builder.Vertices) {
@@ -108,7 +108,7 @@ class ArrowMeshTest {
 
 	[Test]
 	public void ShouldApplyTextureTransform() {
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius, textureTransform: Transform2D.FromScalingOnly(2f));
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius, textureTransform: Transform2D.FromScalingOnly(2f));
 		foreach (var v in _builder.Vertices) {
 			Assert.AreEqual(v.Location.Z / TotalLength * 2f, v.TextureCoords.Y, Tolerance);
 		}
@@ -116,7 +116,7 @@ class ArrowMeshTest {
 
 	[Test]
 	public void AllTrianglesShouldFaceOutwards() {
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius);
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius);
 		foreach (var t in _builder.Triangles) {
 			var a = _builder.Vertices[t.IndexA];
 			var b = _builder.Vertices[t.IndexB];
@@ -137,30 +137,30 @@ class ArrowMeshTest {
 
 	[Test]
 	public void ShouldTranslateOriginAccordingToEnum() {
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius);
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius);
 		Assert.AreEqual(Vect.Zero, _builder.OriginTranslation);
 
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius, ArrowMeshOrigin.HeadTip);
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius, ArrowMeshOrigin.HeadTip);
 		Assert.AreEqual(TotalLength, _builder.OriginTranslation.Z, Tolerance);
 		Assert.AreEqual(0f, _builder.OriginTranslation.X);
 		Assert.AreEqual(0f, _builder.OriginTranslation.Y);
 
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius, ArrowMeshOrigin.Centre);
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius, ArrowMeshOrigin.Centre);
 		Assert.AreEqual(TotalLength * 0.5f, _builder.OriginTranslation.Z, Tolerance);
 
-		_ = Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius, ArrowMeshOrigin.HeadTip, IMeshBuilder.DefaultArrowSegmentCount, new MeshGenerationConfig(), new MeshCreationConfig { OriginTranslation = new Vect(1f, 2f, 3f) });
+		_ = Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius, ArrowMeshOrigin.HeadTip, IMeshBuilder.DefaultArrowSegmentCount, new MeshGenerationConfig(), new MeshCreationConfig { OriginTranslation = new Vect(1f, 2f, 3f) });
 		Assert.AreEqual(new Vect(1f, 2f, 3f + TotalLength), _builder.OriginTranslation);
 	}
 
 	[Test]
 	public void ShouldThrowOnInvalidArguments() {
-		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateMesh(0f, StemRadius, HeadLength, HeadRadius));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateMesh(StemLength, -1f, HeadLength, HeadRadius));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateMesh(StemLength, StemRadius, 0f, HeadRadius));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateMesh(StemLength, StemRadius, HeadLength, 0f));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateMesh(StemLength, StemRadius, HeadLength, float.NaN));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateMesh(StemLength, StemRadius, HeadLength, HeadRadius, segmentCount: 2));
-		Assert.Throws<ArgumentException>(() => Builder.CreateMesh(StemLength, HeadRadius, HeadLength, StemRadius));
-		Assert.DoesNotThrow(() => Builder.CreateMesh(StemLength, StemRadius, HeadLength, StemRadius));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateArrow(0f, StemRadius, HeadLength, HeadRadius));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateArrow(StemLength, -1f, HeadLength, HeadRadius));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateArrow(StemLength, StemRadius, 0f, HeadRadius));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateArrow(StemLength, StemRadius, HeadLength, 0f));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateArrow(StemLength, StemRadius, HeadLength, float.NaN));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Builder.CreateArrow(StemLength, StemRadius, HeadLength, HeadRadius, segmentCount: 2));
+		Assert.Throws<ArgumentException>(() => Builder.CreateArrow(StemLength, HeadRadius, HeadLength, StemRadius));
+		Assert.DoesNotThrow(() => Builder.CreateArrow(StemLength, StemRadius, HeadLength, StemRadius));
 	}
 }

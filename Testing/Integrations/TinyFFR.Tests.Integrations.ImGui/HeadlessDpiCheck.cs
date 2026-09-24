@@ -496,7 +496,7 @@ static class HeadlessDpiCheck {
 		using var factory = new LocalTinyFfrFactory();
 		using var buffer = factory.RendererBuilder.CreateRenderOutputBuffer(targetSize);
 
-		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+		using var cubeMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(1f));
 		using var cubeMaterial = factory.MaterialBuilder.CreateTestMaterial();
 		using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, cubeMaterial);
 		using var light = factory.LightBuilder.CreatePointLight(new Location(2f, 2f, -2f));
@@ -608,7 +608,7 @@ static class HeadlessDpiCheck {
 		var viewportTexture = viewportBuffer.CreateDynamicTexture();
 		var viewportId = imgui.RegisterTexture(viewportTexture);
 
-		using var viewportMesh = factory.MeshBuilder.CreateMesh(new Cuboid(0.8f));
+		using var viewportMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(0.8f));
 		using var viewportMaterial = factory.MaterialBuilder.CreateTestMaterial();
 		using var viewportCube = factory.ObjectBuilder.CreateModelInstance(viewportMesh, viewportMaterial, new Location(0f, 0.9f, 0f));
 		using var viewportLight = factory.LightBuilder.CreatePointLight(new Location(1.5f, 2.5f, -2f));

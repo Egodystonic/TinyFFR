@@ -14,7 +14,7 @@ static unsafe partial class SmokeSections {
 	static int _readbackTexelCount;
 
 	public static void RenderFrame() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Render Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Render Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Render Instance");
 		using var light = Factory.LightBuilder.CreatePointLight(Location.Origin, name: "Benchmark Render Light");
@@ -37,7 +37,7 @@ static unsafe partial class SmokeSections {
 	}
 
 	public static void FrameReadback() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Readback Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Readback Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Readback Instance");
 		using var scene = Factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Green, name: "Benchmark Readback Scene");
@@ -57,7 +57,7 @@ static unsafe partial class SmokeSections {
 	static void CountReadbackTexels(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) => _readbackTexelCount = texels.Length;
 
 	public static void BufferAsDynamicTexture() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Dynamic Texture Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Dynamic Texture Mesh");
 		using var sourceMaterial = Factory.MaterialBuilder.CreateTestMaterial();
 		using var sourceInstance = Factory.ObjectBuilder.CreateModelInstance(mesh, sourceMaterial, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Dynamic Texture Source Instance");
 		using var sourceScene = Factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Red, name: "Benchmark Dynamic Texture Source Scene");
@@ -83,7 +83,7 @@ static unsafe partial class SmokeSections {
 	}
 
 	public static void RenderQualityAndCulling() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Quality Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Quality Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Quality Instance");
 		using var scene = Factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Black, name: "Benchmark Quality Scene");
@@ -105,7 +105,7 @@ static unsafe partial class SmokeSections {
 	}
 
 	public static void ViewportSubAreas() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Viewport Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Viewport Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Viewport Instance");
 		using var scene = Factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Black, name: "Benchmark Viewport Scene");
@@ -130,7 +130,7 @@ static unsafe partial class SmokeSections {
 	}
 
 	public static void PixelPicking() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Picking Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Picking Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Picking Instance");
 		using var light = Factory.LightBuilder.CreatePointLight(Location.Origin, name: "Benchmark Picking Light");
@@ -150,7 +150,7 @@ static unsafe partial class SmokeSections {
 	}
 
 	public static void Compositing() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Compositing Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Compositing Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Compositing Instance");
 		using var backgroundScene = Factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Aqua, name: "Benchmark Compositing Background Scene");

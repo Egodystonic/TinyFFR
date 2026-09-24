@@ -28,7 +28,7 @@ using var factory = new LocalTinyFfrFactory();
 var display = factory.DisplayDiscoverer.Primary!.Value;
 using var window = factory.WindowBuilder.CreateWindow(display, title: "TinyFFR ImGui Integration Test");
 
-using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+using var cubeMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(1f));
 using var cubeMaterial = factory.MaterialBuilder.CreateTestMaterial();
 using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, cubeMaterial);
 using var light = factory.LightBuilder.CreatePointLight(new Location(2f, 2f, -2f));

@@ -36,7 +36,7 @@ class LocalResourceGroupTest {
 		using var factory = new LocalTinyFfrFactory();
 
 		var meshes = new Mesh[6];
-		for (var i = 0; i < meshes.Length; ++i) meshes[i] = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f + 1f * i, 1f + 2f * i, 1f + 3f * i));
+		for (var i = 0; i < meshes.Length; ++i) meshes[i] = factory.AssetLoader.MeshBuilder.CreateCuboid(new Cuboid(1f + 1f * i, 1f + 2f * i, 1f + 3f * i));
 
 		var cameras = new Camera[4];
 		for (var i = 0; i < cameras.Length; ++i) cameras[i] = factory.CameraBuilder.CreateCamera(new Location(i, i, i));
@@ -190,7 +190,7 @@ class LocalResourceGroupTest {
 		using var tex = factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false);
 		using var material = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
 
-		using var quadMesh = factory.MeshBuilder.CreateQuadMesh();
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
 		using var quadInstance = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
 		using var cameraLockedQuadInstance = factory.ObjectBuilder.CreateCameraLockedQuadInstance(
 			quadMesh,
@@ -316,7 +316,7 @@ class LocalResourceGroupTest {
 		using var tex = factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false);
 		using var material = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
 
-		var quadMesh = factory.MeshBuilder.CreateQuadMesh();
+		var quadMesh = factory.MeshBuilder.CreateQuad();
 		var quadInstance = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
 		var underlyingMesh = quadMesh.UnderlyingMesh;
 		var underlyingQuadModelInstance = quadInstance.UnderlyingModelInstance;
@@ -361,7 +361,7 @@ class LocalResourceGroupTest {
 
 		canvasPen.Dispose();
 
-		var survivingQuadMesh = factory.MeshBuilder.CreateQuadMesh();
+		var survivingQuadMesh = factory.MeshBuilder.CreateQuad();
 		var survivingUnderlyingMesh = survivingQuadMesh.UnderlyingMesh;
 		var nonDisposingGroup = factory.ResourceAllocator.CreateResourceGroup(true);
 		nonDisposingGroup.Add(survivingQuadMesh);
@@ -378,7 +378,7 @@ class LocalResourceGroupTest {
 		using var font = factory.AssetLoader.LoadFont();
 		using var pen = font.CreatePen(BuiltInFontPenStyle.Default);
 		using var fontString = font.CreateString("Test");
-		using var quadMesh = factory.MeshBuilder.CreateQuadMesh();
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
 
 		using var group = factory.ResourceAllocator.CreateResourceGroup(false);
 		group.Add(pen);

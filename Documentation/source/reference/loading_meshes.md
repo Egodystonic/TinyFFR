@@ -7,7 +7,8 @@ description: Information on how to load mesh data/files in TinyFFR.
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * TODO :material-arrow-right: [Reading Input Event Data](#reading-input-event-data)
+    * You can load mesh geometry from a file using `assetLoader.LoadMesh(@"Assets/crate.obj")`. :material-arrow-right: [Mesh Files](#mesh-files)
+    * If you want to enable wireframe viewing, it needs to be enabled here. :material-arrow-right: [Wireframe Data](#wireframe-data)
 
 </div>
 

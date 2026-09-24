@@ -48,7 +48,7 @@ static partial class SmokeSections {
 	}
 
 	public static void Quads() {
-		using var quadMesh = Factory.MeshBuilder.CreateQuadMesh(name: "Benchmark Quad Mesh");
+		using var quadMesh = Factory.MeshBuilder.CreateQuad(name: "Benchmark Quad Mesh");
 		using var colorMap = Factory.TextureBuilder.CreateColorMap(BenchmarkAssets.ColorPattern, includeAlpha: false, "Benchmark Quad Color Map");
 		using var material = Factory.MaterialBuilder.CreateLightingIgnoringMaterial(colorMap, name: "Benchmark Quad Material");
 		using var scene = Factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Black, name: "Benchmark Quad Scene");

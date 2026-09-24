@@ -130,6 +130,7 @@ nav:
         - reference/bundled_assets.md
         - Meshes:
             - reference/loading_meshes.md
+            - reference/creating_meshes.md
 
 not_in_nav: |
 

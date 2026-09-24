@@ -46,11 +46,11 @@ class LocalResourceDependencyTest {
 
 			tex = factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
 			mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
-			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+			var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 			AssertDependency(mesh, instance);
 			
-			mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+			mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 			instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 			AssertDependency(mat, instance);
 			
@@ -123,10 +123,10 @@ class LocalResourceDependencyTest {
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false));
 			var tempTex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempTex, factory.MaterialBuilder.CreateStandardMaterial(tempTex));
-			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MeshBuilder.CreateMesh(Cuboid.UnitCube));
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube));
 			tempTex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
 			var tempMat = factory.MaterialBuilder.CreateStandardMaterial(tempTex);
-			var tempMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+			var tempMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempTex, tempMat, tempMesh, factory.ObjectBuilder.CreateModelInstance(tempMesh, tempMat));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.CameraBuilder.CreateCamera());
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.SceneBuilder.CreateScene());
@@ -143,7 +143,7 @@ class LocalResourceDependencyTest {
 			void CheckEffectsMaterial(Func<Texture, Material> matCreationFunc, Action<Texture, MaterialEffectController> assignBlendDestTexAction) {
 				using var map = factory.TextureBuilder.CreateTexture(new TexelRgba32(), dataType: TextureDataType.LinearData);
 				using var m = matCreationFunc(map);
-				using var cube = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+				using var cube = factory.MeshBuilder.CreateCuboid(new Cuboid(1f));
 				var blendMap = factory.TextureBuilder.CreateTexture(new TexelRgba32(), dataType: TextureDataType.LinearData);
 				var obj = factory.ObjectBuilder.CreateModelInstance(cube, m);
 				assignBlendDestTexAction(blendMap, obj.MaterialEffects!.Value);

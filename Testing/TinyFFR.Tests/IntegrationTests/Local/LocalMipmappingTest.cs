@@ -67,7 +67,7 @@ class LocalMipmappingTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Press Space (Mipmap = OFF)");
 		window.Size = display.CurrentResolution.ScaledByReal(0.9f);
 		using var camera = factory.CameraBuilder.CreateCamera(initialViewDirection: new Direction(0f, -0.3f, 1f));
-		using var mesh = factory.MeshBuilder.CreateMesh(new Cuboid(300f, 0.05f, 1000f));
+		using var mesh = factory.MeshBuilder.CreateCuboid(new Cuboid(300f, 0.05f, 1000f));
 
 		using var mipmapInstance = factory.ObjectBuilder.CreateModelInstance(mesh, mipmappedWallMat, initialPosition: (0f, -0.8f, 0f));
 		using var nonMipmapInstance = factory.ObjectBuilder.CreateModelInstance(mesh, nonMipmappedWallMat, initialPosition: (0f, -0.8f, 0f));
