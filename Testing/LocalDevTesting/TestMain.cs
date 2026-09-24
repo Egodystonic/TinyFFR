@@ -45,7 +45,15 @@ static partial class TestMain {
 		var factory = builder.Context.Factory!;
 		var scene = builder.Context.Scene!.Value;
 		
-		using var crateMesh = factory.AssetLoader.LoadMesh(@"Assets/crate.obj");
+		using var crateMesh = factory.AssetLoader.LoadMesh(
+			@"Assets/crate.obj", 
+			new MeshCreationConfig() {
+				WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplication
+			},
+			new MeshReadConfig {
+				CorrectFlippedOrientation = true
+			}
+		);
 		using var crateColorTex = factory.AssetLoader.LoadColorMap(@"Assets/crate_albedo.bmp");
 		using var crateMat = factory.MaterialBuilder.CreateStandardMaterial(crateColorTex);
 		using var crateInstance = factory.ObjectBuilder.CreateModelInstance(crateMesh, crateMat);

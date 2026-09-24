@@ -29,7 +29,7 @@ scene.Add(carModelInstances); // (3)!
 
 	The returned `carModelInstances` is a `ModelInstanceGroup` (essentially a specialized `ResourceGroup`) that contains all loaded model instances.
 	
-3.	This line adds all the newly-instantiated model instances to a pre-existing [Scene](scenes); ready to be rendered.
+3.	This line adds all the newly-instantiated model instances to a pre-existing [Scene](scenes.md); ready to be rendered.
 
 Modern 3D assets are typically packaged in a composite/bundled "transmission" format such as `.glTF` or `.glb`. These files usually contain the meshes, textures, materials definitions, and animations required to define a single unified asset or group of assets.
 
