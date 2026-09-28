@@ -43,4 +43,11 @@ public static class ResourceUtils {
 	public static TImpl ExtractImplementation<TResource, TImpl>(TResource resource) where TResource : IResource<TResource, TImpl> where TImpl : class, IResourceImplProvider<TResource> {
 		return resource.Implementation;
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static ResourceStub ToStub<TResource>(TResource resource) where TResource : IResource => resource.AsStub;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static TResource FromStub<TResource>(ResourceStub stub) where TResource : IResource<TResource> => TResource.CreateFromStub(stub);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static TResource FastFromStub<TResource>(ResourceStub stub) where TResource : IResource<TResource> => TResource.FastCreateFromStub(stub);
 }

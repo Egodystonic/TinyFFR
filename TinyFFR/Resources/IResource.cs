@@ -72,6 +72,7 @@ public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : I
 
 	internal static abstract TSelf CreateFromHandleAndImpl(ResourceHandle<TSelf> handle, IResourceImplProvider impl);
 	internal static virtual TSelf CreateFromStub(ResourceStub stub) => TSelf.CreateFromHandleAndImpl(stub.CreateTypedHandleWithTypeCheck<TSelf>(), stub.Implementation);
+	internal static virtual TSelf FastCreateFromStub(ResourceStub stub) => TSelf.CreateFromHandleAndImpl((ResourceHandle<TSelf>) stub.Handle, stub.Implementation);
 	internal ResourceHandle<TSelf> GetHandleWithoutDisposeCheck();
 	internal static virtual TSelf CreateFromSerializedAndFreeAllocatedGcHandle(ReadOnlySpan<byte> src) {
 		var gcHandle = ReadGcHandleFromSerializedResource(src);

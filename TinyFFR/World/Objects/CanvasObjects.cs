@@ -419,7 +419,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 		outBaseResource = resource.UnderlyingQuadInstance.UnderlyingModelInstance;
 	}
 	static CanvasTexture IResourceSpecialization<CanvasTexture, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(new CanvasScene(TypeUtils.StubToResource<Scene>(additionalResourceRef!.Value)), new QuadInstance(baseResource));	
+		return new(new CanvasScene(ResourceUtils.FromStub<Scene>(additionalResourceRef!.Value)), new QuadInstance(baseResource));	
 	}
 	#endregion
 	
@@ -906,7 +906,7 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 		outBaseResource = resource.UnderlyingTextInstance.UnderlyingModelInstance;
 	}
 	static CanvasText IResourceSpecialization<CanvasText, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(new CanvasScene(TypeUtils.StubToResource<Scene>(additionalResourceRef!.Value)), new TextInstance(baseResource));	
+		return new(new CanvasScene(ResourceUtils.FromStub<Scene>(additionalResourceRef!.Value)), new TextInstance(baseResource));	
 	}
 	#endregion
 	

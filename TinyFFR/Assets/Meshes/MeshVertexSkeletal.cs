@@ -20,7 +20,6 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = ExpectedSerializedSize)]
 public readonly record struct MeshVertexSkeletal : IMeshVertex {
-#pragma warning disable CA1034 // "Nested types should not be visible" -- I prefer these being namespaced very specifically to MeshVertexSkeletal
 	/// <summary>
 	/// The four bones that may move one vertex, as indices in to the skeleton's bone list.
 	/// </summary>
@@ -116,7 +115,6 @@ public readonly record struct MeshVertexSkeletal : IMeshVertex {
 		/// <inheritdoc />
 		public override string ToString() => $"[{this[0]}, {this[1]}, {this[2]}, {this[3]}]";
 	}
-#pragma warning restore CA1034
 	
 	/// <summary>
 	/// How many bones may influence a single vertex: <c>4</c>.

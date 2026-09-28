@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR.World;
 /// HSL describes a colour the way a person tends to think about one (which colour it is, how vivid it is, and how bright it is), which makes it more convenient
 /// than red/green/blue for adjustments such as "make this a little more washed out" or "shift this towards green".
 /// </remarks>
-public interface IColoredSceneObject {
+public interface IColoredSceneObject : ISceneObject {
 	/// <summary>
 	/// Which colour this object is, as an angle around the colour wheel.
 	/// </summary>

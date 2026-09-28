@@ -7,7 +7,6 @@ namespace Egodystonic.TinyFFR.Resources;
 /// An <see cref="IResourceImplProvider{TResource}"/> for <see cref="ResourceGroup"/> resources.
 /// </summary>
 public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<ResourceGroup> {
-#pragma warning disable CA1034 // "Nested types should not be visible" -- Similar to enumerators, this is meant to be "namespaced" to this interface and shouldn't really need to be used directly (at least when using implicit typing)
 	/// <summary>
 	/// The value used as <see cref="IndirectEnumerable{TIn,TOut}"/>'s <c>TIn</c> for the various resource-enumeration members below (e.g. <see cref="GetAllResourcesOfType{TResource}"/>).
 	/// </summary>
@@ -15,7 +14,6 @@ public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<Re
 	/// You should not typically need to reference this type directly; it exists purely to carry the state needed to enumerate a <see cref="ResourceGroup"/>'s contents without allocating.
 	/// </remarks>
 	public readonly record struct EnumerationInput(IResourceGroupImplProvider Impl, ResourceHandle<ResourceGroup> Handle, IntPtr ResourceTypeHandle);
-#pragma warning restore CA1034
 
 	/// <summary>
 	/// Invoked via <see cref="ResourceGroup.ResourceCount"/>.

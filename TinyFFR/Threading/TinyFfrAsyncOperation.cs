@@ -122,7 +122,6 @@ public interface ITinyFfrAsyncOperation {
 /// </remarks>
 /// <seealso cref="TinyFfrAsyncOperation{T}"/>
 public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
-#pragma warning disable CA1034 // "Don't nest public classes" -- I'll do what I want
 	/// <summary>
 	/// The awaiter type returned by <see cref="GetAwaiter"/>, enabling a <see cref="TinyFfrAsyncOperation"/> to be used directly with the <see langword="await"/> keyword.
 	/// </summary>
@@ -130,7 +129,6 @@ public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
 	/// You will not typically need to use this type directly; it exists to satisfy the compiler's awaitable pattern.
 	/// </remarks>
 	public readonly record struct Awaiter : ICriticalNotifyCompletion {
-#pragma warning restore CA1034
 		readonly TinyFfrAsyncOperation _operation;
 
 		internal Awaiter(TinyFfrAsyncOperation operation) => _operation = operation;
@@ -360,7 +358,6 @@ public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
 /// </remarks>
 /// <typeparam name="T">The type of the operation's eventual result.</typeparam>
 public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOperation {
-#pragma warning disable CA1034 // "Don't nest public classes" -- I'll do what I want
 	/// <summary>
 	/// The awaiter type returned by <see cref="GetAwaiter"/>, enabling a <see cref="TinyFfrAsyncOperation{T}"/> to be used directly with the <see langword="await"/> keyword.
 	/// </summary>
@@ -368,7 +365,6 @@ public readonly unsafe record struct TinyFfrAsyncOperation<T> : ITinyFfrAsyncOpe
 	/// You will not typically need to use this type directly; it exists to satisfy the compiler's awaitable pattern.
 	/// </remarks>
 	public readonly record struct Awaiter : ICriticalNotifyCompletion {
-#pragma warning restore CA1034
 		readonly TinyFfrAsyncOperation<T> _operation;
 
 		internal Awaiter(TinyFfrAsyncOperation<T> operation) => _operation = operation;

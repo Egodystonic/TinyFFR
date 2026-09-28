@@ -18,7 +18,7 @@ namespace Egodystonic.TinyFFR.World;
 /// Useful wherever several instances make up one conceptual thing, such as a vehicle assembled from separate parts. Transforming the group applies the same change
 /// to every instance in it.
 /// </remarks>
-public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
+public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialReceivingSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
 #pragma warning restore CA1710
 	/// <summary>
 	/// The <see cref="ResourceGroup"/> instance backing this instance group, which is what actually owns the contained instances.
@@ -169,6 +169,19 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	/// <inheritdoc />
 	public void AdjustScaleBy(Vect vect) {
 		for (var i = 0; i < Count; ++i) Instances[i].AdjustScaleBy(vect);
+	}
+
+	/// <inheritdoc />
+	public void SetMaterial(Material material) {
+		for (var i = 0; i < Count; ++i) Instances[i].SetMaterial(material);
+	}
+	/// <inheritdoc />
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) {
+		for (var i = 0; i < Count; ++i) Instances[i].SetDefaultMaterialBaseColor(baseColor);
+	}
+	/// <inheritdoc />
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) {
+		for (var i = 0; i < Count; ++i) Instances[i].SetDefaultMaterialShadingStyle(style);
 	}
 
 	/// <inheritdoc />

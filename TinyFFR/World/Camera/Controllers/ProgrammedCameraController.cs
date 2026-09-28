@@ -53,7 +53,6 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	}
 	#endregion
 	
-	#pragma warning disable CA1034 // "Do not nest publicly-visible types" -- These are most correctly namespaced specifically to this controller
 	/// <summary>
 	/// One step of a scripted camera path: a location to arrive at, how long to take getting there, and how to ease along the way.
 	/// </summary>
@@ -115,7 +114,6 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		
 		float ITimeKeyedItem.TimeKeySeconds => LengthSeconds;
 	}
-	#pragma warning restore CA1034
 	#pragma warning disable CA1001 // Warning that KeyframeTrack owns disposable fields without disposing them; but lifetime is app-wide
 	sealed class KeyframeTrack<T> where T : struct, ITimeKeyedItem {
 		readonly ArrayPoolBackedVector<T> _keyframes = new();

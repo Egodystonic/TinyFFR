@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.World;
 /// <summary>
 /// Represents a scene object that can be moved around the world.
 /// </summary>
-public interface IMovableSceneObject {
+public interface IMovableSceneObject : ISceneObject {
 	/// <summary>
 	/// Moves this object by <paramref name="translation"/>, relative to wherever it currently is.
 	/// </summary>
@@ -28,7 +28,7 @@ public interface IPositionedSceneObject : IMovableSceneObject {
 /// <summary>
 /// Represents a scene object that can be rotated.
 /// </summary>
-public interface IReorientableSceneObject {
+public interface IReorientableSceneObject : ISceneObject {
 	/// <summary>
 	/// Rotates this object by <paramref name="rotation"/>, relative to however it is currently oriented.
 	/// </summary>
@@ -60,7 +60,7 @@ public interface IOrientedSceneObject : IReorientableSceneObject {
 /// <summary>
 /// Represents a scene object that can be made larger or smaller.
 /// </summary>
-public interface IRescalableSceneObject {
+public interface IRescalableSceneObject : ISceneObject {
 	/// <summary>
 	/// Multiplies this object's current scaling by <paramref name="scalar"/> on every axis.
 	/// </summary>

@@ -131,7 +131,7 @@ public readonly record struct CanvasSceneQueryProvider {
 			result = default;
 			return false;
 		}
-		result = TCanvasObject.DeSmuggle(modelInstance, ReadOnlySpan<byte>.Empty, TypeUtils.ResourceToStub(Canvas.UnderlyingScene));
+		result = TCanvasObject.DeSmuggle(modelInstance, ReadOnlySpan<byte>.Empty, ResourceUtils.ToStub(Canvas.UnderlyingScene));
 		return true;
 	}
 }
