@@ -35,7 +35,7 @@ public enum MeshAnimationType {
 /// Animations are named in the file they were authored in, so looking one up by name is the usual way to find it.
 /// </remarks>
 /// <param name="Mesh">The mesh whose animations these are.</param>
-public readonly record struct MeshAnimationIndex(Mesh Mesh) : IReadOnlyCollection<MeshAnimation> {
+public readonly record struct MeshAnimationIndex(Mesh Mesh) : IMeshAnimationIndex<Mesh> {
 #pragma warning restore CA1710
 	/// <summary>
 	/// How many animations the mesh has in total.

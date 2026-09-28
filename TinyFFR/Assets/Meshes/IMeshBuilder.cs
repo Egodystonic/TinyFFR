@@ -1036,9 +1036,9 @@ public interface IMeshBuilder {
 	/// </para>
 	/// </remarks>
 	/// <param name="mesh">The skeletal mesh to attach the animation to.</param>
-	/// <param name="scalingKeyframes">Every scaling keyframe in the animation. Must hold at least one entry.</param>
-	/// <param name="rotationKeyframes">Every rotation keyframe in the animation. Must hold at least one entry.</param>
-	/// <param name="translationKeyframes">Every translation keyframe in the animation. Must hold at least one entry.</param>
+	/// <param name="scalingKeyframes">Every scaling keyframe in the animation. May be empty.</param>
+	/// <param name="rotationKeyframes">Every rotation keyframe in the animation. May be empty.</param>
+	/// <param name="translationKeyframes">Every translation keyframe in the animation. May be empty.</param>
 	/// <param name="boneMutations">Which stretch of each keyframe list drives which joint.</param>
 	/// <param name="defaultCompletionTimeSeconds">How long the animation takes to play from start to finish at its authored speed, in seconds.</param>
 	/// <param name="name">The name to give the animation. Must be unique among the mesh's animations.</param>

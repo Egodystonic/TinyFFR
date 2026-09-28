@@ -131,6 +131,7 @@ nav:
         - Meshes:
             - reference/loading_meshes.md
             - reference/creating_meshes.md
+            - reference/skeletal_meshes.md
 
 not_in_nav: |
 

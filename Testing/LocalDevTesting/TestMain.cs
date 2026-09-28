@@ -42,20 +42,6 @@ static partial class TestMain {
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
 		
-		var factory = builder.Context.Factory!;
-		var scene = builder.Context.Scene!.Value;
-		
-		using var cubeMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
-		using var sphereMesh = factory.MeshBuilder.CreateSphere(Sphere.OneMeterCubedVolumeSphere);
-		using var arrowMesh = factory.MeshBuilder.CreateArrow(0.65f, 0.2f, 0.35f, 0.45f);
-		
-		using var polygons = factory.MeshBuilder.AllocateNewPolygonGroup();
-		AssemblePolygons(polygons);
-		using var polyMesh = factory.MeshBuilder.CreateFromPolygonGroup(polygons);
-		
-using var vertexLease = factory.ResourceAllocator.BorrowSpan<MeshVertex>(4);
-using var triangleLease = factory.ResourceAllocator.BorrowSpan<VertexTriangle>(2);
-		using var vertMesh = factory.MeshBuilder.CreateFromVertices(vertices);
 	}
 
 	public static void StartTest(TestContext context) {

@@ -206,6 +206,12 @@ class LocalAnimationTest {
 				Console.WriteLine("Loading " + _filesToLoad[curFileIndex].Filename + "...");
 				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename), new ModelCreationConfig() { MeshConfig = new() { LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor, OriginTranslation = (0f, 0f, curFileIndex) }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
+				foreach (var mesh in loadedResources.Value.Meshes) {
+					Console.WriteLine($"\t{mesh} : {mesh.Skeleton.Nodes.Count} nodes");
+					foreach (var anim in mesh.Animations.Skeletal) {
+						Console.WriteLine($"\t\t{anim.GetNameAsNewStringObject()}");
+					}
+				}
 				Assert.GreaterOrEqual(curAnimCount, 1);
 
 				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
