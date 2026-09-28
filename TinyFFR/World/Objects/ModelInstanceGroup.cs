@@ -20,6 +20,8 @@ namespace Egodystonic.TinyFFR.World;
 /// </remarks>
 public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialReceivingSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
 #pragma warning restore CA1710
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstanceGroup;
+
 	/// <summary>
 	/// The <see cref="ResourceGroup"/> instance backing this instance group, which is what actually owns the contained instances.
 	/// </summary>

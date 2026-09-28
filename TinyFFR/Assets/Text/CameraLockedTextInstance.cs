@@ -20,6 +20,8 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// </para>
 /// </remarks>
 public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecialization<CameraLockedTextInstance, ModelInstance>, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.CameraLockedTextInstance;
+
 	/// <summary>
 	/// The text object this camera-locked text is a specialized view of.
 	/// </summary>

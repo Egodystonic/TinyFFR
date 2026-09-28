@@ -23,6 +23,8 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// </para>
 /// </remarks>
 public readonly struct TextInstance : ITextInstance, IResourceSpecialization<TextInstance, ModelInstance>, IEquatable<TextInstance>, ITransformedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.TextInstance;
+
 	/// <summary>
 	/// The general-purpose model instance this text object is a specialized view of.
 	/// </summary>

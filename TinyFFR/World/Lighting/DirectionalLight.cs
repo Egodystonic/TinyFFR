@@ -17,6 +17,8 @@ namespace Egodystonic.TinyFFR.World;
 /// <see cref="SetSunDiscParameters"/>.
 /// </remarks>
 public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.DirectionalLight;
+
 	/// <summary>
 	/// The largest permitted <see cref="Brightness"/>: <c>1E+15f</c>.
 	/// </summary>

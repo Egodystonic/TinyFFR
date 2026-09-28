@@ -221,6 +221,8 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 /// </para>
 /// </remarks>
 public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled, IEquatable<MutableGridInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.MutableGridInstance;
+
 	static readonly Lock _staticMutationLock = new();
 	static readonly HeapPool _sharedHeapPool = new();
 	static readonly ArrayPoolBackedMap<nuint, MutableGridInstance> _activeLeaseMap = new();

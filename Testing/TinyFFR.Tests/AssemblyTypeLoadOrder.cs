@@ -58,6 +58,7 @@ sealed class AssemblyTypeLoadOrderAnchorStage2 {
 	FontString _fontString;
 	QuadInstance _quadInstance;
 	QuadMesh _quadMesh;
+	SceneObject _sceneObject;
 	TextInstance _textInstance;
 }
 

@@ -134,6 +134,8 @@ public enum DefaultMaterialShadingStyle {
 /// thousand copies of its geometry. An instance must be added to a <see cref="Scene"/> before it is rendered.
 /// </remarks>
 public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstance;
+
 	readonly ResourceHandle<ModelInstance> _handle;
 	readonly IModelInstanceImplProvider _impl;
 

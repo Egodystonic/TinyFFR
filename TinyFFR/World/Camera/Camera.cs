@@ -21,6 +21,8 @@ namespace Egodystonic.TinyFFR.World;
 /// </para>
 /// </remarks>
 public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>, IPositionedSceneObject, IOrientedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.Camera;
+
 	/// <summary>
 	/// The smallest permitted field of view: <c>0°</c>.
 	/// </summary>

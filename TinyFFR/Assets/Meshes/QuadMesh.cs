@@ -160,6 +160,8 @@ public interface IQuadInstance : IDisposable, IStringSpanNameEnabled;
 /// </para>
 /// </remarks>
 public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<QuadInstance, ModelInstance>, IEquatable<QuadInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.QuadInstance;
+
 	/// <summary>
 	/// The general-purpose model instance this quad instance is a specialized view of.
 	/// </summary>
@@ -411,6 +413,8 @@ public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<Qua
 /// </para>
 /// </remarks>
 public readonly struct CameraLockedQuadInstance : IQuadInstance, IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>, IEquatable<CameraLockedQuadInstance>, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.CameraLockedQuadInstance;
+
 	/// <summary>
 	/// The quad instance this camera-locked quad is a specialized view of.
 	/// </summary>

@@ -19,6 +19,8 @@ namespace Egodystonic.TinyFFR.World;
 /// either disposes the light itself.
 /// </remarks>
 public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSpanNameEnabled {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.Unspecified;
+
 	readonly ResourceHandle _handle;
 	readonly ILightImplProvider _impl;
 
@@ -195,7 +197,7 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 	/// <param name="other">The light to compare with this one.</param>
 	public bool Equals<TLight>(TLight other) where TLight : ILight => Equals(other.AsBaseLight());
 	/// <inheritdoc />
-	public override bool Equals(object? obj) => obj is ILight other && Equals(other);
+	public override bool Equals(object? obj) => obj is ILight other && Equals(other.AsBaseLight());
 	/// <inheritdoc />
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	/// <summary>

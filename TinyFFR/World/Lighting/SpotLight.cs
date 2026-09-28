@@ -16,6 +16,8 @@ namespace Egodystonic.TinyFFR.World;
 /// light is, and <see cref="IntenseBeamAngle"/> sets how sharply the light fades towards the cone's edge.
 /// </remarks>
 public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IOrientedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.SpotLight;
+
 	/// <summary>
 	/// The largest permitted <see cref="Brightness"/>: <c>1E+15f</c>.
 	/// </summary>

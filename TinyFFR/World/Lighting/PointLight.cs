@@ -16,6 +16,8 @@ namespace Egodystonic.TinyFFR.World;
 /// <see cref="MaxIlluminationRadius"/> sets the distance beyond which they stop contributing altogether.
 /// </remarks>
 public readonly struct PointLight : ILight<PointLight>, IPositionedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.PointLight;
+
 	/// <summary>
 	/// The largest permitted <see cref="Brightness"/>: <c>1E+15f</c>.
 	/// </summary>
