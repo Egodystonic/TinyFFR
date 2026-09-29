@@ -147,7 +147,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 
-	public ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
+	public ResourceGroup Load(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -160,7 +160,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadAllCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig });
 	}
 
-	public TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
+	public TinyFfrAsyncOperation<ResourceGroup> LoadAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();

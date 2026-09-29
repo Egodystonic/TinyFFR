@@ -37,7 +37,7 @@ class LocalRenderQualityTest {
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
 		scene.Add(sunlight);
 
-		using var loadedResources = factory.AssetLoader.LoadAll(
+		using var loadedResources = factory.AssetLoader.LoadBundledAsset(
 			CommonTestAssets.FindAsset("models/showcase_ABeautifulGame.glb"),
 			new ModelCreationConfig(),
 			new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }

@@ -1,11 +1,11 @@
 // Created on 2026-09-28 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using System.Diagnostics.CodeAnalysis;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.World.SceneObjectTypeExtensions;
 using static Egodystonic.TinyFFR.Resources.ResourceUtils;
 
@@ -124,47 +124,59 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 
 	SceneObjectAdapterFunctionTable(SceneObjectType sceneObjectType) {
 		SceneObjectType = sceneObjectType;
+		SetAllToNoOp();
 	}
 
-	void ThrowIfInconsistentWithType() {
-		static void Check(SceneObjectType type, bool typeHasCapability, bool allSet, bool noneSet, string capabilityName) {
-			if (typeHasCapability ? allSet : noneSet) return;
-			throw new InvalidOperationException($"Adapter function table for {type} does not match its '{capabilityName}' flag (this is a bug in TinyFFR).");
-		}
+	#region No-Op Defaults
+	static Location NoOpGetPosition(ResourceStub _) => Location.Origin;
+	static Rotation NoOpGetRotation(ResourceStub _) => Rotation.None;
+	static Quaternion NoOpGetRotationQuaternion(ResourceStub _) => Quaternion.Identity;
+	static Vect NoOpGetScaling(ResourceStub _) => Vect.One;
+	static Transform NoOpGetTransform(ResourceStub _) => Transform.None;
+	static Angle NoOpGetColorHue(ResourceStub _) => Angle.Zero;
+	static float NoOpGetColorComponent(ResourceStub _) => 0f;
+	static void NoOp<TArg>(ResourceStub _, TArg __) { }
+	static void NoOp<TArg1, TArg2>(ResourceStub _, TArg1 __, TArg2 ___) { }
 
-		Check(SceneObjectType, SceneObjectType.IsPositioned(),
-			GetPosition != null && SetPosition != null && MoveBy != null,
-			GetPosition == null && SetPosition == null && MoveBy == null,
-			nameof(SceneObjectTypeExtensions.IsPositioned)
-		);
-		Check(SceneObjectType, SceneObjectType.IsOriented(),
-			GetRotation != null && SetRotation != null && GetRotationQuaternion != null && SetRotationQuaternion != null && RotateByRotation != null && RotateByQuaternion != null,
-			GetRotation == null && SetRotation == null && GetRotationQuaternion == null && SetRotationQuaternion == null && RotateByRotation == null && RotateByQuaternion == null,
-			nameof(SceneObjectTypeExtensions.IsOriented)
-		);
-		Check(SceneObjectType, SceneObjectType.IsScaled(),
-			GetScaling != null && SetScaling != null && ScaleByScalar != null && ScaleByVect != null && AdjustScaleByScalar != null && AdjustScaleByVect != null,
-			GetScaling == null && SetScaling == null && ScaleByScalar == null && ScaleByVect == null && AdjustScaleByScalar == null && AdjustScaleByVect == null,
-			nameof(SceneObjectTypeExtensions.IsScaled)
-		);
-		Check(SceneObjectType, SceneObjectType.IsTransformed(),
-			GetTransform != null && SetTransform != null && RotateByRotationAroundPivot != null && RotateByQuaternionAroundPivot != null,
-			GetTransform == null && SetTransform == null && RotateByRotationAroundPivot == null && RotateByQuaternionAroundPivot == null,
-			nameof(SceneObjectTypeExtensions.IsTransformed)
-		);
-		Check(SceneObjectType, SceneObjectType.IsMaterialReceiving(),
-			SetMaterial != null && SetDefaultMaterialBaseColor != null && SetDefaultMaterialShadingStyle != null,
-			SetMaterial == null && SetDefaultMaterialBaseColor == null && SetDefaultMaterialShadingStyle == null,
-			nameof(SceneObjectTypeExtensions.IsMaterialReceiving)
-		);
-		Check(SceneObjectType, SceneObjectType.IsColored(),
-			GetColorHue != null && SetColorHue != null && GetColorSaturation != null && SetColorSaturation != null && GetColorLightness != null && SetColorLightness != null
-				&& AdjustColorHueBy != null && AdjustColorSaturationBy != null && AdjustColorLightnessBy != null,
-			GetColorHue == null && SetColorHue == null && GetColorSaturation == null && SetColorSaturation == null && GetColorLightness == null && SetColorLightness == null
-				&& AdjustColorHueBy == null && AdjustColorSaturationBy == null && AdjustColorLightnessBy == null,
-			nameof(SceneObjectTypeExtensions.IsColored)
-		);
+	void SetAllToNoOp() {
+		GetPosition = &NoOpGetPosition;
+		SetPosition = &NoOp<Location>;
+		MoveBy = &NoOp<Vect>;
+
+		GetRotation = &NoOpGetRotation;
+		SetRotation = &NoOp<Rotation>;
+		GetRotationQuaternion = &NoOpGetRotationQuaternion;
+		SetRotationQuaternion = &NoOp<Quaternion>;
+		RotateByRotation = &NoOp<Rotation>;
+		RotateByQuaternion = &NoOp<Quaternion>;
+
+		GetScaling = &NoOpGetScaling;
+		SetScaling = &NoOp<Vect>;
+		ScaleByScalar = &NoOp<float>;
+		ScaleByVect = &NoOp<Vect>;
+		AdjustScaleByScalar = &NoOp<float>;
+		AdjustScaleByVect = &NoOp<Vect>;
+
+		GetTransform = &NoOpGetTransform;
+		SetTransform = &NoOp<Transform>;
+		RotateByRotationAroundPivot = &NoOp<Rotation, Location>;
+		RotateByQuaternionAroundPivot = &NoOp<Quaternion, Location>;
+
+		SetMaterial = &NoOp<Material>;
+		SetDefaultMaterialBaseColor = &NoOp<ColorVect>;
+		SetDefaultMaterialShadingStyle = &NoOp<DefaultMaterialShadingStyle>;
+
+		GetColorHue = &NoOpGetColorHue;
+		SetColorHue = &NoOp<Angle>;
+		GetColorSaturation = &NoOpGetColorComponent;
+		SetColorSaturation = &NoOp<float>;
+		GetColorLightness = &NoOpGetColorComponent;
+		SetColorLightness = &NoOp<float>;
+		AdjustColorHueBy = &NoOp<Angle>;
+		AdjustColorSaturationBy = &NoOp<float>;
+		AdjustColorLightnessBy = &NoOp<float>;
 	}
+	#endregion
 
 	#region Capability Adapters
 	void AddPositioned<T, TConverter>() where T : IPositionedSceneObject where TConverter : IStubConverter<T> {
@@ -287,7 +299,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.ModelInstance);
 		result.AddTransformed<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		result.AddMaterialReceiving<ModelInstance, ResourceStubConverter<ModelInstance>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -296,7 +307,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.ModelInstanceGroup);
 		result.AddTransformed<ModelInstanceGroup, ModelInstanceGroupStubConverter>();
 		result.AddMaterialReceiving<ModelInstanceGroup, ModelInstanceGroupStubConverter>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -305,7 +315,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.MutableGridInstance);
 		result.AddTransformed<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		result.AddMaterialReceiving<ModelInstance, ResourceStubConverter<ModelInstance>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -314,7 +323,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.QuadInstance);
 		result.AddTransformed<QuadInstance, QuadInstanceStubConverter>();
 		result.AddMaterialReceiving<QuadInstance, QuadInstanceStubConverter>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -324,7 +332,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		result.AddPositioned<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		result.AddScaled<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		result.AddMaterialReceiving<ModelInstance, ResourceStubConverter<ModelInstance>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -332,7 +339,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	static SceneObjectAdapterFunctionTable CreateForTextInstance() {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.TextInstance);
 		result.AddTransformed<TextInstance, TextInstanceStubConverter>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -341,7 +347,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.CameraLockedTextInstance);
 		result.AddPositioned<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		result.AddScaled<ModelInstance, ResourceStubConverter<ModelInstance>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -350,7 +355,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.PointLight);
 		result.AddPositioned<PointLight, ResourceStubConverter<PointLight>>();
 		result.AddColored<PointLight, ResourceStubConverter<PointLight>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -360,7 +364,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		result.AddPositioned<SpotLight, ResourceStubConverter<SpotLight>>();
 		result.AddOriented<SpotLight, ResourceStubConverter<SpotLight>>();
 		result.AddColored<SpotLight, ResourceStubConverter<SpotLight>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -369,7 +372,6 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.DirectionalLight);
 		result.AddOriented<DirectionalLight, ResourceStubConverter<DirectionalLight>>();
 		result.AddColored<DirectionalLight, ResourceStubConverter<DirectionalLight>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 
@@ -378,13 +380,12 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.Camera);
 		result.AddPositioned<Camera, ResourceStubConverter<Camera>>();
 		result.AddOriented<Camera, ResourceStubConverter<Camera>>();
-		result.ThrowIfInconsistentWithType();
 		return result;
 	}
 	#endregion
 }
 
-public readonly unsafe record struct SceneObject : ITransformedSceneObject, IColoredSceneObject, IMaterialReceivingSceneObject {
+public readonly unsafe record struct SceneObject : ITransformedSceneObject, IColoredSceneObject, IMaterialReceivingSceneObject, IStringSpanNameEnabled {
 	internal ResourceStub Stub { get; }
 	internal SceneObjectAdapterFunctionTable FunctionTable => field ?? throw InvalidObjectException.InvalidDefault<SceneObject>();
 
@@ -407,7 +408,6 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	public SceneObject(DirectionalLight light) : this(ToStub(light), SceneObjectAdapterFunctionTable.ForDirectionalLight) { }
 	public SceneObject(Camera camera) : this(ToStub(camera), SceneObjectAdapterFunctionTable.ForCamera) { }
 
-	#region Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(ModelInstance operand) => new(operand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -471,224 +471,131 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	InvalidCastException CreateInvalidCastException(SceneObjectType targetType) {
 		return new InvalidCastException($"Can not convert {nameof(SceneObject)} of type {Type} to {targetType}.");
 	}
-	#endregion
 
-	#region Positioned
 	public Location Position {
-		get {
-			var f = FunctionTable.GetPosition;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetPosition;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetPosition(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetPosition(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetPosition(Location position) => Position = position;
 
-	public void MoveBy(Vect translation) {
-		var f = FunctionTable.MoveBy;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, translation);
-	}
-	#endregion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void MoveBy(Vect translation) => FunctionTable.MoveBy(Stub, translation);
 
-	#region Oriented
 	public Rotation Rotation {
-		get {
-			var f = FunctionTable.GetRotation;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetRotation;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetRotation(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetRotation(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
 	public Quaternion RotationQuaternion {
-		get {
-			var f = FunctionTable.GetRotationQuaternion;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetRotationQuaternion;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetRotationQuaternion(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetRotationQuaternion(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
 
-	public void RotateBy(Rotation rotation) {
-		var f = FunctionTable.RotateByRotation;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, rotation);
-	}
-	public void RotateBy(Quaternion rotationQuaternion) {
-		var f = FunctionTable.RotateByQuaternion;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, rotationQuaternion);
-	}
-	#endregion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Rotation rotation) => FunctionTable.RotateByRotation(Stub, rotation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Quaternion rotationQuaternion) => FunctionTable.RotateByQuaternion(Stub, rotationQuaternion);
 
-	#region Scaled
 	public Vect Scaling {
-		get {
-			var f = FunctionTable.GetScaling;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetScaling;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetScaling(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetScaling(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(Vect scaling) => Scaling = scaling;
 
-	public void ScaleBy(float scalar) {
-		var f = FunctionTable.ScaleByScalar;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, scalar);
-	}
-	public void ScaleBy(Vect vect) {
-		var f = FunctionTable.ScaleByVect;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, vect);
-	}
-	public void AdjustScaleBy(float scalar) {
-		var f = FunctionTable.AdjustScaleByScalar;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, scalar);
-	}
-	public void AdjustScaleBy(Vect vect) {
-		var f = FunctionTable.AdjustScaleByVect;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, vect);
-	}
-	#endregion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(float scalar) => FunctionTable.ScaleByScalar(Stub, scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBy(Vect vect) => FunctionTable.ScaleByVect(Stub, vect);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(float scalar) => FunctionTable.AdjustScaleByScalar(Stub, scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustScaleBy(Vect vect) => FunctionTable.AdjustScaleByVect(Stub, vect);
 
-	#region Transformed
 	public Transform Transform {
-		get {
-			var f = FunctionTable.GetTransform;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetTransform;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetTransform(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetTransform(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Transform = transform;
 
-	public void RotateBy(Rotation rotation, Location pivotPoint) {
-		var f = FunctionTable.RotateByRotationAroundPivot;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, rotation, pivotPoint);
-	}
-	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) {
-		var f = FunctionTable.RotateByQuaternionAroundPivot;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, rotationQuaternion, pivotPoint);
-	}
-	#endregion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Rotation rotation, Location pivotPoint) => FunctionTable.RotateByRotationAroundPivot(Stub, rotation, pivotPoint);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => FunctionTable.RotateByQuaternionAroundPivot(Stub, rotationQuaternion, pivotPoint);
 
-	#region Material Receiving
-	public void SetMaterial(Material material) {
-		var f = FunctionTable.SetMaterial;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, material);
-	}
-	public void SetDefaultMaterialBaseColor(ColorVect baseColor) {
-		var f = FunctionTable.SetDefaultMaterialBaseColor;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, baseColor);
-	}
-	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) {
-		var f = FunctionTable.SetDefaultMaterialShadingStyle;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, style);
-	}
-	#endregion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetMaterial(Material material) => FunctionTable.SetMaterial(Stub, material);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => FunctionTable.SetDefaultMaterialBaseColor(Stub, baseColor);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => FunctionTable.SetDefaultMaterialShadingStyle(Stub, style);
 
-	#region Colored
 	public Angle ColorHue {
-		get {
-			var f = FunctionTable.GetColorHue;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetColorHue;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetColorHue(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetColorHue(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColorHue(Angle hue) => ColorHue = hue;
 
 	public float ColorSaturation {
-		get {
-			var f = FunctionTable.GetColorSaturation;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetColorSaturation;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetColorSaturation(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetColorSaturation(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColorSaturation(float saturation) => ColorSaturation = saturation;
 
 	public float ColorLightness {
-		get {
-			var f = FunctionTable.GetColorLightness;
-			if (f == null) ThrowUnsupported(Type);
-			return f(Stub);
-		}
-		set {
-			var f = FunctionTable.SetColorLightness;
-			if (f == null) ThrowUnsupported(Type);
-			f(Stub, value);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FunctionTable.GetColorLightness(Stub);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => FunctionTable.SetColorLightness(Stub, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColorLightness(float lightness) => ColorLightness = lightness;
 
-	public void AdjustColorHueBy(Angle adjustment) {
-		var f = FunctionTable.AdjustColorHueBy;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, adjustment);
-	}
-	public void AdjustColorSaturationBy(float adjustment) {
-		var f = FunctionTable.AdjustColorSaturationBy;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, adjustment);
-	}
-	public void AdjustColorLightnessBy(float adjustment) {
-		var f = FunctionTable.AdjustColorLightnessBy;
-		if (f == null) ThrowUnsupported(Type);
-		f(Stub, adjustment);
-	}
-	#endregion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustColorHueBy(Angle adjustment) => FunctionTable.AdjustColorHueBy(Stub, adjustment);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustColorSaturationBy(float adjustment) => FunctionTable.AdjustColorSaturationBy(Stub, adjustment);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustColorLightnessBy(float adjustment) => FunctionTable.AdjustColorLightnessBy(Stub, adjustment);
 
-	[DoesNotReturn, MethodImpl(MethodImplOptions.NoInlining)]
-	static void ThrowUnsupported(SceneObjectType type, [CallerMemberName] string memberName = "") {
-		throw new InvalidOperationException($"{nameof(SceneObject)} of type {type} does not support '{memberName}'.");
+	public string GetNameAsNewStringObject() {
+		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
+		return Stub.GetNameAsNewStringObject();
+	}
+	public int GetNameLength() {
+		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
+		return Stub.GetNameLength();
+	}
+	public void CopyName(Span<char> destinationBuffer) {
+		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
+		Stub.CopyName(destinationBuffer);
+	}
+
+	public void DisposeUnderlyingObject() {
+		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
+		Stub.Dispose();
 	}
 
 	public override string ToString() => $"Scene Object ({Type}) \"{Stub.GetNameAsNewStringObject()}\"";

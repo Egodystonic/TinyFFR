@@ -34,6 +34,7 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// How many model instances are in this group.
 	/// </summary>
 	public int Count { get; }
+	readonly ModelBundleAnimationTable _animTable;
 	
 	ModelInstance? FirstInstance => Count > 0 ? Instances[0] : null;
 	
@@ -53,6 +54,17 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		UnderlyingResourceGroup = underlyingResourceGroup;
 		Instances = UnderlyingResourceGroup.ModelInstances;
 		Count = Instances.Count;
+		_animTable = UnderlyingResourceGroup.AnimationTables.Count > 0 ? UnderlyingResourceGroup.AnimationTables[0] : ModelBundleAnimationTable.Empty;
+	}
+	
+	public ModelBundleAnimationIndex Animations {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _animTable.Animations;
+	}
+	
+	public ModelBundleSkeleton Skeleton {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _animTable.Skeleton;
 	}
 
 	/// <inheritdoc />
@@ -185,6 +197,75 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) {
 		for (var i = 0; i < Count; ++i) Instances[i].SetDefaultMaterialShadingStyle(style);
 	}
+	
+	/// <summary>
+	/// Returns a player that runs the given animation on this instance at its natural speed.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="animation">The animation to play.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayer(MeshAnimation animation) => new(this, animation);
+	
+	/// <summary>
+	/// Returns a player that runs the given animation on this instance at a multiple of its natural speed.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="animation">The animation to play.</param>
+	/// <param name="animationSpeedMultiplier">How much faster than natural to play, where <c>1f</c> is natural speed and <c>2f</c> is twice as fast.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation animation, float animationSpeedMultiplier) => MeshAnimationPlayer.CreateWithSpeedMultiplier(this, animation, animationSpeedMultiplier);
+	
+	/// <summary>
+	/// Returns a player that runs the given animation on this instance stretched or compressed to a chosen duration.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="animation">The animation to play.</param>
+	/// <param name="animationDurationSeconds">How long one cycle of the animation should take, in seconds.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation animation, float animationDurationSeconds) => MeshAnimationPlayer.CreateWithTargetDuration(this, animation, animationDurationSeconds);
+	
+	/// <summary>
+	/// Returns a player that blends between two animations on this instance, so that one can be cross-faded in to the other.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
+	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayer(MeshAnimation startAnimation, MeshAnimation endAnimation) => new(this, startAnimation, endAnimation);
+	
+	/// <summary>
+	/// Returns a player that blends between two animations on this instance, each running at a multiple of its natural speed.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
+	/// <param name="startAnimationSpeedMultiplier">How much faster than natural to play <paramref name="startAnimation"/>.</param>
+	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
+	/// <param name="endAnimationSpeedMultiplier">How much faster than natural to play <paramref name="endAnimation"/>.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation startAnimation, float startAnimationSpeedMultiplier, MeshAnimation endAnimation, float endAnimationSpeedMultiplier) => MeshBlendedAnimationPlayer.CreateWithSpeedMultiplier(this, startAnimation, endAnimation, startAnimationSpeedMultiplier, endAnimationSpeedMultiplier);
+	
+	/// <summary>
+	/// Returns a player that blends between two animations on this instance, each stretched or compressed to a chosen duration.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
+	/// <param name="startAnimationDurationSeconds">How long one cycle of <paramref name="startAnimation"/> should take, in seconds.</param>
+	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
+	/// <param name="endAnimationDurationSeconds">How long one cycle of <paramref name="endAnimation"/> should take, in seconds.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

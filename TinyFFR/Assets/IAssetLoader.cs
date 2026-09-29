@@ -1208,8 +1208,8 @@ public partial interface IAssetLoader {
 	/// companion data files alongside it.</param>
 	/// <param name="name">The name to give the resource group. May be left empty, in which case the file's own name is
 	/// used.</param>
-	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
-		return LoadAll(
+	ModelBundle LoadBundledAsset(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadBundledAsset(
 			filePath,
 			new ModelCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
@@ -1225,7 +1225,7 @@ public partial interface IAssetLoader {
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
-	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadAll(filePath, in config, new ModelReadConfig());
+	ModelBundle LoadBundledAsset(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadBundledAsset(filePath, in config, new ModelReadConfig());
 	/// <summary>
 	/// Loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar), using the given creation and read configs.
 	/// </summary>
@@ -1236,7 +1236,7 @@ public partial interface IAssetLoader {
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
 	/// <param name="readConfig">Controls how the file's contents are interpreted as they are read.</param>
-	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
+	ModelBundle LoadBundledAsset(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
 
 	/// <summary>
 	/// Asynchronously loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar).
@@ -1259,8 +1259,8 @@ public partial interface IAssetLoader {
 	/// companion data files alongside it.</param>
 	/// <param name="name">The name to give the resource group. May be left empty, in which case the file's own name is
 	/// used.</param>
-	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
-		return LoadAllAsync(
+	TinyFfrAsyncOperation<ModelBundle> LoadBundledAssetAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadBundledAssetAsync(
 			filePath,
 			new ModelCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
@@ -1288,7 +1288,7 @@ public partial interface IAssetLoader {
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
-	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadAllAsync(filePath, in config, new ModelReadConfig());
+	TinyFfrAsyncOperation<ModelBundle> LoadBundledAssetAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadBundledAssetAsync(filePath, in config, new ModelReadConfig());
 	/// <summary>
 	/// Asynchronously loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar), using the given creation and
 	/// read configs.
@@ -1311,6 +1311,6 @@ public partial interface IAssetLoader {
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
 	/// <param name="readConfig">Controls how the file's contents are interpreted as they are read.</param>
-	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
+	TinyFfrAsyncOperation<ModelBundle> LoadBundledAssetAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
 	#endregion
 }

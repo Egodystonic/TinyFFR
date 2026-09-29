@@ -209,10 +209,10 @@ static class SmokeProbes {
 
 	static void ProbeLoadModelFile() {
 		Measure($"LoadAll + Dispose x{ModelLoadCount}", static () => {
-			for (var i = 0; i < ModelLoadCount; ++i) Factory.AssetLoader.LoadAll(BenchmarkAssets.BoxModel).Dispose();
+			for (var i = 0; i < ModelLoadCount; ++i) Factory.AssetLoader.LoadBundledAsset(BenchmarkAssets.BoxModel).Dispose();
 		}, ModelLoadCount);
 
-		using var group = Factory.AssetLoader.LoadAll(BenchmarkAssets.BoxModel, "Probe Model");
+		using var group = Factory.AssetLoader.LoadBundledAsset(BenchmarkAssets.BoxModel, "Probe Model");
 		using var scene = Factory.SceneBuilder.CreateScene(name: "Probe Model Scene");
 
 		Measure($"CreateModelInstances + Dispose x{ModelLoadCount}", () => {

@@ -151,7 +151,7 @@ class LocalModelLoadingTest {
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 
 				Console.WriteLine(_filesToLoad[curFileIndex]);
-				loadedResources = factory.AssetLoader.LoadAll(
+				loadedResources = factory.AssetLoader.LoadBundledAsset(
 					CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), 
 					new ModelCreationConfig() { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing }}, 
 					new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }

@@ -407,7 +407,7 @@ class LocalAssetBakingTest {
 		}
 
 		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
-			_pendingSourceOperation = factory.AssetLoader.LoadAllAsync(CommonTestAssets.FindAsset("models/Fox.glb"));
+			_pendingSourceOperation = factory.AssetLoader.LoadBundledAssetAsync(CommonTestAssets.FindAsset("models/Fox.glb"));
 		}
 
 		public override void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath) {
@@ -492,7 +492,7 @@ class LocalAssetBakingTest {
 		}
 
 		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
-			_pendingOperation = factory.AssetLoader.LoadAllAsync(
+			_pendingOperation = factory.AssetLoader.LoadBundledAssetAsync(
 				CommonTestAssets.FindAsset(SourceAssetPath),
 				new ModelCreationConfig {
 					Name = DisplayName,
@@ -586,7 +586,7 @@ class LocalAssetBakingTest {
 		}
 
 		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
-			_pendingOperation = factory.AssetLoader.LoadAllAsync(
+			_pendingOperation = factory.AssetLoader.LoadBundledAssetAsync(
 				CommonTestAssets.FindAsset("models/showcase_ABeautifulGame.glb"),
 				new ModelCreationConfig {
 					Name = "Baked Chess Set",

@@ -1,5 +1,25 @@
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
+/// <summary>
+/// Identifies which of the two ways of animating a mesh's geometry an animation uses.
+/// </summary>
+public enum MeshAnimationType {
+	/// <summary>
+	/// The mesh is deformed by moving a small tree of joints, with each vertex following the joints it is weighted against.
+	/// </summary>
+	/// <remarks>
+	/// This is how a character's limbs are usually animated: a handful of joints drive thousands of vertices.
+	/// </remarks>
+	Skeletal,
+	/// <summary>
+	/// The mesh is deformed by interpolating its vertices directly between stored shapes.
+	/// </summary>
+	/// <remarks>
+	/// This suits deformations that no arrangement of joints would produce cleanly, such as facial expressions.
+	/// </remarks>
+	Morphing
+}
+
 #pragma warning disable CA1710 // "Must be called Collection because it implements IROCollection<>" -- I disagree in this case
 /// <summary>
 /// An index that allows you to look up the animations belonging to one mesh, addressable by name, by position or by kind.

@@ -188,7 +188,7 @@ unsafe partial class LocalAssetLoader {
 			if (loadSkeletalAnimationData) {
 				if (metadata.SubMeshCount != 1 && readConfig.SubMeshIndex == null) {
 					Console.WriteLine($"Can not load skeletal animation data for file '{filePath.Span}' as it contains multiple sub-meshes and no {nameof(MeshReadConfig.SubMeshIndex)} was given " +
-									  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(LoadAll)}(...) instead).");
+									  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(Load)}(...) instead).");
 					loadSkeletalAnimationData = false;
 				}
 			}

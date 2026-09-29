@@ -93,6 +93,17 @@ public interface IObjectBuilder {
 			name
 		);
 	}
+	ModelInstanceGroup CreateModelInstances(ModelBundle bundle, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			bundle,
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			name
+		);
+	}
 	
 	
 
@@ -157,6 +168,15 @@ public interface IObjectBuilder {
 			}
 		);
 	}
+	ModelInstanceGroup CreateModelInstances(ModelBundle bundle, Transform initialTransform, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			bundle,
+			new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			}
+		);
+	}
 	
 	
 	/// <summary>
@@ -187,6 +207,7 @@ public interface IObjectBuilder {
 	/// <param name="models">The models to create instances of.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model>;
+	ModelInstanceGroup CreateModelInstances(ModelBundle bundle, in ModelInstanceCreationConfig config);
 	/// <summary>
 	/// Groups existing model instances together so they can be transformed as one.
 	/// </summary>

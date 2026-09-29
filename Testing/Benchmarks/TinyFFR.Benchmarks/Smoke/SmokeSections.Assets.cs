@@ -19,7 +19,7 @@ static partial class SmokeSections {
 
 	public static void LoadModelFile() {
 		for (var repeat = 0; repeat < SmokeWorkload.ModelFileLoadCount; ++repeat) {
-			using var group = Factory.AssetLoader.LoadAll(BenchmarkAssets.BoxModel, "Benchmark Loaded Model");
+			using var group = Factory.AssetLoader.LoadBundledAsset(BenchmarkAssets.BoxModel, "Benchmark Loaded Model");
 			using var instances = Factory.ObjectBuilder.CreateModelInstances(group.Models, name: "Benchmark Loaded Model Instances");
 			using var scene = Factory.SceneBuilder.CreateScene(name: "Benchmark Loaded Model Scene");
 			scene.Add(instances);
@@ -28,7 +28,7 @@ static partial class SmokeSections {
 	}
 
 	public static void SkeletalAnimation() {
-		using var group = Factory.AssetLoader.LoadAll(BenchmarkAssets.RiggedModel, "Benchmark Rigged Model");
+		using var group = Factory.AssetLoader.LoadBundledAsset(BenchmarkAssets.RiggedModel, "Benchmark Rigged Model");
 		using var instances = Factory.ObjectBuilder.CreateModelInstances(group.Models, name: "Benchmark Rigged Model Instances");
 
 		foreach (var instance in instances.Instances) {

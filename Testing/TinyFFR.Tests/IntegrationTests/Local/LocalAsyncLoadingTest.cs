@@ -148,7 +148,7 @@ unsafe class LocalAsyncLoadingTest {
 		// Everything is dispatched up front; the point of the test is that the loop below stays
 		// responsive while all of it streams in on worker threads.
 		for (var i = 0; i < fileCount; ++i) {
-			ops[i] = factory.AssetLoader.LoadAllAsync(
+			ops[i] = factory.AssetLoader.LoadBundledAssetAsync(
 				CommonTestAssets.FindAsset("models/" + InteractiveTestFiles[i].Filename),
 				new ModelCreationConfig {
 					MeshConfig = new() { LinearRescalingFactor = InteractiveTestFiles[i].ScalingFactor },
@@ -638,7 +638,7 @@ unsafe class LocalAsyncLoadingTest {
 		var loader = factory.AssetLoader;
 
 		foreach (var file in new[] { CesiumManFile, CommonTestAssets.FindAsset("models/DamagedHelmet.glb") }) {
-			using var group = loader.LoadAll(file, Path.GetFileNameWithoutExtension(file));
+			using var group = loader.LoadBundledAsset(file, Path.GetFileNameWithoutExtension(file));
 			Console.WriteLine($"  {Path.GetFileName(file)}: {group.Meshes.Count} meshes, {group.Materials.Count} materials, {group.Textures.Count} textures");
 			Assert.Greater(group.Meshes.Count, 0, $"{file}: LoadAll produced no meshes.");
 			Assert.Greater(group.Materials.Count, 0, $"{file}: LoadAll produced no materials.");
@@ -669,8 +669,8 @@ unsafe class LocalAsyncLoadingTest {
 
 		foreach (var file in new[] { CesiumManFile, HelmetFile, CarConceptFile }) {
 			var label = Path.GetFileName(file);
-			using var syncGroup = loader.LoadAll(file, "grp");
-			using var asyncGroup = AwaitLoad(loader.LoadAllAsync(file, "grp"));
+			using var syncGroup = loader.LoadBundledAsset(file, "grp");
+			using var asyncGroup = AwaitLoad(loader.LoadBundledAssetAsync(file, "grp"));
 
 			Assert.Greater(syncGroup.Meshes.Count, 0, $"{label}: LoadAll produced no meshes.");
 			Assert.Greater(syncGroup.Materials.Count, 0, $"{label}: LoadAll produced no materials.");
@@ -696,10 +696,10 @@ unsafe class LocalAsyncLoadingTest {
 			Console.WriteLine($"  {label}: {String.Join(", ", actual)}");
 		}
 
-		using (var cesiumGroup = loader.LoadAll(CesiumManFile, "grp")) {
+		using (var cesiumGroup = loader.LoadBundledAsset(CesiumManFile, "grp")) {
 			AssertMapTypes(cesiumGroup, "CesiumMan", "texture map_color", "texture map_orm");
 		}
-		using (var helmetGroup = AwaitLoad(loader.LoadAllAsync(HelmetFile, "grp"))) {
+		using (var helmetGroup = AwaitLoad(loader.LoadBundledAssetAsync(HelmetFile, "grp"))) {
 			AssertMapTypes(helmetGroup, "DamagedHelmet", "texture map_color", "texture map_norm", "texture map_orm", "texture map_emissive");
 		}
 	}
@@ -710,14 +710,14 @@ unsafe class LocalAsyncLoadingTest {
 
 		var expectedMeshCounts = new List<int>();
 		foreach (var file in new[] { CesiumManFile, HelmetFile, CarConceptFile }) {
-			using var syncGroup = loader.LoadAll(file, "expected");
+			using var syncGroup = loader.LoadBundledAsset(file, "expected");
 			expectedMeshCounts.Add(syncGroup.Meshes.Count);
 		}
 
 		var operations = new[] {
-			loader.LoadAllAsync(CesiumManFile, "concurrent0"),
-			loader.LoadAllAsync(HelmetFile, "concurrent1"),
-			loader.LoadAllAsync(CarConceptFile, "concurrent2")
+			loader.LoadBundledAssetAsync(CesiumManFile, "concurrent0"),
+			loader.LoadBundledAssetAsync(HelmetFile, "concurrent1"),
+			loader.LoadBundledAssetAsync(CarConceptFile, "concurrent2")
 		};
 
 		var groups = operations.Select(AwaitLoad).ToArray();
@@ -752,7 +752,7 @@ unsafe class LocalAsyncLoadingTest {
 			_postProcessInvocationsBeforeFailure = allowedInvocations;
 
 			Assert.Catch(() => {
-				using var _ = loader.LoadAll(
+				using var _ = loader.LoadBundledAsset(
 					CarConceptFile,
 					new ModelCreationConfig {
 						Name = "doomed",
@@ -774,7 +774,7 @@ unsafe class LocalAsyncLoadingTest {
 
 		Console.WriteLine("  4 deliberately-failed loads left no orphaned meshes, textures, materials or models");
 
-		using var recoveryGroup = loader.LoadAll(CarConceptFile, "recovered");
+		using var recoveryGroup = loader.LoadBundledAsset(CarConceptFile, "recovered");
 		Assert.Greater(recoveryGroup.Meshes.Count, 0, "The loader did not recover after a failed load.");
 		Console.WriteLine($"  a subsequent load still produced {recoveryGroup.Meshes.Count} meshes");
 	}

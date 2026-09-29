@@ -41,7 +41,7 @@ class LocalAnimationTest {
 	public void TearDownTest() { }
 	
 	void TestRepeatNodeNames(LocalTinyFfrFactory factory) {
-		using var rGroup = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/Fox.glb"));
+		using var rGroup = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/Fox.glb"));
 		var mesh = rGroup.Meshes[0];
 		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 0, mesh.Skeleton.Nodes[1].GetNameAsNewStringObject());
 		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 5, "foxnode");
@@ -204,7 +204,7 @@ class LocalAnimationTest {
 				prevAnimTimeRemaining = 0f;
 
 				Console.WriteLine("Loading " + _filesToLoad[curFileIndex].Filename + "...");
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename), new ModelCreationConfig() { MeshConfig = new() { LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor, OriginTranslation = (0f, 0f, curFileIndex) }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename), new ModelCreationConfig() { MeshConfig = new() { LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor, OriginTranslation = (0f, 0f, curFileIndex) }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
 				foreach (var mesh in loadedResources.Value.Meshes) {
 					Console.WriteLine($"\t{mesh} : {mesh.Skeleton.Nodes.Count} nodes");
@@ -274,7 +274,7 @@ class LocalAnimationTest {
 			modelInstanceGroup?.ScaleBy(1f - (0.05f * loop.Input.KeyboardAndMouse.MouseScrollWheelDelta)); 
 			if (loop.Input.KeyboardAndMouse.MouseScrollWheelDelta != 0) UpdateBoundingBoxes();
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.E)) {
-				factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
+				factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.N)) {
 				if (modelInstanceGroup is { } mig) {

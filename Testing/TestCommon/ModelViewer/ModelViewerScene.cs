@@ -100,7 +100,7 @@ public sealed class ModelViewerScene : IDisposable {
 	}
 
 	public async Task LoadModelAsync(string fileName) {
-		var resources = await _factory.AssetLoader.LoadAllAsync(
+		var resources = await _factory.AssetLoader.LoadBundledAssetAsync(
 			CommonTestAssets.FindAsset("models/" + fileName),
 			new ModelCreationConfig { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.Enabled }, TextureConfig = new() { DataType = TextureDataType.LinearData, CompressionQuality = Quality.VeryLow }},
 			new ModelReadConfig { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }
