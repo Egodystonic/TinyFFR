@@ -601,7 +601,7 @@ class LocalAssetBakingTest {
 				CommonTestAssets.FindAsset("models/showcase_ABeautifulGame.glb"),
 				new ModelCreationConfig {
 					Name = "Baked Chess Set",
-					TextureConfig = new TextureCreationConfig { DataType = TextureDataType.LinearData, CompressionQuality = Quality.VeryLow }
+					TextureConfig = new TextureCreationConfig { DataType = TextureDataType.LinearData }
 				}
 			);
 		}
@@ -656,6 +656,86 @@ class LocalAssetBakingTest {
 			_instances.Clear();
 			_group?.Dispose();
 			_group = null;
+		}
+	}
+
+	sealed class ModelBundleEntry : BakedAssetEntry {
+		const float BundleScaling = 1.2f;
+
+		ModelBundle? _bundle;
+		ModelInstanceGroup? _instances;
+		TinyFfrAsyncOperation<ModelBundle>? _pendingSourceOperation;
+		TinyFfrAsyncOperation<ResourceGroup>? _pendingBakedOperation;
+
+		public override string DisplayName => "Model Bundle";
+		public override string BakedFileName => "model_bundle.tinyffr";
+
+		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
+			if (_pendingSourceOperation is { } sourceOp) dest.Add(sourceOp);
+			if (_pendingBakedOperation is { } bakedOp) dest.Add(bakedOp);
+		}
+
+		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
+			_pendingSourceOperation = factory.AssetLoader.LoadBundledAssetAsync(
+				CommonTestAssets.FindAsset("models/BrainStem.glb"),
+				new ModelCreationConfig {
+					Name = "Baked BrainStem",
+					TextureConfig = new TextureCreationConfig { DataType = TextureDataType.LinearData, CompressionQuality = Quality.VeryLow }
+				}
+			);
+		}
+
+		public override void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath) {
+			_pendingBakedOperation = factory.AssetLoader.LoadBakedResourceGroupAsync(filePath);
+		}
+
+		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
+			if (_pendingSourceOperation is { } sourceOp) {
+				_bundle = sourceOp.GetResultAndDisposeOperation();
+				_pendingSourceOperation = null;
+			}
+			else if (_pendingBakedOperation is { } bakedOp) {
+				_bundle = new ModelBundle(bakedOp.GetResultAndDisposeOperation());
+				_pendingBakedOperation = null;
+			}
+			else throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
+		}
+
+		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {
+			factory.AssetBakery.Bake(_bundle!.Value.UnderlyingResourceGroup, filePath);
+		}
+
+		public override void AddToScene(LocalTinyFfrFactory factory, Scene scene, CanvasScene canvas) {
+			var instances = factory.ObjectBuilder.CreateModelInstances(
+				_bundle!.Value,
+				new Location(3.4f, -2.1f, -3.4f),
+				Direction.Up % new Angle(180f),
+				new Vect(BundleScaling, BundleScaling, BundleScaling),
+				"Baked Bundle Instances"
+			);
+			scene.Add(instances);
+			_instances = instances;
+		}
+
+		public override void RemoveFromScene(Scene scene, CanvasScene canvas) {
+			if (_instances is { } instances) {
+				scene.Remove(instances);
+				instances.Dispose();
+			}
+			_instances = null;
+		}
+
+		public override void Update(float totalSeconds) {
+			if (_instances is not { } instances) return;
+			if (instances.Animations.Count == 0) return;
+			instances.GetAnimationPlayer(instances.Animations[0]).SetTimePoint(totalSeconds, AnimationWrapStyle.Loop);
+		}
+
+		public override void Dispose() {
+			_instances?.Dispose();
+			_instances = null;
+			_bundle?.Dispose();
+			_bundle = null;
 		}
 	}
 
@@ -787,6 +867,7 @@ class LocalAssetBakingTest {
 		new ModelEntry(),
 		new SkeletalModelEntry(),
 		new ResourceGroupEntry(),
+		new ModelBundleEntry(),
 		new SharedMapGroupEntry()
 	};
 
@@ -923,7 +1004,7 @@ class LocalAssetBakingTest {
 				}
 
 				camera.SetViewAndUpDirection(
-					Direction.Forward.RotatedBy(Direction.Up % (24f * (float) loop.TotalIteratedTime.TotalSeconds)),
+					Direction.Forward.RotatedBy(Direction.Up % (55f * (float) loop.TotalIteratedTime.TotalSeconds)),
 					Direction.Up
 				);
 				if (!loadInProgress) {
