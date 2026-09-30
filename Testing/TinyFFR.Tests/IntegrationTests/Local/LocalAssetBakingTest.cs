@@ -395,7 +395,7 @@ class LocalAssetBakingTest {
 		Material? _material;
 		ModelInstance? _instance;
 		ResourceGroup? _loadedGroup;
-		TinyFfrAsyncOperation<ResourceGroup>? _pendingSourceOperation;
+		TinyFfrAsyncOperation<ModelBundle>? _pendingSourceOperation;
 		TinyFfrAsyncOperation<Mesh>? _pendingBakedOperation;
 
 		public override string DisplayName => "Skeletal Mesh";
@@ -416,7 +416,7 @@ class LocalAssetBakingTest {
 
 		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
 			if (_pendingSourceOperation is { } sourceOp) {
-				var group = sourceOp.GetResultAndDisposeOperation();
+				var group = sourceOp.GetResultAndDisposeOperation().UnderlyingResourceGroup;
 				_pendingSourceOperation = null;
 				_loadedGroup = group;
 				_mesh = group.Meshes[0];
@@ -482,6 +482,7 @@ class LocalAssetBakingTest {
 		protected ModelInstance? Instance;
 		ResourceGroup? _loadedGroup;
 		TinyFfrAsyncOperation<ResourceGroup>? _pendingOperation;
+		TinyFfrAsyncOperation<ModelBundle>? _pendingSourceOperation;
 
 		protected abstract string SourceAssetPath { get; }
 		protected abstract Location InstanceLocation { get; }
@@ -489,10 +490,11 @@ class LocalAssetBakingTest {
 
 		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
 			if (_pendingOperation is { } op) dest.Add(op);
+			if (_pendingSourceOperation is { } sourceOp) dest.Add(sourceOp);
 		}
 
 		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
-			_pendingOperation = factory.AssetLoader.LoadBundledAssetAsync(
+			_pendingSourceOperation = factory.AssetLoader.LoadBundledAssetAsync(
 				CommonTestAssets.FindAsset(SourceAssetPath),
 				new ModelCreationConfig {
 					Name = DisplayName,
@@ -506,9 +508,16 @@ class LocalAssetBakingTest {
 		}
 
 		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
-			if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
-			var group = op.GetResultAndDisposeOperation();
-			_pendingOperation = null;
+			ResourceGroup group;
+			if (_pendingSourceOperation is { } sourceOp) {
+				group = sourceOp.GetResultAndDisposeOperation().UnderlyingResourceGroup;
+				_pendingSourceOperation = null;
+			}
+			else {
+				if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
+				group = op.GetResultAndDisposeOperation();
+				_pendingOperation = null;
+			}
 			_loadedGroup = group;
 			Model = group.Models[0];
 		}
@@ -577,16 +586,18 @@ class LocalAssetBakingTest {
 		ResourceGroup? _group;
 		readonly List<ModelInstance> _instances = new();
 		TinyFfrAsyncOperation<ResourceGroup>? _pendingOperation;
+		TinyFfrAsyncOperation<ModelBundle>? _pendingSourceOperation;
 
 		public override string DisplayName => "Resource Group";
 		public override string BakedFileName => "resource_group.tinyffr";
 
 		public override void AddPendingOperationsTo(List<TinyFfrAsyncOperation> dest) {
 			if (_pendingOperation is { } op) dest.Add(op);
+			if (_pendingSourceOperation is { } sourceOp) dest.Add(sourceOp);
 		}
 
 		public override void BeginLoadFromSource(LocalTinyFfrFactory factory) {
-			_pendingOperation = factory.AssetLoader.LoadBundledAssetAsync(
+			_pendingSourceOperation = factory.AssetLoader.LoadBundledAssetAsync(
 				CommonTestAssets.FindAsset("models/showcase_ABeautifulGame.glb"),
 				new ModelCreationConfig {
 					Name = "Baked Chess Set",
@@ -600,9 +611,15 @@ class LocalAssetBakingTest {
 		}
 
 		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
-			if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
-			_group = op.GetResultAndDisposeOperation();
-			_pendingOperation = null;
+			if (_pendingSourceOperation is { } sourceOp) {
+				_group = sourceOp.GetResultAndDisposeOperation().UnderlyingResourceGroup;
+				_pendingSourceOperation = null;
+			}
+			else {
+				if (_pendingOperation is not { } op) throw new InvalidOperationException($"No pending load for '{DisplayName}'.");
+				_group = op.GetResultAndDisposeOperation();
+				_pendingOperation = null;
+			}
 		}
 
 		public override void BakeToFile(LocalTinyFfrFactory factory, string filePath) {

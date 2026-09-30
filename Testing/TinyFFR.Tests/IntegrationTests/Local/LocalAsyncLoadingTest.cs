@@ -136,7 +136,7 @@ unsafe class LocalAsyncLoadingTest {
 		modelText.SetPlacementFraction(Orientation2D.DownLeft, (0.012f, 0.015f), 0.024f);
 
 		var fileCount = InteractiveTestFiles.Length;
-		var ops = new TinyFfrAsyncOperation<ResourceGroup>?[fileCount];
+		var ops = new TinyFfrAsyncOperation<ModelBundle>?[fileCount];
 		var groups = new ResourceGroup?[fileCount];
 		var failures = new string?[fileCount];
 		var loadDurations = new TimeSpan[fileCount];
@@ -222,7 +222,7 @@ unsafe class LocalAsyncLoadingTest {
 				somethingCompleted = true;
 				loadDurations[i] = loop.TotalIteratedTime;
 				try {
-					groups[i] = op.GetResultAndDisposeOperation();
+					groups[i] = op.GetResultAndDisposeOperation().UnderlyingResourceGroup;
 					++loadedCount;
 				}
 #pragma warning disable CA1031 // A single bad asset must not take down the viewer; it's reported on the canvas instead
@@ -313,7 +313,7 @@ unsafe class LocalAsyncLoadingTest {
 				if (!op.GetResultAndDisposeOperation(TimeSpan.FromSeconds(2d), out var rg)) {
 					throw new InvalidOperationException("Closing test early to prevent tedious wait.");
 				}
-				groups[i] = rg;
+				groups[i] = rg.UnderlyingResourceGroup;
 			}
 #pragma warning disable CA1031 // Shutting down; a load that failed on the way out is not interesting
 			catch (Exception e) {
@@ -676,7 +676,7 @@ unsafe class LocalAsyncLoadingTest {
 			Assert.Greater(syncGroup.Materials.Count, 0, $"{label}: LoadAll produced no materials.");
 			Console.WriteLine($"  {label}: {syncGroup.Meshes.Count} meshes / {syncGroup.Materials.Count} materials / {syncGroup.Textures.Count} textures / {syncGroup.Models.Count} models");
 
-			AssertGroupsEquivalent(syncGroup, asyncGroup, label);
+			AssertGroupsEquivalent(syncGroup.UnderlyingResourceGroup, asyncGroup.UnderlyingResourceGroup, label);
 		}
 	}
 
@@ -697,10 +697,10 @@ unsafe class LocalAsyncLoadingTest {
 		}
 
 		using (var cesiumGroup = loader.LoadBundledAsset(CesiumManFile, "grp")) {
-			AssertMapTypes(cesiumGroup, "CesiumMan", "texture map_color", "texture map_orm");
+			AssertMapTypes(cesiumGroup.UnderlyingResourceGroup, "CesiumMan", "texture map_color", "texture map_orm");
 		}
 		using (var helmetGroup = AwaitLoad(loader.LoadBundledAssetAsync(HelmetFile, "grp"))) {
-			AssertMapTypes(helmetGroup, "DamagedHelmet", "texture map_color", "texture map_norm", "texture map_orm", "texture map_emissive");
+			AssertMapTypes(helmetGroup.UnderlyingResourceGroup, "DamagedHelmet", "texture map_color", "texture map_norm", "texture map_orm", "texture map_emissive");
 		}
 	}
 

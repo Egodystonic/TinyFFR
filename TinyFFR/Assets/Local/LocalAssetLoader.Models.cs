@@ -23,6 +23,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	const int ResourceNameIndexSpaceMax = 20;
 	const string MeshNameSuffix = " mesh ";
 	const string ModelNameSuffix = " model ";
+	const string AnimationTableNameSuffix = " animation table";
 	
 	const string DefaultModelName = "Unnamed Model";
 	readonly WorkerJobSyncHelper<LocalAssetLoader, ModelLoadContext, ModelLoadConfig> _modelLoadWorkerSyncHelper;
@@ -67,6 +68,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		public int NodeCount { get; set; } = 0;
 		public int BoneCount { get; set; } = 0;
 		public bool IsSkeletal { get; set; } = false;
+		public bool AddedToCombinedSkeleton { get; set; } = false;
 		public bool AllowsPerInstanceVertexMutation { get; set; } = false;
 		public WireframeGenerationMode WireframeGenerationMode { get; set; } = WireframeGenerationMode.Disabled;
 		public PositionedCuboid BoundingBox { get; set; } = default;
@@ -92,6 +94,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			NodeCount = 0;
 			BoneCount = 0;
 			IsSkeletal = false;
+			AddedToCombinedSkeleton = false;
 			AllowsPerInstanceVertexMutation = false;
 			WireframeGenerationMode = WireframeGenerationMode.Disabled;
 			BoundingBox = default;
@@ -115,6 +118,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		public InteropStringBuffer? NameBuffer { get; set; } = null;
 		public UIntPtr AssetHandle { get; set; } = UIntPtr.Zero;
 		public ModelLoadSubMeshData CurrentSubMeshData { get; } = new();
+		public CombinedSkeletonAccumulator CombinedSkeleton { get; } = new();
 		public ArrayPoolBackedMap<int, Material> AssetIndexToMaterialMap { get; } = new();
 
 		// Handed across each primary thread hop
@@ -130,6 +134,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			Group?.Dispose(disposeContainedResources: true);
 			Group = null;
 			CurrentSubMeshData.DisposeBuffersAndReset();
+			CombinedSkeleton.Reset();
 			AssetIndexToMaterialMap.Clear();
 			NameBuffer?.Dispose();
 			NameBuffer = null;
@@ -143,11 +148,12 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 
 		public override void Dispose() {
 			CurrentSubMeshData.Dispose();
+			CombinedSkeleton.Dispose();
 			AssetIndexToMaterialMap.Dispose();
 		}
 	}
 
-	public ResourceGroup Load(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
+	public ModelBundle LoadBundledAsset(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -157,10 +163,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
 		contextWrapper.Context.SetName(config.Name.IsEmpty ? Path.GetFileName(filePath) : config.Name);
 
-		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadAllCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+		return new ModelBundle(contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadBundledAssetCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig }));
 	}
 
-	public TinyFfrAsyncOperation<ResourceGroup> LoadAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
+	public TinyFfrAsyncOperation<ModelBundle> LoadBundledAssetAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -170,10 +176,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
 		contextWrapper.Context.SetName(config.Name.IsEmpty ? Path.GetFileName(filePath) : config.Name);
 
-		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadAllCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig });
+		return contextWrapper.DispatchWrappedResourceReturningAsynchronousOperation<ResourceGroup, ModelBundle>(&LoadBundledAssetCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig });
 	}
 
-	static ResourceGroup LoadAllCore(ModelLoadContext context, in ModelLoadConfig config) {
+	static ResourceGroup LoadBundledAssetCore(ModelLoadContext context, in ModelLoadConfig config) {
 		if (context.FilePath is not { } filePath) {
 			throw new InvalidOperationException("No file path set in context (this is a bug in TinyFFR).");
 		}
@@ -242,6 +248,15 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				context.CurrentSubMeshData.DisposeBuffersAndReset();
 			}
 
+			context.CombinedSkeleton.BuildOnWorker(
+				assetHandle,
+				creationConfig.MeshConfig.OriginTranslation,
+				creationConfig.MeshConfig.LinearRescalingFactor,
+				readConfig.MeshConfig.AnimationTicksPerSecondOverride,
+				context.NameBuffer,
+				context.HeapPool
+			);
+
 			UnloadAssetFileFromMemory(context.AssetHandle).ThrowIfFailure();
 			context.AssetHandle = UIntPtr.Zero;
 
@@ -269,12 +284,20 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 
 	static void CreateSubMeshResourcesOnPrimary(ModelLoadContext context) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		var self = context.Self;
 		var group = GetOrCreateGroupOnPrimary(context);
+		var mesh = CreateAndRegisterSubMeshOnPrimary(context, group);
+		CreateAndRegisterSubMeshMaterialAndModelOnPrimary(context, group, mesh);
+	}
 
-		var mesh = self.CreateSubMeshOnPrimary(context.CurrentSubMeshData);
+	static Mesh CreateAndRegisterSubMeshOnPrimary(ModelLoadContext context, ResourceGroup group) {
+		var mesh = context.Self.CreateSubMeshOnPrimary(context.CurrentSubMeshData);
 		group.Add(mesh);
+		if (context.CurrentSubMeshData.AddedToCombinedSkeleton) context.CombinedSkeleton.AddBoneSetMeshOnPrimary(mesh);
+		return mesh;
+	}
 
+	static void CreateAndRegisterSubMeshMaterialAndModelOnPrimary(ModelLoadContext context, ResourceGroup group, Mesh mesh) {
+		var self = context.Self;
 		Material material;
 		if (context.CurrentSubMeshData.GatheredMaterial is { } gatheredMaterial) {
 			material = self.MaterializeAssetMaterial(gatheredMaterial, context.CurrentSubMeshData.TextureRegistry, group);
@@ -298,6 +321,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	static ResourceGroup CompleteModelLoad(ModelLoadContext context) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		var group = GetOrCreateGroupOnPrimary(context);
+
+		var resourceGroupName = context.Name;
+		Span<char> tableNameBuffer = stackalloc char[SpanUtils.GetConcatenatedLength(resourceGroupName, AnimationTableNameSuffix)];
+		SpanUtils.Concatenate(tableNameBuffer, resourceGroupName, AnimationTableNameSuffix);
+		if (context.CombinedSkeleton.CreateTableOnPrimary(context.Self._meshBuilder.MeshGroupAnimationTableImplProvider, tableNameBuffer) is { } animationTable) {
+			group.Add(animationTable);
+		}
+
 		group.Seal();
 		context.Group = null;
 		return group;
@@ -413,6 +444,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			}
 
 			buffers.BoneCount = LocalMeshBuilder.CalculateAndValidateBoneCount(translatedNodeBuffer.Span);
+			if (buffers.BoneCount > 0) {
+				context.CombinedSkeleton.AddSkeletalSubMeshOnWorker(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), translatedNodeBuffer.Span[..nodeCount], buffers.BoneCount, context.HeapPool);
+				buffers.AddedToCombinedSkeleton = true;
+			}
 
 			GatherMeshAnimations(assetHandle, nodeHandles, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, nameBuffer, context.HeapPool, buffers.SkeletalDataRegistry);
 			GatherNodeNames(new ReadOnlySpan<NodeHandle>(nodeHandles, nodeCount), maxNodeNameLength, nameBuffer, context.HeapPool, buffers.SkeletalDataRegistry);

@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// The tree of joints belonging to one mesh, which skeletal animations move and the mesh's vertices follow.
 /// </summary>
 /// <param name="Mesh">The mesh whose skeleton this is.</param>
-public readonly record struct MeshSkeleton(Mesh Mesh) {
+public readonly record struct MeshSkeleton(Mesh Mesh) : IMeshSkeleton<MeshNodeIndex> {
 	/// <summary>
 	/// The joints that make up this skeleton.
 	/// </summary>
@@ -27,7 +27,7 @@ public readonly record struct MeshSkeleton(Mesh Mesh) {
 	/// </remarks>
 	/// <param name="targetInstance">The object to pose. Its mesh must be the one this skeleton belongs to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyBindPose(ModelInstance targetInstance) => Mesh.ApplySkeletalBindPose(targetInstance);
+	public void ApplyBindPose(SceneObject targetInstance) => Mesh.ApplySkeletalBindPose(targetInstance);
 	
 	/// <summary>
 	/// Reports where the given joint sits in the bind pose.

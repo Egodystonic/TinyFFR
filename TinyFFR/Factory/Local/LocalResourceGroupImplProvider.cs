@@ -16,6 +16,7 @@ readonly unsafe struct SerializedResourceData {
 	public IntPtr SpecializationTypeIdentifier { get; init; }
 	public PooledHeapMemory<byte> SpecializationData { get; init; }
 	public ResourceStub? AdditionalResourceRef { get; init; }
+	public bool DoNotDispose { get; init; }
 	public delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, void> SpecializedResourceDisposalStub { get; init; }
 	public delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, object> SpecializedResourceBoxingStub { get; init; }
 	public bool IsSpecialized => SpecializationTypeIdentifier != default;
@@ -95,6 +96,17 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 			new(underlyingResource.AsStub, TResource.SpecializationTypeIdentifier, specializationDataBuffer, additionalResourceRef, &IResourceSpecialization<TResource, TBase>.DisposeViaStub, &IResourceSpecialization<TResource, TBase>.BoxViaStub),
 			underlyingResource
 		);
+	}
+
+	public void SetDoNotDisposeFlag<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource {
+		var data = ValidateCanAddAndGetData(handle);
+		var stub = resource.AsStub;
+		for (var i = 0; i < data.Count; ++i) {
+			if (data.DataArray[i].Stub != stub) continue;
+			data.DataArray[i] = data.DataArray[i] with { DoNotDispose = true };
+			return;
+		}
+		throw new ArgumentException($"{resource} is not a member of {nameof(ResourceGroup)} '{_globals.GetResourceName(handle.Ident, DefaultGroupName)}'.", nameof(resource));
 	}
 
 	GroupData ValidateCanAddAndGetData(ResourceHandle<ResourceGroup> handle) {
@@ -268,7 +280,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 				_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), additionalResourceRef);
 			}
 
-			if (disposeContainedResources) {
+			if (disposeContainedResources && !data.DoNotDispose) {
 				if (data.IsSpecialized) {
 					if (data.SpecializedResourceDisposalStub != null) {
 						data.SpecializedResourceDisposalStub(data.Stub, data.SpecializationData.Span, data.AdditionalResourceRef);

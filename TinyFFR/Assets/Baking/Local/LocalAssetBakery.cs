@@ -59,7 +59,8 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		typeof(Texture),
 		typeof(Matrix4x4),
 		typeof(PositionedCuboid),
-		typeof(ResourceGroup)
+		typeof(ResourceGroup),
+		typeof(MeshGroupAnimationTable)
 	};
 #pragma warning disable CA1859 // "Don't use readonlydict for increased performance" -- I don't need perf, I need the intentionality of read-only; that's why I chose that interface :/
 	static readonly IReadOnlyDictionary<Type, int> _typeToTypeIdMap = _typeIdToTypeMap.Select((t, i) => (Type: t, Id: i)).ToDictionary(tuple => tuple.Type, tuple => tuple.Id);
@@ -89,6 +90,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	readonly ArrayPoolBackedVector<ResourceStub> _poolMaterials = new();
 	readonly ArrayPoolBackedVector<ResourceStub> _poolMeshes = new();
 	readonly ArrayPoolBackedVector<ResourceStub> _poolModels = new();
+	readonly ArrayPoolBackedVector<ResourceStub> _poolAnimationTables = new();
 	readonly ArrayPoolBackedLruCache<ResourceStub, BakedData> _resourcesReadyForBaking;
 	readonly ArrayPoolBackedObjectPool<LoadedBakedAsset, LocalAssetBakery> _loadedAssetPool;
 	readonly WorkerJobSyncHelper<LocalAssetBakery, AssetLoadContext, AssetLoadConfig> _loadSyncHelper;
@@ -149,6 +151,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		BakedPoolKind.Material => _poolMaterials,
 		BakedPoolKind.Mesh => _poolMeshes,
 		BakedPoolKind.Model => _poolModels,
+		BakedPoolKind.AnimationTable => _poolAnimationTables,
 		_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 	};
 
@@ -166,11 +169,11 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposedOrDisabled();
 		
-		var bakeableCount = resource.Textures.Count + resource.Materials.Count + resource.Meshes.Count + resource.Models.Count;
+		var bakeableCount = resource.Textures.Count + resource.Materials.Count + resource.Meshes.Count + resource.Models.Count + resource.AnimationTables.Count;
 		if (bakeableCount != resource.ResourceCount) {
 			throw new AssetBakeException(
 				$"Can not bake resource group at least one of its constituent resources are not of a bakeable type. " +
-				$"Only {nameof(Texture)}, {nameof(Material)}, {nameof(Mesh)} and {nameof(Model)} resources can be baked as part of a group."
+				$"Only {nameof(Texture)}, {nameof(Material)}, {nameof(Mesh)}, {nameof(Model)} and {nameof(MeshGroupAnimationTable)} resources can be baked as part of a group."
 			);
 		}
 		
@@ -184,6 +187,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			foreach (var material in resource.Materials) AddToPool(GetStub(material), BakedPoolKind.Material);
 			foreach (var mesh in resource.Meshes) AddToPool(GetStub(mesh), BakedPoolKind.Mesh);
 			foreach (var model in resource.Models) AddToPool(GetStub(model), BakedPoolKind.Model);
+			foreach (var animationTable in resource.AnimationTables) AddToPool(GetStub(animationTable), BakedPoolKind.AnimationTable);
 			FormalizePendingPoolReferences(rootStub);
 			WritePoolsAndReferenceTable(rootStub);
 
@@ -415,6 +419,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		_poolMaterials.Clear();
 		_poolMeshes.Clear();
 		_poolModels.Clear();
+		_poolAnimationTables.Clear();
 	}
 
 	void AddToPool(ResourceStub stub, BakedPoolKind kind) {
@@ -454,6 +459,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		WritePool(root, BakedPoolKind.Material, sectionNameBuffer);
 		WritePool(root, BakedPoolKind.Mesh, sectionNameBuffer);
 		WritePool(root, BakedPoolKind.Model, sectionNameBuffer);
+		WritePool(root, BakedPoolKind.AnimationTable, sectionNameBuffer);
 
 		using var entries = _globals.HeapPool.Borrow<AssetPoolSchema.BakedReferenceEntry>(Int32.Max(_references.Count, 1));
 		var entryCount = 0;
@@ -686,6 +692,7 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			_poolMaterials.Dispose();
 			_poolMeshes.Dispose();
 			_poolModels.Dispose();
+			_poolAnimationTables.Dispose();
 			lock (_loadedAssetPoolLock) {
 				_loadedAssetPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 			}

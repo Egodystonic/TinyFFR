@@ -16,9 +16,9 @@ public enum SceneObjectType {
 	ModelInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 1,
 	ModelInstanceGroup = (TransformedFlag | MaterialReceivingFlag) + 2,
 	MutableGridInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 3,
-	QuadInstance = (TransformedFlag | MaterialReceivingFlag) + 4,
+	QuadInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 4,
 	CameraLockedQuadInstance = (PositionedFlag | ScaledFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 5,
-	TextInstance = (TransformedFlag) + 6,
+	TextInstance = (TransformedFlag | StoresOnlyModelInstanceFlag) + 6,
 	CameraLockedTextInstance = (PositionedFlag | ScaledFlag | StoresOnlyModelInstanceFlag) + 7,
 	PointLight = (PositionedFlag | ColoredFlag) + 8,
 	SpotLight = (PositionedFlag | OrientedFlag | ColoredFlag) + 9,
@@ -438,6 +438,10 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	public static explicit operator ModelInstanceGroup(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.ModelInstanceGroup);
 		return new(FastFromStub<ResourceGroup>(operand.Stub));
+	}
+	internal static ResourceGroup GetModelInstanceGroupUnderlyingResourceGroup(SceneObject o) {
+		o.ThrowIfNotOfType(SceneObjectType.ModelInstanceGroup);
+		return FastFromStub<ResourceGroup>(o.Stub);
 	}
 	public static explicit operator QuadInstance(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.QuadInstance);

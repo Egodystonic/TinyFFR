@@ -56,6 +56,13 @@ partial class LocalAssetLoader {
 				var model = CreateModelFromBakedAsset(Self, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.Model, i, in this);
 				Resources.Add(model);
 			}
+
+			var animationTableCount = AssetData.Extract(AssetPoolSchema.AnimationTableCount, 0);
+			for (var i = 0; i < animationTableCount; ++i) {
+				var subAsset = AssetData.ExtractSubAsset<MeshGroupAnimationTable>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.AnimationTable, i));
+				var animationTable = CreateAnimationTableFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.AnimationTable, i, in this);
+				Resources.Add(animationTable);
+			}
 		}
 
 		bool TryResolveBakedReference(BakedPoolKind ownerKind, int ownerIndex, BakedReferenceSlot slot, out AssetPoolSchema.BakedReferenceEntry result) {
@@ -95,11 +102,88 @@ partial class LocalAssetLoader {
 			return Resources.Meshes[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Mesh, Resources.Meshes.Count, slot)];
 		}
 
+		public int ResolveMeshes(BakedPoolKind ownerKind, int ownerIndex, BakedReferenceSlot slot, Span<Mesh> destination) {
+			var count = 0;
+			foreach (var entry in References) {
+				if (entry.OwnerKind != (int) ownerKind || entry.OwnerIndex != ownerIndex || entry.Slot != (int) slot) continue;
+				if (count >= destination.Length) throw new AssetBakeException($"Baked asset has more '{slot}' references than expected ({destination.Length}).");
+				destination[count++] = Resources.Meshes[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Mesh, Resources.Meshes.Count, slot)];
+			}
+			return count;
+		}
+
 		public Material ResolveMaterial(BakedPoolKind ownerKind, int ownerIndex, BakedReferenceSlot slot) {
 			if (!TryResolveBakedReference(ownerKind, ownerIndex, slot, out var entry)) {
 				throw new AssetBakeException($"Baked asset is missing required material reference '{slot}'.");
 			}
 			return Resources.Materials[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Material, Resources.Materials.Count, slot)];
+		}
+	}
+
+	static MeshGroupAnimationTable CreateAnimationTableFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name, BakedPoolKind ownerKind, int ownerIndex, in BakedAssetResolver resolver) {
+		var provider = self._meshBuilder.MeshGroupAnimationTableImplProvider;
+		var nodeCount = assetData.Extract<int>(MeshGroupAnimationTableBakingSchema.SkeletonNodeCount);
+		var boneSetCount = assetData.Extract<int>(MeshGroupAnimationTableBakingSchema.BoneSetCount);
+		var boneSetBoneCounts = assetData.ExtractSpan<int>(MeshGroupAnimationTableBakingSchema.BoneSetBoneCounts)[..boneSetCount];
+		var totalBoneCount = 0;
+		for (var i = 0; i < boneSetCount; ++i) totalBoneCount += boneSetBoneCounts[i];
+
+		var meshArray = TinyFfrArrayPool<Mesh>.Shared.Rent(boneSetCount);
+		try {
+			var meshes = meshArray.AsSpan(0, boneSetCount);
+			var resolvedMeshCount = resolver.ResolveMeshes(ownerKind, ownerIndex, BakedReferenceSlot.AnimationTableMesh, meshes);
+			if (resolvedMeshCount != boneSetCount) {
+				throw new AssetBakeException($"Baked animation table '{name}' declares {boneSetCount} bone sets but references {resolvedMeshCount} meshes.");
+			}
+
+			var table = provider.CreateFromBakedData(
+				name,
+				nodeCount,
+				assetData.Extract<int>(MeshGroupAnimationTableBakingSchema.SkeletonFirstParentedNodeIndex),
+				assetData.Extract<Matrix4x4>(MeshGroupAnimationTableBakingSchema.SkeletonModelImportTransform),
+				assetData.ExtractSpan<Matrix4x4>(MeshGroupAnimationTableBakingSchema.SkeletonDefaultLocalTransforms)[..nodeCount],
+				assetData.ExtractSpan<int>(MeshGroupAnimationTableBakingSchema.SkeletonParentIndices)[..nodeCount],
+				assetData.ExtractSpan<int>(MeshGroupAnimationTableBakingSchema.SkeletonMutationTargetIndexMap)[..nodeCount],
+				meshes,
+				boneSetBoneCounts,
+				assetData.ExtractSpan<Matrix4x4>(MeshGroupAnimationTableBakingSchema.BoneSetBindPoseInversions)[..totalBoneCount],
+				assetData.ExtractSpan<int>(MeshGroupAnimationTableBakingSchema.BoneSetBoneToNodeMaps)[..totalBoneCount]
+			);
+
+			try {
+				var animationEntries = assetData.ExtractSpan<MeshBakingSchema.BakedAnimationEntry>(MeshBakingSchema.AnimationTable);
+				var scaling = assetData.ExtractSpan<SkeletalAnimationScalingKeyframe>(MeshBakingSchema.AnimationScalingKeyframes);
+				var rotation = assetData.ExtractSpan<SkeletalAnimationRotationKeyframe>(MeshBakingSchema.AnimationRotationKeyframes);
+				var translation = assetData.ExtractSpan<SkeletalAnimationTranslationKeyframe>(MeshBakingSchema.AnimationTranslationKeyframes);
+				var mutations = assetData.ExtractSpan<SkeletalAnimationNodeMutationDescriptor>(MeshBakingSchema.AnimationMutationDescriptors);
+				var animationNameChars = assetData.ExtractString(MeshBakingSchema.AnimationNameChars);
+				foreach (var entry in animationEntries) {
+					provider.RestoreBakedAnimation(
+						table,
+						scaling.Slice(entry.ScalingStart, entry.ScalingCount),
+						rotation.Slice(entry.RotationStart, entry.RotationCount),
+						translation.Slice(entry.TranslationStart, entry.TranslationCount),
+						mutations.Slice(entry.MutationStart, entry.MutationCount),
+						entry.DefaultCompletionTimeSeconds,
+						animationNameChars.Slice(entry.NameStart, entry.NameLength)
+					);
+				}
+
+				var nodeNameEntries = assetData.ExtractSpan<MeshBakingSchema.BakedNodeNameEntry>(MeshBakingSchema.NodeNameTable);
+				var nodeNameChars = assetData.ExtractString(MeshBakingSchema.NodeNameChars);
+				foreach (var entry in nodeNameEntries) {
+					provider.RestoreBakedNodeName(table, entry.NodeIndex, nodeNameChars.Slice(entry.NameStart, entry.NameLength));
+				}
+			}
+			catch {
+				table.Dispose();
+				throw;
+			}
+
+			return table;
+		}
+		finally {
+			TinyFfrArrayPool<Mesh>.Shared.Return(meshArray, clearArray: true);
 		}
 	}
 }

@@ -11,7 +11,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// An index that allows you to look up the the joints of one mesh's skeleton, addressable by name or by position.
 /// </summary>
 /// <param name="Skeleton">The skeleton whose joints these are.</param>
-public readonly record struct MeshNodeIndex(MeshSkeleton Skeleton) : IReadOnlyCollection<MeshNode> {
+public readonly record struct MeshNodeIndex(MeshSkeleton Skeleton) : IMeshNodeIndex<Mesh> {
 #pragma warning restore CA1710
 	/// <summary>
 	/// The mesh whose skeleton these nodes belong to.

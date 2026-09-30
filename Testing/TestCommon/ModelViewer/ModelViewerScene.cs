@@ -118,11 +118,11 @@ public sealed class ModelViewerScene : IDisposable {
 		for (var i = 0; i < instances.Count; ++i) originalMaterials[i] = instances[i].Material;
 
 		_loadedModels.Add(fileName, new LoadedModel {
-			Resources = resources,
+			Resources = resources.UnderlyingResourceGroup,
 			Instances = instances,
 			OriginalMaterials = originalMaterials,
 			Summary = $"{fileName}: {resources.Models.Count} models / {resources.Meshes.Count} meshes / {resources.Materials.Count} materials / {resources.Textures.Count} textures",
-			ResourceListing = BuildResourceListing(resources)
+			ResourceListing = BuildResourceListing(resources.UnderlyingResourceGroup)
 		});
 	}
 

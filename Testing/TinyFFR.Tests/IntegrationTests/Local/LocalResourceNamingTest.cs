@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
@@ -86,6 +87,17 @@ class LocalResourceNamingTest {
 			ReadOnlySpan<SkeletalAnimationTranslationKeyframe>.Empty,
 			ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor>.Empty,
 			1f,
+			n
+		));
+		var bundleTableProvider = ((LocalMeshBuilder) factory.MeshBuilder).MeshGroupAnimationTableImplProvider;
+		var bundleTableNodes = new SkeletalAnimationNode[] { new(Matrix4x4.Identity, Matrix4x4.Identity, null, null) };
+		TestNameStorageAndRetrieval(n => bundleTableProvider.Create(
+			bundleTableNodes,
+			Matrix4x4.Identity,
+			new[] { skeletalMesh },
+			new[] { 1 },
+			new[] { Matrix4x4.Identity },
+			new[] { 0 },
 			n
 		));
 		var meshNodeIndex = 0;

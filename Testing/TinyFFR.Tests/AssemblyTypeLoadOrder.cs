@@ -38,6 +38,7 @@ sealed class AssemblyTypeLoadOrderAnchor {
 	MeshNode _meshNode;
 	Model _model;
 	ModelInstance _modelInstance;
+	MeshGroupAnimationTable _meshGroupAnimationTable;
 	ModelInstanceGroup _modelInstanceGroup;
 	PointLight _pointLight;
 	Renderer _renderer;
@@ -56,6 +57,9 @@ sealed class AssemblyTypeLoadOrderAnchorStage2 {
 	CanvasScene _canvasScene;
 	FontPen _fontPen;
 	FontString _fontString;
+	ModelBundle _modelBundle;
+	MeshGroupAnimationIndex _meshGroupAnimationIndex;
+	MeshGroupSkeleton _meshGroupSkeleton;
 	QuadInstance _quadInstance;
 	QuadMesh _quadMesh;
 	SceneObject _sceneObject;
@@ -68,5 +72,6 @@ sealed class AssemblyTypeLoadOrderAnchorStage3 {
 	CameraLockedTextInstance _cameraLockedTextInstance;
 	CanvasTexture _canvasTexture;
 	CanvasText _canvasText;
+	MeshGroupNodeIndex _meshGroupNodeIndex;
 }
 #pragma warning restore CS0169

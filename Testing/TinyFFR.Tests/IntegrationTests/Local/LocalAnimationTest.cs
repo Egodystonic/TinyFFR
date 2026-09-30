@@ -110,6 +110,42 @@ class LocalAnimationTest {
 	}
 
 	[Test]
+	public void PlayModelBundleAnimationsViaGroup() {
+		using var factory = new LocalTinyFfrFactory();
+		var display = factory.DisplayDiscoverer.Primary!.Value;
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Model bundle group animation (Space: next clip, Esc: quit)");
+		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 1f, -3f));
+		using var cameraController = camera.CreateController<FreeFlyingCameraController>();
+		using var light = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
+		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
+		using var scene = factory.SceneBuilder.CreateScene(backdrop);
+		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+		scene.Add(light);
+
+		using var bundle = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/BrainStem.glb"));
+		using var instances = factory.ObjectBuilder.CreateModelInstances(bundle);
+		scene.Add(instances);
+		Console.WriteLine($"{bundle.Meshes.Count} meshes / {instances.Skeleton.Nodes.Count} shared nodes / {instances.Animations.Count} clips");
+		Assert.Greater(instances.Animations.Count, 0);
+
+		var clipIndex = 0;
+		var clipTime = 0f;
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
+		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
+			DefaultCameraInputHandler.Progress(cameraController, deltaTime);
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				clipIndex = (clipIndex + 1) % instances.Animations.Count;
+				clipTime = 0f;
+			}
+			clipTime += deltaTime;
+			instances.GetAnimationPlayer(instances.Animations[clipIndex]).SetTimePoint(clipTime, AnimationWrapStyle.Loop);
+			renderer.Render();
+		}
+		scene.Remove(instances);
+	}
+
+	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		TestRepeatNodeNames(factory);
@@ -142,7 +178,7 @@ class LocalAnimationTest {
 		var curNodeIndex = 0;
 		var curAnimCount = 1;
 		var playingAnim = false;
-		ResourceGroup? loadedResources = null;
+		ModelBundle? loadedResources = null;
 		ModelInstanceGroup? modelInstanceGroup = null;
 		
 		var boundingBoxColours = new PrimitivePaintbrush[100];

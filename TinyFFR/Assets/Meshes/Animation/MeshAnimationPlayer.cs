@@ -25,7 +25,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <summary>
 	/// The object this player poses.
 	/// </summary>
-	public ModelInstance Instance { get; init; }
+	public SceneObject Target { get; init; }
 	/// <summary>
 	/// The animation this player plays.
 	/// </summary>
@@ -60,10 +60,10 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// </remarks>
 	/// <param name="instance">The object to pose. Its mesh must be the one the animation belongs to.</param>
 	/// <param name="animation">The animation to play.</param>
-	public MeshAnimationPlayer(ModelInstance instance, MeshAnimation animation) : this(instance, animation, 1f) { }
-	MeshAnimationPlayer(ModelInstance instance, MeshAnimation animation, float speedMultiplier) {
+	public MeshAnimationPlayer(SceneObject instance, MeshAnimation animation) : this(instance, animation, 1f) { }
+	MeshAnimationPlayer(SceneObject instance, MeshAnimation animation, float speedMultiplier) {
 		if (speedMultiplier == 0f) speedMultiplier = 1f;
-		Instance = instance;
+		Target = instance;
 		Animation = animation;
 		SpeedMultiplier = speedMultiplier;
 	}
@@ -75,7 +75,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="animation">The animation to play.</param>
 	/// <param name="speedMultiplier">How fast to run it, where <c>1f</c> is its authored speed. A value of <c>0f</c> is treated as <c>1f</c>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static MeshAnimationPlayer CreateWithSpeedMultiplier(ModelInstance instance, MeshAnimation animation, float speedMultiplier) {
+	public static MeshAnimationPlayer CreateWithSpeedMultiplier(SceneObject instance, MeshAnimation animation, float speedMultiplier) {
 		return new MeshAnimationPlayer(instance, animation, speedMultiplier);
 	}
 	
@@ -86,7 +86,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="animation">The animation to play.</param>
 	/// <param name="targetAnimationCompletionTimeSeconds">How long the animation should take from start to finish, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static MeshAnimationPlayer CreateWithTargetDuration(ModelInstance instance, MeshAnimation animation, float targetAnimationCompletionTimeSeconds) {
+	public static MeshAnimationPlayer CreateWithTargetDuration(SceneObject instance, MeshAnimation animation, float targetAnimationCompletionTimeSeconds) {
 		return new MeshAnimationPlayer(instance, animation) { DurationSeconds = targetAnimationCompletionTimeSeconds };
 	}
 	
@@ -100,7 +100,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="timePointSeconds">How far in to the animation to set the pose, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePoint(float timePointSeconds) {
-		Animation.Apply(Instance, timePointSeconds * SpeedMultiplier);
+		Animation.Apply(Target, timePointSeconds * SpeedMultiplier);
 	}
 	/// <summary>
 	/// Poses the object as the animation has it at the given moment, and reports where the given node ended up.
@@ -114,7 +114,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		Animation.ApplyAndGetNodeTransforms(Instance, timePointSeconds * SpeedMultiplier, node, out modelSpaceTransform);
+		Animation.ApplyAndGetNodeTransforms(Target, timePointSeconds * SpeedMultiplier, node, out modelSpaceTransform);
 	}
 	/// <summary>
 	/// Poses the object as the animation has it at the given moment, and reports where the given nodes ended up.
@@ -128,7 +128,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, timePointSeconds * SpeedMultiplier, nodes, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, timePointSeconds * SpeedMultiplier, nodes, modelSpaceTransforms);
 	}
 	/// <summary>
 	/// Poses the object as the animation has it at the given moment, and reports where the nodes at the given indices ended up.
@@ -142,7 +142,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, timePointSeconds * SpeedMultiplier, nodeIndices, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, timePointSeconds * SpeedMultiplier, nodeIndices, modelSpaceTransforms);
 	}
 	
 	/// <summary>
@@ -152,7 +152,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePoint(float timePointSeconds, AnimationWrapStyle wrapStyle) {
-		Animation.Apply(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds));
+		Animation.Apply(Target, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds));
 	}
 	/// <summary>
 	/// Poses the object at the given wrapped moment, and reports where the given node ended up.
@@ -167,7 +167,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, AnimationWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
+		Animation.ApplyAndGetNodeTransforms(Target, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
 	}
 	/// <summary>
 	/// Poses the object at the given wrapped moment, and reports where the given nodes ended up.
@@ -182,7 +182,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, AnimationWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
 	}
 	/// <summary>
 	/// Poses the object at the given wrapped moment, and reports where the nodes at the given indices ended up.
@@ -197,7 +197,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, AnimationWrapStyle wrapStyle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), nodeIndices, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), nodeIndices, modelSpaceTransforms);
 	}
 	#endregion
 
@@ -211,7 +211,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="fraction">How far through the animation to set the pose, where <c>0f</c> is its start and <c>1f</c> its end.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFraction(float fraction) {
-		Animation.Apply(Instance, Animation.DefaultDurationSeconds * fraction);
+		Animation.Apply(Target, Animation.DefaultDurationSeconds * fraction);
 	}
 	/// <summary>
 	/// Poses the object at the given fraction through the animation, and reports where the given node ended up.
@@ -225,7 +225,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float fraction, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		Animation.ApplyAndGetNodeTransforms(Instance, Animation.DefaultDurationSeconds * fraction, node, out modelSpaceTransform);
+		Animation.ApplyAndGetNodeTransforms(Target, Animation.DefaultDurationSeconds * fraction, node, out modelSpaceTransform);
 	}
 	/// <summary>
 	/// Poses the object at the given fraction through the animation, and reports where the given nodes ended up.
@@ -239,7 +239,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float fraction, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, Animation.DefaultDurationSeconds * fraction, nodes, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, Animation.DefaultDurationSeconds * fraction, nodes, modelSpaceTransforms);
 	}
 	/// <summary>
 	/// Poses the object at the given fraction through the animation, and reports where the nodes at the given indices ended up.
@@ -253,7 +253,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float fraction, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, Animation.DefaultDurationSeconds * fraction, nodeIndices, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, Animation.DefaultDurationSeconds * fraction, nodeIndices, modelSpaceTransforms);
 	}
 	
 	/// <summary>
@@ -263,7 +263,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="wrapStyle">What to do when the given point falls outside the animation's duration.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFraction(float fraction, AnimationWrapStyle wrapStyle) {
-		Animation.Apply(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds));
+		Animation.Apply(Target, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds));
 	}
 	/// <summary>
 	/// Poses the object at the given wrapped fraction, and reports where the given node ended up.
@@ -278,7 +278,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float fraction, AnimationWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
+		Animation.ApplyAndGetNodeTransforms(Target, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
 	}
 	/// <summary>
 	/// Poses the object at the given wrapped fraction, and reports where the given nodes ended up.
@@ -293,7 +293,7 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float fraction, AnimationWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
 	}
 	/// <summary>
 	/// Poses the object at the given wrapped fraction, and reports where the nodes at the given indices ended up.
@@ -308,16 +308,16 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float fraction, AnimationWrapStyle wrapStyle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), nodeIndices, modelSpaceTransforms);
+		Animation.ApplyAndGetNodeTransforms(Target, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), nodeIndices, modelSpaceTransforms);
 	}
 	#endregion
 
 	/// <inheritdoc />
-	public bool Equals(MeshAnimationPlayer other) => Instance.Equals(other.Instance) && Animation.Equals(other.Animation) && SpeedMultiplier.Equals(other.SpeedMultiplier);
+	public bool Equals(MeshAnimationPlayer other) => Target.Equals(other.Target) && Animation.Equals(other.Animation) && SpeedMultiplier.Equals(other.SpeedMultiplier);
 	/// <inheritdoc />
 	public override bool Equals(object? obj) => obj is MeshAnimationPlayer other && Equals(other);
 	/// <inheritdoc />
-	public override int GetHashCode() => HashCode.Combine(Instance, Animation, SpeedMultiplier);
+	public override int GetHashCode() => HashCode.Combine(Target, Animation, SpeedMultiplier);
 	/// <summary>
 	/// Returns whether the two given players pose the same object with the same animation at the same speed.
 	/// </summary>

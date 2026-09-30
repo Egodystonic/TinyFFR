@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 #pragma warning disable CA1710 // "Must be called Collection because it implements IROCollection<>" -- I disagree in this case
-public readonly record struct ModelBundleAnimationIndex(ModelBundleAnimationTable Table) : IMeshAnimationIndex<ModelBundleAnimationTable> {
+public readonly record struct MeshGroupAnimationIndex(MeshGroupAnimationTable Table) : IMeshAnimationIndex<MeshGroupAnimationTable> {
 #pragma warning restore CA1710
 	public int Count {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -17,21 +17,21 @@ public readonly record struct ModelBundleAnimationIndex(ModelBundleAnimationTabl
 	/// <summary>
 	/// The mesh's skeletal animations, which deform it by moving a tree of joints.
 	/// </summary>
-	public IndirectEnumerable<ModelBundleAnimationTable, MeshAnimation> Skeletal {
+	public IndirectEnumerable<MeshGroupAnimationTable, MeshAnimation> Skeletal {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Table.GetAnimations(MeshAnimationType.Skeletal);
 	}
 	/// <summary>
 	/// The mesh's morphing animations, which deform it by interpolating its vertices directly.
 	/// </summary>
-	public IndirectEnumerable<ModelBundleAnimationTable, MeshAnimation> Morphing {
+	public IndirectEnumerable<MeshGroupAnimationTable, MeshAnimation> Morphing {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Table.GetAnimations(MeshAnimationType.Morphing);
 	}
 	/// <summary>
 	/// Every animation the mesh has, of either kind.
 	/// </summary>
-	public IndirectEnumerable<ModelBundleAnimationTable, MeshAnimation> All {
+	public IndirectEnumerable<MeshGroupAnimationTable, MeshAnimation> All {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Table.GetAnimations(null);
 	}
@@ -45,7 +45,7 @@ public readonly record struct ModelBundleAnimationIndex(ModelBundleAnimationTabl
 	public MeshAnimation this[ReadOnlySpan<char> name] {
 #pragma warning restore CA1043
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => TryGetAnimationByName(name) ?? throw new KeyNotFoundException($"No animation with name '{name}' was found for this model group ({Table}).");
+		get => TryGetAnimationByName(name) ?? throw new KeyNotFoundException($"No animation with name '{name}' was found for this mesh group ({Table}).");
 	}
 	
 	/// <summary>
@@ -78,5 +78,5 @@ public readonly record struct ModelBundleAnimationIndex(ModelBundleAnimationTabl
 	/// Returns an enumerator over every animation the mesh has.
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public IndirectEnumerable<ModelBundleAnimationTable, MeshAnimation>.Enumerator GetEnumerator() => All.GetEnumerator();
+	public IndirectEnumerable<MeshGroupAnimationTable, MeshAnimation>.Enumerator GetEnumerator() => All.GetEnumerator();
 }

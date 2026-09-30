@@ -103,7 +103,7 @@ class LocalModelLoadingTest {
 		scene.Add(sunlight);
 		
 		var curFileIndex = -1;
-		ResourceGroup? loadedResources = null; 
+		ModelBundle? loadedResources = null; 
 		ModelInstanceGroup? modelInstances = null;
 		var nextPrimitiveColorIsOpaque = true;
 		

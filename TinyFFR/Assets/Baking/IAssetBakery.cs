@@ -69,6 +69,7 @@ public interface IAssetBakery {
 	/// <param name="resource">The resource to bake.</param>
 	/// <param name="filePath">The path of the baked asset file to write. Any existing file at that path is overwritten.</param>
 	void Bake(ResourceGroup resource, ReadOnlySpan<char> filePath);
+	void Bake(ModelBundle resource, ReadOnlySpan<char> filePath) => Bake(resource.UnderlyingResourceGroup, filePath);
 	/// <summary>
 	/// Writes the given texture to a baked asset file.
 	/// </summary>

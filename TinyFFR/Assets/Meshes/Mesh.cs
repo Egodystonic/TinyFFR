@@ -163,7 +163,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal MeshNode? TryGetNodeByName(ReadOnlySpan<char> name) => Implementation.TryGetNodeByName(_handle, name);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void ApplySkeletalBindPose(ModelInstance targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
+	internal void ApplySkeletalBindPose(SceneObject targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void GetSkeletalBindPoseNodeModelTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalBindPoseNodeModelTransforms(_handle, nodes, modelSpaceTransforms);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

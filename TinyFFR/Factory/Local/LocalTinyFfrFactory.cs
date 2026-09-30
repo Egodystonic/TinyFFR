@@ -9,6 +9,7 @@ using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -106,8 +107,9 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			[typeof(RendererCompositor)] = RendererBuilder,
 			[typeof(BackdropTexture)] = AssetLoader,
 			[typeof(Font)] = AssetLoader,
-			[typeof(MeshAnimation)] = MeshBuilder,
-			[typeof(MeshNode)] = MeshBuilder,
+			[typeof(MeshAnimation)] = ((LocalMeshBuilder) MeshBuilder).AnimationTableProvider,
+			[typeof(MeshNode)] = ((LocalMeshBuilder) MeshBuilder).AnimationTableProvider,
+			[typeof(MeshGroupAnimationTable)] = ((LocalMeshBuilder) MeshBuilder).MeshGroupAnimationTableImplProvider,
 			[typeof(DynamicVertexBuffer)] = MeshBuilder,
 			[typeof(ResourceGroup)] = _resourceGroupProvider,
 		});

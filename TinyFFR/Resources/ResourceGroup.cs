@@ -104,6 +104,7 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// All currently-live <see cref="Mesh"/>es in this group; equivalent to <c>GetAllResourcesOfType&lt;Mesh&gt;()</c>.
 	/// </summary>
 	public IndirectEnumerable<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	public IndirectEnumerable<EnumerationInput, MeshGroupAnimationTable> AnimationTables => GetAllResourcesOfType<MeshGroupAnimationTable>();
 	/// <summary>
 	/// All currently-live <see cref="MeshAnimation"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;MeshAnimation&gt;()</c>.
 	/// </summary>
@@ -273,6 +274,9 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add<TResource, TBase>(TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource<TResource, TBase>(Handle, resource);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDoNotDisposeFlag<TResource>(TResource resource) where TResource : IResource => Implementation.SetDoNotDisposeFlag(Handle, resource);
 
 	/// <summary>
 	/// Adds <paramref name="resource"/> (a specialization of <see cref="Mesh"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -63,6 +64,17 @@ class LocalResourceDependencyTest {
 			mat.Dispose();
 			mesh.Dispose();
 			tex.Dispose();
+
+			var bundle = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/CesiumMan.glb"));
+			var bundleTable = bundle.AnimationTable;
+			var bundleInstances = factory.ObjectBuilder.CreateModelInstances(bundle);
+			Assert.Catch<ResourceDependencyException>(bundleTable.Dispose);
+			Assert.Catch<ResourceDependencyException>(bundle.Meshes[0].Dispose);
+			Assert.Catch<ResourceDependencyException>(bundle.Dispose);
+			Assert.DoesNotThrow(bundleInstances.Dispose);
+			Assert.DoesNotThrow(() => _ = bundleTable.Animations.Count);
+			Assert.DoesNotThrow(bundle.Dispose);
+			Assert.Catch<ObjectDisposedException>(() => _ = bundleTable.Animations.Count);
 
 			var camera = factory.CameraBuilder.CreateCamera();
 			var scene = factory.SceneBuilder.CreateScene();

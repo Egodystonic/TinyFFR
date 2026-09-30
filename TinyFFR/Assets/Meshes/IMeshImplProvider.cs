@@ -57,7 +57,7 @@ public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	/// <summary>
 	/// Invoked via <see cref="MeshSkeleton.ApplyBindPose"/>.
 	/// </summary>
-	void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, ModelInstance targetInstance);
+	void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, SceneObject targetInstance);
 	/// <summary>
 	/// Invoked via <see cref="MeshSkeleton.GetBindPoseNodeTransforms(ReadOnlySpan{MeshNode}, Span{Matrix4x4})"/>.
 	/// </summary>

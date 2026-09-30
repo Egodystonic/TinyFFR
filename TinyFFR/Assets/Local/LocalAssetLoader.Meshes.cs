@@ -29,6 +29,15 @@ unsafe partial class LocalAssetLoader {
 		[FieldOffset(8)] readonly UIntPtr _bone;
 		[FieldOffset(16)] readonly int _boneIndex;
 		[FieldOffset(20)] readonly int _;
+
+		public UIntPtr NodePointer => _node;
+
+		public NodeHandle(UIntPtr node) {
+			_node = node;
+			_bone = UIntPtr.Zero;
+			_boneIndex = -1;
+			_ = 0;
+		}
 	}
 
 	readonly record struct NameSlice(int StartIndex, int Length);
@@ -188,7 +197,7 @@ unsafe partial class LocalAssetLoader {
 			if (loadSkeletalAnimationData) {
 				if (metadata.SubMeshCount != 1 && readConfig.SubMeshIndex == null) {
 					Console.WriteLine($"Can not load skeletal animation data for file '{filePath.Span}' as it contains multiple sub-meshes and no {nameof(MeshReadConfig.SubMeshIndex)} was given " +
-									  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(Load)}(...) instead).");
+									  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(LoadBundledAsset)}(...) instead).");
 					loadSkeletalAnimationData = false;
 				}
 			}

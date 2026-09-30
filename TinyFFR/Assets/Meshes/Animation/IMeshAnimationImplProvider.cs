@@ -22,7 +22,7 @@ public interface IMeshAnimationImplProvider : IResourceImplProvider<MeshAnimatio
 	/// <summary>
 	/// Invoked via <see cref="MeshAnimation.Apply"/>.
 	/// </summary>
-	void Apply(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds);
+	void Apply(SceneObject targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds);
 	/// <summary>
 	/// Invoked via <see cref="MeshAnimation.GetNodeTransforms(float, ReadOnlySpan{MeshNode}, Span{Matrix4x4})"/>.
 	/// </summary>
@@ -32,26 +32,26 @@ public interface IMeshAnimationImplProvider : IResourceImplProvider<MeshAnimatio
 	/// </summary>
 	void GetNodeTransforms(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms);
 	/// <summary>
-	/// Invoked via <see cref="MeshAnimation.ApplyAndGetNodeTransforms(ModelInstance, float, ReadOnlySpan{MeshNode}, Span{Matrix4x4})"/>.
+	/// Invoked via <see cref="MeshAnimation.ApplyAndGetNodeTransforms(SceneObject, float, ReadOnlySpan{MeshNode}, Span{Matrix4x4})"/>.
 	/// </summary>
-	void ApplyAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
+	void ApplyAndGetNodeTransforms(SceneObject targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
 	/// <summary>
-	/// Invoked via <see cref="MeshAnimation.ApplyAndGetNodeTransforms(ModelInstance, float, ReadOnlySpan{int}, Span{Matrix4x4})"/>.
+	/// Invoked via <see cref="MeshAnimation.ApplyAndGetNodeTransforms(SceneObject, float, ReadOnlySpan{int}, Span{Matrix4x4})"/>.
 	/// </summary>
-	void ApplyAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms);
+	void ApplyAndGetNodeTransforms(SceneObject targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms);
 	
 	/// <summary>
 	/// Invoked via <see cref="MeshAnimation.ApplyBlended"/>.
 	/// </summary>
-	void ApplyBlended(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance);
+	void ApplyBlended(SceneObject targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance);
 	/// <summary>
-	/// Invoked via <see cref="MeshAnimation.ApplyBlendedAndGetNodeTransforms(ModelInstance, float, MeshAnimation, float, float, ReadOnlySpan{MeshNode}, Span{Matrix4x4})"/>.
+	/// Invoked via <see cref="MeshAnimation.ApplyBlendedAndGetNodeTransforms(SceneObject, float, MeshAnimation, float, float, ReadOnlySpan{MeshNode}, Span{Matrix4x4})"/>.
 	/// </summary>
-	void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
+	void ApplyBlendedAndGetNodeTransforms(SceneObject targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
 	/// <summary>
-	/// Invoked via <see cref="MeshAnimation.ApplyBlendedAndGetNodeTransforms(ModelInstance, float, MeshAnimation, float, float, ReadOnlySpan{int}, Span{Matrix4x4})"/>.
+	/// Invoked via <see cref="MeshAnimation.ApplyBlendedAndGetNodeTransforms(SceneObject, float, MeshAnimation, float, float, ReadOnlySpan{int}, Span{Matrix4x4})"/>.
 	/// </summary>
-	void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms);
+	void ApplyBlendedAndGetNodeTransforms(SceneObject targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms);
 	/// <summary>
 	/// Invoked via <see cref="MeshAnimation.GetBlendedNodeTransforms(float, MeshAnimation, float, float, ReadOnlySpan{MeshNode}, Span{Matrix4x4})"/>.
 	/// </summary>

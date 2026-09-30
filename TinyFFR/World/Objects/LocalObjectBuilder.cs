@@ -99,6 +99,22 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
 	}
+	public ModelInstanceGroup CreateModelInstances(ModelBundle bundle, in ModelInstanceCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		var models = bundle.Models;
+		var modelCount = models.Count;
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: modelCount + 1, name: config.Name);
+		for (var i = 0; i < modelCount; ++i) {
+			var model = models[i];
+			resourceGroup.Add(CreateModelInstance(model.Mesh, model.Material, in config));
+		}
+		var animationTable = bundle.AnimationTable;
+		resourceGroup.Add(animationTable);
+		resourceGroup.SetDoNotDisposeFlag(animationTable);
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+
 	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
 		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Length > 0 ? instances.Length : 1, name: name);

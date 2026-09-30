@@ -150,6 +150,20 @@ class LocalResourceDisposalTest {
 			v => _ = v.Mesh,
 		};
 		AssertUseAfterDisposalThrowsException(assetLoader.CreateModel(mesh, material), objectIsAlreadyDisposed: false, modelActions);
+		var bundle = assetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/CesiumMan.glb"));
+		var bundleTable = bundle.AnimationTable;
+		bundle.UnderlyingResourceGroup.Dispose(disposeContainedResources: false);
+		var bundleTableActions = new Action<MeshGroupAnimationTable>[] {
+			v => _ = v.Handle,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
+			v => _ = v.Animations.Count,
+			v => _ = v.Animations[0].DefaultDurationSeconds,
+			v => _ = v.Skeleton.Nodes.Count,
+			v => v.Skeleton.GetBindPoseNodeTransforms(v.Skeleton.Nodes[0], out _),
+		};
+		AssertUseAfterDisposalThrowsException(bundleTable, objectIsAlreadyDisposed: false, bundleTableActions);
 		var font = assetLoader.LoadFont();
 		var fontActions = new Action<Font>[] {
 			v => _ = v.Handle,

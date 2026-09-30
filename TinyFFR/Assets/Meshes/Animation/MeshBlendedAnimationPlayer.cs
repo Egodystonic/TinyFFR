@@ -24,7 +24,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <summary>
 	/// The object this player poses.
 	/// </summary>
-	public ModelInstance Instance { get; init; }
+	public SceneObject Target { get; init; }
 	/// <summary>
 	/// The animation blended away from.
 	/// </summary>
@@ -83,13 +83,13 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="instance">The object to pose. Its mesh must be the one both animations belong to.</param>
 	/// <param name="startAnimation">The animation to blend away from.</param>
 	/// <param name="endAnimation">The animation to blend towards.</param>
-	public MeshBlendedAnimationPlayer(ModelInstance instance, MeshAnimation startAnimation, MeshAnimation endAnimation) : this(instance, startAnimation, endAnimation, 1f, 1f) { }
-	MeshBlendedAnimationPlayer(ModelInstance instance, MeshAnimation startAnimation, MeshAnimation endAnimation, float startAnimationSpeedMultiplier, float endAnimationSpeedMultiplier) {
+	public MeshBlendedAnimationPlayer(SceneObject instance, MeshAnimation startAnimation, MeshAnimation endAnimation) : this(instance, startAnimation, endAnimation, 1f, 1f) { }
+	MeshBlendedAnimationPlayer(SceneObject instance, MeshAnimation startAnimation, MeshAnimation endAnimation, float startAnimationSpeedMultiplier, float endAnimationSpeedMultiplier) {
 		if (startAnimationSpeedMultiplier == 0f) startAnimationSpeedMultiplier = 1f;
 		if (endAnimationSpeedMultiplier == 0f) endAnimationSpeedMultiplier = 1f;
 		StartAnimation = startAnimation;
 		EndAnimation = endAnimation;
-		Instance = instance;
+		Target = instance;
 		StartAnimationSpeedMultiplier = startAnimationSpeedMultiplier;
 		EndAnimationSpeedMultiplier = endAnimationSpeedMultiplier;
 	}
@@ -103,7 +103,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="startAnimationSpeedMultiplier">How fast to run the start animation, where <c>1f</c> is its authored speed.</param>
 	/// <param name="endAnimationSpeedMultiplier">How fast to run the end animation, where <c>1f</c> is its authored speed.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static MeshBlendedAnimationPlayer CreateWithSpeedMultiplier(ModelInstance instance, MeshAnimation startAnimation, MeshAnimation endAnimation, float startAnimationSpeedMultiplier, float endAnimationSpeedMultiplier) {
+	public static MeshBlendedAnimationPlayer CreateWithSpeedMultiplier(SceneObject instance, MeshAnimation startAnimation, MeshAnimation endAnimation, float startAnimationSpeedMultiplier, float endAnimationSpeedMultiplier) {
 		return new MeshBlendedAnimationPlayer(instance, startAnimation, endAnimation, startAnimationSpeedMultiplier, endAnimationSpeedMultiplier);
 	}
 	
@@ -116,7 +116,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="startAnimationCompletionTimeSeconds">How long the start animation should take from start to finish, in seconds.</param>
 	/// <param name="endAnimationCompletionTimeSeconds">How long the end animation should take from start to finish, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static MeshBlendedAnimationPlayer CreateWithTargetDuration(ModelInstance instance, MeshAnimation startAnimation, MeshAnimation endAnimation, float startAnimationCompletionTimeSeconds, float endAnimationCompletionTimeSeconds) {
+	public static MeshBlendedAnimationPlayer CreateWithTargetDuration(SceneObject instance, MeshAnimation startAnimation, MeshAnimation endAnimation, float startAnimationCompletionTimeSeconds, float endAnimationCompletionTimeSeconds) {
 		return new MeshBlendedAnimationPlayer(instance, startAnimation, endAnimation) {
 			StartAnimationDurationSeconds = startAnimationCompletionTimeSeconds,
 			EndAnimationDurationSeconds = endAnimationCompletionTimeSeconds
@@ -135,7 +135,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely the start animation and <c>1f</c> entirely the end animation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePoint(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance) {
-		StartAnimation.ApplyBlended(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance);
+		StartAnimation.ApplyBlended(Target, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance);
 	}
 	/// <summary>
 	/// Poses the object as a blend at the given moments, and reports where the given node ended up.
@@ -151,7 +151,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, node, out modelSpaceTransform);
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Target, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, node, out modelSpaceTransform);
 	}
 	/// <summary>
 	/// Poses the object as a blend at the given moments, and reports where the given nodes ended up.
@@ -167,7 +167,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, nodes, modelSpaceTransforms);
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Target, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, nodes, modelSpaceTransforms);
 	}
 	/// <summary>
 	/// Poses the object as a blend at the given moments, and reports where the nodes at the given indices ended up.
@@ -183,7 +183,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, nodeIndices, modelSpaceTransforms);
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Target, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, nodeIndices, modelSpaceTransforms);
 	}
 	
 	/// <summary>
@@ -197,7 +197,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePoint(float startAnimTimePointSeconds, AnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, AnimationWrapStyle endWrapStyle, float interpolationDistance) {
 		StartAnimation.ApplyBlended(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
@@ -221,7 +221,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, AnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, AnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
@@ -247,7 +247,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, AnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, AnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
@@ -273,7 +273,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, AnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, AnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
@@ -293,7 +293,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely the start animation and <c>1f</c> entirely the end animation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFraction(float startAnimFraction, float endAnimFraction, float interpolationDistance) {
-		StartAnimation.ApplyBlended(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance);
+		StartAnimation.ApplyBlended(Target, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance);
 	}
 	/// <summary>
 	/// Poses the object as a blend at the given fractions, and reports where the given node ended up.
@@ -309,7 +309,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, float endAnimFraction, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, node, out modelSpaceTransform);
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Target, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, node, out modelSpaceTransform);
 	}
 	/// <summary>
 	/// Poses the object as a blend at the given fractions, and reports where the given nodes ended up.
@@ -325,7 +325,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, float endAnimFraction, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, nodes, modelSpaceTransforms);
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Target, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, nodes, modelSpaceTransforms);
 	}
 	/// <summary>
 	/// Poses the object as a blend at the given fractions, and reports where the nodes at the given indices ended up.
@@ -341,7 +341,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, float endAnimFraction, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, nodeIndices, modelSpaceTransforms);
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Target, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, nodeIndices, modelSpaceTransforms);
 	}
 	
 	/// <summary>
@@ -355,7 +355,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFraction(float startAnimFraction, AnimationWrapStyle startWrapStyle, float endAnimFraction, AnimationWrapStyle endWrapStyle, float interpolationDistance) {
 		StartAnimation.ApplyBlended(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
@@ -379,7 +379,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, AnimationWrapStyle startWrapStyle, float endAnimFraction, AnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
@@ -405,7 +405,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, AnimationWrapStyle startWrapStyle, float endAnimFraction, AnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
@@ -431,7 +431,7 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, AnimationWrapStyle startWrapStyle, float endAnimFraction, AnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
-			Instance,
+			Target,
 			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
 			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
@@ -443,11 +443,11 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	#endregion
 
 	/// <inheritdoc />
-	public bool Equals(MeshBlendedAnimationPlayer other) => Instance.Equals(other.Instance) && StartAnimation.Equals(other.StartAnimation) && EndAnimation.Equals(other.EndAnimation) && StartAnimationSpeedMultiplier.Equals(other.StartAnimationSpeedMultiplier) && EndAnimationSpeedMultiplier.Equals(other.EndAnimationSpeedMultiplier);
+	public bool Equals(MeshBlendedAnimationPlayer other) => Target.Equals(other.Target) && StartAnimation.Equals(other.StartAnimation) && EndAnimation.Equals(other.EndAnimation) && StartAnimationSpeedMultiplier.Equals(other.StartAnimationSpeedMultiplier) && EndAnimationSpeedMultiplier.Equals(other.EndAnimationSpeedMultiplier);
 	/// <inheritdoc />
 	public override bool Equals(object? obj) => obj is MeshBlendedAnimationPlayer other && Equals(other);
 	/// <inheritdoc />
-	public override int GetHashCode() => HashCode.Combine(Instance, StartAnimation, EndAnimation, StartAnimationSpeedMultiplier, EndAnimationSpeedMultiplier);
+	public override int GetHashCode() => HashCode.Combine(Target, StartAnimation, EndAnimation, StartAnimationSpeedMultiplier, EndAnimationSpeedMultiplier);
 	/// <summary>
 	/// Returns whether the two given players pose the same object with the same pair of animations at the same speeds.
 	/// </summary>

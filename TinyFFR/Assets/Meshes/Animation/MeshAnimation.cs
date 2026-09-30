@@ -116,7 +116,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="targetInstance">The object to pose.</param>
 	/// <param name="targetTimePointSeconds">The moment in the animation to apply, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Apply(ModelInstance targetInstance, float targetTimePointSeconds) {
+	public void Apply(SceneObject targetInstance, float targetTimePointSeconds) {
 		Implementation.Apply(targetInstance, _handle, targetTimePointSeconds);
 	}
 	
@@ -132,7 +132,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="node">The node whose resulting position is wanted.</param>
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+	public void ApplyAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		Unsafe.SkipInit(out modelSpaceTransform);
 		ApplyAndGetNodeTransforms(targetInstance, targetTimePointSeconds, new ReadOnlySpan<MeshNode>(in node), new Span<Matrix4x4>(ref modelSpaceTransform));
 	}
@@ -149,7 +149,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="nodes">The nodes whose resulting positions are wanted.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+	public void ApplyAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		Implementation.ApplyAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, nodes, modelSpaceTransforms);
 	}
 	
@@ -165,7 +165,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="nodeIndices">The indices of the nodes whose resulting positions are wanted. Indices can be put on the stack where the nodes themselves can not.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+	public void ApplyAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
 		Implementation.ApplyAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, nodeIndices, modelSpaceTransforms);
 	}
 	
@@ -237,7 +237,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyBlended(ModelInstance targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance) {
+	public void ApplyBlended(SceneObject targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance) {
 		Implementation.ApplyBlended(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance);
 	}
 	
@@ -256,7 +256,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="node">The node whose resulting position is wanted.</param>
 	/// <param name="modelSpaceTransform">Set to the node's resulting transform, relative to the model's own origin.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+	public void ApplyBlendedAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		Unsafe.SkipInit(out modelSpaceTransform);
 		ApplyBlendedAndGetNodeTransforms(targetInstance, targetTimePointSeconds, blendAnimation, blendAnimTargetTimePointSeconds, interpolationDistance, new ReadOnlySpan<MeshNode>(in node), new Span<Matrix4x4>(ref modelSpaceTransform));
 	}
@@ -276,7 +276,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="nodes">The nodes whose resulting positions are wanted.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+	public void ApplyBlendedAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		Implementation.ApplyBlendedAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodes, modelSpaceTransforms);
 	}
 	
@@ -295,7 +295,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// <param name="nodeIndices">The indices of the nodes whose resulting positions are wanted. Indices can be put on the stack where the nodes themselves can not.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+	public void ApplyBlendedAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
 		Implementation.ApplyBlendedAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodeIndices, modelSpaceTransforms);
 	}
 

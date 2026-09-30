@@ -34,7 +34,7 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// How many model instances are in this group.
 	/// </summary>
 	public int Count { get; }
-	readonly ModelBundleAnimationTable _animTable;
+	readonly MeshGroupAnimationTable _animTable;
 	
 	ModelInstance? FirstInstance => Count > 0 ? Instances[0] : null;
 	
@@ -54,15 +54,15 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		UnderlyingResourceGroup = underlyingResourceGroup;
 		Instances = UnderlyingResourceGroup.ModelInstances;
 		Count = Instances.Count;
-		_animTable = UnderlyingResourceGroup.AnimationTables.Count > 0 ? UnderlyingResourceGroup.AnimationTables[0] : ModelBundleAnimationTable.Empty;
+		_animTable = UnderlyingResourceGroup.AnimationTables.Count > 0 ? UnderlyingResourceGroup.AnimationTables[0] : MeshGroupAnimationTable.Empty;
 	}
 	
-	public ModelBundleAnimationIndex Animations {
+	public MeshGroupAnimationIndex Animations {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _animTable.Animations;
 	}
 	
-	public ModelBundleSkeleton Skeleton {
+	public MeshGroupSkeleton Skeleton {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _animTable.Skeleton;
 	}
@@ -265,7 +265,7 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
 	/// <param name="endAnimationDurationSeconds">How long one cycle of <paramref name="endAnimation"/> should take, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, startAnimationDurationSeconds, endAnimationDurationSeconds);
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

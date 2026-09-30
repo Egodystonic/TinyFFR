@@ -22,7 +22,7 @@ using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<MeshAnimation>, IResourceDirectory<MeshNode>, IResourceDirectory<DynamicVertexBuffer>, IDisposable {
+sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<DynamicVertexBuffer>, IDisposable {
 	readonly record struct MeshData(MeshBufferData BufferData, PositionedCuboid BoundingBox, PositionedCuboid AxisAlignedBoundingBox, PositionedSphere BoundingSphere);
 	
 	readonly record struct DynamicVertexBufferData(
@@ -51,28 +51,27 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshWireframeBufferData = new();
 	readonly ArrayPoolBackedMap<(Location Lower, Location Higher), int> _wireframeEdgeScratchMap = new();
 	readonly ArrayPoolBackedObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
-	readonly ArrayPoolBackedObjectPool<LocalMeshAnimationTable, LocalMeshBuilder> _meshAnimationTablePool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshAnimationTable> _activeMeshAnimationTables = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 	nuint _prevHandleId = 0;
-	int _meshAnimDirectoryVersion = 0;
-	LocalDynamicVertexBufferImplProvider? _dynamicVertexBufferImplProvider;
 
-	internal LocalDynamicVertexBufferImplProvider DynamicVertexBufferImplProvider => _dynamicVertexBufferImplProvider ??= new(this);
+	internal LocalDynamicVertexBufferImplProvider DynamicVertexBufferImplProvider => field ??= new(this);
+	internal LocalMeshAnimationTableProvider AnimationTableProvider { get; }
+	internal LocalMeshGroupAnimationTableImplProvider MeshGroupAnimationTableImplProvider { get; }
 
 	public LocalMeshBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 		_meshPolyGroupPool = new(&CreateNewPolyGroupInstance, this);
-		_meshAnimationTablePool = new(&CreateNewMeshAnimationTable, this);
+		AnimationTableProvider = new(globals);
+		MeshGroupAnimationTableImplProvider = new(globals, AnimationTableProvider);
 		_mutableVertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment);
 		_dynamicVertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleDynamicVertexLeaseDisposal, this);
 		_dynamicIndexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleDynamicIndexLeaseDisposal, this);
 	}
 
 	static LocalMeshPolygonGroup CreateNewPolyGroupInstance(LocalMeshBuilder arg) => new(arg, &PolyGroupHeapPoolAccessorFunc, &ReturnPolyGroup);
-	static LocalMeshAnimationTable CreateNewMeshAnimationTable(LocalMeshBuilder @this) => new(@this._globals);
 
 	static HeapPool PolyGroupHeapPoolAccessorFunc(LocalMeshBuilder builder) {
 		if (builder._isDisposed) {
@@ -150,10 +149,14 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return boneCount;
 	}
 
+	internal static Matrix4x4 CalculateModelImportTransformMatrix(Vect originTranslation, float linearRescalingFactor) {
+		return Matrix4x4.CreateTranslation(-(originTranslation.ToVector3())) * Matrix4x4.CreateScale(linearRescalingFactor);
+	}
+
 	internal void AttachSkeletonToMesh(Mesh mesh, int boneCount, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, Vect originTranslation, float linearRescalingFactor) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		var modelImportTransformMatrix = Matrix4x4.CreateTranslation(-(originTranslation.ToVector3())) * Matrix4x4.CreateScale(linearRescalingFactor);
-		var animTable = _meshAnimationTablePool.Rent();
+		var modelImportTransformMatrix = CalculateModelImportTransformMatrix(originTranslation, linearRescalingFactor);
+		var animTable = AnimationTableProvider.Rent();
 		animTable.SetSkeleton(mesh, boneCount, skeletalNodes, modelImportTransformMatrix);
 		_activeMeshAnimationTables.Add(mesh.Handle, animTable);
 	}
@@ -383,7 +386,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		ReadOnlySpan<int> mutationTargetIndexMap
 	) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		var animTable = _meshAnimationTablePool.Rent();
+		var animTable = AnimationTableProvider.Rent();
 		animTable.SetSkeletonFromBakedData(
 			mesh,
 			nodeCount,
@@ -587,7 +590,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
 			throw new InvalidOperationException($"Can not attach animation to {mesh} as it was not created with skeletal vertex/bone data.");
 		}
-		++_meshAnimDirectoryVersion;
 		return animTable.Add(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds, name);
 	}
 	public MeshAnimation AttachAnimationAndTransferBufferOwnership(
@@ -603,7 +605,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
 			throw new InvalidOperationException($"Can not attach animation to {mesh} as it was not created with skeletal vertex/bone data.");
 		}
-		++_meshAnimDirectoryVersion;
 		return animTable.AddAndTransferBufferOwnership(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds, name);
 	}
 
@@ -766,7 +767,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		animTable.GetBindPoseNodeTransforms(nodeIndices, modelSpaceTransforms);
 	}
 
-	public void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, ModelInstance targetInstance) {
+	public void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, SceneObject targetInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return;
 		
@@ -1158,82 +1159,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			? _globals.GetResourceName(handle.Ident, DefaultMeshName).Contains(name, comparisonType)
 			: _globals.GetResourceName(handle.Ident, DefaultMeshName).Equals(name, comparisonType);
 	}
-	IndirectEnumerable<object, MeshAnimation> IResourceDirectory<MeshAnimation>.AllActiveInstances {
-		get {
-			static LocalMeshBuilder CastSelf(object self) => self as LocalMeshBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
-			static int GetCount(object self) {
-				var builder = CastSelf(self);
-				var count = 0;
-				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) count += builder._activeMeshAnimationTables.GetPairAtIndex(i).Value.Count;
-				return count;
-			}
-			static int GetVersion(object self) => CastSelf(self)._meshAnimDirectoryVersion;
-			static MeshAnimation GetItem(object self, int index) {
-				var builder = CastSelf(self);
-				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) {
-					var table = builder._activeMeshAnimationTables.GetPairAtIndex(i).Value;
-					if (index < table.Count) return table.GetAnimationAtUnstableIndex(index);
-					index -= table.Count;
-				}
-				throw new InvalidOperationException($"Index '{index}' out of range.");
-			}
-
-			ThrowIfThisIsDisposed();
-			return new(
-				this,
-				GetVersion(this),
-				&GetCount,
-				&GetVersion,
-				&GetItem
-			);
-		}
-	}
-	public bool ResourceNameMatchIsMatching(MeshAnimation resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
-		var handle = resource.GetHandleWithoutDisposeCheck();
-		var resourceName = _globals.GetMandatoryResourceName(handle.Ident);
-		return allowPartialMatch
-			? resourceName.Contains(name, comparisonType)
-			: resourceName.Equals(name, comparisonType);
-	}
-	IndirectEnumerable<object, MeshNode> IResourceDirectory<MeshNode>.AllActiveInstances {
-		get {
-			static LocalMeshBuilder CastSelf(object self) => self as LocalMeshBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
-			static int GetCount(object self) {
-				var builder = CastSelf(self);
-				var count = 0;
-				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) count += builder._activeMeshAnimationTables.GetPairAtIndex(i).Value.GetNodeCount();
-				return count;
-			}
-			static int GetVersion(object self) => CastSelf(self)._activeMeshAnimationTables.Version;
-			static MeshNode GetItem(object self, int index) {
-				var builder = CastSelf(self);
-				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) {
-					var table = builder._activeMeshAnimationTables.GetPairAtIndex(i).Value;
-					var nodeCount = table.GetNodeCount();
-					if (index < nodeCount) return table.GetNode(index);
-					index -= nodeCount;
-				}
-				throw new InvalidOperationException($"Index '{index}' out of range.");
-			}
-
-			ThrowIfThisIsDisposed();
-			return new(
-				this,
-				GetVersion(this),
-				&GetCount,
-				&GetVersion,
-				&GetItem
-			);
-		}
-	}
-	public bool ResourceNameMatchIsMatching(MeshNode resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
-		var nameLen = resource.GetNameLength();
-		using var nameBuffer = _globals.HeapPool.Borrow<char>(nameLen);
-		resource.CopyName(nameBuffer.Span);
-		return allowPartialMatch
-			? nameBuffer.Span.Contains(name, comparisonType)
-			: nameBuffer.Span.Equals(name, comparisonType);
-	}
 	IndirectEnumerable<object, DynamicVertexBuffer> IResourceDirectory<DynamicVertexBuffer>.AllActiveInstances {
 		get {
 			static LocalMeshBuilder CastSelf(object self) => self as LocalMeshBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
@@ -1362,8 +1287,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 #pragma warning disable CA2000 // Compiler incorrectly assumes animTable is going out of scope here and warns me to invoke Dispose() on it
 		if (_activeMeshAnimationTables.Remove(handle, out var animTable)) {
 #pragma warning restore CA2000
-			animTable.Recycle();
-			_meshAnimationTablePool.Return(animTable);
+			AnimationTableProvider.Return(animTable);
 		}
 		
 		if (_defaultMutableVerticesMap.Remove(handle, out var mutableVerts)) {
@@ -1401,6 +1325,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			MeshGroupAnimationTableImplProvider.Dispose();
 			foreach (var kvp in _activeDynamicVertexBuffers) Dispose(kvp.Key, removeFromMap: false);
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
 			_mutableVertexLeaseTracker.Dispose();
@@ -1423,7 +1348,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			}
 			_vertexBufferRefCounts.Dispose();
 			_indexBufferRefCounts.Dispose();
-			_meshAnimationTablePool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
+			AnimationTableProvider.Dispose();
 			_meshPolyGroupPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 		}
 		finally {

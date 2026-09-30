@@ -16,7 +16,8 @@ static class BakedResourceSchemata {
 		Texture = 0,
 		Material = 1,
 		Mesh = 2,
-		Model = 3
+		Model = 3,
+		AnimationTable = 4
 	}
 	
 	public static BakedPoolKind GetPoolKindForType(Type type) {
@@ -24,6 +25,7 @@ static class BakedResourceSchemata {
 		if (type == typeof(Material)) return BakedPoolKind.Material;
 		if (type == typeof(Mesh)) return BakedPoolKind.Mesh;
 		if (type == typeof(Model)) return BakedPoolKind.Model;
+		if (type == typeof(MeshGroupAnimationTable)) return BakedPoolKind.AnimationTable;
 		return BakedPoolKind.Root;
 	}
 	
@@ -32,6 +34,7 @@ static class BakedResourceSchemata {
 		BakedPoolKind.Material => typeof(Material),
 		BakedPoolKind.Mesh => typeof(Mesh),
 		BakedPoolKind.Model => typeof(Model),
+		BakedPoolKind.AnimationTable => typeof(MeshGroupAnimationTable),
 		_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 	};
 
@@ -46,7 +49,8 @@ static class BakedResourceSchemata {
 		AbsorptionTransmissionMap = 7,
 		ModelMesh = 8,
 		ModelMaterial = 9,
-		FontAtlas = 10
+		FontAtlas = 10,
+		AnimationTableMesh = 11
 	}
 
 	public static class AssetPoolSchema {
@@ -63,11 +67,13 @@ static class BakedResourceSchemata {
 		public const string MaterialCount = "pool_material_count";
 		public const string MeshCount = "pool_mesh_count";
 		public const string ModelCount = "pool_model_count";
+		public const string AnimationTableCount = "pool_animtable_count";
 
 		public const string TexturePrefix = "pool_texture_";
 		public const string MaterialPrefix = "pool_material_";
 		public const string MeshPrefix = "pool_mesh_";
 		public const string ModelPrefix = "pool_model_";
+		public const string AnimationTablePrefix = "pool_animtable_";
 
 		public const string ReferenceTable = "reference_table";
 
@@ -78,6 +84,7 @@ static class BakedResourceSchemata {
 			BakedPoolKind.Material => MaterialCount,
 			BakedPoolKind.Mesh => MeshCount,
 			BakedPoolKind.Model => ModelCount,
+			BakedPoolKind.AnimationTable => AnimationTableCount,
 			_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 		};
 
@@ -86,6 +93,7 @@ static class BakedResourceSchemata {
 			BakedPoolKind.Material => MaterialPrefix,
 			BakedPoolKind.Mesh => MeshPrefix,
 			BakedPoolKind.Model => ModelPrefix,
+			BakedPoolKind.AnimationTable => AnimationTablePrefix,
 			_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 		};
 
@@ -97,6 +105,20 @@ static class BakedResourceSchemata {
 			}
 			return destination[..(prefix.Length + indexCharsWritten)];
 		}
+	}
+
+	public static class MeshGroupAnimationTableBakingSchema {
+		public const string SkeletonNodeCount = MeshBakingSchema.SkeletonNodeCount;
+		public const string SkeletonFirstParentedNodeIndex = MeshBakingSchema.SkeletonFirstParentedNodeIndex;
+		public const string SkeletonModelImportTransform = MeshBakingSchema.SkeletonModelImportTransform;
+		public const string SkeletonDefaultLocalTransforms = MeshBakingSchema.SkeletonDefaultLocalTransforms;
+		public const string SkeletonParentIndices = MeshBakingSchema.SkeletonParentIndices;
+		public const string SkeletonMutationTargetIndexMap = MeshBakingSchema.SkeletonMutationTargetIndexMap;
+
+		public const string BoneSetCount = "bone_set_count";
+		public const string BoneSetBoneCounts = "bone_set_bone_counts";
+		public const string BoneSetBindPoseInversions = "bone_set_bind_pose_inversions";
+		public const string BoneSetBoneToNodeMaps = "bone_set_bone_to_node_maps";
 	}
 
 	public static class BackdropTextureBakingSchema {
