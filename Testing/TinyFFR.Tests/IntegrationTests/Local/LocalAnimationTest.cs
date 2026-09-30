@@ -207,7 +207,19 @@ class LocalAnimationTest {
 				prevAnimTimeRemaining = 0f;
 
 				Console.WriteLine("Loading " + _filesToLoad[curFileIndex].Filename + "...");
-				loadedResources = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename), new ModelCreationConfig() { MeshConfig = new() { LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor, OriginTranslation = (0f, 0f, curFileIndex) }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadBundledAsset(
+					CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename),
+					new ModelCreationConfig() {
+						MeshConfig = new() {
+							LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor,
+							OriginTranslation = Vect.Random(new(-0.2f),
+								new(0.2f))
+						}
+					},
+					new ModelReadConfig() {
+						HandleUriEscapedStrings = true
+					}
+				);
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
 				foreach (var mesh in loadedResources.Value.Meshes) {
 					Console.WriteLine($"\t{mesh} : {mesh.Skeleton.Nodes.Count} nodes");
@@ -237,6 +249,7 @@ class LocalAnimationTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.I)) {
 				animPlaybackViaIndividualMeshes = !animPlaybackViaIndividualMeshes;
+				UpdateTitle();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0) && modelInstanceGroup.HasValue) {
 				Console.WriteLine("Setting t=0 on anim #" + curAnimIndex);

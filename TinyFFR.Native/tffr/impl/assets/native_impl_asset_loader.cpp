@@ -871,6 +871,12 @@ unsigned int count_nodes(aiNode* node) {
 	return result;
 }
 
+unsigned int count_ancestors(aiNode* node) {
+	auto result = 0U;
+	for (auto ancestor = node->mParent; ancestor != nullptr; ancestor = ancestor->mParent) ++result;
+	return result;
+}
+
 void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outNodeCount, "Out node count pointer was null.");
@@ -878,7 +884,7 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(MemoryL
 	auto unused = aiMatrix4x4{};
 	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
 	if (!mesh->HasBones()) *outNodeCount = 0;
-	else *outNodeCount = static_cast<int32_t>(count_nodes(mesh->mBones[0]->mArmature));
+	else *outNodeCount = static_cast<int32_t>(count_ancestors(mesh->mBones[0]->mArmature) + count_nodes(mesh->mBones[0]->mArmature));
 }
 StartExportedFunc(get_loaded_asset_mesh_skeletal_node_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount) {
 	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(assetHandle, meshIndex, outNodeCount);
@@ -901,6 +907,20 @@ unsigned int write_nodes(aiMesh* mesh, aiNode* node, native_impl_asset_loader::N
 	return result;
 }
 
+unsigned int write_ancestors(aiMesh* mesh, aiNode* ancestor, native_impl_asset_loader::NodeHandle* buffer, unsigned int remainingBufferCount, std::unordered_map<std::string, unsigned int>& boneMap) {
+	if (ancestor == nullptr) return 0U;
+	auto result = write_ancestors(mesh, ancestor->mParent, buffer, remainingBufferCount, boneMap);
+	ThrowIf(remainingBufferCount <= result, "Buffer not large enough.");
+	auto kvp = boneMap.find(ancestor->mName.C_Str());
+	auto boneExists = kvp != boneMap.end();
+	buffer[result] = {
+		.Node = ancestor,
+		.BoneIfExists = boneExists ? mesh->mBones[kvp->second] : nullptr,
+		.BoneIndex = boneExists ? static_cast<int32_t>(kvp->second) : -1
+	};
+	return result + 1U;
+}
+
 void native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buffer(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, NodeHandle* nodeHandleBuffer, int32_t handleBufferCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(nodeHandleBuffer, "Node handle buffer pointer was null.");
@@ -915,7 +935,9 @@ void native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buf
 		boneMap[mesh->mBones[i]->mName.C_Str()] = i;
 	}
 	
-	auto numNodesWritten = write_nodes(mesh, mesh->mBones[0]->mArmature, nodeHandleBuffer, static_cast<unsigned int>(handleBufferCount), boneMap);	
+	auto armature = mesh->mBones[0]->mArmature;
+	auto numNodesWritten = write_ancestors(mesh, armature->mParent, nodeHandleBuffer, static_cast<unsigned int>(handleBufferCount), boneMap);
+	numNodesWritten += write_nodes(mesh, armature, nodeHandleBuffer + numNodesWritten, static_cast<unsigned int>(handleBufferCount) - numNodesWritten, boneMap);
 	ThrowIf(numNodesWritten != static_cast<unsigned int>(handleBufferCount), "Buffer count did not match node count.");
 }
 StartExportedFunc(generate_loaded_asset_mesh_skeletal_node_flat_buffer, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount) {
