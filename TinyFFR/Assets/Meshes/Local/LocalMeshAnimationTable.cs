@@ -490,7 +490,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		}
 		else if (target.Type == SceneObjectType.ModelInstanceGroup) {
 			// We use this to avoid the cost of reconstruction of the ModelInstanceGroup which isn't actually useful here
-			var rg = SceneObject.GetModelInstanceGroupUnderlyingResourceGroup(target);
+			var rg = SceneObject.GetUnderlyingResourceGroupFromModelInstanceGroup(target);
 			foreach (var instance in rg.ModelInstances) {
 				ApplyToInstance(instance);
 			}

@@ -11,13 +11,17 @@ public abstract unsafe class TinyFfrBenchmark {
 		BenchmarkEnvironment.RetainAcrossBenchmarks = true;
 		TinyFfrThread.Start();
 		TinyFfrThread.Invoke(&InitializeEnvironment);
+		OnGlobalSetup();
 	}
 
 	[IterationCleanup]
 	public void IterationCleanup() => TinyFfrThread.Invoke(&BenchmarkEnvironment.PumpGpuResourceReclamation);
 
 	[GlobalCleanup]
-	public void GlobalCleanup() { }
+	public void GlobalCleanup() => OnGlobalCleanup();
+
+	protected virtual void OnGlobalSetup() { }
+	protected virtual void OnGlobalCleanup() { }
 
 	static void InitializeEnvironment() => BenchmarkEnvironment.Initialize(BenchmarkRenderTargetKind.OutputBuffer);
 }

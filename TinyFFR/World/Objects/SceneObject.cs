@@ -1,4 +1,4 @@
-// Created on 2026-09-28 by Ben Bowen
+﻿// Created on 2026-09-28 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -134,66 +134,78 @@ public interface ISceneObject {
 	static abstract SceneObjectType SceneObjectType { get; }
 }
 
+readonly struct GroupInstanceCache : IEquatable<GroupInstanceCache> {
+	public ModelInstance[] Instances { get; }
+	public int Count { get; }
+	public GroupInstanceCache(ModelInstance[] instances, int count) {
+		Instances = instances;
+		Count = count;
+	}
+	public bool Equals(GroupInstanceCache other) => true;
+	public override bool Equals(object? obj) => obj is GroupInstanceCache;
+	public override int GetHashCode() => 0;
+}
+
 internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	interface IStubConverter<out TTargetType> {
-		static abstract TTargetType FromStub(ResourceStub stub);
+		static abstract TTargetType FromSceneObject(in SceneObject sceneObject);
 	}
 	
 	readonly struct ResourceStubConverter<TResource> : IStubConverter<TResource> where TResource : IResource<TResource> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TResource FromStub(ResourceStub stub) => FastFromStub<TResource>(stub);
+		public static TResource FromSceneObject(in SceneObject sceneObject) => FastFromStub<TResource>(sceneObject.Stub);
 	}
 	readonly struct ModelInstanceGroupStubConverter : IStubConverter<ModelInstanceGroup> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ModelInstanceGroup FromStub(ResourceStub stub) => new(FastFromStub<ResourceGroup>(stub));
+		public static ModelInstanceGroup FromSceneObject(in SceneObject sceneObject) => new(FastFromStub<ResourceGroup>(sceneObject.Stub));
 	}
 	readonly struct QuadInstanceStubConverter : IStubConverter<QuadInstance> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static QuadInstance FromStub(ResourceStub stub) => new(FastFromStub<ModelInstance>(stub));
+		public static QuadInstance FromSceneObject(in SceneObject sceneObject) => new(FastFromStub<ModelInstance>(sceneObject.Stub));
 	}
 	readonly struct TextInstanceStubConverter : IStubConverter<TextInstance> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static TextInstance FromStub(ResourceStub stub) => new(FastFromStub<ModelInstance>(stub));
+		public static TextInstance FromSceneObject(in SceneObject sceneObject) => new(FastFromStub<ModelInstance>(sceneObject.Stub));
 	}
 
 	public SceneObjectType SceneObjectType { get; }
 
-	public delegate* managed<ResourceStub, Location> GetPosition { get; private set; }
-	public delegate* managed<ResourceStub, Location, void> SetPosition { get; private set; }
-	public delegate* managed<ResourceStub, Vect, void> MoveBy { get; private set; }
+	public delegate* managed<in SceneObject, Location> GetPosition { get; private set; }
+	public delegate* managed<in SceneObject, Location, void> SetPosition { get; private set; }
+	public delegate* managed<in SceneObject, Vect, void> MoveBy { get; private set; }
 
-	public delegate* managed<ResourceStub, Rotation> GetRotation { get; private set; }
-	public delegate* managed<ResourceStub, Rotation, void> SetRotation { get; private set; }
-	public delegate* managed<ResourceStub, Quaternion> GetRotationQuaternion { get; private set; }
-	public delegate* managed<ResourceStub, Quaternion, void> SetRotationQuaternion { get; private set; }
-	public delegate* managed<ResourceStub, Rotation, void> RotateByRotation { get; private set; }
-	public delegate* managed<ResourceStub, Quaternion, void> RotateByQuaternion { get; private set; }
+	public delegate* managed<in SceneObject, Rotation> GetRotation { get; private set; }
+	public delegate* managed<in SceneObject, Rotation, void> SetRotation { get; private set; }
+	public delegate* managed<in SceneObject, Quaternion> GetRotationQuaternion { get; private set; }
+	public delegate* managed<in SceneObject, Quaternion, void> SetRotationQuaternion { get; private set; }
+	public delegate* managed<in SceneObject, Rotation, void> RotateByRotation { get; private set; }
+	public delegate* managed<in SceneObject, Quaternion, void> RotateByQuaternion { get; private set; }
 
-	public delegate* managed<ResourceStub, Vect> GetScaling { get; private set; }
-	public delegate* managed<ResourceStub, Vect, void> SetScaling { get; private set; }
-	public delegate* managed<ResourceStub, float, void> ScaleByScalar { get; private set; }
-	public delegate* managed<ResourceStub, Vect, void> ScaleByVect { get; private set; }
-	public delegate* managed<ResourceStub, float, void> AdjustScaleByScalar { get; private set; }
-	public delegate* managed<ResourceStub, Vect, void> AdjustScaleByVect { get; private set; }
+	public delegate* managed<in SceneObject, Vect> GetScaling { get; private set; }
+	public delegate* managed<in SceneObject, Vect, void> SetScaling { get; private set; }
+	public delegate* managed<in SceneObject, float, void> ScaleByScalar { get; private set; }
+	public delegate* managed<in SceneObject, Vect, void> ScaleByVect { get; private set; }
+	public delegate* managed<in SceneObject, float, void> AdjustScaleByScalar { get; private set; }
+	public delegate* managed<in SceneObject, Vect, void> AdjustScaleByVect { get; private set; }
 
-	public delegate* managed<ResourceStub, Transform> GetTransform { get; private set; }
-	public delegate* managed<ResourceStub, Transform, void> SetTransform { get; private set; }
-	public delegate* managed<ResourceStub, Rotation, Location, void> RotateByRotationAroundPivot { get; private set; }
-	public delegate* managed<ResourceStub, Quaternion, Location, void> RotateByQuaternionAroundPivot { get; private set; }
+	public delegate* managed<in SceneObject, Transform> GetTransform { get; private set; }
+	public delegate* managed<in SceneObject, Transform, void> SetTransform { get; private set; }
+	public delegate* managed<in SceneObject, Rotation, Location, void> RotateByRotationAroundPivot { get; private set; }
+	public delegate* managed<in SceneObject, Quaternion, Location, void> RotateByQuaternionAroundPivot { get; private set; }
 
-	public delegate* managed<ResourceStub, Material, void> SetMaterial { get; private set; }
-	public delegate* managed<ResourceStub, ColorVect, void> SetDefaultMaterialBaseColor { get; private set; }
-	public delegate* managed<ResourceStub, DefaultMaterialShadingStyle, void> SetDefaultMaterialShadingStyle { get; private set; }
+	public delegate* managed<in SceneObject, Material, void> SetMaterial { get; private set; }
+	public delegate* managed<in SceneObject, ColorVect, void> SetDefaultMaterialBaseColor { get; private set; }
+	public delegate* managed<in SceneObject, DefaultMaterialShadingStyle, void> SetDefaultMaterialShadingStyle { get; private set; }
 
-	public delegate* managed<ResourceStub, Angle> GetColorHue { get; private set; }
-	public delegate* managed<ResourceStub, Angle, void> SetColorHue { get; private set; }
-	public delegate* managed<ResourceStub, float> GetColorSaturation { get; private set; }
-	public delegate* managed<ResourceStub, float, void> SetColorSaturation { get; private set; }
-	public delegate* managed<ResourceStub, float> GetColorLightness { get; private set; }
-	public delegate* managed<ResourceStub, float, void> SetColorLightness { get; private set; }
-	public delegate* managed<ResourceStub, Angle, void> AdjustColorHueBy { get; private set; }
-	public delegate* managed<ResourceStub, float, void> AdjustColorSaturationBy { get; private set; }
-	public delegate* managed<ResourceStub, float, void> AdjustColorLightnessBy { get; private set; }
+	public delegate* managed<in SceneObject, Angle> GetColorHue { get; private set; }
+	public delegate* managed<in SceneObject, Angle, void> SetColorHue { get; private set; }
+	public delegate* managed<in SceneObject, float> GetColorSaturation { get; private set; }
+	public delegate* managed<in SceneObject, float, void> SetColorSaturation { get; private set; }
+	public delegate* managed<in SceneObject, float> GetColorLightness { get; private set; }
+	public delegate* managed<in SceneObject, float, void> SetColorLightness { get; private set; }
+	public delegate* managed<in SceneObject, Angle, void> AdjustColorHueBy { get; private set; }
+	public delegate* managed<in SceneObject, float, void> AdjustColorSaturationBy { get; private set; }
+	public delegate* managed<in SceneObject, float, void> AdjustColorLightnessBy { get; private set; }
 
 	SceneObjectAdapterFunctionTable(SceneObjectType sceneObjectType) {
 		SceneObjectType = sceneObjectType;
@@ -201,15 +213,15 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	}
 
 	#region No-Op Defaults
-	static Location NoOpGetPosition(ResourceStub _) => Location.Origin;
-	static Rotation NoOpGetRotation(ResourceStub _) => Rotation.None;
-	static Quaternion NoOpGetRotationQuaternion(ResourceStub _) => Quaternion.Identity;
-	static Vect NoOpGetScaling(ResourceStub _) => Vect.One;
-	static Transform NoOpGetTransform(ResourceStub _) => Transform.None;
-	static Angle NoOpGetColorHue(ResourceStub _) => Angle.Zero;
-	static float NoOpGetColorComponent(ResourceStub _) => 0f;
-	static void NoOp<TArg>(ResourceStub _, TArg __) { }
-	static void NoOp<TArg1, TArg2>(ResourceStub _, TArg1 __, TArg2 ___) { }
+	static Location NoOpGetPosition(in SceneObject _) => Location.Origin;
+	static Rotation NoOpGetRotation(in SceneObject _) => Rotation.None;
+	static Quaternion NoOpGetRotationQuaternion(in SceneObject _) => Quaternion.Identity;
+	static Vect NoOpGetScaling(in SceneObject _) => Vect.One;
+	static Transform NoOpGetTransform(in SceneObject _) => Transform.None;
+	static Angle NoOpGetColorHue(in SceneObject _) => Angle.Zero;
+	static float NoOpGetColorComponent(in SceneObject _) => 0f;
+	static void NoOp<TArg>(in SceneObject _, TArg __) { }
+	static void NoOp<TArg1, TArg2>(in SceneObject _, TArg1 __, TArg2 ___) { }
 
 	void SetAllToNoOp() {
 		GetPosition = &NoOpGetPosition;
@@ -253,12 +265,12 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 
 	#region Capability Adapters
 	void AddPositioned<T, TConverter>() where T : IPositionedSceneObject where TConverter : IStubConverter<T> {
-		static Location GetPositionAdapter(ResourceStub stub) => TConverter.FromStub(stub).Position;
-		static void SetPositionAdapter(ResourceStub stub, Location position) {
-			var obj = TConverter.FromStub(stub);
+		static Location GetPositionAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).Position;
+		static void SetPositionAdapter(in SceneObject sceneObject, Location position) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.Position = position;
 		}
-		static void MoveByAdapter(ResourceStub stub, Vect translation) => TConverter.FromStub(stub).MoveBy(translation);
+		static void MoveByAdapter(in SceneObject sceneObject, Vect translation) => TConverter.FromSceneObject(sceneObject).MoveBy(translation);
 
 		GetPosition = &GetPositionAdapter;
 		SetPosition = &SetPositionAdapter;
@@ -266,18 +278,18 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	}
 
 	void AddOriented<T, TConverter>() where T : IOrientedSceneObject where TConverter : IStubConverter<T> {
-		static Rotation GetRotationAdapter(ResourceStub stub) => TConverter.FromStub(stub).Rotation;
-		static void SetRotationAdapter(ResourceStub stub, Rotation rotation) {
-			var obj = TConverter.FromStub(stub);
+		static Rotation GetRotationAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).Rotation;
+		static void SetRotationAdapter(in SceneObject sceneObject, Rotation rotation) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.Rotation = rotation;
 		}
-		static Quaternion GetRotationQuaternionAdapter(ResourceStub stub) => TConverter.FromStub(stub).RotationQuaternion;
-		static void SetRotationQuaternionAdapter(ResourceStub stub, Quaternion rotationQuaternion) {
-			var obj = TConverter.FromStub(stub);
+		static Quaternion GetRotationQuaternionAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).RotationQuaternion;
+		static void SetRotationQuaternionAdapter(in SceneObject sceneObject, Quaternion rotationQuaternion) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.RotationQuaternion = rotationQuaternion;
 		}
-		static void RotateByRotationAdapter(ResourceStub stub, Rotation rotation) => TConverter.FromStub(stub).RotateBy(rotation);
-		static void RotateByQuaternionAdapter(ResourceStub stub, Quaternion rotationQuaternion) => TConverter.FromStub(stub).RotateBy(rotationQuaternion);
+		static void RotateByRotationAdapter(in SceneObject sceneObject, Rotation rotation) => TConverter.FromSceneObject(sceneObject).RotateBy(rotation);
+		static void RotateByQuaternionAdapter(in SceneObject sceneObject, Quaternion rotationQuaternion) => TConverter.FromSceneObject(sceneObject).RotateBy(rotationQuaternion);
 
 		GetRotation = &GetRotationAdapter;
 		SetRotation = &SetRotationAdapter;
@@ -288,15 +300,15 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	}
 
 	void AddScaled<T, TConverter>() where T : IScaledSceneObject where TConverter : IStubConverter<T> {
-		static Vect GetScalingAdapter(ResourceStub stub) => TConverter.FromStub(stub).Scaling;
-		static void SetScalingAdapter(ResourceStub stub, Vect scaling) {
-			var obj = TConverter.FromStub(stub);
+		static Vect GetScalingAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).Scaling;
+		static void SetScalingAdapter(in SceneObject sceneObject, Vect scaling) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.Scaling = scaling;
 		}
-		static void ScaleByScalarAdapter(ResourceStub stub, float scalar) => TConverter.FromStub(stub).ScaleBy(scalar);
-		static void ScaleByVectAdapter(ResourceStub stub, Vect vect) => TConverter.FromStub(stub).ScaleBy(vect);
-		static void AdjustScaleByScalarAdapter(ResourceStub stub, float scalar) => TConverter.FromStub(stub).AdjustScaleBy(scalar);
-		static void AdjustScaleByVectAdapter(ResourceStub stub, Vect vect) => TConverter.FromStub(stub).AdjustScaleBy(vect);
+		static void ScaleByScalarAdapter(in SceneObject sceneObject, float scalar) => TConverter.FromSceneObject(sceneObject).ScaleBy(scalar);
+		static void ScaleByVectAdapter(in SceneObject sceneObject, Vect vect) => TConverter.FromSceneObject(sceneObject).ScaleBy(vect);
+		static void AdjustScaleByScalarAdapter(in SceneObject sceneObject, float scalar) => TConverter.FromSceneObject(sceneObject).AdjustScaleBy(scalar);
+		static void AdjustScaleByVectAdapter(in SceneObject sceneObject, Vect vect) => TConverter.FromSceneObject(sceneObject).AdjustScaleBy(vect);
 
 		GetScaling = &GetScalingAdapter;
 		SetScaling = &SetScalingAdapter;
@@ -307,13 +319,13 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	}
 
 	void AddTransformed<T, TConverter>() where T : ITransformedSceneObject where TConverter : IStubConverter<T> {
-		static Transform GetTransformAdapter(ResourceStub stub) => TConverter.FromStub(stub).Transform;
-		static void SetTransformAdapter(ResourceStub stub, Transform transform) {
-			var obj = TConverter.FromStub(stub);
+		static Transform GetTransformAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).Transform;
+		static void SetTransformAdapter(in SceneObject sceneObject, Transform transform) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.Transform = transform;
 		}
-		static void RotateByRotationAroundPivotAdapter(ResourceStub stub, Rotation rotation, Location pivotPoint) => TConverter.FromStub(stub).RotateBy(rotation, pivotPoint);
-		static void RotateByQuaternionAroundPivotAdapter(ResourceStub stub, Quaternion rotationQuaternion, Location pivotPoint) => TConverter.FromStub(stub).RotateBy(rotationQuaternion, pivotPoint);
+		static void RotateByRotationAroundPivotAdapter(in SceneObject sceneObject, Rotation rotation, Location pivotPoint) => TConverter.FromSceneObject(sceneObject).RotateBy(rotation, pivotPoint);
+		static void RotateByQuaternionAroundPivotAdapter(in SceneObject sceneObject, Quaternion rotationQuaternion, Location pivotPoint) => TConverter.FromSceneObject(sceneObject).RotateBy(rotationQuaternion, pivotPoint);
 
 		AddPositioned<T, TConverter>();
 		AddOriented<T, TConverter>();
@@ -325,9 +337,9 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	}
 
 	void AddMaterialReceiving<T, TConverter>() where T : IMaterialReceivingSceneObject where TConverter : IStubConverter<T> {
-		static void SetMaterialAdapter(ResourceStub stub, Material material) => TConverter.FromStub(stub).SetMaterial(material);
-		static void SetDefaultMaterialBaseColorAdapter(ResourceStub stub, ColorVect baseColor) => TConverter.FromStub(stub).SetDefaultMaterialBaseColor(baseColor);
-		static void SetDefaultMaterialShadingStyleAdapter(ResourceStub stub, DefaultMaterialShadingStyle style) => TConverter.FromStub(stub).SetDefaultMaterialShadingStyle(style);
+		static void SetMaterialAdapter(in SceneObject sceneObject, Material material) => TConverter.FromSceneObject(sceneObject).SetMaterial(material);
+		static void SetDefaultMaterialBaseColorAdapter(in SceneObject sceneObject, ColorVect baseColor) => TConverter.FromSceneObject(sceneObject).SetDefaultMaterialBaseColor(baseColor);
+		static void SetDefaultMaterialShadingStyleAdapter(in SceneObject sceneObject, DefaultMaterialShadingStyle style) => TConverter.FromSceneObject(sceneObject).SetDefaultMaterialShadingStyle(style);
 
 		SetMaterial = &SetMaterialAdapter;
 		SetDefaultMaterialBaseColor = &SetDefaultMaterialBaseColorAdapter;
@@ -335,24 +347,24 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	}
 
 	void AddColored<T, TConverter>() where T : IColoredSceneObject where TConverter : IStubConverter<T> {
-		static Angle GetColorHueAdapter(ResourceStub stub) => TConverter.FromStub(stub).ColorHue;
-		static void SetColorHueAdapter(ResourceStub stub, Angle hue) {
-			var obj = TConverter.FromStub(stub);
+		static Angle GetColorHueAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).ColorHue;
+		static void SetColorHueAdapter(in SceneObject sceneObject, Angle hue) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.ColorHue = hue;
 		}
-		static float GetColorSaturationAdapter(ResourceStub stub) => TConverter.FromStub(stub).ColorSaturation;
-		static void SetColorSaturationAdapter(ResourceStub stub, float saturation) {
-			var obj = TConverter.FromStub(stub);
+		static float GetColorSaturationAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).ColorSaturation;
+		static void SetColorSaturationAdapter(in SceneObject sceneObject, float saturation) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.ColorSaturation = saturation;
 		}
-		static float GetColorLightnessAdapter(ResourceStub stub) => TConverter.FromStub(stub).ColorLightness;
-		static void SetColorLightnessAdapter(ResourceStub stub, float lightness) {
-			var obj = TConverter.FromStub(stub);
+		static float GetColorLightnessAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).ColorLightness;
+		static void SetColorLightnessAdapter(in SceneObject sceneObject, float lightness) {
+			var obj = TConverter.FromSceneObject(sceneObject);
 			obj.ColorLightness = lightness;
 		}
-		static void AdjustColorHueByAdapter(ResourceStub stub, Angle adjustment) => TConverter.FromStub(stub).AdjustColorHueBy(adjustment);
-		static void AdjustColorSaturationByAdapter(ResourceStub stub, float adjustment) => TConverter.FromStub(stub).AdjustColorSaturationBy(adjustment);
-		static void AdjustColorLightnessByAdapter(ResourceStub stub, float adjustment) => TConverter.FromStub(stub).AdjustColorLightnessBy(adjustment);
+		static void AdjustColorHueByAdapter(in SceneObject sceneObject, Angle adjustment) => TConverter.FromSceneObject(sceneObject).AdjustColorHueBy(adjustment);
+		static void AdjustColorSaturationByAdapter(in SceneObject sceneObject, float adjustment) => TConverter.FromSceneObject(sceneObject).AdjustColorSaturationBy(adjustment);
+		static void AdjustColorLightnessByAdapter(in SceneObject sceneObject, float adjustment) => TConverter.FromSceneObject(sceneObject).AdjustColorLightnessBy(adjustment);
 
 		GetColorHue = &GetColorHueAdapter;
 		SetColorHue = &SetColorHueAdapter;
@@ -478,7 +490,8 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 /// </para>
 /// <para>
 /// This type itself represents no managed or unmanaged memory and does not need to be disposed. It is cheap to create and use.
-/// If you want to dispose the underlying object you can with <see cref="DisposeUnderlyingObject"/>.
+/// If you want to dispose the underlying object you can with <see cref="DisposeUnderlyingObject"/>. You <b>must not</b> dispose the underlying object (either
+/// via <see cref="DisposeUnderlyingObject"/> or via its own <c>Dispose()</c> method) and then continue to use this SceneObject.
 /// </para>
 /// <para>
 /// A <c>default</c> <see cref="SceneObject"/> wraps nothing and is not valid for use.
@@ -650,7 +663,7 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 		operand.ThrowIfNotOfType(SceneObjectType.ModelInstanceGroup);
 		return new(FastFromStub<ResourceGroup>(operand.Stub));
 	}
-	internal static ResourceGroup GetModelInstanceGroupUnderlyingResourceGroup(SceneObject o) {
+	internal static ResourceGroup GetUnderlyingResourceGroupFromModelInstanceGroup(SceneObject o) {
 		o.ThrowIfNotOfType(SceneObjectType.ModelInstanceGroup);
 		return FastFromStub<ResourceGroup>(o.Stub);
 	}
@@ -720,9 +733,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// <inheritdoc />
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetPosition(Stub);
+		get => FunctionTable.GetPosition(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetPosition(Stub, value);
+		set => FunctionTable.SetPosition(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="Position"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -733,14 +746,14 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void MoveBy(Vect translation) => FunctionTable.MoveBy(Stub, translation);
+	public void MoveBy(Vect translation) => FunctionTable.MoveBy(this, translation);
 
 	/// <inheritdoc />
 	public Rotation Rotation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetRotation(Stub);
+		get => FunctionTable.GetRotation(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetRotation(Stub, value);
+		set => FunctionTable.SetRotation(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="Rotation"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -752,9 +765,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// <inheritdoc />
 	public Quaternion RotationQuaternion {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetRotationQuaternion(Stub);
+		get => FunctionTable.GetRotationQuaternion(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetRotationQuaternion(Stub, value);
+		set => FunctionTable.SetRotationQuaternion(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="RotationQuaternion"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -765,17 +778,17 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Rotation rotation) => FunctionTable.RotateByRotation(Stub, rotation);
+	public void RotateBy(Rotation rotation) => FunctionTable.RotateByRotation(this, rotation);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Quaternion rotationQuaternion) => FunctionTable.RotateByQuaternion(Stub, rotationQuaternion);
+	public void RotateBy(Quaternion rotationQuaternion) => FunctionTable.RotateByQuaternion(this, rotationQuaternion);
 
 	/// <inheritdoc />
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetScaling(Stub);
+		get => FunctionTable.GetScaling(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetScaling(Stub, value);
+		set => FunctionTable.SetScaling(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="Scaling"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -786,23 +799,23 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(float scalar) => FunctionTable.ScaleByScalar(Stub, scalar);
+	public void ScaleBy(float scalar) => FunctionTable.ScaleByScalar(this, scalar);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(Vect vect) => FunctionTable.ScaleByVect(Stub, vect);
+	public void ScaleBy(Vect vect) => FunctionTable.ScaleByVect(this, vect);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(float scalar) => FunctionTable.AdjustScaleByScalar(Stub, scalar);
+	public void AdjustScaleBy(float scalar) => FunctionTable.AdjustScaleByScalar(this, scalar);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(Vect vect) => FunctionTable.AdjustScaleByVect(Stub, vect);
+	public void AdjustScaleBy(Vect vect) => FunctionTable.AdjustScaleByVect(this, vect);
 
 	/// <inheritdoc />
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetTransform(Stub);
+		get => FunctionTable.GetTransform(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetTransform(Stub, value);
+		set => FunctionTable.SetTransform(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="Transform"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -813,27 +826,27 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Rotation rotation, Location pivotPoint) => FunctionTable.RotateByRotationAroundPivot(Stub, rotation, pivotPoint);
+	public void RotateBy(Rotation rotation, Location pivotPoint) => FunctionTable.RotateByRotationAroundPivot(this, rotation, pivotPoint);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => FunctionTable.RotateByQuaternionAroundPivot(Stub, rotationQuaternion, pivotPoint);
+	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => FunctionTable.RotateByQuaternionAroundPivot(this, rotationQuaternion, pivotPoint);
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetMaterial(Material material) => FunctionTable.SetMaterial(Stub, material);
+	public void SetMaterial(Material material) => FunctionTable.SetMaterial(this, material);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => FunctionTable.SetDefaultMaterialBaseColor(Stub, baseColor);
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => FunctionTable.SetDefaultMaterialBaseColor(this, baseColor);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => FunctionTable.SetDefaultMaterialShadingStyle(Stub, style);
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => FunctionTable.SetDefaultMaterialShadingStyle(this, style);
 
 	/// <inheritdoc />
 	public Angle ColorHue {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetColorHue(Stub);
+		get => FunctionTable.GetColorHue(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetColorHue(Stub, value);
+		set => FunctionTable.SetColorHue(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="ColorHue"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -845,9 +858,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// <inheritdoc />
 	public float ColorSaturation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetColorSaturation(Stub);
+		get => FunctionTable.GetColorSaturation(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetColorSaturation(Stub, value);
+		set => FunctionTable.SetColorSaturation(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="ColorSaturation"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -859,9 +872,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// <inheritdoc />
 	public float ColorLightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FunctionTable.GetColorLightness(Stub);
+		get => FunctionTable.GetColorLightness(this);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => FunctionTable.SetColorLightness(Stub, value);
+		set => FunctionTable.SetColorLightness(this, value);
 	}
 	/// <summary>
 	/// Sets <see cref="ColorLightness"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -872,13 +885,13 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustColorHueBy(Angle adjustment) => FunctionTable.AdjustColorHueBy(Stub, adjustment);
+	public void AdjustColorHueBy(Angle adjustment) => FunctionTable.AdjustColorHueBy(this, adjustment);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustColorSaturationBy(float adjustment) => FunctionTable.AdjustColorSaturationBy(Stub, adjustment);
+	public void AdjustColorSaturationBy(float adjustment) => FunctionTable.AdjustColorSaturationBy(this, adjustment);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustColorLightnessBy(float adjustment) => FunctionTable.AdjustColorLightnessBy(Stub, adjustment);
+	public void AdjustColorLightnessBy(float adjustment) => FunctionTable.AdjustColorLightnessBy(this, adjustment);
 
 	/// <inheritdoc />
 	public string GetNameAsNewStringObject() {

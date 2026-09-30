@@ -42,6 +42,12 @@ static partial class TestMain {
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
 		
+		var factory = builder.Context.Factory!;
+		
+		using var noiseTex = factory.AssetLoader.LoadTexture(@"Assets/noise.jpg", TextureDataType.LinearData);
+		using var bricks = factory.AssetLoader.LoadColorMap(@"Assets/bricks.png");
+		using var warningSymbol = factory.AssetLoader.LoadCanvasTexture(@"Assets/warning.tga");
+		using var normalPattern = factory.AssetLoader.LoadNormalMap(@"Assets/normalPattern1.bmp");
 	}
 
 	public static void StartTest(TestContext context) {

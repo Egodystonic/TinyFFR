@@ -1,8 +1,16 @@
 ﻿// Created on 2024-09-27 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
+using Egodystonic.TinyFFR.Environment;
+using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.World;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
@@ -31,17 +39,47 @@ readonly unsafe struct SerializedResourceData {
 }
 
 sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider, IResourceDirectory<ResourceGroup>, IDisposable {
-	readonly record struct GroupData(SerializedResourceData[] DataArray, int Count, bool DisposeContainedResourcesWhenDisposed, bool IsSealed) {
+	readonly record struct GroupData(SerializedResourceData[] DataArray, int Count, bool DisposeContainedResourcesWhenDisposed, bool IsSealed, int[]? TypeIndex) {
 		public void ThrowIfSealed(ReadOnlySpan<char> name) {
 			if (IsSealed) throw new ResourceGroupSealedException($"Can not add resource to {nameof(ResourceGroup)} '{name}' as it is sealed.");
 		}
 	}
 
+	static class TypeKey<TResource> where TResource : IResource {
+		public static readonly int Value = GetTypeKey(typeof(TResource).TypeHandle.Value);
+	}
+
 	public const int DefaultInitialCapacity = 4;
 	const string DefaultGroupName = "Unnamed Resource Group";
+	static readonly nint[] IndexedTypeHandles = [
+		typeof(ApplicationLoop).TypeHandle.Value,
+		typeof(BackdropTexture).TypeHandle.Value,
+		typeof(Camera).TypeHandle.Value,
+		typeof(DirectionalLight).TypeHandle.Value,
+		typeof(Display).TypeHandle.Value,
+		typeof(Font).TypeHandle.Value,
+		typeof(Material).TypeHandle.Value,
+		typeof(Mesh).TypeHandle.Value,
+		typeof(MeshGroupAnimationTable).TypeHandle.Value,
+		typeof(MeshAnimation).TypeHandle.Value,
+		typeof(MeshNode).TypeHandle.Value,
+		typeof(Model).TypeHandle.Value,
+		typeof(ModelInstance).TypeHandle.Value,
+		typeof(PointLight).TypeHandle.Value,
+		typeof(Renderer).TypeHandle.Value,
+		typeof(RendererCompositor).TypeHandle.Value,
+		typeof(RenderOutputBuffer).TypeHandle.Value,
+		typeof(ResourceGroup).TypeHandle.Value,
+		typeof(Scene).TypeHandle.Value,
+		typeof(SpotLight).TypeHandle.Value,
+		typeof(Texture).TypeHandle.Value,
+		typeof(Window).TypeHandle.Value,
+	];
+	static readonly int TypeIndexHeaderLength = IndexedTypeHandles.Length * 2;
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPool<SerializedResourceData> _dataArrayPool = TinyFfrArrayPool<SerializedResourceData>.Shared;
+	readonly ArrayPool<int> _typeIndexPool = TinyFfrArrayPool<int>.Shared;
 	readonly ArrayPoolBackedMap<ResourceHandle<ResourceGroup>, GroupData> _dataMap = new();
 	nuint _previousGroupId = 0;
 	bool _isDisposed = false;
@@ -57,7 +95,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 		var stubArray = _dataArrayPool.Rent(initialCapacity);
 		var handle = new ResourceHandle<ResourceGroup>(++_previousGroupId);
-		_dataMap.Add(handle, new(stubArray, 0, disposeContainedResourcesWhenDisposed, false));
+		_dataMap.Add(handle, new(stubArray, 0, disposeContainedResourcesWhenDisposed, false, null));
 
 		return HandleToInstance(handle);
 	}
@@ -78,7 +116,52 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 	public void Seal(ResourceHandle<ResourceGroup> handle) {
 		var data = GetDataForHandleOrThrow(handle);
-		_dataMap[handle] = data with { IsSealed = true };
+		if (data.IsSealed) return;
+		_dataMap[handle] = data with { IsSealed = true, TypeIndex = data.Count > 0 ? CreateTypeIndex(data) : null };
+	}
+
+	int[] CreateTypeIndex(GroupData data) {
+		var result = _typeIndexPool.Rent(TypeIndexHeaderLength + data.Count);
+		var header = result.AsSpan(0, TypeIndexHeaderLength);
+		var indices = result.AsSpan(TypeIndexHeaderLength, data.Count);
+		header.Clear();
+
+		for (var i = 0; i < data.Count; ++i) {
+			var key = GetTypeKey(data.DataArray[i].Stub.TypeHandle);
+			if (key >= 0) ++header[key * 2 + 1];
+		}
+
+		Span<int> cursors = stackalloc int[IndexedTypeHandles.Length];
+		var start = 0;
+		for (var key = 0; key < cursors.Length; ++key) {
+			header[key * 2] = start;
+			cursors[key] = start;
+			start += header[key * 2 + 1];
+		}
+
+		for (var i = 0; i < data.Count; ++i) {
+			var key = GetTypeKey(data.DataArray[i].Stub.TypeHandle);
+			if (key >= 0) indices[cursors[key]++] = i;
+		}
+
+		return result;
+	}
+
+	static int GetTypeKey(nint typeHandle) {
+		for (var i = 0; i < IndexedTypeHandles.Length; ++i) {
+			if (IndexedTypeHandles[i] == typeHandle) return i;
+		}
+		return -1;
+	}
+
+	static bool TryGetIndexedRange(in GroupData data, int typeKey, out ReadOnlySpan<int> indices) {
+		var typeIndex = data.TypeIndex;
+		if (typeKey < 0 || typeIndex == null) {
+			indices = default;
+			return false;
+		}
+		indices = new ReadOnlySpan<int>(typeIndex, TypeIndexHeaderLength + typeIndex[typeKey * 2], typeIndex[typeKey * 2 + 1]);
+		return true;
 	}
 
 	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource {
@@ -135,15 +218,16 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		return new IndirectEnumerable<EnumerationInput, TResource>(
 			new(this, handle, typeof(TResource).TypeHandle.Value),
 			GetDataForHandleOrThrow(handle).Count,
-			&GetEnumeratorResourceCount,
+			&GetEnumeratorResourceCount<TResource>,
 			&GetEnumeratorStateVersion,
 			&GetEnumeratorResourceAtIndex<TResource>
 		);
 	}
 	static int GetEnumeratorStateVersion(EnumerationInput input) => (input.Impl as LocalResourceGroupImplProvider)!.GetDataForHandleOrThrow(input.Handle).Count;
-	static int GetEnumeratorResourceCount(EnumerationInput input) {
+	static int GetEnumeratorResourceCount<TResource>(EnumerationInput input) where TResource : IResource<TResource> {
 		var implProvider = (input.Impl as LocalResourceGroupImplProvider) ?? throw new InvalidOperationException($"Expected impl provider to be of type {nameof(LocalResourceGroupImplProvider)}.");
 		var data = implProvider.GetDataForHandleOrThrow(input.Handle);
+		if (TryGetIndexedRange(data, TypeKey<TResource>.Value, out var indices)) return indices.Length;
 
 		var result = 0;
 		for (var i = 0; i < data.Count; ++i) {
@@ -154,6 +238,10 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	static TResource GetEnumeratorResourceAtIndex<TResource>(EnumerationInput input, int index) where TResource : IResource<TResource> {
 		var implProvider = (input.Impl as LocalResourceGroupImplProvider) ?? throw new InvalidOperationException($"Expected impl provider to be of type {nameof(LocalResourceGroupImplProvider)}.");
 		var data = implProvider.GetDataForHandleOrThrow(input.Handle);
+		if (TryGetIndexedRange(data, TypeKey<TResource>.Value, out var indices)) {
+			if ((uint) index < (uint) indices.Length) return TResource.CreateFromStub(data.DataArray[indices[index]].Stub);
+			throw new ArgumentOutOfRangeException(nameof(index), $"Index '{index}' is out of range for resources of type '{typeof(TResource).Name}' in this resource group (actual count = {indices.Length}).");
+		}
 
 		var count = 0;
 		for (var i = 0; i < data.Count; ++i) {
@@ -175,16 +263,22 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		return new IndirectEnumerable<EnumerationInput, TResource>(
 			new(this, handle, (nint) TResource.SpecializationTypeIdentifier),
 			GetDataForHandleOrThrow(handle).Count,
-			&GetEnumeratorSpecializedResourceCount,
+			&GetEnumeratorSpecializedResourceCount<TResource, TBase>,
 			&GetEnumeratorStateVersion,
 			&GetEnumeratorSpecializedResourceAtIndex<TResource, TBase>
 		);
 	}
-	static int GetEnumeratorSpecializedResourceCount(EnumerationInput input) {
+	static int GetEnumeratorSpecializedResourceCount<TResource, TBase>(EnumerationInput input) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
 		var implProvider = (input.Impl as LocalResourceGroupImplProvider) ?? throw new InvalidOperationException($"Expected impl provider to be of type {nameof(LocalResourceGroupImplProvider)}.");
 		var data = implProvider.GetDataForHandleOrThrow(input.Handle);
 
 		var result = 0;
+		if (TryGetIndexedRange(data, TypeKey<TBase>.Value, out var indices)) {
+			for (var i = 0; i < indices.Length; ++i) {
+				if (data.DataArray[indices[i]].SpecializationTypeIdentifier == input.ResourceTypeHandle) ++result;
+			}
+			return result;
+		}
 		for (var i = 0; i < data.Count; ++i) {
 			if (data.DataArray[i].SpecializationTypeIdentifier == input.ResourceTypeHandle) ++result;
 		}
@@ -195,6 +289,16 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		var data = implProvider.GetDataForHandleOrThrow(input.Handle);
 
 		var count = 0;
+		if (TryGetIndexedRange(data, TypeKey<TBase>.Value, out var indices)) {
+			for (var i = 0; i < indices.Length; ++i) {
+				ref readonly var d = ref data.DataArray[indices[i]];
+				if (d.SpecializationTypeIdentifier != input.ResourceTypeHandle) continue;
+				if (count == index) return TResource.DeSmuggle(TBase.CreateFromStub(d.Stub), d.SpecializationData.Span, d.AdditionalResourceRef);
+				++count;
+			}
+			throw new ArgumentOutOfRangeException(nameof(index), $"Index '{index}' is out of range for resources of type '{typeof(TResource).Name}' in this resource group (actual count = {count}).");
+		}
+
 		for (var i = 0; i < data.Count; ++i) {
 			var d = data.DataArray[i];
 			if (d.SpecializationTypeIdentifier != input.ResourceTypeHandle) continue;
@@ -263,14 +367,16 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	public bool IsDisposed(ResourceHandle<ResourceGroup> handle) => !_dataMap.ContainsKey(handle.AsInteger);
 	public void Dispose(ResourceHandle<ResourceGroup> handle) {
 		if (!_dataMap.TryGetValue(handle, out var data)) return;
-		Dispose(handle, data.DataArray, data.Count, data.DisposeContainedResourcesWhenDisposed);
+		Dispose(handle, data, data.DisposeContainedResourcesWhenDisposed);
 	}
 	public void Dispose(ResourceHandle<ResourceGroup> handle, bool disposeContainedResources) {
 		if (!_dataMap.TryGetValue(handle, out var data)) return;
-		Dispose(handle, data.DataArray, data.Count, disposeContainedResources);
+		Dispose(handle, data, disposeContainedResources);
 	}
-	void Dispose(ResourceHandle<ResourceGroup> handle, SerializedResourceData[] dataArray, int count, bool disposeContainedResources) {
+	void Dispose(ResourceHandle<ResourceGroup> handle, GroupData groupData, bool disposeContainedResources) {
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		var dataArray = groupData.DataArray;
+		var count = groupData.Count;
 		// Maintainer's note: Reverse order of disposal is important to help dispose items in the correct order according to their dependency chains
 		// This doesn't guarantee anything of course, but makes it more likely that thoughtless use of this type will work okay
 		for (var i = count - 1; i >= 0; --i) {
@@ -292,6 +398,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 			if (data.IsSpecialized) data.SpecializationData.Dispose();
 		}
 
+		if (groupData.TypeIndex is { } typeIndex) _typeIndexPool.Return(typeIndex);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		_dataMap.Remove(handle);
 		_dataArrayPool.Return(dataArray, clearArray: true);
@@ -304,6 +411,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 			for (var j = 0; j < data.Count; ++j) {
 				if (data.DataArray[j].IsSpecialized) data.DataArray[j].SpecializationData.Dispose();
 			}
+			if (data.TypeIndex is { } typeIndex) _typeIndexPool.Return(typeIndex);
 			_dataArrayPool.Return(data.DataArray, clearArray: true);
 		}
 		_dataMap.Dispose();

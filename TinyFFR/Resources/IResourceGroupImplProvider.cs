@@ -58,7 +58,7 @@ public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<Re
 	/// <summary>
 	/// Invoked via <see cref="ResourceGroup.GetAllResourcesBoxed"/>.
 	/// </summary>
-	internal IReadOnlyCollection<object> GetAllResourcesBoxed(ResourceHandle<ResourceGroup> handle);
+	IReadOnlyCollection<object> GetAllResourcesBoxed(ResourceHandle<ResourceGroup> handle);
 
 	/// <summary>
 	/// Invoked via <see cref="ResourceGroup.Dispose(bool)"/>.

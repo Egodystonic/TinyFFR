@@ -193,8 +193,8 @@ class LocalModelLoadingTest {
 				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.W)) {
-				if (modelInstances?.Instances is { } enumerable) {
-					foreach (var inst in enumerable) {
+				if (modelInstances is { } instanceGroup) {
+					foreach (var inst in instanceGroup.Instances) {
 						inst.SetMaterial(factory.MaterialBuilder.DefaultMaterial);
 						inst.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Wireframe);
 						inst.SetDefaultMaterialBaseColor(ColorVect.RandomOpaque());
@@ -202,15 +202,15 @@ class LocalModelLoadingTest {
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.T)) {
-				if (modelInstances?.Instances is { } enumerable && loadedResources is { } lr) {
-					foreach (var inst in enumerable) {
+				if (modelInstances is { } instanceGroup && loadedResources is { } lr) {
+					foreach (var inst in instanceGroup.Instances) {
 						inst.SetMaterial(lr.Models.First(m => m.Mesh == inst.Mesh).Material);
 					}
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
-				if (modelInstances?.Instances is { } enumerable) {
-					foreach (var inst in enumerable) {
+				if (modelInstances is { } instanceGroup) {
+					foreach (var inst in instanceGroup.Instances) {
 						inst.SetMaterial(factory.MaterialBuilder.DefaultMaterial);
 						inst.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain3D);
 						inst.SetDefaultMaterialBaseColor(nextPrimitiveColorIsOpaque ? ColorVect.RandomOpaque() : ColorVect.Random().WithPremultipliedAlpha());

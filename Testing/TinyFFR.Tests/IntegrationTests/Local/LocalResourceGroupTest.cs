@@ -32,6 +32,13 @@ class LocalResourceGroupTest {
 		SpecializedResourcesShouldBeDisposedWithGroup();
 		SealedGroupShouldRejectSpecializedAdds();
 		GroupShouldTrackDependencyOnSpecializationAdditionalResourceRef();
+		EnumerationShouldBeIdenticalBeforeAndAfterSealing();
+		ModelInstanceGroupShouldIterateInInsertionOrder();
+		SingularTypeGroupsShouldEnumerateIdenticallyBeforeAndAfterSealing();
+		ModelInstanceGroupCopiesShouldShareDisposalSafely();
+		SceneObjectsWrappingGroupsShouldRoundTripAndDispose();
+		EmptyGroupsShouldSealAndEnumerate();
+		SealedGroupsShouldStillDisposeDependentsFirst();
 		
 		using var factory = new LocalTinyFfrFactory();
 
@@ -413,5 +420,303 @@ class LocalResourceGroupTest {
 
 		Assert.DoesNotThrow(() => canvasTexture.Dispose());
 		Assert.DoesNotThrow(() => canvasScene.Dispose());
+	}
+	
+	sealed record GroupSnapshot(
+		ModelInstance[] ModelInstances,
+		Mesh[] Meshes,
+		Material[] Materials,
+		Camera[] Cameras,
+		QuadInstance[] QuadInstances,
+		QuadMesh[] QuadMeshes,
+		DynamicVertexBuffer[] DynamicVertexBuffers,
+		PointLight[] PointLights,
+		object[] Boxed
+	);
+
+	static T[] Collect<TIn, T>(IndirectEnumerable<TIn, T> enumerable) {
+		var result = new List<T>();
+		foreach (var item in enumerable) result.Add(item);
+		Assert.AreEqual(result.Count, enumerable.Count);
+		for (var i = 0; i < result.Count; ++i) Assert.AreEqual(result[i], enumerable[i]);
+		return result.ToArray();
+	}
+
+	static GroupSnapshot Snapshot(ResourceGroup group) {
+		return new GroupSnapshot(
+			Collect(group.ModelInstances),
+			Collect(group.Meshes),
+			Collect(group.Materials),
+			Collect(group.Cameras),
+			Collect(group.QuadInstances),
+			Collect(group.QuadMeshes),
+			Collect(group.GetAllResourcesOfType<DynamicVertexBuffer>()),
+			Collect(group.PointLights),
+			group.GetAllResourcesBoxed().ToArray()
+		);
+	}
+
+	static void AssertSnapshotsMatch(GroupSnapshot expected, GroupSnapshot actual) {
+		Assert.IsTrue(expected.ModelInstances.SequenceEqual(actual.ModelInstances));
+		Assert.IsTrue(expected.Meshes.SequenceEqual(actual.Meshes));
+		Assert.IsTrue(expected.Materials.SequenceEqual(actual.Materials));
+		Assert.IsTrue(expected.Cameras.SequenceEqual(actual.Cameras));
+		Assert.IsTrue(expected.QuadInstances.SequenceEqual(actual.QuadInstances));
+		Assert.IsTrue(expected.QuadMeshes.SequenceEqual(actual.QuadMeshes));
+		Assert.IsTrue(expected.DynamicVertexBuffers.SequenceEqual(actual.DynamicVertexBuffers));
+		Assert.IsTrue(expected.PointLights.SequenceEqual(actual.PointLights));
+		Assert.IsTrue(expected.Boxed.SequenceEqual(actual.Boxed));
+	}
+
+	static void AssertNthAndOutOfRange<T>(ResourceGroup group, T[] expected) where T : IResource<T> {
+		for (var i = 0; i < expected.Length; ++i) Assert.AreEqual(expected[i], group.GetNthResourceOfType<T>(i));
+		Assert.Throws<ArgumentOutOfRangeException>(() => group.GetNthResourceOfType<T>(expected.Length));
+		Assert.Throws<ArgumentOutOfRangeException>(() => group.GetNthResourceOfType<T>(-1));
+	}
+
+	void EnumerationShouldBeIdenticalBeforeAndAfterSealing() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
+		using var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+
+		var expectedInstances = new List<ModelInstance>();
+		var expectedMeshes = new List<Mesh>();
+		var expectedQuads = new List<QuadInstance>();
+		for (var i = 0; i < 12; ++i) {
+			var mesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+			group.Add(mesh);
+			group.Add(instance);
+			expectedMeshes.Add(mesh);
+			expectedInstances.Add(instance);
+			if (i % 3 == 0) group.Add(factory.CameraBuilder.CreateCamera());
+			if (i % 4 == 1) {
+				var quad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
+				group.Add(quad);
+				expectedQuads.Add(quad);
+				expectedInstances.Add(quad.UnderlyingModelInstance);
+			}
+			if (i == 7) group.Add(factory.MeshBuilder.CreateDynamicVertexBuffer(16, 16));
+		}
+		group.Add(quadMesh);
+		expectedMeshes.Add(quadMesh.UnderlyingMesh);
+		group.ExcludeFromDisposal(quadMesh.UnderlyingMesh);
+
+		var modelInstancesEnumerable = group.ModelInstances;
+		var unsealed = Snapshot(group);
+		Assert.IsTrue(expectedInstances.SequenceEqual(unsealed.ModelInstances));
+		Assert.IsTrue(expectedMeshes.SequenceEqual(unsealed.Meshes));
+		Assert.IsTrue(expectedQuads.SequenceEqual(unsealed.QuadInstances));
+		Assert.AreEqual(4, unsealed.Cameras.Length);
+		Assert.AreEqual(1, unsealed.QuadMeshes.Length);
+		Assert.AreEqual(1, unsealed.DynamicVertexBuffers.Length);
+		Assert.AreEqual(0, unsealed.PointLights.Length);
+
+		group.Seal();
+		group.Seal();
+
+		var @sealed = Snapshot(group);
+		AssertSnapshotsMatch(unsealed, @sealed);
+		Assert.IsTrue(unsealed.ModelInstances.SequenceEqual(Collect(modelInstancesEnumerable)));
+
+		AssertNthAndOutOfRange(group, @sealed.ModelInstances);
+		AssertNthAndOutOfRange(group, @sealed.Meshes);
+		AssertNthAndOutOfRange(group, @sealed.Cameras);
+		AssertNthAndOutOfRange(group, @sealed.DynamicVertexBuffers);
+		AssertNthAndOutOfRange(group, @sealed.PointLights);
+		for (var i = 0; i < expectedQuads.Count; ++i) Assert.AreEqual(expectedQuads[i], group.GetNthResourceOfType<QuadInstance, ModelInstance>(i));
+		Assert.Throws<ArgumentOutOfRangeException>(() => group.GetNthResourceOfType<QuadInstance, ModelInstance>(expectedQuads.Count));
+		Assert.Throws<ArgumentOutOfRangeException>(() => group.GetNthResourceOfType<QuadMesh, Mesh>(1));
+	}
+
+	void ModelInstanceGroupShouldIterateInInsertionOrder() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var mesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+
+		var instances = new ModelInstance[40];
+		for (var i = 0; i < instances.Length; ++i) instances[i] = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+		using var group = factory.ObjectBuilder.GroupModelInstances(instances);
+
+		Assert.AreEqual(instances.Length, group.Count);
+		var enumerated = new List<ModelInstance>();
+		foreach (var instance in group) enumerated.Add(instance);
+		Assert.IsTrue(instances.SequenceEqual(enumerated));
+		for (var i = 0; i < instances.Length; ++i) Assert.AreEqual(instances[i], group[i]);
+
+		group.MoveBy(new Vect(1f, 2f, 3f));
+		for (var i = 0; i < instances.Length; ++i) Assert.AreEqual(new Location(1f, 2f, 3f), instances[i].Position);
+	}
+
+	void SingularTypeGroupsShouldEnumerateIdenticallyBeforeAndAfterSealing() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
+		using var cuboidMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+
+		using var instanceGroup = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+		var expectedQuads = new List<QuadInstance>();
+		for (var i = 0; i < 10; ++i) {
+			if (i % 3 == 0) {
+				var quad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
+				instanceGroup.Add(quad);
+				expectedQuads.Add(quad);
+			}
+			else instanceGroup.Add(factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material));
+		}
+		var unsealedInstances = Snapshot(instanceGroup);
+		instanceGroup.Seal();
+		var sealedInstances = Snapshot(instanceGroup);
+		AssertSnapshotsMatch(unsealedInstances, sealedInstances);
+		Assert.AreEqual(10, sealedInstances.ModelInstances.Length);
+		Assert.IsTrue(expectedQuads.SequenceEqual(sealedInstances.QuadInstances));
+		Assert.AreEqual(0, sealedInstances.Meshes.Length);
+		Assert.AreEqual(0, instanceGroup.TextInstances.Count);
+		AssertNthAndOutOfRange(instanceGroup, sealedInstances.ModelInstances);
+		AssertNthAndOutOfRange(instanceGroup, sealedInstances.Meshes);
+		AssertNthAndOutOfRange(instanceGroup, sealedInstances.DynamicVertexBuffers);
+		for (var i = 0; i < expectedQuads.Count; ++i) Assert.AreEqual(expectedQuads[i], instanceGroup.GetNthResourceOfType<QuadInstance, ModelInstance>(i));
+		Assert.Throws<ArgumentOutOfRangeException>(() => instanceGroup.GetNthResourceOfType<QuadInstance, ModelInstance>(expectedQuads.Count));
+		Assert.Throws<ArgumentOutOfRangeException>(() => instanceGroup.GetNthResourceOfType<QuadMesh, Mesh>(0));
+
+		using var bufferGroup = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+		for (var i = 0; i < 3; ++i) bufferGroup.Add(factory.MeshBuilder.CreateDynamicVertexBuffer(16, 16));
+		var unsealedBuffers = Snapshot(bufferGroup);
+		bufferGroup.Seal();
+		var sealedBuffers = Snapshot(bufferGroup);
+		AssertSnapshotsMatch(unsealedBuffers, sealedBuffers);
+		Assert.AreEqual(3, sealedBuffers.DynamicVertexBuffers.Length);
+		Assert.AreEqual(0, sealedBuffers.ModelInstances.Length);
+		AssertNthAndOutOfRange(bufferGroup, sealedBuffers.DynamicVertexBuffers);
+		AssertNthAndOutOfRange(bufferGroup, sealedBuffers.ModelInstances);
+
+		using var nearlySingularGroup = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+		for (var i = 0; i < 4; ++i) nearlySingularGroup.Add(factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material));
+		nearlySingularGroup.Add(factory.CameraBuilder.CreateCamera());
+		var unsealedNearlySingular = Snapshot(nearlySingularGroup);
+		nearlySingularGroup.Seal();
+		var sealedNearlySingular = Snapshot(nearlySingularGroup);
+		AssertSnapshotsMatch(unsealedNearlySingular, sealedNearlySingular);
+		Assert.AreEqual(4, sealedNearlySingular.ModelInstances.Length);
+		Assert.AreEqual(1, sealedNearlySingular.Cameras.Length);
+	}
+
+	void ModelInstanceGroupCopiesShouldShareDisposalSafely() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var mesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+
+		var instances = new ModelInstance[6];
+		for (var i = 0; i < instances.Length; ++i) instances[i] = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+		var group = factory.ObjectBuilder.GroupModelInstances(instances, disposingGroupDisposesInstances: false, "Test Group");
+		var copy = group;
+
+		Assert.IsTrue(instances.SequenceEqual(((IEnumerable<ModelInstance>) copy).ToArray()));
+		Assert.IsTrue(instances.SequenceEqual(copy.Instances.ToArray()));
+
+		new SceneObject(group).MoveBy(new Vect(0f, 5f, 0f));
+		for (var i = 0; i < instances.Length; ++i) Assert.AreEqual(new Location(0f, 5f, 0f), instances[i].Position);
+		Assert.AreEqual(new Location(0f, 5f, 0f), new SceneObject(group).Position);
+
+		group.Dispose();
+		Assert.DoesNotThrow(() => copy.Dispose());
+		Assert.DoesNotThrow(() => group.Dispose(disposeContainedInstances: false));
+		Assert.Throws<ObjectDisposedException>(() => _ = copy.Instances);
+		Assert.Throws<ObjectDisposedException>(() => copy.MoveBy(new Vect(1f, 0f, 0f)));
+		Assert.Throws<ObjectDisposedException>(() => _ = copy[0]);
+		Assert.Throws<ObjectDisposedException>(() => _ = copy.Transform);
+
+		var secondGroup = factory.ObjectBuilder.GroupModelInstances(instances[..3], disposingGroupDisposesInstances: false, "Second Group");
+		Assert.IsTrue(instances[..3].SequenceEqual(secondGroup.Instances.ToArray()));
+		Assert.Throws<ObjectDisposedException>(() => _ = copy.Instances);
+		secondGroup.Dispose();
+
+		using var emptyResourceGroup = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: false);
+		emptyResourceGroup.Seal();
+		var emptyGroup = new ModelInstanceGroup(emptyResourceGroup);
+		Assert.AreEqual(0, emptyGroup.Instances.Length);
+		Assert.AreEqual(Transform.None, emptyGroup.Transform);
+		emptyGroup.Dispose();
+
+		for (var i = 0; i < instances.Length; ++i) instances[i].Dispose();
+	}
+
+	void SceneObjectsWrappingGroupsShouldRoundTripAndDispose() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var mesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+
+		var instances = new ModelInstance[5];
+		for (var i = 0; i < instances.Length; ++i) instances[i] = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+		var group = factory.ObjectBuilder.GroupModelInstances(instances, disposingGroupDisposesInstances: false, "Test Group");
+		var secondWrapper = new ModelInstanceGroup(group.UnderlyingResourceGroup);
+
+		SceneObject sceneObject = group;
+		SceneObject secondSceneObject = secondWrapper;
+		Assert.AreEqual(sceneObject, secondSceneObject);
+		Assert.AreEqual(sceneObject.GetHashCode(), secondSceneObject.GetHashCode());
+		Assert.AreNotEqual(sceneObject, (SceneObject) instances[0]);
+
+		var roundTripped = (ModelInstanceGroup) sceneObject;
+		Assert.AreEqual(group, roundTripped);
+		Assert.IsTrue(instances.SequenceEqual(roundTripped.Instances.ToArray()));
+
+		sceneObject.Transform = new Transform(new Vect(1f, 2f, 3f), Rotation.None, Vect.One);
+		for (var i = 0; i < instances.Length; ++i) Assert.AreEqual(new Location(1f, 2f, 3f), instances[i].Position);
+		Assert.AreEqual(new Location(1f, 2f, 3f), sceneObject.Position);
+
+		sceneObject.DisposeUnderlyingObject();
+		Assert.Throws<ObjectDisposedException>(() => sceneObject.MoveBy(new Vect(1f, 0f, 0f)));
+		Assert.Throws<ObjectDisposedException>(() => _ = group.Instances);
+		Assert.DoesNotThrow(() => group.Dispose());
+		Assert.DoesNotThrow(() => secondWrapper.Dispose());
+
+		var replacement = factory.ObjectBuilder.GroupModelInstances(instances[..2], disposingGroupDisposesInstances: false, "Replacement Group");
+		Assert.IsTrue(instances[..2].SequenceEqual(replacement.Instances.ToArray()));
+		Assert.Throws<ObjectDisposedException>(() => sceneObject.MoveBy(new Vect(1f, 0f, 0f)));
+		Assert.Throws<ObjectDisposedException>(() => _ = roundTripped.Instances);
+		replacement.Dispose();
+
+		for (var i = 0; i < instances.Length; ++i) Assert.IsFalse(instances[i].IsDisposed);
+		for (var i = 0; i < instances.Length; ++i) instances[i].Dispose();
+	}
+
+	void EmptyGroupsShouldSealAndEnumerate() {
+		using var factory = new LocalTinyFfrFactory();
+		using var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+		group.Seal();
+
+		Assert.AreEqual(0, group.ModelInstances.Count);
+		Assert.AreEqual(0, group.QuadInstances.Count);
+		Assert.AreEqual(0, group.GetAllResourcesBoxed().Count);
+		Assert.Throws<ArgumentOutOfRangeException>(() => group.GetNthResourceOfType<ModelInstance>(0));
+	}
+
+	void SealedGroupsShouldStillDisposeDependentsFirst() {
+		using var factory = new LocalTinyFfrFactory();
+		var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+		var materials = new List<Material>();
+		var meshes = new List<Mesh>();
+		var instances = new List<ModelInstance>();
+
+		for (var i = 0; i < 8; ++i) {
+			var mesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+			var material = factory.MaterialBuilder.CreateTestMaterial();
+			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+			group.Add(mesh);
+			group.Add(material);
+			group.Add(instance);
+			meshes.Add(mesh);
+			materials.Add(material);
+			instances.Add(instance);
+		}
+		group.Seal();
+
+		Assert.DoesNotThrow(() => group.Dispose());
+		Assert.IsTrue(group.IsDisposed);
+		Assert.IsTrue(meshes.All(m => m.IsDisposed));
+		Assert.IsTrue(materials.All(m => m.IsDisposed));
+		Assert.IsTrue(instances.All(m => m.IsDisposed));
 	}
 } 

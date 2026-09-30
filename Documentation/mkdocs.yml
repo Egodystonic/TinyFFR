@@ -132,6 +132,9 @@ nav:
             - reference/loading_meshes.md
             - reference/creating_meshes.md
             - reference/skeletal_meshes.md
+        - Textures:
+            - reference/loading_textures.md
+            - reference/texture_map_types.md
 
 not_in_nav: |
 

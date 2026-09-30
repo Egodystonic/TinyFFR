@@ -27,7 +27,11 @@ namespace Egodystonic.TinyFFR.World;
 public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialReceivingSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
 #pragma warning restore CA1710
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstanceGroup;
+	static readonly ArrayPool<ModelInstance> _instanceArrayPool = TinyFfrArrayPool<ModelInstance>.Shared;
+	static readonly ArrayPoolBackedMap<ResourceGroup, ModelInstance[]> _borrowedInstanceArrayLedger = new();
 
+	readonly MeshGroupAnimationTable _animTable;
+	
 	/// <summary>
 	/// The <see cref="ResourceGroup"/> instance backing this instance group, which is what actually owns the contained instances.
 	/// </summary>
@@ -35,21 +39,41 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// <summary>
 	/// Every model instance in this group.
 	/// </summary>
-	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance> Instances { get; }
+	public ReadOnlySpan<ModelInstance> Instances {
+		get {
+			ThrowIfDisposed();
+			return new ReadOnlySpan<ModelInstance>(InstanceArray, 0, Count);
+		}
+	}
 	/// <summary>
 	/// How many model instances are in this group.
 	/// </summary>
 	public int Count { get; }
-	readonly MeshGroupAnimationTable _animTable;
 	
-	ModelInstance? FirstInstance => Count > 0 ? Instances[0] : null;
+	internal ModelInstance[] InstanceArray { get; }
+	
+	ModelInstance? FirstInstance {
+		get {
+			ThrowIfDisposed();
+			return Count > 0 ? this[0] : null;
+		}
+	}
 	
 	/// <summary>
 	/// Returns the model instance at the given position in this group.
 	/// </summary>
 	/// <param name="index">The position of the instance to return. Must be in the range <c>0 &lt;= n &lt; </c><see cref="Count"/>.</param>
-	/// <exception cref="IndexOutOfRangeException">Thrown if <paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
-	public ModelInstance this[int index] => Instances[index];
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
+	public ModelInstance this[int index] {
+		get {
+			return index >= 0 && index < Count
+				? GetInstanceAtPreValidatedIndex(index)
+				: throw new ArgumentOutOfRangeException(nameof(index), index, $"Must be non-negative and smaller than {nameof(Count)} ({Count}).");
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	ModelInstance GetInstanceAtPreValidatedIndex(int index) => InstanceArray[index];
 
 	/// <summary>
 	/// Constructs a new <see cref="ModelInstanceGroup"/> over an existing resource group.
@@ -57,13 +81,24 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// <remarks>
 	/// If the group contains a <see cref="MeshGroupAnimationTable"/>, the first one is exposed via <see cref="Animations"/> and <see cref="Skeleton"/>.
 	/// </remarks>
-	/// <param name="underlyingResourceGroup">The resource group whose model instances this group should transform together.</param>
+	/// <param name="underlyingResourceGroup">The resource group whose model instances this group should transform together. <b>Must</b> be sealed.</param>
+	/// <exception cref="ArgumentException">Thrown if the given <paramref name="underlyingResourceGroup"/> is not sealed.</exception>
 	public ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
 		if (!underlyingResourceGroup.IsSealed) throw new ArgumentException("Resource group must be sealed.", nameof(underlyingResourceGroup));
 		UnderlyingResourceGroup = underlyingResourceGroup;
-		Instances = UnderlyingResourceGroup.ModelInstances;
-		Count = Instances.Count;
 		_animTable = UnderlyingResourceGroup.AnimationTables.Count > 0 ? UnderlyingResourceGroup.AnimationTables[0] : MeshGroupAnimationTable.Empty;
+		
+		var modelInstances = UnderlyingResourceGroup.ModelInstances;
+		Count = modelInstances.Count;
+		if (_borrowedInstanceArrayLedger.TryGetValue(underlyingResourceGroup, out var preExistingInstanceArray)) {
+			InstanceArray = preExistingInstanceArray;
+		}
+		else {
+			InstanceArray = _instanceArrayPool.Rent(Count);
+			var index = 0;
+			foreach (var instance in modelInstances) InstanceArray[index++] = instance;
+			_borrowedInstanceArrayLedger.Add(underlyingResourceGroup, InstanceArray);
+		}
 	}
 	
 	/// <summary>
@@ -100,7 +135,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Transform ?? Transform.None;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetTransform(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetTransform(value);
 		}
 	}
 	/// <summary>
@@ -115,7 +151,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Position ?? Location.Origin;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetPosition(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetPosition(value);
 		}
 	}
 	/// <summary>
@@ -130,7 +167,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Rotation ?? Rotation.None;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetRotation(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetRotation(value);
 		}
 	}
 	/// <summary>
@@ -145,7 +183,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.RotationQuaternion ?? Quaternion.Identity;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetRotationQuaternion(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetRotationQuaternion(value);
 		}
 	}
 	/// <summary>
@@ -160,7 +199,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Scaling ?? Vect.One;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetScaling(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetScaling(value);
 		}
 	}
 	/// <summary>
@@ -178,52 +218,64 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 
 	/// <inheritdoc />
 	public void MoveBy(Vect translation) {
-		for (var i = 0; i < Count; ++i) Instances[i].MoveBy(translation);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).MoveBy(translation);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Rotation rotation) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotation);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotation);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Rotation rotation, Location pivotPoint) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotation, pivotPoint);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotation, pivotPoint);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Quaternion rotationQuaternion) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotationQuaternion);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotationQuaternion);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotationQuaternion, pivotPoint);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotationQuaternion, pivotPoint);
 	}
 	/// <inheritdoc />
 	public void ScaleBy(float scalar) {
-		for (var i = 0; i < Count; ++i) Instances[i].ScaleBy(scalar);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).ScaleBy(scalar);
 	}
 	/// <inheritdoc />
 	public void ScaleBy(Vect vect) {
-		for (var i = 0; i < Count; ++i) Instances[i].ScaleBy(vect);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).ScaleBy(vect);
 	}
 	/// <inheritdoc />
 	public void AdjustScaleBy(float scalar) {
-		for (var i = 0; i < Count; ++i) Instances[i].AdjustScaleBy(scalar);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).AdjustScaleBy(scalar);
 	}
 	/// <inheritdoc />
 	public void AdjustScaleBy(Vect vect) {
-		for (var i = 0; i < Count; ++i) Instances[i].AdjustScaleBy(vect);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).AdjustScaleBy(vect);
 	}
 
 	/// <inheritdoc />
 	public void SetMaterial(Material material) {
-		for (var i = 0; i < Count; ++i) Instances[i].SetMaterial(material);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetMaterial(material);
 	}
 	/// <inheritdoc />
 	public void SetDefaultMaterialBaseColor(ColorVect baseColor) {
-		for (var i = 0; i < Count; ++i) Instances[i].SetDefaultMaterialBaseColor(baseColor);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetDefaultMaterialBaseColor(baseColor);
 	}
 	/// <inheritdoc />
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) {
-		for (var i = 0; i < Count; ++i) Instances[i].SetDefaultMaterialShadingStyle(style);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetDefaultMaterialShadingStyle(style);
 	}
 	
 	/// <summary>
@@ -305,21 +357,41 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingResourceGroup.CopyName(destinationBuffer);
 
-	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-	IEnumerator<ModelInstance> IEnumerable<ModelInstance>.GetEnumerator() => GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<ModelInstance>) this).GetEnumerator();
+	IEnumerator<ModelInstance> IEnumerable<ModelInstance>.GetEnumerator() {
+		ThrowIfDisposed();
+		return new ArraySegment<ModelInstance>(InstanceArray, 0, Count).GetEnumerator();
+	}
 	/// <summary>
 	/// Returns an enumerator over the model instances in this group.
 	/// </summary>
-	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance>.Enumerator GetEnumerator() => Instances.GetEnumerator();
+	public ReadOnlySpan<ModelInstance>.Enumerator GetEnumerator() => Instances.GetEnumerator();
 
 	#region Disposal
 	/// <inheritdoc />
-	public void Dispose() => UnderlyingResourceGroup.Dispose();
+	public void Dispose() {
+		var wasAlreadyDisposed = UnderlyingResourceGroup.IsDisposed;
+		UnderlyingResourceGroup.Dispose();
+		if (!wasAlreadyDisposed) ReturnBorrowedInstanceArray();
+	}
 	/// <summary>
 	/// Disposes this group, optionally disposing the model instances in it as well.
 	/// </summary>
 	/// <param name="disposeContainedInstances">If <see langword="true"/>, every instance in this group is disposed too; if <see langword="false"/>, only the grouping itself is discarded and the instances remain usable.</param>
-	public void Dispose(bool disposeContainedInstances) => UnderlyingResourceGroup.Dispose(disposeContainedInstances);
+	public void Dispose(bool disposeContainedInstances) {
+		var wasAlreadyDisposed = UnderlyingResourceGroup.IsDisposed;
+		UnderlyingResourceGroup.Dispose(disposeContainedInstances);
+		if (!wasAlreadyDisposed) ReturnBorrowedInstanceArray();
+	}
+	
+	void ThrowIfDisposed() {
+		if (UnderlyingResourceGroup.IsDisposed) throw new ObjectDisposedException(nameof(ModelInstanceGroup));
+	}
+
+	void ReturnBorrowedInstanceArray() {
+		_borrowedInstanceArrayLedger.Remove(UnderlyingResourceGroup);
+		_instanceArrayPool.Return(InstanceArray, clearArray: true);
+	}
 	#endregion
 
 	/// <inheritdoc />
