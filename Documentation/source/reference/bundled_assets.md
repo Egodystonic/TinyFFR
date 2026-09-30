@@ -7,8 +7,8 @@ description: Information on how to load composite asset files (including glTF/gl
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * You can load entire assets via `assetLoader.LoadAll(@"my_file.gltf")`. :material-arrow-right: [Bundled/Composite Asset Files](#bundledcomposite-asset-files)
-    * Every component texture, mesh, material, and model definition are returned together as a `ResourceGroup`. :material-arrow-right: [ResourceGroups](#resourcegroups)
+    * You can load entire assets via `assetLoader.LoadBundledAsset(@"my_file.gltf")`. :material-arrow-right: [Bundled/Composite Asset Files](#bundledcomposite-asset-files)
+    * Every component texture, mesh, material, and model definition are returned together as a `ModelBundle`. :material-arrow-right: [ModelBundles](#modelbundles)
     * It's possible to customize exactly how the resources are loaded. :material-arrow-right: [Customizing the Load Operation](#customizing-the-load-operation)
 
 </div>
@@ -16,22 +16,22 @@ description: Information on how to load composite asset files (including glTF/gl
 ## Bundled/Composite Asset Files
 
 ```csharp
-using var carResources = factory.AssetLoader.LoadAll(@"Assets/Models/ToyCar.glb"); // (1)!
-using var carModelInstances = factory.ObjectBuilder.CreateModelInstances(carResources.Models); // (2)!
+using var carBundle = factory.AssetLoader.LoadBundledAsset(@"Assets/Models/ToyCar.glb"); // (1)!
+using var carModelInstances = factory.ObjectBuilder.CreateModelInstances(carBundle); // (2)!
 scene.Add(carModelInstances); // (3)!
 ```
 
 1.	This line instructs TinyFFR to load the "ToyCar.glb" model file from "Assets/Models/ToyCar.glb".
 
-	The returned `carResources` is a `ResourceGroup` (explained below) containing all loaded meshes, textures, materials, and models.
+	The returned `carBundle` is a `ModelBundle` (explained below) containing all loaded meshes, textures, materials, and models.
 	
-2.	This line creates a single [ModelInstance](model_instances.md) for each `Model` (explained below) loaded amongst `carResources`.
+2.	This line creates a single [ModelInstance](model_instances.md) for each `Model` (explained below) loaded amongst `carBundle`.
 
 	The returned `carModelInstances` is a `ModelInstanceGroup` (essentially a specialized `ResourceGroup`) that contains all loaded model instances.
 	
 3.	This line adds all the newly-instantiated model instances to a pre-existing [Scene](scenes.md); ready to be rendered.
 
-Modern 3D assets are typically packaged in a composite/bundled "transmission" format such as `.glTF` or `.glb`. These files usually contain the meshes, textures, materials definitions, and animations required to define a single unified asset or group of assets.
+Modern 3D assets are typically packaged in a composite/bundled "transmission" format such as `.glTF` or `.glb`. These files usually contain the meshes, textures, materials definitions, and animations required to define a single unified asset.
 
 ??? abstract "Supported Formats"
 	TinyFFR can load the following asset formats. Some more esoteric features of 3D model formats such as scenes, multi-material objects, or exported material systems are not loaded, and therefore support for some of the file formats listed below may be partial.
@@ -100,50 +100,27 @@ Modern 3D assets are typically packaged in a composite/bundled "transmission" fo
 
 #### What's Actually Loaded
 
-`LoadAll()` loads every `Mesh`, `Texture` and `Material` inside the target file. It associates linked `Mesh`es and `Material`s in to `Model`s (see below).
+`LoadBundledAsset()` reads every `Mesh`, `Texture` and `Material` inside the target file. It associates linked `Mesh`es and `Material`s in to `Model`s (see below).
 
-If any `Mesh` has skeletal animation data, those skeletons and animations will also be loaded and be made accessible via the animation/skeleton API on each respective `Mesh`. See [Skeletal Animations](skeletal_animations.md) for more info.
+Skeletal animation data, if present, will also be loaded. See [Skeletal Meshes](skeletal_meshes.md) for more info on how this data is loaded, or see [Playing Skeletal Animations](playing_skeletal_animations.md) for information on playing the animations in a scene.
 
-## ResourceGroups
+Everything is returned inside a single returned resource called a `ModelBundle`:
 
-Every `LoadAll()` function returns a `ResourceGroup`. As its name implies, it represents a group of tightly-related loaded resources (in this case all textures, meshes, materials and models loaded as part of the composite asset file). 
+## ModelBundles
 
-Disposing the `ResourceGroup` also disposes all contained resources, meaning invoking `carResources.Dispose()` also disposes every `Mesh`, `Material`, `Texture`, etc loaded by `LoadAll()`.
+`LoadBundledAsset()` returns a `ModelBundle`. As its name implies, it represents a bundle of tightly-related loaded resources (in this case all textures, meshes, materials, models, and any shared animation data loaded as part of the composite asset file). 
 
-??? info "Creating Resource Groups Manually"
-	If you want to create a `ResourceGroup` (say, if you're bundling manually-loaded assets together) you can do this via the factory's resource allocator: `factory.ResourceAllocator.CreateResourceGroup(...)`. Add whatever resources you wish via the `Add()` methods, and optionally `Seal()` the group before passing it along(1).
-	{ .annotate }
+The `Textures`, `Materials`, `Meshes` and `Models` properties let you enumerate each kind of resource in the bundle, while `Animations` and `Skeleton` expose the bundle's shared animation data.
 
-	1.	Sealing the group means any subsequent `Add()` call will fail with an exception.
+Disposing the `ModelBundle` also disposes all contained resources, meaning invoking `carBundle.Dispose()` also disposes every `Mesh`, `Material`, `Texture`, etc loaded by `LoadBundledAsset()`.
 
-		You can determine whether a group is sealed using `group.IsSealed`.
-		
-	```csharp
-	var myGroup = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
-	myGroup.Add(myMesh);
-	myGroup.Add(myTexture);
-	myGroup.Add(myMaterial);
-	myGroup.Seal();
-	return myGroup;
-	```
-		
-	#### Add() Ordering is Important!
-	
-	When a `ResourceGroup` is disposed and its contained resources are disposed, the order of disposal is important. For example, if you've added a `Model`, a `Material`, a `Texture`, and a `Mesh` that all inter-depend on each other, attempting to dispose them in the wrong order will result in exceptions being thrown by the [dependency-graph checker](resource_dependencies.md) when invoking `Dispose()`.
-	
-	Therefore, a `ResourceGroup` guarantees that contained resources will be disposed in reverse-add-order; i.e. __the last-added resource will be disposed first, then the second-last, etc.; until the first-added resource is disposed at the very end__.
-	
-	In the example above this would mean `myMaterial` is disposed first, then `myTexture`, then finally `myMesh`.
-	
-	Accordingly, you should `Add()` each resource's dependencies *before* the resource itself (e.g. a `Mesh` and `Texture` first, then the `Material` that uses that texture, then the `Model` that uses the mesh and material). That way, `Dispose()` tears down the dependent resources first, before the resources they depend on.
-	
 ## Models
 
-Helpfully, when we invoke `LoadAll()`, TinyFFR also determines which materials are meant for which meshes and loads that information in to `Model`s that are also added to the returned `ResourceGroup`. Most of the time, when loading composite asset files (such as glTF/glb) it's the `Model`s that we actually want to use.
+When you invoke `LoadBundledAsset()` TinyFFR determines which materials are meant for which meshes and pairs them in to `Model` instances. Most of the time, when loading composite asset files (such as glTF/glb) it's the `Model`s that we actually want to use.
 
-A `Model` does not itself represent any loaded data on the system; instead it is a logical pairing of a `Mesh` and `Material` that combined make up a single fully-textured object model.
+A `Model` does not *itself* represent any loaded data on the system; instead it is a logical pairing of a `Mesh` and `Material` that combined make up a single fully-textured object model.
 
-We can pass a `Model` (or collection/enumerable of `Model`s, e.g. `carResources.Models`) to the `factory.ObjectBuilder` to create instances of those models. Those [ModelInstances](model_instances.md) can then be added to any [Scene](scenes.md).
+We can pass a `Model` or `ModelBundle` to the `factory.ObjectBuilder` to create instances of those models. Passing the whole `ModelBundle` (as in the example at the top of this page) creates an instance of every model in it. Those [ModelInstances](model_instances.md) can then be added to any [Scene](scenes.md).
 
 ??? info "Creating Models Manually"
 	If you wish to logically link a `Mesh` and `Material` together in to your own `Model`, it's as simple as invoking `factory.AssetLoader.CreateModel(mesh, material)`.
@@ -152,7 +129,7 @@ We can pass a `Model` (or collection/enumerable of `Model`s, e.g. `carResources.
 
 ## Customizing the Load Operation
 
-You can pass a `ModelCreationConfig` and a `ModelReadConfig` to `LoadAll()` to customize how the bundled data should be loaded:
+You can pass a `ModelCreationConfig` and a `ModelReadConfig` to `LoadBundledAsset()` to customize how the bundled data should be loaded:
 
 ### ModelCreationConfig
 

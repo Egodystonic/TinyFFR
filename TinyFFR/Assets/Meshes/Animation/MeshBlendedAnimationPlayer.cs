@@ -80,7 +80,8 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <remarks>
 	/// Players are cheap to construct and hold nothing that needs disposing, so there is no harm in making one per frame.
 	/// </remarks>
-	/// <param name="instance">The object to pose. Its mesh must be the one both animations belong to.</param>
+	/// <param name="instance">The object to pose; usually a <see cref="ModelInstance"/> or <see cref="ModelInstanceGroup"/>. Both animations must come from the same
+	/// mesh or animation table; any instance whose mesh they do not belong to (and any object that is not a model instance or instance group) is left unchanged.</param>
 	/// <param name="startAnimation">The animation to blend away from.</param>
 	/// <param name="endAnimation">The animation to blend towards.</param>
 	public MeshBlendedAnimationPlayer(SceneObject instance, MeshAnimation startAnimation, MeshAnimation endAnimation) : this(instance, startAnimation, endAnimation, 1f, 1f) { }
@@ -97,7 +98,8 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <summary>
 	/// Constructs a new <see cref="MeshBlendedAnimationPlayer"/> running each animation at a multiple of its authored speed.
 	/// </summary>
-	/// <param name="instance">The object to pose. Its mesh must be the one both animations belong to.</param>
+	/// <param name="instance">The object to pose; usually a <see cref="ModelInstance"/> or <see cref="ModelInstanceGroup"/>. Both animations must come from the same
+	/// mesh or animation table; any instance whose mesh they do not belong to (and any object that is not a model instance or instance group) is left unchanged.</param>
 	/// <param name="startAnimation">The animation to blend away from.</param>
 	/// <param name="endAnimation">The animation to blend towards.</param>
 	/// <param name="startAnimationSpeedMultiplier">How fast to run the start animation, where <c>1f</c> is its authored speed.</param>
@@ -110,7 +112,8 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	/// <summary>
 	/// Constructs a new <see cref="MeshBlendedAnimationPlayer"/> running each animation over a particular length of time.
 	/// </summary>
-	/// <param name="instance">The object to pose. Its mesh must be the one both animations belong to.</param>
+	/// <param name="instance">The object to pose; usually a <see cref="ModelInstance"/> or <see cref="ModelInstanceGroup"/>. Both animations must come from the same
+	/// mesh or animation table; any instance whose mesh they do not belong to (and any object that is not a model instance or instance group) is left unchanged.</param>
 	/// <param name="startAnimation">The animation to blend away from.</param>
 	/// <param name="endAnimation">The animation to blend towards.</param>
 	/// <param name="startAnimationCompletionTimeSeconds">How long the start animation should take from start to finish, in seconds.</param>

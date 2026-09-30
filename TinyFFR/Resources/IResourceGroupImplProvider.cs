@@ -35,6 +35,9 @@ public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<Re
 	/// Invoked via <see cref="ResourceGroup.Add{TResource,TBase}"/>.
 	/// </summary>
 	void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
+	/// <summary>
+	/// Invoked via <see cref="ResourceGroup.ExcludeFromDisposal{TResource}"/>.
+	/// </summary>
 	void SetDoNotDisposeFlag<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource;
 	/// <summary>
 	/// Invoked via <see cref="ResourceGroup.GetAllResourcesOfType{TResource}"/>.

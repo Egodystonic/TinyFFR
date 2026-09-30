@@ -5,7 +5,18 @@ using Egodystonic.TinyFFR.Assets.Materials;
 
 namespace Egodystonic.TinyFFR.World;
 
+/// <summary>
+/// Represents a scene object whose surface can be set to a <see cref="Material"/>, or painted with the built-in default material.
+/// </summary>
+/// <remarks>
+/// Unlike <see cref="IMaterialUsingSceneObject"/>, this does not require the object to have one single material that can be read back; a
+/// <see cref="ModelInstanceGroup"/>, for example, can apply a material to every instance in it even though each instance may since have been given a different one.
+/// </remarks>
 public interface IMaterialReceivingSceneObject : ISceneObject {
+	/// <summary>
+	/// Sets the material this object's surface is rendered with.
+	/// </summary>
+	/// <param name="material">The material to render this object with.</param>
 	void SetMaterial(Material material);
 	/// <summary>
 	/// Sets the render colour for this object to <paramref name="baseColor"/>.

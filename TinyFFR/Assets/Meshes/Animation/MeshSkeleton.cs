@@ -25,7 +25,8 @@ public readonly record struct MeshSkeleton(Mesh Mesh) : IMeshSkeleton<MeshNodeIn
 	/// <remarks>
 	/// This is what to apply to return an object to rest after an animation has finished with it.
 	/// </remarks>
-	/// <param name="targetInstance">The object to pose. Its mesh must be the one this skeleton belongs to.</param>
+	/// <param name="targetInstance">The object to pose: a <see cref="ModelInstance"/> using this skeleton's mesh, or a <see cref="ModelInstanceGroup"/> (in which case
+	/// every instance in it using this skeleton's mesh is posed). Anything else is left unchanged.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ApplyBindPose(SceneObject targetInstance) => Mesh.ApplySkeletalBindPose(targetInstance);
 	

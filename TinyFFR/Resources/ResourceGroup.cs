@@ -104,6 +104,9 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// All currently-live <see cref="Mesh"/>es in this group; equivalent to <c>GetAllResourcesOfType&lt;Mesh&gt;()</c>.
 	/// </summary>
 	public IndirectEnumerable<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	/// <summary>
+	/// All currently-live <see cref="MeshGroupAnimationTable"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;MeshGroupAnimationTable&gt;()</c>.
+	/// </summary>
 	public IndirectEnumerable<EnumerationInput, MeshGroupAnimationTable> AnimationTables => GetAllResourcesOfType<MeshGroupAnimationTable>();
 	/// <summary>
 	/// All currently-live <see cref="MeshAnimation"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;MeshAnimation&gt;()</c>.
@@ -275,8 +278,15 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add<TResource, TBase>(TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource<TResource, TBase>(Handle, resource);
 
+	/// <summary>
+	/// Marks <paramref name="resource"/> (which must already be in this group) so that it is not disposed if/when this group disposes its contained resources.
+	/// The group must not be sealed.
+	/// </summary>
+	/// <param name="resource">The resource to mark.</param>
+	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="resource"/> is not a member of this group.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetDoNotDisposeFlag<TResource>(TResource resource) where TResource : IResource => Implementation.SetDoNotDisposeFlag(Handle, resource);
+	public void ExcludeFromDisposal<TResource>(TResource resource) where TResource : IResource => Implementation.SetDoNotDisposeFlag(Handle, resource);
 
 	/// <summary>
 	/// Adds <paramref name="resource"/> (a specialization of <see cref="Mesh"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.

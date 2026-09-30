@@ -15,10 +15,10 @@ description: Information on how skeletal meshes work in TinyFFR.
 
 ## Loading and Using Skeletal Mesh Data
 
-Skeletal meshes (& animations) are supported in TinyFFR. You can load skeletal meshes either via [LoadAll(...)](bundled_assets.md) or [LoadMesh(...)](loading_meshes.md).
+Skeletal meshes (& animations) are supported in TinyFFR. You can load skeletal meshes via [LoadBundledAsset(...)](bundled_assets.md), [LoadMeshGroup(...)](loading_meshes.md#mesh-groups), or [LoadMesh(...)](loading_meshes.md).
 
 ???+ warning "LoadMesh() Limitations"
-	`LoadMesh()` can load files that contain multiple "sub" meshes (they are merged in to one `Mesh`), but it can only load skeletal data for a single sub-mesh. When loading a skeletal file with multiple sub-meshes, either select one via `readConfig.SubMeshIndex` or use `LoadAll()` instead; otherwise the mesh is loaded as a static (non-skeletal) mesh and a warning is written to the console.
+	`LoadMesh()` can load files that contain multiple "sub" meshes (they are merged in to one `Mesh`), but it can only load skeletal data for a single sub-mesh. When loading a skeletal file with multiple sub-meshes, either select one via `readConfig.SubMeshIndex` or use `LoadMeshGroup()` / `LoadBundledAsset()` instead; otherwise the mesh is loaded as a static (non-skeletal) mesh and a warning is written to the console.
 
 Skeletal data is loaded as long as the given `readConfig.LoadSkeletalAnimationDataIfPresent` property is `true`. The property is `true` by default which means any mesh with skeletal data present has that data (and associated animations + nodes) loaded by default.
 
@@ -51,6 +51,11 @@ if (rightHand != null) {
 
 Every `Mesh` has a `Skeleton` property. Its `Nodes` property lists every node (joint) in the skeleton, and lets you look them up by index or by name.
 
+??? note "Files May Contain Hierarchical Nodes"
+	For meshes loaded from a file, the skeleton includes every node from the root of the file's node hierarchy down to the mesh's joints; so it may contain a few non-joint nodes above the joints themselves (e.g. a root node that converts the file's "up" axis). These nodes are part of the animated hierarchy and are needed for the mesh to be posed correctly.
+	
+	When accessing nodes by name this will have no meaningful impact, but be aware that the total node count may be slightly higher than that shown by your DCC/authoring software.
+
 Each `MeshNode` has an `Index` (its position in the skeleton's node list) and a name (accessed via `GetNameAsNewStringObject()`, or `GetNameLength()` + `CopyName()` to avoid allocating). Nodes loaded from a file take their names from that file; nodes that were never given a name are reported as `node_<index>`. Nodes belong to their `Mesh` and are disposed along with it, so they do not need disposing themselves.
 
 The `Skeleton` also offers the following methods:
@@ -61,7 +66,7 @@ The `Skeleton` also offers the following methods:
 
 <span class="def-icon">:material-code-block-parentheses:</span> `ApplyBindPose()`
 
-:   Returns the given [ModelInstance](model_instances.md) (which must be using this mesh) to its bind pose; use this to reset an instance after you've finished animating it.
+:   Returns the given [ModelInstance](model_instances.md) to its bind pose; use this to reset an instance after you've finished animating it. You can also pass a `ModelInstanceGroup`, in which case every instance in the group that uses this mesh is reset. Instances that do not use this mesh (and any other kind of object) are left unchanged.
 
 For a mesh without skeletal data, `Nodes` is empty, `GetBindPoseNodeTransforms()` returns identity matrices, and `ApplyBindPose()` does nothing.
 
@@ -92,6 +97,49 @@ Each `MeshAnimation` has:
 Animations belong to their `Mesh` and are disposed along with it.
 
 To actually play an animation on a [ModelInstance](model_instances.md), see [Playing Skeletal Animations](playing_skeletal_animations.md).
+
+## Shared Skeletons (Model Bundles)
+
+```csharp
+using var character = factory.AssetLoader.LoadBundledAsset(@"Assets/Models/Character.glb"); // (1)!
+Console.WriteLine($"{character.Meshes.Count} meshes share a {character.Skeleton.Nodes.Count}-node skeleton and {character.Animations.Count} animations");
+
+using var instances = factory.ObjectBuilder.CreateModelInstances(character); // (2)!
+instances.GetAnimationPlayer(character.Animations["Walk"]).SetTimePoint(0.5f); // (3)!
+
+var head = instances.Skeleton.Nodes["Head"];
+instances.Skeleton.GetBindPoseNodeTransforms(head, out var headTransform); // (4)!
+```
+
+1.	`LoadMeshGroup()` can also be used instead; its returned group contains the shared animation table (as `group.AnimationTables[0]`) instead of exposing `Animations`/`Skeleton` properties directly.
+
+2.	The returned `ModelInstanceGroup` is linked to the bundle's shared animation table, so `instances.Animations` and `instances.Skeleton` are the same as `character.Animations` and `character.Skeleton`.
+
+3.	Poses every instance in the group, half a second in to the animation, from a single evaluation of the shared skeleton.
+
+4.	As with a single mesh's skeleton, this is relative to the model's own origin; multiply it by an instance's transform to get the world-space transform.
+
+Many animated assets are split in to multiple separately-skinned meshes that are all driven by one skeleton (e.g. each body part or item of clothing of a character). Each mesh loaded from such a file gets its own copy of the skeleton and animations (described above); but when every mesh is animated together, calculating the same pose separately for each mesh is wasteful.
+
+So, when loading a file via [`LoadBundledAsset()`](bundled_assets.md#animated-bundles) or [`LoadMeshGroup()`](loading_meshes.md#mesh-groups), TinyFFR also creates a single `MeshGroupAnimationTable`: One copy of the skeleton plus the animations that drive it, shared by every skinned mesh in the file. You can access its data via:
+
+* `bundle.Animations` and `bundle.Skeleton` on a `ModelBundle`;
+* `group.AnimationTables[0].Animations` and `.Skeleton` on the group returned by `LoadMeshGroup()`;
+* `instanceGroup.Animations` and `instanceGroup.Skeleton` on a `ModelInstanceGroup` that is linked to a table (see below).
+
+The shared `Animations` and `Skeleton` offer the same API as a single mesh's (described above): enumerating animations and nodes, looking them up by name or index, `GetBindPoseNodeTransforms()` and `ApplyBindPose()`. Note that the shared skeleton contains every node used by *any* of the meshes, so node indices in the shared skeleton do not necessarily match those in each mesh's own skeleton; look nodes up by name if you need to relate the two.
+
+??? info "Linking Instance Groups to Shared Animations"
+	To play a shared animation efficiently, your instances should be in a `ModelInstanceGroup` that is linked to the table. The following `factory.ObjectBuilder` methods create a linked group:
+	
+	* `CreateModelInstances(bundle)` (uses the table contained in the given `ModelBundle`)
+	* `CreateModelInstances(meshes, material, animationTable: table)` (requires you to pass the table manually)
+	* `CreateModelInstances(models, animationTable: table)` (requires you to pass the table manually)
+	* `GroupModelInstances(instances, table)` (requires you to pass the table manually)
+	
+	The table is only *referenced* by the instance group. It remains owned by (and is disposed along with) the bundle or mesh group it was loaded in to. Disposing the instance group never disposes it.
+
+Playing a shared animation on a linked `ModelInstanceGroup` calculates the skeleton's pose once and then applies it to every instance in the group whose mesh is part of the table; any other instances are left unchanged. This is considerably cheaper than playing each mesh's own copy of the animation on each instance individually. (Each mesh's own animations remain available though, so you can still animate individual parts separately if you wish.)
 
 ## Manually Creating Skeletal Meshes
 
@@ -302,6 +350,6 @@ The vertices of a skeletal mesh are stored in their unposed form and are moved i
 
 Meshes loaded from a file via the `AssetLoader` get this treatment automatically, as their animations are known when the mesh is created.
 
-Meshes you build yourself via `IMeshBuilder.CreateFromVertices()` are a special case: because `AttachAnimation()` is necessarily invoked *after* the mesh has been created, the mesh's bounding box covers the bind pose only. If your animations move vertices outside of that box, supply your own box via `MeshCreationConfig.BoundingBoxOverride` when creating the mesh. (You can also use `BoundingBoxOverride` for loaded meshes if the sampled box is not large enough.)
+Meshes you build yourself via `IMeshBuilder.CreateFromVertices()` are a special case: Because `AttachAnimation()` is necessarily invoked *after* the mesh has been created, the mesh's bounding box covers the bind pose only. If your animations move vertices outside of that box, supply your own box via `MeshCreationConfig.BoundingBoxOverride` when creating the mesh.
 
 In all cases, the box is additionally enlarged by `MeshCreationConfig.BoundingBoxAdditionalMargin`.

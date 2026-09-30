@@ -15,8 +15,14 @@ namespace Egodystonic.TinyFFR.World;
 /// A set of <see cref="ModelInstance"/>s that can be moved, rotated and scaled together as though they were one object.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Useful wherever several instances make up one conceptual thing, such as a vehicle assembled from separate parts. Transforming the group applies the same change
 /// to every instance in it.
+/// </para>
+/// <para>
+/// A group can also carry a shared <see cref="MeshGroupAnimationTable"/> (for example when created from a <see cref="Assets.ModelBundle"/>), in which case its
+/// <see cref="Animations"/> can be played on the whole group at once.
+/// </para>
 /// </remarks>
 public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialReceivingSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
 #pragma warning restore CA1710
@@ -48,6 +54,9 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// <summary>
 	/// Constructs a new <see cref="ModelInstanceGroup"/> over an existing resource group.
 	/// </summary>
+	/// <remarks>
+	/// If the group contains a <see cref="MeshGroupAnimationTable"/>, the first one is exposed via <see cref="Animations"/> and <see cref="Skeleton"/>.
+	/// </remarks>
 	/// <param name="underlyingResourceGroup">The resource group whose model instances this group should transform together.</param>
 	public ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
 		if (!underlyingResourceGroup.IsSealed) throw new ArgumentException("Resource group must be sealed.", nameof(underlyingResourceGroup));
@@ -57,11 +66,30 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		_animTable = UnderlyingResourceGroup.AnimationTables.Count > 0 ? UnderlyingResourceGroup.AnimationTables[0] : MeshGroupAnimationTable.Empty;
 	}
 	
+	/// <summary>
+	/// The animations of the shared animation table attached to this group, addressable by name, by position or by kind.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Playing one of these on this group (see <see cref="GetAnimationPlayer(MeshAnimation)"/>) evaluates the skeleton's pose once and then poses every instance whose
+	/// mesh is part of the table; any other instances are left unchanged.
+	/// </para>
+	/// <para>
+	/// This is empty if the group has no animation table, which is the case unless it was created from a <see cref="Assets.ModelBundle"/>, from a mesh group containing a
+	/// table, or with an explicit table (see <see cref="IObjectBuilder"/>).
+	/// </para>
+	/// </remarks>
 	public MeshGroupAnimationIndex Animations {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _animTable.Animations;
 	}
 	
+	/// <summary>
+	/// The skeleton of the shared animation table attached to this group.
+	/// </summary>
+	/// <remarks>
+	/// This has no joints if the group has no animation table (see <see cref="Animations"/>).
+	/// </remarks>
 	public MeshGroupSkeleton Skeleton {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _animTable.Skeleton;
@@ -199,20 +227,20 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	}
 	
 	/// <summary>
-	/// Returns a player that runs the given animation on this instance at its natural speed.
+	/// Returns a player that runs the given animation on this group at its natural speed.
 	/// </summary>
 	/// <remarks>
-	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
 	/// </remarks>
 	/// <param name="animation">The animation to play.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public MeshAnimationPlayer GetAnimationPlayer(MeshAnimation animation) => new(this, animation);
 	
 	/// <summary>
-	/// Returns a player that runs the given animation on this instance at a multiple of its natural speed.
+	/// Returns a player that runs the given animation on this group at a multiple of its natural speed.
 	/// </summary>
 	/// <remarks>
-	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
 	/// </remarks>
 	/// <param name="animation">The animation to play.</param>
 	/// <param name="animationSpeedMultiplier">How much faster than natural to play, where <c>1f</c> is natural speed and <c>2f</c> is twice as fast.</param>
@@ -220,10 +248,10 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	public MeshAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation animation, float animationSpeedMultiplier) => MeshAnimationPlayer.CreateWithSpeedMultiplier(this, animation, animationSpeedMultiplier);
 	
 	/// <summary>
-	/// Returns a player that runs the given animation on this instance stretched or compressed to a chosen duration.
+	/// Returns a player that runs the given animation on this group stretched or compressed to a chosen duration.
 	/// </summary>
 	/// <remarks>
-	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
 	/// </remarks>
 	/// <param name="animation">The animation to play.</param>
 	/// <param name="animationDurationSeconds">How long one cycle of the animation should take, in seconds.</param>
@@ -231,10 +259,10 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	public MeshAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation animation, float animationDurationSeconds) => MeshAnimationPlayer.CreateWithTargetDuration(this, animation, animationDurationSeconds);
 	
 	/// <summary>
-	/// Returns a player that blends between two animations on this instance, so that one can be cross-faded in to the other.
+	/// Returns a player that blends between two animations on this group, so that one can be cross-faded in to the other.
 	/// </summary>
 	/// <remarks>
-	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
 	/// </remarks>
 	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
 	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
@@ -242,10 +270,10 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	public MeshBlendedAnimationPlayer GetAnimationPlayer(MeshAnimation startAnimation, MeshAnimation endAnimation) => new(this, startAnimation, endAnimation);
 	
 	/// <summary>
-	/// Returns a player that blends between two animations on this instance, each running at a multiple of its natural speed.
+	/// Returns a player that blends between two animations on this group, each running at a multiple of its natural speed.
 	/// </summary>
 	/// <remarks>
-	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
 	/// </remarks>
 	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
 	/// <param name="startAnimationSpeedMultiplier">How much faster than natural to play <paramref name="startAnimation"/>.</param>
@@ -255,10 +283,10 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	public MeshBlendedAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation startAnimation, float startAnimationSpeedMultiplier, MeshAnimation endAnimation, float endAnimationSpeedMultiplier) => MeshBlendedAnimationPlayer.CreateWithSpeedMultiplier(this, startAnimation, endAnimation, startAnimationSpeedMultiplier, endAnimationSpeedMultiplier);
 	
 	/// <summary>
-	/// Returns a player that blends between two animations on this instance, each stretched or compressed to a chosen duration.
+	/// Returns a player that blends between two animations on this group, each stretched or compressed to a chosen duration.
 	/// </summary>
 	/// <remarks>
-	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per instance per frame (they are lightweight and do not generate GC pressure).
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
 	/// </remarks>
 	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
 	/// <param name="startAnimationDurationSeconds">How long one cycle of <paramref name="startAnimation"/> should take, in seconds.</param>

@@ -92,8 +92,8 @@ public readonly record struct MaterialEffectController {
 /// </summary>
 /// <remarks>
 /// This applies only to objects using the built-in default material. Objects opt in to using the default material either by supplying
-/// <c>null</c> as their material parameter in the <see cref="IObjectBuilder"/>, or by invoking <see cref="IMaterialUsingSceneObject.SetDefaultMaterialShadingStyle">SetDefaultMaterialShadingStyle()</see>
-/// of <see cref="IMaterialUsingSceneObject.SetDefaultMaterialBaseColor">SetDefaultMaterialBaseColor()</see>.
+/// <c>null</c> as their material parameter in the <see cref="IObjectBuilder"/>, or by invoking <see cref="IMaterialReceivingSceneObject.SetDefaultMaterialShadingStyle">SetDefaultMaterialShadingStyle()</see>
+/// of <see cref="IMaterialReceivingSceneObject.SetDefaultMaterialBaseColor">SetDefaultMaterialBaseColor()</see>.
 /// </remarks>
 #pragma warning disable CA1027 // This isn't a bitfield enum
 public enum DefaultMaterialShadingStyle {

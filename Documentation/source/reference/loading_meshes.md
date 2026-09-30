@@ -9,6 +9,7 @@ description: Information on how to load mesh data/files in TinyFFR.
 
     * You can load mesh geometry from a file using `assetLoader.LoadMesh(@"Assets/crate.obj")`. :material-arrow-right: [Mesh Files](#mesh-files)
     * If you want to enable wireframe viewing, it needs to be enabled here. :material-arrow-right: [Wireframe Data](#wireframe-data)
+    * You can load every sub-mesh in a file as a separate `Mesh` (along with any shared skeleton and animations) using `assetLoader.LoadMeshGroup(@"Assets/character.glb")`. :material-arrow-right: [Mesh Groups](#mesh-groups)
 
 </div>
 
@@ -32,7 +33,7 @@ scene.Add(crateInstance); // (3)!
 
 It's possible to load mesh (vertex) data from common mesh file formats such as `.obj`, as well as from transmission formats such as `.gltf` etc.
 
-Note that `LoadMesh()` only loads *geometry*: any materials described in the file are ignored, and if the file contains multiple meshes they are combined in to a single `Mesh` (unless you [select a specific sub-mesh](#sub-meshes)). If you want to load a file's meshes together with their materials and textures, use [`LoadAll()`](bundled_assets.md) instead.
+Note that `LoadMesh()` only loads *geometry*: any materials described in the file are ignored, and if the file contains multiple meshes they are combined in to a single `Mesh` (unless you [select a specific sub-mesh](#sub-meshes)). If you want to load each of a file's meshes separately, use [`LoadMeshGroup()`](#mesh-groups); if you want to load them together with their materials and textures, use [`LoadBundledAsset()`](bundled_assets.md) instead.
 
 `LoadMesh()` returns a `Mesh` object. A `Mesh` instance represents vertex/polygon data uploaded on to your GPU's VRAM, and should be disposed when no longer required.
 
@@ -356,4 +357,30 @@ Many mesh files contain more than one mesh (called "sub-meshes"). By default (wh
 Alternatively, you can set `SubMeshIndex` to load only one specific sub-mesh. `0` is always a valid index. You can find out how many sub-meshes a file contains with `factory.AssetLoader.ReadMeshMetadata()`, which also reports the total vertex and triangle counts. Make sure you pass the same `MeshReadConfig` to `ReadMeshMetadata()` as you use when loading (see the warning in [Optimisation & Error-Correction](#optimisation-error-correction)).
 
 ??? warning "Skeletal Animation Data"
-	TinyFFR can not currently combine the skeletal animation data from multiple sub-meshes in to one `Mesh`. If you load a file with multiple animated sub-meshes without specifying a `SubMeshIndex`, the skeletal animation data will be discarded. To keep it, either load each sub-mesh individually, or use [`LoadAll()`](bundled_assets.md) instead.
+	TinyFFR can not combine the skeletal animation data from multiple sub-meshes in to one `Mesh`. If you load a file with multiple animated sub-meshes without specifying a `SubMeshIndex`, the skeletal animation data will be discarded (and a warning is written to the console). To keep it, use [`LoadMeshGroup()`](#mesh-groups) (or [`LoadBundledAsset()`](bundled_assets.md)) instead, which loads every sub-mesh separately along with the skeleton and animations they share.
+
+## Mesh Groups
+
+```csharp
+using var characterMeshes = factory.AssetLoader.LoadMeshGroup(@"Assets/character.glb"); // (1)!
+using var characterInstances = factory.ObjectBuilder.CreateModelInstances( // (2)!
+	characterMeshes.Meshes, 
+	characterMaterial, 
+	animationTable: characterMeshes.AnimationTables.Count > 0 ? characterMeshes.AnimationTables[0] : null // (3)!
+);
+scene.Add(characterInstances);
+```
+
+1.	This loads every sub-mesh in "character.glb" as its own `Mesh`, and returns them together in a `ResourceGroup`.
+
+	If the sub-meshes have skeletal animation data, the group also contains one `MeshGroupAnimationTable` holding the skeleton and animations they share.
+
+2.	This creates one [ModelInstance](model_instances.md) per mesh in the group, all using a presumed pre-existing `characterMaterial` (pass `null` to use the default material instead).
+
+3.	Passing the group's animation table links the returned `ModelInstanceGroup` to it, if it exists.
+
+`LoadMeshGroup()` is a sibling to `LoadMesh()`: rather than combining a file's sub-meshes in to one `Mesh`, it loads each sub-mesh as a separate `Mesh`, and returns them all in a single [`ResourceGroup`](resource_groups.md). Like `LoadMesh()`, it only loads geometry (and skeletal animation data); no textures, materials, or models are created. If you want those too, use [`LoadBundledAsset()`](bundled_assets.md).
+
+Any non-null `meshReadConfig.SubMeshIndex` is ignored, as every sub-mesh is always loaded. All other `MeshCreationConfig` and `MeshReadConfig` properties apply to every mesh in the group.
+
+Disposing the returned group disposes every mesh in it (and the animation table, if any).

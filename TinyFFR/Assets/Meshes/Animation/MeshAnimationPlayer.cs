@@ -58,7 +58,8 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <remarks>
 	/// Players are cheap to construct and hold nothing that needs disposing, so there is no harm in making one per frame.
 	/// </remarks>
-	/// <param name="instance">The object to pose. Its mesh must be the one the animation belongs to.</param>
+	/// <param name="instance">The object to pose; usually a <see cref="ModelInstance"/> or <see cref="ModelInstanceGroup"/>. Any instance whose mesh the animation does
+	/// not belong to (and any object that is not a model instance or instance group) is left unchanged.</param>
 	/// <param name="animation">The animation to play.</param>
 	public MeshAnimationPlayer(SceneObject instance, MeshAnimation animation) : this(instance, animation, 1f) { }
 	MeshAnimationPlayer(SceneObject instance, MeshAnimation animation, float speedMultiplier) {
@@ -71,7 +72,8 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <summary>
 	/// Constructs a new <see cref="MeshAnimationPlayer"/> that runs the given animation at a multiple of its authored speed.
 	/// </summary>
-	/// <param name="instance">The object to pose. Its mesh must be the one the animation belongs to.</param>
+	/// <param name="instance">The object to pose; usually a <see cref="ModelInstance"/> or <see cref="ModelInstanceGroup"/>. Any instance whose mesh the animation does
+	/// not belong to (and any object that is not a model instance or instance group) is left unchanged.</param>
 	/// <param name="animation">The animation to play.</param>
 	/// <param name="speedMultiplier">How fast to run it, where <c>1f</c> is its authored speed. A value of <c>0f</c> is treated as <c>1f</c>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,7 +84,8 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	/// <summary>
 	/// Constructs a new <see cref="MeshAnimationPlayer"/> that runs the given animation over a particular length of time.
 	/// </summary>
-	/// <param name="instance">The object to pose. Its mesh must be the one the animation belongs to.</param>
+	/// <param name="instance">The object to pose; usually a <see cref="ModelInstance"/> or <see cref="ModelInstanceGroup"/>. Any instance whose mesh the animation does
+	/// not belong to (and any object that is not a model instance or instance group) is left unchanged.</param>
 	/// <param name="animation">The animation to play.</param>
 	/// <param name="targetAnimationCompletionTimeSeconds">How long the animation should take from start to finish, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

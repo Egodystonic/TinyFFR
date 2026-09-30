@@ -11,21 +11,67 @@ using static Egodystonic.TinyFFR.Resources.ResourceUtils;
 
 namespace Egodystonic.TinyFFR.World;
 
+/// <summary>
+/// Identifies which kind of object a <see cref="SceneObject"/> wraps.
+/// </summary>
+/// <remarks>
+/// Use the extension methods in <see cref="SceneObjectTypeExtensions"/> (such as <see cref="SceneObjectTypeExtensions.IsTransformed"/>) to ask which capabilities
+/// a given type supports, rather than comparing against every value.
+/// </remarks>
 public enum SceneObjectType {
+	/// <summary>
+	/// No type; the value of a <c>default</c> <see cref="SceneObject"/>, which is not valid for use.
+	/// </summary>
 	Unspecified = 0,
+	/// <summary>
+	/// A <see cref="World.ModelInstance"/>.
+	/// </summary>
 	ModelInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 1,
+	/// <summary>
+	/// A <see cref="World.ModelInstanceGroup"/>.
+	/// </summary>
 	ModelInstanceGroup = (TransformedFlag | MaterialReceivingFlag) + 2,
+	/// <summary>
+	/// A <see cref="Assets.Meshes.MutableGridInstance"/>.
+	/// </summary>
 	MutableGridInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 3,
+	/// <summary>
+	/// A <see cref="Assets.Meshes.QuadInstance"/>.
+	/// </summary>
 	QuadInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 4,
+	/// <summary>
+	/// A <see cref="Assets.Meshes.CameraLockedQuadInstance"/>.
+	/// </summary>
 	CameraLockedQuadInstance = (PositionedFlag | ScaledFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 5,
+	/// <summary>
+	/// A <see cref="Assets.Text.TextInstance"/>.
+	/// </summary>
 	TextInstance = (TransformedFlag | StoresOnlyModelInstanceFlag) + 6,
+	/// <summary>
+	/// A <see cref="Assets.Text.CameraLockedTextInstance"/>.
+	/// </summary>
 	CameraLockedTextInstance = (PositionedFlag | ScaledFlag | StoresOnlyModelInstanceFlag) + 7,
+	/// <summary>
+	/// A <see cref="World.PointLight"/>.
+	/// </summary>
 	PointLight = (PositionedFlag | ColoredFlag) + 8,
+	/// <summary>
+	/// A <see cref="World.SpotLight"/>.
+	/// </summary>
 	SpotLight = (PositionedFlag | OrientedFlag | ColoredFlag) + 9,
+	/// <summary>
+	/// A <see cref="World.DirectionalLight"/>.
+	/// </summary>
 	DirectionalLight = (OrientedFlag | ColoredFlag) + 10,
+	/// <summary>
+	/// A <see cref="World.Camera"/>.
+	/// </summary>
 	Camera = (PositionedFlag | OrientedFlag) + 11
 }
 
+/// <summary>
+/// Extension methods for <see cref="SceneObjectType"/> that report which capabilities each type of scene object supports.
+/// </summary>
 public static class SceneObjectTypeExtensions {
 	internal const int TypeIdReservedBitShift = 6;
 	internal const int TypeIdReservedBitCount = 1 << TypeIdReservedBitShift; // This is the max number of scene object types supported in the enum above, increase TypeIdReservedBitShift if necessary
@@ -40,24 +86,51 @@ public static class SceneObjectTypeExtensions {
 	extension(SceneObjectType @this) {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		bool FlagExists(int flag) => (((int) @this) & flag) == flag;
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type have a position that can be read and changed (see <see cref="IPositionedSceneObject"/>).
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsPositioned() => @this.FlagExists(PositionedFlag);
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type have an orientation that can be read and changed (see <see cref="IOrientedSceneObject"/>).
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsOriented() => @this.FlagExists(OrientedFlag);
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type have a scale that can be read and changed (see <see cref="IScaledSceneObject"/>).
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsScaled() => @this.FlagExists(ScaledFlag);
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type are positioned, oriented and scaled, i.e. has a full <see cref="Transform"/> (see <see cref="ITransformedSceneObject"/>).
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsTransformed() => @this.FlagExists(TransformedFlag);
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type can have their material set (see <see cref="IMaterialReceivingSceneObject"/>).
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsMaterialReceiving() => @this.FlagExists(MaterialReceivingFlag);
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type have a colour that can be read and changed (see <see cref="IColoredSceneObject"/>).
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColored() => @this.FlagExists(ColoredFlag);
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type are backed by a single <see cref="ModelInstance"/>, and can therefore be explicitly converted to one.
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsStoredAsModelInstance() => @this.FlagExists(StoresOnlyModelInstanceFlag);
 	}
 }
 
+/// <summary>
+/// Base interface for every object that can be placed in (or used to view) a scene, and therefore wrapped in a <see cref="SceneObject"/>.
+/// </summary>
 public interface ISceneObject {
+	/// <summary>
+	/// The <see cref="World.SceneObjectType"/> that identifies this kind of object.
+	/// </summary>
 	static abstract SceneObjectType SceneObjectType { get; }
 }
 
@@ -385,10 +458,39 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	#endregion
 }
 
+/// <summary>
+/// A "wrapper" type that abstracts over any object that can be added to a <see cref="Scene"/> and potentially also transformed, coloured, etc. 
+/// </summary>
+/// <remarks>
+/// <para>
+/// Every supported object type converts implicitly to <see cref="SceneObject"/>, so any APIs that accepts one can be passed any of them directly.
+/// Use <see cref="Type"/> to find out what is wrapped, and the explicit conversion operators to get the original object back.
+/// </para>
+/// <para>
+/// Note that not every type can be fully converted back however-- notably camera-locked types lose their camera lock data when converted to a SceneObject.
+/// You can still convert these types back to a <see cref="ModelInstance"/>, but conversion back to the full camera-locked type requires usage of that target
+/// type's smuggle API. 
+/// </para>
+/// <para>
+/// Members that are not relevant to the wrapped object do nothing. For example, setting the colour of a model instance or the material of a light is
+/// ignored, and reading an unsupported property returns a neutral default (i.e. <see cref="Rotation"/> returns <see cref="Rotation.None"/>). Check <see cref="Type"/>
+/// (see <see cref="SceneObjectTypeExtensions"/>) first if you need to know whether a member will have an effect.
+/// </para>
+/// <para>
+/// This type itself represents no managed or unmanaged memory and does not need to be disposed. It is cheap to create and use.
+/// If you want to dispose the underlying object you can with <see cref="DisposeUnderlyingObject"/>.
+/// </para>
+/// <para>
+/// A <c>default</c> <see cref="SceneObject"/> wraps nothing and is not valid for use.
+/// </para>
+/// </remarks>
 public readonly unsafe record struct SceneObject : ITransformedSceneObject, IColoredSceneObject, IMaterialReceivingSceneObject, IStringSpanNameEnabled {
 	internal ResourceStub Stub { get; }
 	internal SceneObjectAdapterFunctionTable FunctionTable => field ?? throw InvalidObjectException.InvalidDefault<SceneObject>();
 
+	/// <summary>
+	/// Which kind of object this wraps.
+	/// </summary>
 	public SceneObjectType Type => FunctionTable.SceneObjectType;
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.Unspecified;
 
@@ -396,45 +498,154 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 		Stub = stub;
 		FunctionTable = functionTable;
 	}
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="ModelInstance"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="mi">The object to wrap.</param>
 	public SceneObject(ModelInstance mi) : this(ToStub(mi), SceneObjectAdapterFunctionTable.ForModelInstance) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="ModelInstanceGroup"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="group">The object to wrap.</param>
 	public SceneObject(ModelInstanceGroup group) : this(ToStub(group.UnderlyingResourceGroup), SceneObjectAdapterFunctionTable.ForModelInstanceGroup) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="MutableGridInstance"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="grid">The object to wrap.</param>
 	public SceneObject(MutableGridInstance grid) : this(ToStub(grid.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForMutableGridInstance) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="QuadInstance"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="quad">The object to wrap.</param>
 	public SceneObject(QuadInstance quad) : this(ToStub(quad.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForQuadInstance) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="CameraLockedQuadInstance"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="quad">The object to wrap.</param>
 	public SceneObject(CameraLockedQuadInstance quad) : this(ToStub(quad.UnderlyingQuadInstance.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForCameraLockedQuadInstance) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="TextInstance"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="text">The object to wrap.</param>
 	public SceneObject(TextInstance text) : this(ToStub(text.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForTextInstance) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="CameraLockedTextInstance"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="text">The object to wrap.</param>
 	public SceneObject(CameraLockedTextInstance text) : this(ToStub(text.UnderlyingTextInstance.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForCameraLockedTextInstance) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="PointLight"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="light">The object to wrap.</param>
 	public SceneObject(PointLight light) : this(ToStub(light), SceneObjectAdapterFunctionTable.ForPointLight) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="SpotLight"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="light">The object to wrap.</param>
 	public SceneObject(SpotLight light) : this(ToStub(light), SceneObjectAdapterFunctionTable.ForSpotLight) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="DirectionalLight"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="light">The object to wrap.</param>
 	public SceneObject(DirectionalLight light) : this(ToStub(light), SceneObjectAdapterFunctionTable.ForDirectionalLight) { }
+	/// <summary>
+	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="Camera"/>.
+	/// You can also use the implicit conversion operator.
+	/// </summary>
+	/// <param name="camera">The object to wrap.</param>
 	public SceneObject(Camera camera) : this(ToStub(camera), SceneObjectAdapterFunctionTable.ForCamera) { }
 
+	/// <summary>
+	/// Wraps the given <see cref="ModelInstance"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(ModelInstance operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="ModelInstanceGroup"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(ModelInstanceGroup operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="MutableGridInstance"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(MutableGridInstance operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="QuadInstance"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(QuadInstance operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="CameraLockedQuadInstance"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(CameraLockedQuadInstance operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="TextInstance"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(TextInstance operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="CameraLockedTextInstance"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(CameraLockedTextInstance operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="PointLight"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(PointLight operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="SpotLight"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(SpotLight operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="DirectionalLight"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(DirectionalLight operand) => new(operand);
+	/// <summary>
+	/// Wraps the given <see cref="Camera"/> in a <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The object to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SceneObject(Camera operand) => new(operand);
 
+	/// <summary>
+	/// Returns the <see cref="ModelInstance"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="ModelInstance"/> (i.e. its <see cref="Type"/> is one for which <see cref="SceneObjectTypeExtensions.IsStoredAsModelInstance"/> returns <see langword="true"/>).</exception>
 	public static explicit operator ModelInstance(SceneObject operand) {
 		if (operand.Type.IsStoredAsModelInstance()) return FastFromStub<ModelInstance>(operand.Stub);
 		throw operand.CreateInvalidCastException(SceneObjectType.ModelInstance);
 	}
+	/// <summary>
+	/// Returns the <see cref="ModelInstanceGroup"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="ModelInstanceGroup"/> (i.e. its <see cref="Type"/> is <see cref="SceneObjectType.ModelInstanceGroup"/>).</exception>
 	public static explicit operator ModelInstanceGroup(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.ModelInstanceGroup);
 		return new(FastFromStub<ResourceGroup>(operand.Stub));
@@ -443,26 +654,56 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 		o.ThrowIfNotOfType(SceneObjectType.ModelInstanceGroup);
 		return FastFromStub<ResourceGroup>(o.Stub);
 	}
+	/// <summary>
+	/// Returns the <see cref="QuadInstance"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="QuadInstance"/> (i.e. its <see cref="Type"/> is <see cref="SceneObjectType.QuadInstance"/>).</exception>
 	public static explicit operator QuadInstance(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.QuadInstance);
 		return new(FastFromStub<ModelInstance>(operand.Stub));
 	}
+	/// <summary>
+	/// Returns the <see cref="TextInstance"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="TextInstance"/> (i.e. its <see cref="Type"/> is <see cref="SceneObjectType.TextInstance"/>).</exception>
 	public static explicit operator TextInstance(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.TextInstance);
 		return new(FastFromStub<ModelInstance>(operand.Stub));
 	}
+	/// <summary>
+	/// Returns the <see cref="PointLight"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="PointLight"/> (i.e. its <see cref="Type"/> is <see cref="SceneObjectType.PointLight"/>).</exception>
 	public static explicit operator PointLight(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.PointLight);
 		return FastFromStub<PointLight>(operand.Stub);
 	}
+	/// <summary>
+	/// Returns the <see cref="SpotLight"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="SpotLight"/> (i.e. its <see cref="Type"/> is <see cref="SceneObjectType.SpotLight"/>).</exception>
 	public static explicit operator SpotLight(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.SpotLight);
 		return FastFromStub<SpotLight>(operand.Stub);
 	}
+	/// <summary>
+	/// Returns the <see cref="DirectionalLight"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="DirectionalLight"/> (i.e. its <see cref="Type"/> is <see cref="SceneObjectType.DirectionalLight"/>).</exception>
 	public static explicit operator DirectionalLight(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.DirectionalLight);
 		return FastFromStub<DirectionalLight>(operand.Stub);
 	}
+	/// <summary>
+	/// Returns the <see cref="Camera"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="Camera"/> (i.e. its <see cref="Type"/> is <see cref="SceneObjectType.Camera"/>).</exception>
 	public static explicit operator Camera(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.Camera);
 		return FastFromStub<Camera>(operand.Stub);
@@ -476,131 +717,194 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 		return new InvalidCastException($"Can not convert {nameof(SceneObject)} of type {Type} to {targetType}.");
 	}
 
+	/// <inheritdoc />
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetPosition(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetPosition(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="Position"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="position">The new value for <see cref="Position"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetPosition(Location position) => Position = position;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void MoveBy(Vect translation) => FunctionTable.MoveBy(Stub, translation);
 
+	/// <inheritdoc />
 	public Rotation Rotation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetRotation(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetRotation(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="Rotation"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="rotation">The new value for <see cref="Rotation"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
+	/// <inheritdoc />
 	public Quaternion RotationQuaternion {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetRotationQuaternion(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetRotationQuaternion(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="RotationQuaternion"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="rotationQuaternion">The new value for <see cref="RotationQuaternion"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetRotationQuaternion(Quaternion rotationQuaternion) => RotationQuaternion = rotationQuaternion;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation) => FunctionTable.RotateByRotation(Stub, rotation);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Quaternion rotationQuaternion) => FunctionTable.RotateByQuaternion(Stub, rotationQuaternion);
 
+	/// <inheritdoc />
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetScaling(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetScaling(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="Scaling"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="scaling">The new value for <see cref="Scaling"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(Vect scaling) => Scaling = scaling;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ScaleBy(float scalar) => FunctionTable.ScaleByScalar(Stub, scalar);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ScaleBy(Vect vect) => FunctionTable.ScaleByVect(Stub, vect);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void AdjustScaleBy(float scalar) => FunctionTable.AdjustScaleByScalar(Stub, scalar);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void AdjustScaleBy(Vect vect) => FunctionTable.AdjustScaleByVect(Stub, vect);
 
+	/// <inheritdoc />
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetTransform(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetTransform(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="Transform"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="transform">The new value for <see cref="Transform"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Transform = transform;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation, Location pivotPoint) => FunctionTable.RotateByRotationAroundPivot(Stub, rotation, pivotPoint);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => FunctionTable.RotateByQuaternionAroundPivot(Stub, rotationQuaternion, pivotPoint);
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetMaterial(Material material) => FunctionTable.SetMaterial(Stub, material);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => FunctionTable.SetDefaultMaterialBaseColor(Stub, baseColor);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => FunctionTable.SetDefaultMaterialShadingStyle(Stub, style);
 
+	/// <inheritdoc />
 	public Angle ColorHue {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetColorHue(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetColorHue(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="ColorHue"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="hue">The new value for <see cref="ColorHue"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColorHue(Angle hue) => ColorHue = hue;
 
+	/// <inheritdoc />
 	public float ColorSaturation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetColorSaturation(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetColorSaturation(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="ColorSaturation"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="saturation">The new value for <see cref="ColorSaturation"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColorSaturation(float saturation) => ColorSaturation = saturation;
 
+	/// <inheritdoc />
 	public float ColorLightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetColorLightness(Stub);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => FunctionTable.SetColorLightness(Stub, value);
 	}
+	/// <summary>
+	/// Sets <see cref="ColorLightness"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="lightness">The new value for <see cref="ColorLightness"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColorLightness(float lightness) => ColorLightness = lightness;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void AdjustColorHueBy(Angle adjustment) => FunctionTable.AdjustColorHueBy(Stub, adjustment);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void AdjustColorSaturationBy(float adjustment) => FunctionTable.AdjustColorSaturationBy(Stub, adjustment);
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void AdjustColorLightnessBy(float adjustment) => FunctionTable.AdjustColorLightnessBy(Stub, adjustment);
 
+	/// <inheritdoc />
 	public string GetNameAsNewStringObject() {
 		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
 		return Stub.GetNameAsNewStringObject();
 	}
+	/// <inheritdoc />
 	public int GetNameLength() {
 		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
 		return Stub.GetNameLength();
 	}
+	/// <inheritdoc />
 	public void CopyName(Span<char> destinationBuffer) {
 		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
 		Stub.CopyName(destinationBuffer);
 	}
 
+	/// <summary>
+	/// Disposes the object this wraps.
+	/// </summary>
+	/// <exception cref="InvalidObjectException">Thrown if this is a <c>default</c> <see cref="SceneObject"/>.</exception>
 	public void DisposeUnderlyingObject() {
 		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
 		Stub.Dispose();
 	}
 
+	/// <inheritdoc />
 	public override string ToString() => $"Scene Object ({Type}) \"{Stub.GetNameAsNewStringObject()}\"";
 }

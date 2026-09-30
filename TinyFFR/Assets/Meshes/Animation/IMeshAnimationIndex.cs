@@ -22,11 +22,17 @@ public enum MeshAnimationType {
 
 #pragma warning disable CA1710 // "Must be called Collection because it implements IROCollection<>" -- I disagree in this case
 /// <summary>
-/// An index that allows you to look up the animations belonging to one mesh, addressable by name, by position or by kind.
+/// An index that allows you to look up the animations belonging to one mesh (or to one group of meshes sharing a skeleton), addressable by name, by position or by kind.
 /// Usually you'll pass the returned <see cref="MeshAnimation"/>s to a <see cref="MeshAnimationPlayer"/> or <see cref="MeshBlendedAnimationPlayer"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Animations are named in the file they were authored in, so looking one up by name is the usual way to find it.
+/// </para>
+/// <para>
+/// <see cref="MeshAnimationIndex"/> is the implementation for a single <see cref="Mesh"/>; <see cref="MeshGroupAnimationIndex"/> is the implementation for a
+/// <see cref="MeshGroupAnimationTable"/>.
+/// </para>
 /// </remarks>
 public interface IMeshAnimationIndex : IReadOnlyCollection<MeshAnimation> {
 #pragma warning restore CA1710
@@ -62,6 +68,10 @@ public interface IMeshAnimationIndex : IReadOnlyCollection<MeshAnimation> {
 	MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType animationType);
 }
 
+/// <summary>
+/// An <see cref="IMeshAnimationIndex"/> that can also enumerate its animations, split by kind, without generating garbage.
+/// </summary>
+/// <typeparam name="TEnumerationArg">The type that owns the animations and backs the enumerables (a <see cref="Mesh"/> or a <see cref="MeshGroupAnimationTable"/>).</typeparam>
 public interface IMeshAnimationIndex<TEnumerationArg> : IMeshAnimationIndex {
 	/// <summary>
 	/// The mesh's skeletal animations, which deform it by moving a tree of joints.
