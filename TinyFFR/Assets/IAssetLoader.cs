@@ -1027,6 +1027,28 @@ public partial interface IAssetLoader {
 	/// <param name="readConfig">Controls how the file's geometry is interpreted as it is read.</param>
 	TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
 
+	ResourceGroup LoadMeshGroup(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadMeshGroup(
+			filePath,
+			new MeshCreationConfig {
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	ResourceGroup LoadMeshGroup(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMeshGroup(filePath, config, new MeshReadConfig());
+	ResourceGroup LoadMeshGroup(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
+
+	TinyFfrAsyncOperation<ResourceGroup> LoadMeshGroupAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadMeshGroupAsync(
+			filePath,
+			new MeshCreationConfig {
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	TinyFfrAsyncOperation<ResourceGroup> LoadMeshGroupAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMeshGroupAsync(filePath, config, new MeshReadConfig());
+	TinyFfrAsyncOperation<ResourceGroup> LoadMeshGroupAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
+
 	/// <summary>
 	/// Reports how many vertices, triangles and sub-meshes a model file holds without loading it, so that buffers for its
 	/// geometry can be sized.

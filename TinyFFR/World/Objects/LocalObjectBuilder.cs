@@ -108,11 +108,27 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			var model = models[i];
 			resourceGroup.Add(CreateModelInstance(model.Mesh, model.Material, in config));
 		}
-		var animationTable = bundle.AnimationTable;
-		resourceGroup.Add(animationTable);
-		resourceGroup.SetDoNotDisposeFlag(animationTable);
+		AttachSharedAnimationTable(resourceGroup, bundle.AnimationTable);
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup CreateModelInstances(ResourceGroup meshGroup, Material? material, in ModelInstanceCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		var meshes = meshGroup.Meshes;
+		var meshCount = meshes.Count;
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: meshCount + 1, name: config.Name);
+		for (var i = 0; i < meshCount; ++i) {
+			resourceGroup.Add(CreateModelInstance(meshes[i], material, in config));
+		}
+		var animationTables = meshGroup.AnimationTables;
+		if (animationTables.Count > 0) AttachSharedAnimationTable(resourceGroup, animationTables[0]);
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+
+	static void AttachSharedAnimationTable(ResourceGroup group, MeshGroupAnimationTable animationTable) {
+		group.Add(animationTable);
+		group.SetDoNotDisposeFlag(animationTable);
 	}
 
 	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name) {
@@ -130,6 +146,27 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		for (var i = 0; i < instances.Count; ++i) {
 			resourceGroup.Add(instances[i]);
 		}
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+
+	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Length + 1, name: name);
+		for (var i = 0; i < instances.Length; ++i) {
+			resourceGroup.Add(instances[i]);
+		}
+		AttachSharedAnimationTable(resourceGroup, animationTable);
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance> {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Count + 1, name: name);
+		for (var i = 0; i < instances.Count; ++i) {
+			resourceGroup.Add(instances[i]);
+		}
+		AttachSharedAnimationTable(resourceGroup, animationTable);
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
 	}

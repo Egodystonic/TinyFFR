@@ -179,7 +179,43 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		return contextWrapper.DispatchWrappedResourceReturningAsynchronousOperation<ResourceGroup, ModelBundle>(&LoadBundledAssetCore, new ModelLoadConfig { CreationConfig = config, ReadConfig = readConfig });
 	}
 
-	static ResourceGroup LoadBundledAssetCore(ModelLoadContext context, in ModelLoadConfig config) {
+	public ResourceGroup LoadMeshGroup(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+		config.ThrowIfInvalid();
+
+		var contextWrapper = _modelLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
+		contextWrapper.Context.SetName(config.Name.IsEmpty ? Path.GetFileName(filePath) : config.Name);
+
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadMeshGroupCore, CreateMeshGroupLoadConfig(in config, in readConfig));
+	}
+
+	public TinyFfrAsyncOperation<ResourceGroup> LoadMeshGroupAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+		config.ThrowIfInvalid();
+
+		var contextWrapper = _modelLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.FilePath = _globals.HeapPool.BorrowAndCopy(filePath);
+		contextWrapper.Context.SetName(config.Name.IsEmpty ? Path.GetFileName(filePath) : config.Name);
+
+		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadMeshGroupCore, CreateMeshGroupLoadConfig(in config, in readConfig));
+	}
+
+	static ModelLoadConfig CreateMeshGroupLoadConfig(in MeshCreationConfig config, in MeshReadConfig readConfig) {
+		return new ModelLoadConfig {
+			CreationConfig = new ModelCreationConfig { MeshConfig = config },
+			ReadConfig = new ModelReadConfig { MeshConfig = readConfig }
+		};
+	}
+
+	static ResourceGroup LoadBundledAssetCore(ModelLoadContext context, in ModelLoadConfig config) => LoadAssetGroupCore(context, in config, includeMaterialsAndModels: true);
+	static ResourceGroup LoadMeshGroupCore(ModelLoadContext context, in ModelLoadConfig config) => LoadAssetGroupCore(context, in config, includeMaterialsAndModels: false);
+
+	static ResourceGroup LoadAssetGroupCore(ModelLoadContext context, in ModelLoadConfig config, bool includeMaterialsAndModels) {
 		if (context.FilePath is not { } filePath) {
 			throw new InvalidOperationException("No file path set in context (this is a bug in TinyFFR).");
 		}
@@ -200,12 +236,17 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			).ThrowIfFailure();
 			context.AssetHandle = assetHandle;
 
-			pathBuffer.ConvertFromUtf16(Path.GetDirectoryName(filePath.Span));
-
 			GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
-			GetLoadedAssetMaterialCount(assetHandle, out var materialCount).ThrowIfFailure();
-			GetLoadedAssetTextureCount(assetHandle, out var textureCount).ThrowIfFailure();
-			context.TotalResourceCountHint = meshCount + materialCount + textureCount;
+			var materialCount = 0;
+			if (includeMaterialsAndModels) {
+				pathBuffer.ConvertFromUtf16(Path.GetDirectoryName(filePath.Span));
+				GetLoadedAssetMaterialCount(assetHandle, out materialCount).ThrowIfFailure();
+				GetLoadedAssetTextureCount(assetHandle, out var textureCount).ThrowIfFailure();
+				context.TotalResourceCountHint = meshCount + materialCount + textureCount;
+			}
+			else {
+				context.TotalResourceCountHint = meshCount + 1;
+			}
 
 			var resourceGroupName = context.Name;
 			Span<char> meshNameBuffer = stackalloc char[SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix) + ResourceNameIndexSpaceMax];
@@ -224,6 +265,12 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				}
 
 				self.GatherSubMeshOnWorker(context, assetHandle, i, in readConfig, creationConfig.MeshConfig with { Name = meshName }, loadSkeletalAnimationData);
+
+				if (!includeMaterialsAndModels) {
+					context.DispatchOnPrimaryAndWait(&CreateSubMeshOnlyResourcesOnPrimary);
+					context.CurrentSubMeshData.DisposeBuffersAndReset();
+					continue;
+				}
 
 				GetLoadedAssetMeshMaterialIndex(assetHandle, i, out var matIndex).ThrowIfFailure();
 				if (matIndex < 0 || matIndex >= materialCount) throw new InvalidOperationException($"Mesh at index '{i}' references material at index '{matIndex}' but asset only contains {materialCount} materials.");
@@ -287,6 +334,11 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		var group = GetOrCreateGroupOnPrimary(context);
 		var mesh = CreateAndRegisterSubMeshOnPrimary(context, group);
 		CreateAndRegisterSubMeshMaterialAndModelOnPrimary(context, group, mesh);
+	}
+
+	static void CreateSubMeshOnlyResourcesOnPrimary(ModelLoadContext context) {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		_ = CreateAndRegisterSubMeshOnPrimary(context, GetOrCreateGroupOnPrimary(context));
 	}
 
 	static Mesh CreateAndRegisterSubMeshOnPrimary(ModelLoadContext context, ResourceGroup group) {

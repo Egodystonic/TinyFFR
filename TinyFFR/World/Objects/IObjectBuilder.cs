@@ -104,6 +104,18 @@ public interface IObjectBuilder {
 			name
 		);
 	}
+	ModelInstanceGroup CreateModelInstances(ResourceGroup meshGroup, Material? material, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			meshGroup,
+			material,
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			name
+		);
+	}
 	
 	
 
@@ -177,6 +189,16 @@ public interface IObjectBuilder {
 			}
 		);
 	}
+	ModelInstanceGroup CreateModelInstances(ResourceGroup meshGroup, Material? material, Transform initialTransform, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			meshGroup,
+			material,
+			new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			}
+		);
+	}
 	
 	
 	/// <summary>
@@ -208,6 +230,7 @@ public interface IObjectBuilder {
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model>;
 	ModelInstanceGroup CreateModelInstances(ModelBundle bundle, in ModelInstanceCreationConfig config);
+	ModelInstanceGroup CreateModelInstances(ResourceGroup meshGroup, Material? material, in ModelInstanceCreationConfig config);
 	/// <summary>
 	/// Groups existing model instances together so they can be transformed as one.
 	/// </summary>
@@ -242,6 +265,8 @@ public interface IObjectBuilder {
 	/// <param name="disposingGroupDisposesInstances">Whether disposing the group should also dispose the instances in it. Defaults to <see langword="true"/>.</param>
 	/// <param name="name">Optional name for the new object.</param>
 	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, bool disposingGroupDisposesInstances = true, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
+	ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name);
+	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances = true, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
 	
 	#region QuadMesh
 	/// <summary>
