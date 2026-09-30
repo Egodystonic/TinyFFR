@@ -110,42 +110,6 @@ class LocalAnimationTest {
 	}
 
 	[Test]
-	public void PlayModelBundleAnimationsViaGroup() {
-		using var factory = new LocalTinyFfrFactory();
-		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Model bundle group animation (Space: next clip, Esc: quit)");
-		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 1f, -3f));
-		using var cameraController = camera.CreateController<FreeFlyingCameraController>();
-		using var light = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
-		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
-		using var scene = factory.SceneBuilder.CreateScene(backdrop);
-		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-		scene.Add(light);
-
-		using var bundle = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/BrainStem.glb"));
-		using var instances = factory.ObjectBuilder.CreateModelInstances(bundle);
-		scene.Add(instances);
-		Console.WriteLine($"{bundle.Meshes.Count} meshes / {instances.Skeleton.Nodes.Count} shared nodes / {instances.Animations.Count} clips");
-		Assert.Greater(instances.Animations.Count, 0);
-
-		var clipIndex = 0;
-		var clipTime = 0f;
-		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
-		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
-			var deltaTime = loop.IterateOnce().AsDeltaTime();
-			DefaultCameraInputHandler.Progress(cameraController, deltaTime);
-			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				clipIndex = (clipIndex + 1) % instances.Animations.Count;
-				clipTime = 0f;
-			}
-			clipTime += deltaTime;
-			instances.GetAnimationPlayer(instances.Animations[clipIndex]).SetTimePoint(clipTime, AnimationWrapStyle.Loop);
-			renderer.Render();
-		}
-		scene.Remove(instances);
-	}
-
-	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		TestRepeatNodeNames(factory);
@@ -178,6 +142,7 @@ class LocalAnimationTest {
 		var curNodeIndex = 0;
 		var curAnimCount = 1;
 		var playingAnim = false;
+		var animPlaybackViaIndividualMeshes = false;
 		ModelBundle? loadedResources = null;
 		ModelInstanceGroup? modelInstanceGroup = null;
 		
@@ -210,9 +175,11 @@ class LocalAnimationTest {
 				$"A = chg anim | " +
 				$"S = chg start/stop | " +
 				$"N = chg node | " +
+				$"I = mesh vs meshgroup | " +
 				$"Mousewheel scales | " +
 				$"'{_filesToLoad[curFileIndex].Filename}' anim {(curAnimIndex + 1)} / {curAnimCount} | " +
 				$"'{modelInstanceGroup?[0].Skeleton.Nodes[curNodeIndex].GetNameAsNewStringObject()}' node | " +
+				$"{(animPlaybackViaIndividualMeshes ? "via Mesh" : "via MeshGroup")} | " +
 				$"{modelInstanceGroup?.Count ?? 0} models"
 			);
 		}
@@ -250,7 +217,7 @@ class LocalAnimationTest {
 				}
 				Assert.GreaterOrEqual(curAnimCount, 1);
 
-				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
+				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value);
 				scene.Add(modelInstanceGroup.Value);
 				UpdateTitle();
 			}
@@ -267,6 +234,9 @@ class LocalAnimationTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S) && modelInstanceGroup.HasValue) {
 				playingAnim = !playingAnim;
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.I)) {
+				animPlaybackViaIndividualMeshes = !animPlaybackViaIndividualMeshes;
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0) && modelInstanceGroup.HasValue) {
 				Console.WriteLine("Setting t=0 on anim #" + curAnimIndex);
@@ -323,32 +293,59 @@ class LocalAnimationTest {
 				}
 			}
 
-			if (playingAnim && modelInstanceGroup.HasValue) {
+			if (playingAnim && modelInstanceGroup is { } group) {
 				var isFirst = true;
-				foreach (var mi in modelInstanceGroup) {
-					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
-					
-					if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
+				if (animPlaybackViaIndividualMeshes) {
+					foreach (var mi in group) {
+						if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
+						
+						if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
+							if (isFirst) {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+									.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+								nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+								nodeHighlighter.SetScaling(1f);
+							}
+							else {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+									.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
+							}
+							prevAnimTimeRemaining -= deltaTime;
+						}
+						else {
+							if (isFirst) {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+								nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+								nodeHighlighter.SetScaling(1f);
+							}
+							else {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
+							}	
+						}
+					}
+				}
+				else {
+					if (prevAnimTimeRemaining > 0f && prevAnimIndex < group.Animations.All.Count) {
 						if (isFirst) {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
-								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
-							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+							group.GetAnimationPlayer(group.Animations[curAnimIndex], group.Animations[prevAnimIndex])
+								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, group.Skeleton.Nodes[curNodeIndex], out var transform);
+							nodeHighlighter.SetTransform(transform * group.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+							group.GetAnimationPlayer(group.Animations[curAnimIndex], group.Animations[prevAnimIndex])
 								.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
 						}
 						prevAnimTimeRemaining -= deltaTime;
 					}
 					else {
 						if (isFirst) {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
-							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+							group.GetAnimationPlayer(group.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, group.Skeleton.Nodes[curNodeIndex], out var transform);
+							nodeHighlighter.SetTransform(transform * group.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
+							group.GetAnimationPlayer(group.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
 						}	
 					}
 				}
