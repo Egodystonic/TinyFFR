@@ -134,18 +134,6 @@ public interface ISceneObject {
 	static abstract SceneObjectType SceneObjectType { get; }
 }
 
-readonly struct GroupInstanceCache : IEquatable<GroupInstanceCache> {
-	public ModelInstance[] Instances { get; }
-	public int Count { get; }
-	public GroupInstanceCache(ModelInstance[] instances, int count) {
-		Instances = instances;
-		Count = count;
-	}
-	public bool Equals(GroupInstanceCache other) => true;
-	public override bool Equals(object? obj) => obj is GroupInstanceCache;
-	public override int GetHashCode() => 0;
-}
-
 internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	interface IStubConverter<out TTargetType> {
 		static abstract TTargetType FromSceneObject(in SceneObject sceneObject);
@@ -157,7 +145,7 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	}
 	readonly struct ModelInstanceGroupStubConverter : IStubConverter<ModelInstanceGroup> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static ModelInstanceGroup FromSceneObject(in SceneObject sceneObject) => new(FastFromStub<ResourceGroup>(sceneObject.Stub));
+		public static ModelInstanceGroup FromSceneObject(in SceneObject sceneObject) => ModelInstanceGroup.CreateTempIterableInstanceFromLedger(FastFromStub<ResourceGroup>(sceneObject.Stub));
 	}
 	readonly struct QuadInstanceStubConverter : IStubConverter<QuadInstance> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -914,8 +902,16 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// </summary>
 	/// <exception cref="InvalidObjectException">Thrown if this is a <c>default</c> <see cref="SceneObject"/>.</exception>
 	public void DisposeUnderlyingObject() {
-		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
-		Stub.Dispose();
+		switch (Type) {
+			case SceneObjectType.Unspecified:
+				throw InvalidObjectException.InvalidDefault<ResourceStub>();
+			case SceneObjectType.ModelInstanceGroup:
+				((ModelInstanceGroup) this).Dispose();
+				break;
+			default:
+				Stub.Dispose();
+				break;
+		}
 	}
 
 	/// <inheritdoc />

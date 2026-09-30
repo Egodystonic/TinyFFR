@@ -28,7 +28,7 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 #pragma warning restore CA1710
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstanceGroup;
 	static readonly ArrayPool<ModelInstance> _instanceArrayPool = TinyFfrArrayPool<ModelInstance>.Shared;
-	static readonly ArrayPoolBackedMap<ResourceGroup, ModelInstance[]> _borrowedInstanceArrayLedger = new();
+	static readonly ArrayPoolBackedMap<ResourceGroup, (ModelInstance[] Instances, int Count)> _borrowedInstanceArrayLedger = new();
 
 	readonly MeshGroupAnimationTable _animTable;
 	
@@ -55,7 +55,7 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	ModelInstance? FirstInstance {
 		get {
 			ThrowIfDisposed();
-			return Count > 0 ? this[0] : null;
+			return Count > 0 ? GetInstanceAtPreValidatedIndex(0) : null;
 		}
 	}
 	
@@ -66,6 +66,7 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
 	public ModelInstance this[int index] {
 		get {
+			ThrowIfDisposed();
 			return index >= 0 && index < Count
 				? GetInstanceAtPreValidatedIndex(index)
 				: throw new ArgumentOutOfRangeException(nameof(index), index, $"Must be non-negative and smaller than {nameof(Count)} ({Count}).");
@@ -75,29 +76,38 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	ModelInstance GetInstanceAtPreValidatedIndex(int index) => InstanceArray[index];
 
-	/// <summary>
-	/// Constructs a new <see cref="ModelInstanceGroup"/> over an existing resource group.
-	/// </summary>
-	/// <remarks>
-	/// If the group contains a <see cref="MeshGroupAnimationTable"/>, the first one is exposed via <see cref="Animations"/> and <see cref="Skeleton"/>.
-	/// </remarks>
-	/// <param name="underlyingResourceGroup">The resource group whose model instances this group should transform together. <b>Must</b> be sealed.</param>
-	/// <exception cref="ArgumentException">Thrown if the given <paramref name="underlyingResourceGroup"/> is not sealed.</exception>
-	public ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
+	internal ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
 		if (!underlyingResourceGroup.IsSealed) throw new ArgumentException("Resource group must be sealed.", nameof(underlyingResourceGroup));
 		UnderlyingResourceGroup = underlyingResourceGroup;
 		_animTable = UnderlyingResourceGroup.AnimationTables.Count > 0 ? UnderlyingResourceGroup.AnimationTables[0] : MeshGroupAnimationTable.Empty;
 		
 		var modelInstances = UnderlyingResourceGroup.ModelInstances;
 		Count = modelInstances.Count;
-		if (_borrowedInstanceArrayLedger.TryGetValue(underlyingResourceGroup, out var preExistingInstanceArray)) {
-			InstanceArray = preExistingInstanceArray;
+		if (_borrowedInstanceArrayLedger.TryGetValue(underlyingResourceGroup, out var preExistingEntry)) {
+			InstanceArray = preExistingEntry.Instances;
+			
 		}
 		else {
 			InstanceArray = _instanceArrayPool.Rent(Count);
-			var index = 0;
-			foreach (var instance in modelInstances) InstanceArray[index++] = instance;
-			_borrowedInstanceArrayLedger.Add(underlyingResourceGroup, InstanceArray);
+			modelInstances.CopyTo(InstanceArray);
+			_borrowedInstanceArrayLedger.Add(underlyingResourceGroup, (InstanceArray, Count));
+		}
+	}
+
+	ModelInstanceGroup(ResourceGroup underlyingResourceGroup, ModelInstance[] instanceArray, int count) {
+		UnderlyingResourceGroup = underlyingResourceGroup;
+		InstanceArray = instanceArray;
+		Count = count;
+		_animTable = MeshGroupAnimationTable.Empty;
+	}
+
+	internal static ModelInstanceGroup CreateTempIterableInstanceFromLedger(ResourceGroup underlyingResourceGroup) {
+		try {
+			var entry = _borrowedInstanceArrayLedger[underlyingResourceGroup];
+			return new(underlyingResourceGroup, entry.Instances, entry.Count);
+		}
+		catch (KeyNotFoundException e) {
+			throw new ObjectDisposedException("Underlying ModelInstanceGroup has been disposed.", e);
 		}
 	}
 	
@@ -370,27 +380,24 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	#region Disposal
 	/// <inheritdoc />
 	public void Dispose() {
-		var wasAlreadyDisposed = UnderlyingResourceGroup.IsDisposed;
 		UnderlyingResourceGroup.Dispose();
-		if (!wasAlreadyDisposed) ReturnBorrowedInstanceArray();
+		ReleaseBorrowedInstanceArray();
 	}
 	/// <summary>
 	/// Disposes this group, optionally disposing the model instances in it as well.
 	/// </summary>
 	/// <param name="disposeContainedInstances">If <see langword="true"/>, every instance in this group is disposed too; if <see langword="false"/>, only the grouping itself is discarded and the instances remain usable.</param>
 	public void Dispose(bool disposeContainedInstances) {
-		var wasAlreadyDisposed = UnderlyingResourceGroup.IsDisposed;
 		UnderlyingResourceGroup.Dispose(disposeContainedInstances);
-		if (!wasAlreadyDisposed) ReturnBorrowedInstanceArray();
+		ReleaseBorrowedInstanceArray();
 	}
 	
 	void ThrowIfDisposed() {
 		if (UnderlyingResourceGroup.IsDisposed) throw new ObjectDisposedException(nameof(ModelInstanceGroup));
 	}
 
-	void ReturnBorrowedInstanceArray() {
-		_borrowedInstanceArrayLedger.Remove(UnderlyingResourceGroup);
-		_instanceArrayPool.Return(InstanceArray, clearArray: true);
+	void ReleaseBorrowedInstanceArray() {
+		if (_borrowedInstanceArrayLedger.Remove(UnderlyingResourceGroup, out var entry)) _instanceArrayPool.Return(entry.Instances, clearArray: true);
 	}
 	#endregion
 
