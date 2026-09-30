@@ -226,6 +226,7 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	static readonly Lock _staticMutationLock = new();
 	static readonly HeapPool _sharedHeapPool = new();
 	static readonly ArrayPoolBackedMap<nuint, MutableGridInstance> _activeLeaseMap = new();
+	static readonly ArrayPoolBackedMap<ModelInstance, MutableGridInstance> _liveInstanceRegistry = new();
 	static nuint _prevLeaseId = 0U;
 	
 	readonly PooledHeapMemory<MutableGridVertex> _vertexBuffer;
@@ -348,6 +349,16 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 				_precalculatedNormalizedCoords.Span[parentGridMesh.GridDimensions.Index(x, y)] = parentGridMesh.GetVertexCoordinateNormalized((x, y));
 			}
 		}
+		lock (_staticMutationLock) {
+			_liveInstanceRegistry.Add(underlyingModelInstance, this);
+		}
+	}
+
+	internal static MutableGridInstance GetLiveInstance(ModelInstance underlyingModelInstance) {
+		lock (_staticMutationLock) {
+			if (_liveInstanceRegistry.TryGetValue(underlyingModelInstance, out var result)) return result;
+		}
+		throw new ObjectDisposedException(nameof(MutableGridInstance));
 	}
 	
 	/// <summary>
@@ -584,8 +595,10 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 #pragma warning restore CA1065
 				}
 			}
-			_vertexBuffer.Dispose();
-			_precalculatedNormalizedCoords.Dispose();
+			if (_liveInstanceRegistry.Remove(UnderlyingModelInstance)) {
+				_vertexBuffer.Dispose();
+				_precalculatedNormalizedCoords.Dispose();
+			}
 		}
 		UnderlyingModelInstance.Dispose();
 	}

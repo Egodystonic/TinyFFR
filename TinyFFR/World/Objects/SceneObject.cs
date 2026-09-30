@@ -134,6 +134,35 @@ public interface ISceneObject {
 	static abstract SceneObjectType SceneObjectType { get; }
 }
 
+readonly struct SceneObjectSpecializationPayload : IEquatable<SceneObjectSpecializationPayload> {
+	public const int Capacity = 24;
+
+	[InlineArray(Capacity)]
+	struct Buffer { byte _; }
+
+	readonly Buffer _buffer;
+
+	SceneObjectSpecializationPayload(Buffer buffer) => _buffer = buffer;
+
+	public static SceneObjectSpecializationPayload Create<TResource, TBase>(TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+		var length = resource.SpecializationDataLength;
+		if (length > Capacity) throw new InvalidOperationException($"Specialization data for {typeof(TResource).Name} ({length} bytes) exceeds the {nameof(SceneObject)} payload capacity ({Capacity} bytes). This is a bug in TinyFFR.");
+		var buffer = new Buffer();
+		TResource.Smuggle(resource, ((Span<byte>) buffer)[..length], out _, out var additionalResourceRef);
+		if (additionalResourceRef != null) throw new InvalidOperationException($"{typeof(TResource).Name} carries an additional resource reference, which a {nameof(SceneObject)} can not store. This is a bug in TinyFFR.");
+		return new(buffer);
+	}
+
+	public TResource Reconstruct<TResource, TBase>(TBase baseResource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
+		ReadOnlySpan<byte> data = _buffer;
+		return TResource.DeSmuggle(baseResource, data, null);
+	}
+
+	public bool Equals(SceneObjectSpecializationPayload other) => true;
+	public override bool Equals(object? obj) => obj is SceneObjectSpecializationPayload;
+	public override int GetHashCode() => 0;
+}
+
 internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	interface IStubConverter<out TTargetType> {
 		static abstract TTargetType FromSceneObject(in SceneObject sceneObject);
@@ -459,17 +488,12 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 }
 
 /// <summary>
-/// A "wrapper" type that abstracts over any object that can be added to a <see cref="Scene"/> and potentially also transformed, coloured, etc. 
+/// A "wrapper" type that abstracts over any object that can be added to a <see cref="Scene"/> (or a <see cref="Camera"/>).
 /// </summary>
 /// <remarks>
 /// <para>
 /// Every supported object type converts implicitly to <see cref="SceneObject"/>, so any APIs that accepts one can be passed any of them directly.
 /// Use <see cref="Type"/> to find out what is wrapped, and the explicit conversion operators to get the original object back.
-/// </para>
-/// <para>
-/// Note that not every type can be fully converted back however-- notably camera-locked types lose their camera lock data when converted to a SceneObject.
-/// You can still convert these types back to a <see cref="ModelInstance"/>, but conversion back to the full camera-locked type requires usage of that target
-/// type's smuggle API. 
 /// </para>
 /// <para>
 /// Members that are not relevant to the wrapped object do nothing. For example, setting the colour of a model instance or the material of a light is
@@ -488,6 +512,7 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 public readonly unsafe record struct SceneObject : ITransformedSceneObject, IColoredSceneObject, IMaterialReceivingSceneObject, IStringSpanNameEnabled {
 	internal ResourceStub Stub { get; }
 	internal SceneObjectAdapterFunctionTable FunctionTable => field ?? throw InvalidObjectException.InvalidDefault<SceneObject>();
+	readonly SceneObjectSpecializationPayload _specializationPayload;
 
 	/// <summary>
 	/// Which kind of object this wraps.
@@ -528,7 +553,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// You can also use the implicit conversion operator.
 	/// </summary>
 	/// <param name="quad">The object to wrap.</param>
-	public SceneObject(CameraLockedQuadInstance quad) : this(ToStub(quad.UnderlyingQuadInstance.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForCameraLockedQuadInstance) { }
+	public SceneObject(CameraLockedQuadInstance quad) : this(ToStub(quad.UnderlyingQuadInstance.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForCameraLockedQuadInstance) {
+		_specializationPayload = SceneObjectSpecializationPayload.Create<CameraLockedQuadInstance, ModelInstance>(quad);
+	}
 	/// <summary>
 	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="TextInstance"/>.
 	/// You can also use the implicit conversion operator.
@@ -540,7 +567,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// You can also use the implicit conversion operator.
 	/// </summary>
 	/// <param name="text">The object to wrap.</param>
-	public SceneObject(CameraLockedTextInstance text) : this(ToStub(text.UnderlyingTextInstance.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForCameraLockedTextInstance) { }
+	public SceneObject(CameraLockedTextInstance text) : this(ToStub(text.UnderlyingTextInstance.UnderlyingModelInstance), SceneObjectAdapterFunctionTable.ForCameraLockedTextInstance) {
+		_specializationPayload = SceneObjectSpecializationPayload.Create<CameraLockedTextInstance, ModelInstance>(text);
+	}
 	/// <summary>
 	/// Constructs a new <see cref="SceneObject"/> wrapping the given <see cref="PointLight"/>.
 	/// You can also use the implicit conversion operator.
@@ -663,6 +692,34 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	public static explicit operator QuadInstance(SceneObject operand) {
 		operand.ThrowIfNotOfType(SceneObjectType.QuadInstance);
 		return new(FastFromStub<ModelInstance>(operand.Stub));
+	}
+	/// <summary>
+	/// Returns the <see cref="CameraLockedQuadInstance"/> wrapped by the given <see cref="SceneObject"/>, including its camera-lock configuration.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="CameraLockedQuadInstance"/> (i.e. its <see cref="Type"/> is not <see cref="SceneObjectType.CameraLockedQuadInstance"/>).</exception>
+	public static explicit operator CameraLockedQuadInstance(SceneObject operand) {
+		operand.ThrowIfNotOfType(SceneObjectType.CameraLockedQuadInstance);
+		return operand._specializationPayload.Reconstruct<CameraLockedQuadInstance, ModelInstance>(FastFromStub<ModelInstance>(operand.Stub));
+	}
+	/// <summary>
+	/// Returns the <see cref="CameraLockedTextInstance"/> wrapped by the given <see cref="SceneObject"/>, including its camera-lock configuration.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="CameraLockedTextInstance"/> (i.e. its <see cref="Type"/> is not <see cref="SceneObjectType.CameraLockedTextInstance"/>).</exception>
+	public static explicit operator CameraLockedTextInstance(SceneObject operand) {
+		operand.ThrowIfNotOfType(SceneObjectType.CameraLockedTextInstance);
+		return operand._specializationPayload.Reconstruct<CameraLockedTextInstance, ModelInstance>(FastFromStub<ModelInstance>(operand.Stub));
+	}
+	/// <summary>
+	/// Returns the <see cref="MutableGridInstance"/> wrapped by the given <see cref="SceneObject"/>.
+	/// </summary>
+	/// <param name="operand">The scene object to unwrap.</param>
+	/// <exception cref="InvalidCastException">Thrown if <paramref name="operand"/> does not wrap a <see cref="MutableGridInstance"/> (i.e. its <see cref="Type"/> is not <see cref="SceneObjectType.MutableGridInstance"/>).</exception>
+	/// <exception cref="ObjectDisposedException">Thrown if the wrapped <see cref="MutableGridInstance"/> has been disposed.</exception>
+	public static explicit operator MutableGridInstance(SceneObject operand) {
+		operand.ThrowIfNotOfType(SceneObjectType.MutableGridInstance);
+		return MutableGridInstance.GetLiveInstance(FastFromStub<ModelInstance>(operand.Stub));
 	}
 	/// <summary>
 	/// Returns the <see cref="TextInstance"/> wrapped by the given <see cref="SceneObject"/>.
@@ -907,6 +964,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 				throw InvalidObjectException.InvalidDefault<ResourceStub>();
 			case SceneObjectType.ModelInstanceGroup:
 				((ModelInstanceGroup) this).Dispose();
+				break;
+			case SceneObjectType.MutableGridInstance:
+				((MutableGridInstance) this).Dispose();
 				break;
 			default:
 				Stub.Dispose();

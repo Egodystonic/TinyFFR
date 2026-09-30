@@ -1,8 +1,12 @@
-// Created on 2026-09-28 by Ben Bowen
+﻿// Created on 2026-09-28 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Linq;
 using System.Reflection;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
+using Egodystonic.TinyFFR.Factory.Local;
 
 namespace Egodystonic.TinyFFR.World;
 
@@ -71,5 +75,96 @@ class SceneObjectTest {
 		Assert.AreEqual(SceneObjectType.Camera, (SceneObjectType) getCameraSceneObjectType.Invoke(null, null)!);
 		Assert.AreEqual(SceneObjectType.Unspecified, Get<Light>());
 		Assert.AreEqual(SceneObjectType.Unspecified, Get<SceneObject>());
+	}
+	[Test]
+	public void CameraLockedInstancesShouldRoundTripThroughSceneObjects() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
+		using var quad = factory.ObjectBuilder.CreateCameraLockedQuadInstance(quadMesh, material, lockedUprightDirection: Direction.Left, positionAnchor: Orientation2D.UpLeft, scalingMode: CameraLockedScalingMode.ViewportFractionalFixedWidth, lockStyle: CameraLockStyle.FaceCameraPlane);
+
+		SceneObject quadSceneObject = quad;
+		var roundTrippedQuad = (CameraLockedQuadInstance) quadSceneObject;
+		Assert.AreEqual(quad, roundTrippedQuad);
+		Assert.AreEqual(quad.LockedUprightDirection, roundTrippedQuad.LockedUprightDirection);
+		Assert.AreEqual(quad.PositionAnchor, roundTrippedQuad.PositionAnchor);
+		Assert.AreEqual(quad.ScalingMode, roundTrippedQuad.ScalingMode);
+		Assert.AreEqual(quad.LockStyle, roundTrippedQuad.LockStyle);
+		Assert.AreEqual((SceneObject) quad, quadSceneObject);
+		Assert.AreEqual(((SceneObject) quad).GetHashCode(), quadSceneObject.GetHashCode());
+		Assert.Throws<InvalidCastException>(() => _ = (CameraLockedTextInstance) quadSceneObject);
+		Assert.Throws<InvalidCastException>(() => _ = (CameraLockedQuadInstance) (SceneObject) quad.UnderlyingQuadInstance);
+
+		using var font = factory.AssetLoader.LoadFont();
+		using var pen = font.CreatePen(ColorVect.WhiteOpaque);
+		using var @string = font.CreateString("Round Trip");
+		using var text = factory.ObjectBuilder.CreateCameraLockedTextInstance(pen, @string, lockedUprightDirection: Direction.Right, scalingMode: CameraLockedScalingMode.ViewportFractionalFixedHeight, lockStyle: CameraLockStyle.FaceCameraPlane);
+
+		SceneObject textSceneObject = text;
+		var roundTrippedText = (CameraLockedTextInstance) textSceneObject;
+		Assert.AreEqual(text, roundTrippedText);
+		Assert.AreEqual(text.LockedUprightDirection, roundTrippedText.LockedUprightDirection);
+		Assert.AreEqual(text.PositionAnchor, roundTrippedText.PositionAnchor);
+		Assert.AreEqual(text.ScalingMode, roundTrippedText.ScalingMode);
+		Assert.AreEqual(text.LockStyle, roundTrippedText.LockStyle);
+		Assert.Throws<InvalidCastException>(() => _ = (CameraLockedQuadInstance) textSceneObject);
+	}
+
+	[Test]
+	public void ScenesShouldAddAndRemoveEverySceneObjectType() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
+		using var cuboidMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+		using var gridMesh = factory.MeshBuilder.CreateMutableGrid(new XYPair<int>(4, 4));
+		using var font = factory.AssetLoader.LoadFont();
+		using var pen = font.CreatePen(ColorVect.WhiteOpaque);
+		using var @string = font.CreateString("Scene Object");
+		using var scene = factory.SceneBuilder.CreateScene();
+		using var camera = factory.CameraBuilder.CreateCamera(new Location(3f, 2f, -6f));
+
+		using var modelInstance = factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material);
+		var groupedInstances = new[] { factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material), factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material) };
+		using var group = factory.ObjectBuilder.GroupModelInstances(groupedInstances);
+		using var grid = factory.ObjectBuilder.CreateMutableGridInstance(gridMesh, material);
+		using var quad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
+		using var text = factory.ObjectBuilder.CreateTextInstance(pen, @string);
+		var camLockedPosition = new Location(1f, 0.5f, 0f);
+		using var camLockedQuad = factory.ObjectBuilder.CreateCameraLockedQuadInstance(quadMesh, material, position: camLockedPosition);
+		using var camLockedQuadAddedTyped = factory.ObjectBuilder.CreateCameraLockedQuadInstance(quadMesh, material, position: camLockedPosition);
+		using var camLockedQuadAddedPlain = factory.ObjectBuilder.CreateCameraLockedQuadInstance(quadMesh, material, position: camLockedPosition);
+		using var camLockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(pen, @string);
+		using var pointLight = factory.LightBuilder.CreatePointLight();
+		using var spotLight = factory.LightBuilder.CreateSpotLight();
+		using var directionalLight = factory.LightBuilder.CreateDirectionalLight();
+
+		var sceneObjects = new SceneObject[] { modelInstance, group, grid, quad, text, camLockedQuad, camLockedText, pointLight, spotLight, directionalLight };
+		foreach (var sceneObject in sceneObjects) scene.Add(sceneObject);
+		scene.Add(camLockedQuadAddedTyped);
+		scene.Add(camLockedQuadAddedPlain.UnderlyingQuadInstance);
+
+		var expectedModelInstances = new[] {
+			modelInstance, groupedInstances[0], groupedInstances[1], grid.UnderlyingModelInstance, quad.UnderlyingModelInstance, text.UnderlyingModelInstance,
+			camLockedQuad.UnderlyingQuadInstance.UnderlyingModelInstance, camLockedText.UnderlyingTextInstance.UnderlyingModelInstance,
+			camLockedQuadAddedTyped.UnderlyingQuadInstance.UnderlyingModelInstance, camLockedQuadAddedPlain.UnderlyingQuadInstance.UnderlyingModelInstance
+		};
+		CollectionAssert.AreEquivalent(expectedModelInstances, scene.ContainedModelInstances.ToArray());
+		Assert.AreEqual(3, scene.ContainedLights.Count);
+
+		((LocalSceneBuilder) scene.Implementation).PrepareCameraSensitiveObjectsForRender(scene.Handle, camera);
+		var viaSceneObjectRotation = camLockedQuad.UnderlyingQuadInstance.UnderlyingModelInstance.Rotation;
+		Assert.AreEqual(camLockedQuadAddedTyped.UnderlyingQuadInstance.UnderlyingModelInstance.Rotation, viaSceneObjectRotation);
+		Assert.AreNotEqual(camLockedQuadAddedPlain.UnderlyingQuadInstance.UnderlyingModelInstance.Rotation, viaSceneObjectRotation);
+
+		Assert.Throws<ArgumentException>(() => scene.Add((SceneObject) camera));
+		Assert.Throws<ArgumentException>(() => scene.Remove((SceneObject) camera));
+		Assert.Throws<InvalidObjectException>(() => scene.Add(default(SceneObject)));
+		Assert.Throws<InvalidObjectException>(() => scene.Remove(default(SceneObject)));
+
+		foreach (var sceneObject in sceneObjects) scene.Remove(sceneObject);
+		scene.Remove(camLockedQuadAddedTyped);
+		scene.Remove(camLockedQuadAddedPlain.UnderlyingQuadInstance);
+		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
+		Assert.AreEqual(0, scene.ContainedLights.Count);
 	}
 }

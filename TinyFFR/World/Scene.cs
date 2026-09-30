@@ -279,6 +279,94 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// <param name="text">The camera-facing text to remove.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
+
+	/// <summary>
+	/// Adds the object wrapped by the given <see cref="SceneObject"/> to this scene, exactly as though the matching typed <c>Add</c> overload had been called.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Adding something already in this scene has no effect (i.e. this method is idempotent).
+	/// </para>
+	/// <para>
+	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/>, this method simply returns without any effect.
+	/// </para>
+	/// </remarks>
+	/// <param name="sceneObject">The object to add.</param>
+	/// <exception cref="InvalidObjectException">Thrown if <paramref name="sceneObject"/> is <c>default</c>.</exception>
+	public void Add(SceneObject sceneObject) {
+		switch (sceneObject.Type) {
+			case SceneObjectType.ModelInstance:
+			case SceneObjectType.MutableGridInstance:
+			case SceneObjectType.QuadInstance:
+			case SceneObjectType.TextInstance:
+				Add((ModelInstance) sceneObject);
+				break;
+			case SceneObjectType.ModelInstanceGroup:
+				Add((ModelInstanceGroup) sceneObject);
+				break;
+			case SceneObjectType.CameraLockedQuadInstance:
+				Add((CameraLockedQuadInstance) sceneObject);
+				break;
+			case SceneObjectType.CameraLockedTextInstance:
+				Add((CameraLockedTextInstance) sceneObject);
+				break;
+			case SceneObjectType.PointLight:
+				Add((PointLight) sceneObject);
+				break;
+			case SceneObjectType.SpotLight:
+				Add((SpotLight) sceneObject);
+				break;
+			case SceneObjectType.DirectionalLight:
+				Add((DirectionalLight) sceneObject);
+				break;
+			case SceneObjectType.Camera:
+				return;
+			default:
+				throw InvalidObjectException.InvalidDefault<SceneObject>();
+		}
+	}
+	/// <summary>
+	/// Removes the object wrapped by the given <see cref="SceneObject"/> from this scene, exactly as though the matching typed <c>Remove</c> overload had been called.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Removing something not in this scene has no effect (i.e. this method is idempotent).
+	/// </para>
+	/// <para>
+	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/>, this method simply returns without any effect.
+	/// </para>
+	/// </remarks>
+	/// <param name="sceneObject">The object to remove.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="sceneObject"/> wraps a <see cref="Camera"/>, which can not be part of a scene.</exception>
+	/// <exception cref="InvalidObjectException">Thrown if <paramref name="sceneObject"/> is <c>default</c>.</exception>
+	public void Remove(SceneObject sceneObject) {
+		switch (sceneObject.Type) {
+			case SceneObjectType.ModelInstance:
+			case SceneObjectType.MutableGridInstance:
+			case SceneObjectType.QuadInstance:
+			case SceneObjectType.TextInstance:
+			case SceneObjectType.CameraLockedQuadInstance:
+			case SceneObjectType.CameraLockedTextInstance:
+				Remove((ModelInstance) sceneObject);
+				break;
+			case SceneObjectType.ModelInstanceGroup:
+				Remove((ModelInstanceGroup) sceneObject);
+				break;
+			case SceneObjectType.PointLight:
+				Remove((PointLight) sceneObject);
+				break;
+			case SceneObjectType.SpotLight:
+				Remove((SpotLight) sceneObject);
+				break;
+			case SceneObjectType.DirectionalLight:
+				Remove((DirectionalLight) sceneObject);
+				break;
+			case SceneObjectType.Camera:
+				return;
+			default:
+				throw InvalidObjectException.InvalidDefault<SceneObject>();
+		}
+	}
 	
 	/// <summary>
 	/// Empties this scene of its contents, optionally keeping some categories of them.
