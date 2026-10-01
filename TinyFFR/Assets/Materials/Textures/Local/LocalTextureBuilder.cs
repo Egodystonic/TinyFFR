@@ -138,7 +138,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		return result;
 	}
 
-	public Texture CreateTextureFromCompressedBlocks(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+	public Texture CreateTextureFromCompressedData(ReadOnlySpan<byte> compressedData, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		if (compressionFormat == TextureCompressionFormat.None) {
@@ -158,16 +158,16 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		}
 
 		var expectedSizeBytes = TextureCompressor.GetCompressedSizeBytes(dimensions, compressionFormat, levelCount);
-		if (blocks.Length < expectedSizeBytes) {
+		if (compressedData.Length < expectedSizeBytes) {
 			throw new ArgumentException(
 				$"Compressed block data for a {dimensions.X}x{dimensions.Y} {compressionFormat} texture requires {expectedSizeBytes} bytes, " +
-				$"but only {blocks.Length} were supplied.",
-				nameof(blocks)
+				$"but only {compressedData.Length} were supplied.",
+				nameof(compressedData)
 			);
 		}
 
 		var buffer = _globals.CreateGpuHoldingBuffer(expectedSizeBytes);
-		blocks[..expectedSizeBytes].CopyTo(buffer.AsSpan<byte>());
+		compressedData[..expectedSizeBytes].CopyTo(buffer.AsSpan<byte>());
 		return UploadCompressedBlocksAndStoreTextureData(buffer, dimensions, compressionFormat, levelCount, sourceTexelType, dataType, renderingConfig, name);
 	}
 

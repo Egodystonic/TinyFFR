@@ -356,7 +356,7 @@ unsafe partial class LocalAssetLoader {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		if (data.CompressionFormat != TextureCompressionFormat.None && data.CompressedData is { } compressedData) {
-			return self._textureBuilder.CreateTextureFromCompressedBlocks(
+			return self._textureBuilder.CreateTextureFromCompressedData(
 				compressedData.Span,
 				data.Dimensions,
 				data.CompressionFormat,
@@ -960,7 +960,7 @@ unsafe partial class LocalAssetLoader {
 		};
 
 		if (compressionFormat != TextureCompressionFormat.None) {
-			return self._textureBuilder.CreateTextureFromCompressedBlocks(
+			return self._textureBuilder.CreateTextureFromCompressedData(
 				assetData.ExtractSpan<byte>(BakedResourceSchemata.TextureBakingSchema.TexelData),
 				dimensions,
 				compressionFormat,

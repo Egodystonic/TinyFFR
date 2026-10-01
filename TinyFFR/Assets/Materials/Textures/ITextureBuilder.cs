@@ -103,6 +103,40 @@ public unsafe interface ITextureBuilder {
 	/// <param name="generationConfig">The dimensions of the texture being created.</param>
 	/// <param name="config">Controls how the texture is created on the GPU.</param>
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
+
+	/// <summary>
+	/// Creates a texture from data that has already been compressed, e.g. via <see cref="TextureCompressor.Compress{TTexel}"/>,
+	/// using the given rendering config.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The data is uploaded to the GPU as-is, so none of the (potentially slow) compression cost is paid here. This makes it
+	/// possible to compress textures ahead of time and store them however you like.
+	/// </para>
+	/// <para>
+	/// The texture's details are not stored alongside the compressed data, so the arguments given here must exactly match the
+	/// ones the data was compressed with. If you simply wish to load pre-compressed textures from disk, consider baking them with
+	/// the <see cref="Baking.IAssetBakery"/> instead, which stores the texture's details for you.
+	/// </para>
+	/// <para>
+	/// Textures created this way never allow dynamic writes.
+	/// </para>
+	/// </remarks>
+	/// <param name="compressedData">The compressed data, created from a previous invocation of <see cref="TextureCompressor.Compress{TTexel}"/>.</param>
+	/// <param name="dimensions">The width and height of the full-size texture, in texels. Both must be positive.</param>
+	/// <param name="compressionFormat">Which compressed format the data is in. Must not be <see cref="TextureCompressionFormat.None"/>,
+	/// and must be supported on this machine (see <see cref="TextureCompressor.FormatIsSupported"/>).</param>
+	/// <param name="levelCount">How many copies of the texture the data holds, counting the full-size original as one. Must be at
+	/// least 1 and no more than <see cref="TextureUtils.GetMipLevelCount"/> for the given <paramref name="dimensions"/>.</param>
+	/// <param name="sourceTexelType">The type of the texels the data was originally compressed from.</param>
+	/// <param name="dataType">What the texels represent. This should match the data type the data was compressed with.</param>
+	/// <param name="renderingConfig">Controls how the GPU samples the texture once it is created.</param>
+	/// <param name="name">The name to give the texture. May be left empty.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="compressionFormat"/> is <see cref="TextureCompressionFormat.None"/>,
+	/// or <paramref name="levelCount"/> is out of range.</exception>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="compressionFormat"/> is not supported on this machine, or
+	/// <paramref name="compressedData"/> is too short for the given dimensions, format and level count.</exception>
+	Texture CreateTextureFromCompressedData(ReadOnlySpan<byte> compressedData, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name = default);
 	#endregion
 
 	#region Generic Patterns
