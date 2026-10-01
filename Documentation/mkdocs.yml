@@ -135,6 +135,9 @@ nav:
         - Textures:
             - reference/loading_textures.md
             - reference/texture_map_types.md
+            - reference/built-in_textures.md
+            - reference/creating_textures.md
+            - reference/texture_patterns.md
 
 not_in_nav: |
 

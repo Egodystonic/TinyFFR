@@ -53,6 +53,13 @@ The easiest way to load a texture is to use one of the many `Load[...]Map()` fun
 
 The alternative is `assetLoader.LoadTexture(...)`. However, when loading a texture this way you must specify at least its `TextureDataType`; and some of the default load options may not be fully appropriate for your intended usage (i.e. the `TextureCreationConfig` and `TextureReadConfig`). Therefore, `LoadTexture(...)` can be considered a "raw" API for when you want maximum control on how an image asset is loaded in to the system.
 
+??? info "Texture Combination (and `LoadCombinedTexture(...)`)"
+	In some cases you may have two or more disparate texture files that you want to combine to create a single texture map (for example, you might have a separate occlusion, roughness, and metallic texture file that you want to load together to make one ORM map).
+	
+	The various `Load[...]Map()` functions accommodate for this where possible by having overloads that let you specify a file for each individual data component.
+	
+	If you want more control on how exactly the files are combined, `LoadCombinedTexture()` lets you specify a `TextureCombinationConfig`; further explained in [Creating Textures](creating_textures.md).
+
 ## Texture Data Types
 
 Texture files (such as `.bmp`, `.jpeg`, `.png` etc) only store colour channel information; but to effectively *use* that information TinyFFR needs to know what the intended *use* of the texture is.
@@ -306,7 +313,7 @@ The `TextureReadConfig` controls how a texture file's contents are read from dis
 
 	The added alpha channel is fully opaque. This is useful when a texture must have a four-channel layout regardless of what the source file contains. Setting this to `true` while `IncludeWAlphaChannel` is `false` will throw an exception.
 
-### Reading Texture Data Without Loading
+## Reading Texture Data Without Loading
 
 ```csharp
 var metadata = factory.AssetLoader.ReadTextureMetadata(@"Assets/bricks.png");
@@ -320,3 +327,5 @@ If you want to inspect or alter a texture's data in your own code before it reac
 * `factory.AssetLoader.ReadTexture()` reads the file's texels in to the given buffer, converting them to the buffer's texel type (e.g. `TexelRgb24` or `TexelRgba32`) as it does so. It returns the number of texels written. An overload also accepts a `TextureProcessingConfig` to apply as the data is read.
 
 Note that the data is written row-by-row, from the bottom row of the image to the top.
+
+For information on how to create a `Texture` with the modified texel data, see [Creating Textures](creating_textures.md).

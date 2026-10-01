@@ -44,10 +44,20 @@ static partial class TestMain {
 		
 		var factory = builder.Context.Factory!;
 		
-		using var noiseTex = factory.AssetLoader.LoadTexture(@"Assets/noise.jpg", TextureDataType.LinearData);
-		using var bricks = factory.AssetLoader.LoadColorMap(@"Assets/bricks.png");
-		using var warningSymbol = factory.AssetLoader.LoadCanvasTexture(@"Assets/warning.tga");
-		using var normalPattern = factory.AssetLoader.LoadNormalMap(@"Assets/normalPattern1.bmp");
+		var builtInTexLibrary = factory.AssetLoader.BuiltInTexturePaths;
+		
+		using var ormr = factory.AssetLoader.LoadOcclusionRoughnessMetallicReflectanceMap(
+			@"Assets/metal_orm.png",
+			builtInTexLibrary.DefaultReflectanceValue // (1)!
+		);
+		
+		using var orm = factory.AssetLoader.LoadOcclusionRoughnessMetallicMap(
+			@"Assets/occlusion.png",
+			builtInTexLibrary.Rgba30Percent, // (2)!
+			@"Assets/metallic.png"
+		);
+		
+		using var texelBuffer = factory.ResourceAllocator.BorrowSpan<TexelRgba32>(numTexels);
 	}
 
 	public static void StartTest(TestContext context) {
@@ -58,6 +68,8 @@ static partial class TestMain {
 		//		The Tick function passed to BeginDefaultLoop should return `true` to exit the loop.
 		//		If you pass a CameraController to BeginDefaultLoop, it will be possible to control the camera with keyboard/mouse or gamepad using the default controller input mapping.
 		
+		context.Scene.SetBackdrop(SceneCreationConfig.DefaultInitialBackdropColor);
+		context.ModelInstance.RotateBy(180f % Direction.Down);
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.

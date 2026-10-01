@@ -231,14 +231,14 @@ class LocalAssetImportTest {
 					case 3: {
 						var prevMat = instance.Material;
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadOcclusionRoughnessMetallicMap(
-							factory.AssetLoader.BuiltInTexturePaths.DefaultOcclusionMap,
-							factory.AssetLoader.BuiltInTexturePaths.DefaultRoughnessMap,
-							factory.AssetLoader.BuiltInTexturePaths.DefaultMetallicMap
+							factory.AssetLoader.BuiltInTexturePaths.DefaultOcclusionValue,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultRoughnessValue,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultMetallicValue
 						));
 						Assert.AreEqual("?tffr_builtin?map_occlusion+?tffr_builtin?map_roughness+?tffr_builtin?map_metallic", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadOcclusionRoughnessMetallicReflectanceMap(
 							factory.AssetLoader.BuiltInTexturePaths.DefaultOcclusionRoughnessMetallicMap,
-							factory.AssetLoader.BuiltInTexturePaths.DefaultReflectanceMap
+							factory.AssetLoader.BuiltInTexturePaths.DefaultReflectanceValue
 						));
 						Assert.AreEqual("?tffr_builtin?map_orm+?tffr_builtin?map_reflectance", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadOcclusionRoughnessMetallicReflectanceMap(
@@ -264,7 +264,7 @@ class LocalAssetImportTest {
 						));
 						Assert.AreEqual("?tffr_builtin?map_at", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAbsorptionTransmissionMap(
-							factory.AssetLoader.BuiltInTexturePaths.DefaultAbsorptionMap
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAbsorptionValue
 						));
 						Assert.AreEqual("?tffr_builtin?map_absorption+?tffr_builtin?map_transmission", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAbsorptionTransmissionMap(
@@ -289,8 +289,8 @@ class LocalAssetImportTest {
 					case 5: {
 						var prevMat = instance.Material;
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadEmissiveMap(
-							factory.AssetLoader.BuiltInTexturePaths.DefaultEmissiveColorMap,
-							factory.AssetLoader.BuiltInTexturePaths.DefaultEmissiveIntensityMap
+							factory.AssetLoader.BuiltInTexturePaths.DefaultEmissiveColorValue,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultEmissiveIntensityValue
 						));
 						Assert.AreEqual("?tffr_builtin?map_emissive-color+?tffr_builtin?map_emissive-intensity", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
 						
@@ -307,12 +307,12 @@ class LocalAssetImportTest {
 						var prevMat = instance.Material;
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAnisotropyMapVectorFormatted(
 							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyVectorMap,
-							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyStrengthMap
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyStrengthValue
 						));
 						Assert.AreEqual("?tffr_builtin?map_anisotropy-vector+?tffr_builtin?map_anisotropy-strength", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAnisotropyMapRadialAngleFormatted(
-							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyRadialAngleMap,
-							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyStrengthMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyRadialAngleValue,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyStrengthValue,
 							Orientation2D.Up, AnisotropyRadialAngleRange.ZeroTo180, true
 						));
 						Assert.AreEqual("?tffr_builtin?map_anisotropy-angle+?tffr_builtin?map_anisotropy-strength", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
@@ -329,8 +329,8 @@ class LocalAssetImportTest {
 					case 7: {
 						var prevMat = instance.Material;
 						resourcesToBeDisposed.Add(factory.AssetLoader.LoadClearCoatMap(
-							factory.AssetLoader.BuiltInTexturePaths.DefaultClearCoatThicknessMap,
-							factory.AssetLoader.BuiltInTexturePaths.DefaultClearCoatRoughnessMap
+							factory.AssetLoader.BuiltInTexturePaths.DefaultClearCoatThicknessValue,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultClearCoatRoughnessValue
 						));
 						Assert.AreEqual("?tffr_builtin?map_clearcoat-thickness+?tffr_builtin?map_clearcoat-roughness", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
 

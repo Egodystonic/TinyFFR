@@ -66,23 +66,23 @@ class LocalBuiltInTexturePathLibraryTest {
 		AssertProperty(127, 127, 255, lib => lib.DefaultNormalMap);
 		AssertProperty(ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultMetallic, lib => lib.DefaultOcclusionRoughnessMetallicMap);
 		AssertProperty(ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultReflectance, lib => lib.DefaultOcclusionRoughnessMetallicReflectanceMap);
-		AssertProperty(ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, lib => lib.DefaultOcclusionMap);
-		AssertProperty(ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, lib => lib.DefaultRoughnessMap);
-		AssertProperty(ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, lib => lib.DefaultMetallicMap);
-		AssertProperty(ITextureBuilder.DefaultReflectance, ITextureBuilder.DefaultReflectance, ITextureBuilder.DefaultReflectance, lib => lib.DefaultReflectanceMap);
+		AssertProperty(ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, lib => lib.DefaultOcclusionValue);
+		AssertProperty(ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, lib => lib.DefaultRoughnessValue);
+		AssertProperty(ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, lib => lib.DefaultMetallicValue);
+		AssertProperty(ITextureBuilder.DefaultReflectance, ITextureBuilder.DefaultReflectance, ITextureBuilder.DefaultReflectance, lib => lib.DefaultReflectanceValue);
 		AssertProperty(new TexelRgba32(new TexelRgb24(ITextureBuilder.DefaultAbsorption), (byte) (ITextureBuilder.DefaultTransmission * Byte.MaxValue)), lib => lib.DefaultAbsorptionTransmissionMap);
-		AssertProperty(new TexelRgb24(ITextureBuilder.DefaultAbsorption), lib => lib.DefaultAbsorptionMap);
-		AssertProperty(ITextureBuilder.DefaultTransmission, ITextureBuilder.DefaultTransmission, ITextureBuilder.DefaultTransmission, lib => lib.DefaultTransmissionMap);
+		AssertProperty(new TexelRgb24(ITextureBuilder.DefaultAbsorption), lib => lib.DefaultAbsorptionValue);
+		AssertProperty(ITextureBuilder.DefaultTransmission, ITextureBuilder.DefaultTransmission, ITextureBuilder.DefaultTransmission, lib => lib.DefaultTransmissionValue);
 		AssertProperty(new TexelRgba32(new TexelRgb24(ITextureBuilder.DefaultEmissiveColor), (byte) (ITextureBuilder.DefaultEmissiveIntensity * Byte.MaxValue)), lib => lib.DefaultEmissiveMap);
-		AssertProperty(new TexelRgb24(ITextureBuilder.DefaultEmissiveColor), lib => lib.DefaultEmissiveColorMap);
-		AssertProperty(ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, lib => lib.DefaultEmissiveIntensityMap);
+		AssertProperty(new TexelRgb24(ITextureBuilder.DefaultEmissiveColor), lib => lib.DefaultEmissiveColorValue);
+		AssertProperty(ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, lib => lib.DefaultEmissiveIntensityValue);
 		AssertProperty(255, 128, 255, lib => lib.DefaultAnisotropyMap);
-		AssertProperty(ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, lib => lib.DefaultAnisotropyRadialAngleMap);
+		AssertProperty(ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, lib => lib.DefaultAnisotropyRadialAngleValue);
 		AssertProperty(255, 128, 0, lib => lib.DefaultAnisotropyVectorMap);
-		AssertProperty(ITextureBuilder.DefaultAnisotropyStrength, ITextureBuilder.DefaultAnisotropyStrength, ITextureBuilder.DefaultAnisotropyStrength, lib => lib.DefaultAnisotropyStrengthMap);
+		AssertProperty(ITextureBuilder.DefaultAnisotropyStrength, ITextureBuilder.DefaultAnisotropyStrength, ITextureBuilder.DefaultAnisotropyStrength, lib => lib.DefaultAnisotropyStrengthValue);
 		AssertProperty(ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatRoughness, 0f, lib => lib.DefaultClearCoatMap);
-		AssertProperty(ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, lib => lib.DefaultClearCoatThicknessMap);
-		AssertProperty(ITextureBuilder.DefaultClearCoatRoughness, ITextureBuilder.DefaultClearCoatRoughness, ITextureBuilder.DefaultClearCoatRoughness, lib => lib.DefaultClearCoatRoughnessMap);
+		AssertProperty(ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, lib => lib.DefaultClearCoatThicknessValue);
+		AssertProperty(ITextureBuilder.DefaultClearCoatRoughness, ITextureBuilder.DefaultClearCoatRoughness, ITextureBuilder.DefaultClearCoatRoughness, lib => lib.DefaultClearCoatRoughnessValue);
 
 		byte R(float f) => (byte) MathF.Round(255f * f, MidpointRounding.AwayFromZero);
 

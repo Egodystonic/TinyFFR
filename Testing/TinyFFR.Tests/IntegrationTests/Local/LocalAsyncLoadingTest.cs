@@ -435,8 +435,8 @@ unsafe class LocalAsyncLoadingTest {
 		using var factory = new LocalTinyFfrFactory();
 		var loader = factory.AssetLoader;
 
-		using var syncTex = loader.LoadTexture(loader.BuiltInTexturePaths.DefaultReflectanceMap, dataType: TextureDataType.LinearData, "builtin-sync");
-		using var asyncTex = AwaitLoad(loader.LoadTextureAsync(loader.BuiltInTexturePaths.DefaultReflectanceMap, dataType: TextureDataType.LinearData, "builtin-async"));
+		using var syncTex = loader.LoadTexture(loader.BuiltInTexturePaths.DefaultReflectanceValue, dataType: TextureDataType.LinearData, "builtin-sync");
+		using var asyncTex = AwaitLoad(loader.LoadTextureAsync(loader.BuiltInTexturePaths.DefaultReflectanceValue, dataType: TextureDataType.LinearData, "builtin-async"));
 		AssertTexturesEquivalent(syncTex, asyncTex, "built-in texel");
 
 		using var syncEmbedded = loader.LoadTexture(loader.BuiltInTexturePaths.UvTestingTexture, dataType: TextureDataType.ColorSrgb, "embedded-sync");
