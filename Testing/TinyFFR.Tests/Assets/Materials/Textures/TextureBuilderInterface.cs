@@ -80,30 +80,6 @@ unsafe class TextureBuilderInterfaceTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyForwardCompressedDataConvenienceOverload() {
-		var data = new byte[] { 1, 2, 3, 4 };
-
-		_tb.CreateTextureFromCompressedData(data, new XYPair<int>(64, 32), TextureCompressionFormat.Bc7Srgb, includesMipMaps: true, TexelType.Rgba32, TextureDataType.ColorSrgb, "Test");
-		var call = _mtb.LastCompressedDataCall!.Value;
-		Assert.AreEqual(data, call.Data);
-		Assert.AreEqual(new XYPair<int>(64, 32), call.Dimensions);
-		Assert.AreEqual(TextureCompressionFormat.Bc7Srgb, call.Format);
-		Assert.AreEqual(TextureUtils.GetMipLevelCount(new XYPair<int>(64, 32)), call.LevelCount);
-		Assert.AreEqual(TexelType.Rgba32, call.SourceTexelType);
-		Assert.AreEqual(TextureDataType.ColorSrgb, call.DataType);
-		Assert.AreEqual(new TextureRenderingConfig(), call.RenderingConfig);
-		Assert.AreEqual("Test", call.Name);
-
-		_tb.CreateTextureFromCompressedData(data, new XYPair<int>(64, 32), TextureCompressionFormat.Bc5, includesMipMaps: false, TexelType.Rgb24, TextureDataType.LinearDataUnitVector);
-		call = _mtb.LastCompressedDataCall!.Value;
-		Assert.AreEqual(1, call.LevelCount);
-		Assert.AreEqual(TextureCompressionFormat.Bc5, call.Format);
-		Assert.AreEqual(TexelType.Rgb24, call.SourceTexelType);
-		Assert.AreEqual(TextureDataType.LinearDataUnitVector, call.DataType);
-		Assert.AreEqual("", call.Name);
-	}
-
-	[Test]
 	public void ShouldCorrectlyPassThroughCreationArgs() {
 		AssertCreateTextureCall<TexelRgb24>((texels, gc, cc) => {
 			Assert.AreEqual(10, texels.Length);

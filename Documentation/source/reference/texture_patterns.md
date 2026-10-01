@@ -3,9 +3,17 @@ title: Texture Patterns
 description: Examples of how to use texture patterns to make color, normal, and ORM maps.
 ---
 
-You can use the built-in texture pattern generators to create interesting color maps, normal maps, and ORM maps for your materials.
+You can use the built-in texture pattern generators to create interesting color maps, normal maps, ORM maps, and more for your materials.
 
-Details on how to use these patterns is explained in a previous page: [Creating Textures](creating_textures.md). This page simply demonstrates the different patterns.
+How to create textures from patterns (using the texture builder's `Create[...]Map()` functions) is explained on the previous page: [Creating Textures](creating_textures.md). This page demonstrates the different patterns themselves.
+
+## Pattern Basics
+
+Every pattern is created via one of the static methods on `TexturePattern` (e.g. `TexturePattern.Chequerboard()`), and is a `TexturePattern<T>`, where `T` is the type of value the pattern produces at each texel. The same pattern types can therefore be used to produce colours (`ColorVect`), normal-map directions (`SphericalTranslation`), angles (`Angle`), or plain numeric data (`Real`).
+
+A pattern determines its own dimensions (in texels) from the arguments it's created with; these are available via its `Dimensions` property. Any size arguments you don't specify fall back to the defaults listed on `TexturePatternDefaultValues`.
+
+Some pattern overloads (the circles with per-side values, and all of the gradients) blend smoothly between the values you give them. These overloads require a value type that can be interpolated; all of `ColorVect`, `Real`, `Angle`, and `SphericalTranslation` can be.
 
 ## Chequerboard Color Maps
 
@@ -23,11 +31,12 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 		TexturePattern.ChequerboardBordered(
 			borderValue: ColorVect.FromRgb24(0x880000), // (1)!
 			borderWidth: 8, // (2)!
-			firstValue: ColorVect.White, // (3)!
-			secondValue: ColorVect.Black, // (4)!
+			firstValue: ColorVect.WhiteOpaque, // (3)!
+			secondValue: ColorVect.BlackOpaque, // (4)!
 			repetitionCount: (8, 8), // (5)!
 			cellResolution: 120 // (6)!
-		)
+		),
+		includeAlpha: false // (7)!
 	);
 	```
 
@@ -47,9 +56,11 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 
 	6.	This is setting the size, in pixels, of the width and depth of each cell (square).
 
+	7.	Every color map created from a pattern must specify whether it should include an alpha channel. Our colours are all fully opaque, so we don't need one.
+
 === "Bordered, 4 Colours"
 
-	There are some overloads of `ChequerboardBordered` that can take a `thirdValue` and/or `fourthValue` too if you prefer. Here's another example using four colours and an uneven repetition count:
+	There are some overloads of `ChequerboardBordered` that can take a `thirdValue` and/or `fourthValue` too if you prefer (and one that takes only a `firstValue`, for a single colour of cell separated by borders). Here's another example using four colours and an uneven repetition count:
 
 	![Image of chequerboard cube with random colours](texture_patterns_chequerboard_random.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
@@ -67,7 +78,8 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 			fourthValue: ColorVect.RandomOpaque(),
 			repetitionCount: (10, 6),
 			cellResolution: 200
-		)
+		),
+		includeAlpha: false
 	);
 	```
 
@@ -81,12 +93,15 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	///
 
 	```csharp
-	using var colorMap = textureBuilder.CreateColorMap(TexturePattern.Chequerboard(
-		firstValue: ColorVect.FromStandardColor(StandardColor.Red), // (1)!
-		secondValue: ColorVect.FromStandardColor(StandardColor.Green),
-		thirdValue: ColorVect.FromStandardColor(StandardColor.Blue),
-		fourthValue: ColorVect.FromStandardColor(StandardColor.Yellow)
-	));
+	using var colorMap = textureBuilder.CreateColorMap(
+		TexturePattern.Chequerboard(
+			firstValue: ColorVect.FromStandardColor(StandardColor.Red), // (1)!
+			secondValue: ColorVect.FromStandardColor(StandardColor.Green),
+			thirdValue: ColorVect.FromStandardColor(StandardColor.Blue),
+			fourthValue: ColorVect.FromStandardColor(StandardColor.Yellow)
+		),
+		includeAlpha: false
+	);
 	```
 
 	1. 	`ColorVect.FromStandardColor()` can also be replaced with just an implicit conversion from `StandardColor`, e.g. you can write this line simply as:
@@ -105,18 +120,23 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	In this example, we create a 3x3 'grid' of bordered circles. We specify each colour in [HSL](https://en.wikipedia.org/wiki/HSL_and_HSV) format with the static method `ColorVect.FromHueSaturationLightness()`. The first argument to `FromHueSaturationLightness()` is a hue angle in degrees, the second is a saturation (from 0.0 to 1.0), and the third is a lightness (also from 0.0 to 1.0):
 
 	```csharp
-	using var colorMap = textureBuilder.CreateColorMap(TexturePattern.Circles(
-		interiorValue: ColorVect.FromHueSaturationLightness(180f, 0.6f, 0.33f), // (1)!
-		borderValue: ColorVect.FromHueSaturationLightness(-70f, 1f, 0.5f), // (2)!
-		paddingValue: ColorVect.FromHueSaturationLightness(240f, 0.3f, 0.7f), // (3)!
-		repetitions: (3, 3) // (4)!
-	));
+	using var colorMap = textureBuilder.CreateColorMap(
+		TexturePattern.Circles(
+			interiorValue: ColorVect.FromHueSaturationLightness(180f, 0.6f, 0.33f), // (1)!
+			borderValue: ColorVect.FromHueSaturationLightness(-70f, 1f, 0.5f), // (2)!
+			paddingValue: ColorVect.FromHueSaturationLightness(240f, 0.3f, 0.7f), // (3)!
+			repetitions: (3, 3) // (4)!
+		),
+		includeAlpha: false
+	);
 	```
 
 	1. This is the colour of the interior of each circle.
 	2. This is the colour of the border of each circle.
 	3. This is the colour between the circles.
 	4. Just like with the chequerboard patterns, this specifies the number of circles in each direction.
+
+	The size of each circle can also be adjusted via the optional `interiorRadius`, `borderSize`, and `paddingSize` arguments (all in texels).
 
 === "Interpolated Circle"
 
@@ -139,25 +159,28 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	var leftAngle = Orientation2D.Left.ToPolarAngle()!.Value;
 	var bottomAngle = Orientation2D.Down.ToPolarAngle()!.Value;
 
-	using var colorMap = textureBuilder.CreateColorMap(TexturePattern.Circles(
-		interiorValueRight: ColorVect.FromHueSaturationLightness(rightAngle, 1f, 0.3f),
-		interiorValueTop: ColorVect.FromHueSaturationLightness(topAngle, 1f, 0.3f),
-		interiorValueLeft: ColorVect.FromHueSaturationLightness(leftAngle, 1f, 0.3f),
-		interiorValueBottom: ColorVect.FromHueSaturationLightness(bottomAngle, 1f, 0.3f),
+	using var colorMap = textureBuilder.CreateColorMap(
+		TexturePattern.Circles(
+			interiorValueRight: ColorVect.FromHueSaturationLightness(rightAngle, 1f, 0.3f),
+			interiorValueTop: ColorVect.FromHueSaturationLightness(topAngle, 1f, 0.3f),
+			interiorValueLeft: ColorVect.FromHueSaturationLightness(leftAngle, 1f, 0.3f),
+			interiorValueBottom: ColorVect.FromHueSaturationLightness(bottomAngle, 1f, 0.3f),
 
-		borderValueRight: ColorVect.FromHueSaturationLightness(rightAngle + 90f, 1f, 0.5f), // (1)!
-		borderValueTop: ColorVect.FromHueSaturationLightness(topAngle + 90f, 1f, 0.5f),
-		borderValueLeft: ColorVect.FromHueSaturationLightness(leftAngle + 90f, 1f, 0.5f),
-		borderValueBottom: ColorVect.FromHueSaturationLightness(bottomAngle + 90f, 1f, 0.5f),
+			borderValueRight: ColorVect.FromHueSaturationLightness(rightAngle + 90f, 1f, 0.5f), // (1)!
+			borderValueTop: ColorVect.FromHueSaturationLightness(topAngle + 90f, 1f, 0.5f),
+			borderValueLeft: ColorVect.FromHueSaturationLightness(leftAngle + 90f, 1f, 0.5f),
+			borderValueBottom: ColorVect.FromHueSaturationLightness(bottomAngle + 90f, 1f, 0.5f),
 
-		paddingValue: ColorVect.White.WithLightness(0.2f), // (2)!
+			paddingValue: ColorVect.WhiteOpaque.WithLightness(0.2f), // (2)!
 
-		repetitions: (1, 1)
-	));
+			repetitions: (1, 1)
+		),
+		includeAlpha: false
+	);
 	```
 
 	1. Notice that we're shifting the hue colour angle for each border stop by 90°, mostly to help it stand out from the interior colour wheel.
-	2. `WithLightness()` returns a new `ColorVect` with the HSL lightness adjusted to the given value (in this case we're returning `White` with a lightness of `0.2`).
+	2. `WithLightness()` returns a new `ColorVect` with the HSL lightness adjusted to the given value (in this case we're returning white with a lightness of `0.2`).
 
 === "Simple Rectangles"
 
@@ -173,7 +196,8 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 		TexturePattern.Rectangles(
 			interiorValue: new ColorVect(1f, 0f, 0f),
 			paddingValue: new ColorVect(0f, 1f, 0f)
-		)
+		),
+		includeAlpha: false
 	);
 	```
 
@@ -184,7 +208,7 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	Four squares each with multi-coloured borders
 	///
 
-	Not only can you specify a border for each "rectangle", but you can actually specify a different value for the top, left, bottom and right sides (optionally):
+	Not only can you specify a border for each "rectangle", but you can actually specify a different value for the top, left, bottom and right sides (in this overload every argument except `transform` is required):
 
 	```csharp
 	using var colorMap = textureBuilder.CreateColorMap(
@@ -199,7 +223,8 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 			borderBottomValue: new ColorVect(0f, 0f, 1f),
 			paddingValue: new ColorVect(0f, 0f, 0f),
 			repetitions: (2, 2)
-		)
+		),
+		includeAlpha: false
 	);
 	```
 
@@ -298,11 +323,13 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 
 	2.	We specify each border direction's coordinate `AzimuthalOffset` as being one of the 90° right-angle values.
 
-		We deliberately flip the top/bottom and left/right borders from the [usual convention](/tutorials/conventions.md/#2d-handedness-orientation) in order to create an "indented" rather than "outdented" effect.
+		We deliberately flip the top/bottom and left/right borders from the [usual convention](conventions.md#2d-handedness-orientation) in order to create an "indented" rather than "outdented" effect.
 
 	Compare also to [Occluded Circular Divots](#__tabbed_4_3) below.
 
 ## Line & Circle ORM Maps
+
+When creating an ORM map from patterns, `CreateOcclusionRoughnessMetallicMap()` requires a pattern for each of the occlusion, roughness, and metallic components. If you only want to vary one or two of them, use a `PlainFill` pattern for the others. The default values (the same ones used when creating an ORM map from single values) are available as `ITextureBuilder.DefaultOcclusion`, `ITextureBuilder.DefaultRoughness`, and `ITextureBuilder.DefaultMetallic`.
 
 === "Metallic Strips"
 
@@ -311,7 +338,7 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	The lines along this surface alternate between metallic and non-metallic strips.
 	///
 
-	In this first example for ORM maps, we will specify just a metallic pattern. Specifically, we will use the `Lines` pattern to create metallic 'bands'/'strips' horizontally across our material surface:
+	In this first example for ORM maps, we will vary just the metallic data. Specifically, we will use the `Lines` pattern to create metallic 'bands'/'strips' horizontally across our material surface:
 
 	```csharp
 	var metallicPattern = TexturePattern.Lines<Real>( // (1)!
@@ -321,11 +348,15 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 		numRepeats: 5 // (5)!
 	);
 
-	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap(metallicPattern: metallicPattern); // (6)!
+	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap( // (6)!
+		occlusionPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultOcclusion),
+		roughnessPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultRoughness),
+		metallicPattern: metallicPattern
+	);
 
 	using var material = materialBuilder.CreateStandardMaterial( // (7)!
 		colorMap: colorMap, 
-		ormMap: ormMap
+		ormOrOrmrMap: ormMap
 	);
 	```
 
@@ -350,9 +381,9 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 
 		Because we wrote `5`, we will see 10 bands in total (5 of `firstValue`/non-metallic and 5 of `secondValue`/metallic).
 
-	6.	When creating an ORM map there are three optional parameters; one each for occlusion, roughness, and metallicness.
+	6.	We want to vary only the metallic data, so we pass `PlainFill` patterns of the default occlusion and roughness values for the other two components.
 
-		If you just want to specify a metallic pattern like we're doing here, you can explicitly name the `metallicPattern` argument. The library will fill in sensible defaults for you for the roughness and occlusion.
+		If you wanted a uniform ORM map with no patterns at all, you could instead use the overload that takes single values (e.g. `CreateOcclusionRoughnessMetallicMap(metallic: 1f)`); see [Creating Textures](creating_textures.md#map-creation-functions).
 
 	7.	Finally we pass our `ormMap` to `CreateStandardMaterial()` just like we did with the `colorMap` and `normalMap`. 
 	
@@ -398,6 +429,8 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	
 		Negative values have all the same properties as positive values but reverse the direction of the curves.
 
+	The thickness of each line and the overall size of the pattern can also be adjusted via the optional `lineThickness` and `colinearSize` arguments.
+
 	```csharp
 	var roughnessPattern = TexturePattern.Lines<Real>( // (1)!
 		firstValue: 0f,
@@ -419,6 +452,7 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	);
 
 	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap( // (2)!
+		occlusionPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultOcclusion),
 		roughnessPattern: roughnessPattern, 
 		metallicPattern: metallicPattern
 	);
@@ -426,9 +460,9 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 
 	1. 	This line pattern uses four values to specify four roughness bands (`0f` is perfectly smooth, `1f` is maximally rough).
 
-		`Line` patterns can have up to ten values.
+		`Lines` patterns can have up to ten values.
 
-	2.	In this example we're passing in a roughness and metallic map to `CreateOcclusionRoughnessMetallicMap()`. Make sure you name the arguments to avoid accidentally specifying the wrong type of pattern or map.
+	2.	In this example we're passing in a roughness and metallic pattern to `CreateOcclusionRoughnessMetallicMap()` (and a plain fill of the default occlusion value). Make sure you name the arguments to avoid accidentally specifying the wrong type of pattern.
 
 === "Occluded Circular Divots"
 
@@ -442,7 +476,7 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	As a reminder, the actual surface geometry has not changed (it's still a plain cube mesh); but by clever usage of normal and occlusion mapping we can give the strong "effect" of surface detail.
 
 	```csharp
-	var normalMap = TextureBuilder.CreateNormalMap(TexturePattern.Circles( // (1)!
+	using var normalMap = textureBuilder.CreateNormalMap(TexturePattern.Circles( // (1)!
 		interiorValue: new SphericalTranslation(0f, 0f),
 		borderValueRight: new SphericalTranslation(180f, 45f),
 		borderValueTop: new SphericalTranslation(270f, 45f),
@@ -452,13 +486,15 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 		repetitions: (6, 6)
 	));
 
-	var ormMap = TextureBuilder.CreateOcclusionRoughnessMetallicMap( // (2)!
+	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap( // (2)!
 		occlusionPattern: TexturePattern.Circles<Real>(
 			interiorValue: 0.5f,
 			borderValue: 0.75f,
 			paddingValue: 1f,
 			repetitions: (6, 6)
-		)
+		),
+		roughnessPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultRoughness),
+		metallicPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultMetallic)
 	);
 	```
 
@@ -477,19 +513,18 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	The metal is shiniest at the top and rougher at the bottom.
 	///
 
-	The last two types of pattern currently supported are `PlainFill`s and `Gradient`s.
-
 	In this example we will use a `PlainFill` to create a fully metallic surface, and then use a `GradientVertical` to vary the roughness from top-to-bottom:
 
 	```csharp
 	using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap(
+		occlusionPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultOcclusion),
 		roughnessPattern: TexturePattern.GradientVertical<Real>(0f, 1f), // (1)!
 		metallicPattern: TexturePattern.PlainFill<Real>(1f) // (2)!
 	);
 
 	using var material = materialBuilder.CreateStandardMaterial(
 		colorMap: colorMap, 
-		ormMap: ormMap
+		ormOrOrmrMap: ormMap
 	);
 	```
 
@@ -516,8 +551,9 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 			bottomLeft:		ColorVect.FromHueSaturationLightness(225f, 1f, 0.5f),
 			bottom:			ColorVect.FromHueSaturationLightness(270f, 1f, 0.5f),
 			bottomRight:	ColorVect.FromHueSaturationLightness(315f, 1f, 0.5f),
-			centre:			ColorVect.White
-		)
+			centre:			ColorVect.WhiteOpaque
+		),
+		includeAlpha: false
 	);
 	using var material = materialBuilder.CreateStandardMaterial(colorMap);
 	```
@@ -547,7 +583,9 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 
 	:   This pattern interpolates between an `inner` and `outer` gradient and produces a radial (circular) gradient.
 	
-		You can also specify whether to `fringeCorners`, i.e. whether the corners of the resultant map texture should go a little past the `outer` value. If `true` the corners of the map will 'fringe' past `outer`. If `false` the corners will be clamped to the `outer` value.
+		You can also specify whether to `fringeCorners`, i.e. whether the corners of the resultant map texture should go a little past the `outer` value. If `true` (the default) the corners of the map will 'fringe' past `outer`. If `false` the corners will be clamped to the `outer` value.
+
+		The optional `innerOuterRatio` argument controls how quickly the gradient moves from the `inner` value to the `outer` value.
 
 	<span class="def-icon">:material-code-block-parentheses:</span> `Gradient()`
 
@@ -555,7 +593,51 @@ Details on how to use these patterns is explained in a previous page: [Creating 
 	
 		The pattern will interpolate between all nine values across the map texture.
 
+	Every gradient pattern also takes an optional `resolution` argument specifying its width and height in texels.
 
+## Grid Patterns
+
+The `Grid` pattern draws evenly-spaced horizontal and vertical lines over a background, like a sheet of graph paper. The lines are laid out outwards from the centre of the pattern, so there is always a horizontal and vertical line passing through its exact centre.
+
+The full form of the pattern lets you specify separate values for the two *centre* lines, the widely-spaced *major* lines, and the closely-spaced *minor* lines in between them:
+
+```csharp
+using var colorMap = textureBuilder.CreateColorMap(
+	TexturePattern.Grid(
+		centreLineValue: ColorVect.FromStandardColor(StandardColor.Red), // (1)!
+		majorLineValue: ColorVect.WhiteOpaque,
+		minorLineValue: new ColorVect(0.4f, 0.4f, 0.4f),
+		backgroundValue: ColorVect.BlackOpaque,
+		majorLineSpacing: 0.25f, // (2)!
+		minorLineSpacing: 0.05f,
+		centreLineThickness: 8, // (3)!
+		majorLineThickness: 4,
+		minorLineThickness: 2,
+		resolution: 1024 // (4)!
+	),
+	includeAlpha: false
+);
+```
+
+1.	These four lines set the value of each kind of line and the background. Where lines overlap, centre lines are drawn over major lines, which are drawn over minor lines.
+
+2.	These two lines set the distance between neighbouring lines, as a fraction of the pattern's width. In this example there will be a major line every quarter of the texture, and a minor line every twentieth.
+
+	Setting either spacing to `0f` removes that set of lines entirely.
+
+3.	These three lines set the thickness of each kind of line, in texels.
+
+4.	The width and height of the pattern in texels (grid patterns are always square).
+
+For a simple grid where every line is the same, the shorter overload takes just one line value, a background value, and (optionally) a spacing and thickness. For example, the following creates an ORM map where the surface is metallic only along a grid of lines:
+
+```csharp
+using var ormMap = textureBuilder.CreateOcclusionRoughnessMetallicMap(
+	occlusionPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultOcclusion),
+	roughnessPattern: TexturePattern.PlainFill<Real>(ITextureBuilder.DefaultRoughness),
+	metallicPattern: TexturePattern.Grid<Real>(lineValue: 1f, backgroundValue: 0f, lineSpacing: 0.125f, lineThickness: 8)
+);
+```
 
 ## Transforms
 
@@ -585,13 +667,14 @@ using var colorMap = textureBuilder.CreateColorMap(
 		fourthValue: StandardColor.Purple,
 		borderWidth: 8,
 		transform: Transform2D.None // (1)!
-	)
+	),
+	includeAlpha: false
 );
 ```
 
 1. 	Only this line will change in the following three examples.
 
-	(Supplying `Transform.None` to the `transform` argument is the same as supplying no argument at all.)
+	(Supplying `Transform2D.None` to the `transform` argument is the same as supplying no argument at all.)
 
 ![Example color map](texture_patterns_transform_none.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 /// caption
@@ -619,7 +702,8 @@ The  tabs below show the three different transformation types being applied to i
 			fourthValue: StandardColor.Purple,
 			borderWidth: 8,
 			transform: new Transform2D(scaling: (0.5f, 2f)) // (1)!
-		)
+		),
+		includeAlpha: false
 	);
 	```
 
@@ -659,7 +743,8 @@ The  tabs below show the three different transformation types being applied to i
 			fourthValue: StandardColor.Purple,
 			borderWidth: 8,
 			transform: new Transform2D(rotation: 10f) // (1)!
-		)
+		),
+		includeAlpha: false
 	);
 	```
 
@@ -668,7 +753,7 @@ The  tabs below show the three different transformation types being applied to i
 	???+ note "Clockwise Rotations"
 		You can rotate clockwise by supplying a negative value for `rotation` in your `transform`.
 
-		The reason positive values result in an anticlockwise rotation in TinyFFR is just a [convention](/tutorials/conventions.md), although it's worth noting this is ultimately just conforming to a [general convention in trigonometry](https://math.stackexchange.com/questions/1749279/why-are-the-trig-functions-defined-by-the-counterclockwise-path-of-a-circle).
+		The reason positive values result in an anticlockwise rotation in TinyFFR is just a [convention](conventions.md), although it's worth noting this is ultimately just conforming to a [general convention in trigonometry](https://math.stackexchange.com/questions/1749279/why-are-the-trig-functions-defined-by-the-counterclockwise-path-of-a-circle).
 
 === "Translation"
 
@@ -689,7 +774,8 @@ The  tabs below show the three different transformation types being applied to i
 			fourthValue: StandardColor.Purple,
 			borderWidth: 8,
 			transform: new Transform2D(translation: (1f / 8f, -1f / 4f)) // (1)!
-		)
+		),
+		includeAlpha: false
 	);
 	```
 
@@ -698,7 +784,3 @@ The  tabs below show the three different transformation types being applied to i
 	The translation values for X and Y are specified as fractions of the entire pattern's width/height respectively, so usually you'll want to supply values in the range `[-1, 1]` (though any valid float is permitted).
 
 	As per the [usual convention](conventions.md) a positive X value shifts right and a positive Y value shifts upward.
-
-
-
-		

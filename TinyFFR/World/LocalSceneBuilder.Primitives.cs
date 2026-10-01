@@ -409,16 +409,16 @@ sealed partial class LocalSceneBuilder {
 		const int GridResolution = 2048;
 		var tex = _assetLoader.TextureBuilder.CreateColorMap(
 			TexturePattern.Grid(
-				centreValue: ColorVect.RedOpaque,
-				majorValue: ColorVect.GreenOpaque,
-				minorValue: ColorVect.BlueOpaque,
+				centreLineValue: ColorVect.RedOpaque,
+				majorLineValue: ColorVect.GreenOpaque,
+				minorLineValue: ColorVect.BlueOpaque,
 				backgroundValue: ColorVect.BlackTransparent,
-				resolution: GridResolution,
-				majorFraction: majorGridLineSpacing / gridSize,
-				minorFraction: minorGridLineSpacing / gridSize,
+				majorLineSpacing: majorGridLineSpacing / gridSize,
+				minorLineSpacing: minorGridLineSpacing / gridSize,
 				centreLineThickness: 6,
 				majorLineThickness: 4,
-				minorLineThickness: 1
+				minorLineThickness: 1,
+				resolution: GridResolution
 			),
 			includeAlpha: false,
 			new TextureCreationConfig { DataType = TextureDataType.LinearData, GenerateMipMaps = false, Name = "Primitive Grid Texture" }
