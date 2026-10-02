@@ -118,7 +118,13 @@ public interface ITinyFfrAsyncOperation {
 /// Represents an ongoing or completed asynchronous operation with the return type erased; useful for grouping multiple async operations of differing return type together.
 /// </summary>
 /// <remarks>
+/// <para>
 /// You can implicitly convert a <see cref="TinyFfrAsyncOperation{T}"/> to a <see cref="TinyFfrAsyncOperation"/>. To convert back requires an explicit cast.
+/// </para>
+/// <para>
+/// Like <see cref="TinyFfrAsyncOperation{T}"/>, every operation must be consumed exactly once. An untyped operation is consumed either by awaiting it or by
+/// calling an overload of <see cref="DisposeOperation()"/>, both of which discard any result.
+/// </para>
 /// </remarks>
 /// <seealso cref="TinyFfrAsyncOperation{T}"/>
 public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
@@ -260,6 +266,58 @@ public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
 	}
 
 	/// <summary>
+	/// Blocks the calling thread until this operation completes, then consumes it, discarding any result.
+	/// If <see cref="IsCompleted"/> is <c>true</c> this method returns immediately.
+	/// </summary>
+	/// <remarks>
+	/// Must be called from the primary thread. This (or one of its overloads) is the way to consume an operation without using the <see langword="await"/> keyword,
+	/// and is equivalent to awaiting it; see the remarks on <see cref="TinyFfrAsyncOperation{T}"/>.
+	/// </remarks>
+	/// <exception cref="InvalidOperationException">Thrown if this operation has already been disposed/consumed (i.e. <see cref="IsDisposed"/> is <c>true</c>).</exception>
+	/// <exception cref="AggregateException">Thrown if the operation failed. The operation is still consumed.</exception>
+	public void DisposeOperation() => _ = DisposeOperation(Timeout.InfiniteTimeSpan, default);
+	/// <summary>
+	/// Blocks the calling thread until this operation completes or <paramref name="timeout"/> elapses; if it completed in time, consumes it, discarding any result.
+	/// </summary>
+	/// <remarks>
+	/// Must be called from the primary thread. If this returns <see langword="true"/>, the operation has been consumed. If it returns <see langword="false"/>, the
+	/// operation has <i>not</i> been consumed and must still be consumed later, once it completes.
+	/// </remarks>
+	/// <param name="timeout">The maximum amount of time to wait. Use <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.</param>
+	/// <returns><see langword="true"/> if the operation completed (and was consumed) before <paramref name="timeout"/> elapsed; <see langword="false"/> otherwise.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if this operation has already been disposed/consumed (i.e. <see cref="IsDisposed"/> is <c>true</c>).</exception>
+	/// <exception cref="AggregateException">Thrown if the operation failed. The operation is still consumed.</exception>
+	public bool DisposeOperation(TimeSpan timeout) => DisposeOperation(timeout, default);
+	/// <summary>
+	/// Blocks the calling thread until this operation completes, then consumes it, discarding any result.
+	/// </summary>
+	/// <remarks>
+	/// Must be called from the primary thread.
+	/// </remarks>
+	/// <param name="cancellationToken">A token that can be used to stop waiting early. If cancelled before the operation completes, the operation is <i>not</i> consumed and must still be consumed later, once it completes.</param>
+	/// <exception cref="InvalidOperationException">Thrown if this operation has already been disposed/consumed (i.e. <see cref="IsDisposed"/> is <c>true</c>).</exception>
+	/// <exception cref="AggregateException">Thrown if the operation failed. The operation is still consumed.</exception>
+	public void DisposeOperation(CancellationToken cancellationToken) => _ = DisposeOperation(Timeout.InfiniteTimeSpan, cancellationToken);
+	/// <summary>
+	/// Blocks the calling thread until this operation completes, until <paramref name="timeout"/> elapses, or until <paramref name="cancellationToken"/> is cancelled; if it completed in time, consumes it, discarding any result.
+	/// </summary>
+	/// <remarks>
+	/// Must be called from the primary thread. If this returns <see langword="true"/>, the operation has been consumed. If it returns <see langword="false"/>, the
+	/// operation has <i>not</i> been consumed and must still be consumed later, once it completes.
+	/// </remarks>
+	/// <param name="timeout">The maximum amount of time to wait. Use <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.</param>
+	/// <param name="cancellationToken">A token that can be used to stop waiting early.</param>
+	/// <returns><see langword="true"/> if the operation completed (and was consumed) before <paramref name="timeout"/> elapsed and before <paramref name="cancellationToken"/> was cancelled; <see langword="false"/> otherwise.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if this operation has already been disposed/consumed (i.e. <see cref="IsDisposed"/> is <c>true</c>).</exception>
+	/// <exception cref="AggregateException">Thrown if the operation failed. The operation is still consumed.</exception>
+	public bool DisposeOperation(TimeSpan timeout, CancellationToken cancellationToken) {
+		if (TrackingData == null) throw InvalidObjectException.InvalidDefault<TinyFfrAsyncOperation>();
+		if (!TrackingData.WaitForCompletion(Version, timeout, cancellationToken)) return false;
+		TrackingData.DiscardResultAndClearWithoutWaiting(Version);
+		return true;
+	}
+
+	/// <summary>
 	/// Blocks the calling thread until every one of <paramref name="operations"/> has completed.
 	/// </summary>
 	/// <remarks>
@@ -347,7 +405,8 @@ public readonly record struct TinyFfrAsyncOperation : ITinyFfrAsyncOperation {
 /// </summary>
 /// <remarks>
 /// <para>
-/// Every <see cref="TinyFfrAsyncOperation{T}"/> returned by the library must be consumed exactly once, either by awaiting it or by calling an overload of <see cref="GetResultAndDisposeOperation()"/>.
+/// Every <see cref="TinyFfrAsyncOperation{T}"/> returned by the library must be consumed exactly once, either by awaiting it or by calling an overload of <see cref="GetResultAndDisposeOperation()"/>
+/// (or, if the result is not needed, by converting it to a <see cref="TinyFfrAsyncOperation"/> and calling <see cref="TinyFfrAsyncOperation.DisposeOperation()"/>).
 /// Consuming an operation is what releases its internal tracking data back to a shared pool; an operation that is never consumed retains that tracking data (and its wait handle) for the
 /// lifetime of the process. An operation whose wait timed out has not been consumed, and must still be consumed once it completes.
 /// </para>

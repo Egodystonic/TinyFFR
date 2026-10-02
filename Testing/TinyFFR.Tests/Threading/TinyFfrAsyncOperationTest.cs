@@ -204,6 +204,48 @@ unsafe class TinyFfrAsyncOperationTest {
 	}
 
 	[Test, Timeout(30_000)]
+	public void ShouldConsumeAndRecycleUntypedOperationViaDisposeOperation() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		TinyFfrAsyncOperation untyped = operation;
+		operation.SetResult(5);
+
+		Assert.AreEqual(1, OutstandingAsyncOperationRegistry.OutstandingCount);
+		untyped.DisposeOperation();
+
+		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
+		Assert.IsTrue(untyped.IsCompleted);
+		Assert.IsTrue(untyped.IsDisposed);
+		Assert.IsTrue(operation.IsDisposed);
+		Assert.Throws<InvalidOperationException>(() => untyped.DisposeOperation());
+		Assert.Throws<InvalidObjectException>(() => default(TinyFfrAsyncOperation).DisposeOperation());
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldPropagateExceptionFromDisposeOperationAndStillConsume() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		TinyFfrAsyncOperation untyped = operation;
+		operation.SetException(new InvalidOperationException("Deliberate test failure."));
+
+		Assert.Throws<AggregateException>(() => untyped.DisposeOperation());
+		Assert.IsTrue(untyped.IsDisposed);
+		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
+	}
+
+	[Test, Timeout(30_000)]
+	public void ShouldNotConsumeWhenDisposeOperationTimesOut() {
+		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
+		TinyFfrAsyncOperation untyped = operation;
+
+		Assert.IsFalse(untyped.DisposeOperation(TimeSpan.FromMilliseconds(50d)));
+		Assert.IsFalse(untyped.IsDisposed);
+
+		operation.SetResult(3);
+		Assert.IsTrue(untyped.DisposeOperation(TimeSpan.FromMilliseconds(50d)));
+		Assert.IsTrue(untyped.IsDisposed);
+		Assert.AreEqual(0, OutstandingAsyncOperationRegistry.OutstandingCount);
+	}
+
+	[Test, Timeout(30_000)]
 	public void ShouldRecycleTrackingDataWhenAwaited() {
 		var operation = new TinyFfrAsyncOperation<int>(Dispatcher);
 		operation.SetResult(5);

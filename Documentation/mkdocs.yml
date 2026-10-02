@@ -149,6 +149,7 @@ nav:
             - reference/the_default_material.md
         - Fonts:
             - reference/loading_fonts.md
+        - reference/asynchronous_loading.md
 
 not_in_nav: |
 
