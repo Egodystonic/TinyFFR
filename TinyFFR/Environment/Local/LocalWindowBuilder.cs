@@ -16,7 +16,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IResourceDirectory<Window>, IDisposable {
+sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IResourceDirectory<Window>, IDisposable, ILocalResourceImplProvider {
 	const string LogoResourceName = "logo_128.png";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
@@ -230,7 +230,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 					
 					SetWindowFullscreenMode(
 						handle,
-						display.Handle,
+						display.GetLocalHandle(),
 						bestMatchIndex
 					).ThrowIfFailure();
 				}
@@ -267,7 +267,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 				if (bestMatchIndex >= 0) {
 					SetWindowFullscreenMode(
 						handle,
-						display.Handle,
+						display.GetLocalHandle(),
 						bestMatchIndex
 					).ThrowIfFailure();
 				}

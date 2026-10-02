@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Rendering.Local;
 
 // This is a private embedded 'delegating' object to help provide distinction between some default interface methods
 // on both IRenderOutputBufferImplProvider and IRendererBuilder. 
-sealed class LocalRenderOutputBufferImplProvider : IRenderOutputBufferImplProvider {
+sealed class LocalRenderOutputBufferImplProvider : IRenderOutputBufferImplProvider, ILocalResourceImplProvider {
 	readonly LocalRendererBuilder _owner;
 
 	public LocalRenderOutputBufferImplProvider(LocalRendererBuilder owner) => _owner = owner;

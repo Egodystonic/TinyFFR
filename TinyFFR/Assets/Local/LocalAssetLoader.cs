@@ -14,10 +14,11 @@ using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, IDisposable {
+sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, IDisposable, ILocalResourceImplProvider {
 	internal const int MaxAssetBufferSizeBytes = 1 << 30;
 
 	readonly LocalFactoryGlobalObjectGroup _globals;

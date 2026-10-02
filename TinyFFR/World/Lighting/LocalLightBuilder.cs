@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDirectory<PointLight>, IResourceDirectory<SpotLight>, IResourceDirectory<DirectionalLight>, IDisposable {
+sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDirectory<PointLight>, IResourceDirectory<SpotLight>, IResourceDirectory<DirectionalLight>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct LightData(LightType Type, nint TypeHandle, float Brightness, Angle SpotLightInner, Angle SpotLightOuter);
 	const string DefaultLightName = "Unnamed Light";
 	readonly LocalFactoryGlobalObjectGroup _globals;

@@ -10,7 +10,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
-sealed unsafe class LocalMeshGroupAnimationTableImplProvider : IMeshGroupAnimationTableImplProvider, IResourceDirectory<MeshGroupAnimationTable>, IDisposable {
+sealed unsafe class LocalMeshGroupAnimationTableImplProvider : IMeshGroupAnimationTableImplProvider, IResourceDirectory<MeshGroupAnimationTable>, IDisposable, ILocalResourceImplProvider {
 	const string DefaultTableName = "Model Bundle Animation Table";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalMeshAnimationTableProvider _tableProvider;

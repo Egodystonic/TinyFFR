@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResourceDirectory<Camera>, IDisposable {
+sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResourceDirectory<Camera>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct CameraParameters(
 		Location Position,
 		Direction ViewDirection,

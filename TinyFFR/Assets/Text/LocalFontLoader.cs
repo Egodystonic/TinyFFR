@@ -20,7 +20,7 @@ using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
-sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable {
+sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct RenderedTextData(ManagedStringPool.RentedStringHandle Text, TextJustification Justification, PooledHeapMemory<MeshVertex> Vertices, PooledHeapMemory<VertexTriangle> Triangles, XYPair<float> Size);
 	readonly record struct AtlasRuneData(XYPair<float> AtlasUVOffset, XYPair<float> AtlasUVSize, XYPair<float> NibOffset, float AdvanceWidth);
 	readonly record struct TextLineRecord(int StartVertexIndex, float Width, float MinX, float MaxX);

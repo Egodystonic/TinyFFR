@@ -22,7 +22,7 @@ using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<DynamicVertexBuffer>, IDisposable {
+sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<DynamicVertexBuffer>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct MeshData(MeshBufferData BufferData, PositionedCuboid BoundingBox, PositionedCuboid AxisAlignedBoundingBox, PositionedSphere BoundingSphere);
 	
 	readonly record struct DynamicVertexBufferData(
@@ -1008,7 +1008,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	}
 	public void SetBoundingBox(ResourceHandle<DynamicVertexBuffer> handle, Mesh mesh, PositionedCuboid newBoundingBox) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var meshHandle = mesh.Handle;
+		var meshHandle = mesh.GetLocalHandle();
 		if (!_meshViewParents.TryGetValue(meshHandle, out var parentHandle) || parentHandle != handle) {
 			throw new ArgumentException($"Given {nameof(Mesh)} ({mesh}) was not created from {HandleToInstance(handle)}.", nameof(mesh));
 		}

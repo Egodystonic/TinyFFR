@@ -11,7 +11,7 @@ using DisplayModeArray = Egodystonic.TinyFFR.Environment.Local.DisplayMode[];
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, IResourceDirectory<Display>, IDisposable {
+sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, IResourceDirectory<Display>, IDisposable, ILocalResourceImplProvider {
 	const int MaxDisplayNameLength = 200; // Should be low enough to be stackalloc'able (or rewrite ctor)
 	const int MaxDisplayCount = 1_000_000;
 	readonly LocalFactoryGlobalObjectGroup _globals;

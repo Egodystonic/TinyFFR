@@ -6,7 +6,7 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
-sealed class LocalMeshNodeImplProvider : IMeshNodeImplProvider {
+sealed class LocalMeshNodeImplProvider : IMeshNodeImplProvider, ILocalResourceImplProvider {
 	readonly LocalMeshAnimationTable _owner;
 	public LocalMeshNodeImplProvider(LocalMeshAnimationTable owner) => _owner = owner;
 	

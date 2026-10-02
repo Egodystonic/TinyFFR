@@ -17,7 +17,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
+sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 	readonly record struct PrivateMaterialData(Material Material, bool IsDefault, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
@@ -48,6 +48,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	public ModelInstance CreateModelInstance(Mesh mesh, Material? material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
+		ResourceUtils.ThrowIfNotLocal(mesh);
+		if (material is { } m) ResourceUtils.ThrowIfNotLocal(m);
 		var meshBufferData = mesh.BufferData;
 		var aabb = mesh.BoundingBox;
 		
@@ -290,6 +292,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ResourceUtils.ThrowIfNotLocal(newMesh);
 		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
 		
 		var newMeshBufferData = newMesh.BufferData;
@@ -435,6 +438,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ResourceUtils.ThrowIfNotLocal(newMaterial);
 
 		var oldMat = GetMaterial(handle);
 		var oldIsDefault = oldMat == _materialBuilder.DefaultMaterial;

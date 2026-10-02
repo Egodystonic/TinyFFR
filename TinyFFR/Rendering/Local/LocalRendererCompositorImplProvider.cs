@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Rendering.Local;
 
 // This is a private embedded 'delegating' object to help provide distinction between some default interface methods
 // on both IRendererCompositorImplProvider and IRendererImplProvider.
-sealed class LocalRendererCompositorImplProvider : IRendererCompositorImplProvider {
+sealed class LocalRendererCompositorImplProvider : IRendererCompositorImplProvider, ILocalResourceImplProvider {
 	public LocalRendererBuilder Owner { get; }
 
 	public LocalRendererCompositorImplProvider(LocalRendererBuilder owner) => Owner = owner;

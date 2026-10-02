@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
 // This provides the implementation for textures created via RenderOutputBuffer.CreateDynamicTexture()
-sealed class LocalRenderOutputBufferTextureImplProvider : ITextureImplProvider {
+sealed class LocalRenderOutputBufferTextureImplProvider : ITextureImplProvider, ILocalResourceImplProvider {
 	const string NamePrefix = "Dynamic texture for ";
 	readonly LocalRendererBuilder _owner;
 

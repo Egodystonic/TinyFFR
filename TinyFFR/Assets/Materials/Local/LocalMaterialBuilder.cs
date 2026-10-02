@@ -26,7 +26,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IResourceDirectory<Material>, IDisposable {
+sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IResourceDirectory<Material>, IDisposable, ILocalResourceImplProvider {
 	[Flags]
 	enum SupportedEffectsFlags {
 		None = 0,
@@ -152,6 +152,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public Material CreateLightingIgnoringMaterial(in LightingIgnoringMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		ThrowIfNotLocal(config.ColorMap);
 
 		var shaderConstants = LightingIgnoringMaterialShader;
 
@@ -180,6 +181,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public Material CreateColorKeyedMaterial(in ColorKeyedMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		ThrowIfNotLocal(config.KeyMap);
 
 		var shaderConstants = ColorKeyedMaterialShader;
 
@@ -203,6 +205,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public Material CreateStandardMaterial(in StandardMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		ThrowIfNotLocal(config.ColorMap);
+		ThrowIfNotLocal(config.NormalMap);
+		ThrowIfNotLocal(config.OcclusionRoughnessMetallicReflectanceMap);
+		ThrowIfNotLocal(config.AnisotropyMap);
+		ThrowIfNotLocal(config.EmissiveMap);
+		ThrowIfNotLocal(config.ClearCoatMap);
 
 		var shaderConstants = StandardMaterialShader;
 		
@@ -254,6 +262,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		const float ThinThickRefractionModelCrossoverThickness = 0.2f;
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		ThrowIfNotLocal(config.ColorMap);
+		ThrowIfNotLocal(config.AbsorptionTransmissionMap);
+		ThrowIfNotLocal(config.NormalMap);
+		ThrowIfNotLocal(config.OcclusionRoughnessMetallicReflectanceMap);
+		ThrowIfNotLocal(config.AnisotropyMap);
+		ThrowIfNotLocal(config.EmissiveMap);
 
 		var shaderConstants = TransmissiveMaterialShader;
 
@@ -431,8 +445,13 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return textureMap.TryGetValue(parameterName, out var result) ? result : null;
 	}
 
+	static void ThrowIfNotLocal(Texture? map) {
+		if (map is { } m) ResourceUtils.ThrowIfNotLocal(m);
+	}
+
 	void ApplyMaterialParam(Material material, Texture? map, ReadOnlySpan<byte> param) {
 		if (!map.HasValue) return;
+		ResourceUtils.ThrowIfNotLocal(map.Value);
 		var renderingConfig = map.Value.RenderingConfig;
 
 		Span<char> paramChars = stackalloc char[SpanUtils.GetUtf16Length(param)];
@@ -550,6 +569,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 	public void SetEffectBlendTexture(ResourceHandle<Material> handle, MaterialEffectMapType mapType, Texture mapTexture) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ResourceUtils.ThrowIfNotLocal(mapTexture);
 		var matData = _activeMaterials[handle];
 
 		ReadOnlySpan<byte> param;

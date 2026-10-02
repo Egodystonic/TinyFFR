@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 
 // This is a private embedded 'delegating' object to help provide distinction between some default interface methods
 // on both IModelImplProvider and IBackdropTextureImplProvider. 
-sealed class LocalBackdropTextureImplProvider : IBackdropTextureImplProvider {
+sealed class LocalBackdropTextureImplProvider : IBackdropTextureImplProvider, ILocalResourceImplProvider {
 	readonly LocalAssetLoader _owner;
 
 	public LocalBackdropTextureImplProvider(LocalAssetLoader owner) => _owner = owner;

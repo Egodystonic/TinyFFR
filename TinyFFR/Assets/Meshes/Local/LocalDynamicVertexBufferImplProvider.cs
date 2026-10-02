@@ -6,7 +6,7 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
-sealed class LocalDynamicVertexBufferImplProvider : IDynamicVertexBufferImplProvider {
+sealed class LocalDynamicVertexBufferImplProvider : IDynamicVertexBufferImplProvider, ILocalResourceImplProvider {
 	readonly LocalMeshBuilder _owner;
 
 	public LocalDynamicVertexBufferImplProvider(LocalMeshBuilder owner) {

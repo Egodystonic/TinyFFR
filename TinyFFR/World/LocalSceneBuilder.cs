@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable {
+sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
 	readonly record struct RayIntersectionData(float DistanceSquared, ModelInstance Instance) : IComparable<RayIntersectionData> {
 		public int CompareTo(RayIntersectionData other) => DistanceSquared.CompareTo(other.DistanceSquared);
@@ -107,7 +107,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		AddModelInstanceToScene(
 			handle,
-			modelInstance.Handle
+			modelInstance.GetLocalHandle()
 		).ThrowIfFailure();
 
 		instanceVector.Add(modelInstance);
@@ -182,7 +182,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		AddLightToScene(
 			handle,
-			light.Handle
+			light.GetLocalHandle()
 		).ThrowIfFailure();
 
 		instanceVector.Add(light.AsBaseLight());
@@ -293,6 +293,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ResourceUtils.ThrowIfNotLocal(backdrop);
 
 		RemoveBackdrop(handle);
 
@@ -337,6 +338,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	}
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ResourceUtils.ThrowIfNotLocal(backdrop);
 
 		RemoveBackdrop(handle);
 

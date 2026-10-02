@@ -101,7 +101,7 @@ sealed partial class LocalRendererBuilder {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var compositorData = _loadedCompositors[handle];
-		var rendererTarget = _loadedRenderers[renderer.Handle].RenderTarget;
+		var rendererTarget = _loadedRenderers[renderer.GetLocalHandle()].RenderTarget;
 		
 		foreach (var rd in compositorData.AddedRenderers) {
 			if (rd.Renderer == renderer) {

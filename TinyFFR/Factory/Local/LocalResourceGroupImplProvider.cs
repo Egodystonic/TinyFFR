@@ -38,7 +38,7 @@ readonly unsafe struct SerializedResourceData {
 	}
 }
 
-sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider, IResourceDirectory<ResourceGroup>, IDisposable {
+sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider, IResourceDirectory<ResourceGroup>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct GroupData(SerializedResourceData[] DataArray, int Count, bool DisposeContainedResourcesWhenDisposed, bool IsSealed, int[]? TypeIndex) {
 		public void ThrowIfSealed(ReadOnlySpan<char> name) {
 			if (IsSealed) throw new ResourceGroupSealedException($"Can not add resource to {nameof(ResourceGroup)} '{name}' as it is sealed.");

@@ -24,7 +24,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable {
+sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType, bool AllowsDynamicWrites, bool ContainsMipMaps, TextureRenderingConfig RenderingConfig, TextureCompressionFormat CompressionFormat);
 	const string DefaultTextureName = "Unnamed Texture";
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();

@@ -16,7 +16,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
-sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IResourceDirectory<RendererCompositor>, IDisposable {
+sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IResourceDirectory<RendererCompositor>, IDisposable, ILocalResourceImplProvider {
 	enum RenderOrdering { Standalone, First, Middle, Last }
 
 	[StructLayout(LayoutKind.Explicit)]
@@ -209,6 +209,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	}
 	
 	RenderTargetUnion AllocateOrRetrieveRenderTargetUnion<TRenderTarget>(TRenderTarget renderTarget) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
+		ResourceUtils.ThrowIfNotLocal(renderTarget);
 		static RenderTargetUnion SetUpWindowRenderer(LocalRendererBuilder @this, Window window) {
 			var result = new RenderTargetUnion(window);
 
@@ -249,6 +250,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		ResourceUtils.ThrowIfNotLocal(scene);
+		ResourceUtils.ThrowIfNotLocal(camera);
 		var qualityConfig = config.Quality ?? RenderQualityConfig.SceneDefault;
 
 		var rtu = AllocateOrRetrieveRenderTargetUnion(renderTarget);

@@ -1,6 +1,8 @@
 ﻿// Created on 2025-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Egodystonic.TinyFFR.Resources;
 
 /// <summary>
@@ -50,4 +52,23 @@ public static class ResourceUtils {
 	internal static TResource FromStub<TResource>(ResourceStub stub) where TResource : IResource<TResource> => TResource.CreateFromStub(stub);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static TResource FastFromStub<TResource>(ResourceStub stub) where TResource : IResource<TResource> => TResource.FastCreateFromStub(stub);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static ResourceHandle<TResource> GetLocalHandle<TResource>(this TResource resource) where TResource : IResource<TResource> {
+		if (resource.Implementation is not ILocalResourceImplProvider) ThrowForeignResource(resource);
+		return resource.Handle;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static void ThrowIfNotLocal<TResource>(TResource resource) where TResource : IResource {
+		if (resource.Implementation is not ILocalResourceImplProvider) ThrowForeignResource(resource);
+	}
+
+	[DoesNotReturn]
+	static void ThrowForeignResource<TResource>(TResource resource) where TResource : IResource {
+		throw new InvalidOperationException(
+			$"{resource} was not created by this factory (e.g. it is a custom resource created via {nameof(ResourceUtils)}.{nameof(CreateCustom)}, " +
+			$"or a resource provided by an integration library) and can not be used here."
+		);
+	}
 }

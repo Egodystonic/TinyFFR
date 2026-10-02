@@ -17,7 +17,7 @@ using Egodystonic.TinyFFR.Threading;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IResourceDirectory<ApplicationLoop>, IDisposable {
+sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IResourceDirectory<ApplicationLoop>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct HandleTrackingData(
 		TimeSpan MaxCpuBusyWaitTime, 
 		TimeSpan FrameInterval, 

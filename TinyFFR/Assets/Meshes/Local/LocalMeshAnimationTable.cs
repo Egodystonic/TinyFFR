@@ -15,7 +15,7 @@ using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDisposable {
+sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDisposable, ILocalResourceImplProvider {
 	const string DefaultNodeNamePrefix = "unnamed_node_";
 	readonly record struct StartingAnimationData(ResourceHandle<MeshAnimation> AnimHandle, float TimePointSeconds);
 	readonly record struct EndingAnimationData(ResourceHandle<MeshAnimation> AnimHandle, float TimePointSeconds, float InterpolationDistance);
@@ -478,7 +478,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		);
 		
 		SetModelInstanceBoneTransforms(
-			targetInstance.Handle, 
+			targetInstance.GetLocalHandle(), 
 			_applyTransformsBuffer.BufferPointer, 
 			boneSet.BoneCount
 		).ThrowIfFailure();

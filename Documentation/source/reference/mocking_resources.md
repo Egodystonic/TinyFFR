@@ -9,7 +9,7 @@ description: Information on how to create fake resources for unit testing code t
 
     * Every resource is a handle plus an *implementation provider*; by supplying your own implementation, you can create fake resources for unit tests. :material-arrow-right: [Mocking Resources](#mocking-resources)
     * Fake resources are created with `ResourceUtils.CreateCustom()`, using a hand-written fake or a mocking library. :material-arrow-right: [Creating Fakes](#creating-fakes)
-    * Fake resources are only for testing your own code; they must never be passed in to TinyFFR itself. :material-arrow-right: [Limitations](#limitations)
+    * Fake resources are only for testing your own code; passing them in to TinyFFR itself throws an exception. :material-arrow-right: [Limitations](#limitations)
 
 </div>
 
@@ -110,8 +110,10 @@ Two resources are equal (via `==` or `Equals()`) when they have both the same ha
 
 ## Limitations
 
-???+ danger "Never Pass Fakes to TinyFFR"
-	Fake resources are only for testing your own code. Passing a fake resource in to the factory or anything created by it (e.g. creating a material from a fake texture, or adding a fake model instance to a real scene) is not supported. TinyFFR's implementations assume every resource they're given is one of their own, and doing so can crash the process outright rather than throwing an exception.
+???+ warning "Fakes Can't Be Used By TinyFFR"
+	Fake resources are only for testing your own code. Passing a fake resource in to the factory or anything created by it (e.g. creating a material from a fake texture, or adding a fake model instance to a real scene) throws an `InvalidOperationException`.
+
+	The exception is operations that only need to refer to a resource rather than use it: for example, fake resources can be added to a real [resource group](resource_groups.md), combined in to a `Model`, or grouped in to a `ModelInstanceGroup`.
 
 Additionally:
 

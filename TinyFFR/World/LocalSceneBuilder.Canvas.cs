@@ -529,7 +529,7 @@ sealed partial class LocalSceneBuilder {
 
 		ResourceHandle<ModelInstance>? newParentHandle = null;
 		if (parent is { } parentInstance) {
-			newParentHandle = parentInstance.Handle;
+			newParentHandle = parentInstance.GetLocalHandle();
 			if (newParentHandle == instanceHandle) {
 				SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { DockParent = null });
 				return;
