@@ -756,7 +756,7 @@ public partial interface IAssetLoader {
 
 	#region Load Backdrop Texture
 	/// <summary>
-	/// Loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format.
+	/// Loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file.
 	/// </summary>
 	/// <remarks>
 	/// A backdrop supplies both the sky you see behind the scene and the ambient light that sky casts on to everything in it,
@@ -772,7 +772,7 @@ public partial interface IAssetLoader {
 		);
 	}
 	/// <summary>
-	/// Loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format, using the given
+	/// Loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file, using the given
 	/// config.
 	/// </summary>
 	/// <param name="skyboxKtxFilePath">The path of the file holding the visible sky.</param>
@@ -781,7 +781,7 @@ public partial interface IAssetLoader {
 	BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
 
 	/// <summary>
-	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format.
+	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file.
 	/// </summary>
 	/// <remarks>
 	/// The asynchronous counterpart to <c>LoadPreprocessedBackdropTexture</c>. The returned operation must be consumed exactly
@@ -797,7 +797,7 @@ public partial interface IAssetLoader {
 		);
 	}
 	/// <summary>
-	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format, using
+	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file, using
 	/// the given config.
 	/// </summary>
 	/// <remarks>

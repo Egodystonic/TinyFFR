@@ -79,7 +79,7 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 	#endregion
 
 	/// <inheritdoc />
-	public override string ToString() => $"Environment Cubemap {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
+	public override string ToString() => $"Backdrop Texture {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	/// <inheritdoc />

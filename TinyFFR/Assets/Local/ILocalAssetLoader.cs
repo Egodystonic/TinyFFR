@@ -20,7 +20,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	internal static string HdrExrToKtxWorkspaceDirectoryPath { get; } = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, "HdrExrToKtxWorkspace");
 
 	/// <summary>
-	/// Converts a high-dynamic-range image in to the readily-supported <c>.ktx</c> and <c>.ibl</c> format files, and writes them to a directory.
+	/// Converts a high-dynamic-range image in to a pair of readily-supported <c>.ktx</c> files (a <c>*_skybox.ktx</c> file and a <c>*_ibl.ktx</c> file), and writes them to a directory.
 	/// </summary>
 	/// <remarks>
 	/// This is the slow step of creating a backdrop, done once so that it need not be repeated. Note that this is still a slower result to
@@ -31,7 +31,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// <param name="backdropTextureResolution">How detailed the resulting backdrop should be. Higher resolutions take proportionally longer to prepare.</param>
 	void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard);
 	/// <summary>
-	/// Asynchronously converts a high-dynamic-range image in to the readily-supported <c>.ktx</c> and <c>.ibl</c> format files, and writes them to a directory.
+	/// Asynchronously converts a high-dynamic-range image in to a pair of readily-supported <c>.ktx</c> files (a <c>*_skybox.ktx</c> file and a <c>*_ibl.ktx</c> file), and writes them to a directory.
 	/// </summary>
 	/// <remarks>
 	/// <para>
@@ -50,7 +50,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 
 	/// <summary>
 	/// Loads a backdrop from a directory previously written by <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> (or otherwise
-	/// containing exactly one <c>.ibl</c> and one <c>.ktx</c> file).
+	/// containing one <c>*_skybox.ktx</c> file and one <c>*_ibl.ktx</c> file).
 	/// </summary>
 	/// <param name="directoryPath">The path of the directory holding the preprocessed backdrop files.</param>
 	/// <param name="name">The name to give the backdrop texture. May be left empty.</param>
@@ -59,14 +59,14 @@ public interface ILocalAssetLoader : IAssetLoader {
 	}
 	/// <summary>
 	/// Loads a backdrop from a directory previously written by <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> (or otherwise
-	/// containing exactly one <c>.ibl</c> and one <c>.ktx</c> file), using the given config.
+	/// containing one <c>*_skybox.ktx</c> file and one <c>*_ibl.ktx</c> file), using the given config.
 	/// </summary>
 	/// <param name="directoryPath">The path of the directory holding the preprocessed backdrop files.</param>
 	/// <param name="config">Controls how the backdrop texture is created.</param>
 	BackdropTexture LoadBackdropTextureFromPreprocessedDirectory(ReadOnlySpan<char> directoryPath, in BackdropTextureCreationConfig config);
 	/// <summary>
 	/// Asynchronously loads a backdrop from a directory previously written by <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> (or otherwise
-	/// containing exactly one <c>.ibl</c> and one <c>.ktx</c> file).
+	/// containing one <c>*_skybox.ktx</c> file and one <c>*_ibl.ktx</c> file).
 	/// </summary>
 	/// <remarks>
 	/// The asynchronous counterpart to the method of the same name without the <c>Async</c> suffix. The returned operation
@@ -79,7 +79,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	}
 	/// <summary>
 	/// Asynchronously loads a backdrop from a directory previously written by <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> (or otherwise
-	/// containing exactly one <c>.ibl</c> and one <c>.ktx</c> file), using the given config.
+	/// containing one <c>*_skybox.ktx</c> file and one <c>*_ibl.ktx</c> file), using the given config.
 	/// </summary>
 	/// <remarks>
 	/// The asynchronous counterpart to the method of the same name without the <c>Async</c> suffix. The returned operation
@@ -98,12 +98,12 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>
-	/// It is much quicker to load a pre-processed <c>.ktx</c>/<c>.ibl</c> file pair. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> and
+	/// It is much quicker to load a pre-processed pair of <c>.ktx</c> files. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> and
 	/// load them with <see cref="LoadBackdropTextureFromPreprocessedDirectory(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.
 	/// </para>
 	/// <para>
 	/// It is even quicker still to use a pre-baked <see cref="BackdropTexture"/>; you can bake the processed file using the <see cref="IAssetBakery"/> and then
-	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTexture"/>. The only reason to prefer <c>.ktx</c>/<c>.ibl</c> format over this is if you've
+	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTexture"/>. The only reason to prefer the <c>.ktx</c> files over this is if you've
 	/// already been provided that format or you wish to keep your baked data portable. 
 	/// </para>
 	/// </remarks>
@@ -122,12 +122,12 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>
-	/// It is much quicker to load a pre-processed <c>.ktx</c>/<c>.ibl</c> file pair. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> and
+	/// It is much quicker to load a pre-processed pair of <c>.ktx</c> files. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> and
 	/// load them with <see cref="LoadBackdropTextureFromPreprocessedDirectory(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.
 	/// </para>
 	/// <para>
 	/// It is even quicker still to use a pre-baked <see cref="BackdropTexture"/>; you can bake the processed file using the <see cref="IAssetBakery"/> and then
-	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTexture"/>. The only reason to prefer <c>.ktx</c>/<c>.ibl</c> format over this is if you've
+	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTexture"/>. The only reason to prefer the <c>.ktx</c> files over this is if you've
 	/// already been provided that format or you wish to keep your baked data portable. 
 	/// </para>
 	/// </remarks>
@@ -148,12 +148,12 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>
-	/// It is much quicker to load a pre-processed <c>.ktx</c>/<c>.ibl</c> file pair. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync"/> and
+	/// It is much quicker to load a pre-processed pair of <c>.ktx</c> files. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync"/> and
 	/// load them with <see cref="LoadBackdropTextureFromPreprocessedDirectoryAsync(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.
 	/// </para>
 	/// <para>
 	/// It is even quicker still to use a pre-baked <see cref="BackdropTexture"/>; you can bake the processed file using the <see cref="IAssetBakery"/> and then
-	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTextureAsync"/>. The only reason to prefer <c>.ktx</c>/<c>.ibl</c> format over this is if you've
+	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTextureAsync"/>. The only reason to prefer the <c>.ktx</c> files over this is if you've
 	/// already been provided that format or you wish to keep your baked data portable. 
 	/// </para>
 	/// </remarks>
@@ -176,12 +176,12 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// and allocates heavily whilst it runs. It is not something to do while the application is meant to be responsive.
 	/// </para>
 	/// <para>
-	/// It is much quicker to load a pre-processed <c>.ktx</c>/<c>.ibl</c> file pair. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync"/> and
+	/// It is much quicker to load a pre-processed pair of <c>.ktx</c> files. You can pre-create these files using <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync"/> and
 	/// load them with <see cref="LoadBackdropTextureFromPreprocessedDirectoryAsync(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.
 	/// </para>
 	/// <para>
 	/// It is even quicker still to use a pre-baked <see cref="BackdropTexture"/>; you can bake the processed file using the <see cref="IAssetBakery"/> and then
-	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTextureAsync"/>. The only reason to prefer <c>.ktx</c>/<c>.ibl</c> format over this is if you've
+	/// load it again with <see cref="IAssetLoader.LoadBakedBackdropTextureAsync"/>. The only reason to prefer the <c>.ktx</c> files over this is if you've
 	/// already been provided that format or you wish to keep your baked data portable. 
 	/// </para>
 	/// </remarks>

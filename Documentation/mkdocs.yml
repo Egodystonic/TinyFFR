@@ -138,6 +138,8 @@ nav:
             - reference/built-in_textures.md
             - reference/creating_textures.md
             - reference/texture_patterns.md
+            - reference/texture_compression.md
+            - reference/backdrop_textures.md
 
 not_in_nav: |
 
