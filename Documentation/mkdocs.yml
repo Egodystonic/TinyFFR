@@ -151,6 +151,11 @@ nav:
             - reference/loading_fonts.md
         - reference/asynchronous_loading.md
         - reference/asset_bakery.md
+        - Resources:
+            - reference/resource_dependencies.md
+            - reference/resource_directory.md
+            - reference/resource_groups.md
+            - reference/mocking_resources.md
 
 not_in_nav: |
 

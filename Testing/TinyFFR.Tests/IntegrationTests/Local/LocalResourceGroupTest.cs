@@ -64,10 +64,10 @@ class LocalResourceGroupTest {
 			Assert.AreEqual(4, group.ResourceCount);
 			var boxedResources = group.GetAllResourcesBoxed().ToArray();
 			Assert.AreEqual(4, boxedResources.Length);
-			Assert.AreEqual(ToStub(meshes[0]), boxedResources[0]);
-			Assert.AreEqual(ToStub(meshes[1]), boxedResources[1]);
-			Assert.AreEqual(ToStub(cameras[0]), boxedResources[2]);
-			Assert.AreEqual(ToStub(cameras[1]), boxedResources[3]);
+			Assert.AreEqual(meshes[0], boxedResources[0]);
+			Assert.AreEqual(meshes[1], boxedResources[1]);
+			Assert.AreEqual(cameras[0], boxedResources[2]);
+			Assert.AreEqual(cameras[1], boxedResources[3]);
 
 			Assert.AreEqual(2, group.GetAllResourcesOfType<Mesh>().Count);
 			Assert.AreEqual(meshes[0], group.GetAllResourcesOfType<Mesh>()[0]);
@@ -108,8 +108,8 @@ class LocalResourceGroupTest {
 			Assert.AreEqual(2, group.ResourceCount);
 			var boxedResources = group.GetAllResourcesBoxed().ToArray();
 			Assert.AreEqual(2, boxedResources.Length);
-			Assert.AreEqual(ToStub(meshes[2]), boxedResources[0]);
-			Assert.AreEqual(ToStub(meshes[3]), boxedResources[1]);
+			Assert.AreEqual(meshes[2], boxedResources[0]);
+			Assert.AreEqual(meshes[3], boxedResources[1]);
 
 			Assert.AreEqual(2, group.GetAllResourcesOfType<Mesh>().Count);
 			Assert.AreEqual(meshes[2], group.GetAllResourcesOfType<Mesh>()[0]);
@@ -188,8 +188,6 @@ class LocalResourceGroupTest {
 		foreach (var mat in materials) mat.Dispose();
 		foreach (var cam in cameras) cam.Dispose();
 	}
-
-	ResourceStub ToStub<TResource>(TResource r) where TResource : IResource => r.AsStub;
 
 	public void SpecializedResourcesShouldRoundTrip() {
 		using var factory = new LocalTinyFfrFactory();

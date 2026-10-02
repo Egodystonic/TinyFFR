@@ -88,9 +88,10 @@ public interface IResourceDirectory<TResource> where TResource : struct, IResour
 
 	/// <inheritdoc cref="IResourceDirectory.FindByName{TResource}(ReadOnlySpan{char},bool,StringComparison)"/>
 	TResource? FindByName(ReadOnlySpan<char> name, bool allowPartialMatch = DefaultAllowPartialMatch, StringComparison comparisonType = DefaultComparisonType) {
-		Unsafe.SkipInit(out TResource result);
-		if (FindByName(new Span<TResource>(ref result), name, allowPartialMatch, comparisonType) == 1) return result;
-		else return null;
+		foreach (var instance in AllActiveInstances) {
+			if (ResourceNameMatchIsMatching(instance, name, allowPartialMatch, comparisonType)) return instance;
+		}
+		return null;
 	}
 	/// <inheritdoc cref="IResourceDirectory.FindByName{TResource}(Span{TResource},ReadOnlySpan{char},bool,StringComparison)"/>
 	int FindByName(Span<TResource> dest, ReadOnlySpan<char> name, bool allowPartialMatch = DefaultAllowPartialMatch, StringComparison comparisonType = DefaultComparisonType) {

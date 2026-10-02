@@ -529,7 +529,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	}
 	#endregion
 
-	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
+	public override string ToString() => _isDisposed ? "TinyFFR Local Texture Builder [Disposed]" : "TinyFFR Local Texture Builder";
 
 	#region Disposal
 	public bool IsDisposed(ResourceHandle<Texture> handle) => _isDisposed || !_loadedTextures.ContainsKey(handle);

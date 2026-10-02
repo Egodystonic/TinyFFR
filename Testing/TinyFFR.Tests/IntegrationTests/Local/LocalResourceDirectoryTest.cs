@@ -162,6 +162,7 @@ class LocalResourceDirectoryTest {
 		Assert.IsTrue(dest.Contains(apple));
 		Assert.IsTrue(dest.Contains(banana));
 		Assert.IsTrue(dest.Contains(carrot));
+		Assert.AreEqual(dest[0], _resourceDirectory.FindByName<T>("a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
 		Array.Clear(dest);
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: false, StringComparison.Ordinal));
 		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 2, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.Ordinal));

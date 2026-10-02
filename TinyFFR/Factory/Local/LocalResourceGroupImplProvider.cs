@@ -26,15 +26,15 @@ readonly unsafe struct SerializedResourceData {
 	public ResourceStub? AdditionalResourceRef { get; init; }
 	public bool DoNotDispose { get; init; }
 	public delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, void> SpecializedResourceDisposalStub { get; init; }
-	public delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, object> SpecializedResourceBoxingStub { get; init; }
+	public delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, object> ResourceBoxingStub { get; init; }
 	public bool IsSpecialized => SpecializationTypeIdentifier != default;
-	public SerializedResourceData(ResourceStub stub, IntPtr specializationTypeIdentifier, PooledHeapMemory<byte> specializationData, ResourceStub? additionalResourceRef, delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, void> specializedResourceDisposalStub, delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, object> specializedResourceBoxingStub) {
+	public SerializedResourceData(ResourceStub stub, IntPtr specializationTypeIdentifier, PooledHeapMemory<byte> specializationData, ResourceStub? additionalResourceRef, delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, void> specializedResourceDisposalStub, delegate* managed<ResourceStub, ReadOnlySpan<byte>, ResourceStub?, object> resourceBoxingStub) {
 		Stub = stub;
 		SpecializationTypeIdentifier = specializationTypeIdentifier;
 		SpecializationData = specializationData;
 		AdditionalResourceRef = additionalResourceRef;
 		SpecializedResourceDisposalStub = specializedResourceDisposalStub;
-		SpecializedResourceBoxingStub = specializedResourceBoxingStub;
+		ResourceBoxingStub = resourceBoxingStub;
 	}
 }
 
@@ -166,7 +166,11 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource {
 		var data = ValidateCanAddAndGetData(handle);
-		AddResource(handle, data, new SerializedResourceData(resource.AsStub, default, default, default, null, null), resource);
+		AddResource(handle, data, new SerializedResourceData(resource.AsStub, default, default, default, null, &BoxResourceViaStub<TResource>), resource);
+	}
+
+	static object BoxResourceViaStub<TResource>(ResourceStub stub, ReadOnlySpan<byte> specializationData, ResourceStub? additionalResourceRef) where TResource : IResource {
+		return TResource.BoxFromStub(stub);
 	}
 
 	public void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
@@ -319,7 +323,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		var result = new List<object>(data.Count);
 		for (var i = 0; i < data.Count; ++i) {
 			var d = data.DataArray[i];
-			result.Add(d.IsSpecialized ? d.SpecializedResourceBoxingStub(d.Stub, d.SpecializationData.Span, d.AdditionalResourceRef) : d.Stub);
+			result.Add(d.ResourceBoxingStub(d.Stub, d.SpecializationData.Span, d.AdditionalResourceRef));
 		}
 		return result;
 	}
