@@ -147,6 +147,8 @@ nav:
             - reference/lighting_ignoring_materials.md
             - reference/color_keyed_materials.md
             - reference/the_default_material.md
+        - Fonts:
+            - reference/loading_fonts.md
 
 not_in_nav: |
 
