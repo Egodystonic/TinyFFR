@@ -140,6 +140,13 @@ nav:
             - reference/texture_patterns.md
             - reference/texture_compression.md
             - reference/backdrop_textures.md
+        - Materials:
+            - reference/creating_materials.md
+            - reference/standard_materials.md
+            - reference/transmissive_materials.md
+            - reference/lighting_ignoring_materials.md
+            - reference/color_keyed_materials.md
+            - reference/the_default_material.md
 
 not_in_nav: |
 
