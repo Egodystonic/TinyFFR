@@ -44,20 +44,7 @@ static partial class TestMain {
 		
 		var factory = builder.Context.Factory!;
 		
-		var builtInTexLibrary = factory.AssetLoader.BuiltInTexturePaths;
 		
-		using var ormr = factory.AssetLoader.LoadOcclusionRoughnessMetallicReflectanceMap(
-			@"Assets/metal_orm.png",
-			builtInTexLibrary.DefaultReflectanceValue // (1)!
-		);
-		
-		using var orm = factory.AssetLoader.LoadOcclusionRoughnessMetallicMap(
-			@"Assets/occlusion.png",
-			builtInTexLibrary.Rgba30Percent, // (2)!
-			@"Assets/metallic.png"
-		);
-		
-		using var texelBuffer = factory.ResourceAllocator.BorrowSpan<TexelRgba32>(numTexels);
 	}
 
 	public static void StartTest(TestContext context) {

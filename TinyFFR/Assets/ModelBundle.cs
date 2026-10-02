@@ -78,16 +78,7 @@ public readonly struct ModelBundle : IDisposable, IStringSpanNameEnabled, IEquat
 	/// </remarks>
 	public MeshGroupSkeleton Skeleton => AnimationTable.Skeleton;
 
-	/// <summary>
-	/// Constructs a new <see cref="ModelBundle"/> over an existing resource group.
-	/// </summary>
-	/// <remarks>
-	/// This is mainly useful for restoring a bundle from a baked asset file: pass the group returned by <see cref="IAssetLoader.LoadBakedResourceGroup"/>. The
-	/// bundle's animations are taken from the first <see cref="MeshGroupAnimationTable"/> in the group, if there is one.
-	/// </remarks>
-	/// <param name="underlyingResourceGroup">The resource group whose resources this bundle should expose.</param>
-	/// <exception cref="ArgumentException">Thrown if <paramref name="underlyingResourceGroup"/> has not been sealed.</exception>
-	public ModelBundle(ResourceGroup underlyingResourceGroup) {
+	internal ModelBundle(ResourceGroup underlyingResourceGroup) {
 		if (!underlyingResourceGroup.IsSealed) throw new ArgumentException("Resource group must be sealed.", nameof(underlyingResourceGroup));
 		UnderlyingResourceGroup = underlyingResourceGroup;
 	}

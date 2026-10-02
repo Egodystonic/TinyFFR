@@ -4,6 +4,7 @@
 using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
@@ -18,50 +19,107 @@ partial class LocalAssetLoader {
 		public readonly ResourceGroup Resources;
 		public readonly LoadedBakedAsset AssetData;
 		public readonly LocalAssetLoader Self;
+		readonly int _textureCount;
+		readonly int _materialCount;
+		readonly int _meshCount;
+		readonly Texture[] _textures;
+		readonly Material[] _materials;
+		readonly Mesh[] _meshes;
+		readonly bool[] _textureIsPooledFontAtlas;
 
 		public BakedAssetResolver(LoadedBakedAsset assetData, ResourceGroup resourceGroup, LocalAssetLoader self) {
 			AssetData = assetData;
 			References = assetData.ExtractSpan<AssetPoolSchema.BakedReferenceEntry>(AssetPoolSchema.ReferenceTable, default);
 			Resources = resourceGroup;
 			Self = self;
+			_textureCount = assetData.Extract(AssetPoolSchema.TextureCount, 0);
+			_materialCount = assetData.Extract(AssetPoolSchema.MaterialCount, 0);
+			_meshCount = assetData.Extract(AssetPoolSchema.MeshCount, 0);
+			_textures = TinyFfrArrayPool<Texture>.Shared.Rent(_textureCount);
+			_materials = TinyFfrArrayPool<Material>.Shared.Rent(_materialCount);
+			_meshes = TinyFfrArrayPool<Mesh>.Shared.Rent(_meshCount);
+			_textureIsPooledFontAtlas = TinyFfrArrayPool<bool>.Shared.Rent(_textureCount);
+			_textureIsPooledFontAtlas.AsSpan(0, _textureCount).Clear();
 		}
-		
+
+		public void Dispose() {
+			TinyFfrArrayPool<Texture>.Shared.Return(_textures, clearArray: true);
+			TinyFfrArrayPool<Material>.Shared.Return(_materials, clearArray: true);
+			TinyFfrArrayPool<Mesh>.Shared.Return(_meshes, clearArray: true);
+			TinyFfrArrayPool<bool>.Shared.Return(_textureIsPooledFontAtlas, clearArray: true);
+		}
+
 		public void MaterializeAll() {
 			Span<char> sectionNameBuffer = stackalloc char[AssetPoolSchema.MaxPoolSectionNameLength];
 
-			var textureCount = AssetData.Extract(AssetPoolSchema.TextureCount, 0);
-			for (var i = 0; i < textureCount; ++i) {
-				var subAsset = AssetData.ExtractSubAsset<Texture>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Texture, i));
-				var texture = CreateTextureFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
-				Resources.Add(texture);
+			foreach (var entry in References) {
+				if (entry.OwnerKind != (int) BakedPoolKind.Font || entry.Slot != (int) BakedReferenceSlot.FontAtlas) continue;
+				if (entry.TargetKind != (int) BakedPoolKind.Texture || entry.TargetIndex < 0 || entry.TargetIndex >= _textureCount) continue;
+				_textureIsPooledFontAtlas[entry.TargetIndex] = true;
 			}
 
-			var materialCount = AssetData.Extract(AssetPoolSchema.MaterialCount, 0);
-			for (var i = 0; i < materialCount; ++i) {
-				var subAsset = AssetData.ExtractSubAsset<Material>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Material, i));
-				var material = CreateMaterialFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.Material, i, in this);
-				Resources.Add(material);
-			}
+			var createdTextureCount = 0;
+			try {
+				for (var i = 0; i < _textureCount; ++i) {
+					var subAsset = AssetData.ExtractSubAsset<Texture>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Texture, i));
+					var texture = CreateTextureFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
+					_textures[i] = texture;
+					createdTextureCount = i + 1;
+					if (!_textureIsPooledFontAtlas[i]) Resources.Add(texture);
+				}
 
-			var meshCount = AssetData.Extract(AssetPoolSchema.MeshCount, 0);
-			for (var i = 0; i < meshCount; ++i) {
-				var subAsset = AssetData.ExtractSubAsset<Mesh>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Mesh, i));
-				var mesh = CreateMeshFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
-				Resources.Add(mesh);
-			}
+				for (var i = 0; i < _materialCount; ++i) {
+					var subAsset = AssetData.ExtractSubAsset<Material>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Material, i));
+					var material = CreateMaterialFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.Material, i, in this);
+					_materials[i] = material;
+					Resources.Add(material);
+				}
 
-			var modelCount = AssetData.Extract(AssetPoolSchema.ModelCount, 0);
-			for (var i = 0; i < modelCount; ++i) {
-				var subAsset = AssetData.ExtractSubAsset<Model>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Model, i));
-				var model = CreateModelFromBakedAsset(Self, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.Model, i, in this);
-				Resources.Add(model);
-			}
+				for (var i = 0; i < _meshCount; ++i) {
+					var subAsset = AssetData.ExtractSubAsset<Mesh>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Mesh, i));
+					var mesh = CreateMeshFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
+					_meshes[i] = mesh;
+					Resources.Add(mesh);
+				}
 
-			var animationTableCount = AssetData.Extract(AssetPoolSchema.AnimationTableCount, 0);
-			for (var i = 0; i < animationTableCount; ++i) {
-				var subAsset = AssetData.ExtractSubAsset<MeshGroupAnimationTable>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.AnimationTable, i));
-				var animationTable = CreateAnimationTableFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.AnimationTable, i, in this);
-				Resources.Add(animationTable);
+				var modelCount = AssetData.Extract(AssetPoolSchema.ModelCount, 0);
+				for (var i = 0; i < modelCount; ++i) {
+					var subAsset = AssetData.ExtractSubAsset<Model>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Model, i));
+					var model = CreateModelFromBakedAsset(Self, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.Model, i, in this);
+					Resources.Add(model);
+				}
+
+				var animationTableCount = AssetData.Extract(AssetPoolSchema.AnimationTableCount, 0);
+				for (var i = 0; i < animationTableCount; ++i) {
+					var subAsset = AssetData.ExtractSubAsset<MeshGroupAnimationTable>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.AnimationTable, i));
+					var animationTable = CreateAnimationTableFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default), BakedPoolKind.AnimationTable, i, in this);
+					Resources.Add(animationTable);
+				}
+
+				var fontCount = AssetData.Extract(AssetPoolSchema.FontCount, 0);
+				for (var i = 0; i < fontCount; ++i) {
+					var subAsset = AssetData.ExtractSubAsset<Font>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.Font, i));
+					if (!TryResolveBakedReference(BakedPoolKind.Font, i, BakedReferenceSlot.FontAtlas, out var atlasEntry)) {
+						throw new AssetBakeException($"Baked font at pool index {i} is missing its required '{BakedReferenceSlot.FontAtlas}' reference.");
+					}
+					var atlasIndex = GetValidatedBakeTargetIndex(atlasEntry, BakedPoolKind.Texture, _textureCount, BakedReferenceSlot.FontAtlas);
+					var font = CreateFontFromBakedAsset(Self, subAsset, _textures[atlasIndex], subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
+					_textureIsPooledFontAtlas[atlasIndex] = false;
+					Resources.Add(font);
+				}
+
+				var backdropTextureCount = AssetData.Extract(AssetPoolSchema.BackdropTextureCount, 0);
+				for (var i = 0; i < backdropTextureCount; ++i) {
+					var subAsset = AssetData.ExtractSubAsset<BackdropTexture>(AssetPoolSchema.WriteEntrySectionName(sectionNameBuffer, BakedPoolKind.BackdropTexture, i));
+					var backdropTexture = CreateBackdropTextureFromBakedAsset(Self, subAsset, subAsset.ExtractString(LocalAssetBakery.ResourceNameSectionName, default));
+					Resources.Add(backdropTexture);
+				}
+			}
+			catch {
+				for (var i = 0; i < createdTextureCount; ++i) {
+					if (_textureIsPooledFontAtlas[i]) _textures[i].Dispose();
+				}
+				throw;
 			}
 		}
 
@@ -87,7 +145,7 @@ partial class LocalAssetLoader {
 
 		public Texture? ResolveOptionalTexture(BakedPoolKind ownerKind, int ownerIndex, BakedReferenceSlot slot) {
 			if (!TryResolveBakedReference(ownerKind, ownerIndex, slot, out var entry)) return null;
-			return Resources.Textures[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Texture, Resources.Textures.Count, slot)];
+			return _textures[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Texture, _textureCount, slot)];
 		}
 
 		public Texture ResolveTexture(BakedPoolKind ownerKind, int ownerIndex, BakedReferenceSlot slot) {
@@ -99,7 +157,7 @@ partial class LocalAssetLoader {
 			if (!TryResolveBakedReference(ownerKind, ownerIndex, slot, out var entry)) {
 				throw new AssetBakeException($"Baked asset is missing required mesh reference '{slot}'.");
 			}
-			return Resources.Meshes[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Mesh, Resources.Meshes.Count, slot)];
+			return _meshes[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Mesh, _meshCount, slot)];
 		}
 
 		public int ResolveMeshes(BakedPoolKind ownerKind, int ownerIndex, BakedReferenceSlot slot, Span<Mesh> destination) {
@@ -107,7 +165,7 @@ partial class LocalAssetLoader {
 			foreach (var entry in References) {
 				if (entry.OwnerKind != (int) ownerKind || entry.OwnerIndex != ownerIndex || entry.Slot != (int) slot) continue;
 				if (count >= destination.Length) throw new AssetBakeException($"Baked asset has more '{slot}' references than expected ({destination.Length}).");
-				destination[count++] = Resources.Meshes[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Mesh, Resources.Meshes.Count, slot)];
+				destination[count++] = _meshes[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Mesh, _meshCount, slot)];
 			}
 			return count;
 		}
@@ -116,7 +174,7 @@ partial class LocalAssetLoader {
 			if (!TryResolveBakedReference(ownerKind, ownerIndex, slot, out var entry)) {
 				throw new AssetBakeException($"Baked asset is missing required material reference '{slot}'.");
 			}
-			return Resources.Materials[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Material, Resources.Materials.Count, slot)];
+			return _materials[GetValidatedBakeTargetIndex(entry, BakedPoolKind.Material, _materialCount, slot)];
 		}
 	}
 

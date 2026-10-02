@@ -581,6 +581,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		return _globals.Bakery.LoadAsync<ResourceGroup, ResourceGroup, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedResourceGroupCore);
 	}
 
+	public ModelBundle LoadBakedBundledAsset(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return new ModelBundle(_globals.Bakery.Load<ResourceGroup, ResourceGroup, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedResourceGroupCore));
+	}
+
+	public TinyFfrAsyncOperation<ModelBundle> LoadBakedBundledAssetAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default) {
+		return _globals.Bakery.LoadWrappedAsync<ResourceGroup, ResourceGroup, ModelBundle, LocalAssetLoader>(this, bakedAssetFilePath, name, &LoadBakedResourceGroupCore);
+	}
+
 	static ResourceGroup LoadBakedModelCore(LocalAssetBakery.AssetLoadContext ctx) {
 		static ResourceGroup Finalize(LocalAssetBakery.AssetLoadContext ctx) {
 			ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
@@ -590,7 +598,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			var name = ctx.StoredOrOverridingName;
 
 			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, name);
-			var resolver = new BakedAssetResolver(assetData, group, self);
+			using var resolver = new BakedAssetResolver(assetData, group, self);
 			try {
 				resolver.MaterializeAll();
 				group.Add(CreateModelFromBakedAsset(self, name, BakedPoolKind.Root, -1, in resolver));
@@ -616,7 +624,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			var name = ctx.StoredOrOverridingName;
 
 			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, name);
-			var resolver = new BakedAssetResolver(assetData, group, self);
+			using var resolver = new BakedAssetResolver(assetData, group, self);
 			try {
 				resolver.MaterializeAll();
 			}

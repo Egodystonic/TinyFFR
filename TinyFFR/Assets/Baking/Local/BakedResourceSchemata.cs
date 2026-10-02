@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Assets.Meshes;
 
 namespace Egodystonic.TinyFFR.Assets.Baking;
@@ -17,7 +18,9 @@ static class BakedResourceSchemata {
 		Material = 1,
 		Mesh = 2,
 		Model = 3,
-		AnimationTable = 4
+		AnimationTable = 4,
+		Font = 5,
+		BackdropTexture = 6
 	}
 	
 	public static BakedPoolKind GetPoolKindForType(Type type) {
@@ -26,6 +29,8 @@ static class BakedResourceSchemata {
 		if (type == typeof(Mesh)) return BakedPoolKind.Mesh;
 		if (type == typeof(Model)) return BakedPoolKind.Model;
 		if (type == typeof(MeshGroupAnimationTable)) return BakedPoolKind.AnimationTable;
+		if (type == typeof(Font)) return BakedPoolKind.Font;
+		if (type == typeof(BackdropTexture)) return BakedPoolKind.BackdropTexture;
 		return BakedPoolKind.Root;
 	}
 	
@@ -35,6 +40,8 @@ static class BakedResourceSchemata {
 		BakedPoolKind.Mesh => typeof(Mesh),
 		BakedPoolKind.Model => typeof(Model),
 		BakedPoolKind.AnimationTable => typeof(MeshGroupAnimationTable),
+		BakedPoolKind.Font => typeof(Font),
+		BakedPoolKind.BackdropTexture => typeof(BackdropTexture),
 		_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 	};
 
@@ -68,12 +75,16 @@ static class BakedResourceSchemata {
 		public const string MeshCount = "pool_mesh_count";
 		public const string ModelCount = "pool_model_count";
 		public const string AnimationTableCount = "pool_animtable_count";
+		public const string FontCount = "pool_font_count";
+		public const string BackdropTextureCount = "pool_backdrop_count";
 
 		public const string TexturePrefix = "pool_texture_";
 		public const string MaterialPrefix = "pool_material_";
 		public const string MeshPrefix = "pool_mesh_";
 		public const string ModelPrefix = "pool_model_";
 		public const string AnimationTablePrefix = "pool_animtable_";
+		public const string FontPrefix = "pool_font_";
+		public const string BackdropTexturePrefix = "pool_backdrop_";
 
 		public const string ReferenceTable = "reference_table";
 
@@ -85,6 +96,8 @@ static class BakedResourceSchemata {
 			BakedPoolKind.Mesh => MeshCount,
 			BakedPoolKind.Model => ModelCount,
 			BakedPoolKind.AnimationTable => AnimationTableCount,
+			BakedPoolKind.Font => FontCount,
+			BakedPoolKind.BackdropTexture => BackdropTextureCount,
 			_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 		};
 
@@ -94,6 +107,8 @@ static class BakedResourceSchemata {
 			BakedPoolKind.Mesh => MeshPrefix,
 			BakedPoolKind.Model => ModelPrefix,
 			BakedPoolKind.AnimationTable => AnimationTablePrefix,
+			BakedPoolKind.Font => FontPrefix,
+			BakedPoolKind.BackdropTexture => BackdropTexturePrefix,
 			_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 		};
 

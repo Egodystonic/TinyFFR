@@ -150,6 +150,7 @@ nav:
         - Fonts:
             - reference/loading_fonts.md
         - reference/asynchronous_loading.md
+        - reference/asset_bakery.md
 
 not_in_nav: |
 

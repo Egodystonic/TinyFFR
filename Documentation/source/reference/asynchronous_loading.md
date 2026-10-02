@@ -62,7 +62,7 @@ Loading an asset can take a long time (files must be read, image data decoded, t
 Asynchronous counterparts are available for every method on the asset loader that loads an asset, including:
 
 * **Textures:** `LoadTextureAsync()`, every `Load[...]MapAsync()` function (e.g. `LoadColorMapAsync()`, `LoadNormalMapAsync()`), `LoadCanvasTextureAsync()`, `LoadCombinedTextureAsync()`, and `LoadBakedTextureAsync()`;
-* **Meshes and models:** `LoadMeshAsync()`, `LoadMeshGroupAsync()`, `LoadBundledAssetAsync()`, `LoadBakedMeshAsync()`, `LoadBakedModelAsync()`, and `LoadBakedResourceGroupAsync()`;
+* **Meshes and models:** `LoadMeshAsync()`, `LoadMeshGroupAsync()`, `LoadBundledAssetAsync()`, `LoadBakedMeshAsync()`, `LoadBakedModelAsync()`, `LoadBakedResourceGroupAsync()`, and `LoadBakedBundledAssetAsync()`;
 * **Materials:** `LoadBakedMaterialAsync()`;
 * **Fonts:** `LoadFontAsync()` and `LoadBakedFontAsync()`;
 * **Backdrop textures:** `LoadBackdropTextureAsync()`, `LoadBackdropTextureFromPreprocessedDirectoryAsync()`, `LoadPreprocessedBackdropTextureAsync()`, `LoadBakedBackdropTextureAsync()`, and `PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync()`.

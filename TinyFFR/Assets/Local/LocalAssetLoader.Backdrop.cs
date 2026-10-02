@@ -479,35 +479,38 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	
 	static BackdropTexture LoadBakedBackdropTextureCore(LocalAssetBakery.AssetLoadContext ctx) {
 		static BackdropTexture Finalize(LocalAssetBakery.AssetLoadContext ctx) {
-			var assetData = ctx.AssetData;
-			var skyboxData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.SkyboxData);
-			var iblData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.IblData);
-			fixed (byte* skyboxPin = skyboxData) {
-				fixed (byte* iblPin = iblData) {
-					LoadSkyboxFileInToMemory(
-						skyboxPin,
-						skyboxData.Length,
-						out var skyboxTextureHandle
-					).ThrowIfFailure();
-
-					try {
-						LoadIblFileInToMemory(
-							iblPin,
-							iblData.Length,
-							out var iblTextureHandle
-						).ThrowIfFailure();
-
-						return ctx.Invoker<LocalAssetLoader>().StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, ctx.StoredOrOverridingName);
-					}
-					catch {
-						UnloadSkyboxFileFromMemory(skyboxTextureHandle);
-						throw;
-					}
-				}	
-			}
+			return CreateBackdropTextureFromBakedAsset(ctx.Invoker<LocalAssetLoader>(), ctx.AssetData, ctx.StoredOrOverridingName);
 		}
 		
 		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static BackdropTexture CreateBackdropTextureFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name) {
+		var skyboxData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.SkyboxData);
+		var iblData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.IblData);
+		fixed (byte* skyboxPin = skyboxData) {
+			fixed (byte* iblPin = iblData) {
+				LoadSkyboxFileInToMemory(
+					skyboxPin,
+					skyboxData.Length,
+					out var skyboxTextureHandle
+				).ThrowIfFailure();
+
+				try {
+					LoadIblFileInToMemory(
+						iblPin,
+						iblData.Length,
+						out var iblTextureHandle
+					).ThrowIfFailure();
+
+					return self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, name);
+				}
+				catch {
+					UnloadSkyboxFileFromMemory(skyboxTextureHandle);
+					throw;
+				}
+			}
+		}
 	}
 	#endregion
 

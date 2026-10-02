@@ -665,7 +665,7 @@ class LocalAssetBakingTest {
 		ModelBundle? _bundle;
 		ModelInstanceGroup? _instances;
 		TinyFfrAsyncOperation<ModelBundle>? _pendingSourceOperation;
-		TinyFfrAsyncOperation<ResourceGroup>? _pendingBakedOperation;
+		TinyFfrAsyncOperation<ModelBundle>? _pendingBakedOperation;
 
 		public override string DisplayName => "Model Bundle";
 		public override string BakedFileName => "model_bundle.tinyffr";
@@ -686,7 +686,7 @@ class LocalAssetBakingTest {
 		}
 
 		public override void BeginLoadFromBakedFile(LocalTinyFfrFactory factory, string filePath) {
-			_pendingBakedOperation = factory.AssetLoader.LoadBakedResourceGroupAsync(filePath);
+			_pendingBakedOperation = factory.AssetLoader.LoadBakedBundledAssetAsync(filePath);
 		}
 
 		public override void CompletePendingLoad(LocalTinyFfrFactory factory) {
@@ -695,7 +695,7 @@ class LocalAssetBakingTest {
 				_pendingSourceOperation = null;
 			}
 			else if (_pendingBakedOperation is { } bakedOp) {
-				_bundle = new ModelBundle(bakedOp.GetResultAndDisposeOperation());
+				_bundle = bakedOp.GetResultAndDisposeOperation();
 				_pendingBakedOperation = null;
 			}
 			else throw new InvalidOperationException($"No pending load for '{DisplayName}'.");

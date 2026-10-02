@@ -1362,7 +1362,7 @@ public partial interface IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The asynchronous counterpart to <see cref="LoadBakedModel"/>. The returned operation must be consumed exactly once; see
+	/// The asynchronous counterpart to <see cref="LoadBakedResourceGroup"/>. The returned operation must be consumed exactly once; see
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
@@ -1373,6 +1373,39 @@ public partial interface IAssetLoader {
 	/// produced by an <see cref="Baking.IAssetBakery"/>.</param>
 	/// <param name="name">The name to give the resource group. May be left empty.</param>
 	TinyFfrAsyncOperation<ResourceGroup> LoadBakedResourceGroupAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+
+	/// <summary>
+	/// Loads a bundled asset (i.e. a <see cref="ModelBundle"/>) from a previously baked asset file.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The file must have been produced by baking a <see cref="ModelBundle"/> (via <see cref="Baking.IAssetBakery.Bake(ModelBundle, ReadOnlySpan{char})"/>).
+	/// </para>
+	/// <para>
+	/// Disposing the returned bundle disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="bakedAssetFilePath">The path of the baked asset file to load. Must name an existing file previously
+	/// produced by an <see cref="Baking.IAssetBakery"/>.</param>
+	/// <param name="name">The name to give the bundle. May be left empty.</param>
+	ModelBundle LoadBakedBundledAsset(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+	/// <summary>
+	/// Asynchronously loads a bundled asset (i.e. a <see cref="ModelBundle"/>) from a previously baked asset file.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The asynchronous counterpart to <see cref="LoadBakedBundledAsset"/>. The returned operation must be consumed exactly once; see
+	/// <see cref="TinyFfrAsyncOperation{T}"/>.
+	/// </para>
+	/// <para>
+	/// The file must have been produced by baking a <see cref="ModelBundle"/> (via <see cref="Baking.IAssetBakery.Bake(ModelBundle, ReadOnlySpan{char})"/>).
+	/// Disposing the returned bundle disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="bakedAssetFilePath">The path of the baked asset file to load. Must name an existing file previously
+	/// produced by an <see cref="Baking.IAssetBakery"/>.</param>
+	/// <param name="name">The name to give the bundle. May be left empty.</param>
+	TinyFfrAsyncOperation<ModelBundle> LoadBakedBundledAssetAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
 
 	/// <summary>
 	/// Loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar).
