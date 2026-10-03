@@ -850,6 +850,11 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	void Dispose(ResourceHandle<ModelInstance> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		if (removeFromMap && _activeInstanceCanvases.TryGetValue(handle, out var canvas)) {
+			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+			canvas.UnderlyingScene.Implementation.DisposeCanvasObject(canvas.UnderlyingScene.GetHandleWithoutDisposeCheck(), HandleToInstance(handle));
+			return;
+		}
 		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));

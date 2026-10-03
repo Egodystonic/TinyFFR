@@ -445,4 +445,60 @@ class ResourceGroupTest {
 		Assert.IsTrue(canvas.UnderlyingScene.IsDisposed);
 		Assert.IsTrue(canvasTexture.UnderlyingModelInstance.IsDisposed);
 	}
+
+	[Test]
+	public void CanvasScenesShouldOwnTheirCanvasObjects() {
+		using var factory = new LocalTinyFfrFactory();
+		using var sourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
+		var canvas = factory.SceneBuilder.CreateCanvasScene();
+		var canvasTexture = canvas.Add(sourceTexture);
+
+		var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: false);
+		group.Add(canvasTexture);
+
+		Assert.Throws<ResourceDependencyException>(() => canvas.Dispose());
+		Assert.IsFalse(canvas.UnderlyingScene.IsDisposed);
+		Assert.AreEqual(1, canvas.UnderlyingScene.ContainedModelInstances.Count);
+		var secondTexture = canvas.Add(sourceTexture);
+		Assert.AreEqual(2, canvas.UnderlyingScene.ContainedModelInstances.Count);
+
+		group.Dispose();
+		Assert.DoesNotThrow(() => canvasTexture.Dispose());
+		Assert.AreEqual(1, canvas.UnderlyingScene.ContainedModelInstances.Count);
+		Assert.DoesNotThrow(() => canvas.Dispose());
+		Assert.IsTrue(secondTexture.UnderlyingModelInstance.IsDisposed);
+	}
+
+	[Test]
+	public void DisposingACanvasObjectsUnderlyingInstanceShouldRemoveItFromItsCanvas() {
+		using var factory = new LocalTinyFfrFactory();
+		using var sourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
+		using var canvas = factory.SceneBuilder.CreateCanvasScene();
+		var canvasTexture = canvas.Add(sourceTexture);
+		var canvasText = canvas.Add("Hello", factory.AssetLoader.LoadFont().CreatePen(BuiltInFontPenStyle.Default));
+		Assert.AreEqual(2, canvas.UnderlyingScene.ContainedModelInstances.Count);
+
+		canvasTexture.UnderlyingModelInstance.Dispose();
+		Assert.IsTrue(canvasTexture.UnderlyingModelInstance.IsDisposed);
+		Assert.AreEqual(1, canvas.UnderlyingScene.ContainedModelInstances.Count);
+
+		canvasText.IsVisible = false;
+		canvasText.IsVisible = true;
+		canvasText.UnderlyingModelInstance.Dispose();
+		Assert.AreEqual(0, canvas.UnderlyingScene.ContainedModelInstances.Count);
+	}
+
+	[Test]
+	public void GroupsHoldingOnlyCanvasObjectsShouldDisposeThem() {
+		using var factory = new LocalTinyFfrFactory();
+		using var sourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
+		using var canvas = factory.SceneBuilder.CreateCanvasScene();
+		var canvasTexture = canvas.Add(sourceTexture);
+
+		var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
+		group.Add(canvasTexture);
+		Assert.DoesNotThrow(() => group.Dispose());
+		Assert.IsTrue(canvasTexture.UnderlyingModelInstance.IsDisposed);
+		Assert.AreEqual(0, canvas.UnderlyingScene.ContainedModelInstances.Count);
+	}
 }

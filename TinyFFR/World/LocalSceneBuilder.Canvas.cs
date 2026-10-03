@@ -192,7 +192,8 @@ sealed partial class LocalSceneBuilder {
 	void AddCanvasItem(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> viewportSize) {
 		var modelInstance = itemData.ModelInstance;
 		_canvasItemMap[handle][modelInstance.Handle] = itemData;
-		Add(handle, modelInstance);
+		AddModelInstanceWithoutTrackingDependency(handle, modelInstance);
+		_globals.DependencyTracker.RegisterOwnership(HandleToInstance(handle), modelInstance);
 		SetCanvasItemTransformAccordingToViewport(handle, in itemData, viewportSize);
 	}
 
@@ -583,14 +584,8 @@ sealed partial class LocalSceneBuilder {
 	}
 	public void SetCanvasObjectVisibility(ResourceHandle<Scene> handle, ModelInstance modelInstance, bool newValue) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newValue) {
-			Add(handle, modelInstance);
-		}
-		else {
-			Remove(handle, modelInstance);
-			// Remove de-links the dependency but we want to maintain it
-			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), modelInstance);
-		}
+		if (newValue) AddModelInstanceWithoutTrackingDependency(handle, modelInstance);
+		else RemoveModelInstanceWithoutTrackingDependency(handle, modelInstance);
 	}
 
 	public XYPair<int> GetCanvasObjectPositionPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
@@ -876,10 +871,10 @@ sealed partial class LocalSceneBuilder {
 				OrphanCanvasDockChildren(handle, canvasItemMap, instanceHandle);
 				canvasItemMap.Remove(instanceHandle);
 			}
-			Remove(handle, modelInstance);
-			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+			RemoveModelInstanceWithoutTrackingDependency(handle, modelInstance);
 		}
 
+		_objectBuilder.SetCanvas(instanceHandle, null);
 		modelInstance.Dispose();
 		ownedMaterial?.Dispose();
 		ownedString?.Dispose();

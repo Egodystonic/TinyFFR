@@ -102,8 +102,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	#region Model Instance
 	public void Add(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!AddModelInstanceWithoutTrackingDependency(handle, modelInstance)) return;
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), modelInstance);
+	}
+	bool AddModelInstanceWithoutTrackingDependency(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		var instanceVector = _modelInstanceMap[handle];
-		if (instanceVector.Contains(modelInstance)) return;
+		if (instanceVector.Contains(modelInstance)) return false;
 
 		AddModelInstanceToScene(
 			handle,
@@ -111,12 +115,16 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		).ThrowIfFailure();
 
 		instanceVector.Add(modelInstance);
-		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), modelInstance);
+		return true;
 	}
 
 	public void Remove(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!_modelInstanceMap[handle].Remove(modelInstance)) return;
+		if (!RemoveModelInstanceWithoutTrackingDependency(handle, modelInstance)) return;
+		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+	}
+	bool RemoveModelInstanceWithoutTrackingDependency(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
+		if (!_modelInstanceMap[handle].Remove(modelInstance)) return false;
 		
 		RemoveInstanceFromCameraLockedMaps(handle, modelInstance);
 
@@ -124,8 +132,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			handle,
 			modelInstance.Handle
 		).ThrowIfFailure();
-
-		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+		return true;
 	}
 
 	public void Add(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup) {
