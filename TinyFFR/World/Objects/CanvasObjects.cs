@@ -190,11 +190,12 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 }
 
 /// <summary>
-/// An <see cref="ICanvasObject"/> that knows both its own concrete type and the resource type underlying it.
+/// An <see cref="ICanvasObject"/> that knows its own concrete type.
 /// </summary>
 /// <typeparam name="TSelf">The implementing type itself.</typeparam>
-/// <typeparam name="TBase">The resource type this canvas object is a specialization of.</typeparam>
-public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecialization<TSelf, TBase> where TSelf : struct, ICanvasObject<TSelf, TBase> where TBase : IResource<TBase>;
+public interface ICanvasObject<TSelf> : ICanvasObject where TSelf : struct, ICanvasObject<TSelf> {
+	internal static abstract bool TryWrap(ModelInstance modelInstance, out TSelf result);
+}
 
 /// <summary>
 /// An image drawn flat on a <see cref="CanvasScene"/>. Created by adding a texture or material to a <see cref="CanvasScene"/>.
@@ -204,7 +205,7 @@ public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecializ
 /// properties) and how much of its own area is filled (<see cref="FillFraction"/>). Between them these are enough to build icons from a packed sheet, progress
 /// bars and similar interface elements without separate images for each.
 /// </remarks>
-public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, ModelInstance> {
+public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDisposableResource<CanvasTexture> {
 	/// <inheritdoc />
 	public CanvasScene Canvas { get; }
 	/// <summary>
@@ -410,18 +411,28 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 		Canvas = canvas;
 		UnderlyingQuadInstance = underlyingQuadInstance;
 	}
+
+	static bool ICanvasObject<CanvasTexture>.TryWrap(ModelInstance modelInstance, out CanvasTexture result) => TryWrap(modelInstance, out result);
+	internal static bool TryWrap(ModelInstance modelInstance, out CanvasTexture result) {
+		if (modelInstance.Implementation.GetCanvas(modelInstance.Handle) is not { } canvas || modelInstance.Implementation.IsTextInstance(modelInstance.Handle)) {
+			result = default;
+			return false;
+		}
+		result = new(canvas, new QuadInstance(modelInstance));
+		return true;
+	}
+
+	static CanvasTexture WrapBase(ModelInstance b) => TryWrap(b, out var result) ? result : new(default, new QuadInstance(b));
+	ResourceHandle<CanvasTexture> IResource<CanvasTexture>.Handle => UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingModelInstance.Handle.Ident, UnderlyingModelInstance.Implementation);
+	ResourceHandle<CanvasTexture> IResource<CanvasTexture>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CanvasTexture IResource<CanvasTexture>.CreateFromHandleAndImpl(ResourceHandle<CanvasTexture> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CanvasTexture IResource<CanvasTexture>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CanvasTexture IResource<CanvasTexture>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CanvasTexture, ModelInstance>.SpecializationTypeIdentifier => typeof(CanvasTexture).TypeHandle.Value;
-	int IResourceSpecialization<CanvasTexture, ModelInstance>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<CanvasTexture, ModelInstance>.Smuggle(CanvasTexture resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = ((IResource<Scene>) resource.Canvas.UnderlyingScene).AsStub;
-		outBaseResource = resource.UnderlyingQuadInstance.UnderlyingModelInstance;
-	}
-	static CanvasTexture IResourceSpecialization<CanvasTexture, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(new CanvasScene(ResourceUtils.FromStub<Scene>(additionalResourceRef!.Value)), new QuadInstance(baseResource));	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Sets this object’s anchor, position and size together, in pixels.
@@ -625,7 +636,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 /// By default the height of the element grows with the number of lines the text occupies; set
 /// <see cref="DisableAutomaticLineCountBasedHeightScaling"/> to keep the height fixed instead.
 /// </remarks>
-public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstance> {
+public readonly record struct CanvasText : ICanvasObject<CanvasText>, IDisposableResource<CanvasText> {
 	/// <inheritdoc />
 	public CanvasScene Canvas { get; }
 	/// <summary>
@@ -897,18 +908,28 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 		Canvas = canvas;
 		UnderlyingTextInstance = underlyingTextInstance;
 	}
+
+	static bool ICanvasObject<CanvasText>.TryWrap(ModelInstance modelInstance, out CanvasText result) => TryWrap(modelInstance, out result);
+	internal static bool TryWrap(ModelInstance modelInstance, out CanvasText result) {
+		if (modelInstance.Implementation.GetCanvas(modelInstance.Handle) is not { } canvas || !modelInstance.Implementation.IsTextInstance(modelInstance.Handle)) {
+			result = default;
+			return false;
+		}
+		result = new(canvas, new TextInstance(modelInstance));
+		return true;
+	}
+
+	static CanvasText WrapBase(ModelInstance b) => TryWrap(b, out var result) ? result : new(default, new TextInstance(b));
+	ResourceHandle<CanvasText> IResource<CanvasText>.Handle => UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingModelInstance.Handle.Ident, UnderlyingModelInstance.Implementation);
+	ResourceHandle<CanvasText> IResource<CanvasText>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CanvasText IResource<CanvasText>.CreateFromHandleAndImpl(ResourceHandle<CanvasText> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CanvasText IResource<CanvasText>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CanvasText IResource<CanvasText>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CanvasText, ModelInstance>.SpecializationTypeIdentifier => typeof(CanvasText).TypeHandle.Value;
-	int IResourceSpecialization<CanvasText, ModelInstance>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<CanvasText, ModelInstance>.Smuggle(CanvasText resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = ((IResource<Scene>) resource.Canvas.UnderlyingScene).AsStub;
-		outBaseResource = resource.UnderlyingTextInstance.UnderlyingModelInstance;
-	}
-	static CanvasText IResourceSpecialization<CanvasText, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(new CanvasScene(ResourceUtils.FromStub<Scene>(additionalResourceRef!.Value)), new TextInstance(baseResource));	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Sets this object’s anchor, position and size together, in pixels.

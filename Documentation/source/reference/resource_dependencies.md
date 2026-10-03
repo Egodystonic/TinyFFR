@@ -7,7 +7,7 @@ description: Information on how TinyFFR tracks dependencies between resources, a
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * When a resource uses another resource, TinyFFR records a *dependency* between them. :material-arrow-right: [Resource Dependencies](#resource-dependencies)
+    * When one resource uses another resource, TinyFFR records a *dependency* between them. :material-arrow-right: [Resource Dependencies](#resource-dependencies)
     * A resource can't be disposed while anything still depends on it; attempting to do so throws a `ResourceDependencyException`. :material-arrow-right: [Disposing Resources](#disposing-resources)
     * Dependencies are released when the dependent resource is disposed, or stops using the resource it depended on. :material-arrow-right: [Releasing Dependencies](#releasing-dependencies)
 
@@ -19,7 +19,12 @@ description: Information on how TinyFFR tracks dependencies between resources, a
 var colorMap = factory.TextureBuilder.CreateColorMap(StandardColor.Red, includeAlpha: false, name: "Bricks Color");
 var material = factory.MaterialBuilder.CreateStandardMaterial(colorMap, name: "Bricks"); // (1)!
 
-colorMap.Dispose(); // (2)!
+try {
+	colorMap.Dispose(); // (2)!
+}
+catch (ResourceDependencyException e) {
+	Console.WriteLine("Oops! I tried to dispose something in use: " + e.Message);
+}
 
 material.Dispose(); // (3)!
 colorMap.Dispose();
@@ -36,7 +41,7 @@ Many resources in TinyFFR are built from other resources: a `Material` uses `Tex
 Every time one resource starts using another, TinyFFR records a *dependency* between them. The resource doing the using is the *dependent*, and the resource being used is its *target*. While a target has at least one dependent, it can't be disposed.
 
 ??? question "Why Track Dependencies?"
-	Most resources in TinyFFR represent data held in unmanaged (native/GPU) memory. Disposing a resource that's still in use by another (e.g. disposing a texture that a material is still sampling from) would leave the dependent resource reading from freed memory, which typically results in rendering corruption or the application crashing (without a helpful error message).
+	Most resources in TinyFFR represent data held in unmanaged (native/GPU) memory. Disposing a resource that's still in use by another (e.g. disposing a texture that a material is still sampling from) would leave the dependent resource reading from freed memory, which would result in rendering corruption or an application crash *at best*.
 
 	Tracking dependencies turns that class of bug in to an immediate, descriptive exception at the point the mistake is made.
 
@@ -50,18 +55,16 @@ The following dependencies are tracked:
 | `Model`                         | Its `Mesh` and `Material`.                                                                         |
 | `ModelInstance`                 | Its `Mesh` and `Material` (the [default material](the_default_material.md) excepted).              |
 | `Scene`                         | Every `ModelInstance` and light added to it, and its `BackdropTexture` (if one is set).            |
-| `CanvasScene`                   | Its `Camera`, and every canvas object added to it.                                                 |
 | `Renderer`                      | Its `Scene`, `Camera`, and render target (`Window` or `RenderOutputBuffer`).                       |
 | `RendererCompositor`            | Its render target, and every `Renderer` added to it.                                               |
 | `MeshGroupAnimationTable`       | The `Mesh`es it animates.                                                                          |
 | Mesh views of a `DynamicVertexBuffer` | The `DynamicVertexBuffer` they were created from.                                            |
 | `ResourceGroup`                 | Every resource added to it (see [Resource Groups](resource_groups.md)).                            |
-
-Additionally, disposing a `Font` also disposes every `FontPen` and `FontString` created from it; so a `Font` can't be disposed while any of its pens or strings are still in use elsewhere (e.g. by a text instance in a scene).
+| `TextInstance`                  | The `Font` and `FontPen`/`FontString` it uses.                                                     |
 
 ## Disposing Resources
 
-When you dispose a resource that still has dependents, a `ResourceDependencyException` is thrown and the resource is *not* disposed. The exception message names the resource and (up to three of) its dependents, for example:
+When you attempt to dispose a resource that still has dependents, a `ResourceDependencyException` is thrown and the resource is *not* disposed. The exception message names the resource and (up to three of) its dependents, for example:
 
 ```
 Can not execute this action (i.e. dispose or mutation) for Texture 'Bricks Color' because it is still in use by 1 other
@@ -89,7 +92,7 @@ The same principle applies to [resource groups](resource_groups.md), which dispo
 
 ### Mutation
 
-Dependencies can also prevent *modifying* a resource, where the modification would invalidate its dependents. Currently, this only applies to `DynamicVertexBuffer`s: resizing a buffer's vertex or index storage throws a `ResourceDependencyException` while any mesh views created from it are still alive.
+Dependencies can also prevent *modifying* a resource, where the modification would invalidate its dependents. Currently, this only applies to `DynamicVertexBuffer`s when resizing a buffer's vertex or index storage throws a `ResourceDependencyException` while any mesh views created from it are still alive.
 
 ## Releasing Dependencies
 
@@ -97,8 +100,6 @@ A dependent's dependencies are released when:
 
 * The dependent is disposed. For example, disposing a `Material` releases its dependency on every `Texture` it uses.
 * The dependent stops using the target. For example, `modelInstance.SetMaterial(otherMaterial)` releases the instance's dependency on its previous material, and `scene.Remove(modelInstance)` releases the scene's dependency on the instance.
-
-A dependent only ever depends on a given target once: adding the same `ModelInstance` to a `Scene` twice and then removing it once releases the dependency.
 
 ```csharp
 var oldMaterial = factory.MaterialBuilder.CreateStandardMaterial(colorMap);

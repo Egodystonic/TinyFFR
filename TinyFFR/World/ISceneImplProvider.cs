@@ -410,10 +410,6 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// </summary>
 	Span<ModelInstance> GetCanvasQueryScratchBuffer(ResourceHandle<Scene> handle);
 	/// <summary>
-	/// Invoked via <see cref="CanvasSceneQueryProvider.FindObjectsUnderLocalCoord{TCanvasObject}"/>.
-	/// </summary>
-	bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance>;
-	/// <summary>
 	/// Invoked via <see cref="ICanvasObject.ActualSizePixels"/>.
 	/// </summary>
 	XYPair<int> GetCanvasObjectActualSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance);

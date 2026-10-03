@@ -7,7 +7,7 @@ description: Information on how to create fake resources for unit testing code t
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * Every resource is a handle plus an *implementation provider*; by supplying your own implementation, you can create fake resources for unit tests. :material-arrow-right: [Mocking Resources](#mocking-resources)
+    * You can create fake resources for unit tests. :material-arrow-right: [Mocking Resources](#mocking-resources)
     * Fake resources are created with `ResourceUtils.CreateCustom()`, using a hand-written fake or a mocking library. :material-arrow-right: [Creating Fakes](#creating-fakes)
     * Fake resources are only for testing your own code; passing them in to TinyFFR itself throws an exception. :material-arrow-right: [Limitations](#limitations)
 
@@ -54,9 +54,10 @@ Normally the implementation provider is part of the factory, and does the real w
 
 :   Your implementation of the resource's implementation provider interface (`TImpl`), e.g. `ITextureImplProvider` for a `Texture`. Must not be `null`.
 
-Any mocking library that can mock interfaces will work, as shown at the [top of this page](#mocking-resources). Alternatively, you can write a fake implementation by hand:
+Any mocking library that can mock interfaces will work, as shown at the top of this page using NSubstitute. Alternatively, you can write a fake implementation by hand:
 
 ```csharp
+// NOTE: This example may not be up-to-date with the latest API and serves as just an example
 sealed class FakeTextureImplProvider : ITextureImplProvider {
 	public XYPair<int> Dimensions { get; set; } = new(64, 64);
 	public bool WasDisposed { get; private set; }
@@ -87,11 +88,6 @@ var texture = ResourceUtils.CreateCustom<Texture, ITextureImplProvider>(1, impl)
 
 3.	The name methods are part of every resource's implementation provider, and are used by e.g. `texture.GetNameAsNewStringObject()` and `texture.ToString()`.
 
-??? info "Disposal Checks"
-	Resources forward their properties and methods to the implementation provider without checking whether they've been disposed first; in TinyFFR's own implementations it's the implementation provider that throws an `ObjectDisposedException` when a disposed resource is used.
-
-	So if you'd like your fake resources to throw when used after being disposed, implement that check in your fake implementation.
-
 ### Extracting Handles & Implementations
 
 `ResourceUtils` also offers the reverse operations, which work on any resource (fake or real):
@@ -108,14 +104,18 @@ These are useful in tests for checking which resource some code returned or used
 
 Two resources are equal (via `==` or `Equals()`) when they have both the same handle *and* the same implementation provider instance. So two fakes with the same handle but different implementations are not equal.
 
+??? warning "Don't use ResourceUtils to Work Around TinyFFR's Public API"
+	You may be tempted to use the methods shown above to work around the public library API and invoke "hidden" implementation methods manually. For example, `IsDisposed()` is available as a method on each implementation provider interface, but no resource type exposes it.
+	
+	In some cases we do not want to expose internal implementation details because we either don't want consumers of the library to rely on them (i.e. they're subject to change or may be deprecated).
+	
+	In other cases it may be because their usage is non-obvious and better exposed in other ways. For example, resource types that use handles that are actually pointers in re-usable arena allocator tables can "resurrect", meaning a theoretical `IsDisposed` could "change" from `true` back to `false`. That is why there is no public exposure of the `IsDisposed()` method today.
+	
+	If there's an API hole that you really need added, better to raise an issue on TinyFFR's Github repository.
+
 ## Limitations
 
-???+ warning "Fakes Can't Be Used By TinyFFR"
+Fake resources are not tracked by any factory. They don't appear in the [resource directory](resource_directory.md), and have no [dependencies](resource_dependencies.md) tracked.
+
+???+ failure "Fakes Can't Be Used By TinyFFR"
 	Fake resources are only for testing your own code. Passing a fake resource in to the factory or anything created by it (e.g. creating a material from a fake texture, or adding a fake model instance to a real scene) throws an `InvalidOperationException`.
-
-	The exception is operations that only need to refer to a resource rather than use it: for example, fake resources can be added to a real [resource group](resource_groups.md), combined in to a `Model`, or grouped in to a `ModelInstanceGroup`.
-
-Additionally:
-
-* Fake resources are not tracked by any factory: they don't appear in the [resource directory](resource_directory.md), and have no [dependencies](resource_dependencies.md) tracked.
-* A resource's `default` value has no implementation provider; using it throws an `InvalidObjectException`. This applies to fake and real resource types alike.

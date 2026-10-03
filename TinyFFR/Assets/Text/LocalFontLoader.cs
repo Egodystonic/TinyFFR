@@ -24,7 +24,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	readonly record struct RenderedTextData(ManagedStringPool.RentedStringHandle Text, TextJustification Justification, PooledHeapMemory<MeshVertex> Vertices, PooledHeapMemory<VertexTriangle> Triangles, XYPair<float> Size);
 	readonly record struct AtlasRuneData(XYPair<float> AtlasUVOffset, XYPair<float> AtlasUVSize, XYPair<float> NibOffset, float AdvanceWidth);
 	readonly record struct TextLineRecord(int StartVertexIndex, float Width, float MinX, float MaxX);
-	readonly record struct FontData(Texture Atlas, float Ascent, float Descent, float LineAdvance, Rune LineBreakRune, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<ulong, float> KerningMap, ArrayPoolBackedMap<nuint, PenData> ActivePens, ArrayPoolBackedMap<nuint, StringData> ActiveStrings, ArrayPoolBackedLruCache<int, RenderedTextData> RenderedTextCache);
+	readonly record struct FontData(Texture Atlas, float Ascent, float Descent, float LineAdvance, Rune LineBreakRune, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<ulong, float> KerningMap, ArrayPoolBackedMap<ResourceHandle<FontPen>, PenData> ActivePens, ArrayPoolBackedMap<ResourceHandle<FontString>, StringData> ActiveStrings, ArrayPoolBackedLruCache<int, RenderedTextData> RenderedTextCache);
 	readonly record struct PenData(ResourceHandle<Font> OwningFont, Material Material);
 	readonly record struct StringData(ResourceHandle<Font> OwningFont, Mesh Mesh, XYPair<float> Size);
 
@@ -44,11 +44,15 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	readonly LocalMaterialBuilder _materialBuilder;
 	readonly MapPool<Rune, AtlasRuneData> _runeMapPool = new(false);
 	readonly MapPool<ulong, float> _kerningMapPool = new(false);
-	readonly MapPool<nuint, PenData> _penMapPool = new(false);
-	readonly MapPool<nuint, StringData> _stringMapPool = new(false);
+	readonly MapPool<ResourceHandle<FontPen>, PenData> _penMapPool = new(false);
+	readonly MapPool<ResourceHandle<FontString>, StringData> _stringMapPool = new(false);
 	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedLruCache<int, RenderedTextData>, LocalFontLoader> _renderedTextCachePool;
 	readonly MapPool<Rune, int> _fontLoadRuneToGlyphMapMap = new(zeroMemoryOnReturn: false);
 	readonly ArrayPoolBackedMap<ResourceHandle<Font>, FontData> _activeFonts = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<FontPen>, ResourceHandle<Font>> _activePenOwners = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<FontString>, ResourceHandle<Font>> _activeStringOwners = new();
+	readonly LocalFontPenImplProvider _penImplProvider;
+	readonly LocalFontStringImplProvider _stringImplProvider;
 	readonly WorkerJobSyncHelper<LocalFontLoader, FontLoadContext, FontCreationConfig> _fontLoadWorkerSyncHelper;
 	nuint _prevHandleId = 0U;
 	bool _isDisposed = false;
@@ -70,6 +74,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		_textureBuilder = textureBuilder;
 		_materialBuilder = materialBuilder;
 		_renderedTextCachePool = new(&CreateNewTextCache, this);
+		_penImplProvider = new(this);
+		_stringImplProvider = new(this);
 		_fontLoadWorkerSyncHelper = new(this, _globals.HeapPool.ThreadSafeWrapper, _globals.PrimaryThreadDispatcher, _globals.SynchronousWorkScheduler, _globals.ThreadPoolWorkScheduler);
 	}
 
@@ -424,6 +430,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 					)
 				);
 				var result = ctx.Self.HandleToInstance(handle);
+				ctx.Self._globals.DependencyTracker.RegisterOwnership(result, atlas);
 				ctx.Self.RegisterInBakery(result, ctx.Self._activeFonts[handle], ctx.Name);
 				ctx.RuneMap = null!;
 				ctx.KerningMap = null!;
@@ -520,6 +527,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		);
 
 		var result = HandleToInstance(handle);
+		_globals.DependencyTracker.RegisterOwnership(result, atlas);
 		RegisterInBakery(result, _activeFonts[handle], name);
 		return result;
 	}
@@ -575,7 +583,12 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		);
 		++_prevHandleId;
 		fontData.ActiveStrings[_prevHandleId] = new StringData(handle, mesh, textData.Size);
-		return new FontString(HandleToInstance(handle), _prevHandleId);
+		_activeStringOwners.Add(_prevHandleId, handle);
+		var result = new FontString(_prevHandleId, _stringImplProvider);
+		_globals.StoreMandatoryResourceName(result.GetHandleWithoutDisposeCheck().Ident, nameBuffer.Span);
+		_globals.DependencyTracker.RegisterOwnership(HandleToInstance(handle), result);
+		_globals.DependencyTracker.RegisterOwnership(result, mesh);
+		return result;
 	}
 
 	RenderedTextData RenderAndCacheText(ResourceHandle<Font> fontHandle, ReadOnlySpan<char> text, TextJustification justification, int cacheKey) {
@@ -755,22 +768,20 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		return result;
 	}
 	
-	public Mesh GetStringMesh(ResourceHandle<Font> handle, nuint stringHandle) {
+	StringData GetStringData(ResourceHandle<FontString> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var fontData = _activeFonts[handle];
-		ObjectDisposedException.ThrowIf(!fontData.ActiveStrings.TryGetValue(stringHandle, out var stringData), typeof(FontString));
-		return stringData.Mesh;
+		return _activeFonts[_activeStringOwners[handle]].ActiveStrings[handle];
 	}
-
-	public XYPair<float> GetStringSize(ResourceHandle<Font> handle, nuint stringHandle) {
+	public Font GetFont(ResourceHandle<FontString> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var fontData = _activeFonts[handle];
-		ObjectDisposedException.ThrowIf(!fontData.ActiveStrings.TryGetValue(stringHandle, out var stringData), typeof(FontString));
-		return stringData.Size;
+		return HandleToInstance(_activeStringOwners[handle]);
 	}
+	public Mesh GetMesh(ResourceHandle<FontString> handle) => GetStringData(handle).Mesh;
+	public XYPair<float> GetSize(ResourceHandle<FontString> handle) => GetStringData(handle).Size;
 
 	public FontPen CreatePen(ResourceHandle<Font> handle, ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessNormalized) {
-		const string NameEndingString = " pen material";
+		const string NameEndingString = " pen";
+		const string MaterialNameEndingString = " material";
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var fontData = _activeFonts[handle];
 
@@ -792,17 +803,26 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			_globals.GetResourceName(handle.Ident, DefaultFontName),
 			NameEndingString
 		);
-		var material = _materialBuilder.AllocateTextMaterialInstance(fontData.Atlas, foregroundColor, backgroundColor, outlineColor, outlineThicknessNormalized, nameBuffer.Span);
+		using var materialNameBuffer = _globals.HeapPool.CreateSpanLease<char>(nameLength + MaterialNameEndingString.Length);
+		SpanUtils.Concatenate(materialNameBuffer.Span, nameBuffer.Span, MaterialNameEndingString);
+		var material = _materialBuilder.AllocateTextMaterialInstance(fontData.Atlas, foregroundColor, backgroundColor, outlineColor, outlineThicknessNormalized, materialNameBuffer.Span);
 		++_prevHandleId;
 		fontData.ActivePens[_prevHandleId] = new PenData(handle, material);
-		return new FontPen(HandleToInstance(handle), _prevHandleId);
+		_activePenOwners.Add(_prevHandleId, handle);
+		var result = new FontPen(_prevHandleId, _penImplProvider);
+		_globals.StoreMandatoryResourceName(result.GetHandleWithoutDisposeCheck().Ident, nameBuffer.Span);
+		_globals.DependencyTracker.RegisterOwnership(HandleToInstance(handle), result);
+		_globals.DependencyTracker.RegisterOwnership(result, material);
+		return result;
 	}
 
-	public Material GetPenMaterial(ResourceHandle<Font> handle, nuint penHandle) {
+	public Font GetFont(ResourceHandle<FontPen> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var fontData = _activeFonts[handle];
-		ObjectDisposedException.ThrowIf(!fontData.ActivePens.TryGetValue(penHandle, out var penData), typeof(FontPen));
-		return penData.Material;
+		return HandleToInstance(_activePenOwners[handle]);
+	}
+	public Material GetMaterial(ResourceHandle<FontPen> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeFonts[_activePenOwners[handle]].ActivePens[handle].Material;
 	}
 
 	/* Maintainer's note:
@@ -878,6 +898,30 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	public void CopyName(ResourceHandle<Font> handle, Span<char> destinationBuffer) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultFontName, destinationBuffer);
+	}
+	public string GetNameAsNewStringObject(ResourceHandle<FontPen> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new String(_globals.GetMandatoryResourceName(handle.Ident));
+	}
+	public int GetNameLength(ResourceHandle<FontPen> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetMandatoryResourceName(handle.Ident).Length;
+	}
+	public void CopyName(ResourceHandle<FontPen> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyMandatoryResourceName(handle.Ident, destinationBuffer);
+	}
+	public string GetNameAsNewStringObject(ResourceHandle<FontString> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new String(_globals.GetMandatoryResourceName(handle.Ident));
+	}
+	public int GetNameLength(ResourceHandle<FontString> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetMandatoryResourceName(handle.Ident).Length;
+	}
+	public void CopyName(ResourceHandle<FontString> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyMandatoryResourceName(handle.Ident, destinationBuffer);
 	}
 
 	#region Native Methods
@@ -1001,8 +1045,20 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	public bool IsDisposed(ResourceHandle<Font> handle) => _isDisposed || !_activeFonts.ContainsKey(handle);
 	
 	public void Dispose(ResourceHandle<Font> handle) => Dispose(handle, true);
-	public void DisposePen(ResourceHandle<Font> handle, nuint penHandle) => DisposePen(handle, penHandle, true);
-	public void DisposeString(ResourceHandle<Font> handle, nuint stringHandle) => DisposeString(handle, stringHandle, true);
+	public bool IsDisposed(ResourceHandle<FontPen> handle) => _isDisposed || !_activePenOwners.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<FontString> handle) => _isDisposed || !_activeStringOwners.ContainsKey(handle);
+	public void Dispose(ResourceHandle<FontPen> handle) {
+		if (IsDisposed(handle)) return;
+		var pen = new FontPen(handle, _penImplProvider);
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(pen);
+		DisposePen(_activePenOwners[handle], handle, true);
+	}
+	public void Dispose(ResourceHandle<FontString> handle) {
+		if (IsDisposed(handle)) return;
+		var str = new FontString(handle, _stringImplProvider);
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(str);
+		DisposeString(_activeStringOwners[handle], handle, true);
+	}
 	
 	void Dispose(ResourceHandle<Font> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
@@ -1010,12 +1066,6 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
-		foreach (var penHandle in data.ActivePens.Keys) {
-			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(data.ActivePens[penHandle].Material);
-		}
-		foreach (var stringHandle in data.ActiveStrings.Keys) {
-			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(data.ActiveStrings[stringHandle].Mesh);
-		}
 
 		foreach (var penHandle in data.ActivePens.Keys) {
 			DisposePen(handle, penHandle, false);
@@ -1024,7 +1074,9 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			DisposeString(handle, stringHandle, false);
 		}
 		
+		var atlasStub = ResourceUtils.ToStub(data.Atlas);
 		data.Atlas.Dispose();
+		_globals.DependencyTracker.DeregisterDependency(atlasStub, HandleToInstance(handle));
 		data.RenderedTextCache.Clear(invokeCacheEvictionCallbackOnAllContainedValues: true);
 		_renderedTextCachePool.Return(data.RenderedTextCache);
 		_penMapPool.Return(data.ActivePens);
@@ -1035,20 +1087,32 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeFonts.Remove(handle);
 	}
-	void DisposePen(ResourceHandle<Font> handle, nuint penHandle, bool removeFromMap) {
+	void DisposePen(ResourceHandle<Font> handle, ResourceHandle<FontPen> penHandle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		var fontData = _activeFonts[handle];
 		if (!fontData.ActivePens.TryGetValue(penHandle, out var penData)) return;
 		
+		var pen = new FontPen(penHandle, _penImplProvider);
+		var materialStub = ResourceUtils.ToStub(penData.Material);
 		penData.Material.Dispose();
+		_globals.DependencyTracker.DeregisterDependency(materialStub, pen);
+		_globals.DependencyTracker.DeregisterDependency(pen, HandleToInstance(handle));
+		_globals.DisposeResourceNameIfExists(penHandle.Ident);
+		_activePenOwners.Remove(penHandle);
 		if (removeFromMap) fontData.ActivePens.Remove(penHandle);
 	}
-	void DisposeString(ResourceHandle<Font> handle, nuint stringHandle, bool removeFromMap) {
+	void DisposeString(ResourceHandle<Font> handle, ResourceHandle<FontString> stringHandle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		var fontData = _activeFonts[handle];
 		if (!fontData.ActiveStrings.TryGetValue(stringHandle, out var stringData)) return;
 		
+		var str = new FontString(stringHandle, _stringImplProvider);
+		var meshStub = ResourceUtils.ToStub(stringData.Mesh);
 		stringData.Mesh.Dispose();
+		_globals.DependencyTracker.DeregisterDependency(meshStub, str);
+		_globals.DependencyTracker.DeregisterDependency(str, HandleToInstance(handle));
+		_globals.DisposeResourceNameIfExists(stringHandle.Ident);
+		_activeStringOwners.Remove(stringHandle);
 		if (removeFromMap) fontData.ActiveStrings.Remove(stringHandle);
 	}
 
@@ -1062,6 +1126,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			}
 			
 			_activeFonts.Dispose();
+			_activePenOwners.Dispose();
+			_activeStringOwners.Dispose();
 			_renderedTextCachePool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
 			_penMapPool.Dispose();
 			_stringMapPool.Dispose();
@@ -1075,6 +1141,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	}
 	
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Font> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Font));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<FontPen> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(FontPen));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<FontString> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(FontString));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

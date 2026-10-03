@@ -11,6 +11,13 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 	readonly SetPool<ResourceStub> _setPool = new(zeroMemoryOnReturn: false);
 	readonly StubMap _targetsToDependentsMap = new();
 	readonly StubMap _dependentsToTargetsMap = new();
+	readonly ArrayPoolBackedMap<ResourceIdent, ResourceIdent> _ownedToOwnerMap = new();
+	readonly ArrayPoolBackedVector<ResourceStub> _prematureDisposalClosure = new();
+	readonly ArrayPoolBackedSet<ResourceIdent> _prematureDisposalClosureIdents = new();
+	readonly ArrayPoolBackedMap<ResourceIdent, int> _orderingNodeMap = new();
+	readonly ArrayPoolBackedVector<ResourceStub> _orderingClosure = new();
+	readonly ArrayPoolBackedVector<int> _orderingClosureNodes = new();
+	readonly ArrayPoolBackedVector<(int Before, int After)> _orderingEdges = new();
 	bool _isDisposed = false;
 	int _stateVersion = 0;
 
@@ -48,12 +55,48 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		var targetStub = new ResourceStub(targetNoLongerInUse.Ident, targetNoLongerInUse.Implementation);
 		RemoveStubFromMap(_setPool, _targetsToDependentsMap, targetStub.Ident, dependentStub);
 		RemoveStubFromMap(_setPool, _dependentsToTargetsMap, dependentStub.Ident, targetStub);
+		if (IsOwnedBy(dependentStub.Ident, targetStub.Ident)) _ownedToOwnerMap.Remove(dependentStub.Ident);
 		_stateVersion++;
+	}
+
+	public void RegisterOwnership<TOwner, TOwned>(TOwner owner, TOwned owned) where TOwner : IResource where TOwned : IResource {
+		RegisterDependency(owned, owner);
+		_ownedToOwnerMap[owned.Ident] = owner.Ident;
+	}
+
+	bool IsOwnedBy(ResourceIdent candidate, ResourceIdent owner) => _ownedToOwnerMap.TryGetValue(candidate, out var actualOwner) && actualOwner == owner;
+
+	bool HasOwnedDependents(ResourceIdent owner, ArrayPoolBackedSet<ResourceStub> dependents) {
+		if (_ownedToOwnerMap.Count == 0) return false;
+		foreach (var dependent in dependents) {
+			if (IsOwnedBy(dependent.Ident, owner)) return true;
+		}
+		return false;
+	}
+
+	void AppendOwnershipClosure(ResourceStub root, ArrayPoolBackedVector<ResourceStub> dest, ReadOnlySpan<ResourceStub> excludedSubtreeRoots = default) {
+		var index = dest.Count;
+		dest.Add(root);
+		if (_ownedToOwnerMap.Count == 0) return;
+		for (; index < dest.Count; ++index) {
+			var owner = dest[index];
+			if (!_targetsToDependentsMap.TryGetValue(owner.Ident, out var dependents)) continue;
+			foreach (var dependent in dependents) {
+				if (!IsOwnedBy(dependent.Ident, owner.Ident)) continue;
+				if (!excludedSubtreeRoots.IsEmpty && IsExcludedSubtreeRoot(dependent.Ident, excludedSubtreeRoots)) continue;
+				dest.Add(dependent);
+			}
+		}
+	}
+
+	bool IsExcludedSubtreeRoot(ResourceIdent ident, ReadOnlySpan<ResourceStub> excludedSubtreeRoots) {
+		return _orderingNodeMap.TryGetValue(ident, out var node) && node < excludedSubtreeRoots.Length && excludedSubtreeRoots[node].Ident == ident;
 	}
 
 	public void DeregisterAllDependencies<TDependent>(TDependent dependent) where TDependent : IResource {
 		ThrowIfDisposed();
 
+		_ownedToOwnerMap.Remove(dependent.Ident);
 		if (!_dependentsToTargetsMap.TryGetValue(dependent.Ident, out var targets)) return;
 		var dependentStub = new ResourceStub(dependent.Ident, dependent.Implementation);
 		
@@ -74,11 +117,178 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		ThrowIfDisposed();
 
 		if (!_targetsToDependentsMap.TryGetValue(targetPotentiallyInUse.Ident, out var dependents)) return;
+		if (!HasOwnedDependents(targetPotentiallyInUse.Ident, dependents)) {
+			throw ResourceDependencyException.CreateForPrematureDisposalOrMutation(
+				targetPotentiallyInUse.GetType().Name,
+				targetPotentiallyInUse.GetNameAsNewStringObject(),
+				dependents.Select(sr => sr.Implementation.GetNameAsNewStringObject(sr.Ident.RawResourceHandle).ToString()).ToArray()
+			);
+		}
+
+		List<string>? externalDependentNames = null;
+		try {
+			AppendOwnershipClosure(new ResourceStub(targetPotentiallyInUse.Ident, targetPotentiallyInUse.Implementation), _prematureDisposalClosure);
+			for (var i = 0; i < _prematureDisposalClosure.Count; ++i) _prematureDisposalClosureIdents.Add(_prematureDisposalClosure[i].Ident);
+
+			for (var i = 0; i < _prematureDisposalClosure.Count; ++i) {
+				if (!_targetsToDependentsMap.TryGetValue(_prematureDisposalClosure[i].Ident, out var closureMemberDependents)) continue;
+				foreach (var dependent in closureMemberDependents) {
+					if (_prematureDisposalClosureIdents.Contains(dependent.Ident)) continue;
+					externalDependentNames ??= new();
+					var name = dependent.Implementation.GetNameAsNewStringObject(dependent.Ident.RawResourceHandle);
+					if (!externalDependentNames.Contains(name)) externalDependentNames.Add(name);
+				}
+			}
+		}
+		finally {
+			for (var i = 0; i < _prematureDisposalClosure.Count; ++i) _prematureDisposalClosureIdents.Remove(_prematureDisposalClosure[i].Ident);
+			ResetScratchVector(_prematureDisposalClosure);
+		}
+
+		if (externalDependentNames == null) return;
 		throw ResourceDependencyException.CreateForPrematureDisposalOrMutation(
 			targetPotentiallyInUse.GetType().Name,
 			targetPotentiallyInUse.GetNameAsNewStringObject(),
-			dependents.Select(sr => sr.Implementation.GetNameAsNewStringObject(sr.Ident.RawResourceHandle).ToString()).ToArray()
+			externalDependentNames
 		);
+	}
+
+	public bool TryGetDisposalOrder(ReadOnlySpan<ResourceStub> resources, ResourceIdent ignoredDependent, Span<int> orderDest, out DisposalOrderFailure failure) {
+		ThrowIfDisposed();
+		if (orderDest.Length < resources.Length) throw new ArgumentException("Destination span is too small.", nameof(orderDest));
+
+		failure = default;
+		try {
+			for (var i = 0; i < resources.Length; ++i) _orderingNodeMap.TryAdd(resources[i].Ident, i);
+			for (var i = 0; i < resources.Length; ++i) {
+				var closureStart = _orderingClosure.Count;
+				AppendOwnershipClosure(resources[i], _orderingClosure, resources);
+				for (var c = closureStart; c < _orderingClosure.Count; ++c) {
+					_orderingClosureNodes.Add(i);
+					if (c > closureStart) _orderingNodeMap.TryAdd(_orderingClosure[c].Ident, i);
+				}
+			}
+
+			for (var c = 0; c < _orderingClosure.Count; ++c) {
+				var member = _orderingClosure[c];
+				var node = _orderingClosureNodes[c];
+				if (!_targetsToDependentsMap.TryGetValue(member.Ident, out var dependents)) continue;
+				foreach (var dependent in dependents) {
+					if (dependent.Ident == ignoredDependent) continue;
+					if (!_orderingNodeMap.TryGetValue(dependent.Ident, out var dependentNode)) {
+						failure = new(member, dependent);
+						return false;
+					}
+					if (dependentNode != node) _orderingEdges.Add((dependentNode, node));
+				}
+			}
+
+			if (_orderingEdges.Count == 0) {
+				for (var i = 0; i < resources.Length; ++i) orderDest[i] = resources.Length - 1 - i;
+				return true;
+			}
+
+			return TryTopologicallySort(resources, orderDest, out failure);
+		}
+		finally {
+			for (var i = 0; i < resources.Length; ++i) _orderingNodeMap.Remove(resources[i].Ident);
+			for (var c = 0; c < _orderingClosure.Count; ++c) _orderingNodeMap.Remove(_orderingClosure[c].Ident);
+			ResetScratchVector(_orderingClosure);
+			_orderingClosureNodes.ClearWithoutZeroingMemory();
+			_orderingEdges.ClearWithoutZeroingMemory();
+		}
+	}
+
+	static void ResetScratchVector<T>(ArrayPoolBackedVector<T> vector) {
+		vector.AsSpan[..vector.Count].Clear();
+		vector.ClearWithoutZeroingMemory();
+	}
+
+	bool TryTopologicallySort(ReadOnlySpan<ResourceStub> resources, Span<int> orderDest, out DisposalOrderFailure failure) {
+		var nodeCount = resources.Length;
+		var edgeCount = _orderingEdges.Count;
+		var intPool = TinyFfrArrayPool<int>.Shared;
+		var inDegrees = intPool.Rent(nodeCount);
+		var adjacencyStarts = intPool.Rent(nodeCount + 1);
+		var adjacencyFill = intPool.Rent(nodeCount);
+		var adjacency = intPool.Rent(edgeCount);
+		var readyHeap = intPool.Rent(nodeCount);
+
+		try {
+			Array.Clear(inDegrees, 0, nodeCount);
+			Array.Clear(adjacencyStarts, 0, nodeCount + 1);
+			for (var e = 0; e < edgeCount; ++e) {
+				var (before, after) = _orderingEdges[e];
+				++adjacencyStarts[before + 1];
+				++inDegrees[after];
+			}
+			for (var n = 0; n < nodeCount; ++n) {
+				adjacencyStarts[n + 1] += adjacencyStarts[n];
+				adjacencyFill[n] = adjacencyStarts[n];
+			}
+			for (var e = 0; e < edgeCount; ++e) {
+				var (before, after) = _orderingEdges[e];
+				adjacency[adjacencyFill[before]++] = after;
+			}
+
+			var heapCount = 0;
+			for (var n = 0; n < nodeCount; ++n) {
+				if (inDegrees[n] == 0) PushReadyNode(readyHeap, ref heapCount, n);
+			}
+
+			var orderCount = 0;
+			while (heapCount > 0) {
+				var node = PopReadyNode(readyHeap, ref heapCount);
+				orderDest[orderCount++] = node;
+				for (var a = adjacencyStarts[node]; a < adjacencyStarts[node + 1]; ++a) {
+					var after = adjacency[a];
+					if (--inDegrees[after] == 0) PushReadyNode(readyHeap, ref heapCount, after);
+				}
+			}
+
+			if (orderCount == nodeCount) {
+				failure = default;
+				return true;
+			}
+
+			var blockedNode = 0;
+			while (inDegrees[blockedNode] == 0) ++blockedNode;
+			failure = new(resources[blockedNode], null);
+			return false;
+		}
+		finally {
+			intPool.Return(inDegrees);
+			intPool.Return(adjacencyStarts);
+			intPool.Return(adjacencyFill);
+			intPool.Return(adjacency);
+			intPool.Return(readyHeap);
+		}
+	}
+
+	static void PushReadyNode(int[] heap, ref int count, int node) {
+		var index = count++;
+		heap[index] = node;
+		while (index > 0) {
+			var parent = (index - 1) >> 1;
+			if (heap[parent] >= heap[index]) break;
+			(heap[parent], heap[index]) = (heap[index], heap[parent]);
+			index = parent;
+		}
+	}
+
+	static int PopReadyNode(int[] heap, ref int count) {
+		var result = heap[0];
+		heap[0] = heap[--count];
+		var index = 0;
+		while (true) {
+			var left = index * 2 + 1;
+			if (left >= count) break;
+			var largest = left + 1 < count && heap[left + 1] > heap[left] ? left + 1 : left;
+			if (heap[index] >= heap[largest]) break;
+			(heap[index], heap[largest]) = (heap[largest], heap[index]);
+			index = largest;
+		}
+		return result;
 	}
 
 	public IndirectEnumerable<EnumerationInput, ResourceStub> GetDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
@@ -245,6 +455,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 			_setPool.Return(kvp.Value);
 		}
 		_dependentsToTargetsMap.Clear();
+		_ownedToOwnerMap.Clear();
 	}
 
 	public void Dispose() {
@@ -253,6 +464,13 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		EraseAllDependencies();
 		_targetsToDependentsMap.Dispose();
 		_dependentsToTargetsMap.Dispose();
+		_ownedToOwnerMap.Dispose();
+		_prematureDisposalClosure.Dispose();
+		_prematureDisposalClosureIdents.Dispose();
+		_orderingNodeMap.Dispose();
+		_orderingClosure.Dispose();
+		_orderingClosureNodes.Dispose();
+		_orderingEdges.Dispose();
 		_setPool.Dispose();
 		_isDisposed = true;
 	}

@@ -22,7 +22,7 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// text instance in-world.
 /// </para>
 /// </remarks>
-public readonly struct TextInstance : ITextInstance, IResourceSpecialization<TextInstance, ModelInstance>, IEquatable<TextInstance>, ITransformedSceneObject {
+public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, ITransformedSceneObject, IDisposableResource<TextInstance> {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.TextInstance;
 
 	/// <summary>
@@ -158,17 +158,6 @@ public readonly struct TextInstance : ITextInstance, IResourceSpecialization<Tex
 		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string, layout);
 	}
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<TextInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(TextInstance).TypeHandle.Value;
-	int IResourceSpecialization<TextInstance, ModelInstance>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<TextInstance, ModelInstance>.Smuggle(TextInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		outBaseResource = resource.UnderlyingModelInstance;
-	}
-	static TextInstance IResourceSpecialization<TextInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(baseResource);	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Wraps an existing model instance as a <see cref="TextInstance"/>, without creating anything new.
@@ -182,6 +171,18 @@ public readonly struct TextInstance : ITextInstance, IResourceSpecialization<Tex
 	/// <param name="layout">How the text is sized and anchored.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static TextInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string, TextLayout layout) => new(underlyingModelInstance, pen, @string, layout);
+
+
+	static TextInstance WrapBase(ModelInstance b) => new(b);
+	ResourceHandle<TextInstance> IResource<TextInstance>.Handle => UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingModelInstance.Handle.Ident, UnderlyingModelInstance.Implementation);
+	ResourceHandle<TextInstance> IResource<TextInstance>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static TextInstance IResource<TextInstance>.CreateFromHandleAndImpl(ResourceHandle<TextInstance> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static TextInstance IResource<TextInstance>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static TextInstance IResource<TextInstance>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

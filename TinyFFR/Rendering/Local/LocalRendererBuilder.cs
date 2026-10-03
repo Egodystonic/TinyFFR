@@ -307,7 +307,9 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		_loadedBuffers.Add(handle, bufferData);
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRenderOutputBufferName);
-		return HandleToInstance(handle);
+		var result = HandleToInstance(handle);
+		_globals.DependencyTracker.RegisterOwnership(result, HandleToInstance(new ResourceHandle<Texture>(textureHandle)));
+		return result;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1309,8 +1311,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		if (IsDisposed(handle)) return;
 
 		var data = _loadedBuffers[handle];
-		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(new ResourceHandle<Texture>(data.TextureHandle)));
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(new ResourceHandle<Texture>(data.TextureHandle)), HandleToInstance(handle));
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.TextureHandle, &DisposeRenderTargetBuffer);
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.RenderTargetHandle, &DisposeRenderTarget);
 		_globals.DisposeResourceNameIfExists(handle.Ident);

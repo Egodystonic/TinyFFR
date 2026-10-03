@@ -255,12 +255,9 @@ sealed class FakeResourceGroupImplProvider : IResourceGroupImplProvider {
 	public bool IsSealed(ResourceHandle<ResourceGroup> handle) => Sealed;
 	public void Seal(ResourceHandle<ResourceGroup> handle) => Sealed = true;
 	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource => _resources.Add(resource);
-	public void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
 	public void SetDoNotDisposeFlag<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource => throw new NotSupportedException();
 	public IReadOnlyCollection<object> GetAllResourcesBoxed(ResourceHandle<ResourceGroup> handle) => _resources.Cast<object>().ToArray();
 	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource> => throw new NotSupportedException();
-	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
-	public TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
 	public TResource GetNthResourceOfType<TResource>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResource<TResource> {
 		var seen = 0;
 		foreach (var resource in _resources) {
@@ -367,7 +364,6 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public bool CanvasObjectContainsPixelCoord(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> coord, DiagonalOrientation2D coordOrigin) => throw new NotSupportedException();
 	public Ray? GetCanvasQueryRay(ResourceHandle<Scene> handle, XYPair<int> localCoord, DiagonalOrientation2D coordOrigin) => throw new NotSupportedException();
 	public Span<ModelInstance> GetCanvasQueryScratchBuffer(ResourceHandle<Scene> handle) => throw new NotSupportedException();
-	public bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> => throw new NotSupportedException();
 	public XYPair<int> GetCanvasObjectActualSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
 	public XYPair<float> GetCanvasObjectActualSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
 	public void SetCanvasObjectDockParent(ResourceHandle<Scene> handle, ModelInstance modelInstance, ModelInstance? parent) => throw new NotSupportedException();

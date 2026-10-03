@@ -162,75 +162,45 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public IndirectEnumerable<EnumerationInput, Window> Windows => GetAllResourcesOfType<Window>();
 
 	/// <summary>
-	/// All currently-live <see cref="QuadMesh"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;QuadMesh, Mesh&gt;()</c>.
+	/// All currently-live <see cref="QuadMesh"/>es in this group; equivalent to <c>GetAllResourcesOfType&lt;QuadMesh&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="QuadMesh"/> is a specialization of <see cref="Mesh"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="Mesh"/>es that were added to the group specifically as a <see cref="QuadMesh"/> (via <see cref="Add(QuadMesh)"/>), not every <see cref="Mesh"/> in <see cref="Meshes"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, QuadMesh> QuadMeshes => GetAllResourcesOfType<QuadMesh, Mesh>();
+	public IndirectEnumerable<EnumerationInput, QuadMesh> QuadMeshes => GetAllResourcesOfType<QuadMesh>();
 	/// <summary>
-	/// All currently-live <see cref="QuadInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;QuadInstance, ModelInstance&gt;()</c>.
+	/// All currently-live <see cref="QuadInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;QuadInstance&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="QuadInstance"/> is a specialization of <see cref="ModelInstance"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="ModelInstance"/>s that were added to the group specifically as a <see cref="QuadInstance"/> (via <see cref="Add(QuadInstance)"/>), not every <see cref="ModelInstance"/> in <see cref="ModelInstances"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, QuadInstance> QuadInstances => GetAllResourcesOfType<QuadInstance, ModelInstance>();
+	public IndirectEnumerable<EnumerationInput, QuadInstance> QuadInstances => GetAllResourcesOfType<QuadInstance>();
 	/// <summary>
-	/// All currently-live <see cref="CameraLockedQuadInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CameraLockedQuadInstance, ModelInstance&gt;()</c>.
+	/// All currently-live <see cref="CameraLockedQuadInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CameraLockedQuadInstance&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="CameraLockedQuadInstance"/> is a specialization of <see cref="ModelInstance"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="ModelInstance"/>s that were added to the group specifically as a <see cref="CameraLockedQuadInstance"/> (via <see cref="Add(CameraLockedQuadInstance)"/>), not every <see cref="ModelInstance"/> in <see cref="ModelInstances"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, CameraLockedQuadInstance> CameraLockedQuadInstances => GetAllResourcesOfType<CameraLockedQuadInstance, ModelInstance>();
+	public IndirectEnumerable<EnumerationInput, CameraLockedQuadInstance> CameraLockedQuadInstances => GetAllResourcesOfType<CameraLockedQuadInstance>();
 	/// <summary>
-	/// All currently-live <see cref="TextInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;TextInstance, ModelInstance&gt;()</c>.
+	/// All currently-live <see cref="TextInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;TextInstance&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="TextInstance"/> is a specialization of <see cref="ModelInstance"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="ModelInstance"/>s that were added to the group specifically as a <see cref="TextInstance"/> (via <see cref="Add(TextInstance)"/>), not every <see cref="ModelInstance"/> in <see cref="ModelInstances"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, TextInstance> TextInstances => GetAllResourcesOfType<TextInstance, ModelInstance>();
+	public IndirectEnumerable<EnumerationInput, TextInstance> TextInstances => GetAllResourcesOfType<TextInstance>();
 	/// <summary>
-	/// All currently-live <see cref="CameraLockedTextInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CameraLockedTextInstance, ModelInstance&gt;()</c>.
+	/// All currently-live <see cref="CameraLockedTextInstance"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CameraLockedTextInstance&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="CameraLockedTextInstance"/> is a specialization of <see cref="ModelInstance"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="ModelInstance"/>s that were added to the group specifically as a <see cref="CameraLockedTextInstance"/> (via <see cref="Add(CameraLockedTextInstance)"/>), not every <see cref="ModelInstance"/> in <see cref="ModelInstances"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, CameraLockedTextInstance> CameraLockedTextInstances => GetAllResourcesOfType<CameraLockedTextInstance, ModelInstance>();
+	public IndirectEnumerable<EnumerationInput, CameraLockedTextInstance> CameraLockedTextInstances => GetAllResourcesOfType<CameraLockedTextInstance>();
 	/// <summary>
-	/// All currently-live <see cref="FontString"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;FontString, Font&gt;()</c>.
+	/// All currently-live <see cref="FontString"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;FontString&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="FontString"/> is a specialization of <see cref="Font"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="Font"/>s that were added to the group specifically as a <see cref="FontString"/> (via <see cref="Add(FontString)"/>), not every <see cref="Font"/> in <see cref="Fonts"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, FontString> FontStrings => GetAllResourcesOfType<FontString, Font>();
+	public IndirectEnumerable<EnumerationInput, FontString> FontStrings => GetAllResourcesOfType<FontString>();
 	/// <summary>
-	/// All currently-live <see cref="FontPen"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;FontPen, Font&gt;()</c>.
+	/// All currently-live <see cref="FontPen"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;FontPen&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="FontPen"/> is a specialization of <see cref="Font"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="Font"/>s that were added to the group specifically as a <see cref="FontPen"/> (via <see cref="Add(FontPen)"/>), not every <see cref="Font"/> in <see cref="Fonts"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, FontPen> FontPens => GetAllResourcesOfType<FontPen, Font>();
+	public IndirectEnumerable<EnumerationInput, FontPen> FontPens => GetAllResourcesOfType<FontPen>();
 	/// <summary>
-	/// All currently-live <see cref="CanvasScene"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasScene, Scene&gt;()</c>.
+	/// All currently-live <see cref="CanvasScene"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasScene&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="CanvasScene"/> is a specialization of <see cref="Scene"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="Scene"/>s that were added to the group specifically as a <see cref="CanvasScene"/> (via <see cref="Add(CanvasScene)"/>), not every <see cref="Scene"/> in <see cref="Scenes"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, CanvasScene> CanvasScenes => GetAllResourcesOfType<CanvasScene, Scene>();
+	public IndirectEnumerable<EnumerationInput, CanvasScene> CanvasScenes => GetAllResourcesOfType<CanvasScene>();
 	/// <summary>
-	/// All currently-live <see cref="CanvasText"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasText, ModelInstance&gt;()</c>.
+	/// All currently-live <see cref="CanvasText"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasText&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="CanvasText"/> is a specialization of <see cref="ModelInstance"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="ModelInstance"/>s that were added to the group specifically as a <see cref="CanvasText"/> (via <see cref="Add(CanvasText)"/>), not every <see cref="ModelInstance"/> in <see cref="ModelInstances"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, CanvasText> CanvasTexts => GetAllResourcesOfType<CanvasText, ModelInstance>();
+	public IndirectEnumerable<EnumerationInput, CanvasText> CanvasTexts => GetAllResourcesOfType<CanvasText>();
 	/// <summary>
-	/// All currently-live <see cref="CanvasTexture"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasTexture, ModelInstance&gt;()</c>.
+	/// All currently-live <see cref="CanvasTexture"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasTexture&gt;()</c>.
 	/// </summary>
-	/// <remarks>
-	/// <see cref="CanvasTexture"/> is a specialization of <see cref="ModelInstance"/> (see <see cref="IResourceSpecialization{TSelf,TBase}"/>); this property only returns <see cref="ModelInstance"/>s that were added to the group specifically as a <see cref="CanvasTexture"/> (via <see cref="Add(CanvasTexture)"/>), not every <see cref="ModelInstance"/> in <see cref="ModelInstances"/>.
-	/// </remarks>
-	public IndirectEnumerable<EnumerationInput, CanvasTexture> CanvasTextures => GetAllResourcesOfType<CanvasTexture, ModelInstance>();
+	public IndirectEnumerable<EnumerationInput, CanvasTexture> CanvasTextures => GetAllResourcesOfType<CanvasTexture>();
 	#endregion
 
 	internal ResourceGroup(ResourceHandle<ResourceGroup> handle, IResourceGroupImplProvider impl) {
@@ -268,17 +238,6 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public void Add<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
 
 	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <typeparamref name="TBase"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <typeparamref name="TBase"/> resource that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add<TResource, TBase>(TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => Implementation.AddResource<TResource, TBase>(Handle, resource);
-
-	/// <summary>
 	/// Marks <paramref name="resource"/> (which must already be in this group) so that it is not disposed if/when this group disposes its contained resources.
 	/// The group must not be sealed.
 	/// </summary>
@@ -287,116 +246,6 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// <exception cref="ArgumentException">Thrown if <paramref name="resource"/> is not a member of this group.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ExcludeFromDisposal<TResource>(TResource resource) where TResource : IResource => Implementation.SetDoNotDisposeFlag(Handle, resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="Mesh"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="Mesh"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(QuadMesh resource) => Add<QuadMesh, Mesh>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="ModelInstance"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="ModelInstance"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(QuadInstance resource) => Add<QuadInstance, ModelInstance>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="ModelInstance"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="ModelInstance"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CameraLockedQuadInstance resource) => Add<CameraLockedQuadInstance, ModelInstance>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="ModelInstance"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="ModelInstance"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(TextInstance resource) => Add<TextInstance, ModelInstance>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="ModelInstance"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="ModelInstance"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CameraLockedTextInstance resource) => Add<CameraLockedTextInstance, ModelInstance>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="Font"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="Font"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(FontString resource) => Add<FontString, Font>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="Font"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="Font"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(FontPen resource) => Add<FontPen, Font>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="Scene"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="Scene"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CanvasScene resource) => Add<CanvasScene, Scene>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="ModelInstance"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="ModelInstance"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CanvasText resource) => Add<CanvasText, ModelInstance>(resource);
-
-	/// <summary>
-	/// Adds <paramref name="resource"/> (a specialization of <see cref="ModelInstance"/>, see <see cref="IResourceSpecialization{TSelf,TBase}"/>) to this group.
-	/// </summary>
-	/// <remarks>
-	/// This creates a dependency from this group on the underlying <see cref="ModelInstance"/> that <paramref name="resource"/> specializes: you can not dispose that underlying resource while <paramref name="resource"/> remains part of this (non-disposed) group.
-	/// </remarks>
-	/// <param name="resource">The resource to add.</param>
-	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(CanvasTexture resource) => Add<CanvasTexture, ModelInstance>(resource);
 
 	/// <summary>
 	/// Prevents any further resources from being added to this group.
@@ -429,19 +278,6 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	}
 
 	/// <summary>
-	/// Returns every currently-live <typeparamref name="TResource"/> (a specialization of <typeparamref name="TBase"/>) in this group.
-	/// </summary>
-	/// <remarks>
-	/// This is the general-purpose form of the specialization-typed enumeration properties above (e.g. <see cref="QuadMeshes"/> is equivalent to <c>GetAllResourcesOfType&lt;QuadMesh, Mesh&gt;()</c>).
-	/// </remarks>
-	/// <typeparam name="TResource">The specialized type of resource to enumerate.</typeparam>
-	/// <typeparam name="TBase">The underlying resource type that <typeparamref name="TResource"/> specializes.</typeparam>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>() where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
-		return Implementation.GetAllResourcesOfType<TResource, TBase>(Handle);
-	}
-
-	/// <summary>
 	/// Returns the <typeparamref name="TResource"/> at <paramref name="index"/> in this group, using the same ordering as <see cref="GetAllResourcesOfType{TResource}"/>.
 	/// </summary>
 	/// <param name="index">The index of the resource to retrieve, among only the <typeparamref name="TResource"/>s in this group.</param>
@@ -450,18 +286,6 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TResource GetNthResourceOfType<TResource>(int index) where TResource : IResource<TResource> {
 		return Implementation.GetNthResourceOfType<TResource>(Handle, index);
-	}
-
-	/// <summary>
-	/// Returns the <typeparamref name="TResource"/> (a specialization of <typeparamref name="TBase"/>) at <paramref name="index"/> in this group, using the same ordering as <see cref="GetAllResourcesOfType{TResource,TBase}"/>.
-	/// </summary>
-	/// <param name="index">The index of the resource to retrieve, among only the <typeparamref name="TResource"/>s in this group.</param>
-	/// <typeparam name="TResource">The specialized type of resource to retrieve.</typeparam>
-	/// <typeparam name="TBase">The underlying resource type that <typeparamref name="TResource"/> specializes.</typeparam>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="index"/> is negative, or greater than or equal to the number of <typeparamref name="TResource"/>s in this group.</exception>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TResource GetNthResourceOfType<TResource, TBase>(int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> {
-		return Implementation.GetNthResourceOfType<TResource, TBase>(Handle, index);
 	}
 
 	#region Disposal
@@ -474,15 +298,27 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// Disposes this group, using <see cref="DisposesContainedResourcesByDefaultWhenDisposed"/> to determine whether resources currently in the group are also disposed.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Use <see cref="Dispose(bool)"/> instead if you want to explicitly choose whether contained resources are disposed, regardless of <see cref="DisposesContainedResourcesByDefaultWhenDisposed"/>.
+	/// </para>
+	/// <para>
+	/// When contained resources are disposed, they are disposed in an order that respects the dependencies between them (falling back to the reverse of the order they were added in).
+	/// If any contained resource is still in use by a resource that is not being disposed along with the group, nothing is disposed and a <see cref="ResourceDependencyException"/> is thrown.
+	/// </para>
 	/// </remarks>
+	/// <exception cref="ResourceDependencyException">Thrown if this group is still in use by another resource, or if its contained resources can not all be disposed (see remarks).</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
 
 	/// <summary>
 	/// Disposes this group, explicitly specifying whether resources currently in the group should also be disposed.
 	/// </summary>
+	/// <remarks>
+	/// When contained resources are disposed, they are disposed in an order that respects the dependencies between them (falling back to the reverse of the order they were added in).
+	/// If any contained resource is still in use by a resource that is not being disposed along with the group, nothing is disposed and a <see cref="ResourceDependencyException"/> is thrown.
+	/// </remarks>
 	/// <param name="disposeContainedResources">If <see langword="true"/>, every resource currently in the group is also disposed. If <see langword="false"/>, contained resources are left untouched (and this group's dependency on them is released).</param>
+	/// <exception cref="ResourceDependencyException">Thrown if this group is still in use by another resource, or if <paramref name="disposeContainedResources"/> is <see langword="true"/> and its contained resources can not all be disposed (see remarks).</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose(bool disposeContainedResources) => Implementation.Dispose(_handle, disposeContainedResources);
 	#endregion

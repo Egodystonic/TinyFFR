@@ -32,10 +32,6 @@ public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<Re
 	/// </summary>
 	void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource;
 	/// <summary>
-	/// Invoked via <see cref="ResourceGroup.Add{TResource,TBase}"/>.
-	/// </summary>
-	void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
-	/// <summary>
 	/// Invoked via <see cref="ResourceGroup.ExcludeFromDisposal{TResource}"/>.
 	/// </summary>
 	void SetDoNotDisposeFlag<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource;
@@ -44,17 +40,9 @@ public interface IResourceGroupImplProvider : IDisposableResourceImplProvider<Re
 	/// </summary>
 	IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource>;
 	/// <summary>
-	/// Invoked via <see cref="ResourceGroup.GetAllResourcesOfType{TResource,TBase}"/>.
-	/// </summary>
-	IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
-	/// <summary>
 	/// Invoked via <see cref="ResourceGroup.GetNthResourceOfType{TResource}"/>.
 	/// </summary>
 	TResource GetNthResourceOfType<TResource>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResource<TResource>;
-	/// <summary>
-	/// Invoked via <see cref="ResourceGroup.GetNthResourceOfType{TResource,TBase}"/>.
-	/// </summary>
-	TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase>;
 	/// <summary>
 	/// Invoked via <see cref="ResourceGroup.GetAllResourcesBoxed"/>.
 	/// </summary>

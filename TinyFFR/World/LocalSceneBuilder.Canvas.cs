@@ -138,7 +138,9 @@ sealed partial class LocalSceneBuilder {
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
 		ApplyCanvasMaterialEffects(handle, quad);
 
-		return new CanvasTexture(new CanvasScene(HandleToInstance(handle)), quad);
+		var canvas = new CanvasScene(HandleToInstance(handle));
+		_objectBuilder.SetCanvas(quad.UnderlyingModelInstance.Handle, canvas);
+		return new CanvasTexture(canvas, quad);
 	}
 
 	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) {
@@ -150,7 +152,9 @@ sealed partial class LocalSceneBuilder {
 		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasTextureData { TextureDimensions = ResolveCanvasMaterialTextureDimensions(material) };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
 
-		return new CanvasTexture(new CanvasScene(HandleToInstance(handle)), quad);
+		var canvas = new CanvasScene(HandleToInstance(handle));
+		_objectBuilder.SetCanvas(quad.UnderlyingModelInstance.Handle, canvas);
+		return new CanvasTexture(canvas, quad);
 	}
 
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) {
@@ -172,7 +176,9 @@ sealed partial class LocalSceneBuilder {
 		_canvasTextDataMap[handle][text.UnderlyingModelInstance.Handle] = new CanvasTextData { OwnedString = ownedString };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), text), sceneData.ViewportSize);
 
-		return new CanvasText(new CanvasScene(HandleToInstance(handle)), text);
+		var canvas = new CanvasScene(HandleToInstance(handle));
+		_objectBuilder.SetCanvas(text.UnderlyingModelInstance.Handle, canvas);
+		return new CanvasText(canvas, text);
 	}
 
 	QuadInstance CreateCanvasQuadInstance<TNameSource>(Material material, TNameSource nameSource, ReadOnlySpan<char> name) where TNameSource : IStringSpanNameEnabled {
@@ -439,13 +445,6 @@ sealed partial class LocalSceneBuilder {
 		}
 		Array.Clear(_canvasQueryScratchBuffer);
 		return _canvasQueryScratchBuffer.AsSpan(0, instanceCount);
-	}
-
-	public bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (typeof(TCanvasObject) == typeof(CanvasTexture)) return _canvasTextureDataMap[handle].ContainsKey(modelInstance.Handle);
-		if (typeof(TCanvasObject) == typeof(CanvasText)) return _canvasTextDataMap[handle].ContainsKey(modelInstance.Handle);
-		return false;
 	}
 
 	public static Location CalculateCanvasLocation(XYPair<int> canvasSizePixels, Orientation2D anchor, XYPair<int> anchorOffset, int layer) {

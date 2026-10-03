@@ -259,11 +259,11 @@ class LocalResourceGroupTest {
 		Assert.AreEqual(1, group.CanvasTexts.Count);
 		Assert.AreEqual(canvasText, group.CanvasTexts[0]);
 
-		Assert.AreEqual(quadMesh, group.GetNthResourceOfType<QuadMesh, Mesh>(0));
-		Assert.AreEqual(pen, group.GetNthResourceOfType<FontPen, Font>(0));
-		Assert.AreEqual(canvasText, group.GetNthResourceOfType<CanvasText, ModelInstance>(0));
-		Assert.Catch(() => group.GetNthResourceOfType<QuadMesh, Mesh>(1));
-		Assert.Catch(() => group.GetNthResourceOfType<CanvasText, ModelInstance>(1));
+		Assert.AreEqual(quadMesh, group.QuadMeshes[0]);
+		Assert.AreEqual(pen, group.GetNthResourceOfType<FontPen>(0));
+		Assert.AreEqual(canvasText, group.CanvasTexts[0]);
+		Assert.Catch(() => _ = group.QuadMeshes[1]);
+		Assert.Catch(() => _ = group.CanvasTexts[1]);
 
 		var roundTrippedLockedQuad = group.CameraLockedQuadInstances[0];
 		Assert.AreEqual(Direction.Up, roundTrippedLockedQuad.LockedUprightDirection);
@@ -282,12 +282,10 @@ class LocalResourceGroupTest {
 		Assert.AreEqual(canvasScene, group.CanvasTextures[0].Canvas);
 		Assert.AreEqual(canvasScene, group.CanvasTexts[0].Canvas);
 
-		Assert.AreEqual(1, group.Meshes.Count);
-		Assert.AreEqual(quadMesh.UnderlyingMesh, group.Meshes[0]);
-		Assert.AreEqual(6, group.ModelInstances.Count);
-		Assert.AreEqual(2, group.Fonts.Count);
-		Assert.AreEqual(1, group.Scenes.Count);
-		Assert.AreEqual(canvasScene.UnderlyingScene, group.Scenes[0]);
+		Assert.AreEqual(0, group.Meshes.Count);
+		Assert.AreEqual(0, group.ModelInstances.Count);
+		Assert.AreEqual(0, group.Fonts.Count);
+		Assert.AreEqual(0, group.Scenes.Count);
 		Assert.AreEqual(0, group.Cameras.Count);
 
 		var boxed = group.GetAllResourcesBoxed().ToArray();
@@ -493,12 +491,10 @@ class LocalResourceGroupTest {
 				var quad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
 				group.Add(quad);
 				expectedQuads.Add(quad);
-				expectedInstances.Add(quad.UnderlyingModelInstance);
 			}
 			if (i == 7) group.Add(factory.MeshBuilder.CreateDynamicVertexBuffer(16, 16));
 		}
 		group.Add(quadMesh);
-		expectedMeshes.Add(quadMesh.UnderlyingMesh);
 		group.ExcludeFromDisposal(quadMesh.UnderlyingMesh);
 
 		var modelInstancesEnumerable = group.ModelInstances;
@@ -523,9 +519,9 @@ class LocalResourceGroupTest {
 		AssertNthAndOutOfRange(group, @sealed.Cameras);
 		AssertNthAndOutOfRange(group, @sealed.DynamicVertexBuffers);
 		AssertNthAndOutOfRange(group, @sealed.PointLights);
-		for (var i = 0; i < expectedQuads.Count; ++i) Assert.AreEqual(expectedQuads[i], group.GetNthResourceOfType<QuadInstance, ModelInstance>(i));
-		Assert.Throws<ArgumentOutOfRangeException>(() => group.GetNthResourceOfType<QuadInstance, ModelInstance>(expectedQuads.Count));
-		Assert.Throws<ArgumentOutOfRangeException>(() => group.GetNthResourceOfType<QuadMesh, Mesh>(1));
+		for (var i = 0; i < expectedQuads.Count; ++i) Assert.AreEqual(expectedQuads[i], group.QuadInstances[i]);
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = group.QuadInstances[expectedQuads.Count]);
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = group.QuadMeshes[1]);
 	}
 
 	void ModelInstanceGroupShouldIterateInInsertionOrder() {
@@ -567,16 +563,16 @@ class LocalResourceGroupTest {
 		instanceGroup.Seal();
 		var sealedInstances = Snapshot(instanceGroup);
 		AssertSnapshotsMatch(unsealedInstances, sealedInstances);
-		Assert.AreEqual(10, sealedInstances.ModelInstances.Length);
+		Assert.AreEqual(6, sealedInstances.ModelInstances.Length);
 		Assert.IsTrue(expectedQuads.SequenceEqual(sealedInstances.QuadInstances));
 		Assert.AreEqual(0, sealedInstances.Meshes.Length);
 		Assert.AreEqual(0, instanceGroup.TextInstances.Count);
 		AssertNthAndOutOfRange(instanceGroup, sealedInstances.ModelInstances);
 		AssertNthAndOutOfRange(instanceGroup, sealedInstances.Meshes);
 		AssertNthAndOutOfRange(instanceGroup, sealedInstances.DynamicVertexBuffers);
-		for (var i = 0; i < expectedQuads.Count; ++i) Assert.AreEqual(expectedQuads[i], instanceGroup.GetNthResourceOfType<QuadInstance, ModelInstance>(i));
-		Assert.Throws<ArgumentOutOfRangeException>(() => instanceGroup.GetNthResourceOfType<QuadInstance, ModelInstance>(expectedQuads.Count));
-		Assert.Throws<ArgumentOutOfRangeException>(() => instanceGroup.GetNthResourceOfType<QuadMesh, Mesh>(0));
+		for (var i = 0; i < expectedQuads.Count; ++i) Assert.AreEqual(expectedQuads[i], instanceGroup.QuadInstances[i]);
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = instanceGroup.QuadInstances[expectedQuads.Count]);
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = instanceGroup.QuadMeshes[0]);
 
 		using var bufferGroup = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
 		for (var i = 0; i < 3; ++i) bufferGroup.Add(factory.MeshBuilder.CreateDynamicVertexBuffer(16, 16));

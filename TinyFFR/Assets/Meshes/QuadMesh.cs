@@ -3,7 +3,6 @@
 
 using Egodystonic.TinyFFR.Resources;
 using System;
-using System.Buffers.Binary;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
@@ -23,7 +22,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// This wraps an ordinary <see cref="Mesh"/> and can be used anywhere one is expected.
 /// </para>
 /// </remarks>
-public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IStringSpanNameEnabled, IEquatable<QuadMesh> {
+public readonly struct QuadMesh : IDisposableResource<QuadMesh> {
 	/// <summary>
 	/// The general-purpose mesh this quad is a specialized view of.
 	/// </summary>
@@ -33,17 +32,6 @@ public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IStri
 		UnderlyingMesh = underlyingMesh;
 	}
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<QuadMesh, Mesh>.SpecializationTypeIdentifier => typeof(QuadMesh).TypeHandle.Value;
-	int IResourceSpecialization<QuadMesh, Mesh>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<QuadMesh, Mesh>.Smuggle(QuadMesh resource, Span<byte> specializationDataBuffer, out Mesh outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		outBaseResource = resource.UnderlyingMesh;
-	}
-	static QuadMesh IResourceSpecialization<QuadMesh, Mesh>.DeSmuggle(Mesh baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(baseResource);	
-	}
-	#endregion
 
 	/// <summary>
 	/// Wraps an existing mesh as a <see cref="QuadMesh"/>, without creating anything new.
@@ -54,6 +42,18 @@ public readonly struct QuadMesh : IResourceSpecialization<QuadMesh, Mesh>, IStri
 	/// <param name="underlyingMesh">The mesh to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static QuadMesh FromPreviouslyAllocatedUnderlyingMesh(Mesh underlyingMesh) => new(underlyingMesh);
+
+
+	static QuadMesh WrapBase(Mesh b) => new(b);
+	ResourceHandle<QuadMesh> IResource<QuadMesh>.Handle => UnderlyingMesh.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingMesh.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingMesh.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingMesh.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingMesh.Handle.Ident, UnderlyingMesh.Implementation);
+	ResourceHandle<QuadMesh> IResource<QuadMesh>.GetHandleWithoutDisposeCheck() => UnderlyingMesh.GetHandleWithoutDisposeCheck().AsInteger;
+	static QuadMesh IResource<QuadMesh>.CreateFromHandleAndImpl(ResourceHandle<QuadMesh> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<Mesh>(new ResourceStub(new ResourceIdent(ResourceHandle<Mesh>.TypeHandle, handle.AsInteger), impl)));
+	static QuadMesh IResource<QuadMesh>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<Mesh>(stub));
+	static QuadMesh IResource<QuadMesh>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<Mesh>(stub));
 
 	/// <summary>
 	/// Calculates the transform that places, orients and sizes a standard quad mesh as described.
@@ -159,7 +159,7 @@ public interface IQuadInstance : IDisposable, IStringSpanNameEnabled;
 /// Use <see cref="SetTransform(Location, XYPair{float}, Direction, Direction?, Orientation2D)"/> for a convenient way to place this in-world. 
 /// </para>
 /// </remarks>
-public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<QuadInstance, ModelInstance>, IEquatable<QuadInstance>, ITransformedSceneObject, IMaterialUsingSceneObject {
+public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IMaterialUsingSceneObject, IDisposableResource<QuadInstance> {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.QuadInstance;
 
 	/// <summary>
@@ -171,17 +171,6 @@ public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<Qua
 		UnderlyingModelInstance = underlyingModelInstance;
 	}
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<QuadInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(QuadInstance).TypeHandle.Value;
-	int IResourceSpecialization<QuadInstance, ModelInstance>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<QuadInstance, ModelInstance>.Smuggle(QuadInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		outBaseResource = resource.UnderlyingModelInstance;
-	}
-	static QuadInstance IResourceSpecialization<QuadInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(baseResource);	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Wraps an existing model instance as a <see cref="QuadInstance"/>, without creating anything new.
@@ -192,6 +181,18 @@ public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<Qua
 	/// <param name="underlyingModelInstance">The model instance to wrap.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static QuadInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance) => new(underlyingModelInstance);
+
+
+	static QuadInstance WrapBase(ModelInstance b) => new(b);
+	ResourceHandle<QuadInstance> IResource<QuadInstance>.Handle => UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingModelInstance.Handle.Ident, UnderlyingModelInstance.Implementation);
+	ResourceHandle<QuadInstance> IResource<QuadInstance>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static QuadInstance IResource<QuadInstance>.CreateFromHandleAndImpl(ResourceHandle<QuadInstance> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static QuadInstance IResource<QuadInstance>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static QuadInstance IResource<QuadInstance>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
 	/// <inheritdoc />
 	public Transform Transform {
@@ -412,7 +413,7 @@ public readonly struct QuadInstance : IQuadInstance, IResourceSpecialization<Qua
 /// floating labels and diagnostic data.
 /// </para>
 /// </remarks>
-public readonly struct CameraLockedQuadInstance : IQuadInstance, IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>, IEquatable<CameraLockedQuadInstance>, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject {
+public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject, IDisposableResource<CameraLockedQuadInstance> {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.CameraLockedQuadInstance;
 
 	/// <summary>
@@ -426,49 +427,41 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IResourceSpecia
 	/// Without this the quad would be free to spin about its own facing direction; fixing it is what keeps the quad the
 	/// right way up as the camera moves around.
 	/// </remarks>
-	public Direction LockedUprightDirection { get; }
+	public Direction LockedUprightDirection => GetLockConfig().LockedUprightDirection;
 	/// <summary>
 	/// Which point of the quad is placed at its position (or the centre if <see cref="Orientation2D.None"/>).
 	/// </summary>
-	public Orientation2D PositionAnchor { get; }
+	public Orientation2D PositionAnchor => GetLockConfig().PositionAnchor;
 	/// <summary>
 	/// How this quad's size responds to its distance from the camera.
 	/// </summary>
-	public CameraLockedScalingMode ScalingMode { get; }
+	public CameraLockedScalingMode ScalingMode => GetLockConfig().ScalingMode;
 	/// <summary>
 	/// Which axes this quad is free to turn about as it follows the camera.
 	/// </summary>
-	public CameraLockStyle LockStyle { get; }
+	public CameraLockStyle LockStyle => GetLockConfig().LockStyle;
 
-	internal CameraLockedQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
+	internal CameraLockedQuadInstance(QuadInstance underlyingQuadInstance) {
 		UnderlyingQuadInstance = underlyingQuadInstance;
-		LockedUprightDirection = lockedUprightDirection;
-		PositionAnchor = positionAnchor;
-		ScalingMode = scalingMode;
-		LockStyle = lockStyle;
 	}
+
+	CameraLockConfig GetLockConfig() {
+		var instance = UnderlyingQuadInstance.UnderlyingModelInstance;
+		return instance.Implementation.GetCameraLockConfig(instance.Handle) ?? CameraLockConfig.Default;
+	}
+
+
+	static CameraLockedQuadInstance WrapBase(ModelInstance b) => new(new QuadInstance(b));
+	ResourceHandle<CameraLockedQuadInstance> IResource<CameraLockedQuadInstance>.Handle => UnderlyingQuadInstance.UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingQuadInstance.UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingQuadInstance.UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingQuadInstance.UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingQuadInstance.UnderlyingModelInstance.Handle.Ident, UnderlyingQuadInstance.UnderlyingModelInstance.Implementation);
+	ResourceHandle<CameraLockedQuadInstance> IResource<CameraLockedQuadInstance>.GetHandleWithoutDisposeCheck() => UnderlyingQuadInstance.UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CameraLockedQuadInstance IResource<CameraLockedQuadInstance>.CreateFromHandleAndImpl(ResourceHandle<CameraLockedQuadInstance> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CameraLockedQuadInstance IResource<CameraLockedQuadInstance>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CameraLockedQuadInstance IResource<CameraLockedQuadInstance>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(CameraLockedQuadInstance).TypeHandle.Value;
-	int IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.SpecializationDataLength => Direction.SerializationByteSpanLength + sizeof(int) + sizeof(int) + sizeof(int);
-	static void IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.Smuggle(CameraLockedQuadInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		Direction.SerializeToBytes(specializationDataBuffer, resource.LockedUprightDirection);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..], (int) resource.PositionAnchor);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..], (int) resource.ScalingMode);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..], (int) resource.LockStyle);
-		outBaseResource = resource.UnderlyingQuadInstance.UnderlyingModelInstance;
-	}
-	static CameraLockedQuadInstance IResourceSpecialization<CameraLockedQuadInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(
-			new QuadInstance(baseResource),
-			Direction.DeserializeFromBytes(specializationDataBuffer),
-			(Orientation2D) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..]),
-			(CameraLockedScalingMode) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..]),
-			(CameraLockStyle) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..])
-		);	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Wraps an existing quad instance as a <see cref="CameraLockedQuadInstance"/>, without creating anything new.
@@ -483,7 +476,9 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IResourceSpecia
 	/// <param name="lockStyle">The value for <see cref="LockStyle"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CameraLockedQuadInstance FromPreviouslyAllocatedUnderlyingQuadInstance(QuadInstance underlyingQuadInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
-		return new(underlyingQuadInstance, lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+		var instance = underlyingQuadInstance.UnderlyingModelInstance;
+		instance.Implementation.SetCameraLockConfig(instance.Handle, new CameraLockConfig(lockedUprightDirection, positionAnchor, scalingMode, lockStyle));
+		return new(underlyingQuadInstance);
 	}
 	
 	/// <inheritdoc />

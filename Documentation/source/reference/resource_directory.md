@@ -7,8 +7,8 @@ description: Information on how to enumerate and find live resources via the IRe
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * The resource directory lets you enumerate every live resource of a given type, or find resources by name. :material-arrow-right: [The Resource Directory](#the-resource-directory)
-    * It's mostly useful for debugging, diagnostics, and tooling, rather than as a way to keep track of resources in your application. :material-arrow-right: [Usage Notes](#usage-notes)
+    * You can enumerate every live resource of a given type, or find resources by name. :material-arrow-right: [The Resource Directory](#the-resource-directory)
+    * This is intended for debugging, diagnostics, and tooling; rather than as a way to keep track of resources in your application. :material-arrow-right: [Usage Notes](#usage-notes)
 
 </div>
 
@@ -113,8 +113,9 @@ var numTextures = textureDirectory.AllActiveInstances.Count;
 
 The resource directory is designed primarily for debugging, diagnostics, and tooling (e.g. listing every live texture in a debug UI, or checking for resources that weren't disposed before shutdown).
 
-???+ warning "Not a Replacement for References"
-	Finding resources by name requires checking the name of every live resource of that type; and resource names are not guaranteed to be unique. Prefer keeping hold of the resources you create (in fields, or in [resource groups](resource_groups.md)) over looking them up by name, especially in code that runs every frame.
+Finding resources by name requires checking the name of every live resource of that type (a time-consuming process); and resource names are not guaranteed to be unique. Prefer keeping hold of the resources you create (in fields, or in [resource groups](resource_groups.md)) over looking them up by name, especially in code that runs every frame.
+
+An occasional usage of the resource directory to find some a resource by name (e.g. maybe on user input) is okay.
 
 ??? warning "Modifying Resources While Enumerating"
 	Creating or disposing a resource of type `T` while enumerating `GetAllActiveInstances<T>()` invalidates the enumeration; continuing to iterate it throws an `InvalidOperationException`.

@@ -1,7 +1,6 @@
 // Created on 2026-07-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using System.Buffers.Binary;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
@@ -19,7 +18,7 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// legible from wherever the camera happens to be.
 /// </para>
 /// </remarks>
-public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecialization<CameraLockedTextInstance, ModelInstance>, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject {
+public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject, IDisposableResource<CameraLockedTextInstance> {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.CameraLockedTextInstance;
 
 	/// <summary>
@@ -33,49 +32,41 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecia
 	/// Without this the text would be free to spin about its own facing direction; fixing it is what keeps the text the right
 	/// way up as the camera moves around.
 	/// </remarks>
-	public Direction LockedUprightDirection { get; } // Can be None
+	public Direction LockedUprightDirection => GetLockConfig().LockedUprightDirection;
 	/// <summary>
 	/// Which point of the text is placed at its position (or the centre if <see cref="Orientation2D.None"/>).
 	/// </summary>
-	public Orientation2D PositionAnchor { get; }
+	public Orientation2D PositionAnchor => GetLockConfig().PositionAnchor;
 	/// <summary>
 	/// How this text's size responds to its distance from the camera.
 	/// </summary>
-	public CameraLockedScalingMode ScalingMode { get; }
+	public CameraLockedScalingMode ScalingMode => GetLockConfig().ScalingMode;
 	/// <summary>
 	/// Which axes this text is free to turn about as it follows the camera.
 	/// </summary>
-	public CameraLockStyle LockStyle { get; }
+	public CameraLockStyle LockStyle => GetLockConfig().LockStyle;
 
-	internal CameraLockedTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
+	internal CameraLockedTextInstance(TextInstance underlyingTextInstance) {
 		UnderlyingTextInstance = underlyingTextInstance;
-		LockedUprightDirection = lockedUprightDirection;
-		PositionAnchor = positionAnchor;
-		ScalingMode = scalingMode;
-		LockStyle = lockStyle;
 	}
+
+	CameraLockConfig GetLockConfig() {
+		var instance = UnderlyingTextInstance.UnderlyingModelInstance;
+		return instance.Implementation.GetCameraLockConfig(instance.Handle) ?? CameraLockConfig.Default;
+	}
+
+
+	static CameraLockedTextInstance WrapBase(ModelInstance b) => new(new TextInstance(b));
+	ResourceHandle<CameraLockedTextInstance> IResource<CameraLockedTextInstance>.Handle => UnderlyingTextInstance.UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingTextInstance.UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingTextInstance.UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingTextInstance.UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingTextInstance.UnderlyingModelInstance.Handle.Ident, UnderlyingTextInstance.UnderlyingModelInstance.Implementation);
+	ResourceHandle<CameraLockedTextInstance> IResource<CameraLockedTextInstance>.GetHandleWithoutDisposeCheck() => UnderlyingTextInstance.UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CameraLockedTextInstance IResource<CameraLockedTextInstance>.CreateFromHandleAndImpl(ResourceHandle<CameraLockedTextInstance> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CameraLockedTextInstance IResource<CameraLockedTextInstance>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CameraLockedTextInstance IResource<CameraLockedTextInstance>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(CameraLockedTextInstance).TypeHandle.Value;
-	int IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.SpecializationDataLength => Direction.SerializationByteSpanLength + sizeof(int) + sizeof(int) + sizeof(int);
-	static void IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.Smuggle(CameraLockedTextInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		Direction.SerializeToBytes(specializationDataBuffer, resource.LockedUprightDirection);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..], (int) resource.PositionAnchor);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..], (int) resource.ScalingMode);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..], (int) resource.LockStyle);
-		outBaseResource = resource.UnderlyingTextInstance.UnderlyingModelInstance;
-	}
-	static CameraLockedTextInstance IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(
-			new TextInstance(baseResource),
-			Direction.DeserializeFromBytes(specializationDataBuffer),
-			(Orientation2D) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..]),
-			(CameraLockedScalingMode) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..]),
-			(CameraLockStyle) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..])
-		);	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Wraps an existing text object as a <see cref="CameraLockedTextInstance"/>, without creating anything new.
@@ -90,7 +81,9 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecia
 	/// <param name="lockStyle">The value for <see cref="LockStyle"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CameraLockedTextInstance FromPreviouslyAllocatedUnderlyingTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
-		return new(underlyingTextInstance, lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+		var instance = underlyingTextInstance.UnderlyingModelInstance;
+		instance.Implementation.SetCameraLockConfig(instance.Handle, new CameraLockConfig(lockedUprightDirection, positionAnchor, scalingMode, lockStyle));
+		return new(underlyingTextInstance);
 	}
 
 	/// <summary>

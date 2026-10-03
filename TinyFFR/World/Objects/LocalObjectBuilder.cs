@@ -34,6 +34,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, PrivateMaterialData> _privateMaterialInstances = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, TextInstanceData> _activeInstanceTextInstanceData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockConfig> _activeInstanceCameraLockData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasScene> _activeInstanceCanvases = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, int> _activeInstanceDrawOrderDeferralAmounts = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
 	readonly LocalMaterialBuilder _materialBuilder;
@@ -694,6 +696,27 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		return _activeInstanceTextInstanceData[handle].String;
 	}
 
+	public void SetCameraLockConfig(ResourceHandle<ModelInstance> handle, CameraLockConfig config) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceCameraLockData[handle] = config;
+	}
+	public CameraLockConfig? GetCameraLockConfig(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceCameraLockData.TryGetValue(handle, out var result) ? result : null;
+	}
+	public bool IsTextInstance(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData.ContainsKey(handle);
+	}
+	public CanvasScene? GetCanvas(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceCanvases.TryGetValue(handle, out var result) ? result : null;
+	}
+	internal void SetCanvas(ResourceHandle<ModelInstance> handle, CanvasScene? canvas) {
+		if (canvas is { } c) _activeInstanceCanvases[handle] = c;
+		else _activeInstanceCanvases.Remove(handle);
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
@@ -834,6 +857,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		DisposePrivateMaterialIfPresent(handle);
 		DisposeMutationDataIfPresent(handle);
 		DisposeTextInstanceDataIfPresent(handle);
+		DisposeViewDataIfPresent(handle);
 		_activeInstanceDrawOrderDeferralAmounts.Remove(handle);
 		_activeInstanceData.Remove(handle);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
@@ -852,6 +876,10 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	
 	void DisposeTextInstanceDataIfPresent(ResourceHandle<ModelInstance> handle) => _activeInstanceTextInstanceData.Remove(handle);
+	void DisposeViewDataIfPresent(ResourceHandle<ModelInstance> handle) {
+		_activeInstanceCameraLockData.Remove(handle);
+		_activeInstanceCanvases.Remove(handle);
+	}
 
 	public void Dispose() {
 		try {
@@ -863,6 +891,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();
 			_activeInstanceTextInstanceData.Dispose();
+			_activeInstanceCameraLockData.Dispose();
+			_activeInstanceCanvases.Dispose();
 			_activeInstanceDrawOrderDeferralAmounts.Dispose();
 		}
 		finally {

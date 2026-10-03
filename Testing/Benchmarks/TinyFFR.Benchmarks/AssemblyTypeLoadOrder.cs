@@ -32,6 +32,8 @@ sealed class AssemblyTypeLoadOrderAnchor {
 	DynamicVertexBuffer _dynamicVertexBuffer;
 	Display _display;
 	Font _font;
+	FontPen _fontPen;
+	FontString _fontString;
 	Light _light;
 	Material _material;
 	Mesh _mesh;
@@ -55,8 +57,6 @@ sealed class AssemblyTypeLoadOrderAnchor {
 // safely here because the first anchor has already forced their embedded resource types to load.
 sealed class AssemblyTypeLoadOrderAnchorStage2 {
 	CanvasScene _canvasScene;
-	FontPen _fontPen;
-	FontString _fontString;
 	QuadInstance _quadInstance;
 	QuadMesh _quadMesh;
 	TextInstance _textInstance;

@@ -733,7 +733,7 @@ public interface IMeshBuilder {
 			triangles[3] = new VertexTriangle(5, 6, 7);
 		}
 		
-		return new QuadMesh(CreateFromVertices(vertices, triangles, in config));
+		return QuadMesh.FromPreviouslyAllocatedUnderlyingMesh(CreateFromVertices(vertices, triangles, in config));
 	}
 	
 	/// <summary>

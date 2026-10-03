@@ -35,4 +35,17 @@ public class ResourceDependencyException : Exception {
 			$"({joinedDependentResourceNames}). Dispose or otherwise relinquish the dependency on those resources first before executing this action on '{targetResourceName}'."
 		);
 	}
+
+	internal static ResourceDependencyException CreateForGroupDisposal(string groupName, string blockedResourceName, string? blockingDependentName) {
+		if (blockingDependentName == null) {
+			return new ResourceDependencyException(
+				$"Can not dispose the contents of {nameof(ResourceGroup)} '{groupName}' because the resources in it form a cyclical dependency (involving '{blockedResourceName}'). " +
+				$"Nothing in the group has been disposed."
+			);
+		}
+		return new ResourceDependencyException(
+			$"Can not dispose the contents of {nameof(ResourceGroup)} '{groupName}' because '{blockedResourceName}' is still in use by '{blockingDependentName}', which is not being disposed along with the group. " +
+			$"Nothing in the group has been disposed. Dispose or otherwise relinquish the dependency on '{blockedResourceName}' first, or exclude it from disposal."
+		);
+	}
 }

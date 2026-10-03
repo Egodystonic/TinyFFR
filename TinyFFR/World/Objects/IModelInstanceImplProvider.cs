@@ -219,4 +219,21 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// Invoked via <see cref="TextInstance.String"/>.
 	/// </summary>
 	FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle);
+	
+	/// <summary>
+	/// Invoked internally when a camera-locked quad or text instance is created (or wrapped via one of their <c>FromPreviouslyAllocated...</c> methods).
+	/// </summary>
+	void SetCameraLockConfig(ResourceHandle<ModelInstance> handle, CameraLockConfig config);
+	/// <summary>
+	/// Invoked via the properties of <see cref="CameraLockedQuadInstance"/> and <see cref="CameraLockedTextInstance"/>.
+	/// </summary>
+	CameraLockConfig? GetCameraLockConfig(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked internally to determine whether the given instance was created to display text.
+	/// </summary>
+	bool IsTextInstance(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked internally to find the canvas the given instance belongs to, if it was created as a canvas object.
+	/// </summary>
+	CanvasScene? GetCanvas(ResourceHandle<ModelInstance> handle);
 }

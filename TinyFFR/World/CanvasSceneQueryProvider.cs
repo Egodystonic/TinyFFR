@@ -64,7 +64,7 @@ public readonly record struct CanvasSceneQueryProvider {
 	/// <param name="renderTargetCoord">The coordinate to test, such as a mouse cursor position within a window.</param>
 	/// <param name="coordOrigin">Which corner of the render target <paramref name="renderTargetCoord"/> is measured from (or the centre if <see cref="DiagonalOrientation2D.None"/>). Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>, which matches the convention used for window and cursor coordinates.</param>
 	/// <param name="disableDpiScalingAdjustment">Pass <see langword="true"/> to skip the adjustment made for displays with scaling enabled, if the supplied coordinate is already in real pixels. Defaults to <see langword="false"/>.</param>
-	public TCanvasObject? GetTopmostObjectUnderRenderTargetCoord<TCanvasObject>(XYPair<int> renderTargetCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
+	public TCanvasObject? GetTopmostObjectUnderRenderTargetCoord<TCanvasObject>(XYPair<int> renderTargetCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) where TCanvasObject : struct, ICanvasObject<TCanvasObject> {
 		Unsafe.SkipInit(out TCanvasObject result);
 		return FindObjectsUnderRenderTargetCoord(renderTargetCoord, new Span<TCanvasObject>(ref result), coordOrigin, disableDpiScalingAdjustment) > 0 ? result : null;
 	}
@@ -81,7 +81,7 @@ public readonly record struct CanvasSceneQueryProvider {
 	/// <param name="coordOrigin">Which corner of the render target <paramref name="renderTargetCoord"/> is measured from (or the centre if <see cref="DiagonalOrientation2D.None"/>). Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>, which matches the convention used for window and cursor coordinates.</param>
 	/// <param name="disableDpiScalingAdjustment">Pass <see langword="true"/> to skip the adjustment made for displays with scaling enabled, if the supplied coordinate is already in real pixels. Defaults to <see langword="false"/>.</param>
 	/// <returns>The number of objects written to <paramref name="resultsDest"/>.</returns>
-	public int FindObjectsUnderRenderTargetCoord<TCanvasObject>(XYPair<int> renderTargetCoord, Span<TCanvasObject> resultsDest, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
+	public int FindObjectsUnderRenderTargetCoord<TCanvasObject>(XYPair<int> renderTargetCoord, Span<TCanvasObject> resultsDest, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) where TCanvasObject : struct, ICanvasObject<TCanvasObject> {
 		return FindObjectsUnderLocalCoord(Canvas.ConvertRenderTargetCoordToLocal(renderTargetCoord, coordOrigin, disableDpiScalingAdjustment), resultsDest, coordOrigin);
 	}
 
@@ -95,7 +95,7 @@ public readonly record struct CanvasSceneQueryProvider {
 	/// <typeparam name="TCanvasObject">The kind of canvas object to search for (<see cref="CanvasTexture"/> or <see cref="CanvasText"/>).</typeparam>
 	/// <param name="localCoord">The coordinate to test, in canvas pixels.</param>
 	/// <param name="coordOrigin">Which corner of the canvas <paramref name="localCoord"/> is measured from (or the centre if <see cref="DiagonalOrientation2D.None"/>). Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
-	public TCanvasObject? GetTopmostObjectUnderLocalCoord<TCanvasObject>(XYPair<int> localCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
+	public TCanvasObject? GetTopmostObjectUnderLocalCoord<TCanvasObject>(XYPair<int> localCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) where TCanvasObject : struct, ICanvasObject<TCanvasObject> {
 		Unsafe.SkipInit(out TCanvasObject result);
 		return FindObjectsUnderLocalCoord(localCoord, new Span<TCanvasObject>(ref result), coordOrigin) > 0 ? result : null;
 	}
@@ -111,7 +111,7 @@ public readonly record struct CanvasSceneQueryProvider {
 	/// <param name="resultsDest">The buffer to write the results in to. Results are ordered topmost-first.</param>
 	/// <param name="coordOrigin">Which corner of the canvas <paramref name="localCoord"/> is measured from (or the centre if <see cref="DiagonalOrientation2D.None"/>). Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
 	/// <returns>The number of objects written to <paramref name="resultsDest"/>.</returns>
-	public int FindObjectsUnderLocalCoord<TCanvasObject>(XYPair<int> localCoord, Span<TCanvasObject> resultsDest, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
+	public int FindObjectsUnderLocalCoord<TCanvasObject>(XYPair<int> localCoord, Span<TCanvasObject> resultsDest, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) where TCanvasObject : struct, ICanvasObject<TCanvasObject> {
 		if (resultsDest.IsEmpty) return 0;
 		if (Implementation.GetCanvasQueryRay(SceneHandle, localCoord, coordOrigin) is not { } ray) return 0;
 
@@ -126,12 +126,7 @@ public readonly record struct CanvasSceneQueryProvider {
 		return resultCount;
 	}
 
-	bool TryConvertToCanvasObject<TCanvasObject>(ModelInstance modelInstance, out TCanvasObject result) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
-		if (!Implementation.IsCanvasObjectOfType<TCanvasObject>(SceneHandle, modelInstance)) {
-			result = default;
-			return false;
-		}
-		result = TCanvasObject.DeSmuggle(modelInstance, ReadOnlySpan<byte>.Empty, ResourceUtils.ToStub(Canvas.UnderlyingScene));
-		return true;
+	bool TryConvertToCanvasObject<TCanvasObject>(ModelInstance modelInstance, out TCanvasObject result) where TCanvasObject : struct, ICanvasObject<TCanvasObject> {
+		return TCanvasObject.TryWrap(modelInstance, out result) && result.Canvas == Canvas;
 	}
 }

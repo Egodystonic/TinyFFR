@@ -16,12 +16,17 @@ description: Information on how to bundle related resources together with Resour
 ## Resource Groups
 
 ```csharp
-var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true, name: "Bricks"); // (1)!
+var group = factory.ResourceAllocator.CreateResourceGroup( // (1)!
+	disposeContainedResourcesWhenDisposed: true, 
+	name: "Bricks"
+); 
 
 var colorMap = factory.TextureBuilder.CreateColorMap(StandardColor.Red, includeAlpha: false);
-var material = factory.MaterialBuilder.CreateStandardMaterial(colorMap);
 group.Add(colorMap); // (2)!
-group.Add(material);
+
+var material = factory.MaterialBuilder.CreateStandardMaterial(colorMap);
+group.Add(material); // (6)!
+
 group.Seal(); // (3)!
 
 var firstMaterial = group.Materials[0]; // (4)!
@@ -29,9 +34,9 @@ var firstMaterial = group.Materials[0]; // (4)!
 group.Dispose(); // (5)!
 ```
 
-1.	Creates a new, empty group. Because `disposeContainedResourcesWhenDisposed` is `true`, disposing the group will also dispose everything in it.
+1.	Creates a new, empty group. Because `disposeContainedResourcesWhenDisposed` is `true`, disposing the group will also dispose everything we're about to add to it.
 
-2.	Adds the texture and material to the group.
+2.	Adds the texture to the group.
 
 3.	Seals the group, so that no further resources can be added to it.
 
@@ -39,9 +44,14 @@ group.Dispose(); // (5)!
 
 5.	Disposes the group, which also disposes the material and the texture.
 
-A `ResourceGroup` is a resource that holds a collection of other resources. Groups are intended for small bundles of closely-related resources that belong together, such as a material and the textures it uses, or every mesh, material, and texture that makes up a single model.
+6.	Adds the material to the group. The fact that we add the material *second*, *after* the texture, is important (see [Adding & Sealing](#adding-sealing)).
 
-TinyFFR uses groups itself wherever a single operation produces several resources: for example, the [asset bakery](asset_bakery.md)'s `LoadBakedMaterial()`, `LoadBakedModel()`, and `LoadBakedResourceGroup()` methods each return a `ResourceGroup` holding everything they loaded, and a [`ModelBundle`](bundled_assets.md) is a thin wrapper around a group (exposed via its `UnderlyingResourceGroup` property).
+A `ResourceGroup` is a resource(1) that holds a collection of other resources. Groups are intended for small bundles of closely-related resources that belong together, such as a material and the textures it uses, or every mesh, material, and texture that makes up a single model.
+{ .annotate }
+
+1.	In fact, you can add a `ResourceGroup` to another `ResourceGroup`.
+
+TinyFFR uses groups itself wherever a single operation produces several resources; e.g. the [asset bakery](asset_bakery.md)'s `LoadBakedMaterial()`, `LoadBakedModel()`, and `LoadBakedResourceGroup()` methods each return a `ResourceGroup` holding everything they loaded, and a [`ModelBundle`](bundled_assets.md) is a thin wrapper around a group (exposed via its `UnderlyingResourceGroup` property).
 
 ### Creating Groups
 
@@ -65,14 +75,19 @@ Any resource can be added to a group with `group.Add()`, including another `Reso
 
 Adding a resource to a group creates a [dependency](resource_dependencies.md) from the group on that resource. This means that a resource can't be disposed while it's still in a (non-disposed) group; attempting to do so throws a `ResourceDependencyException`.
 
-Specialized resource types (such as `QuadMesh`, `TextInstance`, `FontString`, or `CanvasScene`) can also be added to groups, and are retrieved again as their specialized type via the group's specialized enumeration properties (e.g. `group.QuadMeshes`).
+Once you've finished adding resources, the group can be *sealed* with `group.Seal()`. You don't have to seal a group; but doing so makes it "immutable" so you can safely pass it around. Sealing can't be undone; attempting to add resources to a sealed group throws a `ResourceGroupSealedException`. The `group.IsSealed` property indicates whether a group has been sealed.
 
-Once you've finished adding resources, the group can be *sealed* with `group.Seal()`. Sealing can't be undone: attempting to add resources to a sealed group throws a `ResourceGroupSealedException`. `group.IsSealed` indicates whether a group has been sealed.
+???+ success "Add Dependencies Before Dependents"
+	When a group disposes its contents, it disposes them in *reverse* order (relative to the order they were added). This means that it's recommended to add any resource to a group *after* the resources it depends upon are added (e.g. in the example at the top of the page, we add a texture and *then* the material that depends-upon/uses that texture).
 
-???+ tip "Seal Your Groups"
-	Sealed groups build an index of their contents by type, which makes retrieving resources of a given type from them (e.g. `group.Meshes`, or `group.GetNthResourceOfType<Mesh>(3)`) faster, especially in groups containing many types of resource.
+	If you add a resource *before* the resources it depends on (e.g. adding the material before its texture), disposing the group may throw a `ResourceDependencyException`. The library attempts to disentangle the dependency graph before disposing the target group, but particularly complex dependency chains (especially those involving sub-groups) can still slip through, causing an exception to be thrown. Therefore, adding resources in dependency order is generally best practice.
 
-	It's also a useful safeguard against accidentally adding resources to a group after it's been handed off to other code. Every group returned by TinyFFR itself is already sealed.
+??? tip "Sealing Groups can Improve Performance"
+	When sealing a group, the library builds an internal set of flat-index maps for its constituent resources.
+	
+	This makes retrieving resources of a given type from them (e.g. `group.Meshes`, or `group.GetNthResourceOfType<Mesh>(3)`) faster, especially in groups containing many types of resource.
+	
+	This can yield a performance gain in some scenarios (i.e. where you're iterating over a large number of `ResourceGroup`s each frame). It has a neglible effect for sporadic usage patterns, however.
 
 ## Retrieving Resources
 
@@ -117,18 +132,33 @@ The enumeration properties cover every resource type, including:
 
 The following methods offer the same functionality generically:
 
-* `group.GetAllResourcesOfType<T>()` returns every resource of type `T` in the group (e.g. `group.GetAllResourcesOfType<Mesh>()` is equivalent to `group.Meshes`).
-* `group.GetNthResourceOfType<T>(index)` returns the resource of type `T` at the given index, using the same ordering.
+* `group.GetAllResourcesOfType<T>()` returns every resource of type `T` in the group (e.g. `group.GetAllResourcesOfType<Mesh>()` is equivalent to `group.Meshes`)(1).
+	{ .annotate }
+
+	1.	For some specialized types, you'll need to use the two-type-parameter overloads, specifying the specialized type and the type it specializes (e.g. `group.GetAllResourcesOfType<QuadMesh, Mesh>()`).
+
+* `group.GetNthResourceOfType<T>(index)` returns the resource of type `T` at the given index, using the same ordering(1).
+	{ .annotate }
+
+	1.	For some specialized types, you'll need to use the two-type-parameter overloads, specifying the specialized type and the type it specializes (e.g. `group.GetNthResourcesOfType<QuadMesh, Mesh>(index)`).
+
 * `group.GetAllResourcesBoxed()` returns every resource in the group (of all types) in the order they were added, each boxed as an `object`. This is convenient for debugging or inspecting a group's contents generically (e.g. `if (resource is Mesh mesh) { ... }`), but allocates; prefer the typed enumerations elsewhere.
+
 * `group.ResourceCount` returns the total number of resources in the group, of all types.
 
-For specialized types, use the two-type-parameter overloads, specifying the specialized type and the type it specializes (e.g. `group.GetAllResourcesOfType<QuadMesh, Mesh>()`).
 
 ## Disposing Groups
 
-Disposing a group with `group.Dispose()` removes the group's dependency on all of its resources; and, if the group was created with `disposeContainedResourcesWhenDisposed: true`, disposes every resource in it.
+Disposing a group with `group.Dispose()` removes the group's dependency on all of its resources; and, if the group was created with `disposeContainedResourcesWhenDisposed: true`, disposes every resource contained within.
 
-Alternatively, `group.Dispose(disposeContainedResources)` lets you choose whether the contained resources are disposed, regardless of the setting the group was created with.
+Alternatively, `group.Dispose(disposeContainedResources)` lets you choose whether the contained resources are disposed, regardless of the setting the group was created with(1).
+{ .annotate }
+
+1.	Beware: Overriding this value means you are now responsible for the lifetime of the contained resources.
+
+### Excluding Specific Resources from Disposal
+
+It is possible to exclude specific dependencies from disposal; this can be useful when you want to bundle a shared resource alongside created resources:
 
 ```csharp
 var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
@@ -143,31 +173,16 @@ group.Dispose(); // (2)!
 
 2.	Disposes `material` and `colorMap`; `sharedMesh` is left alive (and no longer has a dependency from the group).
 
-???+ warning "Add Dependencies Before Dependents"
-	When a group disposes its contents, it disposes them in the *reverse* order to the order they were added. This means that if you add each resource to a group *after* the resources it uses (e.g. adding a texture before the material that uses it), the group will always dispose dependents before the resources they depend on.
+## Nesting Groups
 
-	If you add a resource *before* the resources it depends on (e.g. adding the material before its texture), disposing the group throws a `ResourceDependencyException` part-way through, because the group attempts to dispose the texture while the material is still using it.
-
-### Nesting Groups
-
-Groups can be added to other groups. The usual [dependency](resource_dependencies.md) rules apply: the inner group can't be disposed while it's still in the outer group, and disposing the outer group (with its contained resources) also disposes the inner group (and, depending on its own settings, the inner group's resources).
-
-Like all resources, a `ResourceGroup` is just a small handle, so it's cheap to copy and pass around; every copy refers to the same group.
+Groups can be added to other groups. The usual [dependency](resource_dependencies.md) rules apply: The inner group can't be disposed while it's still in the outer group, and disposing the outer group (with its contained resources) also disposes the inner group (and, depending on its own settings, the inner group's resources).
 
 ## Large Collections of Resources
 
-Resource groups are designed for small bundles of tightly-related resources; they're not designed to act as general-purpose collections, and may perform poorly when used to hold large numbers of resources. They also create dependencies on everything in them, which can make managing the lifetimes of individual resources awkward.
+Like all resources, a `ResourceGroup` instance is just an opaque handle, so it's cheap to copy and pass around. The copy cost of passing around a `ResourceGroup` is the same no matter if it's empty or has thousands of resources contained.
 
-If you need to keep track of large or frequently-changing collections of resources (e.g. every enemy in a level), use an ordinary collection instead. If you'd like to avoid allocating garbage while doing so, `factory.ResourceAllocator` also provides pooled, zero-garbage collections and memory:
+However, resource groups are ultimately designed to collate small bundles of tightly-related resources; they're not meant to act as general-purpose collections, and are not as performant as collection types for general iteration etc. Resource groups also create dependencies on everything inside them.
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `CreateNewArrayPoolBackedList<T>()`, `CreateNewArrayPoolBackedDictionary<TKey, TValue>()`, `CreateNewArrayPoolBackedSet<T>()`
+While it is permitted (and sometimes desirable) to create larger `ResourceGroup`s, generally you should aim to keep the average `ResourceCount` in the order of 1-100 items.
 
-:   Creates a new collection backed by pooled memory, suitable for long-lived storage (e.g. a field). Dispose the collection when it's no longer needed, to return its memory to the pool.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `GetSharedScratchList<T>()`, `GetSharedScratchDictionary<TKey, TValue>()`, `GetSharedScratchSet<T>()`
-
-:   Returns a shared, reusable collection for short-lived scratch work (e.g. within a single method). The same instance is returned (and cleared) on every call, so never hold on to one across a call that may itself use it.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `BorrowSpan<T>(numElements)`
-
-:   Borrows a pooled buffer for a short-lived operation, returned as a lease that should be disposed (usually via `using`) when you've finished with it.
+If you need to keep track of large or frequently-changing collections of resources, you should still use an ordinary collection instead. If you'd like to avoid allocating garbage while doing so, `factory.ResourceAllocator` also provides pooled, zero-garbage collections and memory. See [Avoiding GC Stutter](avoiding_gc_stutter.md) for more information.

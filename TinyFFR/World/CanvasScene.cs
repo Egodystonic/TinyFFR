@@ -22,7 +22,7 @@ namespace Egodystonic.TinyFFR.World;
 /// either is down to preference and should be tested.
 /// </para>
 /// </remarks>
-public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>, IStringSpanNameEnabled, IEquatable<CanvasScene> {
+public readonly struct CanvasScene : IStringSpanNameEnabled, IEquatable<CanvasScene>, IDisposableResource<CanvasScene> {
 	/// <summary>
 	/// The highest permitted layer for a canvas object: <c>100</c>. Objects on higher layers are drawn in front of those on lower ones.
 	/// </summary>
@@ -74,17 +74,6 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 		UnderlyingScene = underlyingScene;
 	}
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CanvasScene, Scene>.SpecializationTypeIdentifier => typeof(CanvasScene).TypeHandle.Value;
-	int IResourceSpecialization<CanvasScene, Scene>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<CanvasScene, Scene>.Smuggle(CanvasScene resource, Span<byte> specializationDataBuffer, out Scene outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		outBaseResource = resource.UnderlyingScene;
-	}
-	static CanvasScene IResourceSpecialization<CanvasScene, Scene>.DeSmuggle(Scene baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(baseResource);	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Reinterprets an existing scene as a canvas scene.
@@ -96,6 +85,18 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 	/// <param name="underlyingScene">The scene to reinterpret.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CanvasScene FromPreviouslyAllocatedUnderlyingScene(Scene underlyingScene) => new(underlyingScene);
+
+
+	static CanvasScene WrapBase(Scene b) => new(b);
+	ResourceHandle<CanvasScene> IResource<CanvasScene>.Handle => UnderlyingScene.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingScene.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingScene.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingScene.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingScene.Handle.Ident, UnderlyingScene.Implementation);
+	ResourceHandle<CanvasScene> IResource<CanvasScene>.GetHandleWithoutDisposeCheck() => UnderlyingScene.GetHandleWithoutDisposeCheck().AsInteger;
+	static CanvasScene IResource<CanvasScene>.CreateFromHandleAndImpl(ResourceHandle<CanvasScene> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<Scene>(new ResourceStub(new ResourceIdent(ResourceHandle<Scene>.TypeHandle, handle.AsInteger), impl)));
+	static CanvasScene IResource<CanvasScene>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<Scene>(stub));
+	static CanvasScene IResource<CanvasScene>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<Scene>(stub));
 
 	/// <summary>
 	/// Adds an image to this canvas.

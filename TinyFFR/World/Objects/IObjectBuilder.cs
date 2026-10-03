@@ -503,7 +503,7 @@ public interface IObjectBuilder {
 	/// <param name="material">The material giving the new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
-		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
+		return QuadInstance.FromPreviouslyAllocatedUnderlyingModelInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
 	}
 	
 	/// <summary>
@@ -555,7 +555,7 @@ public interface IObjectBuilder {
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; see <see cref="CameraLockStyle"/>.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
-		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+		return CameraLockedQuadInstance.FromPreviouslyAllocatedUnderlyingQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
 	}
 	#endregion
 	
@@ -678,7 +678,7 @@ public interface IObjectBuilder {
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; <see cref="CameraLockStyle"/>.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, TextLayout layout, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
-		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, layout, in config), lockedUprightDirection, layout.PositionAnchor, scalingMode, lockStyle);
+		return CameraLockedTextInstance.FromPreviouslyAllocatedUnderlyingTextInstance(CreateTextInstance(pen, @string, layout, in config), lockedUprightDirection, layout.PositionAnchor, scalingMode, lockStyle);
 	}
 	#endregion
 }
