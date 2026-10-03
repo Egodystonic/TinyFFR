@@ -97,7 +97,7 @@ The directory supports the following resource types:
 
 :   `ResourceGroup`
 
-Specialized resource types (such as `QuadMesh`, `TextInstance`, or `FontString`) can't be looked up directly. Instead, look up the underlying resource type they specialize (e.g. `Mesh` for a `QuadMesh`, or `ModelInstance` for a `TextInstance`).
+Some specialized types (such as `QuadMesh`, `TextInstance`, or `CanvasScene`) can't be looked up directly. Instead, look up the underlying resource type they're built on (e.g. `Mesh` for a `QuadMesh`, or `ModelInstance` for a `TextInstance`).
 
 ### Per-Type Directories
 

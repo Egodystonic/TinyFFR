@@ -17,6 +17,11 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// This is what floating labels, nameplates and damage numbers are made of: text that marks a point in the world but must stay
 /// legible from wherever the camera happens to be.
 /// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with the model instance underlying its <see cref="UnderlyingTextInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CameraLockedTextInstances"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
 public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject, IDisposableResource<CameraLockedTextInstance> {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.CameraLockedTextInstance;
@@ -69,10 +74,12 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 	
 	
 	/// <summary>
-	/// Wraps an existing text object as a <see cref="CameraLockedTextInstance"/>, without creating anything new.
+	/// Wraps an existing text object as a <see cref="CameraLockedTextInstance"/>, recording the given lock settings against it.
 	/// </summary>
 	/// <remarks>
 	/// Only use this for an instance that really was created as camera-locked text; nothing here verifies that it was.
+	/// The given settings replace any the instance already had, and are what this object's properties report from then on. Scenes copy the
+	/// settings when the object is added, so re-add it to any scene it is already in for a change to take effect there.
 	/// </remarks>
 	/// <param name="underlyingTextInstance">The text object to wrap.</param>
 	/// <param name="lockedUprightDirection">The value for <see cref="LockedUprightDirection"/>.</param>

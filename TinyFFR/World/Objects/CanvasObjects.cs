@@ -201,9 +201,16 @@ public interface ICanvasObject<TSelf> : ICanvasObject where TSelf : struct, ICan
 /// An image drawn flat on a <see cref="CanvasScene"/>. Created by adding a texture or material to a <see cref="CanvasScene"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// As well as the placement members every canvas object has, this offers control over which part of its source image is shown (the texture offset and extent
 /// properties) and how much of its own area is filled (<see cref="FillFraction"/>). Between them these are enough to build icons from a packed sheet, progress
 /// bars and similar interface elements without separate images for each.
+/// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingModelInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasTextures"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
 public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDisposableResource<CanvasTexture> {
 	/// <inheritdoc />
@@ -633,8 +640,15 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 /// A piece of text drawn flat on a <see cref="CanvasScene"/>. Created by adding text to a <see cref="CanvasScene"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// By default the height of the element grows with the number of lines the text occupies; set
 /// <see cref="DisableAutomaticLineCountBasedHeightScaling"/> to keep the height fixed instead.
+/// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingModelInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasTexts"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
 public readonly record struct CanvasText : ICanvasObject<CanvasText>, IDisposableResource<CanvasText> {
 	/// <inheritdoc />

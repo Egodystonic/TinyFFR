@@ -21,6 +21,11 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// Use <see cref="SetTransform(Location, Direction, Direction?, TextLayout)"/> to easily set the position + scale of this
 /// text instance in-world.
 /// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingModelInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.TextInstances"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
 public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, ITransformedSceneObject, IDisposableResource<TextInstance> {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.TextInstance;

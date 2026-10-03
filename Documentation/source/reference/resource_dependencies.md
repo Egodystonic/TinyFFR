@@ -60,7 +60,8 @@ The following dependencies are tracked:
 | `MeshGroupAnimationTable`       | The `Mesh`es it animates.                                                                          |
 | Mesh views of a `DynamicVertexBuffer` | The `DynamicVertexBuffer` they were created from.                                            |
 | `ResourceGroup`                 | Every resource added to it (see [Resource Groups](resource_groups.md)).                            |
-| `TextInstance`                  | The `Font` and `FontPen`/`FontString` it uses.                                                     |
+| `TextInstance`                  | The `FontPen` and `FontString` it uses.                                                            |
+| `FontPen`, `FontString`         | The `Font` they were created from. The font *owns* them (see below).                               |
 
 ## Disposing Resources
 
@@ -93,6 +94,30 @@ The same principle applies to [resource groups](resource_groups.md), which dispo
 ### Mutation
 
 Dependencies can also prevent *modifying* a resource, where the modification would invalidate its dependents. Currently, this only applies to `DynamicVertexBuffer`s when resizing a buffer's vertex or index storage throws a `ResourceDependencyException` while any mesh views created from it are still alive.
+
+### Owned Resources
+
+Some resources *own* other resources that they create, and dispose them when they're disposed themselves:
+
+* A `Font` owns its atlas texture, and every `FontPen` and `FontString` created from it.
+* A `RenderOutputBuffer` owns the texture it renders in to.
+
+Owned resources don't stop their owner being disposed. However, anything *outside* the owner that still uses something it owns *does* stop it. For example, a font can't be disposed while a `TextInstance` is still drawing with one of its pens. In that case the exception names the pen (or string) that's still in use, and the instance using it:
+
+```csharp
+var font = factory.AssetLoader.LoadFont();
+var pen = font.CreatePen(StandardColor.White);
+var str = font.CreateString("Hello");
+var text = factory.ObjectBuilder.CreateTextInstance(pen, str);
+
+font.Dispose(); // (1)!
+text.Dispose();
+font.Dispose(); // (2)!
+```
+
+1.	Throws a `ResourceDependencyException`, because `text` is still using `pen` and `str`.
+
+2.	Succeeds, and disposes `pen` and `str` along with the font.
 
 ## Releasing Dependencies
 

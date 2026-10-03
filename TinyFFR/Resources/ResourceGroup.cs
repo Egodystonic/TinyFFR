@@ -230,7 +230,13 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// Adds <paramref name="resource"/> to this group.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// This creates a dependency from this group on <paramref name="resource"/>: you can not dispose <paramref name="resource"/> while it remains part of this (non-disposed) group.
+	/// </para>
+	/// <para>
+	/// The resource is listed under the type it was added as. A view type such as <see cref="QuadInstance"/> shares its identity with its underlying resource (so the
+	/// underlying <see cref="ModelInstance"/> is protected from disposal too), but appears only in <see cref="QuadInstances"/>, not <see cref="ModelInstances"/>.
+	/// </para>
 	/// </remarks>
 	/// <param name="resource">The resource to add.</param>
 	/// <exception cref="ResourceGroupSealedException">Thrown if this group has already been sealed (see <see cref="Seal"/>).</exception>
@@ -261,6 +267,7 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// </summary>
 	/// <remarks>
 	/// Unlike <see cref="GetAllResourcesOfType{TResource}"/> and the typed enumeration properties (e.g. <see cref="Meshes"/>), this returns resources of every type in the group at once, at the cost of boxing each one.
+	/// Each resource is boxed as the type it was added as.
 	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public IReadOnlyCollection<object> GetAllResourcesBoxed() => Implementation.GetAllResourcesBoxed(Handle);
@@ -270,6 +277,7 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// </summary>
 	/// <remarks>
 	/// This is the general-purpose form of the typed enumeration properties above (e.g. <see cref="Meshes"/> is equivalent to <c>GetAllResourcesOfType&lt;Mesh&gt;()</c>).
+	/// Resources are matched by the type they were added as (see <see cref="Add{TResource}"/>).
 	/// </remarks>
 	/// <typeparam name="TResource">The type of resource to enumerate.</typeparam>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

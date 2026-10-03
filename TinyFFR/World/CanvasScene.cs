@@ -21,6 +21,11 @@ namespace Egodystonic.TinyFFR.World;
 /// of UI textures) and in some cases you should use fractions (to auto-scale the canvas to the size of the viewport). When to use
 /// either is down to preference and should be tested.
 /// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingScene"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="Scene"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasScenes"/> rather than <see cref="ResourceGroup.Scenes"/>).
+/// </para>
 /// </remarks>
 public readonly struct CanvasScene : IStringSpanNameEnabled, IEquatable<CanvasScene>, IDisposableResource<CanvasScene> {
 	/// <summary>

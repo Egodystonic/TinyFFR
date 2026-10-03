@@ -64,11 +64,11 @@ class SceneObjectTest {
 
 		Assert.AreEqual(SceneObjectType.ModelInstance, Get<ModelInstance>());
 		Assert.AreEqual(SceneObjectType.ModelInstanceGroup, Get<ModelInstanceGroup>());
-		Assert.AreEqual(SceneObjectType.MutableGridInstance, Get<Assets.Meshes.MutableGridInstance>());
-		Assert.AreEqual(SceneObjectType.QuadInstance, Get<Assets.Meshes.QuadInstance>());
-		Assert.AreEqual(SceneObjectType.CameraLockedQuadInstance, Get<Assets.Meshes.CameraLockedQuadInstance>());
-		Assert.AreEqual(SceneObjectType.TextInstance, Get<Assets.Text.TextInstance>());
-		Assert.AreEqual(SceneObjectType.CameraLockedTextInstance, Get<Assets.Text.CameraLockedTextInstance>());
+		Assert.AreEqual(SceneObjectType.MutableGridInstance, Get<MutableGridInstance>());
+		Assert.AreEqual(SceneObjectType.QuadInstance, Get<QuadInstance>());
+		Assert.AreEqual(SceneObjectType.CameraLockedQuadInstance, Get<CameraLockedQuadInstance>());
+		Assert.AreEqual(SceneObjectType.TextInstance, Get<TextInstance>());
+		Assert.AreEqual(SceneObjectType.CameraLockedTextInstance, Get<CameraLockedTextInstance>());
 		Assert.AreEqual(SceneObjectType.PointLight, Get<PointLight>());
 		Assert.AreEqual(SceneObjectType.SpotLight, Get<SpotLight>());
 		Assert.AreEqual(SceneObjectType.DirectionalLight, Get<DirectionalLight>());
@@ -156,8 +156,10 @@ class SceneObjectTest {
 		Assert.AreEqual(camLockedQuadAddedTyped.UnderlyingQuadInstance.UnderlyingModelInstance.Rotation, viaSceneObjectRotation);
 		Assert.AreNotEqual(camLockedQuadAddedPlain.UnderlyingQuadInstance.UnderlyingModelInstance.Rotation, viaSceneObjectRotation);
 
-		Assert.Throws<ArgumentException>(() => scene.Add((SceneObject) camera));
-		Assert.Throws<ArgumentException>(() => scene.Remove((SceneObject) camera));
+		Assert.DoesNotThrow(() => scene.Add(camera));
+		Assert.DoesNotThrow(() => scene.Remove(camera));
+		Assert.AreEqual(expectedModelInstances.Length, scene.ContainedModelInstances.Count);
+		Assert.AreEqual(3, scene.ContainedLights.Count);
 		Assert.Throws<InvalidObjectException>(() => scene.Add(default(SceneObject)));
 		Assert.Throws<InvalidObjectException>(() => scene.Remove(default(SceneObject)));
 

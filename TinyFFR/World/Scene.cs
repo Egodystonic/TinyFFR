@@ -337,7 +337,6 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// </para>
 	/// </remarks>
 	/// <param name="sceneObject">The object to remove.</param>
-	/// <exception cref="ArgumentException">Thrown if <paramref name="sceneObject"/> wraps a <see cref="Camera"/>, which can not be part of a scene.</exception>
 	/// <exception cref="InvalidObjectException">Thrown if <paramref name="sceneObject"/> is <c>default</c>.</exception>
 	public void Remove(SceneObject sceneObject) {
 		switch (sceneObject.Type) {

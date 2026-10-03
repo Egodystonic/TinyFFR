@@ -21,6 +21,11 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 /// <para>
 /// This wraps an ordinary <see cref="Mesh"/> and can be used anywhere one is expected.
 /// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingMesh"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="Mesh"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.QuadMeshes"/> rather than <see cref="ResourceGroup.Meshes"/>).
+/// </para>
 /// </remarks>
 public readonly struct QuadMesh : IDisposableResource<QuadMesh> {
 	/// <summary>
@@ -157,6 +162,11 @@ public interface IQuadInstance : IDisposable, IStringSpanNameEnabled;
 /// </para>
 /// <para>
 /// Use <see cref="SetTransform(Location, XYPair{float}, Direction, Direction?, Orientation2D)"/> for a convenient way to place this in-world. 
+/// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingModelInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.QuadInstances"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
 /// </para>
 /// </remarks>
 public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IMaterialUsingSceneObject, IDisposableResource<QuadInstance> {
@@ -412,6 +422,11 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 /// quad looks like a tree from every angle, instead of vanishing when you walk around it. The same technique is used for
 /// floating labels and diagnostic data.
 /// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with the model instance underlying its <see cref="UnderlyingQuadInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CameraLockedQuadInstances"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
 public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObject, IPositionedSceneObject, IMaterialUsingSceneObject, IDisposableResource<CameraLockedQuadInstance> {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.CameraLockedQuadInstance;
@@ -464,10 +479,12 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObj
 	
 	
 	/// <summary>
-	/// Wraps an existing quad instance as a <see cref="CameraLockedQuadInstance"/>, without creating anything new.
+	/// Wraps an existing quad instance as a <see cref="CameraLockedQuadInstance"/>, recording the given lock settings against it.
 	/// </summary>
 	/// <remarks>
 	/// Only use this for an instance that really was created as a camera-locked quad; nothing here verifies that it was.
+	/// The given settings replace any the instance already had, and are what this object's properties report from then on. Scenes copy the
+	/// settings when the object is added, so re-add it to any scene it is already in for a change to take effect there.
 	/// </remarks>
 	/// <param name="underlyingQuadInstance">The quad instance to wrap.</param>
 	/// <param name="lockedUprightDirection">The value for <see cref="LockedUprightDirection"/>.</param>

@@ -57,15 +57,15 @@ TinyFFR uses groups itself wherever a single operation produces several resource
 
 Groups are created via `factory.ResourceAllocator.CreateResourceGroup()`, which accepts the following parameters:
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `disposeContainedResourcesWhenDisposed`
+<span class="def-icon">:material-code-json:</span> `disposeContainedResourcesWhenDisposed`
 
 :   Whether disposing the group should also dispose every resource in it by default (see [Disposing Groups](#disposing-groups) below). This is fixed for the lifetime of the group, and can be read back via `group.DisposesContainedResourcesByDefaultWhenDisposed`.
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `name` *(optional)*
+<span class="def-icon">:material-code-json:</span> `name` *(optional)*
 
 :   A name for the group. Like every other resource, groups can be found by name via the [resource directory](resource_directory.md).
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `initialCapacity` *(optional)*
+<span class="def-icon">:material-code-json:</span> `initialCapacity` *(optional)*
 
 :   How many resources to make room for up front. The group grows automatically as resources are added, so this is only an optimization when you know how many resources you'll be adding.
 
@@ -108,44 +108,17 @@ var secondMaterial = group.Materials[1]; // (3)!
 
 3.	Enumerations can also be indexed directly.
 
-The enumeration properties cover every resource type, including:
-
-<span class="def-icon">:material-card-bulleted-outline:</span> Assets
-
-:   `Textures`, `Materials`, `Meshes`, `Models`, `Fonts`, `BackdropTextures`, `AnimationTables`, `MeshAnimations`, `MeshNodes`
-
-<span class="def-icon">:material-card-bulleted-outline:</span> World
-
-:   `Scenes`, `ModelInstances`, `Cameras`, `PointLights`, `SpotLights`, `DirectionalLights`
-
-<span class="def-icon">:material-card-bulleted-outline:</span> Rendering & Environment
-
-:   `Renderers`, `RenderOutputBuffers`, `RendererCompositors`, `Windows`, `Displays`, `ApplicationLoops`
-
-<span class="def-icon">:material-card-bulleted-outline:</span> Specialized Types
-
-:   `QuadMeshes`, `QuadInstances`, `CameraLockedQuadInstances`, `TextInstances`, `CameraLockedTextInstances`, `FontStrings`, `FontPens`, `CanvasScenes`, `CanvasTexts`, `CanvasTextures`
-
-<span class="def-icon">:material-card-bulleted-outline:</span> Other
-
-:   `ResourceGroups`
+The enumeration properties cover every resource type, including: `Textures`, `Materials`, `Meshes`, `Models`, `Fonts`, `FontPens`, `FontStrings`, `BackdropTextures`, `AnimationTables`, `MeshAnimations`, `MeshNodes`, `Scenes`, `ModelInstances`, `Cameras`, `PointLights`, `SpotLights`, `DirectionalLights`, `QuadMeshes`, `QuadInstances`, `CameraLockedQuadInstances`, `TextInstances`, `CameraLockedTextInstances`, `CanvasScenes`, `CanvasTexts`, `CanvasTextures`, `Renderers`, `RenderOutputBuffers`, `RendererCompositors`, `Windows`, `Displays`, `ApplicationLoops`, and `ResourceGroups`.
 
 The following methods offer the same functionality generically:
 
-* `group.GetAllResourcesOfType<T>()` returns every resource of type `T` in the group (e.g. `group.GetAllResourcesOfType<Mesh>()` is equivalent to `group.Meshes`)(1).
-	{ .annotate }
+* `group.GetAllResourcesOfType<T>()` returns every resource of type `T` in the group (e.g. `group.GetAllResourcesOfType<Mesh>()` is equivalent to `group.Meshes`, and `group.GetAllResourcesOfType<QuadMesh>()` is equivalent to `group.QuadMeshes`).
 
-	1.	For some specialized types, you'll need to use the two-type-parameter overloads, specifying the specialized type and the type it specializes (e.g. `group.GetAllResourcesOfType<QuadMesh, Mesh>()`).
+* `group.GetNthResourceOfType<T>(index)` returns the resource of type `T` at the given index, using the same ordering.
 
-* `group.GetNthResourceOfType<T>(index)` returns the resource of type `T` at the given index, using the same ordering(1).
-	{ .annotate }
-
-	1.	For some specialized types, you'll need to use the two-type-parameter overloads, specifying the specialized type and the type it specializes (e.g. `group.GetNthResourcesOfType<QuadMesh, Mesh>(index)`).
-
-* `group.GetAllResourcesBoxed()` returns every resource in the group (of all types) in the order they were added, each boxed as an `object`. This is convenient for debugging or inspecting a group's contents generically (e.g. `if (resource is Mesh mesh) { ... }`), but allocates; prefer the typed enumerations elsewhere.
+* `group.GetAllResourcesBoxed()` returns every resource in the group (of all types) in the order they were added, each boxed as an `object` of the type it was added as. This is convenient for debugging or inspecting a group's contents generically (e.g. `if (resource is Mesh mesh) { ... }`), but allocates; prefer the typed enumerations elsewhere.
 
 * `group.ResourceCount` returns the total number of resources in the group, of all types.
-
 
 ## Disposing Groups
 
