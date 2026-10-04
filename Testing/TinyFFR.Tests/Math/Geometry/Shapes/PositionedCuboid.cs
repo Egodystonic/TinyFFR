@@ -1,4 +1,4 @@
-// Created on 2026-04-14 by Ben Bowen
+﻿// Created on 2026-04-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Reflection;
@@ -538,5 +538,34 @@ class PositionedCuboidTest {
 			PositionedCuboid.FromOppositeCorners((3f, 4f, 5f), (3f, 4f, 5f)),
 			TestTolerance
 		);
+	}
+
+	[Test]
+	public void ExtentsShouldCorrectlyReflectAndSetDimensionsWithoutAffectingPosition() {
+		var cuboid = new PositionedCuboid(2f, 4f, 6f, new Location(1f, 2f, 3f));
+		Assert.AreEqual(new Vect(2f, 4f, 6f), cuboid.Extents);
+		Assert.AreEqual(new Vect(1f, 2f, 3f), cuboid.HalfExtents);
+
+		var withExtents = cuboid with { Extents = new Vect(8f, 10f, 12f) };
+		Assert.AreEqual(new PositionedCuboid(8f, 10f, 12f, new Location(1f, 2f, 3f)), withExtents);
+
+		var withHalfExtents = cuboid with { HalfExtents = new Vect(8f, 10f, 12f) };
+		Assert.AreEqual(new PositionedCuboid(16f, 20f, 24f, new Location(1f, 2f, 3f)), withHalfExtents);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateScalingForSize() {
+		var cuboid = new PositionedCuboid(2f, 4f, 8f, new Location(10f, -3f, 1f));
+		Assert.AreEqual(new Vect(1f, 1f, 1f), cuboid.CalculateScalingForSize(new Vect(2f, 4f, 8f)));
+		Assert.AreEqual(new Vect(2f, 0.5f, 0.25f), cuboid.CalculateScalingForSize(new Vect(4f, 2f, 2f)));
+		Assert.AreEqual(new Vect(0f, 1f, 1f), cuboid.CalculateScalingForSize(new Vect(0f, 4f, 8f)));
+		Assert.AreEqual(new Vect(-1f, 1f, 1f), cuboid.CalculateScalingForSize(new Vect(-2f, 4f, 8f)));
+
+		var flat = new PositionedCuboid(2f, 4f, 0f, Location.Origin);
+		Assert.AreEqual(new Vect(2f, 2f, 1f), flat.CalculateScalingForSize(new Vect(4f, 8f, 5f)));
+		Assert.AreEqual(new Vect(2f, 2f, 1f), flat.CalculateScalingForSize(new Vect(4f, 8f, 0f)));
+
+		var degenerate = new PositionedCuboid(0f, Location.Origin);
+		Assert.AreEqual(Vect.One, degenerate.CalculateScalingForSize(new Vect(4f, 8f, 5f)));
 	}
 }

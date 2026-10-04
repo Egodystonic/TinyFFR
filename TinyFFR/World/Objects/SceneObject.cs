@@ -929,17 +929,17 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	public void AdjustColorLightnessBy(float adjustment) => FunctionTable.AdjustColorLightnessBy(this, adjustment);
 
 	/// <inheritdoc />
-	/// <remarks>A <c>default</c> <see cref="SceneObject"/> has an empty name.</remarks>
+	/// <remarks>A <c>default</c> <see cref="SceneObject"/> is named <c>"Empty Scene Object"</c>.</remarks>
 	public string GetNameAsNewStringObject() {
 		return Type == SceneObjectType.None ? NoneSceneObjectName : Stub.GetNameAsNewStringObject();
 	}
 	/// <inheritdoc />
-	/// <remarks>A <c>default</c> <see cref="SceneObject"/> has an empty name.</remarks>
+	/// <remarks>A <c>default</c> <see cref="SceneObject"/> is named <c>"Empty Scene Object"</c>.</remarks>
 	public int GetNameLength() {
 		return Type == SceneObjectType.None ? NoneSceneObjectName.Length : Stub.GetNameLength();
 	}
 	/// <inheritdoc />
-	/// <remarks>A <c>default</c> <see cref="SceneObject"/> has an empty name, so nothing is copied.</remarks>
+	/// <remarks>A <c>default</c> <see cref="SceneObject"/> is named <c>"Empty Scene Object"</c>.</remarks>
 	public void CopyName(Span<char> destinationBuffer) {
 		if (Type == SceneObjectType.None) NoneSceneObjectName.CopyTo(destinationBuffer);
 		else Stub.CopyName(destinationBuffer);

@@ -247,25 +247,27 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
-
-
 	void ISizableSceneObject.SetSize(Vect size) => SetSize(size);
 	/// <inheritdoc cref="ISizableSceneObject.SetSize" />
-	/// <param name="size">The extents to set.</param>
-	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with.</param>
+	/// <param name="size">The size to set this object to, along each of its own axes (i.e. before <see cref="Rotation"/> is applied).</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with (see <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>), which is
+	/// removed before calculating the scaling. Defaults to <see cref="MeshCreationConfig.DefaultBoundingBoxAdditionalMargin"/>.</param>
 	/// <remarks>
 	/// <para>
-	/// This object's model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
+	/// This object's model-space bounding box (see <see cref="GetModelSpaceBoundingBox"/>) is used to calculate the scaling factor to correctly set the requested size.
 	/// This means the accuracy of the resulting size depends on how well the bounding box fits this object's <see cref="Mesh"/>.
+	/// The result replaces <see cref="Scaling"/>; any previous scaling is discarded.
 	/// </para>
 	/// <para>
-	/// This calculation also requires a vector division; if you want to set the size for multiple instances of the same mesh, pre-calculate
-	/// the <see cref="Scaling"/> value once using the mesh's <see cref="Assets.Meshes.Mesh.CalculateScalingForSize">GetScalingForSize()</see> function.
+	/// An axis along which the bounding box has no thickness (for example, the depth of a flat quad) can not be resized; its scaling is set to <c>1f</c>.
+	/// </para>
+	/// <para>
+	/// This calculation also requires fetching the bounding box and a vector division; if you want to set the size for multiple instances of the same mesh, pre-calculate
+	/// the <see cref="Scaling"/> value once using the mesh's <see cref="Assets.Meshes.Mesh.CalculateScalingForSize">CalculateScalingForSize()</see> function.
 	/// </para>
 	/// </remarks>
 	public void SetSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) {
-		var bb = GetModelSpaceBoundingBox();
-		SetScaling(size / (bb.WithAllExtentsAdjustedBy(-boundingBoxMargin).Extents));
+		SetScaling(GetModelSpaceBoundingBox().WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size));
 	}
 
 	/// <inheritdoc />

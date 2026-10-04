@@ -1,4 +1,4 @@
-// Created on 2026-04-14 by Ben Bowen
+﻿// Created on 2026-04-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Numerics;
@@ -460,5 +460,19 @@ class PositionedRotatedCuboidTest {
 			AssertToleranceEquals(expected.Position, actual.Position, TestTolerance);
 			Assert.IsTrue(expected.Rotation.IsEquivalentForAllDirectionsTo(actual.Rotation, TestTolerance));
 		}
+	}
+
+	[Test]
+	public void ExtentsShouldCorrectlyReflectAndSetDimensionsWithoutAffectingPositionOrRotation() {
+		var rotation = 30f % Direction.Up;
+		var cuboid = new PositionedRotatedCuboid(new Cuboid(2f, 4f, 6f), new Location(1f, 2f, 3f), rotation);
+		Assert.AreEqual(new Vect(2f, 4f, 6f), cuboid.Extents);
+		Assert.AreEqual(new Vect(1f, 2f, 3f), cuboid.HalfExtents);
+
+		var withExtents = cuboid with { Extents = new Vect(8f, 10f, 12f) };
+		Assert.AreEqual(new PositionedRotatedCuboid(new Cuboid(8f, 10f, 12f), new Location(1f, 2f, 3f), rotation), withExtents);
+
+		var withHalfExtents = cuboid with { HalfExtents = new Vect(8f, 10f, 12f) };
+		Assert.AreEqual(new PositionedRotatedCuboid(new Cuboid(16f, 20f, 24f), new Location(1f, 2f, 3f), rotation), withHalfExtents);
 	}
 }

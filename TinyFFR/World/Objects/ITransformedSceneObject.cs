@@ -92,13 +92,16 @@ public interface IScaledSceneObject : IRescalableSceneObject {
 	Vect Scaling { get; set; }
 }
 /// <summary>
-/// Represents a scene object whose size can be set directly.
+/// Represents a scene object whose size can be set directly, rather than only via a relative <see cref="IScaledSceneObject.Scaling"/>.
 /// </summary>
 public interface ISizableSceneObject : IScaledSceneObject {
 	/// <summary>
-	/// Sets the size of this object to the requested <paramref name="size"/>.
+	/// Sets the <see cref="IScaledSceneObject.Scaling"/> of this object so that it measures <paramref name="size"/> along each of its own axes.
 	/// </summary>
-	/// <param name="size">The extents to set.</param>
+	/// <remarks>
+	/// The required scaling is derived from the object's bounding box, and replaces any previous scaling.
+	/// </remarks>
+	/// <param name="size">The size to set this object to, along each of its own axes (i.e. before any rotation is applied).</param>
 	void SetSize(Vect size);
 }
 

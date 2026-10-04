@@ -88,6 +88,30 @@ instance.AdjustScaleBy(0.5f); // (5)!
 
 The same transform members are available on every kind of object on this page that can be positioned, rotated, or scaled.
 
+### Size
+
+`Scaling` is relative to the size of the mesh, so a scaling of `(2, 2, 2)` makes an object twice as big as its mesh, whatever size that happens to be. To make an object a specific size instead, use `SetSize()`:
+
+```csharp
+instance.SetSize(new Vect(1f, 2f, 1f)); // (1)!
+
+var treeScaling = treeMesh.CalculateScalingForSize(new Vect(3f, 10f, 3f)); // (2)!
+foreach (var tree in trees) {
+	tree.Scaling = treeScaling;
+}
+```
+
+1.	Sets the instance's `Scaling` so that it measures 1m wide, 2m tall, and 1m deep (along its own axes, i.e. before its rotation is applied).
+
+2.	Calculates the scaling that sizes instances of `treeMesh` at 3m × 10m × 3m once, so it can be assigned to many instances without recalculating it for each.
+
+`SetSize()` works out the required scaling from the instance's bounding box, so the following points apply:
+
+* The result is only as accurate as the bounding box is tight. For most meshes the box fits exactly, but a [skeletal mesh](skeletal_meshes.md)'s box covers every pose of its animations, which can make it larger than the mesh appears at rest.
+* Bounding boxes are enlarged slightly when a mesh is created (by `MeshCreationConfig.BoundingBoxAdditionalMargin`). `SetSize()` removes this margin before calculating the scaling; if you created the mesh with a non-default margin, pass the same value as `SetSize()`'s `boundingBoxMargin` argument.
+* An axis along which the mesh has no thickness (such as the depth of a flat quad) can't be resized, so its scaling is set to `1`.
+* The new scaling replaces the old one; calling `SetSize()` repeatedly with the same size always gives the same result.
+
 ### Mesh & Material
 
 An instance's mesh and material can be changed at any time with the `Mesh` and `Material` properties (or `SetMesh()` / `SetMaterial()`). You can also set a default shading style by using `SetDefaultMaterialBaseColor()` and `SetDefaultMaterialShadingStyle()` (see [The Default Material](the_default_material.md) for more information).
@@ -137,6 +161,7 @@ Groups can also be created from a span of `Model`s or `Mesh`es with `CreateModel
 A group has the same transform members as a model instance, plus a few others:
 
 * `group.SetMaterial()` sets the material of every instance in the group at once.
+* `group.SetSize()` scales the whole group so that it measures the given size, according to the combined bounding box of every instance in it (see [Size](#size)). To size many groups created from the same bundle, calculate the scaling once with `bundle.CalculateScalingForSize()` and assign it to each group's `Scaling`.
 * Groups created from a bundled asset with animations share a single animation table, so the whole group can be animated together with `group.GetAnimationPlayer()` (see [Playing Skeletal Animations](playing_skeletal_animations.md)).
 * Disposing a group disposes the instances in it. When grouping existing instances with `GroupModelInstances()`, pass `disposingGroupDisposesInstances: false` if you'd rather dispose them yourself.
 
@@ -263,24 +288,24 @@ if (sceneObject.Type == SceneObjectType.QuadInstance) {
 
 A `SceneObject` wraps one of the following types, indicated by its `Type` property (a `SceneObjectType`):
 
-| Type                         | Positioned | Oriented | Scaled | Material | Colour |
-| :--------------------------- | :--------: | :------: | :----: | :------: | :----: |
-| `ModelInstance`              | ✓ | ✓ | ✓ | ✓ |   |
-| `ModelInstanceGroup`         | ✓ | ✓ | ✓ | ✓ |   |
-| `QuadInstance`               | ✓ | ✓ | ✓ | ✓ |   |
-| `MutableGridInstance`        | ✓ | ✓ | ✓ | ✓ |   |
-| `TextInstance`               | ✓ | ✓ | ✓ |   |   |
-| `CameraLockedQuadInstance`   | ✓ |   | ✓ | ✓ |   |
-| `CameraLockedTextInstance`   | ✓ |   | ✓ |   |   |
-| `PointLight`                 | ✓ |   |   |   | ✓ |
-| `SpotLight`                  | ✓ | ✓ |   |   | ✓ |
-| `DirectionalLight`           |   | ✓ |   |   | ✓ |
-| `Camera`                     | ✓ | ✓ |   |   |   |
-| `None` (a `default` `SceneObject`) |   |   |   |   |   |
+| Type                         | Positioned | Oriented | Scaled | Sizable | Material | Colour |
+| :--------------------------- | :--------: | :------: | :----: | :-----: | :------: | :----: |
+| `ModelInstance`              | ✓ | ✓ | ✓ | ✓ | ✓ |   |
+| `ModelInstanceGroup`         | ✓ | ✓ | ✓ | ✓ | ✓ |   |
+| `QuadInstance`               | ✓ | ✓ | ✓ |   | ✓ |   |
+| `MutableGridInstance`        | ✓ | ✓ | ✓ |   | ✓ |   |
+| `TextInstance`               | ✓ | ✓ | ✓ |   |   |   |
+| `CameraLockedQuadInstance`   | ✓ |   | ✓ |   | ✓ |   |
+| `CameraLockedTextInstance`   | ✓ |   | ✓ |   |   |   |
+| `PointLight`                 | ✓ |   |   |   |   | ✓ |
+| `SpotLight`                  | ✓ | ✓ |   |   |   | ✓ |
+| `DirectionalLight`           |   | ✓ |   |   |   | ✓ |
+| `Camera`                     | ✓ | ✓ |   |   |   |   |
+| `None` (a `default` `SceneObject`) |   |   |   |   |   |   |
 
-`SceneObject` exposes the members of every column (e.g. `Position`, `Rotation`, `Scaling`, `SetMaterial()`, `ColorHue`), but members that don't apply to the wrapped type simply do nothing. 
+`SceneObject` exposes the members of every column (e.g. `Position`, `Rotation`, `Scaling`, `SetSize()`, `SetMaterial()`, `ColorHue`), but members that don't apply to the wrapped type simply do nothing. 
 
-For example, setting the "material" of a light is ignored, and reading an unsupported property returns a neutral default, so reading the "rotation" of a point light returns `Rotation.None`. To check whether a member will have an effect, use the extension methods on `SceneObjectType`: `IsPositioned()`, `IsOriented()`, `IsScaled()`, `IsTransformed()` (all three), `IsMaterialReceiving()`, and `IsColored()` (e.g. `var takesMaterial = sceneObj.Type.IsMaterialReceiving()`).
+For example, setting the "material" of a light is ignored, and reading an unsupported property returns a neutral default, so reading the "rotation" of a point light returns `Rotation.None`. To check whether a member will have an effect, use the extension methods on `SceneObjectType`: `IsPositioned()`, `IsOriented()`, `IsScaled()`, `IsTransformed()` (all three), `IsSizable()`, `IsMaterialReceiving()`, and `IsColored()` (e.g. `var takesMaterial = sceneObj.Type.IsMaterialReceiving()`).
 
 The following details also apply:
 

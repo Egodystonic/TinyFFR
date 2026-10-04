@@ -58,7 +58,13 @@ public interface ICuboid : IConvexShape {
 	/// The largest of <see cref="Width"/>, <see cref="Height"/> and <see cref="Depth"/>.
 	/// </summary>
 	float LargestExtent { get; }
+	/// <summary>
+	/// <see cref="Width"/>, <see cref="Height"/> and <see cref="Depth"/> as the X, Y and Z components of a single <see cref="Vect"/>.
+	/// </summary>
 	Vect Extents { get; init; }
+	/// <summary>
+	/// <see cref="HalfWidth"/>, <see cref="HalfHeight"/> and <see cref="HalfDepth"/> as the X, Y and Z components of a single <see cref="Vect"/>.
+	/// </summary>
 	Vect HalfExtents { get; init; }
 
 	/// <summary>
@@ -184,6 +190,7 @@ public readonly partial struct Cuboid : ICuboid<Cuboid> {
 	}
 	/// <inheritdoc />
 	public Vect Extents {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(Width, Height, Depth); 
 		init {
 			Width = value.X;
@@ -191,7 +198,9 @@ public readonly partial struct Cuboid : ICuboid<Cuboid> {
 			Depth = value.Z;
 		}
 	}
+	/// <inheritdoc />
 	public Vect HalfExtents {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(HalfWidth, HalfHeight, HalfDepth); 
 		init {
 			HalfWidth = value.X;

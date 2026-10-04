@@ -394,7 +394,7 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	/// </summary>
 	/// <typeparam name="TVertex">The vertex type.</typeparam>
 	/// <param name="vertices">The vertices to enclose.</param>
-	/// <param name="additionalMargin">An extra amount to add to every half-extent of the resultant cuboid (see <see cref="ICuboid{TSelf}.WithAllExtentsAdjustedBy"/>).</param>
+	/// <param name="additionalMargin">An extra amount to add to every extent of the resultant cuboid, i.e. half of it on each side (see <see cref="ICuboid{TSelf}.WithAllExtentsAdjustedBy"/>).</param>
 	public static PositionedCuboid FromBoundingBoxCalculation<TVertex>(ReadOnlySpan<TVertex> vertices, float additionalMargin) where TVertex : IMeshVertex {
 		return FromBoundingBoxCalculation(vertices).WithAllExtentsAdjustedBy(additionalMargin);
 	}
@@ -464,12 +464,25 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 		return new PositionedCuboid(extentsVect.X, extentsVect.Y, extentsVect.Z, boundedRay.MiddlePoint);
 	}
 	
+	const float MinScalableExtent = 1E-5f;
 	/// <summary>
 	/// Calculates the <c>Scaling</c> you should use to set <see cref="ModelInstance"/>s or <see cref="ModelInstanceGroup"/>s
 	/// to the given <paramref name="size"/>; assuming those instances/instance groups' bounding box is equal to this <c>PositionedCuboid</c>.
 	/// </summary>
+	/// <remarks>
+	/// An axis along which this cuboid has no thickness (for example, the depth of a flat quad) can not be resized; the returned scaling
+	/// is <c>1f</c> on any such axis.
+	/// </remarks>
 	/// <param name="size">The target size for instances/instance groups.</param>
-	public Vect CalculateScalingForSize(Vect size) => size / Extents;
+	public Vect CalculateScalingForSize(Vect size) {
+		static float CalculateAxisScaling(float targetSize, float extent) => extent > MinScalableExtent ? targetSize / extent : 1f;
+
+		return new Vect(
+			CalculateAxisScaling(size.X, Width),
+			CalculateAxisScaling(size.Y, Height),
+			CalculateAxisScaling(size.Z, Depth)
+		);
+	}
 
 	/// <summary>
 	/// Converts this shape to an unpositioned <see cref="Cuboid"/>, discarding <see cref="Position"/>.
@@ -771,7 +784,8 @@ public static class PositionedCuboidExtensions {
 	}
 	
 	/// <summary>
-	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the bounding boxes of every model instance's mesh in <paramref name="this"/>.
+	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the model-space bounding boxes of every model instance in <paramref name="this"/>
+	/// (see <see cref="ModelInstance.GetModelSpaceBoundingBox"/>).
 	/// </summary>
 	/// <param name="this">The collection of model instances to enclose.</param>
 	public static unsafe PositionedCuboid CalculateCombinedBoundingBox<TKey>(this IndirectEnumerable<TKey, ModelInstance> @this) {
@@ -815,9 +829,10 @@ public static class PositionedCuboidExtensions {
 	}
 	
 	/// <summary>
-	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the bounding boxes of every model's mesh in <paramref name="this"/>.
+	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the model-space bounding boxes of every model instance in <paramref name="this"/>
+	/// (see <see cref="ModelInstance.GetModelSpaceBoundingBox"/>).
 	/// </summary>
-	/// <param name="this">The collection of models to enclose.</param>
+	/// <param name="this">The group of model instances to enclose.</param>
 	public static unsafe PositionedCuboid CalculateCombinedBoundingBox(this ModelInstanceGroup @this) {
 		static IndirectEnumerable<ModelInstanceGroup, PositionedCuboid> Map(ModelInstanceGroup input) {
 			static int GetCount(ModelInstanceGroup i) => i.Count;

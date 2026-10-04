@@ -112,6 +112,8 @@ Everything is returned inside a single returned resource called a `ModelBundle`:
 
 The `Textures`, `Materials`, `Meshes` and `Models` properties let you enumerate each kind of resource in the bundle, while `Animations` and `Skeleton` expose the bundle's shared animation data.
 
+`CalculateCombinedBoundingBox()` returns the box enclosing every mesh in the bundle (i.e. the model-space bounding box of a group of instances created from it), and `CalculateScalingForSize()` calculates the scaling that makes such a group measure a given size (see [Size](scene_objects.md#size)).
+
 Disposing the `ModelBundle` also disposes all contained resources, meaning invoking `carBundle.Dispose()` also disposes every `Mesh`, `Material`, `Texture`, etc loaded by `LoadBundledAsset()`.
 
 ## Models

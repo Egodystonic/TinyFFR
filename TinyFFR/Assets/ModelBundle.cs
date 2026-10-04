@@ -87,18 +87,32 @@ public readonly struct ModelBundle : IDisposable, IStringSpanNameEnabled, IEquat
 	static ModelBundle IResourceWrapper<ModelBundle, ResourceGroup>.Wrap(ResourceGroup resource) => new(resource);
 	
 	/// <summary>
-	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the bounding boxes of every model's mesh in this bundle.
+	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the bounding box of every mesh in this bundle.
 	/// </summary>
+	/// <remarks>
+	/// This is the model-space bounding box of a <see cref="ModelInstanceGroup"/> created from this bundle (before any per-instance bounding box changes).
+	/// Each mesh's box includes its <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>.
+	/// </remarks>
 	public PositionedCuboid CalculateCombinedBoundingBox() => Meshes.CalculateCombinedBoundingBox();
 	/// <summary>
 	/// Calculates the <c>Scaling</c> you should use to set <see cref="ModelInstanceGroup"/>s of this model bundle to the given <paramref name="size"/>.
 	/// </summary>
 	/// <remarks>
-	/// Each mesh's model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
-	/// This means the accuracy of the resulting size depends on how well the bounding box fits each mesh.
+	/// <para>
+	/// The combined model-space bounding box of every mesh (see <see cref="CalculateCombinedBoundingBox"/>) is used to calculate the scaling factor to correctly set the
+	/// requested size. This means the accuracy of the resulting size depends on how well the bounding box fits each mesh.
+	/// </para>
+	/// <para>
+	/// An axis along which the combined bounding box has no thickness can not be resized; the returned scaling is <c>1f</c> on any such axis.
+	/// </para>
+	/// <para>
+	/// Calculating this once and assigning it to the <see cref="ModelInstanceGroup.Scaling"/> of many groups is cheaper than calling
+	/// <see cref="ModelInstanceGroup.SetSize(Vect, float)"/> on each.
+	/// </para>
 	/// </remarks>
 	/// <param name="size">The target size for model instance groups of this model bundle.</param>
-	/// <param name="boundingBoxMargin">The additional margin each bounding box was created with.</param>
+	/// <param name="boundingBoxMargin">The additional margin each bounding box was created with (see <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>), which is
+	/// removed before calculating the scaling. Defaults to <see cref="MeshCreationConfig.DefaultBoundingBoxAdditionalMargin"/>.</param>
 	public Vect CalculateScalingForSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) => CalculateCombinedBoundingBox().WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size);
 
 	/// <inheritdoc />

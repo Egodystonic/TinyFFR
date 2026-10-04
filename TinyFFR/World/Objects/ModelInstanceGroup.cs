@@ -228,14 +228,18 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
 	void ISizableSceneObject.SetSize(Vect size) => SetSize(size);
-	
 	/// <inheritdoc cref="ISizableSceneObject.SetSize" />
-	/// <param name="size">The extents to set.</param>
-	/// <param name="boundingBoxMargin">The additional margin the bounding boxes were created with.</param>
+	/// <param name="size">The size to set this group to, along each of its own axes (i.e. before <see cref="Rotation"/> is applied).</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding boxes were created with (see <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>), which is
+	/// removed before calculating the scaling. Defaults to <see cref="MeshCreationConfig.DefaultBoundingBoxAdditionalMargin"/>.</param>
 	/// <remarks>
 	/// <para>
-	/// The object group's combined model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
-	/// This means the accuracy of the resulting size depends on how well the bounding box fits each object's <see cref="Mesh"/>.
+	/// The object group's combined model-space bounding box (see <see cref="PositionedCuboidExtensions.CalculateCombinedBoundingBox(ModelInstanceGroup)"/>) is used to
+	/// calculate the scaling factor to correctly set the requested size. This means the accuracy of the resulting size depends on how well the bounding box fits each object's
+	/// <see cref="Mesh"/>. The result replaces <see cref="Scaling"/> on every instance in the group; any previous scaling is discarded.
+	/// </para>
+	/// <para>
+	/// An axis along which the combined bounding box has no thickness can not be resized; its scaling is set to <c>1f</c>.
 	/// </para>
 	/// <para>
 	/// This calculation also requires cumulative bounding box calculations and a vector division; if you want to set the size for multiple groups of the same mesh group,

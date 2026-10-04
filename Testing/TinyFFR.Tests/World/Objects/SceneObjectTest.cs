@@ -113,7 +113,7 @@ class SceneObjectTest {
 			obj.AdjustColorSaturationBy(0.1f);
 			obj.AdjustColorLightnessBy(0.1f);
 			obj.DisposeUnderlyingObject();
-			obj.CopyName(new char[10]);
+			obj.SetSize(new Vect(2f));
 			_ = obj.ToString();
 		});
 
@@ -125,8 +125,13 @@ class SceneObjectTest {
 		Assert.AreEqual(Angle.Zero, obj.ColorHue);
 		Assert.AreEqual(0f, obj.ColorSaturation);
 		Assert.AreEqual(0f, obj.ColorLightness);
-		Assert.AreEqual(String.Empty, obj.GetNameAsNewStringObject());
-		Assert.AreEqual(0, obj.GetNameLength());
+		Assert.AreEqual("Empty Scene Object", obj.GetNameAsNewStringObject());
+		Assert.AreEqual("Empty Scene Object".Length, obj.GetNameLength());
+		var nameBuffer = new char[obj.GetNameLength()];
+		obj.CopyName(nameBuffer);
+		Assert.AreEqual("Empty Scene Object", new String(nameBuffer));
+		Assert.AreEqual("Scene Object (None)", obj.ToString());
+		Assert.IsFalse(obj.Type.IsSizable());
 		Assert.AreEqual(default(SceneObject), obj);
 
 		Assert.Throws<InvalidCastException>(() => _ = (ModelInstance) obj);

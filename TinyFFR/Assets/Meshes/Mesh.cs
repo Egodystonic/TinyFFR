@@ -183,12 +183,18 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	/// Calculates the <c>Scaling</c> you should use to set instances of this Mesh to the given <paramref name="size"/>.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// This mesh's model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
 	/// This means the accuracy of the resulting size depends on how well the bounding box fits this mesh.
+	/// </para>
+	/// <para>
+	/// An axis along which the bounding box has no thickness (for example, the depth of a flat quad) can not be resized; the returned scaling is <c>1f</c> on any such axis.
+	/// </para>
 	/// </remarks>
 	/// <param name="size">The target size for instances of this mesh.</param>
-	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with.</param>
-	public Vect CalculateScalingForSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) => size / (BoundingBox.WithAllExtentsAdjustedBy(-boundingBoxMargin).Extents);
+	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with (see <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>), which is
+	/// removed before calculating the scaling. Defaults to <see cref="MeshCreationConfig.DefaultBoundingBoxAdditionalMargin"/>.</param>
+	public Vect CalculateScalingForSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) => BoundingBox.WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size);
 
 	static Mesh IResource<Mesh>.CreateFromHandleAndImpl(ResourceHandle<Mesh> handle, IResourceImplProvider impl) {
 		return new Mesh(handle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
