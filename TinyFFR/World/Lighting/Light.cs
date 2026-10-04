@@ -19,7 +19,7 @@ namespace Egodystonic.TinyFFR.World;
 /// either disposes the light itself.
 /// </remarks>
 public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSpanNameEnabled {
-	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.Unspecified;
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.None;
 
 	readonly ResourceHandle _handle;
 	readonly ILightImplProvider _impl;

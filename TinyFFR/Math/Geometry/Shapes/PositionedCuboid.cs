@@ -74,6 +74,21 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _impl = _impl with { BaseShape = _impl.BaseShape with { Depth = value } };
 	}
+	
+	/// <inheritdoc />
+	public Vect Extents {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.Extents; 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _impl = _impl with { BaseShape = _impl.BaseShape with { Extents = value } };
+	}
+	/// <inheritdoc />
+	public Vect HalfExtents {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.HalfExtents; 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _impl = _impl with { BaseShape = _impl.BaseShape with { HalfExtents = value } };
+	}
 
 	/// <inheritdoc />
 	public float Volume {
@@ -448,6 +463,13 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 		var extentsVect = boundedRay.StartToEndVect.Absolute;
 		return new PositionedCuboid(extentsVect.X, extentsVect.Y, extentsVect.Z, boundedRay.MiddlePoint);
 	}
+	
+	/// <summary>
+	/// Calculates the <c>Scaling</c> you should use to set <see cref="ModelInstance"/>s or <see cref="ModelInstanceGroup"/>s
+	/// to the given <paramref name="size"/>; assuming those instances/instance groups' bounding box is equal to this <c>PositionedCuboid</c>.
+	/// </summary>
+	/// <param name="size">The target size for instances/instance groups.</param>
+	public Vect CalculateScalingForSize(Vect size) => size / Extents;
 
 	/// <summary>
 	/// Converts this shape to an unpositioned <see cref="Cuboid"/>, discarding <see cref="Position"/>.
@@ -756,7 +778,7 @@ public static class PositionedCuboidExtensions {
 		static IndirectEnumerable<IndirectEnumerable<TKey, ModelInstance>, PositionedCuboid> Map(IndirectEnumerable<TKey, ModelInstance> input) {
 			static int GetCount(IndirectEnumerable<TKey, ModelInstance> i) => i.Count;
 			static int GetVersion(IndirectEnumerable<TKey, ModelInstance> _) => 0;
-			static PositionedCuboid GetItem(IndirectEnumerable<TKey, ModelInstance> i, int index) => i[index].Mesh.BoundingBox;
+			static PositionedCuboid GetItem(IndirectEnumerable<TKey, ModelInstance> i, int index) => i[index].GetModelSpaceBoundingBox();
 			
 			return new(
 				input,
@@ -779,6 +801,28 @@ public static class PositionedCuboidExtensions {
 			static int GetCount(IndirectEnumerable<TKey, Model> i) => i.Count;
 			static int GetVersion(IndirectEnumerable<TKey, Model> _) => 0;
 			static PositionedCuboid GetItem(IndirectEnumerable<TKey, Model> i, int index) => i[index].Mesh.BoundingBox;
+			
+			return new(
+				input,
+				0,
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+		
+		return PositionedCuboid.FromSmallestEnclosingCuboid(Map(@this));
+	}
+	
+	/// <summary>
+	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the bounding boxes of every model's mesh in <paramref name="this"/>.
+	/// </summary>
+	/// <param name="this">The collection of models to enclose.</param>
+	public static unsafe PositionedCuboid CalculateCombinedBoundingBox(this ModelInstanceGroup @this) {
+		static IndirectEnumerable<ModelInstanceGroup, PositionedCuboid> Map(ModelInstanceGroup input) {
+			static int GetCount(ModelInstanceGroup i) => i.Count;
+			static int GetVersion(ModelInstanceGroup _) => 0;
+			static PositionedCuboid GetItem(ModelInstanceGroup i, int index) => i[index].GetModelSpaceBoundingBox();
 			
 			return new(
 				input,

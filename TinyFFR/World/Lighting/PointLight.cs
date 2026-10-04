@@ -25,7 +25,7 @@ public readonly struct PointLight : ILight<PointLight>, IPositionedSceneObject {
 	/// <summary>
 	/// How many lumens a point light emits at a <see cref="Brightness"/> of <c>1f</c>: <c>1,250,000</c>.
 	/// </summary>
-	public const float DefaultLumens = 1_250_000f;
+	public const float DefaultLumens = 3_000f;
 
 	readonly ResourceHandle<PointLight> _handle;
 	readonly ILightImplProvider _impl;

@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets;
 
@@ -84,6 +85,21 @@ public readonly struct ModelBundle : IDisposable, IStringSpanNameEnabled, IEquat
 	}
 
 	static ModelBundle IResourceWrapper<ModelBundle, ResourceGroup>.Wrap(ResourceGroup resource) => new(resource);
+	
+	/// <summary>
+	/// Calculates the smallest axis-aligned <see cref="PositionedCuboid"/> that encloses the bounding boxes of every model's mesh in this bundle.
+	/// </summary>
+	public PositionedCuboid CalculateCombinedBoundingBox() => Meshes.CalculateCombinedBoundingBox();
+	/// <summary>
+	/// Calculates the <c>Scaling</c> you should use to set <see cref="ModelInstanceGroup"/>s of this model bundle to the given <paramref name="size"/>.
+	/// </summary>
+	/// <remarks>
+	/// Each mesh's model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
+	/// This means the accuracy of the resulting size depends on how well the bounding box fits each mesh.
+	/// </remarks>
+	/// <param name="size">The target size for model instance groups of this model bundle.</param>
+	/// <param name="boundingBoxMargin">The additional margin each bounding box was created with.</param>
+	public Vect CalculateScalingForSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) => CalculateCombinedBoundingBox().WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size);
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

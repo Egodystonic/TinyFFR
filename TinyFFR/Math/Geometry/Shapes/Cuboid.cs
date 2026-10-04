@@ -58,6 +58,8 @@ public interface ICuboid : IConvexShape {
 	/// The largest of <see cref="Width"/>, <see cref="Height"/> and <see cref="Depth"/>.
 	/// </summary>
 	float LargestExtent { get; }
+	Vect Extents { get; init; }
+	Vect HalfExtents { get; init; }
 
 	/// <summary>
 	/// Returns the centre point of the given <paramref name="side"/> of the cuboid.
@@ -179,6 +181,23 @@ public readonly partial struct Cuboid : ICuboid<Cuboid> {
 		get => _halfDepth * 2f;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _halfDepth = value * 0.5f;
+	}
+	/// <inheritdoc />
+	public Vect Extents {
+		get => new(Width, Height, Depth); 
+		init {
+			Width = value.X;
+			Height = value.Y;
+			Depth = value.Z;
+		}
+	}
+	public Vect HalfExtents {
+		get => new(HalfWidth, HalfHeight, HalfDepth); 
+		init {
+			HalfWidth = value.X;
+			HalfHeight = value.Y;
+			HalfDepth = value.Z;
+		}
 	}
 
 	/// <inheritdoc />

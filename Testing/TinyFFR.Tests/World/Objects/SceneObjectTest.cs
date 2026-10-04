@@ -41,7 +41,7 @@ class SceneObjectTest {
 	[Test]
 	public void EverySceneObjectTypeShouldHaveExactlyOneFunctionTable() {
 		var tableTypes = GetAllFunctionTables().Select(t => t.SceneObjectType).ToArray();
-		var expectedTypes = Enum.GetValues<SceneObjectType>().Where(t => t != SceneObjectType.Unspecified).ToArray();
+		var expectedTypes = Enum.GetValues<SceneObjectType>();
 
 		Assert.That(tableTypes, Is.EquivalentTo(expectedTypes));
 	}
@@ -73,9 +73,68 @@ class SceneObjectTest {
 		Assert.AreEqual(SceneObjectType.SpotLight, Get<SpotLight>());
 		Assert.AreEqual(SceneObjectType.DirectionalLight, Get<DirectionalLight>());
 		Assert.AreEqual(SceneObjectType.Camera, (SceneObjectType) getCameraSceneObjectType.Invoke(null, null)!);
-		Assert.AreEqual(SceneObjectType.Unspecified, Get<Light>());
-		Assert.AreEqual(SceneObjectType.Unspecified, Get<SceneObject>());
+		Assert.AreEqual(SceneObjectType.None, Get<Light>());
+		Assert.AreEqual(SceneObjectType.None, Get<SceneObject>());
 	}
+	[Test]
+	public void DefaultSceneObjectShouldBeANoOp() {
+		var obj = default(SceneObject);
+
+		Assert.AreEqual(SceneObjectType.None, obj.Type);
+		Assert.IsFalse(obj.Type.IsPositioned());
+		Assert.IsFalse(obj.Type.IsOriented());
+		Assert.IsFalse(obj.Type.IsScaled());
+		Assert.IsFalse(obj.Type.IsMaterialReceiving());
+		Assert.IsFalse(obj.Type.IsColored());
+		Assert.IsFalse(obj.Type.IsStoredAsModelInstance());
+
+		Assert.DoesNotThrow(() => {
+			obj.Position = new Location(1f, 2f, 3f);
+			obj.MoveBy(new Vect(1f, 0f, 0f));
+			obj.Rotation = 90f % Direction.Up;
+			obj.RotationQuaternion = System.Numerics.Quaternion.Identity;
+			obj.RotateBy(90f % Direction.Up);
+			obj.RotateBy(System.Numerics.Quaternion.Identity);
+			obj.Scaling = new Vect(2f);
+			obj.ScaleBy(2f);
+			obj.ScaleBy(new Vect(2f));
+			obj.AdjustScaleBy(1f);
+			obj.AdjustScaleBy(new Vect(1f));
+			obj.Transform = Transform.None;
+			obj.RotateBy(90f % Direction.Up, Location.Origin);
+			obj.RotateBy(System.Numerics.Quaternion.Identity, Location.Origin);
+			obj.SetMaterial(default);
+			obj.SetDefaultMaterialBaseColor(StandardColor.White);
+			obj.SetDefaultMaterialShadingStyle(default);
+			obj.ColorHue = 90f;
+			obj.ColorSaturation = 0.5f;
+			obj.ColorLightness = 0.5f;
+			obj.AdjustColorHueBy(10f);
+			obj.AdjustColorSaturationBy(0.1f);
+			obj.AdjustColorLightnessBy(0.1f);
+			obj.DisposeUnderlyingObject();
+			obj.CopyName(new char[10]);
+			_ = obj.ToString();
+		});
+
+		Assert.AreEqual(Location.Origin, obj.Position);
+		Assert.AreEqual(Rotation.None, obj.Rotation);
+		Assert.AreEqual(System.Numerics.Quaternion.Identity, obj.RotationQuaternion);
+		Assert.AreEqual(Vect.One, obj.Scaling);
+		Assert.AreEqual(Transform.None, obj.Transform);
+		Assert.AreEqual(Angle.Zero, obj.ColorHue);
+		Assert.AreEqual(0f, obj.ColorSaturation);
+		Assert.AreEqual(0f, obj.ColorLightness);
+		Assert.AreEqual(String.Empty, obj.GetNameAsNewStringObject());
+		Assert.AreEqual(0, obj.GetNameLength());
+		Assert.AreEqual(default(SceneObject), obj);
+
+		Assert.Throws<InvalidCastException>(() => _ = (ModelInstance) obj);
+		Assert.Throws<InvalidCastException>(() => _ = (ModelInstanceGroup) obj);
+		Assert.Throws<InvalidCastException>(() => _ = (PointLight) obj);
+		Assert.Throws<InvalidCastException>(() => _ = (MutableGridInstance) obj);
+	}
+
 	[Test]
 	public void CameraLockedInstancesShouldRoundTripThroughSceneObjects() {
 		using var factory = new LocalTinyFfrFactory();
@@ -160,8 +219,10 @@ class SceneObjectTest {
 		Assert.DoesNotThrow(() => scene.Remove(camera));
 		Assert.AreEqual(expectedModelInstances.Length, scene.ContainedModelInstances.Count);
 		Assert.AreEqual(3, scene.ContainedLights.Count);
-		Assert.Throws<InvalidObjectException>(() => scene.Add(default(SceneObject)));
-		Assert.Throws<InvalidObjectException>(() => scene.Remove(default(SceneObject)));
+		Assert.DoesNotThrow(() => scene.Add(default(SceneObject)));
+		Assert.DoesNotThrow(() => scene.Remove(default(SceneObject)));
+		Assert.AreEqual(expectedModelInstances.Length, scene.ContainedModelInstances.Count);
+		Assert.AreEqual(3, scene.ContainedLights.Count);
 
 		foreach (var sceneObject in sceneObjects) scene.Remove(sceneObject);
 		scene.Remove(camLockedQuadAddedTyped);

@@ -288,11 +288,11 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// Adding something already in this scene has no effect (i.e. this method is idempotent).
 	/// </para>
 	/// <para>
-	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/>, this method simply returns without any effect.
+	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/> or is <c>default</c> (i.e. its type is <see cref="SceneObjectType.None"/>),
+	/// this method simply returns without any effect.
 	/// </para>
 	/// </remarks>
 	/// <param name="sceneObject">The object to add.</param>
-	/// <exception cref="InvalidObjectException">Thrown if <paramref name="sceneObject"/> is <c>default</c>.</exception>
 	public void Add(SceneObject sceneObject) {
 		switch (sceneObject.Type) {
 			case SceneObjectType.ModelInstance:
@@ -320,9 +320,10 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 				Add((DirectionalLight) sceneObject);
 				break;
 			case SceneObjectType.Camera:
+			case SceneObjectType.None:
 				return;
 			default:
-				throw InvalidObjectException.InvalidDefault<SceneObject>();
+				throw new ArgumentException($"Unsupported {nameof(SceneObjectType)} '{sceneObject.Type}'.", nameof(sceneObject));
 		}
 	}
 	/// <summary>
@@ -333,11 +334,11 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// Removing something not in this scene has no effect (i.e. this method is idempotent).
 	/// </para>
 	/// <para>
-	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/>, this method simply returns without any effect.
+	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/> or is <c>default</c> (i.e. its type is <see cref="SceneObjectType.None"/>),
+	/// this method simply returns without any effect.
 	/// </para>
 	/// </remarks>
 	/// <param name="sceneObject">The object to remove.</param>
-	/// <exception cref="InvalidObjectException">Thrown if <paramref name="sceneObject"/> is <c>default</c>.</exception>
 	public void Remove(SceneObject sceneObject) {
 		switch (sceneObject.Type) {
 			case SceneObjectType.ModelInstance:
@@ -361,9 +362,10 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 				Remove((DirectionalLight) sceneObject);
 				break;
 			case SceneObjectType.Camera:
+			case SceneObjectType.None:
 				return;
 			default:
-				throw InvalidObjectException.InvalidDefault<SceneObject>();
+				throw new ArgumentException($"Unsupported {nameof(SceneObjectType)} '{sceneObject.Type}'.", nameof(sceneObject));
 		}
 	}
 	

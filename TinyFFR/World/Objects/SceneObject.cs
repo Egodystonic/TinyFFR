@@ -20,17 +20,17 @@ namespace Egodystonic.TinyFFR.World;
 /// </remarks>
 public enum SceneObjectType {
 	/// <summary>
-	/// No type; the value of a <c>default</c> <see cref="SceneObject"/>, which is not valid for use.
+	/// No object; the type of a <c>default</c> <see cref="SceneObject"/>, on which every member does nothing (and reads return neutral defaults).
 	/// </summary>
-	Unspecified = 0,
+	None = 0,
 	/// <summary>
 	/// A <see cref="World.ModelInstance"/>.
 	/// </summary>
-	ModelInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag) + 1,
+	ModelInstance = (TransformedFlag | MaterialReceivingFlag | StoresOnlyModelInstanceFlag | SizableFlag) + 1,
 	/// <summary>
 	/// A <see cref="World.ModelInstanceGroup"/>.
 	/// </summary>
-	ModelInstanceGroup = (TransformedFlag | MaterialReceivingFlag) + 2,
+	ModelInstanceGroup = (TransformedFlag | MaterialReceivingFlag | SizableFlag) + 2,
 	/// <summary>
 	/// A <see cref="Assets.Meshes.MutableGridInstance"/>.
 	/// </summary>
@@ -82,6 +82,7 @@ public static class SceneObjectTypeExtensions {
 	internal const int MaterialReceivingFlag = 0b1 << (TypeIdReservedBitShift + 3);
 	internal const int ColoredFlag = 0b1 << (TypeIdReservedBitShift + 4);
 	internal const int StoresOnlyModelInstanceFlag = 0b1 << (TypeIdReservedBitShift + 5);
+	internal const int SizableFlag = 0b1 << (TypeIdReservedBitShift + 6);
 
 	extension(SceneObjectType @this) {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -121,6 +122,11 @@ public static class SceneObjectTypeExtensions {
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsStoredAsModelInstance() => @this.FlagExists(StoresOnlyModelInstanceFlag);
+		/// <summary>
+		/// Returns <see langword="true"/> if objects of this type can have their size set (<see cref="ISizableSceneObject"/>).
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsSizable() => @this.FlagExists(SizableFlag);
 	}
 }
 
@@ -175,6 +181,7 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	public delegate* managed<in SceneObject, Vect, void> ScaleByVect { get; private set; }
 	public delegate* managed<in SceneObject, float, void> AdjustScaleByScalar { get; private set; }
 	public delegate* managed<in SceneObject, Vect, void> AdjustScaleByVect { get; private set; }
+	public delegate* managed<in SceneObject, Vect, void> SetSize { get; private set; }
 
 	public delegate* managed<in SceneObject, Transform> GetTransform { get; private set; }
 	public delegate* managed<in SceneObject, Transform, void> SetTransform { get; private set; }
@@ -229,6 +236,7 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		ScaleByVect = &NoOp<Vect>;
 		AdjustScaleByScalar = &NoOp<float>;
 		AdjustScaleByVect = &NoOp<Vect>;
+		SetSize = &NoOp<Vect>;
 
 		GetTransform = &NoOpGetTransform;
 		SetTransform = &NoOp<Transform>;
@@ -305,6 +313,12 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		AdjustScaleByScalar = &AdjustScaleByScalarAdapter;
 		AdjustScaleByVect = &AdjustScaleByVectAdapter;
 	}
+	
+	void AddSizable<T, TConverter>() where T : ISizableSceneObject where TConverter : IStubConverter<T> {
+		static void SetSizeByAdapter(in SceneObject sceneObject, Vect vect) => TConverter.FromSceneObject(sceneObject).SetSize(vect);
+		
+		SetSize = &SetSizeByAdapter;
+	}
 
 	void AddTransformed<T, TConverter>() where T : ITransformedSceneObject where TConverter : IStubConverter<T> {
 		static Transform GetTransformAdapter(in SceneObject sceneObject) => TConverter.FromSceneObject(sceneObject).Transform;
@@ -367,11 +381,14 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	#endregion
 
 	#region Per-Type Tables
+	public static SceneObjectAdapterFunctionTable ForNone { get; } = new(SceneObjectType.None);
+
 	public static SceneObjectAdapterFunctionTable ForModelInstance { get; } = CreateForModelInstance();
 	static SceneObjectAdapterFunctionTable CreateForModelInstance() {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.ModelInstance);
 		result.AddTransformed<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		result.AddMaterialReceiving<ModelInstance, ResourceStubConverter<ModelInstance>>();
+		result.AddSizable<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		return result;
 	}
 
@@ -380,6 +397,7 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.ModelInstanceGroup);
 		result.AddTransformed<ModelInstanceGroup, ModelInstanceGroupStubConverter>();
 		result.AddMaterialReceiving<ModelInstanceGroup, ModelInstanceGroupStubConverter>();
+		result.AddSizable<ModelInstanceGroup, ModelInstanceGroupStubConverter>();
 		return result;
 	}
 
@@ -477,18 +495,20 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 /// via <see cref="DisposeUnderlyingObject"/> or via its own <c>Dispose()</c> method) and then continue to use this SceneObject.
 /// </para>
 /// <para>
-/// A <c>default</c> <see cref="SceneObject"/> wraps nothing and is not valid for use.
+/// A <c>default</c> <see cref="SceneObject"/> wraps nothing (its <see cref="Type"/> is <see cref="SceneObjectType.None"/>). Every member of it does nothing or returns
+/// a neutral default, so a <see cref="SceneObject"/> field can safely be left unset until there is something to put in it.
 /// </para>
 /// </remarks>
-public readonly unsafe record struct SceneObject : ITransformedSceneObject, IColoredSceneObject, IMaterialReceivingSceneObject, IStringSpanNameEnabled {
+public readonly unsafe record struct SceneObject : ITransformedSceneObject, IColoredSceneObject, IMaterialReceivingSceneObject, IStringSpanNameEnabled, ISizableSceneObject {
+	const string NoneSceneObjectName = "Empty Scene Object";
 	internal ResourceStub Stub { get; }
-	internal SceneObjectAdapterFunctionTable FunctionTable => field ?? throw InvalidObjectException.InvalidDefault<SceneObject>();
+	internal SceneObjectAdapterFunctionTable FunctionTable => field ?? SceneObjectAdapterFunctionTable.ForNone;
 
 	/// <summary>
-	/// Which kind of object this wraps.
+	/// Which kind of object this wraps, or <see cref="SceneObjectType.None"/> if this is a <c>default</c> <see cref="SceneObject"/>.
 	/// </summary>
 	public SceneObjectType Type => FunctionTable.SceneObjectType;
-	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.Unspecified;
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.None;
 
 	internal SceneObject(ResourceStub stub, SceneObjectAdapterFunctionTable functionTable) {
 		Stub = stub;
@@ -822,6 +842,10 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	public void AdjustScaleBy(Vect vect) => FunctionTable.AdjustScaleByVect(this, vect);
 
 	/// <inheritdoc />
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetSize(Vect size) => FunctionTable.SetSize(this, size);
+
+	/// <inheritdoc />
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FunctionTable.GetTransform(this);
@@ -905,29 +929,29 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	public void AdjustColorLightnessBy(float adjustment) => FunctionTable.AdjustColorLightnessBy(this, adjustment);
 
 	/// <inheritdoc />
+	/// <remarks>A <c>default</c> <see cref="SceneObject"/> has an empty name.</remarks>
 	public string GetNameAsNewStringObject() {
-		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
-		return Stub.GetNameAsNewStringObject();
+		return Type == SceneObjectType.None ? NoneSceneObjectName : Stub.GetNameAsNewStringObject();
 	}
 	/// <inheritdoc />
+	/// <remarks>A <c>default</c> <see cref="SceneObject"/> has an empty name.</remarks>
 	public int GetNameLength() {
-		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
-		return Stub.GetNameLength();
+		return Type == SceneObjectType.None ? NoneSceneObjectName.Length : Stub.GetNameLength();
 	}
 	/// <inheritdoc />
+	/// <remarks>A <c>default</c> <see cref="SceneObject"/> has an empty name, so nothing is copied.</remarks>
 	public void CopyName(Span<char> destinationBuffer) {
-		if (Type == SceneObjectType.Unspecified) throw InvalidObjectException.InvalidDefault<ResourceStub>();
-		Stub.CopyName(destinationBuffer);
+		if (Type == SceneObjectType.None) NoneSceneObjectName.CopyTo(destinationBuffer);
+		else Stub.CopyName(destinationBuffer);
 	}
 
 	/// <summary>
-	/// Disposes the object this wraps.
+	/// Disposes the object this wraps. Does nothing if this is a <c>default</c> <see cref="SceneObject"/>.
 	/// </summary>
-	/// <exception cref="InvalidObjectException">Thrown if this is a <c>default</c> <see cref="SceneObject"/>.</exception>
 	public void DisposeUnderlyingObject() {
 		switch (Type) {
-			case SceneObjectType.Unspecified:
-				throw InvalidObjectException.InvalidDefault<ResourceStub>();
+			case SceneObjectType.None:
+				return;
 			case SceneObjectType.ModelInstanceGroup:
 				((ModelInstanceGroup) this).Dispose();
 				break;
@@ -941,5 +965,5 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	}
 
 	/// <inheritdoc />
-	public override string ToString() => $"Scene Object ({Type}) \"{Stub.GetNameAsNewStringObject()}\"";
+	public override string ToString() => Type == SceneObjectType.None ? $"Scene Object ({SceneObjectType.None})" : $"Scene Object ({Type}) \"{Stub.GetNameAsNewStringObject()}\"";
 }

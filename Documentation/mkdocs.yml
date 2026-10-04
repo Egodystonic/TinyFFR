@@ -156,6 +156,14 @@ nav:
             - reference/resource_directory.md
             - reference/resource_groups.md
             - reference/mocking_resources.md
+    - Scenes & Objects:
+        - reference/scenes.md
+        - reference/scene_objects.md
+        - Lighting & Fog:
+            - reference/point_lights.md
+            - reference/spot_lights.md
+            - reference/directional_lights.md
+            - reference/fog.md
 
 not_in_nav: |
 

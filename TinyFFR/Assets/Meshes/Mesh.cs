@@ -178,6 +178,17 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+	
+	/// <summary>
+	/// Calculates the <c>Scaling</c> you should use to set instances of this Mesh to the given <paramref name="size"/>.
+	/// </summary>
+	/// <remarks>
+	/// This mesh's model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
+	/// This means the accuracy of the resulting size depends on how well the bounding box fits this mesh.
+	/// </remarks>
+	/// <param name="size">The target size for instances of this mesh.</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with.</param>
+	public Vect CalculateScalingForSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) => size / (BoundingBox.WithAllExtentsAdjustedBy(-boundingBoxMargin).Extents);
 
 	static Mesh IResource<Mesh>.CreateFromHandleAndImpl(ResourceHandle<Mesh> handle, IResourceImplProvider impl) {
 		return new Mesh(handle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));

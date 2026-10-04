@@ -218,7 +218,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	/// <summary>
 	/// The default value for <see cref="BoundingBoxAdditionalMargin"/>: <c>0.03f</c>.
 	/// </summary>
-	public static readonly float DefaultBoundingBoxAdditionalMargin = 0.03f;
+	public const float DefaultBoundingBoxAdditionalMargin = 0.03f;
 
 	/// <summary>
 	/// Whether to reverse the winding order of every triangle, turning the mesh inside out. Defaults to <see langword="false"/>.

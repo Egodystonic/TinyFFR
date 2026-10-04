@@ -91,6 +91,16 @@ public interface IScaledSceneObject : IRescalableSceneObject {
 	/// </summary>
 	Vect Scaling { get; set; }
 }
+/// <summary>
+/// Represents a scene object whose size can be set directly.
+/// </summary>
+public interface ISizableSceneObject : IScaledSceneObject {
+	/// <summary>
+	/// Sets the size of this object to the requested <paramref name="size"/>.
+	/// </summary>
+	/// <param name="size">The extents to set.</param>
+	void SetSize(Vect size);
+}
 
 /// <summary>
 /// Represents a scene object whose position, orientation and scaling can all be read and set, both individually and together as a single <see cref="Egodystonic.TinyFFR.Transform"/>.

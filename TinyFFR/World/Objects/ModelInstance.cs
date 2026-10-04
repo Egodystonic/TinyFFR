@@ -133,7 +133,7 @@ public enum DefaultMaterialShadingStyle {
 /// The mesh and material are shared resources, whilst the instance is cheap; this is what lets a scene contain a thousand copies of the same tree without holding a
 /// thousand copies of its geometry. An instance must be added to a <see cref="Scene"/> before it is rendered.
 /// </remarks>
-public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject {
+public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject, ISizableSceneObject {
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstance;
 
 	readonly ResourceHandle<ModelInstance> _handle;
@@ -246,6 +246,27 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// <param name="uniformScaling">The scaling to apply on all three axes, where <c>1f</c> is the object's unmodified size.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+
+
+
+	void ISizableSceneObject.SetSize(Vect size) => SetSize(size);
+	/// <inheritdoc cref="ISizableSceneObject.SetSize" />
+	/// <param name="size">The extents to set.</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with.</param>
+	/// <remarks>
+	/// <para>
+	/// This object's model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
+	/// This means the accuracy of the resulting size depends on how well the bounding box fits this object's <see cref="Mesh"/>.
+	/// </para>
+	/// <para>
+	/// This calculation also requires a vector division; if you want to set the size for multiple instances of the same mesh, pre-calculate
+	/// the <see cref="Scaling"/> value once using the mesh's <see cref="Assets.Meshes.Mesh.CalculateScalingForSize">GetScalingForSize()</see> function.
+	/// </para>
+	/// </remarks>
+	public void SetSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) {
+		var bb = GetModelSpaceBoundingBox();
+		SetScaling(size / (bb.WithAllExtentsAdjustedBy(-boundingBoxMargin).Extents));
+	}
 
 	/// <inheritdoc />
 	public Material Material {

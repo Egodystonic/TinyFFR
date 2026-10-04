@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
@@ -24,7 +25,7 @@ namespace Egodystonic.TinyFFR.World;
 /// <see cref="Animations"/> can be played on the whole group at once.
 /// </para>
 /// </remarks>
-public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialReceivingSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
+public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialReceivingSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup>, ISizableSceneObject {
 #pragma warning restore CA1710
 	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstanceGroup;
 	static readonly ArrayPool<ModelInstance> _instanceArrayPool = TinyFfrArrayPool<ModelInstance>.Shared;
@@ -225,6 +226,25 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 	/// <param name="uniformScaling">The scaling to apply on all three axes, where <c>1f</c> is the group's unmodified size.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+
+	void ISizableSceneObject.SetSize(Vect size) => SetSize(size);
+	
+	/// <inheritdoc cref="ISizableSceneObject.SetSize" />
+	/// <param name="size">The extents to set.</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding boxes were created with.</param>
+	/// <remarks>
+	/// <para>
+	/// The object group's combined model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
+	/// This means the accuracy of the resulting size depends on how well the bounding box fits each object's <see cref="Mesh"/>.
+	/// </para>
+	/// <para>
+	/// This calculation also requires cumulative bounding box calculations and a vector division; if you want to set the size for multiple groups of the same mesh group,
+	/// pre-calculate the <see cref="Scaling"/> value once using <see cref="ModelBundle.CalculateScalingForSize"/> or <see cref="PositionedCuboid.CalculateScalingForSize"/>.
+	/// </para>
+	/// </remarks>
+	public void SetSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) {
+		SetScaling(this.CalculateCombinedBoundingBox().WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size));
+	}
 
 	/// <inheritdoc />
 	public void MoveBy(Vect translation) {
