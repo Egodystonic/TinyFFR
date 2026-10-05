@@ -17,10 +17,12 @@ description: Information on how to load backdrop textures (sky images and the am
 
 ```csharp
 using var sunset = factory.AssetLoader.LoadBackdropTexture(@"Assets/sunset.hdr"); // (1)!
-scene.SetBackdrop(sunset, backdropIntensity: 0.8f, rotation: 130f % Direction.Up);
+scene.SetBackdrop(sunset, backdropIntensity: 0.8f, rotation: 130f % Direction.Up); // (2)!
 ```
 
 1.	Loads a backdrop texture from a high-dynamic-range image file. Note that this can take a long time; see [Loading Backdrop Textures](#loading-backdrop-textures) below for faster alternatives.
+
+2.	Sets the scene's backdrop to the loaded texture, slightly dimmed and turned 130° around the up axis. An intensity of `1f` shows the backdrop as authored; `sunset.MeasuredLux` gives the illuminance that represents, and a `SceneBackdropBrightnessPreset` can be passed instead to light the scene to a real-world brightness (see [Backdrop Intensity](scenes.md#backdrop-intensity)).
 
 A `BackdropTexture` describes the surroundings of a scene. It does two jobs at once:
 

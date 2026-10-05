@@ -19,7 +19,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 		float AspectRatio,
 		float NearPlaneDistance,
 		float FarPlaneDistance,
-		float Exposure,
+		CameraExposureParams Exposure,
 		float? FocusDistance,
 		CameraProjectionType ProjectionType
 	);
@@ -49,12 +49,13 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 			config.AspectRatio,
 			config.NearPlaneDistance,
 			config.FarPlaneDistance,
-			Camera.ExposureDefault,
+			ClampExposure(config.InitialExposure),
 			null,
 			config.ProjectionType
 		);
 
 		_activeCameras.Add(newCameraHandle, parameters);
+		ApplyExposureFromParameters(newCameraHandle);
 		_globals.StoreResourceNameOrDefaultIfEmpty(((ResourceHandle<Camera>) newCameraHandle).Ident, config.Name, DefaultCameraName);
 		UpdateProjectionMatrixFromParameters(newCameraHandle);
 		UpdateModelMatrixFromParameters(newCameraHandle);
@@ -202,22 +203,31 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 		UpdateProjectionMatrixFromParameters(handle);
 	}
 
-	public float GetExposure(ResourceHandle<Camera> handle) {
+	public CameraExposureParams GetExposure(ResourceHandle<Camera> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeCameras[handle].Exposure;
 	}
-	public void SetExposure(ResourceHandle<Camera> handle, float newExposure) {
-		CameraUtils.ConvertBasicExposureValueToGranularValues(ref newExposure, out var aperture, out var shutterSpeed, out var sensitivity);
-		SetExposure(handle, aperture, shutterSpeed, sensitivity);
-		_activeCameras[handle] = _activeCameras[handle] with { Exposure = newExposure };
-	}
-	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity) {
+	public void SetExposure(ResourceHandle<Camera> handle, CameraExposureParams newExposure) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeCameras[handle] = _activeCameras[handle] with { Exposure = ClampExposure(newExposure) };
+		ApplyExposureFromParameters(handle);
+	}
+	static CameraExposureParams ClampExposure(CameraExposureParams exposure) {
+		static float ClampFiniteOrDefault(float value, float min, float max, float defaultValue) => Single.IsFinite(value) ? Math.Clamp(value, min, max) : defaultValue;
+
+		return new CameraExposureParams(
+			ClampFiniteOrDefault(exposure.Aperture, CameraExposureParams.ApertureMin, CameraExposureParams.ApertureMax, CameraExposureParams.ApertureDefault),
+			ClampFiniteOrDefault(exposure.ShutterSpeed, CameraExposureParams.ShutterSpeedMin, CameraExposureParams.ShutterSpeedMax, CameraExposureParams.ShutterSpeedDefault),
+			ClampFiniteOrDefault(exposure.Sensitivity, CameraExposureParams.SensitivityMin, CameraExposureParams.SensitivityMax, CameraExposureParams.SensitivityDefault)
+		);
+	}
+	void ApplyExposureFromParameters(ResourceHandle<Camera> handle) {
+		var exposure = _activeCameras[handle].Exposure;
 		SetCameraExposure(
 			handle,
-			aperture, 
-			shutterSpeed, 
-			sensitivity
+			exposure.Aperture,
+			exposure.ShutterSpeed,
+			exposure.Sensitivity
 		).ThrowIfFailure();
 	}
 

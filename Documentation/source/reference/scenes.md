@@ -16,20 +16,19 @@ description: Information on how to create scenes, populate them, give them a bac
 ## Scenes
 
 ```csharp
-using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds); // (1)!
+using var scene = factory.SceneBuilder.CreateScene(); // (1)!
+scene.SetBackdrop(BuiltInSceneBackdrop.Clouds, SceneBackdropBrightnessPreset.Midday);
 
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
-using var light = factory.LightBuilder.CreatePointLight(new Location(2f, 2f, -2f));
 scene.Add(instance); // (2)!
-scene.Add(light);
 
 using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -3f));
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window); // (3)!
 ```
 
-1.	Creates a new scene using one of TinyFFR's built-in backdrops.
+1.	Creates a new scene, and sets its backdrop to one of TinyFFR's built-in backdrops at the [brightness](#backdrop-intensity) of a clear day around midday. The backdrop lights the scene as well as filling its background.
 
-2.	Adds a model instance and a light to the scene. Nothing appears in (or lights) a scene until it has been added.
+2.	Adds a model instance to the scene. Nothing appears in (or lights) a scene until it has been added.
 
 3.	Creates a renderer that draws the scene (as seen by the camera) to the window.
 
@@ -152,18 +151,6 @@ TinyFFR comes with backdrops that can be used without loading any image of your 
 
 ??? note "Built-In Backdrop Quality"
 	To keep TinyFFR's package size down, the built-in backdrops are somewhat low-resolution, and are mostly intended to help you get something going quickly. You'll probably want to use your own [backdrop textures](backdrop_textures.md) eventually.
-
-### Backdrop Intensity
-
-A backdrop's intensity (the `backdropIntensity` / `indirectLightingIntensity` parameter) sets both how brightly it's drawn and how strongly it lights the scene. An intensity of `1f` corresponds to an illuminance of `Scene.DefaultLux` (10,000 lux), and intensities are capped at `Scene.MaxBrightness`.
-
-If you'd like to set a backdrop's brightness using physical illuminance values, `Scene.LuxToBrightness()` and `Scene.BrightnessToLux()` convert between the two units:
-
-```csharp
-scene.SetBackdrop(BuiltInSceneBackdrop.Clouds, Scene.LuxToBrightness(400f)); // (1)!
-```
-
-1.	Sets the backdrop to an illuminance of 400 lux (roughly that of a brightly-lit office).
 
 ## Fog
 

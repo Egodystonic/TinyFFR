@@ -50,6 +50,10 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 	/// The default value for <see cref="ProjectionType"/>: <see cref="CameraProjectionType.Perspective"/>.
 	/// </summary>
 	public static readonly CameraProjectionType DefaultProjectionType = CameraProjectionType.Perspective;
+		/// <summary>
+	/// The default value for <see cref="InitialExposure"/>: <see cref="CameraExposurePreset.InsideBrightLighting"/>.
+	/// </summary>
+	public static readonly CameraExposureParams DefaultInitialExposure = new(CameraExposurePreset.InsideBrightLighting);
 
 	/// <summary>
 	/// Where the new camera should be. Defaults to <see cref="DefaultPosition"/>.
@@ -91,6 +95,14 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 	/// How the new camera should flatten the scene in to an image. Defaults to <see cref="DefaultProjectionType"/>.
 	/// </summary>
 	public CameraProjectionType ProjectionType { get; init; } = DefaultProjectionType;
+	/// <summary>
+	/// The exposure the new camera should start with; choose the <see cref="CameraExposurePreset"/> matching the lighting in the scene it will view (presets convert implicitly).
+	/// Defaults to <see cref="DefaultInitialExposure"/>.
+	/// </summary>
+	/// <remarks>
+	/// Each setting is clamped to its permitted range in the same way as when setting <see cref="Camera.Exposure"/>.
+	/// </remarks>
+	public CameraExposureParams InitialExposure { get; init; } = DefaultInitialExposure;
 
 	/// <summary>
 	/// Optional name for the new camera.
@@ -152,6 +164,7 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 			+	SerializationSizeOfFloat() // NearPlaneDistance
 			+	SerializationSizeOfFloat() // FarPlaneDistance
 			+	SerializationSizeOfInt() // ProjectionType
+			+	SerializationSizeOf<CameraExposureParams>() // InitialExposure
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	/// <inheritdoc/>
@@ -166,6 +179,7 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 		SerializationWriteFloat(ref dest, src.NearPlaneDistance);
 		SerializationWriteFloat(ref dest, src.FarPlaneDistance);
 		SerializationWriteInt(ref dest, (int) src.ProjectionType);
+		SerializationWrite(ref dest, src.InitialExposure);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	/// <inheritdoc/>
@@ -181,6 +195,7 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 			NearPlaneDistance = SerializationReadFloat(ref src),
 			FarPlaneDistance = SerializationReadFloat(ref src),
 			ProjectionType = (CameraProjectionType) SerializationReadInt(ref src),
+			InitialExposure = SerializationRead<CameraExposureParams>(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

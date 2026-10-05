@@ -25,12 +25,14 @@ class SceneCreationConfigTest {
 			InitialBackdropTexture = null,
 			InitialBackdropColor = new ColorVect(0.25f, 0.5f, 0.7f, 1f),
 			InitialBackdrop = null,
+			InitialBackdropIntensity = 1f,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new SceneCreationConfig {
 			InitialBackdropTexture = new BackdropTexture(1234, backdropTexImplSub),
 			InitialBackdropColor = null,
 			InitialBackdrop = BuiltInSceneBackdrop.Clouds,
+			InitialBackdropIntensity = 2f,
 			Name = "BBBbbb"
 		};
 
@@ -39,6 +41,7 @@ class SceneCreationConfigTest {
 			Assert.AreEqual(expected.InitialBackdropColor, actual.InitialBackdropColor);
 			Assert.AreEqual(expected.InitialBackdrop, actual.InitialBackdrop);
 			Assert.AreEqual(expected.InitialBackdropTexture, actual.InitialBackdropTexture);
+			Assert.AreEqual(expected.InitialBackdropIntensity, actual.InitialBackdropIntensity);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
@@ -50,6 +53,7 @@ class SceneCreationConfigTest {
 			.String("Aa Aa")
 			.Bool(true)
 			.Obj(new ColorVect(0.25f, 0.5f, 0.7f, 1f))
+			.Float(1f)
 			.Bool(false)
 			.Int(0)
 			.For(testConfigA);
@@ -60,6 +64,7 @@ class SceneCreationConfigTest {
 			.String("BBBbbb")
 			.Bool(false)
 			.Obj(default(ColorVect))
+			.Float(2f)
 			.Bool(true)
 			.Int((int) BuiltInSceneBackdrop.Clouds)
 			.For(testConfigB);
@@ -69,6 +74,7 @@ class SceneCreationConfigTest {
 			.Including(nameof(SceneCreationConfig.InitialBackdropTexture))
 			.Including(nameof(SceneCreationConfig.InitialBackdropColor))
 			.Including(nameof(SceneCreationConfig.InitialBackdrop))
+			.Including(nameof(SceneCreationConfig.InitialBackdropIntensity))
 			.End();
 	}
 }

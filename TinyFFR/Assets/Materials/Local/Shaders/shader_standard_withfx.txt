@@ -138,7 +138,7 @@ fragment {
 		vec4 startEmissive = texture(materialParams_emissive_map, uv0).rgba;
 		vec4 endEmissive = texture(materialParams_emissive_map_blend, uv0).rgba;
 
-		const float EMISSIVE_DEFAULT_EXPOSURE_NORMALIZATION = 38400.0;
+		const float EMISSIVE_DEFAULT_EXPOSURE_NORMALIZATION = 282.24;
 		const float EMISSIVE_LUMINANCE_SCALE = 100.0 * EMISSIVE_DEFAULT_EXPOSURE_NORMALIZATION;
 		vec4 emissive = startEmissive * (1.0f - materialParams.emissive_map_blend_distance) + endEmissive * materialParams.emissive_map_blend_distance;
 		material.emissive.rgb = emissive.rgb * (EMISSIVE_LUMINANCE_SCALE * emissive.a);

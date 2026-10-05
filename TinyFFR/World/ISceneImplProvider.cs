@@ -68,6 +68,10 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// </summary>
 	void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation);
 	/// <summary>
+	/// Invoked via <see cref="Scene.SetBackdrop(BuiltInSceneBackdrop, SceneBackdropBrightnessPreset, Rotation?)"/> to obtain the <see cref="BackdropTexture.MeasuredLux"/> of a built-in backdrop.
+	/// </summary>
+	float GetBuiltInBackdropMeasuredLux(BuiltInSceneBackdrop backdrop);
+	/// <summary>
 	/// Invoked via <see cref="Scene.SetBackdrop(BackdropTexture, float, Rotation?)"/>.
 	/// </summary>
 	void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation);

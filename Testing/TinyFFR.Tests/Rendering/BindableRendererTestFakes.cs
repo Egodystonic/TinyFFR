@@ -333,6 +333,7 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void SetPrimitiveGeometryArrow(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location tail, Direction direction, float size, bool constantScreenSize) { }
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) { }
+	public float GetBuiltInBackdropMeasuredLux(BuiltInSceneBackdrop backdrop) => 0f;
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) { }
 	public void SetBackdrop(ResourceHandle<Scene> handle, ColorVect color, float indirectLightingIntensity) { }
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation) { }
@@ -450,9 +451,8 @@ sealed class FakeCameraImplProvider : ICameraImplProvider {
 	public float GetAspectRatio(ResourceHandle<Camera> handle) => AspectRatioCalls.Count > 0 ? AspectRatioCalls[^1] : default;
 	public void SetAspectRatio(ResourceHandle<Camera> handle, float newRatio) => AspectRatioCalls.Add(newRatio);
 
-	public float GetExposure(ResourceHandle<Camera> handle) => default;
-	public void SetExposure(ResourceHandle<Camera> handle, float newExposure) { }
-	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity) { }
+	public CameraExposureParams GetExposure(ResourceHandle<Camera> handle) => default;
+	public void SetExposure(ResourceHandle<Camera> handle, CameraExposureParams newExposure) { }
 
 	public float? GetFocusDistance(ResourceHandle<Camera> handle) => default;
 	public void SetFocusDistance(ResourceHandle<Camera> handle, float? newFocusDistance) { }

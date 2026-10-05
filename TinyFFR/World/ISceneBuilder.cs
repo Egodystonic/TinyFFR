@@ -26,25 +26,28 @@ public interface ISceneBuilder {
 	/// The colour also supplies the scene's ambient light, so a mid-grey lights the scene evenly from every direction whilst a near-black leaves it almost unlit.
 	/// </remarks>
 	/// <param name="backdropColor">The colour to fill the background with, or <see langword="null"/> for no backdrop at all.</param>
+	/// <param name="initialBackdropIntensity">The initial intensity multiplier for the backdrop, or <see langword="null"/> for the default.</param>
 	/// <param name="name">Optional name for the new scene.</param>
-	Scene CreateScene(ColorVect? backdropColor, ReadOnlySpan<char> name = default) {
-		return CreateScene(new SceneCreationConfig { InitialBackdropColor = backdropColor, Name = name });
+	Scene CreateScene(ColorVect? backdropColor, float? initialBackdropIntensity = null, ReadOnlySpan<char> name = default) {
+		return CreateScene(new SceneCreationConfig { InitialBackdropColor = backdropColor, InitialBackdropIntensity = initialBackdropIntensity ?? SceneCreationConfig.DefaultInitialBackdropIntensity, Name = name });
 	}
 	/// <summary>
 	/// Creates a new empty <see cref="Scene"/> with one of the built-in backdrops.
 	/// </summary>
 	/// <param name="backdrop">Which built-in backdrop to use.</param>
+	/// <param name="initialBackdropIntensity">The initial intensity multiplier for the backdrop, or <see langword="null"/> for the default.</param>
 	/// <param name="name">Optional name for the new scene.</param>
-	Scene CreateScene(BuiltInSceneBackdrop backdrop, ReadOnlySpan<char> name = default) {
-		return CreateScene(new SceneCreationConfig { InitialBackdrop = backdrop, Name = name });
+	Scene CreateScene(BuiltInSceneBackdrop backdrop, float? initialBackdropIntensity = null, ReadOnlySpan<char> name = default) {
+		return CreateScene(new SceneCreationConfig { InitialBackdrop = backdrop, InitialBackdropIntensity = initialBackdropIntensity ?? SceneCreationConfig.DefaultInitialBackdropIntensity, Name = name });
 	}
 	/// <summary>
 	/// Creates a new empty <see cref="Scene"/> with a loaded <see cref="BackdropTexture"/> as its backdrop.
 	/// </summary>
 	/// <param name="backdrop">The image to use as the backdrop.</param>
+	/// <param name="initialBackdropIntensity">The initial intensity multiplier for the backdrop, or <see langword="null"/> for the default.</param>
 	/// <param name="name">Optional name for the new scene.</param>
-	Scene CreateScene(BackdropTexture backdrop, ReadOnlySpan<char> name = default) {
-		return CreateScene(new SceneCreationConfig { InitialBackdropTexture = backdrop, Name = name });
+	Scene CreateScene(BackdropTexture backdrop, float? initialBackdropIntensity = null, ReadOnlySpan<char> name = default) {
+		return CreateScene(new SceneCreationConfig { InitialBackdropTexture = backdrop, InitialBackdropIntensity = initialBackdropIntensity ?? SceneCreationConfig.DefaultInitialBackdropIntensity, Name = name });
 	}
 	/// <summary>
 	/// Creates a new empty <see cref="Scene"/> according to the given <paramref name="config"/>.

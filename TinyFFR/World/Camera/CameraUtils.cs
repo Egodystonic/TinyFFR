@@ -238,38 +238,4 @@ public static class CameraUtils {
 		CalculateOrthographicProjectionMatrix(nearPlaneDistance, farPlaneDistance, orthographicHeight, aspectRatio, out var projMat);
 		return CreateRayFromOrthographicCameraParameters(in modelMat, in projMat, normalizedNearPlaneCoordinate);
 	}
-	
-	/// <summary>
-	/// Converts a single exposure multiplier in to the aperture, shutter speed and sensitivity that would produce it.
-	/// </summary>
-	/// <remarks>
-	/// The conversion behind <see cref="Camera.Exposure"/>; the inverse of what <see cref="Camera.SetExposure(float, float, float)"/> does.
-	/// </remarks>
-	/// <param name="exposure">The exposure value to convert. Clamped to the permitted range, and updated in place to the clamped value.</param>
-	/// <param name="aperture">When this method returns, contains the equivalent aperture as an f-number.</param>
-	/// <param name="shutterSpeed">When this method returns, contains the equivalent shutter speed, in seconds.</param>
-	/// <param name="sensitivity">When this method returns, contains the equivalent sensitivity as an ISO value.</param>
-	public static void ConvertBasicExposureValueToGranularValues(ref float exposure, out float aperture, out float shutterSpeed, out float sensitivity) {
-		const float LowestExposureAperture = 32f; // Higher value = less exposure
-		const float LowestExposureShutterSpeed = 1f / 4000f; // Lower value = less exposure
-		const float LowestExposureSensitivity = 100f; // Lower value = less exposure
-		const float HighestExposureAperture = 2f; // Lower value = more exposure
-		const float HighestExposureShutterSpeed = 1f / 25f; // Higher value = more exposure
-		const float HighestExposureSensitivity = 750f; // Higher value = more exposure
-		
-		exposure = ((Real) exposure).Clamp(Camera.ExposureMin, Camera.ExposureMax);
-		
-		if (exposure < 1f) {
-			var distance = ((Real) exposure).RemapRange((Camera.ExposureDefault, Camera.ExposureMin), (0f, 1f));
-			aperture = Real.Interpolate(Camera.ApertureDefault, LowestExposureAperture, distance);
-			shutterSpeed = Real.Interpolate(Camera.ShutterSpeedDefault, LowestExposureShutterSpeed, distance);
-			sensitivity = Real.Interpolate(Camera.SensitivityDefault, LowestExposureSensitivity, distance);
-		}
-		else {
-			var distance = ((Real) exposure).RemapRange((Camera.ExposureDefault, Camera.ExposureMax), (0f, 1f));
-			aperture = Real.Interpolate(Camera.ApertureDefault, HighestExposureAperture, distance);
-			shutterSpeed = Real.Interpolate(Camera.ShutterSpeedDefault, HighestExposureShutterSpeed, distance);
-			sensitivity = Real.Interpolate(Camera.SensitivityDefault, HighestExposureSensitivity, distance);
-		}
-	}
 }

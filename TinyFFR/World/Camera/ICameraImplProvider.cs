@@ -75,15 +75,11 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	/// <summary>
 	/// Invoked via <see cref="Camera.Exposure"/>.
 	/// </summary>
-	public float GetExposure(ResourceHandle<Camera> handle);
+	public CameraExposureParams GetExposure(ResourceHandle<Camera> handle);
 	/// <summary>
 	/// Invoked via <see cref="Camera.Exposure"/>.
 	/// </summary>
-	public void SetExposure(ResourceHandle<Camera> handle, float newExposure);
-	/// <summary>
-	/// Invoked via <see cref="Camera.SetExposure(float, float, float)"/>.
-	/// </summary>
-	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity);
+	public void SetExposure(ResourceHandle<Camera> handle, CameraExposureParams newExposure);
 	
 	/// <summary>
 	/// Invoked via <see cref="Camera.FocusDistance"/>.

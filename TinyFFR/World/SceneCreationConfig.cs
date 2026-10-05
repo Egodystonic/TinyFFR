@@ -12,12 +12,13 @@ namespace Egodystonic.TinyFFR.World;
 /// </summary>
 public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConfig> {
 	/// <summary>
-	/// The default value for <see cref="InitialBackdropColor"/>: a very dark grey (<c>0x080808</c>).
+	/// The default value for <see cref="InitialBackdropColor"/>: <c>0x080808</c>.
 	/// </summary>
-	/// <remarks>
-	/// Deliberately near-black rather than pure black, so that a new scene provides a trace of ambient light and objects in it are not completely unlit.
-	/// </remarks>
 	public static readonly ColorVect DefaultInitialBackdropColor = ColorVect.FromRgb24(0x080808);
+	/// <summary>
+	/// The default value for <see cref="InitialBackdropIntensity"/>: <c>1f</c>.
+	/// </summary>
+	public static readonly float DefaultInitialBackdropIntensity = 1f;
 
 	/// <summary>
 	/// Optional name for the new scene.
@@ -38,6 +39,10 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 	/// A loaded image to start the new scene with as its backdrop, or <see langword="null"/> for none. Defaults to <see langword="null"/>.
 	/// </summary>
 	public BackdropTexture? InitialBackdropTexture { get; init; } = null;
+	/// <summary>
+	/// The intensity multiplier to apply to the backdrop texture/colour. Defaults to <see cref="DefaultInitialBackdropIntensity"/>.
+	/// </summary>
+	public float InitialBackdropIntensity { get; init; } = 1f;
 
 	/// <summary>
 	/// Constructs a new <see cref="SceneCreationConfig"/> with default values for every setting.
@@ -53,6 +58,7 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 		return	SerializationSizeOfNullableResource() // InitialBackdropTexture
 			+	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOfNullable<ColorVect>() // InitialBackdropColor
+			+	SerializationSizeOfFloat() // InitialBackdropIntensity
 			+	SerializationSizeOfNullableInt(); // InitialBackdrop
 	}
 	/// <inheritdoc/>
@@ -60,6 +66,7 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 		SerializationWriteAndAllocateNullableResource(ref dest, src.InitialBackdropTexture);
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteNullable(ref dest, src.InitialBackdropColor);
+		SerializationWriteFloat(ref dest, src.InitialBackdropIntensity);
 		SerializationWriteNullableInt(ref dest, (int?) src.InitialBackdrop);
 	}
 	/// <inheritdoc/>
@@ -68,6 +75,7 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 			InitialBackdropTexture = SerializationReadNullableResource<BackdropTexture>(ref src),
 			Name = SerializationReadString(ref src),
 			InitialBackdropColor = SerializationReadNullable<ColorVect>(ref src),
+			InitialBackdropIntensity = SerializationReadFloat(ref src),
 			InitialBackdrop = (BuiltInSceneBackdrop?) SerializationReadNullableInt(ref src),
 		};
 	}

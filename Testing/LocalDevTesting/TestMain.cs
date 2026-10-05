@@ -61,8 +61,10 @@ static partial class TestMain {
 		context.ModelInstance.SetSize(new(0.5f)); 
 		context.Scene.Remove(context.DirectionalLight);
 		toyCarInstances.Position = context.ModelInstance.Position + Direction.Up * 0.5f;
+		context.Camera.SetExposure(CameraExposurePreset.InsideMoodLighting);
 		
 		var lightbulb = context.Factory.LightBuilder.CreatePointLight(toyCarInstances.Position + Direction.Up * 0.3f);
+		lightbulb.SetBrightness(PointLightBrightnessPreset.BulbDim);
 		context.Scene.Add(lightbulb);
 		
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);

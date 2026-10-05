@@ -61,6 +61,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 	public Scene CreateScene(in SceneCreationConfig config) {
 		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
 		AllocateScene(
 			out var handle
 		).ThrowIfFailure();
@@ -80,9 +81,9 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
-		if (config.InitialBackdropTexture is { } backdropTexture) SetBackdrop(handle, backdropTexture, 1f, Rotation.None);
-		else if (config.InitialBackdrop is { } backdrop) SetBackdrop(handle, backdrop, 1f, Rotation.None);
-		else if (config.InitialBackdropColor is { } color) SetBackdrop(handle, color, 1f);
+		if (config.InitialBackdropTexture is { } backdropTexture) SetBackdrop(handle, backdropTexture, config.InitialBackdropIntensity, Rotation.None);
+		else if (config.InitialBackdrop is { } backdrop) SetBackdrop(handle, backdrop, config.InitialBackdropIntensity, Rotation.None);
+		else if (config.InitialBackdropColor is { } color) SetBackdrop(handle, color, config.InitialBackdropIntensity);
 		return HandleToInstance(handle);
 	}
 
@@ -273,12 +274,16 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		}
 		
 		ThrowIfThisOrHandleIsDisposed(handle);
-		
-		if (_loadedBuiltInBackdropTextures.TryGetValue(backdrop, out var preloadedTex)) {
-			SetBackdrop(handle, preloadedTex, indirectLightingIntensity, rotation);
-			return;
-		}
-		
+		SetBackdrop(handle, GetOrLoadBuiltInBackdropTexture(backdrop), indirectLightingIntensity, rotation);
+	}
+	public float GetBuiltInBackdropMeasuredLux(BuiltInSceneBackdrop backdrop) {
+		ThrowIfThisIsDisposed();
+		if (backdrop == BuiltInSceneBackdrop.None) return BackdropIntensityUtils.TypicalLuxAtUnitIntensity;
+		return GetOrLoadBuiltInBackdropTexture(backdrop).MeasuredLux;
+	}
+	BackdropTexture GetOrLoadBuiltInBackdropTexture(BuiltInSceneBackdrop backdrop) {
+		if (_loadedBuiltInBackdropTextures.TryGetValue(backdrop, out var preloadedTex)) return preloadedTex;
+
 		var (iblResStr, skyResStr) = backdrop switch {
 			BuiltInSceneBackdrop.Clouds => (BuiltInSceneDataResourcePrefix + "clouds_ibl.zip", BuiltInSceneDataResourcePrefix + "clouds_skybox.zip"),
 			BuiltInSceneBackdrop.Starfield => (BuiltInSceneDataResourcePrefix + "starfield_ibl.zip", BuiltInSceneDataResourcePrefix + "starfield_skybox.zip"),
@@ -295,7 +300,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		};
 		var tex = _assetLoader.LoadBinaryBackdropTexture(iblData, skyData, new() { Name = texName });
 		_loadedBuiltInBackdropTextures[backdrop] = tex;
-		SetBackdrop(handle, tex, indirectLightingIntensity, rotation);
+		return tex;
 	}
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) {
@@ -307,7 +312,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		CreateSceneBackdrop(
 			backdrop.SkyboxTextureHandle,
 			backdrop.IndirectLightingTextureHandle,
-			Scene.BrightnessToLux(indirectLightingIntensity),
+			BackdropIntensityUtils.ToNativeIntensity(indirectLightingIntensity),
 			rotation.Angle.Radians,
 			rotation.Axis.ToVector3(),
 			out var skyboxHandle,
@@ -330,7 +335,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		CreateSceneBackdrop(
 			color.ToVector3(),
-			Scene.BrightnessToLux(indirectLightingIntensity),
+			BackdropIntensityUtils.ToNativeIntensity(indirectLightingIntensity),
 			out var skyboxHandle,
 			out var indirectLightHandle
 		).ThrowIfFailure();
@@ -352,7 +357,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		CreateSceneBackdrop(
 			backdrop.SkyboxTextureHandle,
 			backdrop.IndirectLightingTextureHandle,
-			Scene.BrightnessToLux(backdropIntensity),
+			BackdropIntensityUtils.ToNativeIntensity(backdropIntensity),
 			rotation.Angle.Radians,
 			rotation.Axis.ToVector3(),
 			out var skyboxHandle,

@@ -101,6 +101,7 @@ class LocalModelLoadingTest {
 
 		scene.Add(light);
 		scene.Add(sunlight);
+		sunlight.Brightness = 0.2f;
 		
 		var curFileIndex = -1;
 		ModelBundle? loadedResources = null; 

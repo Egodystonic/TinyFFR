@@ -13,12 +13,13 @@ using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
+using Egodystonic.TinyFFR.World;
 using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
-	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
+	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle, float MeasuredLux);
 	const string DefaultBackdropTextureName = "Unnamed Backdrop Texture";
 	const string HdrPreprocessorNameWin = "cmgen.exe";
 	const string HdrPreprocessorNameLinux = "cmgen";
@@ -216,6 +217,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		config.ThrowIfInvalid();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		
+		var measuredLux = BackdropIntensityUtils.MeasureLuxAtUnitIntensity(new ReadOnlySpan<byte>((byte*) iblData.DataPtr, iblData.DataLenBytes));
 		LoadSkyboxFileInToMemory(
 			(byte*) skyData.DataPtr, 
 			skyData.DataLenBytes, 
@@ -229,7 +231,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 				out var iblTextureHandle
 			).ThrowIfFailure();
 
-			return StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, config.Name);
+			return StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, measuredLux, config.Name);
 		}
 		catch {
 			UnloadSkyboxFileFromMemory(skyboxTextureHandle);
@@ -362,6 +364,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			throw new InvalidOperationException("Skybox and/or IBL file data was null (this is a bug in TinyFFR).");
 		}
 
+		var measuredLux = BackdropIntensityUtils.MeasureLuxAtUnitIntensity(iblFileData.Span);
 		var skyboxPin = skyboxFileData.FixData();
 		try {
 			LoadSkyboxFileInToMemory(
@@ -379,7 +382,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 						out var iblTextureHandle
 					).ThrowIfFailure();
 
-					var result = context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, context.Name);
+					var result = context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, measuredLux, context.Name);
 					context.Self.RegisterInBakery(result, skyboxFileData.Span, iblFileData.Span, context.Name);
 					return result;
 				}
@@ -397,11 +400,11 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		}
 	}
 
-	BackdropTexture StoreLoadedBackdropTexture(UIntPtr skyboxTextureHandle, UIntPtr iblTextureHandle, ReadOnlySpan<char> name) {
+	BackdropTexture StoreLoadedBackdropTexture(UIntPtr skyboxTextureHandle, UIntPtr iblTextureHandle, float measuredLux, ReadOnlySpan<char> name) {
 		++_prevBackdropTextureHandle;
 		var handle = (ResourceHandle<BackdropTexture>) _prevBackdropTextureHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultBackdropTextureName);
-		_loadedBackdropTextures.Add(_prevBackdropTextureHandle, new(skyboxTextureHandle, iblTextureHandle));
+		_loadedBackdropTextures.Add(_prevBackdropTextureHandle, new(skyboxTextureHandle, iblTextureHandle, measuredLux));
 		return HandleToInstance(handle);
 	}
 	#endregion
@@ -413,6 +416,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	public UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<BackdropTexture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedBackdropTextures[handle].IblTextureHandle;
+	}
+	public float GetMeasuredLux(ResourceHandle<BackdropTexture> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedBackdropTextures[handle].MeasuredLux;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<BackdropTexture> handle) {
@@ -488,6 +495,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	static BackdropTexture CreateBackdropTextureFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name) {
 		var skyboxData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.SkyboxData);
 		var iblData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.IblData);
+		var measuredLux = BackdropIntensityUtils.MeasureLuxAtUnitIntensity(iblData);
 		fixed (byte* skyboxPin = skyboxData) {
 			fixed (byte* iblPin = iblData) {
 				LoadSkyboxFileInToMemory(
@@ -503,7 +511,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 						out var iblTextureHandle
 					).ThrowIfFailure();
 
-					return self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, name);
+					return self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, measuredLux, name);
 				}
 				catch {
 					UnloadSkyboxFileFromMemory(skyboxTextureHandle);

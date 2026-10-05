@@ -239,7 +239,7 @@ static partial class SmokeSections {
 				camera.Position = Location.Origin + Direction.Up * 1f;
 				camera.SetViewAndUpDirection(Direction.Forward, Direction.Up);
 				camera.HorizontalFieldOfView = 75f;
-				camera.SetExposure(16f, 1f / 125f, 100f);
+				camera.SetExposure(CameraExposurePreset.OutsideMidday);
 				camera.NearPlaneDistance = 0.05f;
 				camera.FarPlaneDistance = 500f;
 			}

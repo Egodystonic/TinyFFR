@@ -8,7 +8,7 @@ description: Information on how to create and adjust directional lights, such as
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
     * A directional light lights the whole scene from one direction, like the sun. :material-arrow-right: [Directional Lights](#directional-lights)
-    * Its brightness is measured in lux, and (unlike other lights) scales linearly. :material-arrow-right: [Brightness](#brightness)
+    * Its brightness is measured in lux, and (unlike other lights) scales linearly. Presets match times of day and weather. :material-arrow-right: [Brightness](#brightness)
     * It can also draw a visible sun disc in the sky. :material-arrow-right: [Sun Disc](#sun-disc)
     * A scene can only contain one directional light. :material-arrow-right: [One Per Scene](#one-per-scene)
 
@@ -24,11 +24,14 @@ using var sun = factory.LightBuilder.CreateDirectionalLight( // (1)!
 	showSunDisc: true
 );
 scene.Add(sun); // (2)!
+camera.SetExposure(CameraExposurePreset.OutsideMidday); // (3)!
 ```
 
 1.	Creates a directional light shining down and forward, with the colour of midday sunlight, casting shadows, and drawing a sun disc in the sky.
 
 2.	Adds the light to a [scene](scenes.md). A light only illuminates the scenes it has been added to.
+
+3.	Sunlight is far brighter than indoor lighting, so the camera viewing the scene needs an exposure to match (see [Brightness & Exposure](point_lights.md#brightness-exposure)).
 
 A `DirectionalLight` lights the entire scene from a single direction. It has no position and no falloff: it's treated as being infinitely far away, so every object in the scene is lit from the same angle with the same intensity. This makes it the right way to model the sun or the moon.
 
@@ -66,7 +69,7 @@ Because a directional light has no position, its direction is the only thing tha
 
 ## Brightness
 
-A directional light's `Brightness` is a relative value like that of [every other light](point_lights.md#brightness), where `1f` corresponds to `DirectionalLight.DefaultLux` (125,000 lux). For reference, direct midday sunlight is on the order of 100,000 lux, so the default brightness is roughly "a bright sunny day".
+A directional light's `Brightness` is a relative value like that of [every other light](point_lights.md#brightness), where `1f` corresponds to `DirectionalLight.DefaultLux` (125,000 lux; that of direct midday sunlight on a clear day).
 
 Unlike point and spot lights, the relationship between a directional light's brightness and its physical unit is *linear*: a brightness of `2f` casts twice as much light as `1f` (250,000 lux). `DirectionalLight.LuxToBrightness()` and `DirectionalLight.BrightnessToLux()` convert between the two:
 
@@ -74,10 +77,38 @@ Unlike point and spot lights, the relationship between a directional light's bri
 sun.Brightness = DirectionalLight.LuxToBrightness(20_000f); // (1)!
 ```
 
-1.	Sets the light to 20,000 lux (roughly that of full daylight in the shade, or an overcast day).
+1.	Sets the light to 20,000 lux (roughly that of full daylight in the shade).
+
+The simplest way to choose a brightness, though, is to pick the time of day or weather the light represents with a `DirectionalLightBrightnessPreset` preset:
+
+```csharp
+sun.SetBrightness(DirectionalLightBrightnessPreset.SunriseSunset); // (1)!
+camera.SetExposure(CameraExposurePreset.OutsideSunriseSunset); // (2)!
+
+using var moon = factory.LightBuilder.CreateDirectionalLight( // (3)!
+	brightness: DirectionalLightBrightnessPreset.FullMoon.ToBrightnessValue()
+);
+```
+
+1.	Makes the light as bright as the light shortly after sunrise or before sunset.
+
+2.	Sets the camera to the matching [exposure](point_lights.md#brightness-exposure).
+
+3.	`ToBrightnessValue()` returns the equivalent `Brightness` value of a preset, which is useful when creating a light. (`ToLux()` returns its illuminance.)
+
+| Preset | Illuminance | Pairs With |
+| :----- | :---------- | :--------- |
+| `DirectionalLightBrightnessPreset.Midday` (default) | 125,000 lux | `CameraExposurePreset.OutsideMidday` |
+| `DirectionalLightBrightnessPreset.Overcast` | 10,000 lux | `CameraExposurePreset.OutsideOvercast` |
+| `DirectionalLightBrightnessPreset.SunriseSunset` | 2,500 lux | `CameraExposurePreset.OutsideSunriseSunset` |
+| `DirectionalLightBrightnessPreset.Twilight` | 40 lux | `CameraExposurePreset.OutsideTwilight` |
+| `DirectionalLightBrightnessPreset.FullMoon` | 0.25 lux | `CameraExposurePreset.OutsideFullMoon` |
+| `DirectionalLightBrightnessPreset.Starlight` | 0.005 lux | `CameraExposurePreset.OutsideStarlight` |
+
+Each preset lights a scene completely on its own: a directional light at a preset, viewed through a camera with the `CameraExposurePreset` of the same name, is correctly exposed without any other light.
 
 ??? tip "Directional Lights & Backdrops"
-	A scene's [backdrop](scenes.md#backdrops) also lights the scene (as ambient light from every direction), so a sunny scene usually wants both: a directional light for the sun's direct light and crisp shadows, and a backdrop for the softer light from the sky.
+	A scene's [backdrop](scenes.md#backdrops) also lights the scene (as ambient light from every direction), and the `SceneBackdropBrightnessPreset` of the same name lights a scene correctly for the same camera exposure on its own too. Using both together adds their light, so the scene will be brighter than either alone: lower the camera's exposure (e.g. `camera.Exposure /= 2f`) or the brightness of one of them to compensate. This is especially worth knowing for backdrop images that already contain the sun, whose light then counts twice.
 
 ## Sun Disc
 

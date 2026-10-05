@@ -9,6 +9,73 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
+/// A preset brightness for a <see cref="PointLight"/>, named after the real-world light source it matches.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Use with <see cref="PointLight.SetBrightness(PointLightBrightnessPreset)"/>, or <see cref="PointLightBrightnessExtensions.ToBrightnessValue"/> to get the equivalent
+/// <see cref="PointLight.Brightness"/> value (for example, to pass when creating a light).
+/// </para>
+/// <para>
+/// These are real-world light outputs, so how bright they appear depends on the camera's exposure (see <see cref="CameraExposurePreset"/>). The default camera exposure
+/// (<see cref="CameraExposurePreset.InsideBrightLighting"/>) suits a <see cref="BulbTypical"/> close to the objects it lights; a single bulb lighting a whole room suits <see cref="CameraExposurePreset.InsideMoodLighting"/>.
+/// </para>
+/// </remarks>
+public enum PointLightBrightnessPreset {
+	/// <summary>
+	/// A typical household light bulb (an output of 800 lumens, equivalent to a 60W incandescent bulb). This is the default brightness of a <see cref="PointLight"/>.
+	/// </summary>
+	BulbTypical = 0,
+	/// <summary>
+	/// A dim household light bulb (an output of 450 lumens, equivalent to a 40W incandescent bulb).
+	/// </summary>
+	BulbDim,
+	/// <summary>
+	/// A bright household light bulb (an output of 1,600 lumens, equivalent to a 100W incandescent bulb).
+	/// </summary>
+	BulbBright,
+	/// <summary>
+	/// A very bright light bulb (an output of 3,000 lumens, equivalent to a 200W incandescent bulb).
+	/// </summary>
+	BulbVeryBright,
+	/// <summary>
+	/// An outdoor floodlight (an output of 10,000 lumens).
+	/// </summary>
+	Floodlight,
+	/// <summary>
+	/// A candle flame (an output of 12 lumens).
+	/// </summary>
+	Candle
+}
+
+/// <summary>
+/// Extension methods for <see cref="PointLightBrightnessPreset"/>.
+/// </summary>
+public static class PointLightBrightnessExtensions {
+	extension(PointLightBrightnessPreset @this) {
+		/// <summary>
+		/// Returns the light output, in lumens, that this preset represents.
+		/// </summary>
+		public float ToLumens() {
+			return @this switch {
+				PointLightBrightnessPreset.BulbDim => 450f,
+				PointLightBrightnessPreset.BulbBright => 1_600f,
+				PointLightBrightnessPreset.BulbVeryBright => 3_000f,
+				PointLightBrightnessPreset.Floodlight => 10_000f,
+				PointLightBrightnessPreset.Candle => 12f,
+				_ /* BulbTypical */ => PointLight.DefaultLumens
+			};
+		}
+
+		/// <summary>
+		/// Returns the <see cref="PointLight.Brightness"/> value that this preset represents.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public float ToBrightnessValue() => PointLight.LumensToBrightness(@this.ToLumens());
+	}
+}
+
+/// <summary>
 /// A light that radiates outward in every direction from a single point, like a bare bulb. Created via the factory's <see cref="ILightBuilder"/>.
 /// </summary>
 /// <remarks>
@@ -23,9 +90,9 @@ public readonly struct PointLight : ILight<PointLight>, IPositionedSceneObject {
 	/// </summary>
 	public const float MaxBrightness = 1E+15f;
 	/// <summary>
-	/// How many lumens a point light emits at a <see cref="Brightness"/> of <c>1f</c>: <c>1,250,000</c>.
+	/// How many lumens a point light emits at a <see cref="Brightness"/> of <c>1f</c>: <c>800</c>, the output of a typical household light bulb (see <see cref="PointLightBrightnessPreset.BulbTypical"/>).
 	/// </summary>
-	public const float DefaultLumens = 3_000f;
+	public const float DefaultLumens = 800f;
 
 	readonly ResourceHandle<PointLight> _handle;
 	readonly ILightImplProvider _impl;
@@ -134,13 +201,13 @@ public readonly struct PointLight : ILight<PointLight>, IPositionedSceneObject {
 	public void SetColorLightness(float lightness) => ColorLightness = lightness;
 
 	/// <summary>
-	/// How much light this emits, where <c>1f</c> corresponds to <see cref="DefaultLumens"/>. Clamped to between <c>0f</c> and <see cref="MaxBrightness"/>.
+	/// How much light this emits as a unitless scalar. Doubling this value corresponds to a perceived doubling
+	/// in output brightness, halving corresponds to a perceived halving of brightness, etc.
 	/// </summary>
 	/// <remarks>
-	/// Note that the relationship is <i>quadratic</i>, not linear: the light emitted is <see cref="DefaultLumens"/> multiplied by the square of this value, so
-	/// doubling the brightness quadruples the light. Use <see cref="LumensToBrightness"/> and <see cref="BrightnessToLumens"/> to work in lumens directly. Negative
-	/// and non-finite values are treated as <c>0f</c>.
+	/// You can also use <see cref="SetBrightness(PointLightBrightnessPreset)"/> to set a value using a preset.
 	/// </remarks>
+	/// <seealso cref="BrightnessLumens"/>
 	public float Brightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetUniversalBrightness(_handle);
@@ -148,11 +215,28 @@ public readonly struct PointLight : ILight<PointLight>, IPositionedSceneObject {
 		set => Implementation.SetUniversalBrightness(_handle, value);
 	}
 	/// <summary>
+	/// How much light this emits in lumens. This property is offered as an alternative to the unitless <see cref="Brightness"/>
+	/// for workflows that prefer real-world light setups.
+	/// </summary>
+	public float BrightnessLumens {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => BrightnessToLumens(Brightness);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Brightness = LumensToBrightness(value);
+	}
+	/// <summary>
 	/// Sets <see cref="Brightness"/>; provided as a method for use in contexts where a property setter can not be invoked.
 	/// </summary>
 	/// <param name="brightness">The new value for <see cref="Brightness"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetBrightness(float brightness) => Brightness = brightness;
+	/// <summary>
+	/// Sets <see cref="Brightness"/> to match the given real-world light source.
+	/// </summary>
+	/// <param name="preset">The preset to apply.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="preset"/> is not a defined <see cref="PointLightBrightnessPreset"/> value.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBrightness(PointLightBrightnessPreset preset) => Brightness = preset.ToBrightnessValue();
 
 	/// <inheritdoc />
 	public bool CastsShadows {

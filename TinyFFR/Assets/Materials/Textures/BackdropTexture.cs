@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.World;
 using System;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
@@ -39,6 +40,42 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetIndirectLightingTextureHandle(_handle);
 	} 
+
+	/// <summary>
+	/// The illuminance, in lux, that this backdrop delivers to an upward-facing surface when used at an intensity of <c>1f</c> (i.e. as authored), measured from its lighting data when it was loaded.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Image files rarely record how bright the scene they depict really was, so different files can light a scene very differently at the same intensity. This value
+	/// describes how brightly <i>this</i> file lights a scene, so that it can be lit to a chosen real-world illuminance instead (see <see cref="LuxToIntensity"/>, or pass a
+	/// <see cref="SceneBackdropBrightnessPreset"/> to <c>Scene.SetBackdrop()</c>).
+	/// </para>
+	/// <para>
+	/// The measurement includes all the light in the image, including that of a sun if the image shows one, and is made with the backdrop unrotated. If the file contains no
+	/// lighting data that can be measured, this is an estimate based on a typical backdrop.
+	/// </para>
+	/// </remarks>
+	public float MeasuredLux {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetMeasuredLux(_handle);
+	}
+
+	/// <summary>
+	/// Returns the intensity at which this backdrop lights a scene to the given illuminance (see <see cref="MeasuredLux"/>).
+	/// </summary>
+	/// <remarks>
+	/// Intensity is linear: an intensity of <c>2f</c> lights a scene to twice the illuminance of <c>1f</c>. A negative or non-finite <paramref name="lux"/> returns <c>0f</c>.
+	/// </remarks>
+	/// <param name="lux">The illuminance to light a scene to, in lux.</param>
+	public float LuxToIntensity(float lux) => BackdropIntensityUtils.LuxToIntensity(lux, MeasuredLux);
+	/// <summary>
+	/// Returns the illuminance, in lux, to which this backdrop lights a scene at the given intensity (see <see cref="MeasuredLux"/>).
+	/// </summary>
+	/// <remarks>
+	/// Intensity is linear: an intensity of <c>2f</c> lights a scene to twice the illuminance of <c>1f</c>. A negative or non-finite <paramref name="intensity"/> returns <c>0f</c>.
+	/// </remarks>
+	/// <param name="intensity">The backdrop intensity, where <c>1f</c> is the backdrop as authored.</param>
+	public float IntensityToLux(float intensity) => BackdropIntensityUtils.IntensityToLux(intensity, MeasuredLux);
 
 	internal BackdropTexture(ResourceHandle<BackdropTexture> handle, IBackdropTextureImplProvider impl) {
 		_handle = handle;
