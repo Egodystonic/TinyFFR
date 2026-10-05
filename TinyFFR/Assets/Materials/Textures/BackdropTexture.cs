@@ -64,7 +64,8 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 	/// Returns the intensity at which this backdrop lights a scene to the given illuminance (see <see cref="MeasuredLux"/>).
 	/// </summary>
 	/// <remarks>
-	/// Intensity is linear: an intensity of <c>2f</c> lights a scene to twice the illuminance of <c>1f</c>. A negative or non-finite <paramref name="lux"/> returns <c>0f</c>.
+	/// Like the brightness of a light, intensity is perceptual; an intensity of <c>2f</c> looks twice as bright as <c>1f</c>, which takes four times the illuminance.
+	/// A negative or non-finite <paramref name="lux"/> returns <c>0f</c>.
 	/// </remarks>
 	/// <param name="lux">The illuminance to light a scene to, in lux.</param>
 	public float LuxToIntensity(float lux) => BackdropIntensityUtils.LuxToIntensity(lux, MeasuredLux);
@@ -72,7 +73,8 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 	/// Returns the illuminance, in lux, to which this backdrop lights a scene at the given intensity (see <see cref="MeasuredLux"/>).
 	/// </summary>
 	/// <remarks>
-	/// Intensity is linear: an intensity of <c>2f</c> lights a scene to twice the illuminance of <c>1f</c>. A negative or non-finite <paramref name="intensity"/> returns <c>0f</c>.
+	/// Like the brightness of a light, intensity is perceptual; an intensity of <c>2f</c> looks twice as bright as <c>1f</c>, which takes four times the illuminance.
+	/// A negative or non-finite <paramref name="intensity"/> returns <c>0f</c>.
 	/// </remarks>
 	/// <param name="intensity">The backdrop intensity, where <c>1f</c> is the backdrop as authored.</param>
 	public float IntensityToLux(float intensity) => BackdropIntensityUtils.IntensityToLux(intensity, MeasuredLux);

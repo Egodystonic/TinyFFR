@@ -125,8 +125,8 @@ light.Brightness = PointLight.LumensToBrightness(1_100f); // (1)!
 	| :---- | :--------------------- | :----------- |
 	| [Point Light](point_lights.md) | 800 lumens (`PointLight.DefaultLumens`); a household light bulb | Quadratic |
 	| [Spot Light](spot_lights.md) | Roughly 37,700 lumens (`SpotLight.DefaultLumens`); the equivalent of a handheld flashlight | Quadratic |
-	| [Directional Light](directional_lights.md) | 125,000 lux (`DirectionalLight.DefaultLux`); direct midday sunlight | Linear |
-	| [Backdrop](scenes.md#backdrop-intensity) | The backdrop image as authored (`BackdropTexture.MeasuredLux` gives its illuminance) | Linear |
+	| [Directional Light](directional_lights.md) | 600 lux (`DirectionalLight.DefaultLux`); a well-lit interior | Linear |
+	| [Backdrop](exposure_and_brightness.md#backdrops) | The backdrop image as authored (`BackdropTexture.MeasuredLux` gives its illuminance) | Quadratic |
 
 	Each light type has its own static conversion methods for its unit, and every type has its own presets.
 
@@ -134,7 +134,7 @@ light.Brightness = PointLight.LumensToBrightness(1_100f); // (1)!
 
 TinyFFR's lights use real-world brightnesses, and real-world lighting varies enormously: direct sunlight is roughly a thousand times brighter than the light of a single bulb a metre away. A real camera (or the human eye) copes with this by adjusting its *exposure*, and so must a TinyFFR `Camera`. A scene lit by a few light bulbs looks almost black through a camera set up for sunlight, and a sunlit scene looks completely washed out through a camera set up for a dim room.
 
-New cameras use an exposure suited to a brightly-lit room (`CameraExposurePreset.InsideBrightLighting`). Set a camera's exposure to the preset that matches the lighting in your scene:
+New cameras use an exposure suited to a brightly-lit room (`CameraExposurePreset.InsideBrightLighting`). Set a camera's exposure to the preset that matches the lighting in your scene (see [Exposure & Brightness](exposure_and_brightness.md) for a full guide to calibrating exposure and lighting):
 
 ```csharp
 camera.SetExposure(CameraExposurePreset.OutsideMidday); // (1)!
@@ -165,7 +165,7 @@ using var nightCamera = factory.CameraBuilder.CreateCamera(exposure: CameraExpos
 
 ???+ tip "Choosing an Exposure"
 	* A [backdrop](scenes.md#backdrops) at an intensity of `1f` typically suits the default exposure (`CameraExposurePreset.InsideBrightLighting`).
-	* A scene lit by a [directional light](directional_lights.md) at its default brightness is lit by direct sunlight, so needs `CameraExposurePreset.OutsideMidday`.
+	* A scene lit by a [directional light](directional_lights.md) at `DirectionalLightBrightnessPreset.Midday` is lit by direct sunlight, so needs `CameraExposurePreset.OutsideMidday`.
 	* Each `DirectionalLightBrightnessPreset` and `SceneBackdropBrightnessPreset` preset pairs with the `CameraExposurePreset` of the same name: either one on its own is correctly exposed. Using both together adds their light, so needs a lower exposure.
 	* For scenes lit by your own point and spot lights, start from `CameraExposurePreset.InsideBrightLighting` or `CameraExposurePreset.InsideMoodLighting` and multiply or divide `Exposure` until the scene looks right.
 

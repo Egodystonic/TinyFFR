@@ -19,6 +19,9 @@ public enum CameraPlaneConfiguration {
 	/// <summary>
 	/// A general-purpose range, suitable for most scenes.
 	/// </summary>
+	/// <remarks>
+	/// Near plane <c>0.03m</c>, far plane <c>1,000m</c>.
+	/// </remarks>
 	Standard,
 	/// <summary>
 	/// Allows objects very close to the camera to be drawn, at the cost of the maximum view distance.

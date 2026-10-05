@@ -455,7 +455,7 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// surroundings. That second part is what makes a scene with a backdrop look markedly more natural than one lit only by its own lights.
 	/// </remarks>
 	/// <param name="backdrop">Which built-in backdrop to use.</param>
-	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is the backdrop as authored and the scale is linear (<c>2f</c> is twice as bright). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is the backdrop as authored; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	/// <param name="rotation">How far the backdrop is turned about the scene, which is how you choose where the sun or a landmark sits. Defaults to no rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BuiltInSceneBackdrop backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
@@ -473,7 +473,7 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// surroundings. That second part is what makes a scene with a backdrop look markedly more natural than one lit only by its own lights.
 	/// </remarks>
 	/// <param name="backdrop">The image to use as the backdrop.</param>
-	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is the backdrop as authored and the scale is linear (<c>2f</c> is twice as bright). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is the backdrop as authored; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	/// <param name="rotation">How far the backdrop is turned about the scene, which is how you choose where the sun or a landmark sits. Defaults to no rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
@@ -491,7 +491,7 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// does. Use <see cref="SetBackdropWithoutIndirectLighting(ColorVect)"/> for a colour that fills the background but contributes no light.
 	/// </remarks>
 	/// <param name="color">The colour to fill the background with, and to light the scene in.</param>
-	/// <param name="indirectLightingIntensity">How strongly the colour lights the scene, where <c>1f</c> lights it with exactly that colour and the scale is linear (<c>2f</c> is twice as bright). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="indirectLightingIntensity">How strongly the colour lights the scene, where <c>1f</c> lights it with exactly that colour; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(ColorVect color, float indirectLightingIntensity = 1f) => Implementation.SetBackdrop(_handle, color, indirectLightingIntensity);
 	/// <inheritdoc cref="SetBackdrop(ColorVect, float)"/>
@@ -507,7 +507,7 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// rather than a plausible environment.
 	/// </remarks>
 	/// <param name="backdrop">The image to use as the backdrop.</param>
-	/// <param name="backdropIntensity">How brightly the backdrop is drawn, where <c>1f</c> is the backdrop as authored and the scale is linear (<c>2f</c> is twice as bright). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="backdropIntensity">How brightly the backdrop is drawn, where <c>1f</c> is the backdrop as authored; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	/// <param name="rotation">How far the backdrop is turned about the scene. Defaults to no rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdropWithoutIndirectLighting(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdropWithoutIndirectLighting(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);

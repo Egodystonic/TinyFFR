@@ -53,20 +53,6 @@ static partial class TestMain {
 		//		The Tick function passed to BeginDefaultLoop should return `true` to exit the loop.
 		//		If you pass a CameraController to BeginDefaultLoop, it will be possible to control the camera with keyboard/mouse or gamepad using the default controller input mapping.
 		
-		context.Scene.SetBackdropWithoutIndirectLighting(SceneCreationConfig.DefaultInitialBackdropColor);
-		var toyCarBundle = context.Factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/showcase_ToyCar.glb"));
-		var toyCarInstances = context.Factory.ObjectBuilder.CreateModelInstances(toyCarBundle);
-		toyCarInstances.SetSize((0.085f, toyCarInstances.CalculateCombinedBoundingBox().Height, 0.1f));
-		context.Scene.Add(toyCarInstances);
-		context.ModelInstance.SetSize(new(0.5f)); 
-		context.Scene.Remove(context.DirectionalLight);
-		toyCarInstances.Position = context.ModelInstance.Position + Direction.Up * 0.5f;
-		context.Camera.SetExposure(CameraExposurePreset.InsideMoodLighting);
-		
-		var lightbulb = context.Factory.LightBuilder.CreatePointLight(toyCarInstances.Position + Direction.Up * 0.3f);
-		lightbulb.SetBrightness(PointLightBrightnessPreset.BulbDim);
-		context.Scene.Add(lightbulb);
-		
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.

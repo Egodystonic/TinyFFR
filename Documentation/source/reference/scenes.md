@@ -26,7 +26,7 @@ using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -3f))
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window); // (3)!
 ```
 
-1.	Creates a new scene, and sets its backdrop to one of TinyFFR's built-in backdrops at the [brightness](#backdrop-intensity) of a clear day around midday. The backdrop lights the scene as well as filling its background.
+1.	Creates a new scene, and sets its backdrop to one of TinyFFR's built-in backdrops. The backdrop lights the scene as well as filling its background.
 
 2.	Adds a model instance to the scene. Nothing appears in (or lights) a scene until it has been added.
 

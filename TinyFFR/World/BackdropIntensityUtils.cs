@@ -70,10 +70,13 @@ static class BackdropIntensityUtils {
 	public static float LuxToIntensity(float lux, float luxAtUnitIntensity) {
 		if (!Single.IsFinite(luxAtUnitIntensity) || luxAtUnitIntensity <= 0f) return 1f;
 		if (!Single.IsFinite(lux) || lux <= 0f) return 0f;
-		return Single.Min(lux / luxAtUnitIntensity, Scene.MaxBrightness);
+		return Single.Min(MathF.Sqrt(lux / luxAtUnitIntensity), Scene.MaxBrightness);
 	}
 
-	public static float IntensityToLux(float intensity, float luxAtUnitIntensity) => SanitizeIntensity(intensity) * luxAtUnitIntensity;
+	public static float IntensityToLux(float intensity, float luxAtUnitIntensity) {
+		var sanitized = SanitizeIntensity(intensity);
+		return sanitized * sanitized * luxAtUnitIntensity;
+	}
 
 	public static float MeasureLuxAtUnitIntensity(ColorVect color) {
 		return NormalizedUpwardRadianceToLux(CalculateLuminance(color.Red, color.Green, color.Blue));

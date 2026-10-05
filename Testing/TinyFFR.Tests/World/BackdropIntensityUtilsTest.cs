@@ -122,12 +122,12 @@ class BackdropIntensityUtilsTest {
 	}
 
 	[Test]
-	public void ConversionsShouldBeLinearAndHandleInvalidInputs() {
+	public void ConversionsShouldBeQuadraticAndHandleInvalidInputs() {
 		const float LuxAtUnitIntensity = 800f;
 		Assert.AreEqual(1f, BackdropIntensityUtils.LuxToIntensity(800f, LuxAtUnitIntensity), TestTolerance);
-		Assert.AreEqual(2f, BackdropIntensityUtils.LuxToIntensity(1_600f, LuxAtUnitIntensity), TestTolerance);
-		Assert.AreEqual(0.25f, BackdropIntensityUtils.LuxToIntensity(200f, LuxAtUnitIntensity), TestTolerance);
-		Assert.AreEqual(1_600f, BackdropIntensityUtils.IntensityToLux(2f, LuxAtUnitIntensity), TestTolerance);
+		Assert.AreEqual(2f, BackdropIntensityUtils.LuxToIntensity(3_200f, LuxAtUnitIntensity), TestTolerance);
+		Assert.AreEqual(0.25f, BackdropIntensityUtils.LuxToIntensity(50f, LuxAtUnitIntensity), TestTolerance);
+		Assert.AreEqual(3_200f, BackdropIntensityUtils.IntensityToLux(2f, LuxAtUnitIntensity), TestTolerance);
 		Assert.AreEqual(3f, BackdropIntensityUtils.LuxToIntensity(BackdropIntensityUtils.IntensityToLux(3f, LuxAtUnitIntensity), LuxAtUnitIntensity), TestTolerance);
 
 		foreach (var invalid in new[] { -1f, Single.NegativeZero, Single.NaN, Single.PositiveInfinity, Single.NegativeInfinity }) {
@@ -140,12 +140,25 @@ class BackdropIntensityUtilsTest {
 	}
 
 	[Test]
+	public void LuxConversionsShouldMatchNativeIntensityMapping() {
+		const float LuxAtUnitIntensity = 1_000f;
+		foreach (var intensity in new[] { 0.1f, 0.5f, 1f, 2f, 7.5f, 140f }) {
+			var nativeIlluminanceFactor = BackdropIntensityUtils.ToNativeIntensity(intensity) / BackdropIntensityUtils.NativeIntensityAtUnitIntensity;
+			Assert.AreEqual(nativeIlluminanceFactor, BackdropIntensityUtils.IntensityToLux(intensity, LuxAtUnitIntensity) / LuxAtUnitIntensity, nativeIlluminanceFactor * TestTolerance);
+		}
+		foreach (var lux in new[] { 10f, 600f, 10_000f, 100_000f }) {
+			var intensity = BackdropIntensityUtils.LuxToIntensity(lux, LuxAtUnitIntensity);
+			Assert.AreEqual(lux / LuxAtUnitIntensity, BackdropIntensityUtils.ToNativeIntensity(intensity) / BackdropIntensityUtils.NativeIntensityAtUnitIntensity, lux / LuxAtUnitIntensity * TestTolerance);
+		}
+	}
+
+	[Test]
 	public void LoadedBackdropsShouldExposeMeasuredLux() {
 		using var factory = new LocalTinyFfrFactory();
 		using var metro = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
 		Assert.AreEqual(BackdropIntensityUtils.MeasureLuxAtUnitIntensity(ReadMetroIbl()), metro.MeasuredLux, TestTolerance);
-		Assert.AreEqual(metro.MeasuredLux * 2f, metro.IntensityToLux(2f), TestTolerance);
-		Assert.AreEqual(0.5f, metro.LuxToIntensity(metro.MeasuredLux * 0.5f), TestTolerance);
+		Assert.AreEqual(metro.MeasuredLux * 4f, metro.IntensityToLux(2f), TestTolerance);
+		Assert.AreEqual(0.5f, metro.LuxToIntensity(metro.MeasuredLux * 0.25f), TestTolerance);
 
 		using var scene = factory.SceneBuilder.CreateScene();
 		Assert.AreEqual(BackdropIntensityUtils.MeasureLuxAtUnitIntensity(ReadBuiltInIbl("clouds")), scene.Implementation.GetBuiltInBackdropMeasuredLux(BuiltInSceneBackdrop.Clouds), TestTolerance);
