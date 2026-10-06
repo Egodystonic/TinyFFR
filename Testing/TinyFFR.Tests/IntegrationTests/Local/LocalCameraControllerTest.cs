@@ -496,10 +496,17 @@ class LocalCameraControllerTest {
 			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(3f, 0f, -3f)));
 			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(0f, 3f, 3f)));
 			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(-3f, 0f, 0f)));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(0f, 0f, -3f), Location.Origin));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(3f, 0f, 0f), Location.Origin));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(0f, 0f, 3f), Location.Origin));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(-3f, 0f, 0f), Location.Origin));
+			_controller.AddPositionKeyframe(new(3f, InterpolationAlgorithm<Location>.Natural(true), new Location(0f, 4f, -8f), Location.Origin));
 
 			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Forward, Direction.Up));
 			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Right, Direction.Up));
 			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Backward, Direction.Up));
+			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Location.Origin, Direction.Up));
+			_controller.AddOrientationKeyframe(new(11f, InterpolationAlgorithm<Direction>.Linear(), Location.Origin, Direction.Up));
 
 			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(60f)));
 			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(90f)));

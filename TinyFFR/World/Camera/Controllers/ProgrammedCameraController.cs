@@ -17,7 +17,13 @@ namespace Egodystonic.TinyFFR.World;
 /// <para>
 /// The camera is driven by three independent tracks (position, orientation and field of view), each a sequence of keyframes. A keyframe names a value to reach, how
 /// long to take getting there, and how to ease between the two. The tracks advance together on one clock (<see cref="CurrentTimestampSeconds"/>) but are otherwise
-/// unrelated, so a camera can be mid-way through a long sweep of movement whilst its field of view snaps between several values.
+/// unrelated, so a camera can be mid-way through a long sweep of movement whilst its field of view snaps between several values. The one exception is an
+/// orientation keyframe with a <see cref="OrientationKeyframe.LookAtTarget"/>: it looks at its target from wherever the position track (or anything else) has put
+/// the camera on that frame.
+/// </para>
+/// <para>
+/// Position keyframes travel in a straight line by default, or sweep around a point in an arc when given a <see cref="PositionKeyframe.Pivot"/>; together with
+/// <see cref="OrientationKeyframe.LookAtTarget"/> this makes orbiting shots straightforward to script.
 /// </para>
 /// <para>
 /// A track with no keyframes leaves that aspect of the camera alone entirely, so it is perfectly reasonable to script only the position and control the orientation
@@ -56,10 +62,47 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	/// <summary>
 	/// One step of a scripted camera path: a location to arrive at, how long to take getting there, and how to ease along the way.
 	/// </summary>
+	/// <remarks>
+	/// By default the camera travels in a straight line from the previous keyframe's location to this one's. Supply a <see cref="Pivot"/> to make it sweep around
+	/// that point in an arc instead.
+	/// </remarks>
 	/// <param name="LengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the camera jump straight to <paramref name="TargetValue"/>.</param>
 	/// <param name="Algorithm">How to interpolate from the previous keyframe's location to this one's (for example linearly, or easing in and out).</param>
 	/// <param name="TargetValue">Where the camera should be by the time this keyframe finishes. Must be physically valid.</param>
 	public readonly record struct PositionKeyframe(float LengthSeconds, InterpolationAlgorithm<Location> Algorithm, Location TargetValue) : ITimeKeyedItem {
+		/// <summary>
+		/// Creates a keyframe that sweeps the camera around <paramref name="pivot"/> in an arc, rather than moving it in a straight line.
+		/// </summary>
+		/// <param name="lengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the camera jump straight to <paramref name="targetValue"/>.</param>
+		/// <param name="algorithm">How to ease along the arc from the previous keyframe's location to this one's (for example linearly, or easing in and out).</param>
+		/// <param name="targetValue">Where the camera should be by the time this keyframe finishes. Must be physically valid.</param>
+		/// <param name="pivot">The point the camera should sweep around on its way to <paramref name="targetValue"/>. Must be physically valid. See <see cref="Pivot"/>.</param>
+		public PositionKeyframe(float lengthSeconds, InterpolationAlgorithm<Location> algorithm, Location targetValue, Location pivot) : this(lengthSeconds, algorithm, targetValue) {
+			Pivot = pivot;
+		}
+
+		/// <summary>
+		/// The point the camera sweeps around on its way to <see cref="TargetValue"/>, or <see langword="null"/> to travel in a straight line.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// When set, the camera's direction from the pivot turns along the shortest arc between where it starts and where it ends, whilst its distance from the
+		/// pivot changes gradually from the starting distance to the ending distance; so the arc is circular when both ends are equally far from the pivot. Because
+		/// the shortest arc is used, a single keyframe can sweep at most 180°; use several keyframes to sweep further.
+		/// </para>
+		/// <para>
+		/// If the start and end are on exactly opposite sides of the pivot, there is no single shortest arc and the plane of the sweep is chosen arbitrarily;
+		/// move the pivot slightly off that line to choose the plane yourself. If either end coincides with the pivot, the camera falls back to travelling in a
+		/// straight line.
+		/// </para>
+		/// <para>
+		/// <see cref="Algorithm"/> still controls the easing along the arc. Every built-in algorithm works here; a <see cref="InterpolationAlgorithm{T}.Custom"/>
+		/// algorithm is sampled on a straight line from <see cref="Location.Origin"/> to <c>(1, 0, 0)</c>, and the X component of the result is used as the
+		/// fraction of the arc travelled.
+		/// </para>
+		/// </remarks>
+		public Location? Pivot { get; init; }
+
 		internal void ThrowIfInvalid() {
 			if (!LengthSeconds.IsNonNegativeAndFinite()) {
 				throw new ArgumentException($"Keyframe length must be finite and non-negative (was {LengthSeconds}).", nameof(LengthSeconds));
@@ -68,6 +111,9 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 			if (!TargetValue.IsPhysicallyValid) {
 				throw new ArgumentException($"Keyframe value must be physically valid (was {TargetValue}).", nameof(TargetValue));
 			}
+			if (Pivot is { IsPhysicallyValid: false } pivot) {
+				throw new ArgumentException($"Keyframe pivot must be physically valid (was {pivot}).", nameof(Pivot));
+			}
 		}
 
 		float ITimeKeyedItem.TimeKeySeconds => LengthSeconds;
@@ -75,17 +121,56 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	/// <summary>
 	/// One step of a scripted camera path: an orientation to arrive at, how long to take getting there, and how to ease along the way.
 	/// </summary>
+	/// <remarks>
+	/// The camera can either turn towards a fixed <see cref="TargetViewDirection"/>, or keep looking at a point in the world by supplying a <see cref="LookAtTarget"/>.
+	/// </remarks>
 	/// <param name="LengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the camera snap straight to the target orientation.</param>
 	/// <param name="Algorithm">How to interpolate from the previous keyframe's orientation to this one's (for example linearly, or easing in and out).</param>
-	/// <param name="TargetViewDirection">Which way the camera should be looking by the time this keyframe finishes. Must be physically valid and not <see cref="Direction.None"/>.</param>
+	/// <param name="TargetViewDirection">Which way the camera should be looking by the time this keyframe finishes. Must be physically valid and not <see cref="Direction.None"/>, unless <see cref="LookAtTarget"/> is set, in which case this value is ignored.</param>
 	/// <param name="TargetUpDirection">Which way should be "up" for the camera by the time this keyframe finishes; this is what lets a scripted shot roll. Must be physically valid and not <see cref="Direction.None"/>.</param>
 	public readonly record struct OrientationKeyframe(float LengthSeconds, InterpolationAlgorithm<Direction> Algorithm, Direction TargetViewDirection, Direction TargetUpDirection) : ITimeKeyedItem {
+		/// <summary>
+		/// Creates a keyframe that turns the camera to look at <paramref name="lookAtTarget"/>, and keeps it looking there as the camera moves.
+		/// </summary>
+		/// <remarks>
+		/// <see cref="TargetViewDirection"/> is set to <see cref="Direction.None"/> on keyframes created this way.
+		/// </remarks>
+		/// <param name="lengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the camera snap straight to looking at <paramref name="lookAtTarget"/>.</param>
+		/// <param name="algorithm">How to interpolate from the previous keyframe's orientation to this one's (for example linearly, or easing in and out).</param>
+		/// <param name="lookAtTarget">The point the camera should look at. Must be physically valid. See <see cref="LookAtTarget"/>.</param>
+		/// <param name="targetUpDirection">Which way should be "up" for the camera by the time this keyframe finishes. Must be physically valid and not <see cref="Direction.None"/>.</param>
+		public OrientationKeyframe(float lengthSeconds, InterpolationAlgorithm<Direction> algorithm, Location lookAtTarget, Direction targetUpDirection) : this(lengthSeconds, algorithm, Direction.None, targetUpDirection) {
+			LookAtTarget = lookAtTarget;
+		}
+
+		/// <summary>
+		/// A point the camera should look at, or <see langword="null"/> to turn towards <see cref="TargetViewDirection"/> instead. When set, <see cref="TargetViewDirection"/> is ignored.
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// The direction to the target is worked out afresh on every <see cref="Progress"/> from the camera's position on that frame (after the position track has
+		/// been applied), so the camera keeps looking at the target as it moves. The camera eases from the previous keyframe's view direction towards the target
+		/// over the length of this keyframe; if the previous keyframe looks at the same target, the camera stays fixed on it throughout. To lock on to a target
+		/// immediately, precede this keyframe with a zero-length keyframe that looks at the same target.
+		/// </para>
+		/// <para>
+		/// Once this keyframe has finished (for example whilst the track holds its final keyframe), the camera continues to look at the target wherever it moves.
+		/// On any frame where the camera is exactly at the target, it keeps its current view direction.
+		/// </para>
+		/// </remarks>
+		public Location? LookAtTarget { get; init; }
+
 		internal void ThrowIfInvalid() {
 			if (!LengthSeconds.IsNonNegativeAndFinite()) {
 				throw new ArgumentException($"Keyframe length must be finite and non-negative (was {LengthSeconds}).", nameof(LengthSeconds));
 			}
 			Algorithm.ThrowIfNullAlgorithm();
-			if (!TargetViewDirection.IsPhysicallyValidAndNotNone) {
+			if (LookAtTarget is { } lookAtTarget) {
+				if (!lookAtTarget.IsPhysicallyValid) {
+					throw new ArgumentException($"Keyframe look-at target must be physically valid (was {lookAtTarget}).", nameof(LookAtTarget));
+				}
+			}
+			else if (!TargetViewDirection.IsPhysicallyValidAndNotNone) {
 				throw new ArgumentException($"Keyframe view direction must be physically valid and not {Direction.None} (was {TargetViewDirection}).", nameof(TargetViewDirection));
 			}
 			if (!TargetUpDirection.IsPhysicallyValidAndNotNone) {
@@ -320,12 +405,19 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		var orientationTuple = _orientationTrack.GetKeyframeAndInterpolationDistance(CurrentTimestampSeconds);
 		var fovTuple = _fovTrack.GetKeyframeAndInterpolationDistance(CurrentTimestampSeconds);
 		
+		Location? positionThisFrame = null;
 		if (positionTuple is { } p) {
-			Camera.SetPosition(p.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(p.PrevKeyframe?.TargetValue ?? _startPosition, p.Keyframe.TargetValue, p.InterpDistance));
+			var position = EvaluatePosition(p.Keyframe, p.PrevKeyframe?.TargetValue ?? _startPosition, p.InterpDistance);
+			Camera.SetPosition(position);
+			positionThisFrame = position;
 		}
 		if (orientationTuple is { } o) {
+			var startView = o.PrevKeyframe is { } prev
+				? ResolveViewDirection(prev.TargetViewDirection, prev.LookAtTarget, positionThisFrame)
+				: _startOrientationView;
+			var endView = ResolveViewDirection(o.Keyframe.TargetViewDirection, o.Keyframe.LookAtTarget, positionThisFrame);
 			Camera.SetViewAndUpDirection(
-				o.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(o.PrevKeyframe?.TargetViewDirection ?? _startOrientationView, o.Keyframe.TargetViewDirection, o.InterpDistance),
+				o.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(startView, endView, o.InterpDistance),
 				o.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(o.PrevKeyframe?.TargetUpDirection ?? _startOrientationUp, o.Keyframe.TargetUpDirection, o.InterpDistance)
 			);
 		}
@@ -335,6 +427,30 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		}
 	}
 	
+	static Location EvaluatePosition(in PositionKeyframe keyframe, Location startPosition, float interpDistance) {
+		if (keyframe.Pivot is not { } pivot) return keyframe.Algorithm.UnsafeGetValueSkipNullCheck(startPosition, keyframe.TargetValue, interpDistance);
+
+		var startVect = startPosition - pivot;
+		var endVect = keyframe.TargetValue - pivot;
+		var startDirection = startVect.Direction;
+		var endDirection = endVect.Direction;
+		if (startDirection == Direction.None || endDirection == Direction.None) {
+			return keyframe.Algorithm.UnsafeGetValueSkipNullCheck(startPosition, keyframe.TargetValue, interpDistance);
+		}
+
+		var easedDistance = keyframe.Algorithm.UnsafeGetValueSkipNullCheck(Location.Origin, PivotEasingProbeEnd, interpDistance).X;
+		var startLength = startVect.Length;
+		var length = startLength + (endVect.Length - startLength) * easedDistance;
+		return pivot + Direction.Interpolate(startDirection, endDirection, easedDistance) * length;
+	}
+	static readonly Location PivotEasingProbeEnd = new(1f, 0f, 0f);
+
+	Direction ResolveViewDirection(Direction viewDirection, Location? lookAtTarget, Location? positionThisFrame) {
+		if (lookAtTarget is not { } target) return viewDirection;
+		var result = (positionThisFrame ?? Camera.Position).DirectionTo(target);
+		return result == Direction.None ? Camera.ViewDirection : result;
+	}
+
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) { /* no-op */ }
 	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputRetriever input, float deltaTime) { /* no-op */ }
 }
