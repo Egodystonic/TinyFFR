@@ -164,7 +164,7 @@ nav:
             - reference/spot_lights.md
             - reference/directional_lights.md
             - reference/fog.md
-        - reference/exposure_and_brightness.md
+            - reference/exposure_and_brightness.md
 
 not_in_nav: |
 

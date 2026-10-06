@@ -7,11 +7,9 @@ description: How to calibrate a camera's exposure against the lights and backdro
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * Lights and backdrops are measured in real-world units, and a camera's exposure decides how bright the result looks. :material-arrow-right: [Exposure & Brightness](#exposure-brightness)
-    * A camera's exposure is an aperture, a shutter speed, and a sensitivity, usually chosen with a preset. :material-arrow-right: [Camera Exposure](#camera-exposure)
-    * Pick the camera preset with the same name as your light or backdrop preset and the scene is correctly exposed. :material-arrow-right: [Matching Presets](#matching-presets)
-    * Several light sources add their light together, so need a less sensitive exposure. :material-arrow-right: [Combining Light Sources](#combining-light-sources)
-    * Backdrop images are measured when they're loaded, so presets light any backdrop to the same real-world brightness. :material-arrow-right: [Backdrops](#backdrops)
+    * You can control how much light a `Camera` lets in (i.e. its exposure) using real-world values. :material-arrow-right: [Camera Exposure](camera-exposure)
+    * It's also possible to set up light sources using real-world units. :material-arrow-right: [Light Sources & Their Units](#light-sources-their-units)
+    * The default brightness levels of lights and scene backdrops in TinyFFR are calibrated for the default camera exposure. :material-arrow-right: [Exposure & Brightness](#exposure-brightness)
 
 </div>
 
@@ -35,25 +33,29 @@ using var indoorCamera = factory.CameraBuilder.CreateCamera(); // (4)!
 
 4.	Creates a camera with the default exposure, which suits a brightly-lit interior such as a room lit by a nearby bulb.
 
-TinyFFR's lights and backdrops use real-world brightnesses, and real-world brightnesses vary enormously: the sun on a clear day lights a scene roughly a thousand times more brightly than a household bulb a metre away, and a full moon roughly a million times less brightly than the sun. A real camera (or your eye) copes with this by adjusting its *exposure*: how much of the light arriving at it ends up in the image. A TinyFFR `Camera` does the same.
+TinyFFR's lights and backdrops use real-world brightnesses, and real-world brightnesses vary enormously. The sun on a clear day lights a scene roughly a thousand times more brightly than a household bulb a metre away, and a full moon roughly a million times less brightly than the sun. A camera (or your eye) copes with this by adjusting its *exposure* which is a measure how much of the light arriving at it ends up in the image.
 
-So the brightness of the final image depends on two things:
+In short, the final brightness of a rendered scene depends on the brightness of all lights + the backdrop and how the camera is exposed to that light; i.e. its `Exposure`. Getting a good image means choosing an exposure that suits the lighting, which is what the rest of this page explains.
 
-* How much light is in the scene: the [lights](point_lights.md) and the scene's [backdrop](scenes.md#backdrops).
-* How the camera is exposed to that light: its `Exposure`.
-
-Neither means anything on its own. A scene lit by a single bulb looks almost black through a camera exposed for sunlight; a sunlit scene looks completely white through a camera exposed for a dim room. Getting a good image means choosing an exposure that suits the lighting, which is what the rest of this page explains.
-
-??? info "Why Not Just Use Arbitrary Brightness Values?"
-	Real-world units make lighting predictable. A bulb and the sun can share a scene with their true relative brightnesses, materials respond the same way under any lighting, and a scene that looks right in daylight still looks right when you swap the sun for a candle and the camera for a night-time exposure. The cost is that every scene needs an exposure that suits it; the presets described below make that a one-line choice in almost every case.
+??? question "When should I use this?"
+	You don't need to use these controls if you're happy with the defaults and have no need or desire to model real-world lighting or multiple dynamic ranges. 
+	
+	The default brightness values of every source of illumination in TinyFFR are calibrated for the camera's default exposure of `InsideBrightLighting`. For example, a `PointLight` `Brightness` of `1f` provides a typical lightbulb brightness; a `SpotLight` `Brightness` of `1f` provides a typical flashlight brightness; and a `DirectionalLight` `Brightness` of `1f` provides the typical blanket brightness of a well-let interior.
+	
+	On the other hand:
+	
+	* Controlling exposure + brightness values allows you to model larger brightness ranges in a scene than can typically be represented by most consumer displays.
+	* Furthermore, real-world units make lighting predictable. A bulb and the sun can share a scene with their true relative brightnesses, materials respond the same way under any lighting, and a scene that looks right in daylight still looks right when you swap the sun for a candle and the camera for a night-time exposure. 
+	
+	The cost is that every scene needs an exposure that suits it.
 
 ## Camera Exposure
 
-A camera's exposure is the same three settings a photographer balances against each other:
+A camera's exposure is set via its `camera.Exposure` property. This property takes a `CameraExposureParams` instance which has the following three properties:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `Aperture`
 
-:   How wide the lens opening is, as an f-number. *Smaller* numbers mean a wider opening and a brighter image. The aperture also controls the strength of the camera's depth-of-field effect (see `RenderQualityConfig.DepthOfFieldStrength`).
+:   How wide the lens opening is, as an f-number. *Smaller* numbers mean a wider opening and a brighter image. The aperture also controls the strength of the camera's depth-of-field effect (alongside the linear quality control `RenderQualityConfig.DepthOfFieldStrength`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `ShutterSpeed`
 
@@ -63,8 +65,6 @@ A camera's exposure is the same three settings a photographer balances against e
 
 :   How sensitive the sensor is to light, as an ISO value. Higher means brighter.
 
-Together these form a `CameraExposureParams`, which is the type of `camera.Exposure`. Its `Ev100` property gives the *exposure value* the three settings add up to: the photographer's single-number measure of how much light the camera needs, in *stops*. Each increase of `1` in `Ev100` halves the brightness of the image (it needs twice as much light for the same result).
-
 ### Exposure Presets
 
 The simplest way to choose an exposure is with a `CameraExposurePreset`, named after the lighting it suits:
@@ -72,16 +72,18 @@ The simplest way to choose an exposure is with a `CameraExposurePreset`, named a
 ```csharp
 camera.SetExposure(CameraExposurePreset.OutsideOvercast); // (1)!
 
-using var nightCamera = factory.CameraBuilder.CreateCamera(exposure: CameraExposurePreset.OutsideFullMoon); // (2)!
+using var nightCamera = factory.CameraBuilder.CreateCamera( // (2)!
+	exposure: CameraExposurePreset.OutsideFullMoon 
+); 
 
 CameraExposureParams settings = CameraExposurePreset.InsideMoodLighting; // (3)!
 ```
 
 1.	Exposes the camera for an overcast day.
 
-2.	Creates a camera exposed for a landscape lit by a full moon. (`CameraCreationConfig.InitialExposure` does the same when creating a camera from a config.)
+2.	Creates a camera exposed for a landscape lit by a full moon.
 
-3.	Presets convert implicitly to `CameraExposureParams`; `ToExposureParams()` does the same explicitly.
+3.	Presets convert implicitly to `CameraExposureParams` (or you can use `ToExposureParams()`).
 
 | Preset | Settings | `Ev100` | Suits Scenes Lit To Roughly |
 | :----- | :------- | ------: | --------------------------: |
@@ -97,12 +99,14 @@ CameraExposureParams settings = CameraExposurePreset.InsideMoodLighting; // (3)!
 | `CameraExposurePreset.OutsideFullMoon` | f/2, 1/2s, ISO 6,400 | -3 | 0.25 lux |
 | `CameraExposurePreset.OutsideStarlight` | f/2, 4s, ISO 51,200 | -9 | 0.005 lux |
 
-New cameras use `CameraExposurePreset.InsideBrightLighting`, which suits a well-lit interior.
+By default, cameras are set to `CameraExposurePreset.InsideBrightLighting`, which suits a well-lit interior.
 
-??? info "How Exposure Relates to Illuminance"
-	Every preset follows the same photographic rule of thumb: a scene lit to an illuminance of `E` lux is well exposed at an exposure value of roughly `log2(E / 2.5)`, or equivalently a camera at a given `Ev100` suits a scene lit to roughly `2.5 × 2^Ev100` lux. You can use the rule to choose an exposure for any lighting, not just the presets' (see [Point & Spot Lights](#point-spot-lights)).
+??? abstract "Exposure Relationship to Illuminance"
+	A scene lit to an illuminance of `E` lux is well exposed at an exposure value of roughly `log2(E / 2.5)`, or equivalently a camera at a given `Ev100` suits a scene lit to roughly `2.5 × 2^Ev100` lux. 
+	
+	You can use the rule to choose an exposure for any lighting, not just the presets.
 
-### Adjusting Exposure
+### Tweaking Exposure
 
 Multiplying or dividing a camera's `Exposure` by a number scales its sensitivity, which makes the image exactly that many times brighter or dimmer:
 
@@ -119,13 +123,19 @@ camera.Exposure = new CameraExposureParams(8f, 1f / 250f, 400f); // (3)!
 
 3.	Sets the three settings directly.
 
-Because multiplying and dividing only ever change the sensitivity, they never alter the strength of a depth-of-field effect; changing the aperture does. Each setting is clamped to a permitted range when assigned to a camera (`CameraExposureParams.ApertureMin`/`ApertureMax`, `ShutterSpeedMin`/`ShutterSpeedMax`, and `SensitivityMin`/`SensitivityMax`), and a non-finite setting is replaced with that of the default exposure.
+Because multiplying and dividing only ever change the sensitivity, they never alter the strength of a depth-of-field effect; changing the aperture does.
+
+### Interpolating Exposure
 
 `CameraExposureParams.Interpolate()` blends between two exposures, which is useful for transitions such as walking from a dark room in to daylight, or a sunset over time:
 
 ```csharp
 var progress = 0.25f;
-camera.Exposure = CameraExposureParams.Interpolate(CameraExposurePreset.OutsideMidday, CameraExposurePreset.OutsideTwilight, progress); // (1)!
+camera.Exposure = CameraExposureParams.Interpolate( // (1)!
+	CameraExposurePreset.OutsideMidday, 
+	CameraExposurePreset.OutsideTwilight, 
+	progress
+); 
 ```
 
 1.	A quarter of the way from a midday exposure to a twilight one.
@@ -136,16 +146,17 @@ camera.Exposure = CameraExposureParams.Interpolate(CameraExposurePreset.OutsideM
 
 Every light has a `Brightness`, a relative value where `1f` is the default strength for its kind, and each kind of light also has a physical unit. The relationship between the two differs:
 
-| Source | Physical Unit | `1f` Equals | Relationship |
+| Source | Physical Unit | `1f` Equals | Preset Name |
 | :----- | :------------ | :---------- | :----------- |
-| [Point Light](point_lights.md#brightness) | Lumens (output) | 800 lumens (`PointLight.DefaultLumens`); a household bulb | Quadratic |
-| [Spot Light](spot_lights.md#brightness) | Lumens (equivalent output) | Roughly 37,700 lumens (`SpotLight.DefaultLumens`); a handheld flashlight | Quadratic |
-| [Directional Light](directional_lights.md#brightness) | Lux (illuminance) | 600 lux (`DirectionalLight.DefaultLux`); a well-lit interior | Linear |
-| [Backdrop](#backdrops) | Lux (illuminance) | The backdrop image as authored (`BackdropTexture.MeasuredLux`) | Quadratic |
+| [Point Light](point_lights.md#brightness) | Lumens (output) | 800 lumens (`PointLight.DefaultLumens`); a household bulb | `PointLightBrightnessPreset.BulbTypical` |
+| [Spot Light](spot_lights.md#brightness) | Lumens (equivalent output) | Roughly 37,700 lumens (`SpotLight.DefaultLumens`); a handheld flashlight | `SpotLightBrightnessPreset.FlashlightTypical` |
+| [Directional Light](directional_lights.md#brightness) | Lux (illuminance) | 600 lux (`DirectionalLight.DefaultLux`); a well-lit interior | `DirectionalLightBrightnessPreset.InsideBrightLighting` |
+| [Backdrop](#backdrops) | Lux (illuminance) | The backdrop image as authored (`BackdropTexture.MeasuredLux`) | `SceneBackdropBrightnessPreset.InsideBrightLighting` |
 
-*Quadratic* means the light emitted is proportional to the *square* of the value: a point light at a brightness of `2f` emits four times the light of `1f` (3,200 lumens), which looks roughly twice as bright. *Linear* means the light is proportional to the value: a directional light at `2f` casts exactly twice the light of `1f` (1,200 lux).
 
 Each light also has a property in its physical unit (`PointLight.BrightnessLumens`, `SpotLight.BrightnessLumens`, and `DirectionalLight.BrightnessLux`), and static methods that convert between the two (e.g. `PointLight.LumensToBrightness()` and `PointLight.BrightnessToLumens()`). A backdrop's conversions belong to the backdrop texture itself, because each image lights a scene differently (see [Measured Brightness](#measured-brightness)).
+
+Every kind of light (and backdrop) also has its own brightness presets, which are the simplest way to choose a brightness. Pass one when creating a light (`brightnessPreset:`), or to `SetBrightness()` / `SetBackdrop()` afterwards.
 
 ```csharp
 lamp.BrightnessLumens = 1_100f; // (1)!
@@ -156,7 +167,55 @@ sun.BrightnessLux = 20_000f; // (2)!
 
 2.	Sets a directional light to 20,000 lux, roughly that of full daylight in the shade.
 
-Every kind of light (and backdrop) also has its own brightness presets, which are the simplest way to choose a brightness. Pass one when creating a light (`brightnessPreset:`), or to `SetBrightness()` / `SetBackdrop()` afterwards.
+```csharp
+light.SetBrightness(PointLightBrightnessPreset.Candle); // (1)!
+
+using var floodlight = factory.LightBuilder.CreatePointLight(brightnessPreset: PointLightBrightnessPreset.Floodlight); // (2)!
+var floodlightBrightness = PointLightBrightnessPreset.Floodlight.ToBrightnessValue(); // (3)!
+var floodlightLumens = PointLightBrightnessPreset.Floodlight.ToLumens(); // (4)!
+```
+
+1.	Makes an existing light as bright as a candle flame.
+
+2.	Creates a light as bright as an outdoor floodlight.
+
+3.	`ToBrightnessValue()` returns the equivalent `Brightness` value of a preset.
+
+4.	`ToLumens()` returns a preset's output in its physical unit (`ToLux()` for directional light and backdrop presets).
+
+### Point Light Presets
+
+| Preset | Output | Equivalent To |
+| :----- | :----- | :------------ |
+| `PointLightBrightnessPreset.Candle` | 12 lumens | A candle flame |
+| `PointLightBrightnessPreset.BulbDim` | 450 lumens | A 40W incandescent bulb |
+| `PointLightBrightnessPreset.BulbTypical` (default) | 800 lumens | A 60W incandescent bulb |
+| `PointLightBrightnessPreset.BulbBright` | 1,600 lumens | A 100W incandescent bulb |
+| `PointLightBrightnessPreset.BulbVeryBright` | 3,000 lumens | A 200W incandescent bulb |
+| `PointLightBrightnessPreset.Floodlight` | 10,000 lumens | An outdoor floodlight |
+
+### Spot Light Presets
+
+| Preset | Beam Intensity | Equivalent To |
+| :----- | :------------- | :------------ |
+| `SpotLightBrightnessPreset.DeskLamp` | 150 candela | A desk or reading lamp |
+| `SpotLightBrightnessPreset.FlashlightDim` | 500 candela | A small flashlight, such as one on a keyring |
+| `SpotLightBrightnessPreset.FlashlightTypical` (default) | 3,000 candela | A typical handheld flashlight |
+| `SpotLightBrightnessPreset.FlashlightBright` | 20,000 candela | A powerful flashlight |
+| `SpotLightBrightnessPreset.CarHeadlight` | 30,000 candela | A car headlight on full beam |
+| `SpotLightBrightnessPreset.StageSpotlight` | 100,000 candela | A theatre or stage spotlight |
+| `SpotLightBrightnessPreset.Searchlight` | 1,000,000 candela | A searchlight |
+
+??? info "Why Spot Light Lumens Are So High"
+	A real flashlight focuses a few hundred lumens in to a narrow beam, making the beam very intense. A standard TinyFFR spot light instead spreads its output as though it were a point light whose light has been masked to a cone (see [Cone & Brightness](spot_lights.md#cone-brightness)), so its beam is only as intense as a point light of the same output.
+
+	The presets are therefore defined by the *beam intensity* of the real light source (in candela), and converted to the equivalent output for a standard spot light: the intensity multiplied by 4π. A brightness of `1f` corresponds to `SpotLight.DefaultLumens`, roughly 37,700 lumens: the equivalent of a typical 3,000 candela flashlight. `ToLumens()` returns the equivalent output of a preset (e.g. `SpotLightBrightnessPreset.FlashlightTypical.ToLumens()`).
+
+	The presets are calibrated for standard spot lights. A spot light created with `highQuality: true` concentrates its whole output in to its cone, so the same brightness looks brighter, increasingly so the narrower its cone is; reduce its brightness to compensate.
+
+### Directional Light & Backdrop Presets
+
+The directional light and backdrop presets are named after lighting conditions (times of day and weather), and are designed to be used with the camera exposure preset of the same name; their values are listed in [Matching Presets](#matching-presets) below. Backdrop presets are described further in [Backdrops](#backdrops).
 
 ## Matching Presets
 
@@ -240,8 +299,6 @@ camera.Exposure *= 80f / illuminance; // (2)!
 
 2.	`InsideMoodLighting` suits 80 lux, so the camera needs to be 80 / 57 (roughly 1.4) times more sensitive.
 
-??? info "High-Quality Spot Lights"
-	The spot light presets assume a standard spot light, which spreads its output as though it were a point light masked to a cone. A spot light created with `highQuality: true` concentrates its whole output in to its cone, so appears brighter the narrower the cone is. See [Spot Lights](spot_lights.md#cone-brightness).
 
 ## Backdrops
 

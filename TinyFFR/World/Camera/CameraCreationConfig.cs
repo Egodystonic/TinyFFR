@@ -50,7 +50,7 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 	/// The default value for <see cref="ProjectionType"/>: <see cref="CameraProjectionType.Perspective"/>.
 	/// </summary>
 	public static readonly CameraProjectionType DefaultProjectionType = CameraProjectionType.Perspective;
-		/// <summary>
+	/// <summary>
 	/// The default value for <see cref="InitialExposure"/>: <see cref="CameraExposurePreset.InsideBrightLighting"/>.
 	/// </summary>
 	public static readonly CameraExposureParams DefaultInitialExposure = new(CameraExposurePreset.InsideBrightLighting);

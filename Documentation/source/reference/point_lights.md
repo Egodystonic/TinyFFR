@@ -10,7 +10,6 @@ description: Information on how to create and adjust point lights, and the prope
     * A point light emits light from a single position in every direction, like a light bulb. :material-arrow-right: [Point Lights](#point-lights)
     * Point lights have a colour, a brightness, and a maximum radius. :material-arrow-right: [Brightness](#brightness), [Colour](#colour), [Range](#range)
     * You can optionally enable shadows at increased performance cost. :material-arrow-right: [Shadows](#shadows)
-    * Lights use real-world brightnesses, so a camera's exposure must suit the lighting in its scene. :material-arrow-right: [Brightness & Exposure](#brightness-exposure)
 
 </div>
 
@@ -51,6 +50,10 @@ Point lights are created with `factory.LightBuilder.CreatePointLight()`, which a
 
 :   The colour of the light. Defaults to white. See [Colour](#colour).
 
+<span class="def-icon">:material-code-json:</span> `brightnessPreset`
+
+:   How much light the light emits, as a real-world light source (e.g. `PointLightBrightnessPreset.Candle`). Ignored if `brightness` is also specified. See [Brightness](#brightness).
+
 <span class="def-icon">:material-code-json:</span> `brightness`
 
 :   How much light the light emits. Defaults to `1f` (a typical household light bulb). See [Brightness](#brightness).
@@ -71,7 +74,7 @@ Each of these can also be changed at any time after creation via the light's pro
 
 ## Brightness
 
-Every light's `Brightness` is a *relative* value, where `1f` is the default strength for that kind of light. This makes it easy to adjust lights of different kinds in the same terms ("half as bright", "twice as bright"). Brightness can't be negative (negative values are treated as `0f`).
+Every light's `Brightness` is a *relative* value, where `1f` is the default strength for that kind of light. This makes it easy to adjust lights of different kinds in the same terms ("half as bright", "twice as bright").
 
 ```csharp
 light.Brightness = 2f;
@@ -83,93 +86,7 @@ light.AdjustBrightnessBy(-1f); // (2)!
 
 2.	*Adds* -1 to the brightness (so `3f` becomes `2f`). The result never goes below `0f`.
 
-For a point light, a brightness of `1f` corresponds to an output of `PointLight.DefaultLumens` (800 lumens; that of a typical household light bulb). Note that the relationship is *quadratic*: the light emitted is proportional to the *square* of the brightness, so a brightness of `2f` emits four times as much light as `1f` (3,200 lumens), not twice as much.
-
-### Brightness Presets
-
-The simplest way to choose a brightness is to pick the real-world light source the light represents:
-
-```csharp
-light.SetBrightness(PointLightBrightnessPreset.Candle); // (1)!
-
-using var floodlight = factory.LightBuilder.CreatePointLight( // (2)!
-	brightness: PointLightBrightnessPreset.Floodlight.ToBrightnessValue()
-);
-```
-
-1.	Makes the light as bright as a candle flame.
-
-2.	`ToBrightnessValue()` returns the equivalent `Brightness` value of a preset, which is useful when creating a light. (`ToLumens()` returns its output in lumens.)
-
-| Preset | Output | Equivalent To |
-| :----- | :----- | :------------ |
-| `PointLightBrightnessPreset.Candle` | 12 lumens | A candle flame |
-| `PointLightBrightnessPreset.BulbDim` | 450 lumens | A 40W incandescent bulb |
-| `PointLightBrightnessPreset.BulbTypical` (default) | 800 lumens | A 60W incandescent bulb |
-| `PointLightBrightnessPreset.BulbBright` | 1,600 lumens | A 100W incandescent bulb |
-| `PointLightBrightnessPreset.BulbVeryBright` | 3,000 lumens | A 200W incandescent bulb |
-| `PointLightBrightnessPreset.Floodlight` | 10,000 lumens | An outdoor floodlight |
-
-If you'd like to work with physical units directly, `PointLight.LumensToBrightness()` and `PointLight.BrightnessToLumens()` convert between brightness and lumens:
-
-```csharp
-light.Brightness = PointLight.LumensToBrightness(1_100f); // (1)!
-```
-
-1.	Sets the light's output to 1,100 lumens (roughly that of a 75W incandescent bulb).
-
-??? info "Brightness Units"
-	Each kind of light uses its own physical unit, and its own relationship between that unit and brightness:
-
-	| Light | `1f` Brightness Equals | Relationship |
-	| :---- | :--------------------- | :----------- |
-	| [Point Light](point_lights.md) | 800 lumens (`PointLight.DefaultLumens`); a household light bulb | Quadratic |
-	| [Spot Light](spot_lights.md) | Roughly 37,700 lumens (`SpotLight.DefaultLumens`); the equivalent of a handheld flashlight | Quadratic |
-	| [Directional Light](directional_lights.md) | 600 lux (`DirectionalLight.DefaultLux`); a well-lit interior | Linear |
-	| [Backdrop](exposure_and_brightness.md#backdrops) | The backdrop image as authored (`BackdropTexture.MeasuredLux` gives its illuminance) | Quadratic |
-
-	Each light type has its own static conversion methods for its unit, and every type has its own presets.
-
-## Brightness & Exposure
-
-TinyFFR's lights use real-world brightnesses, and real-world lighting varies enormously: direct sunlight is roughly a thousand times brighter than the light of a single bulb a metre away. A real camera (or the human eye) copes with this by adjusting its *exposure*, and so must a TinyFFR `Camera`. A scene lit by a few light bulbs looks almost black through a camera set up for sunlight, and a sunlit scene looks completely washed out through a camera set up for a dim room.
-
-New cameras use an exposure suited to a brightly-lit room (`CameraExposurePreset.InsideBrightLighting`). Set a camera's exposure to the preset that matches the lighting in your scene (see [Exposure & Brightness](exposure_and_brightness.md) for a full guide to calibrating exposure and lighting):
-
-```csharp
-camera.SetExposure(CameraExposurePreset.OutsideMidday); // (1)!
-camera.Exposure *= 1.5f; // (2)!
-
-using var nightCamera = factory.CameraBuilder.CreateCamera(exposure: CameraExposurePreset.OutsideFullMoon); // (3)!
-```
-
-1.	Sets the camera up for a scene lit by the sun on a clear day.
-
-2.	Multiplying `Exposure` fine-tunes the result: this makes the image exactly one and a half times as bright as the preset alone. Dividing it makes the image dimmer.
-
-3.	Cameras can also be created with an exposure preset.
-
-| Exposure Preset | Suits Scenes Lit To Roughly | Pairs With |
-| :-------------- | :-------------------------- | :--------- |
-| `CameraExposurePreset.OutsideVeryBright` | Sunlight reflecting off snow or sand | |
-| `CameraExposurePreset.OutsideMidday` | 100,000 lux | `DirectionalLightBrightnessPreset.Midday` or `SceneBackdropBrightnessPreset.Midday` |
-| `CameraExposurePreset.OutsideOvercast` | 10,000 lux | `DirectionalLightBrightnessPreset.Overcast` or `SceneBackdropBrightnessPreset.Overcast` |
-| `CameraExposurePreset.OutsideSunriseSunset` | 2,500 lux | `DirectionalLightBrightnessPreset.SunriseSunset` or `SceneBackdropBrightnessPreset.SunriseSunset` |
-| `CameraExposurePreset.InsideBrightLighting` (default) | 600 lux | A `PointLightBrightnessPreset.BulbTypical` around 30cm away; several bulbs nearby |
-| `CameraExposurePreset.InsideMoodLighting` | 80 lux | A `PointLightBrightnessPreset.BulbTypical` around 1m away |
-| `CameraExposurePreset.OutsideTwilight` | 40 lux | `DirectionalLightBrightnessPreset.Twilight` or `SceneBackdropBrightnessPreset.Twilight` |
-| `CameraExposurePreset.InsideCandleLighting` | 10 lux | A `PointLightBrightnessPreset.Candle` nearby |
-| `CameraExposurePreset.OutsideNightStreet` | 2.5 lux | |
-| `CameraExposurePreset.OutsideFullMoon` | 0.25 lux | `DirectionalLightBrightnessPreset.FullMoon` or `SceneBackdropBrightnessPreset.FullMoon` |
-| `CameraExposurePreset.OutsideStarlight` | A few thousandths of a lux | `DirectionalLightBrightnessPreset.Starlight` or `SceneBackdropBrightnessPreset.Starlight` |
-
-???+ tip "Choosing an Exposure"
-	* A [backdrop](scenes.md#backdrops) at an intensity of `1f` typically suits the default exposure (`CameraExposurePreset.InsideBrightLighting`).
-	* A scene lit by a [directional light](directional_lights.md) at `DirectionalLightBrightnessPreset.Midday` is lit by direct sunlight, so needs `CameraExposurePreset.OutsideMidday`.
-	* Each `DirectionalLightBrightnessPreset` and `SceneBackdropBrightnessPreset` preset pairs with the `CameraExposurePreset` of the same name: either one on its own is correctly exposed. Using both together adds their light, so needs a lower exposure.
-	* For scenes lit by your own point and spot lights, start from `CameraExposurePreset.InsideBrightLighting` or `CameraExposurePreset.InsideMoodLighting` and multiply or divide `Exposure` until the scene looks right.
-
-A camera's `Exposure` is a `CameraExposureParams`: the combination of `Aperture`, `ShutterSpeed`, and `Sensitivity` (ISO) a photographer might use, plus the `Ev100` (exposure value) they add up to. `ToExposureParams()` returns the settings each preset applies (e.g. `CameraExposurePreset.OutsideTwilight.ToExposureParams()`), and you can set the settings directly instead (e.g. `camera.Exposure = new CameraExposureParams(8f, 1f / 125f, 100f)`). Multiplying or dividing `Exposure` only ever adjusts the sensitivity, so (unlike the aperture) it never changes the strength of a depth-of-field effect. Presets also convert implicitly to `CameraExposureParams`, and `CameraExposureParams.Interpolate()` blends smoothly between two exposures (e.g. to fade a camera from `CameraExposurePreset.OutsideMidday` to `CameraExposurePreset.OutsideTwilight` over time), changing the image's brightness evenly.
+The default values for brightness are set up to co-ordinate with the default value of the camera's exposure. For more information, see [Exposure & Brightness](exposure_and_brightness.md).
 
 ## Colour
 

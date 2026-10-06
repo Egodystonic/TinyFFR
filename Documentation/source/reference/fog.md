@@ -7,7 +7,7 @@ description: Information on how to add fog to a scene, using a preset or a fully
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * Fog makes distant objects fade in to a colour, adding depth and atmosphere to a scene. :material-arrow-right: [Fog](#fog)
+    * Fog makes distant objects fade to a colour, adding depth and atmosphere to a scene. :material-arrow-right: [Fog](#fog)
     * Five presets cover common densities, from a faint haze to a thick fog. :material-arrow-right: [Fog Presets](#fog-presets)
     * `FogDescriptor` configures fog in full, including fog that pools near the ground. :material-arrow-right: [Custom Fog](#custom-fog)
 
@@ -29,36 +29,14 @@ scene.RemoveFog(); // (3)!
 
 Fog makes objects fade in to a colour as they get further from the camera, adding a sense of depth and atmosphere to a scene (or hiding distant parts of a scene altogether).
 
-A [scene](scenes.md) can have at most one fog; adding fog to a scene that already has some replaces it.
+Scenes can only have one fog configuration active at any one time.
 
 ## Fog Presets
 
-`scene.AddFog()` accepts one of the following `FogDensity` presets, and optionally a colour (which defaults to a light grey):
+`scene.AddFog()` accepts a `FogDensity` preset and optionally a colour. Each preset sets the fog colour's alpha itself, so only the red, green, and blue components of a colour passed to `AddFog()` are used.
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `FogDensity.VeryThin`
-
-:   The faintest preset; a barely-perceptible haze in the far distance.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FogDensity.Thin`
-
-:   Light fog that begins further from the camera, suggesting haze rather than obscuring the scene.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FogDensity.Moderate`
-
-:   A middling amount of fog. This preset matches `FogDescriptor`'s own default values.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FogDensity.Thick`
-
-:   Dense fog that begins close to the camera and hides the scene's backdrop.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FogDensity.VeryThick`
-
-:   The densest preset: fog begins almost at the camera and hides the scene's backdrop entirely.
-
-Each preset sets the fog colour's alpha itself, so only the red, green, and blue components of a colour passed to `AddFog()` are used.
-
-??? abstract "Preset Values"
-	Each preset is a `FogDescriptor` (see [Custom Fog](#custom-fog) below) with the following values (all other properties are left at their defaults):
+???+ abstract "Preset Values"
+	Each preset maps to a complete `FogDescriptor` (see [Custom Fog](#custom-fog) below) with the following values (all other properties are left at their defaults):
 
 	| Preset      | Color Alpha | `DensityMultiplier` | `StartDistance` | `DirectionalLightScatteringStrengthMultiplier` | `SkywardDensityFalloffMultiplier` | `OccludesBackdrop` |
 	| :---------- | :---------: | :-----------------: | :-------------: | :--------------------------------------------: | :-------------------------------: | :----------------: |
@@ -85,13 +63,15 @@ scene.AddFog(new FogDescriptor { // (2)!
 
 1.	Uses the thin preset, but with the fog also covering the backdrop.
 
-2.	A low-lying mist: dense at ground level, and thinning out quickly above it (like morning mist in a valley).
+2.	A low-lying mist (dense at ground level, and thinning out quickly above it like morning mist in a valley).
 
 A `FogDescriptor` has the following properties:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `Color`
 
-:   The colour of the fog. The colour's alpha sets how completely the fog can obscure what's behind it: a fully opaque colour eventually hides distant objects altogether, whereas a translucent one only ever tints them. Defaults to `FogDescriptor.DefaultColor` (a translucent grey: `(0.75, 0.75, 0.75, 0.75)`).
+:   The colour of the fog. Defaults to `FogDescriptor.DefaultColor` (a translucent grey: `(0.75, 0.75, 0.75, 0.75)`).
+
+	The colour's __alpha__ sets how completely the fog can obscure what's behind it. A fully opaque colour eventually hides distant objects altogether, whereas a translucent one only ever tints them. 
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `DensityMultiplier`
 
