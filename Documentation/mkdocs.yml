@@ -165,6 +165,17 @@ nav:
             - reference/directional_lights.md
             - reference/fog.md
             - reference/exposure_and_brightness.md
+        - Cameras:
+            - reference/camera_settings.md
+            - reference/camera_controllers.md
+            - Controller Types:
+                - reference/camera_controller_first_person.md
+                - reference/camera_controller_follow.md
+                - reference/camera_controller_free_flying.md
+                - reference/camera_controller_inspector.md
+                - reference/camera_controller_orbital.md
+                - reference/camera_controller_pan_tilt_zoom.md
+                - reference/camera_controller_programmed.md
 
 not_in_nav: |
 

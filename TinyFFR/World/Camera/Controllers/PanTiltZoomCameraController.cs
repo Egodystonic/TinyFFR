@@ -150,7 +150,8 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	/// </summary>
 	/// <remarks>
 	/// The limit is applied half in each direction, so a value of <c>160°</c> lets the camera pan <c>80°</c> to the left and <c>80°</c> to the right of
-	/// <see cref="ZeroPanTiltDirection"/>. Non-finite values are ignored rather than throwing.
+	/// <see cref="ZeroPanTiltDirection"/>. A value of <c>0°</c> locks the camera facing <see cref="ZeroPanTiltDirection"/>. Negative values are treated as their
+	/// absolute value, values larger than a full turn are treated as <see langword="null"/>, and non-finite values are ignored rather than throwing.
 	/// </remarks>
 	public Angle? PanRange {
 		get; 
@@ -247,6 +248,10 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		set {
 			if (!Single.IsFinite(value.Radians)) return;
 			if (PanRange is { } nonNullRange) {
+				if (nonNullRange <= Angle.Zero) {
+					_panSetpoint.TargetValue = Angle.Zero;
+					return;
+				}
 				var normalized = value.Normalized;
 				var half = nonNullRange * 0.5f;
 				var negHalfNorm = (-half).Normalized;
@@ -413,7 +418,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		Position = PositionDefault;
 		_panSetpoint.Reset(PanDefault);
 		_tiltSetpoint.Reset(TiltDefault);
-		_zoomSetpoint.Reset((MaxZoomOutFovDefault - MaxZoomInFovDefault) * ZoomDefault + MaxZoomInFovDefault);
+		_zoomSetpoint.Reset(MaxZoomOutFovDefault + (MaxZoomInFovDefault - MaxZoomOutFovDefault) * ZoomDefault);
 		SetGlobalSmoothing(SmoothingStrength.VeryMild);
 	}
 
@@ -535,7 +540,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pan"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultPanSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pan"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultPanSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="leftTriggerPansAnticlockwise">If <see langword="true"/> (the default), the left trigger pans anticlockwise and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPanViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPansAnticlockwise = true) {
@@ -686,7 +691,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Tilt"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultTiltSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Tilt"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultTiltSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="leftTriggerTiltsUpward">If <see langword="true"/> (the default), the left trigger tilts upward and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustTiltViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerTiltsUpward = true) {
@@ -838,7 +843,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Zoom"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultZoomSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Zoom"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultZoomSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="rightTriggerZoomsIn">If <see langword="true"/> (the default), the right trigger zooms in and the left trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustZoomViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool rightTriggerZoomsIn = true) {

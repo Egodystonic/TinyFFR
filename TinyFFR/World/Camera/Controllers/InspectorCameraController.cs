@@ -289,8 +289,10 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	/// </summary>
 	/// <remarks>
 	/// The camera is aimed at the centre of the smallest sphere enclosing <paramref name="boundingBox"/> and placed at one and a half times that sphere's radius
-	/// away, free to move between roughly the object's own half-width and three times the radius. This generally fills the frame sensibly whatever the object's
-	/// size, which is why it is easier than setting <see cref="Target"/>, <see cref="MinDistance"/>, <see cref="MaxDistance"/> and <see cref="Distance"/> by hand.
+	/// away, free to move between three times the radius and the box's smallest half-extent (capped at the radius, or the radius itself if the box is flat). This
+	/// generally fills the frame sensibly whatever the object's size, which is why it is easier than setting <see cref="Target"/>, <see cref="MinDistance"/>,
+	/// <see cref="MaxDistance"/> and <see cref="Distance"/> by hand. If <paramref name="boundingBox"/> has no size at all, only <see cref="Target"/> and
+	/// <see cref="WorldUp"/> are changed.
 	/// </remarks>
 	/// <param name="boundingBox">A box enclosing the object to be inspected.</param>
 	/// <param name="worldUp">The value to assign to <see cref="WorldUp"/>.</param>
@@ -298,9 +300,12 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 		var enclosingSphere = boundingBox.SmallestEnclosingSphere;
 		Target = enclosingSphere.Position;
 		WorldUp = worldUp;
-		MinDistance = Single.Min(enclosingSphere.Radius * 1f, boundingBox.SmallestHalfExtent);
-		MaxDistance = enclosingSphere.Radius * 3f;
-		Distance = enclosingSphere.Radius * 1.5f;
+		var radius = enclosingSphere.Radius;
+		if (!radius.IsPositiveAndFinite()) return;
+		var smallestHalfExtent = boundingBox.SmallestHalfExtent;
+		MinDistance = smallestHalfExtent.IsPositiveAndFinite() ? Single.Min(radius, smallestHalfExtent) : radius;
+		MaxDistance = radius * 3f;
+		Distance = radius * 1.5f;
 	}
 
 	/// <summary>
@@ -469,7 +474,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pitch"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultPitchSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pitch"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultPitchSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="leftTriggerPitchesUp">If <see langword="true"/> (the default), the left trigger pitches up and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPitchesUp = true) {
@@ -621,7 +626,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Yaw"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultYawSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Yaw"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultYawSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="leftTriggerYawsClockwise">If <see langword="true"/> (the default), the left trigger yaws clockwise and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsClockwise = true) {
@@ -773,7 +778,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Distance"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultDistanceSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Distance"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultDistanceSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="leftTriggerIncreasesDistance">If <see langword="true"/> (the default), the left trigger increases distance and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustDistanceViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerIncreasesDistance = true) {
@@ -842,7 +847,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	/// The adjustment applied is <paramref name="adjustmentPerSec"/> multiplied by <paramref name="deltaTime"/>, so the rate of change stays the same regardless of frame rate.
 	/// </remarks>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="adjustmentPerSec">How far to adjust <see cref="Distance"/> by per second, in units.</param>
+	/// <param name="adjustmentPerSec">The fraction of the distance range to move by per second, where <c>1f</c> is the whole range.</param>
 	public void AdjustDistancePercentage(float deltaTime, float adjustmentPerSec) => AdjustDistancePercentage(adjustmentPerSec * deltaTime);
 
 	/// <summary>
@@ -940,7 +945,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Distance"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultDistancePercentageSensitivityControllerTrigger"/> (<c>0.3333f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Distance"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultDistancePercentageSensitivityControllerTrigger"/> (<c>0.3333f</c>) is used.</param>
 	/// <param name="leftTriggerIncreasesDistance">If <see langword="true"/> (the default), the left trigger increases distance and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustDistancePercentageViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerIncreasesDistance = true) {

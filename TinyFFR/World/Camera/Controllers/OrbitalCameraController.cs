@@ -540,7 +540,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Angle"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultAngleSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Angle"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultAngleSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="leftTriggerRotatesClockwise">If <see langword="true"/> (the default), the left trigger rotates clockwise and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustAngleViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerRotatesClockwise = true) {
@@ -692,7 +692,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Height"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultHeightSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Height"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultHeightSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="leftTriggerRaisesHeight">If <see langword="true"/> (the default), the left trigger raises height and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustHeightViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerRaisesHeight = true) {
@@ -844,7 +844,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Distance"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultDistanceSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Distance"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultDistanceSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="leftTriggerIncreasesDistance">If <see langword="true"/> (the default), the left trigger increases distance and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustDistanceViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerIncreasesDistance = true) {
