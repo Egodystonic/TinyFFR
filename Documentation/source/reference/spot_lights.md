@@ -9,7 +9,7 @@ description: Information on how to create and adjust spot lights.
 
     * A spot light emits light from a position in a cone, like a torch or a theatre spotlight. :material-arrow-right: [Spot Lights](#spot-lights)
     * The cone has an outer angle, and an inner angle within which the light is at full strength. :material-arrow-right: [Cone](#cone)
-    * Spot lights can be created to dim as their cone widens, as real spot lights do. :material-arrow-right: [Cone & Brightness](#cone-brightness)
+    * Spot lights can be created to dim as their cone widens, as real spot lights do. :material-arrow-right: [High Quality Cones](#high-quality-cones)
 
 </div>
 
@@ -61,7 +61,7 @@ Spot lights are created with `factory.LightBuilder.CreateSpotLight()`, which acc
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `highQuality`
 
-:   Whether the light dims as its cone widens. Defaults to `false`. Can only be set at creation. See [Cone & Brightness](#cone-brightness).
+:   Whether the light dims as its cone widens. Defaults to `false`. Can only be set at creation. See [High Quality Cones](#high-quality-cones).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `name`
 

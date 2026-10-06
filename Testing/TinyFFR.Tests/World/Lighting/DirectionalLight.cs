@@ -1,6 +1,8 @@
 ﻿// Created on 2025-03-12 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using Egodystonic.TinyFFR.Factory.Local;
+
 namespace Egodystonic.TinyFFR.World.Lighting;
 
 [TestFixture]
@@ -38,5 +40,16 @@ class DirectionalLightTest {
 		Assert.AreEqual(0f, DirectionalLight.LuxToBrightness(Single.NegativeZero));
 		Assert.AreEqual(0f, DirectionalLight.LuxToBrightness(-1f));
 		Assert.AreEqual(DirectionalLight.LuxToBrightness(DirectionalLight.BrightnessToLux(DirectionalLight.MaxBrightness)), DirectionalLight.LuxToBrightness(DirectionalLight.BrightnessToLux(DirectionalLight.MaxBrightness) + 1E10f));
+	}
+
+	[Test]
+	public void CreationShouldApplyBrightnessPreset() {
+		using var factory = new LocalTinyFfrFactory();
+		using var presetLight = factory.LightBuilder.CreateDirectionalLight(brightnessPreset: DirectionalLightBrightnessPreset.Midday);
+		Assert.AreEqual(125_000f, presetLight.BrightnessLux, 125_000f * 0.001f);
+		using var explicitLight = factory.LightBuilder.CreateDirectionalLight(brightnessPreset: DirectionalLightBrightnessPreset.Midday, brightness: 2f);
+		Assert.AreEqual(2f, explicitLight.Brightness, 0.001f);
+		using var defaultLight = factory.LightBuilder.CreateDirectionalLight();
+		Assert.AreEqual(DirectionalLight.DefaultLux, defaultLight.BrightnessLux, 0.1f);
 	}
 }

@@ -58,7 +58,7 @@ public interface ILightBuilder {
 			InitialConeAngle = coneAngle ?? SpotLightCreationConfig.DefaultInitialConeAngle,
 			InitialIntenseBeamAngle = intenseBeamAngle ?? SpotLightCreationConfig.DefaultInitialIntenseBeamAngle,
 			InitialColor = color ?? SpotLightCreationConfig.DefaultInitialColor,
-			InitialBrightness = brightness ?? SpotLightCreationConfig.DefaultInitialBrightness,
+			InitialBrightness = brightness ?? brightnessPreset?.ToBrightnessValue() ?? SpotLightCreationConfig.DefaultInitialBrightness,
 			InitialMaxIlluminationDistance = maxDistance ?? SpotLightCreationConfig.DefaultInitialMaxIlluminationDistance,
 			IsHighQuality = highQuality ?? SpotLightCreationConfig.DefaultIsHighQuality,
 			CastsShadows = castsShadows ?? SpotLightCreationConfig.DefaultCastsShadows,
@@ -85,7 +85,7 @@ public interface ILightBuilder {
 		return CreateDirectionalLight(new DirectionalLightCreationConfig {
 			InitialDirection = direction ?? DirectionalLightCreationConfig.DefaultInitialDirection,
 			InitialColor = color ?? DirectionalLightCreationConfig.DefaultInitialColor,
-			InitialBrightness = brightness ?? DirectionalLightCreationConfig.DefaultInitialBrightness,
+			InitialBrightness = brightness ?? brightnessPreset?.ToBrightnessValue() ?? DirectionalLightCreationConfig.DefaultInitialBrightness,
 			ShowSunDisc = showSunDisc ?? DirectionalLightCreationConfig.DefaultShowSunDisc,
 			CastsShadows = castsShadows ?? DirectionalLightCreationConfig.DefaultCastsShadows,
 			Name = name

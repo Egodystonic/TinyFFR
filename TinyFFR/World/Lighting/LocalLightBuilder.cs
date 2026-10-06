@@ -104,7 +104,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDir
 				break;
 			case LightType.Spot:
 				newBrightness = SpotLight.ClampBrightnessToValidRange(newBrightness);
-				var spotLightLumens = SpotLight.BrightnessToLumensNoClamp(newBrightness);
+				var spotLightLumens = SpotLight.BrightnessToNativeLumensNoClamp(newBrightness);
 				SetSpotLightLumens(handle, spotLightLumens).ThrowIfFailure();
 				break;
 			case LightType.Directional:
