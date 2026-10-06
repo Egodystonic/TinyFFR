@@ -360,7 +360,7 @@ For interoperating with other graphics code or allowing bespoke control, a camer
 
 Each getter also has an overload with an `out Matrix4x4` parameter.
 
-???+ warning "Use Matrices or Properties; Not Both"
+??? warning "Use Matrices or Properties; Not Both"
 	Setting a matrix directly bypasses the properties that would otherwise determine it, and those properties are not updated to match. For example, after `SetModelMatrix()`, `camera.Position` still returns the camera's previous position.
 
 	Furthermore, the next time you set a related property, the matrix is recalculated from the properties, discarding what you set. For example, setting `camera.VerticalFieldOfView` after `SetProjectionMatrix()` replaces your projection matrix. If you set matrices directly, avoid setting the related properties afterwards.

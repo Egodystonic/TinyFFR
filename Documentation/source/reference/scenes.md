@@ -89,7 +89,7 @@ Every kind of object that can be part of a scene has an `Add()` and `Remove()` o
 | `PointLight`, `SpotLight`, `DirectionalLight`  | [Point Lights](point_lights.md), [Spot Lights](spot_lights.md), [Directional Lights](directional_lights.md) |
 | `QuadInstance`                                | [Quads](quads.md)                                        |
 | `MutableGridInstance`                         | [Dynamic Meshes & Mutable Grids](dynamic_meshes_and_mutable_grids.md) |
-| `TextInstance`                                | [FontString & FontPen](fontstring_and_fontpen.md)        |
+| `TextInstance`                                | [Text Instances](text_instances.md)                      |
 | `CameraLockedQuadInstance`, `CameraLockedTextInstance` | [Camera-Locked Objects](camera-locked_objects.md) |
 
 The types of contents you can add/remove to/from scenes are described in more detail on the next page ([Scene Objects](scene_objects.md)).

@@ -70,7 +70,19 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetString(FontString @string) => String = @string;
 	
+	/// <summary>
+	/// How this text is sized and anchored, as last given at creation or via <see cref="SetTransform(Location, Direction, Direction?, TextLayout)"/>.
+	/// </summary>
+	/// <remarks>
+	/// The layout's <see cref="TextLayout.PositionAnchor"/> decides which point of the text <see cref="Position"/> refers to.
+	/// </remarks>
+	public TextLayout Layout => UnderlyingModelInstance.Implementation.GetTextInstanceLayout(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
+
 	/// <inheritdoc />
+	/// <remarks>
+	/// The transform's translation is the centre of the text, which differs from <see cref="Position"/> when the <see cref="Layout"/> has a
+	/// <see cref="TextLayout.PositionAnchor"/>.
+	/// </remarks>
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Transform;
@@ -84,12 +96,22 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Transform = transform;
 	
-	/// <inheritdoc />
+	/// <summary>
+	/// Where the <see cref="TextLayout.PositionAnchor"/> point of this text's <see cref="Layout"/> is in the world (its centre if the anchor is <see cref="Orientation2D.None"/>).
+	/// </summary>
+	/// <remarks>
+	/// This is the same point that was given as the position when this text was created or last laid out. Rotating or rescaling the text keeps this
+	/// point where it is.
+	/// </remarks>
 	public Location Position {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => UnderlyingModelInstance.Position;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetPosition(value);
+		get {
+			var transform = UnderlyingModelInstance.Transform;
+			return (transform.Translation - CalculateRotatedAnchorOffset(in transform)).AsLocation();
+		}
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			UnderlyingModelInstance.SetPosition(value + CalculateRotatedAnchorOffset(in transform));
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Position"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -99,11 +121,16 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	public void SetPosition(Location position) => Position = position;
 
 	/// <inheritdoc />
+	/// <remarks>
+	/// The text turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
 	public Rotation Rotation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Rotation;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetRotation(value);
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Rotation = value });
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Rotation"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -113,11 +140,16 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
 	/// <inheritdoc />
+	/// <remarks>
+	/// The text turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
 	public Quaternion RotationQuaternion {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.RotationQuaternion;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetRotationQuaternion(value);
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { RotationQuaternion = value });
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="RotationQuaternion"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -129,14 +161,17 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	Vect IScaledSceneObject.Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = value });
+		}
 	}
 	/// <summary>
 	/// How large this text is on each of its two axes, where <c>(1, 1)</c> is the size its layout gives it.
 	/// </summary>
 	/// <remarks>
-	/// Text is flat, so only two axes are meaningful; setting this leaves the third axis at <c>1</c>.
+	/// Text is flat, so only two axes are meaningful; setting this leaves the third axis at <c>1</c>. Rescaling keeps the text's <see cref="Position"/>
+	/// (i.e. its anchor point) where it is.
 	/// </remarks>
 	public XYPair<float> Scaling {
 		get {
@@ -144,7 +179,8 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 			return (scalingVect.X, scalingVect.Y);
 		}
 		set {
-			UnderlyingModelInstance.SetScaling(new Vect(value.X, value.Y, 1f));
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = new Vect(value.X, value.Y, 1f) });
 		}
 	}
 	/// <summary>
@@ -223,29 +259,53 @@ public readonly struct TextInstance : ITextInstance, IEquatable<TextInstance>, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void MoveBy(Vect translation) => UnderlyingModelInstance.MoveBy(translation);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation);
+	/// <remarks>
+	/// The text turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
+	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation, Position);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotation, pivotPoint);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Quaternion rotationQuaternion) => UnderlyingModelInstance.RotateBy(rotationQuaternion);
+	/// <remarks>
+	/// The text turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
+	public void RotateBy(Quaternion rotationQuaternion) => UnderlyingModelInstance.RotateBy(rotationQuaternion, Position);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotationQuaternion, pivotPoint);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(float scalar) => UnderlyingModelInstance.ScaleBy(scalar);
+	public void ScaleBy(float scalar) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(Vect vect) => UnderlyingModelInstance.ScaleBy(vect);
+	public void ScaleBy(Vect vect) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(vect));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(float scalar) => UnderlyingModelInstance.AdjustScaleBy(scalar);
+	public void AdjustScaleBy(float scalar) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(Vect vect) => UnderlyingModelInstance.AdjustScaleBy(vect);
+	public void AdjustScaleBy(Vect vect) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(vect));
+	}
+
+	Vect CalculateRotatedAnchorOffset(in Transform transform) {
+		var anchor = Layout.PositionAnchor;
+		if (anchor == Orientation2D.None) return Vect.Zero;
+		var @string = String;
+		return @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(transform.Scaling.X, transform.Scaling.Y), anchor) * transform.Rotation;
+	}
+
+	void SetTransformPreservingAnchor(in Transform currentTransform, Transform newTransform) {
+		var anchorPoint = currentTransform.Translation - CalculateRotatedAnchorOffset(in currentTransform);
+		UnderlyingModelInstance.SetTransform(newTransform with { Translation = anchorPoint + CalculateRotatedAnchorOffset(in newTransform) });
+	}
 
 	/// <summary>
 	/// Disposes the underlying model instance, removing this text from any scene it is in.

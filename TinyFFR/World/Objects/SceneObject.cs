@@ -161,6 +161,14 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static TextInstance FromSceneObject(in SceneObject sceneObject) => new(FastFromStub<ModelInstance>(sceneObject.Stub));
 	}
+	readonly struct CameraLockedQuadInstanceStubConverter : IStubConverter<CameraLockedQuadInstance> {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static CameraLockedQuadInstance FromSceneObject(in SceneObject sceneObject) => new(new QuadInstance(FastFromStub<ModelInstance>(sceneObject.Stub)));
+	}
+	readonly struct CameraLockedTextInstanceStubConverter : IStubConverter<CameraLockedTextInstance> {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static CameraLockedTextInstance FromSceneObject(in SceneObject sceneObject) => new(new TextInstance(FastFromStub<ModelInstance>(sceneObject.Stub)));
+	}
 
 	public SceneObjectType SceneObjectType { get; }
 
@@ -420,8 +428,8 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	public static SceneObjectAdapterFunctionTable ForCameraLockedQuadInstance { get; } = CreateForCameraLockedQuadInstance();
 	static SceneObjectAdapterFunctionTable CreateForCameraLockedQuadInstance() {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.CameraLockedQuadInstance);
-		result.AddPositioned<ModelInstance, ResourceStubConverter<ModelInstance>>();
-		result.AddScaled<ModelInstance, ResourceStubConverter<ModelInstance>>();
+		result.AddPositioned<CameraLockedQuadInstance, CameraLockedQuadInstanceStubConverter>();
+		result.AddScaled<CameraLockedQuadInstance, CameraLockedQuadInstanceStubConverter>();
 		result.AddMaterialReceiving<ModelInstance, ResourceStubConverter<ModelInstance>>();
 		return result;
 	}
@@ -436,8 +444,8 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	public static SceneObjectAdapterFunctionTable ForCameraLockedTextInstance { get; } = CreateForCameraLockedTextInstance();
 	static SceneObjectAdapterFunctionTable CreateForCameraLockedTextInstance() {
 		var result = new SceneObjectAdapterFunctionTable(SceneObjectType.CameraLockedTextInstance);
-		result.AddPositioned<ModelInstance, ResourceStubConverter<ModelInstance>>();
-		result.AddScaled<ModelInstance, ResourceStubConverter<ModelInstance>>();
+		result.AddPositioned<CameraLockedTextInstance, CameraLockedTextInstanceStubConverter>();
+		result.AddScaled<CameraLockedTextInstance, CameraLockedTextInstanceStubConverter>();
 		return result;
 	}
 

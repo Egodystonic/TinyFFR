@@ -35,6 +35,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, TextInstanceData> _activeInstanceTextInstanceData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockConfig> _activeInstanceCameraLockData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Orientation2D> _activeInstanceQuadAnchors = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasScene> _activeInstanceCanvases = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, int> _activeInstanceDrawOrderDeferralAmounts = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
@@ -678,8 +679,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		var font = @string.Font;
 		
 		var currentTransform = _activeInstanceTransforms[handle];
-		var currentScaling = font.GetTextInstanceScaling(data.String.Size, layout);
-		var currentOffset = font.GetTextInstanceAnchorOffset(data.String.Size, currentScaling, layout.PositionAnchor);
+		var currentScaling = new XYPair<float>(currentTransform.Scaling.X, currentTransform.Scaling.Y);
+		var currentOffset = data.String.Font.GetTextInstanceAnchorOffset(data.String.Size, currentScaling, layout.PositionAnchor);
 		
 		var anchorPoint = currentTransform.Translation - currentOffset * currentTransform.Rotation;
 		var newScaling = font.GetTextInstanceScaling(@string.Size, layout);
@@ -694,6 +695,19 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	public FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceTextInstanceData[handle].String;
+	}
+	public TextLayout GetTextInstanceLayout(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData[handle].Layout;
+	}
+	public Orientation2D GetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceQuadAnchors.TryGetValue(handle, out var result) ? result : Orientation2D.None;
+	}
+	public void SetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle, Orientation2D positionAnchor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (positionAnchor == Orientation2D.None) _activeInstanceQuadAnchors.Remove(handle);
+		else _activeInstanceQuadAnchors[handle] = positionAnchor;
 	}
 
 	public void SetCameraLockConfig(ResourceHandle<ModelInstance> handle, CameraLockConfig config) {
@@ -883,6 +897,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	void DisposeTextInstanceDataIfPresent(ResourceHandle<ModelInstance> handle) => _activeInstanceTextInstanceData.Remove(handle);
 	void DisposeViewDataIfPresent(ResourceHandle<ModelInstance> handle) {
 		_activeInstanceCameraLockData.Remove(handle);
+		_activeInstanceQuadAnchors.Remove(handle);
 		_activeInstanceCanvases.Remove(handle);
 	}
 
@@ -897,6 +912,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_activeInstanceVertexMutationData.Dispose();
 			_activeInstanceTextInstanceData.Dispose();
 			_activeInstanceCameraLockData.Dispose();
+			_activeInstanceQuadAnchors.Dispose();
 			_activeInstanceCanvases.Dispose();
 			_activeInstanceDrawOrderDeferralAmounts.Dispose();
 		}

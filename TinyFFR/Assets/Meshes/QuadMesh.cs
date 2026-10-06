@@ -187,10 +187,23 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	/// </summary>
 	/// <remarks>
 	/// Only use this for an instance that really was created from a standard quad mesh; nothing here verifies that it was.
+	/// The given anchor replaces any the instance already had, and is what <see cref="PositionAnchor"/> reports from then on; it does not move the quad.
 	/// </remarks>
 	/// <param name="underlyingModelInstance">The model instance to wrap.</param>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static QuadInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance) => new(underlyingModelInstance);
+	/// <param name="positionAnchor">The value for <see cref="PositionAnchor"/>.</param>
+	public static QuadInstance FromPreviouslyAllocatedUnderlyingModelInstance(ModelInstance underlyingModelInstance, Orientation2D positionAnchor) {
+		underlyingModelInstance.Implementation.SetQuadInstancePositionAnchor(underlyingModelInstance.Handle, positionAnchor);
+		return new(underlyingModelInstance);
+	}
+
+	/// <summary>
+	/// Which point of the quad is placed at its <see cref="Position"/> (or the centre if <see cref="Orientation2D.None"/>).
+	/// </summary>
+	/// <remarks>
+	/// Set when the quad is created or placed via <see cref="SetTransform(Location, XYPair{float}, Direction, Direction?, Orientation2D)"/>.
+	/// Moving, turning and rescaling the quad keep this point where it is.
+	/// </remarks>
+	public Orientation2D PositionAnchor => UnderlyingModelInstance.Implementation.GetQuadInstancePositionAnchor(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
 
 
 	static QuadInstance WrapBase(ModelInstance b) => new(b);
@@ -205,6 +218,9 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	static QuadInstance IResource<QuadInstance>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
 	/// <inheritdoc />
+	/// <remarks>
+	/// The transform's translation is the centre of the quad, which differs from <see cref="Position"/> when the quad has a non-<c>None</c> <see cref="PositionAnchor"/>.
+	/// </remarks>
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Transform;
@@ -218,12 +234,22 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Transform = transform;
 	
-	/// <inheritdoc />
+	/// <summary>
+	/// Where this quad's <see cref="PositionAnchor"/> point is in the world (its centre if the anchor is <see cref="Orientation2D.None"/>).
+	/// </summary>
+	/// <remarks>
+	/// This is the same point that was given as the position when this quad was created or last placed. Turning or rescaling the quad keeps
+	/// this point where it is.
+	/// </remarks>
 	public Location Position {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => UnderlyingModelInstance.Position;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetPosition(value);
+		get {
+			var transform = UnderlyingModelInstance.Transform;
+			return (transform.Translation - CalculateRotatedAnchorOffset(in transform)).AsLocation();
+		}
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			UnderlyingModelInstance.SetPosition(value + CalculateRotatedAnchorOffset(in transform));
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Position"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -233,11 +259,16 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	public void SetPosition(Location position) => Position = position;
 
 	/// <inheritdoc />
+	/// <remarks>
+	/// The quad turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
 	public Rotation Rotation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Rotation;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetRotation(value);
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Rotation = value });
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Rotation"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -247,11 +278,16 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	public void SetRotation(Rotation rotation) => Rotation = rotation;
 
 	/// <inheritdoc />
+	/// <remarks>
+	/// The quad turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
 	public Quaternion RotationQuaternion {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.RotationQuaternion;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetRotationQuaternion(value);
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { RotationQuaternion = value });
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="RotationQuaternion"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -263,15 +299,18 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	Vect IScaledSceneObject.Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingModelInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = value });
+		}
 	}
 	/// <summary>
 	/// How large this quad is on each of its two axes, where <c>(1, 1)</c> is its unmodified size.
 	/// </summary>
 	/// <remarks>
 	/// A quad is flat, so only two axes are meaningful; setting this leaves the third axis at <c>1</c>. Because a standard
-	/// quad mesh is a one-by-one square, this doubles as the quad's size in world units (metres).
+	/// quad mesh is a one-by-one square, this doubles as the quad's size in world units (metres). Rescaling keeps the quad's
+	/// <see cref="Position"/> (i.e. its anchor point) where it is.
 	/// </remarks>
 	public XYPair<float> Scaling {
 		get {
@@ -279,7 +318,8 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 			return (scalingVect.X, scalingVect.Y);
 		}
 		set {
-			UnderlyingModelInstance.SetScaling(new Vect(value.X, value.Y, 1f));
+			var transform = UnderlyingModelInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = new Vect(value.X, value.Y, 1f) });
 		}
 	}
 	/// <summary>
@@ -330,8 +370,9 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	/// <param name="size">How large the quad should be, in world units (metres).</param>
 	/// <param name="facingDirection">Which way the quad's front face should point.</param>
 	/// <param name="uprightDirection">Which way is "up" across the quad's face, or <see langword="null"/> to derive one from <paramref name="facingDirection"/>. Must not be parallel to <paramref name="facingDirection"/>.</param>
-	/// <param name="positionAnchor">Which point of the quad is placed at <paramref name="position"/> (or the centre if <see cref="Orientation2D.None"/>).</param>
+	/// <param name="positionAnchor">Which point of the quad is placed at <paramref name="position"/> (or the centre if <see cref="Orientation2D.None"/>). This becomes the quad's new <see cref="PositionAnchor"/>.</param>
 	public void SetTransform(Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		UnderlyingModelInstance.Implementation.SetQuadInstancePositionAnchor(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), positionAnchor);
 		UnderlyingModelInstance.SetTransform(QuadMesh.CalculateTransformForStandardQuadMesh(position, size, facingDirection, uprightDirection, positionAnchor));
 	}
 
@@ -339,29 +380,52 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void MoveBy(Vect translation) => UnderlyingModelInstance.MoveBy(translation);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation);
+	/// <remarks>
+	/// The quad turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
+	public void RotateBy(Rotation rotation) => UnderlyingModelInstance.RotateBy(rotation, Position);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotation, pivotPoint);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void RotateBy(Quaternion rotationQuaternion) => UnderlyingModelInstance.RotateBy(rotationQuaternion);
+	/// <remarks>
+	/// The quad turns around its <see cref="Position"/> (i.e. its anchor point).
+	/// </remarks>
+	public void RotateBy(Quaternion rotationQuaternion) => UnderlyingModelInstance.RotateBy(rotationQuaternion, Position);
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) => UnderlyingModelInstance.RotateBy(rotationQuaternion, pivotPoint);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(float scalar) => UnderlyingModelInstance.ScaleBy(scalar);
+	public void ScaleBy(float scalar) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(Vect vect) => UnderlyingModelInstance.ScaleBy(vect);
+	public void ScaleBy(Vect vect) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(vect));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(float scalar) => UnderlyingModelInstance.AdjustScaleBy(scalar);
+	public void AdjustScaleBy(float scalar) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(Vect vect) => UnderlyingModelInstance.AdjustScaleBy(vect);
+	public void AdjustScaleBy(Vect vect) {
+		var transform = UnderlyingModelInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(vect));
+	}
+
+	Vect CalculateRotatedAnchorOffset(in Transform transform) {
+		var anchor = PositionAnchor;
+		if (anchor == Orientation2D.None) return Vect.Zero;
+		return QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(transform.Scaling.X, transform.Scaling.Y), anchor) * transform.Rotation;
+	}
+
+	void SetTransformPreservingAnchor(in Transform currentTransform, Transform newTransform) {
+		var anchorPoint = currentTransform.Translation - CalculateRotatedAnchorOffset(in currentTransform);
+		UnderlyingModelInstance.SetTransform(newTransform with { Translation = anchorPoint + CalculateRotatedAnchorOffset(in newTransform) });
+	}
 	
 	/// <summary>
 	/// Sets the base colour this quad is drawn in, for a quad using one of the built-in default materials.
@@ -444,8 +508,11 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObj
 	/// </remarks>
 	public Direction LockedUprightDirection => GetLockConfig().LockedUprightDirection;
 	/// <summary>
-	/// Which point of the quad is placed at its position (or the centre if <see cref="Orientation2D.None"/>).
+	/// Which point of the quad is placed at its <see cref="Position"/> (or the centre if <see cref="Orientation2D.None"/>).
 	/// </summary>
+	/// <remarks>
+	/// The anchor holds in every <see cref="ScalingMode"/>, and stays put when the quad is rescaled.
+	/// </remarks>
 	public Orientation2D PositionAnchor => GetLockConfig().PositionAnchor;
 	/// <summary>
 	/// How this quad's size responds to its distance from the camera.
@@ -498,12 +565,21 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObj
 		return new(underlyingQuadInstance);
 	}
 	
-	/// <inheritdoc />
+	/// <summary>
+	/// Where this quad's <see cref="PositionAnchor"/> point is in the world (its centre if the anchor is <see cref="Orientation2D.None"/>).
+	/// </summary>
+	/// <remarks>
+	/// This is the same point that was given as the position when this quad was created.
+	/// </remarks>
 	public Location Position {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => UnderlyingQuadInstance.Position;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingQuadInstance.SetPosition(value);
+		get {
+			var transform = UnderlyingQuadInstance.Transform;
+			return (transform.Translation - CalculateRotatedAnchorOffset(in transform)).AsLocation();
+		}
+		set {
+			var transform = UnderlyingQuadInstance.Transform;
+			UnderlyingQuadInstance.UnderlyingModelInstance.SetPosition(value + CalculateRotatedAnchorOffset(in transform));
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Position"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -515,20 +591,24 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObj
 	Vect IScaledSceneObject.Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingQuadInstance.UnderlyingModelInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingQuadInstance.UnderlyingModelInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingQuadInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = value });
+		}
 	}
 	/// <summary>
 	/// How large this quad is on each of its two axes, where <c>(1, 1)</c> is its unmodified size.
 	/// </summary>
 	/// <remarks>
-	/// How this translates in to the quad's size on screen depends on <see cref="ScalingMode"/>.
+	/// How this translates in to the quad's size on screen depends on <see cref="ScalingMode"/>. Rescaling keeps the <see cref="PositionAnchor"/> point where it is.
 	/// </remarks>
 	public XYPair<float> Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingQuadInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingQuadInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingQuadInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = new Vect(value.X, value.Y, 1f) });
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Scaling"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -571,17 +651,36 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObj
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void MoveBy(Vect translation) => UnderlyingQuadInstance.MoveBy(translation);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(float scalar) => UnderlyingQuadInstance.ScaleBy(scalar);
+	public void ScaleBy(float scalar) {
+		var transform = UnderlyingQuadInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(Vect vect) => UnderlyingQuadInstance.ScaleBy(vect);
+	public void ScaleBy(Vect vect) {
+		var transform = UnderlyingQuadInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(vect));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(float scalar) => UnderlyingQuadInstance.AdjustScaleBy(scalar);
+	public void AdjustScaleBy(float scalar) {
+		var transform = UnderlyingQuadInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(Vect vect) => UnderlyingQuadInstance.AdjustScaleBy(vect);
+	public void AdjustScaleBy(Vect vect) {
+		var transform = UnderlyingQuadInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(vect));
+	}
+
+	Vect CalculateRotatedAnchorOffset(in Transform transform) {
+		var anchor = PositionAnchor;
+		if (anchor == Orientation2D.None) return Vect.Zero;
+		return QuadMesh.CalculateAnchorOffsetForStandardQuadMesh(new XYPair<float>(transform.Scaling.X, transform.Scaling.Y), anchor) * transform.Rotation;
+	}
+
+	void SetTransformPreservingAnchor(in Transform currentTransform, Transform newTransform) {
+		var anchorPoint = currentTransform.Translation - CalculateRotatedAnchorOffset(in currentTransform);
+		UnderlyingQuadInstance.UnderlyingModelInstance.SetTransform(newTransform with { Translation = anchorPoint + CalculateRotatedAnchorOffset(in newTransform) });
+	}
 	
 	/// <summary>
 	/// Sets the base colour this quad is drawn in, for a quad using one of the built-in default materials.

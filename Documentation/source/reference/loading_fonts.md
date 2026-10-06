@@ -9,7 +9,7 @@ description: Information on how to load fonts in TinyFFR.
 
     * Fonts can be loaded from `.ttf` files, or you can use one of TinyFFR's built-in fonts. :material-arrow-right: [Loading Fonts](#loading-fonts)
     * Every character a font can draw is prepared when the font is loaded, so the set of supported characters is chosen up front. :material-arrow-right: [Customizing the Load Operation](#customizing-the-load-operation)
-    * Once loaded, fonts are used to draw text in 2D or 3D scenes. :material-arrow-right: [FontString & FontPen](fontstring_and_fontpen.md)
+    * Once loaded, fonts are used to draw text in 2D or 3D scenes. :material-arrow-right: [Text Instances](text_instances.md)
 
 </div>
 
@@ -30,11 +30,11 @@ using var helloWorld = defaultFont.CreateString("Hello, world!");
 
 3.	Loads a font from a `.ttf` file.
 
-4.	Creates a pen and a string from the font, ready to be drawn. Pens and strings are explained on the next page: [FontString & FontPen](fontstring_and_fontpen.md).
+4.	Creates a pen and a string from the font, ready to be drawn. Pens and strings are explained on the next page: [Text Instances](text_instances.md).
 
 A `Font` represents a typeface loaded and prepared for drawing text. Fonts can be loaded via `factory.AssetLoader.LoadFont()`, either from one of TinyFFR's [built-in fonts](#built-in-fonts) or from a font file. Font files must be in TrueType (`.ttf`) format.
 
-A font on its own doesn't draw anything. To draw text, you create a `FontPen` (which determines the colours text is drawn in) and a `FontString` (the text itself) from the font; both are explained on the [next page](fontstring_and_fontpen.md).
+A font on its own doesn't draw anything. To draw text, you create a `FontPen` (which determines the colours text is drawn in) and a `FontString` (the text itself) from the font; both are explained on the [next page](text_instances.md).
 
 ??? abstract "Font System Under the Hood"
 	When a font is loaded, TinyFFR draws every character the font should be able to display in to a single texture (known as the font's *atlas*), once, up front. Text is then assembled from that texture, which makes drawing text cheap; but it also means the set of characters a font can draw is fixed when it's loaded (see [Customizing the Load Operation](#customizing-the-load-operation) below).

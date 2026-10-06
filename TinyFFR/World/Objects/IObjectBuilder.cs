@@ -493,17 +493,24 @@ public interface IObjectBuilder {
 					positionAnchor
 				),
 				Name = name
-			}
+			},
+			positionAnchor
 		);
 	}
 	/// <summary>
 	/// Creates a new instance of a flat quad; i.e. a rectangle in the world; using a pre-allocated <see cref="QuadMesh"/> that describes the quad geometry.
 	/// </summary>
+	/// <remarks>
+	/// The translation of the config's initial transform is the centre of the quad; <paramref name="positionAnchor"/> only records which point of the quad
+	/// its <see cref="QuadInstance.Position"/> refers to. <see cref="QuadMesh.CalculateTransformForStandardQuadMesh"/> calculates an initial transform that
+	/// places a given anchor point at a given position.
+	/// </remarks>
 	/// <param name="mesh">The mesh giving the new instance its shape.</param>
 	/// <param name="material">The material giving the new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
-	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
-		return QuadInstance.FromPreviouslyAllocatedUnderlyingModelInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
+	/// <param name="positionAnchor">The value for the new instance's <see cref="QuadInstance.PositionAnchor"/>.</param>
+	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config, Orientation2D positionAnchor = Orientation2D.None) {
+		return QuadInstance.FromPreviouslyAllocatedUnderlyingModelInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config), positionAnchor);
 	}
 	
 	/// <summary>
@@ -521,7 +528,7 @@ public interface IObjectBuilder {
 	/// <param name="scalingMode">How the object is sized on screen; see <see cref="CameraLockedScalingMode"/>.</param>
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; see <see cref="CameraLockStyle"/>.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPlane, ReadOnlySpan<char> name = default) {
 		return CreateCameraLockedQuadInstance(
 			mesh,
 			material,
@@ -648,7 +655,7 @@ public interface IObjectBuilder {
 	/// <param name="scalingMode">How the object is sized on screen; see <see cref="CameraLockedScalingMode"/>.</param>
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; <see cref="CameraLockStyle"/>.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPlane, ReadOnlySpan<char> name = default) {
 		layout ??= new TextLayout();
 		return CreateCameraLockedTextInstance(
 			pen,

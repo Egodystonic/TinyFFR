@@ -219,6 +219,18 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// Invoked via <see cref="TextInstance.String"/>.
 	/// </summary>
 	FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked via <see cref="TextInstance.Layout"/>.
+	/// </summary>
+	TextLayout GetTextInstanceLayout(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked via <see cref="QuadInstance.PositionAnchor"/>.
+	/// </summary>
+	Orientation2D GetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked internally when a quad instance is created or placed with a position anchor.
+	/// </summary>
+	void SetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle, Orientation2D positionAnchor);
 	
 	/// <summary>
 	/// Invoked internally when a camera-locked quad or text instance is created (or wrapped via one of their <c>FromPreviouslyAllocated...</c> methods).

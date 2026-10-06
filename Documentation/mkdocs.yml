@@ -176,6 +176,10 @@ nav:
                 - reference/camera_controller_orbital.md
                 - reference/camera_controller_pan_tilt_zoom.md
                 - reference/camera_controller_programmed.md
+        - reference/quads.md
+        - reference/text_instances.md
+        - reference/camera-locked_objects.md
+        - reference/scene_primitives.md
 
 not_in_nav: |
 

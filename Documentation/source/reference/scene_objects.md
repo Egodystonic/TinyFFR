@@ -201,7 +201,7 @@ using var text = factory.ObjectBuilder.CreateTextInstance(pen, str, position: ne
 
 A `TextInstance` is a string of text placed in the world, drawn with a `FontPen` and `FontString` created from a [`Font`](loading_fonts.md). A text instance's `Pen` and `String` can be changed at any time. Like quads, its scaling is two-dimensional. 
 
-Pens, strings, and text instances are explained in full on their own pages: [FontString & FontPen](fontstring_and_fontpen.md).
+Pens, strings, and text instances are explained in full on their own pages: [Text Instances](text_instances.md).
 
 ### Camera-Locked Objects
 

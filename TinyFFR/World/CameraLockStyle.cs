@@ -15,6 +15,19 @@ namespace Egodystonic.TinyFFR.World;
 /// </remarks>
 public enum CameraLockStyle {
 	/// <summary>
+	/// Every object turns to sit square-on to the screen, all sharing the camera's orientation rather than aiming at its position.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Because every object ends up parallel to the screen, flat content such as text stays perfectly undistorted wherever it appears; this is usually the better
+	/// choice for user-interface-like elements.
+	/// </para>
+	/// <para>
+	/// A note on performance: Compared to <see cref="FaceCameraPosition"/> this choice has a much lighter performance impact.
+	/// </para>
+	/// </remarks>
+	FaceCameraPlane,
+	/// <summary>
 	/// Each object turns to point directly at the camera's position, like a crowd all looking at one person.
 	/// </summary>
 	/// <remarks>
@@ -27,17 +40,4 @@ public enum CameraLockStyle {
 	/// </para>
 	/// </remarks>
 	FaceCameraPosition,
-	/// <summary>
-	/// Every object turns to sit square-on to the screen, all sharing the camera's orientation rather than aiming at its position.
-	/// </summary>
-	/// <remarks>
-	/// <para>
-	/// Because every object ends up parallel to the screen, flat content such as text stays perfectly undistorted wherever it appears; this is usually the better
-	/// choice for user-interface-like elements.
-	/// </para>
-	/// <para>
-	/// A note on performance: Compared to <see cref="FaceCameraPosition"/> this choice has a much lighter performance impact.
-	/// </para>
-	/// </remarks>
-	FaceCameraPlane
 }

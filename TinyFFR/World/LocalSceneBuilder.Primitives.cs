@@ -726,15 +726,11 @@ sealed partial class LocalSceneBuilder {
 			var clipped = new BoundedRay(clipStart, clipEnd);
 
 			var facingAnchor = clipped.BoundedLocationAtDistance(clipped.BoundedDistanceAtPointClosestTo(screenScaling.CameraPosition));
-			var billboard = new Transform(facingAnchor.AsVect(), Rotation.None, new Vect(1f, clipped.Length, 1f));
-			if (screenScaling.ProjectionType == CameraProjectionType.Orthographic) {
-				GetPlanarCylindricalCameraLockedTransform(ref billboard, Vect.Zero, -screenScaling.CameraViewDirection, segment.Direction);
-			}
-			else {
-				GetCylindricalCameraLockedTransform(ref billboard, Vect.Zero, screenScaling.CameraPosition, segment.Direction);
-			}
-			billboard = billboard with { Translation = clipped.MiddlePoint.AsVect() };
-			bodyInstance.SetTransform(billboard);
+			var lockStyle = screenScaling.ProjectionType == CameraProjectionType.Orthographic ? CameraLockStyle.FaceCameraPlane : CameraLockStyle.FaceCameraPosition;
+			var rotation = TryCalculateCameraLockedFacing(facingAnchor, lockStyle, segment.Direction, screenScaling.CameraPosition, Direction.None, -screenScaling.CameraViewDirection, out var facingDirection, out var upDirection)
+				? CalculateCameraLockedRotation(facingDirection, upDirection)
+				: Quaternion.Identity;
+			bodyInstance.SetTransform(new Transform(clipped.MiddlePoint.AsVect(), rotation, new Vect(1f, clipped.Length, 1f)));
 
 			var halfStart = HalfLineWidthAt(clipStart, width, constantScreenSize, in screenScaling);
 			var halfEnd = HalfLineWidthAt(clipEnd, width, constantScreenSize, in screenScaling);

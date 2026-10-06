@@ -39,8 +39,11 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 	/// </remarks>
 	public Direction LockedUprightDirection => GetLockConfig().LockedUprightDirection;
 	/// <summary>
-	/// Which point of the text is placed at its position (or the centre if <see cref="Orientation2D.None"/>).
+	/// Which point of the text is placed at its <see cref="Position"/> (or the centre if <see cref="Orientation2D.None"/>).
 	/// </summary>
+	/// <remarks>
+	/// The anchor holds in every <see cref="ScalingMode"/>, and stays put when the text is rescaled or its <see cref="String"/> is changed.
+	/// </remarks>
 	public Orientation2D PositionAnchor => GetLockConfig().PositionAnchor;
 	/// <summary>
 	/// How this text's size responds to its distance from the camera.
@@ -129,12 +132,21 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetString(FontString @string) => String = @string;
 
-	/// <inheritdoc />
+	/// <summary>
+	/// Where this text's <see cref="PositionAnchor"/> point is in the world (its centre if the anchor is <see cref="Orientation2D.None"/>).
+	/// </summary>
+	/// <remarks>
+	/// This is the same point that was given as the position when this text was created.
+	/// </remarks>
 	public Location Position {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => UnderlyingTextInstance.Position;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingTextInstance.SetPosition(value);
+		get {
+			var transform = UnderlyingTextInstance.Transform;
+			return (transform.Translation - CalculateRotatedAnchorOffset(in transform)).AsLocation();
+		}
+		set {
+			var transform = UnderlyingTextInstance.Transform;
+			UnderlyingTextInstance.UnderlyingModelInstance.SetPosition(value + CalculateRotatedAnchorOffset(in transform));
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Position"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -146,20 +158,24 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 	Vect IScaledSceneObject.Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingTextInstance.UnderlyingModelInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingTextInstance.UnderlyingModelInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingTextInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = value });
+		}
 	}
 	/// <summary>
 	/// How large this text is on each of its two axes, where <c>(1, 1)</c> is the size its layout gives it.
 	/// </summary>
 	/// <remarks>
-	/// How this translates in to the text's size on screen depends on <see cref="ScalingMode"/>.
+	/// How this translates in to the text's size on screen depends on <see cref="ScalingMode"/>. Rescaling keeps the <see cref="PositionAnchor"/> point where it is.
 	/// </remarks>
 	public XYPair<float> Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingTextInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingTextInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingTextInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = new Vect(value.X, value.Y, 1f) });
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Scaling"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -182,17 +198,37 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<Came
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void MoveBy(Vect translation) => UnderlyingTextInstance.MoveBy(translation);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(float scalar) => UnderlyingTextInstance.ScaleBy(scalar);
+	public void ScaleBy(float scalar) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(Vect vect) => UnderlyingTextInstance.ScaleBy(vect);
+	public void ScaleBy(Vect vect) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(vect));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(float scalar) => UnderlyingTextInstance.AdjustScaleBy(scalar);
+	public void AdjustScaleBy(float scalar) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(Vect vect) => UnderlyingTextInstance.AdjustScaleBy(vect);
+	public void AdjustScaleBy(Vect vect) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(vect));
+	}
+
+	Vect CalculateRotatedAnchorOffset(in Transform transform) {
+		var anchor = PositionAnchor;
+		if (anchor == Orientation2D.None) return Vect.Zero;
+		var @string = UnderlyingTextInstance.String;
+		return @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(transform.Scaling.X, transform.Scaling.Y), anchor) * transform.Rotation;
+	}
+
+	void SetTransformPreservingAnchor(in Transform currentTransform, Transform newTransform) {
+		var anchorPoint = currentTransform.Translation - CalculateRotatedAnchorOffset(in currentTransform);
+		UnderlyingTextInstance.UnderlyingModelInstance.SetTransform(newTransform with { Translation = anchorPoint + CalculateRotatedAnchorOffset(in newTransform) });
+	}
 
 	/// <summary>
 	/// Disposes the underlying text object, removing this text from any scene it is in.
