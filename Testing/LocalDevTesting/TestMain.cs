@@ -43,6 +43,12 @@ static partial class TestMain {
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
 		
 		//builder.Context.ModelInstance = null;
+		
+		var vect = new Vect();
+		var direction = new Direction();
+		var location = new Location();
+		
+		location = direction.AsVect(
 	}
 
 	public static void StartTest(TestContext context) {

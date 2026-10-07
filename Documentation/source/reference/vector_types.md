@@ -8,9 +8,7 @@ description: Information on TinyFFR's three 3D vector types (Location, Vect, and
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
     * TinyFFR has three 3D vector types: `Location` (a point in space), `Vect` (a movement with a length), and `Direction` (a way of pointing, with no length). :material-arrow-right: [The Three Vector Types](#the-three-vector-types)
-    * Each type only offers the operations that make sense for it, and converting between them is explicit. :material-arrow-right: [Location](#location), [Vect](#vect), [Direction](#direction), [Converting Between Types](#converting-between-types)
     * All three share common features: Component access, `System.Numerics` interop, parsing and formatting, and random generation. :material-arrow-right: [Common Features](#common-features)
-    * `SphericalTranslation` describes a direction as an offset around a sphere. :material-arrow-right: [SphericalTranslation](#sphericaltranslation)
 
 </div>
 
@@ -18,12 +16,12 @@ description: Information on TinyFFR's three 3D vector types (Location, Vect, and
 
 ![A diagram of TinyFFR's axes, two Locations, the Vect between them, and a Direction](vector_types_axes.jpg)
 /// caption
-TinyFFR's 3D axes: +X points left, +Y points up, and +Z points forward. `Location`s A and B are points in space; the `Vect` from A to B describes the movement between them (including its length); and the `Direction` points the same way with no particular length (it's always drawn here as length 1).
+TinyFFR's 3D axes: +X points left, +Y points up, and +Z points forward. `Location`s A and B are points in space; the `Vect` from A to B describes the movement between them (including its length); and the `Direction` points the same way with no particular length (it's drawn here with length 1).
 ///
 
 Everything in a TinyFFR scene is positioned along three axes, X, Y, and Z, that are all at right-angles to each other. By default +X points left, +Y points up, and +Z points forward, and distances are measured in metres. The point where all three axes meet, `(0, 0, 0)`, is the *origin*.
 
-Many math libraries use a single "vector" type for everything. TinyFFR instead has three, because points, movements, and directions behave differently, and keeping them apart makes code clearer and prevents mistakes:
+Many math libraries use a single "vector" type for everything; TinyFFR separates them by intent.
 
 | Type | Represents | Has a position? | Has a length? | Example |
 | :-- | :-- | :-- | :-- | :-- |
@@ -38,11 +36,11 @@ For example, adding two `Location`s together makes no sense (what is "London plu
 	* "Vector" also commonly means a resizable list in programming.
 	* `Location` and `Direction` are technically vectors as well; `Vect` is specifically the vector that's neither a point nor a pure direction.
 
-All three types are small, immutable `struct`s: Every operation returns a new value rather than modifying the existing one.
+All three types are small, immutable `struct`s. Every operation returns a new value rather than modifying the existing one.
 
-## Location
+### Location
 
-A `Location` is a single point in space: How far it is from the origin along each of the X, Y, and Z axes.
+A `Location` is a single point in space.
 
 ```csharp
 var a = new Location(1f, 2f, 3f); // (1)!
@@ -113,9 +111,9 @@ var rotated = location.RotatedBy(rotation, pivot); // (5)!
 
 :   A location `distance` of the way along the straight line from `start` to `end` (e.g. `0.5f` is halfway).
 
-## Vect
+### Vect
 
-A `Vect` is a movement or offset through space: It has a direction and a length, but no position.
+A `Vect` is a displacement through space; i.e. a direction and a length (magnitude).
 
 ```csharp
 var v = new Vect(1f, -2f, 0f); // (1)!
@@ -208,9 +206,9 @@ var rotated = vect * rotation; // (6)!
 
 :   A `Vect` `distance` of the way between `start` and `end`.
 
-## Direction
+### Direction
 
-A `Direction` is a way of pointing, like an arrow with no position and no particular length. Internally a `Direction` always has a length of exactly 1 (it's a [unit vector](https://en.wikipedia.org/wiki/Unit_vector)), and TinyFFR maintains that for you.
+A `Direction` represents any direction in the world (or `None`) but has no intrinsic position or length of its own.
 
 ```csharp
 var forward = Direction.Forward; // (1)!
@@ -299,9 +297,6 @@ var vect = direction * 3f; // (6)!
 
 :   The nearest of the named *orientations* (such as `Forward`, `UpLeft`, or `DownRightBackward`) to this direction. `Direction.FromOrientation()` goes the other way, and `Direction.AllCardinals`, `AllIntercardinals`, `AllDiagonals`, and `AllOrientations` list them.
 
-??? info "Fast Variants"
-	Some methods (e.g. `OrthogonalizedAgainst()`, `ParallelizedWith()`, and `FromDualOrthogonalization()`) have `Fast` equivalents (`FastOrthogonalizedAgainst()` etc.). These skip checks for the cases that have no single answer (such as `Direction.None`, or directions that are already parallel), and return a non-`null` result. They're slightly faster, but their result is undefined when those checks would have failed, so only use them when you know the inputs are valid.
-
 ??? info "Renormalizing"
 	Each operation on a `Direction` keeps it at unit length, but very long chains of operations (e.g. rotating the same direction by a small amount every frame for hours) can slowly accumulate floating-point error. `Direction.Renormalize(direction)` corrects any drift.
 
@@ -316,19 +311,25 @@ var vectFromOrigin = location.AsVect(); // (1)!
 var locationFromVect = vect.AsLocation(); // (2)!
 var vectFromDirection = direction.AsVect(); // (3)!
 var directionOfVect = vect.Direction; // (4)!
+
+// Alternatively:
+vect = (Vect) direction;
+vect = (Vect) location;
+location = (Location) direction;
+location = (Location) vect;
 ```
 
 1.	The `Vect` that moves the origin to `location`. Equivalent to `(Vect) location`.
 
 2.	The `Location` reached by moving `vect` away from the origin. Equivalent to `(Location) vect`.
 
-3.	A `Vect` of length 1 pointing along `direction`. `direction.AsVect(3f)` (or `direction * 3f`) gives a different length.
+3.	A `Vect` of length 1 pointing along `direction`; `direction.AsVect(3f)` (or `direction * 3f`) gives a different length.
 
 4.	The direction a `Vect` points in.
 
 ## Common Features
 
-All three types (along with many other TinyFFR math types) share the following features:
+All three types share the following features:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `X` / `Y` / `Z` and `this[Axis]`
 

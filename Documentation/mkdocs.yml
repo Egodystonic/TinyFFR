@@ -191,6 +191,8 @@ nav:
         - reference/render_throughput_and_latency.md
         - reference/compositing.md
         - reference/capturing_render_output.md
+    - Math API:
+        - reference/vector_types.md
 
 not_in_nav: |
 
