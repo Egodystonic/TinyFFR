@@ -328,7 +328,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// <seealso cref="ProjectOnToRenderSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
 	/// <seealso cref="ProjectOnToRenderSubAreaSurfacePixels"/>
 	/// <seealso cref="Camera.ProjectOnToNearPlane"/>
-	public XYPair<int>? ProjectOnToRenderSurfacePixels(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToRenderSurface(_handle, location, coordOrigin, disableDpiScalingAdjustment, false) is { } r ? new XYPair<int>((int) MathF.Floor(r.X), (int) MathF.Floor(r.Y)) : null;
+	public XYPair<int>? ProjectOnToRenderSurfacePixels(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToRenderSurface(_handle, location, coordOrigin, disableDpiScalingAdjustment, false) is { } r ? r.Round<float, int>(MidpointRounding.ToNegativeInfinity) : null;
 
 	/// <summary>
 	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, in pixels relative to the target window/buffer, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
@@ -349,14 +349,14 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
 	/// <returns>Where the <paramref name="location"/> appears, or where it is clamped to on the edge of the rendered image.</returns>
 	/// <seealso cref="ProjectOnToRenderSurfacePixels"/>
-	public XYPair<int> ProjectOnToRenderSurfacePixelsClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => FloorToPixel(Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out _));
+	public XYPair<int> ProjectOnToRenderSurfacePixelsClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out _).Round<float, int>(MidpointRounding.ToNegativeInfinity);
 	/// <inheritdoc cref="ProjectOnToRenderSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
 	/// <param name="location">The location in the world to project.</param>
 	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside the camera's view and the result was clamped to the edge of the
 	/// rendered image; otherwise <see langword="false"/>.</param>
 	/// <param name="coordOrigin">Which corner of the target window/buffer should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
 	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
-	public XYPair<int> ProjectOnToRenderSurfacePixelsClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => FloorToPixel(Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out wasClamped));
+	public XYPair<int> ProjectOnToRenderSurfacePixelsClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out wasClamped).Round<float, int>(MidpointRounding.ToNegativeInfinity);
 
 	/// <summary>
 	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, as a fraction of the size of the target window/buffer, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
@@ -427,7 +427,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// <seealso cref="ProjectOnToRenderSubAreaSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
 	/// <seealso cref="ProjectOnToRenderSurfacePixels"/>
 	/// <seealso cref="Camera.ProjectOnToNearPlane"/>
-	public XYPair<int>? ProjectOnToRenderSubAreaSurfacePixels(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToViewportSurface(_handle, location, coordOrigin, disableDpiScalingAdjustment, false) is { } r ? new XYPair<int>((int) MathF.Floor(r.X), (int) MathF.Floor(r.Y)) : null;
+	public XYPair<int>? ProjectOnToRenderSubAreaSurfacePixels(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToViewportSurface(_handle, location, coordOrigin, disableDpiScalingAdjustment, false) is { } r ? r.Round<float, int>(MidpointRounding.ToNegativeInfinity) : null;
 
 	/// <summary>
 	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, in pixels relative to this renderer's render sub-area, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
@@ -448,14 +448,14 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
 	/// <returns>Where the <paramref name="location"/> appears, or where it is clamped to on the edge of the rendered image.</returns>
 	/// <seealso cref="ProjectOnToRenderSubAreaSurfacePixels"/>
-	public XYPair<int> ProjectOnToRenderSubAreaSurfacePixelsClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => FloorToPixel(Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out _));
+	public XYPair<int> ProjectOnToRenderSubAreaSurfacePixelsClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out _).Round<float, int>(MidpointRounding.ToNegativeInfinity);
 	/// <inheritdoc cref="ProjectOnToRenderSubAreaSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
 	/// <param name="location">The location in the world to project.</param>
 	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside the camera's view and the result was clamped to the edge of the
 	/// rendered image; otherwise <see langword="false"/>.</param>
 	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
 	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
-	public XYPair<int> ProjectOnToRenderSubAreaSurfacePixelsClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => FloorToPixel(Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out wasClamped));
+	public XYPair<int> ProjectOnToRenderSubAreaSurfacePixelsClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out wasClamped).Round<float, int>(MidpointRounding.ToNegativeInfinity);
 
 	/// <summary>
 	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, as a fraction of the size of this renderer's render sub-area, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
@@ -504,8 +504,6 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// rendered image; otherwise <see langword="false"/>.</param>
 	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
 	public XYPair<float> ProjectOnToRenderSubAreaSurfaceFractionClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, false, true, out wasClamped);
-
-	static XYPair<int> FloorToPixel(XYPair<float> pixelCoord) => new((int) MathF.Floor(pixelCoord.X), (int) MathF.Floor(pixelCoord.Y));
 
 	/// <summary>
 	/// Sets the sub-area of the <see cref="TargetWindow"/> or <see cref="TargetBuffer"/> this renderer should actually render in to.
