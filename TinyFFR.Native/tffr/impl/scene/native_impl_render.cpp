@@ -600,14 +600,41 @@ StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle vi
 	EndExportedFunc
 }
 
-void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
+void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion, interop_bool flipVertically) {
 	ThrowIfNull(renderer, "Renderer was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(renderTarget, "Render target pointer was null.");
 
 	// renderStandaloneView opens its own implicit beginFrame/endFrame, so ClearOptions must be set per call to preserve the buffer across composited sub-renders.
 	renderer->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, static_cast<bool>(clearAndDiscard), static_cast<bool>(clearAndDiscard) });
-	renderer->renderStandaloneView(viewDescriptor);
+
+	// Renders upside-down (flipped projection, mirrored viewport, inverted winding) when the caller needs the opposite row order to the backend's native one.
+	if (flipVertically) {
+		auto& camera = viewDescriptor->getCamera();
+		auto const originalViewport = viewDescriptor->getViewport();
+		auto const originalWindingInverted = viewDescriptor->isFrontFaceWindingInverted();
+		auto const renderTargetTexture = renderTarget->getTexture(RenderTarget::AttachmentPoint::COLOR);
+		ThrowIfNull(renderTargetTexture, "Render target had no colour attachment.");
+		auto const renderTargetHeight = static_cast<int32_t>(renderTargetTexture->getHeight());
+
+		camera.setScaling({ 1.0, -1.0 });
+		viewDescriptor->setFrontFaceWindingInverted(!originalWindingInverted);
+		viewDescriptor->setViewport({
+			originalViewport.left,
+			renderTargetHeight - (originalViewport.bottom + static_cast<int32_t>(originalViewport.height)),
+			originalViewport.width,
+			originalViewport.height
+		});
+
+		renderer->renderStandaloneView(viewDescriptor);
+
+		viewDescriptor->setViewport(originalViewport);
+		viewDescriptor->setFrontFaceWindingInverted(originalWindingInverted);
+		camera.setScaling({ 1.0, 1.0 });
+	}
+	else {
+		renderer->renderStandaloneView(viewDescriptor);
+	}
 	if (optionalReadbackBuffer == nullptr) return;
 
 	renderer->readPixels(
@@ -628,8 +655,17 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 
 	if (waitForReadbackCompletion) filament_engine->flushAndWait();
 }
-StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
-	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity, waitForReadbackCompletion);
+StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion, interop_bool flipVertically) {
+	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity, waitForReadbackCompletion, flipVertically);
+	EndExportedFunc
+}
+
+bool native_impl_render::render_targets_are_vertically_flipped() {
+	return filament_engine->getBackend() != Engine::Backend::OPENGL;
+}
+StartExportedFunc(get_render_targets_are_vertically_flipped, interop_bool* outResult) {
+	ThrowIfNull(outResult, "Out result pointer was null.");
+	*outResult = native_impl_render::render_targets_are_vertically_flipped() ? interop_bool_true : interop_bool_false;
 	EndExportedFunc
 }
 

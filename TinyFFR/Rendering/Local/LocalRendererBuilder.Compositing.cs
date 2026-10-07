@@ -1,4 +1,4 @@
-// Created on 2026-08-10 by Ben Bowen
+﻿// Created on 2026-08-10 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -304,8 +304,6 @@ sealed partial class LocalRendererBuilder {
 		proxyQuad.CanvasAnchor = Orientation2D.None;
 		proxyQuad.WidthFraction = 1f;
 		proxyQuad.HeightFraction = 1f;
-		proxyQuad.TextureExtentFraction = (1f, -1f);
-		proxyQuad.TextureOffsetFraction = (0f, 0f);
 
 		var proxyConfig = new RendererCreationConfig {
 			Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Canvas),
@@ -408,7 +406,8 @@ sealed partial class LocalRendererBuilder {
 			0U,
 			0U,
 			0U,
-			false
+			false,
+			IsRenderVerticallyFlipped(_loadedBuffers[shimResourceData.PrivateBuffer.GetHandleWithoutDisposeCheck()])
 		).ThrowIfFailure();
 	}
 	#endregion

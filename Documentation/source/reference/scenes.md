@@ -218,7 +218,7 @@ The following details apply to all scene queries:
 * If an object's geometry has been modified since it was loaded (see [Dynamic Meshes & Mutable Grids](dynamic_meshes_and_mutable_grids.md)), its cached bounding box may be out of date. Pass `disallowCachedBoundingBoxes: true` to make the query slower but accurate for such objects.
 
 ??? tip "Pixel-Perfect Picking"
-	If you need to know exactly which object is under a given pixel (e.g. under the mouse cursor), rather than which bounding volumes a ray passes through, use the renderer's pixel-picking instead: see [Ray Casting / Pixel-Picking](ray_casting_and_pixel-picking.md).
+	If you need to know exactly which object is under a given pixel (e.g. under the mouse cursor), rather than which bounding volumes a ray passes through, use the renderer's pixel-picking instead: see [Ray Casting, Pixel-Picking, Projecting](ray_casting_pixel_picking_projecting.md#pixel-picking).
 
 ## Scene Primitives
 

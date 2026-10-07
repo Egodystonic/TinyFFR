@@ -160,7 +160,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			OutputChangeHandlerManaged = outputChangeHandlerManaged;
 		}
 	}
-	readonly record struct OutputBufferData(ResourceHandle<RenderOutputBuffer> Handle, XYPair<int> TextureDimensions, UIntPtr TextureHandle, UIntPtr RenderTargetHandle, OutputBufferCallbackData RenderCompletionHandlers, bool HandleOnlyNextChange);
+	readonly record struct OutputBufferData(ResourceHandle<RenderOutputBuffer> Handle, XYPair<int> TextureDimensions, UIntPtr TextureHandle, UIntPtr RenderTargetHandle, OutputBufferCallbackData RenderCompletionHandlers, bool HandleOnlyNextChange, bool StoresRowsTopToBottom);
 
 	const string DefaultRendererName = "Unnamed Renderer";
 	const string DefaultRenderOutputBufferName = "Unnamed Render Output Buffer";
@@ -175,6 +175,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, RendererData> _loadedRenderers = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly RendererBuilderConfig _config;
+	readonly bool _renderTargetsAreVerticallyFlipped;
 	readonly LocalRenderOutputBufferImplProvider _renderOutputBufferImplProvider;
 	readonly LocalRenderOutputBufferTextureImplProvider _textureImplProvider;
 	readonly UIntPtr _reclamationRendererHandle;
@@ -205,6 +206,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		_textureImplProvider = new(this);
 		AllocateRenderer(out _reclamationRendererHandle).ThrowIfFailure();
 		AllocateReclamationSwapChain(out _reclamationSwapChainHandle).ThrowIfFailure();
+		GetRenderTargetsAreVerticallyFlipped(out var renderTargetsAreVerticallyFlipped).ThrowIfFailure();
+		_renderTargetsAreVerticallyFlipped = renderTargetsAreVerticallyFlipped;
 		lock (_loadedTargetDataMutationLock) {
 			_buildersWithPotentialLoadedTargets.Add(this);
 		}
@@ -305,7 +308,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<RenderOutputBuffer>(_previousHandleId);
-		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, OutputBufferCallbackData.None, false);
+		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, OutputBufferCallbackData.None, false, config.OptimizeForTopToBottomReadback);
 		_loadedBuffers.Add(handle, bufferData);
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRenderOutputBufferName);
@@ -455,7 +458,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					0U,
 					0U,
 					0U,
-					false
+					false,
+					IsRenderVerticallyFlipped(bufferData)
 				).ThrowIfFailure();
 			}
 			else {
@@ -481,7 +485,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					(uint) bufferData.TextureDimensions.X,
 					(uint) bufferData.TextureDimensions.Y,
 					buffer.BufferIdentity,
-					bufferData.HandleOnlyNextChange
+					bufferData.HandleOnlyNextChange,
+					IsRenderVerticallyFlipped(bufferData)
 				).ThrowIfFailure();
 			}
 
@@ -556,7 +561,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		var texelData = MemoryMarshal.Cast<byte, TexelRgba32>(data[..requiredLength]);
 
-		if (tuple.Callbacks.InvertRows) { // Inverted because we actually get the data in screen/window order, so by default we want to flip the data to make it match texture convention
+		if (tuple.Callbacks.InvertRows != tuple.Builder.IsRenderVerticallyFlipped(tuple.Builder._loadedBuffers[tuple.BufferHandle])) { // Data arrives top-row-first unless the backend renders buffers upside-down (see render_scene_standalone), in which case it's already bottom-row-first
 			Span<TexelRgba32> stackSwapSpace = stackalloc TexelRgba32[dimensions.X];
 			for (var rowIndex = 0; rowIndex < dimensions.Y / 2; ++rowIndex) {
 				var lowerRow = texelData[
@@ -659,6 +664,21 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		return (bounds.BottomLeft, bounds.Size, curTargetSize);
 	}
 
+	internal bool RenderTargetsAreVerticallyFlipped => _renderTargetsAreVerticallyFlipped;
+
+	internal bool GetRendersVerticallyFlipped(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var renderTarget = _loadedRenderers[handle].RenderTarget;
+		return renderTarget.IsBuffer && IsRenderVerticallyFlipped(_loadedBuffers[renderTarget.AsBuffer.GetHandleWithoutDisposeCheck()]);
+	}
+
+	internal bool GetBufferStoresRowsTopToBottom(ResourceHandle<RenderOutputBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedBuffers[handle].StoresRowsTopToBottom;
+	}
+
+	bool IsRenderVerticallyFlipped(in OutputBufferData bufferData) => _renderTargetsAreVerticallyFlipped != bufferData.StoresRowsTopToBottom;
+
 	public void MarkSubAreaAsHandledDownstream(ResourceHandle<Renderer> handle, bool isHandledDownstream) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var rendererData = _loadedRenderers[handle];
@@ -741,8 +761,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		try {
 			// This check is an optimisation where we can stop a double-flip:
-			//	When we read back the pixels from the frame, they come back in lowest-address-is-top format.
-			//	Therefore, unless "lowestAddressesRepresentFrameTop" is actually TRUE we have to invert the rows before passing the data to the handler.
+			//	Readback hands the handler whichever row order it asks for (lowest-address-is-top when "lowestAddressesRepresentFrameTop" is TRUE),
+			//	inverting the rows first if the backend's native order differs (see HandleRenderTargetReadback).
 			//
 			//	On the other hand, bitmap format actually expects the lowest address to be the top, so usually when we pass data to ImageUtils internally
 			//	it flips the data, as it assumes we're passing it a texture in the TinyFFR convention (e.g. lowest-address-is-bottom).
@@ -910,7 +930,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			SubmitViewPick(
 				pickViewportData.Handle,
 				(uint) viewportCoord.X,
-				(uint) (viewportSize.Y - 1 - viewportCoord.Y),
+				(uint) (_renderTargetsAreVerticallyFlipped ? viewportCoord.Y : viewportSize.Y - 1 - viewportCoord.Y),
 				pickId,
 				includeTransparentObjects
 			).ThrowIfFailure();
@@ -1183,6 +1203,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	static extern InteropResult AllocateReclamationSwapChain(
 		out UIntPtr swapChainHandle
 	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_render_targets_are_vertically_flipped")]
+	static extern InteropResult GetRenderTargetsAreVerticallyFlipped(
+		out InteropBool outResult
+	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "collect_gpu_garbage")]
 	static extern InteropResult CollectGpuGarbage(
 		UIntPtr rendererHandle,
@@ -1289,7 +1313,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		uint readbackBufferWidth,
 		uint readbackBufferHeight,
 		nuint readbackBufferIdentity,
-		InteropBool waitForReadbackCompletion
+		InteropBool waitForReadbackCompletion,
+		InteropBool flipVertically
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_render_target")]

@@ -4,6 +4,7 @@
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 
@@ -570,6 +571,8 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// If no sub-area has been set, this will simply return the target window/buffer's dimensions.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<int> GetRenderSubAreaPixelOffset(DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.GetTargetViewportOffsetByPixel(_handle, coordOrigin);
+
+	internal bool RendersVerticallyFlipped => Implementation is LocalRendererBuilder localBuilder && localBuilder.GetRendersVerticallyFlipped(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void MarkSubAreaAsHandledDownstream(bool isHandledDownstream) => Implementation.MarkSubAreaAsHandledDownstream(_handle, isHandledDownstream);

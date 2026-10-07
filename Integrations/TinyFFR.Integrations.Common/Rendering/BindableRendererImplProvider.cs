@@ -110,6 +110,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	void CreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
 		_bufferSizePixels = size;
 		_actualRendererTarget = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
+			OptimizeForTopToBottomReadback = true,
 			Name = $"{_name} output buffer",
 			TextureDimensions = size
 		});

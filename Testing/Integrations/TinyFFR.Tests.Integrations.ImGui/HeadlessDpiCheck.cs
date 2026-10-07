@@ -609,7 +609,8 @@ static class HeadlessDpiCheck {
 		var viewportId = imgui.RegisterTexture(viewportTexture);
 
 		using var viewportMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(0.8f));
-		using var viewportMaterial = factory.MaterialBuilder.CreateTestMaterial();
+		using var viewportColorMap = factory.TextureBuilder.CreateColorMap(StandardColor.White, includeAlpha: false);
+		using var viewportMaterial = factory.MaterialBuilder.CreateLightingIgnoringMaterial(viewportColorMap);
 		using var viewportCube = factory.ObjectBuilder.CreateModelInstance(viewportMesh, viewportMaterial, new Location(0f, 0.9f, 0f));
 		using var viewportLight = factory.LightBuilder.CreatePointLight(new Location(1.5f, 2.5f, -2f));
 		using var viewportCamera = factory.CameraBuilder.CreateCamera(initialPosition: new Location(0f, 0f, -3f));
@@ -648,8 +649,8 @@ static class HeadlessDpiCheck {
 					ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
 					| ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBackground
 				);
-				ImGui.Image(new ImTextureRef(null, splitId), new Vector2(ImageW, ImageH));
-				ImGui.Image(new ImTextureRef(null, splitId), new Vector2(8f, 8f));
+				ImGui.Image(new ImTextureRef(null, viewportId), new Vector2(ImageW, ImageH));
+				ImGui.Image(new ImTextureRef(null, bogusId), new Vector2(8f, 8f));
 				ImGui.End();
 				ImGui.PopStyleVar();
 

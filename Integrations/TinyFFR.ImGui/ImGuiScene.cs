@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.World;
 using Hexa.NET.ImGui;
 
@@ -63,6 +64,8 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	int _activeDrawCallCount;
 	int _nextUserTextureId = -1;
 	XYPair<int> _fullTargetSize;
+	bool _lastFrameRendersVerticallyFlipped;
+	MeshVertexImGui[] _flippedVertexScratch = Array.Empty<MeshVertexImGui>();
 	bool _isDisposed;
 
 	/// <summary>
@@ -154,7 +157,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// <param name="window">The window being drawn to, whose size and framebuffer dimensions are used for the display size.</param>
 	public void BeginFrame(float deltaTime, ApplicationLoop loop, Window window) {
 		var framebufferSize = ((IRenderTarget) window).ViewportDimensions;
-		BeginFrame(deltaTime, loop, window.Size, framebufferSize, XYPair<int>.Zero, framebufferSize, window);
+		BeginFrame(deltaTime, loop, window.Size, framebufferSize, XYPair<int>.Zero, framebufferSize, window, null);
 	}
 
 	/// <summary>
@@ -169,7 +172,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// <param name="renderer">The renderer this interface will be drawn with. Its sub-area is adopted as the region the interface occupies, and the renderer is told that the sub-area is being applied here rather than by it.</param>
 	public void BeginFrame(float deltaTime, ApplicationLoop loop, Window window, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
-		BeginFrame(deltaTime, loop, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window);
+		BeginFrame(deltaTime, loop, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window, renderer);
 	}
 
 	/// <summary>
@@ -182,7 +185,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// <param name="renderer">The renderer this interface will be drawn with. Its sub-area is adopted as the region the interface occupies, and the renderer is told that the sub-area is being applied here rather than by it.</param>
 	public void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
-		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), null);
+		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), null, renderer);
 	}
 
 	// Filament decides what a MaterialInstance scissor rectangle is relative to via
@@ -210,7 +213,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// <param name="logicalSize">The size of the drawing area in the operating system's own units. Together with <paramref name="framebufferSize"/> this is what tells ImGui the display's scaling factor.</param>
 	/// <param name="framebufferSize">The size of the drawing area in real pixels.</param>
 	public void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize) {
-		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, null);
+		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, null, null);
 	}
 
 	/// <summary>
@@ -223,12 +226,14 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// <param name="subAreaOffsetFromTopLeft">Where the interface's region begins, in pixels from the top-left of the drawing area.</param>
 	/// <param name="subAreaDimensions">How large the interface's region is, in pixels.</param>
 	public void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffsetFromTopLeft, XYPair<int> subAreaDimensions) {
-		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, subAreaOffsetFromTopLeft, subAreaDimensions, null);
+		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, subAreaOffsetFromTopLeft, subAreaDimensions, null, null);
 	}
 
-	void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffset, XYPair<int> subAreaSize, Window? window) {
+	void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffset, XYPair<int> subAreaSize, Window? window, Renderer? renderer) {
 		ThrowIfDisposed();
 		ImGui.SetCurrentContext(_context);
+
+		_lastFrameRendersVerticallyFlipped = window == null && (renderer?.RendersVerticallyFlipped ?? (_factory.RendererBuilder is LocalRendererBuilder localRendererBuilder && localRendererBuilder.RenderTargetsAreVerticallyFlipped));
 
 		_dpiScale = logicalSize is {X: > 0, Y: > 0}
 			? new XYPair<float>(framebufferSize.X / (float) logicalSize.X, framebufferSize.Y / (float) logicalSize.Y)
@@ -321,7 +326,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 			if (vertexCount == 0 || indexCount == 0) continue;
 
 			var mesh = GetOrGrowMesh(listIndex, vertexCount, indexCount);
-			mesh.SetImGuiVertices(new ReadOnlySpan<MeshVertexImGui>(cmdList.VtxBuffer.Data, vertexCount));
+			mesh.SetImGuiVertices(GetVerticesWithRenderOutputTexturesFlipped(cmdList, new ReadOnlySpan<MeshVertexImGui>(cmdList.VtxBuffer.Data, vertexCount)));
 			mesh.SetImGuiIndices(new ReadOnlySpan<ushort>(cmdList.IdxBuffer.Data, indexCount));
 
 			for (var cmdIndex = 0; cmdIndex < cmdList.CmdBuffer.Size; ++cmdIndex) {
@@ -337,7 +342,9 @@ public sealed unsafe class ImGuiScene : IDisposable {
 				// Scissor rectangles are in whole-target space (offset into the sub-area, Y flipped to Filament's
 				// bottom-left origin) because the Filament viewport spans the whole target -- see AdoptSubAreaFrom.
 				var scissorLeft = LastFrameSubAreaOffset.X + (int) clipMinX;
-				var scissorBottom = _fullTargetSize.Y - (LastFrameSubAreaOffset.Y + (int) clipMaxY);
+				var scissorBottom = _lastFrameRendersVerticallyFlipped
+					? LastFrameSubAreaOffset.Y + (int) clipMinY
+					: _fullTargetSize.Y - (LastFrameSubAreaOffset.Y + (int) clipMaxY);
 				var scissorWidth = (int) (clipMaxX - clipMinX);
 				var scissorHeight = (int) (clipMaxY - clipMinY);
 
@@ -439,6 +446,42 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		_materialBuilder.SetImGuiMaterialColorMap(drawCall.Instance.GetOrCreatePrivateMaterial(), _parkingTexture);
 		drawCall.CurrentTexture = _parkingTexture;
 	}
+
+	ReadOnlySpan<MeshVertexImGui> GetVerticesWithRenderOutputTexturesFlipped(ImDrawListPtr cmdList, ReadOnlySpan<MeshVertexImGui> vertices) {
+		var hasRenderOutputTexture = false;
+		for (var cmdIndex = 0; cmdIndex < cmdList.CmdBuffer.Size; ++cmdIndex) {
+			if (NeedsVerticalUvFlip(ResolveTexture(cmdList.CmdBuffer.Data[cmdIndex].TexRef))) {
+				hasRenderOutputTexture = true;
+				break;
+			}
+		}
+		if (!hasRenderOutputTexture) return vertices;
+
+		if (_flippedVertexScratch.Length < vertices.Length) _flippedVertexScratch = new MeshVertexImGui[Int32.Max(vertices.Length, _flippedVertexScratch.Length * 2)];
+		var result = _flippedVertexScratch.AsSpan(0, vertices.Length);
+		vertices.CopyTo(result);
+
+		for (var cmdIndex = 0; cmdIndex < cmdList.CmdBuffer.Size; ++cmdIndex) {
+			var cmd = cmdList.CmdBuffer.Data[cmdIndex];
+			if (cmd.ElemCount == 0 || cmd.UserCallback != null || !NeedsVerticalUvFlip(ResolveTexture(cmd.TexRef))) continue;
+
+			var minIndex = Int32.MaxValue;
+			var maxIndex = Int32.MinValue;
+			for (var i = 0; i < cmd.ElemCount; ++i) {
+				var index = (int) cmd.VtxOffset + cmdList.IdxBuffer.Data[(int) cmd.IdxOffset + i];
+				minIndex = Int32.Min(minIndex, index);
+				maxIndex = Int32.Max(maxIndex, index);
+			}
+			for (var v = minIndex; v <= maxIndex; ++v) {
+				var coords = result[v].TextureCoords;
+				result[v] = result[v] with { TextureCoords = new XYPair<float>(coords.X, 1f - coords.Y) };
+			}
+		}
+
+		return result;
+	}
+
+	static bool NeedsVerticalUvFlip(Texture texture) => texture.Implementation is LocalRenderOutputBufferTextureImplProvider bufferTextureImpl && !bufferTextureImpl.GetStoresRowsTopToBottom(texture.Handle);
 
 	Texture ResolveTexture(ImTextureRef texRef) {
 		var id = (int) texRef.GetTexID().Handle;

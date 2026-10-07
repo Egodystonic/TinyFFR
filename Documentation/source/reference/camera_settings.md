@@ -10,7 +10,6 @@ description: Information on how to create cameras, and on every setting that con
     * `Camera`s have additional methods that make it easier to position + orient them. :material-arrow-right: [Position & Orientation](#position-orientation)
     * The `Camera`'s field of view, projection type, and near/far planes control how much of the scene it sees. :material-arrow-right: [Field of View](#field-of-view), [Projection Type](#projection-type), [Near & Far Planes](#near-far-planes)
     * Cameras can also blur out-of-focus objects. :material-arrow-right: [Depth of Field](#depth-of-field)
-    * Locations in the world can be projected on to the camera's image (e.g. to track objects on a HUD). :material-arrow-right: [Projecting Locations](#projecting-locations)
 
 </div>
 
@@ -314,74 +313,23 @@ The strength of the blur depends on three things:
 * The camera's aperture: A wider aperture (smaller f-number) gives a stronger blur, as on a real camera. See [Exposure & Brightness](exposure_and_brightness.md#camera-exposure). (Multiplying or dividing `camera.Exposure` only changes its sensitivity, so it doesn't alter the blur.)
 * The renderer's `RenderQualityConfig`: `DepthOfFieldStrength` scales the effect (`0f` hides it entirely), and `DepthOfFieldQuality` trades its quality against performance. See [Render Quality](render_quality.md).
 
-## Rays
+## Rays & Projection
 
-It's possible to construct a [Ray](lines.md#ray) in the world pointing along the camera's point-of-view.
+It's possible to construct a [Ray](lines.md#ray) in the world pointing along the camera's point-of-view, and to find where a location in the world appears in the camera's image.
 
 ```csharp
 var forwardRay = camera.CreateRayFromNearPlane(); // (1)!
-var cornerRay = camera.CreateRayFromNearPlane(new XYPair<float>(-1f, 1f)); // (2)!
-var clickRay = renderer.CreateRayFromRenderSurface(mousePixelCoord); // (3)!
+var clickRay = renderer.CreateRayFromRenderSurface(mousePixelCoord); // (2)!
+var screenCoord = camera.ProjectOnToNearPlane(myObject.Position); // (3)!
 ```
 
 1.	A ray starting at the centre of the camera's near plane and travelling straight forward (e.g. for finding what a first-person crosshair is pointing at).
 
-2.	A ray starting at the top-left corner of the camera's near plane, travelling out in to the scene through that corner of the image.
+2.	A ray travelling out in to the scene through the given pixel of the renderer's output (e.g. for finding what the user clicked on).
 
-3.	A ray travelling out in to the scene through the given pixel of the renderer's output (e.g. for finding what the user clicked on).
+3.	Where `myObject` appears in the camera's image, as a normalized coordinate (`(0, 0)` is the centre of the image, and each component runs from `-1` to `1` at the edges); or `null` if it's out of view.
 
-	See also `renderer.PickModelInstanceFromRenderSurface(...)`.
-
-`CreateRayFromNearPlane()` with no arguments returns a ray travelling straight forward from the centre of the camera's near plane.
-
-`CreateRayFromNearPlane(normalizedNearPlaneCoord)` returns a ray starting at a given point on the near plane, expressed as a normalized fraction of its size (i.e. `(0, 0)` is the centre of the image, and each component runs from `-1` to `1` at the edges). For a perspective camera the ray fans outward as the field of view does; for an orthographic camera every ray travels straight forward.
-
-!!! note "Ray StartPoint is at Near Plane"
-	Note that with both methods the returned `Ray`'s `StartPoint` is at the camera's near plane, not at the camera's `Position`.
-
-To convert a pixel coordinate (such as a mouse click) in to a ray, use `Renderer.CreateRayFromRenderSurface(pixelCoord)` instead, which accounts for the size of the render target for you. See also: `renderer.PickModelInstanceFromRenderSurface(...)`.
-
-Rays are often used with [scene queries](scenes.md#scene-queries) to find which objects lie along them.
-
-## Projecting Locations
-
-The opposite of creating a ray is *projecting* a location in the world on to the camera's image, i.e. finding where that location appears on screen. This is useful for drawing something on a [canvas](canvas_scenes.md#tracking-3d-objects) over an object in the world (such as a name tag, a target marker, or an off-screen indicator).
-
-```csharp
-var nearPlaneCoord = camera.ProjectOnToNearPlane(myObject.Position); // (1)!
-var pixelCoord = renderer.ProjectOnToRenderSurfacePixels(myObject.Position); // (2)!
-var fraction = renderer.ProjectOnToRenderSurfaceFractionClamped(myObject.Position, out var isOffScreen); // (3)!
-```
-
-1.	Where the object appears on the camera's near plane, as a normalized coordinate (the same coordinates `CreateRayFromNearPlane()` takes); or `null` if the object is behind the camera or off the edge of the image.
-
-2.	Where the object appears on the renderer's output in pixels, measured from the top-left corner (the same coordinates `CreateRayFromRenderSurface()` takes); or `null` if it's out of view.
-
-3.	Where the object appears as a fraction of the renderer's output (`(0, 0)` is the top-left corner and `(1, 1)` the bottom-right), clamped to the edge of the image if it's out of view. `isOffScreen` is set to `true` when clamping occurred.
-
-Every projection method comes in three forms:
-
-* The standard form (e.g. `ProjectOnToNearPlane()`) returns `null` when the location is out of view: either behind the camera, or beyond the edges of the image.
-* The `Clamped` form (e.g. `ProjectOnToNearPlaneClamped()`) never returns `null`. When the location is out of view, the result is moved from the centre of the image towards the location until it reaches the edge, so it always lies on the side of the image facing the location (even when the location is behind the camera). A location directly behind the camera is placed at the centre of the bottom edge.
-* The `Clamped` form with an `out bool wasClamped` argument additionally tells you whether the location was out of view.
-
-The camera's near and far plane distances are not taken in to account: Distant objects can still be tracked.
-
-<span class="def-icon">:material-code-block-parentheses:</span> `camera.ProjectOnToNearPlane(location)`
-
-:   Returns where the location appears on the camera's near plane, as a normalized coordinate: `(0, 0)` is the centre of the image, and each component runs from `-1` to `1` at the edges (with positive Y upwards).
-
-<span class="def-icon">:material-code-block-parentheses:</span> `renderer.ProjectOnToRenderSurfacePixels(location)` / `renderer.ProjectOnToRenderSurfaceFraction(location)`
-
-:   Return where the location appears on the renderer's window or buffer, in pixels or as a fraction of its size. Pixel coordinates are in the same coordinate space as the mouse cursor (i.e. they account for the operating system's display scaling), unless `disableDpiScalingAdjustment` is passed as `true`. Both take an optional `coordOrigin` to choose which corner is `(0, 0)` (the top-left by default).
-
-	If the renderer has a [render sub-area](compositing.md#render-sub-areas), only locations that appear within the sub-area are in view, but the result is still relative to the whole window or buffer.
-
-<span class="def-icon">:material-code-block-parentheses:</span> `renderer.ProjectOnToRenderSubAreaSurfacePixels(location)` / `renderer.ProjectOnToRenderSubAreaSurfaceFraction(location)`
-
-:   As above, but relative to the renderer's render sub-area rather than the whole window or buffer.
-
-`CameraUtils` also offers static `ProjectOnToPerspectiveCameraNearPlane...()` and `ProjectOnToOrthographicCameraNearPlane...()` methods, which perform the same calculation as `camera.ProjectOnToNearPlane()` given a camera's matrices or parameters, without needing a `Camera`.
+For all the methods that convert between positions on screen and locations in the world (including ray casting, picking the object under a pixel, and projecting locations on to the screen), see [Ray Casting, Pixel-Picking, Projecting](ray_casting_pixel_picking_projecting.md).
 
 ## Matrices
 

@@ -161,7 +161,7 @@ using var ray = scene.AddPrimitiveShape(
 );
 ```
 
-A ray (`Ray`) starts at a point and continues forever in one direction. It's drawn with a marker at its start point (pass `includeStartPoint: false` to leave it out). Rays are particularly useful for visualising [ray queries](scenes.md#scene-queries) and [camera rays](camera_settings.md#rays); and as primitives are excluded from scene queries, drawing a ray never interferes with querying along it.
+A ray (`Ray`) starts at a point and continues forever in one direction. It's drawn with a marker at its start point (pass `includeStartPoint: false` to leave it out). Rays are particularly useful for visualising [ray queries](scenes.md#scene-queries) and [camera rays](ray_casting_pixel_picking_projecting.md#ray-casting); and as primitives are excluded from scene queries, drawing a ray never interferes with querying along it.
 
 ![Ray primitives](scene_primitives_rays.jpg){ : style="width:77%;" }
 /// caption

@@ -23,14 +23,15 @@ class LocalRenderOutputBufferTest {
 	static readonly XYPair<int> RenderDimensions = (480, 270);
 	static readonly (string Name, ColorVect Color)[] SceneColors = [
 		("purple", new(0.3f, 0f, 0.3f)),
-		("green", new(0.8f, 1f, 0.8f))
+		("green", new(0f, 0.3f, 0f))
 	];
 	static string _screenshotsDir = null!;
 	static string _bitmapsDir = null!;
 
 	[SetUp]
 	public void SetUpTest() {
-		Console.WriteLine("Screenshots and bitmaps should show cube at upper half of all captures");
+		Console.WriteLine("Screenshots and bitmaps should show cube at upper half of all captures, with a red 'Top' label above a blue 'Bottom' label on the left");
+		Console.WriteLine("The window's cube is textured with the render buffer's output, which should also show its 'Top' label above its 'Bottom' label (i.e. not upside-down)");
 
 		_screenshotsDir = SetUpCleanTestDir("screenshots");
 		Console.WriteLine("Screenshots being written to " + _screenshotsDir);
@@ -81,6 +82,7 @@ class LocalRenderOutputBufferTest {
 		using var renderBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((1024, 1024));
 		using var renderBufferScene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Green);
 		renderBufferScene.Add(renderBufferModel);
+		AddOrientationLabels(renderBufferScene, renderBufferCamera.Position);
 		using var renderBufferRenderer = factory.RendererBuilder.CreateRenderer(renderBufferScene, renderBufferCamera, renderBuffer);
 		
 		Assert.AreEqual(renderBufferScene, renderBufferRenderer.TargetScene);
@@ -96,10 +98,11 @@ class LocalRenderOutputBufferTest {
 			windowMat,
 			initialPosition: Location.Origin + Direction.Forward * 1.35f + Direction.Up * 0.4f
 		);
-		using var windowCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
+		using var windowCamera = factory.CameraBuilder.CreateCamera((0f, 0f, -1f), initialViewDirection: (0f, 0.2f, 1f));
 		using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 		using var windowScene = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.WhiteOpaque);
 		windowScene.Add(windowModel);
+		AddOrientationLabels(windowScene, windowCamera.Position);
 		using var windowRenderer = factory.RendererBuilder.CreateRenderer(windowScene, windowCamera, window);
 
 		Assert.AreEqual(windowScene, windowRenderer.TargetScene);
@@ -160,6 +163,7 @@ class LocalRenderOutputBufferTest {
 				var result = factory.SceneBuilder.CreateScene(backdropColor: tuple.Color);
 				result.Add(cube);
 				result.Add(light);
+				AddOrientationLabels(result, camera.Position);
 				return result;
 			});
 
@@ -245,6 +249,12 @@ class LocalRenderOutputBufferTest {
 				Assert.LessOrEqual(lightDiff / (cumulativeLightnessValues[0] / list[0].Length), MaxHslAverageDiffFraction);
 			}
 		}
+	}
+
+	static void AddOrientationLabels(Scene scene, Location cameraPosition) {
+		var labelColumn = cameraPosition + Direction.Forward * 2f + Direction.Left * 0.9f;
+		_ = scene.AddPrimitiveString(labelColumn + Direction.Up * 0.55f, "Top", new PrimitivePaintbrush(StandardColor.Red), ScenePrimitiveSize.VeryLarge);
+		_ = scene.AddPrimitiveString(labelColumn + Direction.Down * 0.55f, "Bottom", new PrimitivePaintbrush(StandardColor.Blue), ScenePrimitiveSize.VeryLarge);
 	}
 
 	void RenderSceneToBitmapAndStoreTexels(IRendererBuilder builder, ApplicationLoop loop, Scene scene, Camera camera, List<TexelRgba32[]> renderDumpList, string bitmapFilePath, int frameBufferCount, bool waitExplicitly) {

@@ -278,7 +278,7 @@ marker.Opacity = isOffScreen ? 0.5f : 1f; // (4)!
 
 4.	Fades the marker while it's acting as an off-screen indicator.
 
-Fractions (rather than pixels) are the simplest choice here, as they're unaffected by the size or display scaling of the window. If you only want to show the marker while the object is on screen, use `ProjectOnToRenderSurfaceFraction()` instead, which returns `null` when the object is out of view. See [Camera Settings: Projecting Locations](camera_settings.md#projecting-locations) for details.
+Fractions (rather than pixels) are the simplest choice here, as they're unaffected by the size or display scaling of the window. If you only want to show the marker while the object is on screen, use `ProjectOnToRenderSurfaceFraction()` instead, which returns `null` when the object is out of view. See [Ray Casting, Pixel-Picking, Projecting](ray_casting_pixel_picking_projecting.md#projecting) for details.
 
 When the canvas is rendered in to a [render sub-area](compositing.md#render-sub-areas), use the 3D renderer's `ProjectOnToRenderSubAreaSurfaceFraction...()` methods instead, so that the result is relative to the same area as the canvas.
 
@@ -305,6 +305,8 @@ To find out whether the user has clicked (or is hovering over) a canvas object:
 * `canvas.ConvertRenderTargetCoordToLocal()` converts a position in the render target (e.g. the mouse cursor's position in the window) in to a position on the canvas. It accounts for display scaling (DPI) and for renderers drawing to only part of their render target. By default, positions are measured from the top-left corner (as mouse cursor positions are); pass a different `coordOrigin` if your position is measured from elsewhere. The returned position is measured from the same corner.
 * `canvasObject.Contains(canvasPosition)` returns whether a position on the canvas falls within the object.
 * `canvas.QueryProvider` finds the canvas objects under a position (in render-target or canvas coordinates): `GetTopmostObjectUnderRenderTargetCoord<T>()` returns the topmost object of type `T` (`CanvasImage` or `CanvasText`) under the position, and `FindObjectsUnderRenderTargetCoord<T>()` writes all of them in to a span (topmost first), returning how many were written. `...LocalCoord` variants take canvas positions instead. Hidden objects are never returned.
+
+To find which object in a *3D* scene is under the cursor instead, see [Ray Casting, Pixel-Picking, Projecting](ray_casting_pixel_picking_projecting.md#pixel-picking).
 
 ## Underlying Objects
 

@@ -252,4 +252,4 @@ Waiting for the GPU means the CPU and GPU can no longer work at the same time, w
 * **You need the frame to be finished before continuing**: For example when rendering frames one at a time to a `RenderOutputBuffer` for offline processing, or before timing how long a frame took to render.
 * **You've just disposed lots of resources**: The GPU memory used by disposed resources (meshes, textures, etc.) is only released once the GPU has finished with every frame that used them, which otherwise happens gradually over the following frames. Calling `WaitForGpu()` after disposing them (e.g. when unloading a level) releases that memory straight away.
 
-`CaptureScreenshot()` and model picking (`PickModelInstanceFromRenderSurface()`) already do their own separate render and wait for it to finish, so you don't need to call `WaitForGpu()` before using them.
+`CaptureScreenshot()` and [model picking](ray_casting_pixel_picking_projecting.md#pixel-picking) (`PickModelInstanceFromRenderSurface()`) already do their own separate render and wait for it to finish, so you don't need to call `WaitForGpu()` before using them.
