@@ -338,6 +338,36 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		return _actualRenderer.PickModelInstanceFromRenderSubAreaSurface(pixelCoord, includeTransparentObjects, coordOrigin, true);
 	}
 
+	XYPair<float> ConvertProjectedCoordToCursorSpace(XYPair<float> projectedCoord, bool disableDpiScalingAdjustment, bool asFraction) {
+		if (asFraction || disableDpiScalingAdjustment) return projectedCoord;
+		var scaling = CursorCoordinateScaling;
+		return new XYPair<float>(projectedCoord.X / scaling.X, projectedCoord.Y / scaling.Y);
+	}
+
+	public XYPair<float>? ProjectOnToRenderSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		if (_actualRenderer.Implementation.ProjectOnToRenderSurface(_actualRenderer.Handle, location, coordOrigin, true, asFraction) is not { } result) return null;
+		return ConvertProjectedCoordToCursorSpace(result, disableDpiScalingAdjustment, asFraction);
+	}
+
+	public XYPair<float> ProjectOnToRenderSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		var result = _actualRenderer.Implementation.ProjectOnToRenderSurfaceClamped(_actualRenderer.Handle, location, coordOrigin, true, asFraction, out wasClamped);
+		return ConvertProjectedCoordToCursorSpace(result, disableDpiScalingAdjustment, asFraction);
+	}
+
+	public XYPair<float>? ProjectOnToViewportSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		if (_actualRenderer.Implementation.ProjectOnToViewportSurface(_actualRenderer.Handle, location, coordOrigin, true, asFraction) is not { } result) return null;
+		return ConvertProjectedCoordToCursorSpace(result, disableDpiScalingAdjustment, asFraction);
+	}
+
+	public XYPair<float> ProjectOnToViewportSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		var result = _actualRenderer.Implementation.ProjectOnToViewportSurfaceClamped(_actualRenderer.Handle, location, coordOrigin, true, asFraction, out wasClamped);
+		return ConvertProjectedCoordToCursorSpace(result, disableDpiScalingAdjustment, asFraction);
+	}
+
 	public Scene GetScene(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		return _actualRenderer.TargetScene;

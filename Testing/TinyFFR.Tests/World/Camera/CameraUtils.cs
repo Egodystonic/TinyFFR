@@ -183,4 +183,108 @@ class CameraUtilsTest {
 		var expected = CameraUtils.CalculatePerspectiveViewportWorldSizeAtDistance(horizontalFov, VerticalFov, Depth);
 		AssertToleranceEquals(span, expected.X, TestTolerance);
 	}
+
+	static void AssertNearPlaneCoordEquals(XYPair<float> expected, XYPair<float>? actual) {
+		Assert.IsTrue(actual.HasValue, $"Expected {expected} but was null.");
+		AssertToleranceEquals(expected.X, actual!.Value.X, TestTolerance);
+		AssertToleranceEquals(expected.Y, actual.Value.Y, TestTolerance);
+	}
+
+	[Test]
+	public void ShouldRoundTripNearPlaneProjectionWithRayCreation() {
+		var random = new Random(1234);
+		float Next(float min, float max) => min + (float) random.NextDouble() * (max - min);
+
+		for (var i = 0; i < 500; ++i) {
+			var position = new Location(Next(-10f, 10f), Next(-10f, 10f), Next(-10f, 10f));
+			var view = Direction.Random();
+			var up = view.AnyOrthogonal();
+			var near = Next(0.05f, 1f);
+			var far = Next(100f, 1000f);
+			var aspect = Next(0.5f, 3f);
+			var coord = new XYPair<float>(Next(-0.99f, 0.99f), Next(-0.99f, 0.99f));
+			var distance = Next(1f, 50f);
+			var fov = Angle.FromDegrees(Next(30f, 110f));
+			var orthoHeight = Next(1f, 20f);
+
+			var perspectiveLocation = CameraUtils.CreateRayFromPerspectiveCameraParameters(position, view, up, near, far, fov, aspect, coord).UnboundedLocationAtDistance(distance);
+			CameraUtils.CalculateModelMatrix(position, view, up, out var modelMat);
+			CameraUtils.CalculatePerspectiveProjectionMatrix(near, far, fov, aspect, out var perspectiveMat);
+			AssertNearPlaneCoordEquals(coord, CameraUtils.ProjectOnToPerspectiveCameraNearPlane(position, view, up, near, far, fov, aspect, perspectiveLocation));
+			AssertNearPlaneCoordEquals(coord, CameraUtils.ProjectOnToPerspectiveCameraNearPlane(in modelMat, in perspectiveMat, perspectiveLocation));
+			AssertNearPlaneCoordEquals(coord, CameraUtils.ProjectOnToPerspectiveCameraNearPlaneClamped(position, view, up, near, far, fov, aspect, perspectiveLocation, out var wasClamped));
+			Assert.IsFalse(wasClamped);
+			AssertNearPlaneCoordEquals(coord, CameraUtils.ProjectOnToPerspectiveCameraNearPlaneClamped(in modelMat, in perspectiveMat, perspectiveLocation));
+
+			var orthographicLocation = CameraUtils.CreateRayFromOrthographicCameraParameters(position, view, up, near, far, orthoHeight, aspect, coord).UnboundedLocationAtDistance(distance);
+			CameraUtils.CalculateOrthographicProjectionMatrix(near, far, orthoHeight, aspect, out var orthographicMat);
+			AssertNearPlaneCoordEquals(coord, CameraUtils.ProjectOnToOrthographicCameraNearPlane(position, view, up, near, far, orthoHeight, aspect, orthographicLocation));
+			AssertNearPlaneCoordEquals(coord, CameraUtils.ProjectOnToOrthographicCameraNearPlane(in modelMat, in orthographicMat, orthographicLocation));
+			AssertNearPlaneCoordEquals(coord, CameraUtils.ProjectOnToOrthographicCameraNearPlaneClamped(position, view, up, near, far, orthoHeight, aspect, orthographicLocation, out wasClamped));
+			Assert.IsFalse(wasClamped);
+		}
+	}
+
+	[Test]
+	public void ShouldReturnNullForLocationsOutsideCameraView() {
+		XYPair<float>? Perspective(Location l) => CameraUtils.ProjectOnToPerspectiveCameraNearPlane(Location.Origin, Direction.Forward, Direction.Up, 0.1f, 1000f, 60f, 16f / 9f, l);
+		XYPair<float>? Orthographic(Location l) => CameraUtils.ProjectOnToOrthographicCameraNearPlane(Location.Origin, Direction.Forward, Direction.Up, 0.1f, 1000f, 4f, 16f / 9f, l);
+
+		Assert.IsNull(Perspective(Location.Origin + Direction.Backward * 5f));
+		Assert.IsNull(Perspective(Location.Origin + Direction.Forward * 5f + Direction.Right * 100f));
+		Assert.IsNull(Perspective(Location.Origin + Direction.Forward * 5f + Direction.Down * 100f));
+		Assert.IsNull(Orthographic(Location.Origin + Direction.Backward * 5f));
+		Assert.IsNull(Orthographic(Location.Origin + Direction.Forward * 5f + Direction.Right * 4f));
+
+		AssertNearPlaneCoordEquals(new XYPair<float>(0f, 0f), Perspective(Location.Origin + Direction.Forward * 5f));
+		AssertNearPlaneCoordEquals(new XYPair<float>(0f, 0f), Orthographic(Location.Origin + Direction.Forward * 5f));
+		Assert.Greater(Perspective(Location.Origin + Direction.Forward * 5f + Direction.Right * 1f)!.Value.X, 0f);
+		Assert.Greater(Perspective(Location.Origin + Direction.Forward * 5f + Direction.Up * 1f)!.Value.Y, 0f);
+		AssertNearPlaneCoordEquals(new XYPair<float>(0.5f / (2f * 16f / 9f) * 2f, 0f), Orthographic(Location.Origin + Direction.Forward * 5f + Direction.Right * 1f));
+	}
+
+	[Test]
+	public void ShouldClampLocationsOutsideCameraViewRadiallyToEdge() {
+		XYPair<float> Perspective(Location l, out bool c) => CameraUtils.ProjectOnToPerspectiveCameraNearPlaneClamped(Location.Origin, Direction.Forward, Direction.Up, 0.1f, 1000f, 60f, 16f / 9f, l, out c);
+		XYPair<float> Orthographic(Location l, out bool c) => CameraUtils.ProjectOnToOrthographicCameraNearPlaneClamped(Location.Origin, Direction.Forward, Direction.Up, 0.1f, 1000f, 4f, 16f / 9f, l, out c);
+
+		var result = Perspective(Location.Origin + Direction.Forward * 5f + Direction.Right * 0.1f, out var wasClamped);
+		Assert.IsFalse(wasClamped);
+		Assert.Less(result.X, 1f);
+
+		result = Perspective(Location.Origin + Direction.Forward * 5f + Direction.Right * 100f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertNearPlaneCoordEquals(new XYPair<float>(1f, 0f), result);
+
+		result = Perspective(Location.Origin + Direction.Forward * 5f + Direction.Right * 100f + Direction.Up * 10f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertToleranceEquals(1f, result.X, TestTolerance);
+		Assert.Greater(result.Y, 0f);
+		Assert.Less(result.Y, 1f);
+
+		result = Perspective(Location.Origin + Direction.Forward * 5f + Direction.Up * 100f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertNearPlaneCoordEquals(new XYPair<float>(0f, 1f), result);
+
+		result = Perspective(Location.Origin + Direction.Backward * 5f + Direction.Right * 3f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertNearPlaneCoordEquals(new XYPair<float>(1f, 0f), result);
+
+		result = Perspective(Location.Origin + Direction.Backward * 5f + Direction.Left * 0.01f + Direction.Down * 3f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertToleranceEquals(-1f, result.Y, TestTolerance);
+		Assert.Less(result.X, 0f);
+
+		result = Perspective(Location.Origin + Direction.Backward * 5f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertNearPlaneCoordEquals(new XYPair<float>(0f, -1f), result);
+
+		result = Orthographic(Location.Origin + Direction.Forward * 5f + Direction.Left * 100f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertNearPlaneCoordEquals(new XYPair<float>(-1f, 0f), result);
+
+		result = Orthographic(Location.Origin + Direction.Backward * 5f + Direction.Right * 1f, out wasClamped);
+		Assert.IsTrue(wasClamped);
+		AssertNearPlaneCoordEquals(new XYPair<float>(1f, 0f), result);
+	}
 }

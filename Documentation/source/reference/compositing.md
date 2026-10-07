@@ -112,7 +112,7 @@ A renderer with a sub-area behaves as if its sub-area were the whole target:
 
 * The camera's aspect ratio is kept in step with the sub-area's size (unless the renderer was created with `AutoUpdateCameraAspectRatio = false`).
 * A canvas scene takes the size of the sub-area, so canvas objects are placed relative to the sub-area's edges and corners.
-* `CreateRayFromRenderSubAreaSurface()` and `PickModelInstanceFromRenderSubAreaSurface()` take pixel coordinates relative to the sub-area (whereas `CreateRayFromRenderSurface()` and `PickModelInstanceFromRenderSurface()` take coordinates relative to the whole target).
+* `CreateRayFromRenderSubAreaSurface()` and `PickModelInstanceFromRenderSubAreaSurface()` take pixel coordinates relative to the sub-area (whereas `CreateRayFromRenderSurface()` and `PickModelInstanceFromRenderSurface()` take coordinates relative to the whole target). Likewise, `ProjectOnToRenderSubAreaSurfacePixels()` and `ProjectOnToRenderSubAreaSurfaceFraction()` return where a location in the world appears relative to the sub-area (see [Camera Settings: Projecting Locations](camera_settings.md#projecting-locations)).
 
 ### Splitscreen
 

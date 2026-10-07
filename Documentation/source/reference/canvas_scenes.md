@@ -256,6 +256,32 @@ scoreText.Pen = highlightPen; // (2)!
 
 Text is positioned and sized by its *line box*, which spans from the top of the font's tallest letters to the bottom of the letters that hang below the line (e.g. "g" or "y"), whichever letters the text actually contains. Centring a text object (vertically) centres this box.
 
+## Tracking 3D Objects
+
+To draw something on a canvas over an object in the 3D world (such as a name tag or target marker), find where the object appears on screen with the 3D scene's renderer each frame, and move the canvas object there:
+
+```csharp
+marker.CanvasAnchor = Orientation2D.UpLeft; // (1)!
+marker.ObjectAnchor = Orientation2D.None; // (2)!
+
+// Per-frame:
+var screenFraction = sceneRenderer.ProjectOnToRenderSurfaceFractionClamped(trackedObject.Position, out var isOffScreen); // (3)!
+marker.PositionFraction = screenFraction;
+marker.Opacity = isOffScreen ? 0.5f : 1f; // (4)!
+```
+
+1.	Measures the marker's position from the top-left corner of the canvas, matching the coordinates returned by `ProjectOnToRenderSurfaceFractionClamped()`.
+
+2.	Centres the marker on its position.
+
+3.	Finds where the object appears, as a fraction of the renderer's output. If the object is off-screen (or behind the camera), the result is clamped to the edge of the screen on the side facing the object.
+
+4.	Fades the marker while it's acting as an off-screen indicator.
+
+Fractions (rather than pixels) are the simplest choice here, as they're unaffected by the size or display scaling of the window. If you only want to show the marker while the object is on screen, use `ProjectOnToRenderSurfaceFraction()` instead, which returns `null` when the object is out of view. See [Camera Settings: Projecting Locations](camera_settings.md#projecting-locations) for details.
+
+When the canvas is rendered in to a [render sub-area](compositing.md#render-sub-areas), use the 3D renderer's `ProjectOnToRenderSubAreaSurfaceFraction...()` methods instead, so that the result is relative to the same area as the canvas.
+
 ## Hit-Testing
 
 ```csharp

@@ -95,6 +95,16 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 		ViewportSurfacePickCalls.Add((pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment));
 		return default;
 	}
+	public XYPair<float>? ProjectOnToRenderSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) => default;
+	public XYPair<float> ProjectOnToRenderSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		wasClamped = false;
+		return default;
+	}
+	public XYPair<float>? ProjectOnToViewportSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) => default;
+	public XYPair<float> ProjectOnToViewportSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		wasClamped = false;
+		return default;
+	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) => Scene;
 	public Camera GetCamera(ResourceHandle<Renderer> handle) => Camera;
@@ -476,6 +486,11 @@ sealed class FakeCameraImplProvider : ICameraImplProvider {
 	public void Rotate(ResourceHandle<Camera> handle, Quaternion rotationQuaternion) { }
 
 	public Ray CreateRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord) => default;
+	public XYPair<float>? ProjectOnToNearPlane(ResourceHandle<Camera> handle, Location location) => default;
+	public XYPair<float> ProjectOnToNearPlaneClamped(ResourceHandle<Camera> handle, Location location, out bool wasClamped) {
+		wasClamped = false;
+		return default;
+	}
 }
 
 static class BindableRendererTestScaffold {

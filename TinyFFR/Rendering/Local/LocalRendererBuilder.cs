@@ -956,6 +956,99 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		return rendererData.Camera.CreateRayFromNearPlane(normalizedCoord);
 	}
 
+	public XYPair<float>? ProjectOnToRenderSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		RefreshViewportForProjection(handle);
+		if (_loadedRenderers[handle].Camera.ProjectOnToNearPlane(location) is not { } nearPlaneCoord) return null;
+		return ConvertNearPlaneCoordToSurfaceCoord(handle, nearPlaneCoord, false, coordOrigin, disableDpiScalingAdjustment, asFraction);
+	}
+
+	public XYPair<float> ProjectOnToRenderSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		RefreshViewportForProjection(handle);
+		var nearPlaneCoord = _loadedRenderers[handle].Camera.ProjectOnToNearPlaneClamped(location, out wasClamped);
+		return ConvertNearPlaneCoordToSurfaceCoord(handle, nearPlaneCoord, false, coordOrigin, disableDpiScalingAdjustment, asFraction);
+	}
+
+	public XYPair<float>? ProjectOnToViewportSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		RefreshViewportForProjection(handle);
+		if (_loadedRenderers[handle].Camera.ProjectOnToNearPlane(location) is not { } nearPlaneCoord) return null;
+		return ConvertNearPlaneCoordToSurfaceCoord(handle, nearPlaneCoord, true, coordOrigin, disableDpiScalingAdjustment, asFraction);
+	}
+
+	public XYPair<float> ProjectOnToViewportSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		RefreshViewportForProjection(handle);
+		var nearPlaneCoord = _loadedRenderers[handle].Camera.ProjectOnToNearPlaneClamped(location, out wasClamped);
+		return ConvertNearPlaneCoordToSurfaceCoord(handle, nearPlaneCoord, true, coordOrigin, disableDpiScalingAdjustment, asFraction);
+	}
+
+	void RefreshViewportForProjection(ResourceHandle<Renderer> handle) {
+		var rendererData = _loadedRenderers[handle];
+		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
+		if (curTargetSize.X <= 0 || curTargetSize.Y <= 0) return;
+		var viewportData = rendererData.Viewport;
+		RefreshViewportDimensionsIfRenderTargetSizeChanged(handle, ref rendererData, ref viewportData);
+	}
+
+	XYPair<float> ConvertNearPlaneCoordToSurfaceCoord(ResourceHandle<Renderer> handle, XYPair<float> nearPlaneCoord, bool relativeToViewport, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) {
+		var rendererData = _loadedRenderers[handle];
+		var viewportBounds = ResolveViewportPixelBounds(handle);
+		var viewportSize = viewportBounds.Size.Cast<float>();
+		var viewportBottomLeft = relativeToViewport ? XYPair<float>.Zero : viewportBounds.BottomLeft.Cast<float>();
+		var surfaceSize = relativeToViewport ? viewportSize : viewportBounds.TargetSize.Cast<float>();
+
+		if (asFraction) {
+			var fractionScalar = new XYPair<float>(
+				surfaceSize.X > 0f ? 1f / surfaceSize.X : 0f,
+				surfaceSize.Y > 0f ? 1f / surfaceSize.Y : 0f
+			);
+			viewportSize = viewportSize.ScaledBy(fractionScalar);
+			viewportBottomLeft = viewportBottomLeft.ScaledBy(fractionScalar);
+			surfaceSize = new XYPair<float>(1f, 1f);
+		}
+		else if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
+			var dpiScalar = rendererData.RenderTarget.AsWindow.Size.Cast<float>() / viewportBounds.TargetSize.Cast<float>();
+			if (Single.IsFinite(dpiScalar.X) && Single.IsFinite(dpiScalar.Y)) {
+				viewportSize = viewportSize.ScaledBy(dpiScalar);
+				viewportBottomLeft = viewportBottomLeft.ScaledBy(dpiScalar);
+				surfaceSize = surfaceSize.ScaledBy(dpiScalar);
+			}
+		}
+
+		var downLeftOriginCoord = new XYPair<float>(
+			viewportBottomLeft.X + (nearPlaneCoord.X + 1f) * 0.5f * viewportSize.X,
+			viewportBottomLeft.Y + (nearPlaneCoord.Y + 1f) * 0.5f * viewportSize.Y
+		);
+		var result = ConvertDownLeftOriginCoordToRequestedOrigin(downLeftOriginCoord, surfaceSize, coordOrigin);
+		if (asFraction) return result;
+
+		var viewportCornerA = ConvertDownLeftOriginCoordToRequestedOrigin(viewportBottomLeft, surfaceSize, coordOrigin);
+		var viewportCornerB = ConvertDownLeftOriginCoordToRequestedOrigin(viewportBottomLeft + viewportSize, surfaceSize, coordOrigin);
+		var minimum = new XYPair<float>(MathF.Min(viewportCornerA.X, viewportCornerB.X), MathF.Min(viewportCornerA.Y, viewportCornerB.Y));
+		var maximum = new XYPair<float>(MathF.Max(viewportCornerA.X, viewportCornerB.X), MathF.Max(viewportCornerA.Y, viewportCornerB.Y));
+		return new XYPair<float>(
+			Math.Clamp(result.X, minimum.X, MathF.Max(minimum.X, maximum.X - 1f)),
+			Math.Clamp(result.Y, minimum.Y, MathF.Max(minimum.Y, maximum.Y - 1f))
+		);
+	}
+
+	static XYPair<float> ConvertDownLeftOriginCoordToRequestedOrigin(XYPair<float> downLeftOriginCoord, XYPair<float> surfaceSize, DiagonalOrientation2D coordOrigin) {
+		return new XYPair<float>(
+			coordOrigin.GetHorizontalComponent() switch {
+				HorizontalOrientation2D.Right => surfaceSize.X - downLeftOriginCoord.X,
+				HorizontalOrientation2D.Left => downLeftOriginCoord.X,
+				_ => downLeftOriginCoord.X - surfaceSize.X * 0.5f
+			},
+			coordOrigin.GetVerticalComponent() switch {
+				VerticalOrientation2D.Up => surfaceSize.Y - downLeftOriginCoord.Y,
+				VerticalOrientation2D.Down => downLeftOriginCoord.Y,
+				_ => downLeftOriginCoord.Y - surfaceSize.Y * 0.5f
+			}
+		);
+	}
+
 	public Scene GetScene(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedRenderers[handle].Scene;

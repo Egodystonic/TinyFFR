@@ -368,6 +368,28 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 			: CameraUtils.CreateRayFromPerspectiveCameraParameters(in modelMat, in projMat, normalizedNearPlaneCoord);
 	}
 
+	public XYPair<float>? ProjectOnToNearPlane(ResourceHandle<Camera> handle, Location location) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		GetCameraModelMatrix(handle, out var modelMat).ThrowIfFailure();
+		GetCameraProjectionMatrix(handle, out var projMat, out _, out _).ThrowIfFailure();
+
+		return _activeCameras[handle].ProjectionType == CameraProjectionType.Orthographic
+			? CameraUtils.ProjectOnToOrthographicCameraNearPlane(in modelMat, in projMat, location)
+			: CameraUtils.ProjectOnToPerspectiveCameraNearPlane(in modelMat, in projMat, location);
+	}
+
+	public XYPair<float> ProjectOnToNearPlaneClamped(ResourceHandle<Camera> handle, Location location, out bool wasClamped) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		GetCameraModelMatrix(handle, out var modelMat).ThrowIfFailure();
+		GetCameraProjectionMatrix(handle, out var projMat, out _, out _).ThrowIfFailure();
+
+		return _activeCameras[handle].ProjectionType == CameraProjectionType.Orthographic
+			? CameraUtils.ProjectOnToOrthographicCameraNearPlaneClamped(in modelMat, in projMat, location, out wasClamped)
+			: CameraUtils.ProjectOnToPerspectiveCameraNearPlaneClamped(in modelMat, in projMat, location, out wasClamped);
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<Camera> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultCameraName));

@@ -591,11 +591,57 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// </summary>
 	/// <remarks>
 	/// This API requires normalized co-ordinates, if you want to convert a pixel click to a <see cref="Ray"/>, see <see cref="Renderer.CreateRayFromRenderSurface"/>.
+	/// The inverse operation (finding where a location in the world appears on the near plane) is <see cref="ProjectOnToNearPlane"/>.
 	/// </remarks>
 	/// <param name="normalizedNearPlaneCoord">Where on the near plane the ray should start, as a fraction of its size: <c>(0, 0)</c> is the centre of the image,
 	/// and each component runs from <c>-1</c> to <c>1</c> at the edges.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CreateRayFromNearPlane(XYPair<float> normalizedNearPlaneCoord) => Implementation.CreateRayFromNearPlane(_handle, normalizedNearPlaneCoord);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on the near plane of this camera; or <see langword="null"/> if it is outside this camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is the inverse of <see cref="CreateRayFromNearPlane(XYPair{float})"/>. The <paramref name="location"/> is considered outside this camera's view if it is behind
+	/// the camera, or beyond the edges of its image. The <see cref="NearPlaneDistance"/> and <see cref="FarPlaneDistance"/> are not taken in to account.
+	/// </para>
+	/// <para>
+	/// This API returns normalized co-ordinates; if you want to know where a location appears on a render target in pixels (or as a fraction of its size),
+	/// see <see cref="Renderer.ProjectOnToRenderSurfacePixels"/> and <see cref="Renderer.ProjectOnToRenderSurfaceFraction"/>.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <returns>The point on the near plane, as a fraction of its size: <c>(0, 0)</c> is the centre of the image, and each component runs from <c>-1</c> to <c>1</c>
+	/// at the edges (with positive Y upwards); or <see langword="null"/> if the location is outside this camera's view.</returns>
+	/// <seealso cref="ProjectOnToNearPlaneClamped(Location)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float>? ProjectOnToNearPlane(Location location) => Implementation.ProjectOnToNearPlane(_handle, location);
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on the near plane of this camera, clamped to the edge of the near plane if it is outside this camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// When the <paramref name="location"/> is outside this camera's view (behind the camera, or beyond the edges of its image), the returned co-ordinate is moved from the centre
+	/// of the near plane towards the location's direction until it reaches the edge. This means it always lies on the side of the image facing the location (even when the location
+	/// is behind the camera), which makes it suitable for placing off-screen indicators. A location directly behind the camera is placed at <c>(0, -1)</c> (the centre of the bottom edge).
+	/// </para>
+	/// <para>
+	/// Use the <see cref="ProjectOnToNearPlaneClamped(Location, out bool)"/> overload to also find out whether clamping occurred.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <returns>The point on the near plane, as a fraction of its size: <c>(0, 0)</c> is the centre of the image, and each component runs from <c>-1</c> to <c>1</c>
+	/// at the edges (with positive Y upwards).</returns>
+	/// <seealso cref="ProjectOnToNearPlane"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float> ProjectOnToNearPlaneClamped(Location location) => Implementation.ProjectOnToNearPlaneClamped(_handle, location, out _);
+	/// <inheritdoc cref="ProjectOnToNearPlaneClamped(Location)"/>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside this camera's view and the result was clamped to the edge
+	/// of the near plane; otherwise <see langword="false"/>.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float> ProjectOnToNearPlaneClamped(Location location, out bool wasClamped) => Implementation.ProjectOnToNearPlaneClamped(_handle, location, out wasClamped);
 
 	/// <summary>
 	/// Creates a camera controller of the given type, connected to this camera.
