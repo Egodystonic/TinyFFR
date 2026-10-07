@@ -132,6 +132,11 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		).ThrowIfFailure();
 		return (outWidth, outHeight);
 	}
+	public int GetCurrentRefreshRateHz(ResourceHandle<Display> handle) {
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
+		GetDisplayCurrentRefreshRate(handle, out var refreshRateHz).ThrowIfFailure();
+		return refreshRateHz > 0 ? refreshRateHz : GetHighestSupportedRefreshRateMode(handle).RefreshRateHz;
+	}
 	public XYPair<int> GetGlobalPositionOffset(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		GetDisplayPositionalOffset(
@@ -188,6 +193,9 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_resolution")]
 	static extern InteropResult GetDisplayResolution(nuint handle, out int outWidth, out int outHeight);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_current_refresh_rate")]
+	static extern InteropResult GetDisplayCurrentRefreshRate(nuint handle, out int outRefreshRateHz);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_positional_offset")]
 	static extern InteropResult GetDisplayPositionalOffset(nuint handle, out int outXOffset, out int outYOffset);

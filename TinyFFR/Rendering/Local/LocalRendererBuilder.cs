@@ -134,7 +134,9 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		}
 	}
 	
-	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed, XYPair<int> LastObservedRenderTargetSize);
+	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed, XYPair<int> LastObservedRenderTargetSize) {
+		public long LastSkippedFramePacingTimestamp { get; init; }
+	}
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions, bool SubAreaIsHandledDownstream = false);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, int GpuSynchronizationFrameBufferCount, RenderQualityConfig Quality, (bool Translucent, bool ClearDepth)? LastPushedCompositingMode, RenderCompositionType CompositionType = RenderCompositionType.Standard) {
 		public bool EmitFences => GpuSynchronizationFrameBufferCount >= 0;
@@ -342,7 +344,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		).ThrowIfFailure();
 		_loadedRenderers[handle] = rendererData;
 		if (rendererData.AutoUpdateCameraAspectRatio) {
-			rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
+			rendererData.Camera.SetAspectRatio(viewportBounds.Size.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
 		}
 
 		return true;
@@ -360,7 +362,12 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		var initialRenderTarget = _loadedRenderers[handle].RenderTarget;
 		if (initialRenderTarget.IsWindow) {
 			var curWindowSize = initialRenderTarget.ViewportDimensions;
-			if (curWindowSize.X <= 0 || curWindowSize.Y <= 0 || initialRenderTarget.AsWindow.IsMinimized) return;
+			if (curWindowSize.X <= 0 || curWindowSize.Y <= 0 || initialRenderTarget.AsWindow.IsMinimized) {
+				if (_config.EnableMinimizedWindowFramePacing && ordering is RenderOrdering.Standalone or RenderOrdering.First) {
+					PaceSkippedWindowFrame(initialRenderTarget);
+				}
+				return;
+			}
 		}
 
 		SetUpSceneForRender(handle);
@@ -488,6 +495,33 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		if (ordering is RenderOrdering.Standalone or RenderOrdering.Last && _loadedRenderers[fenceEmittingHandle].EmitFences) {
 			LocalFrameSynchronizationManager.EmitFenceAndCycleBuffer(fenceEmittingHandle);
+		}
+	}
+
+	void PaceSkippedWindowFrame(RenderTargetUnion windowTarget) {
+		const int FallbackRefreshRateHz = 60;
+		var refreshRateHz = windowTarget.AsWindow.Display.CurrentRefreshRateHz;
+		if (refreshRateHz <= 0) refreshRateHz = FallbackRefreshRateHz;
+		var intervalTicks = Stopwatch.Frequency / refreshRateHz;
+
+		TargetSpecificData targetData;
+		lock (_loadedTargetDataMutationLock) {
+			targetData = _loadedTargets[windowTarget];
+		}
+
+		var nowTimestamp = Stopwatch.GetTimestamp();
+		var deadlineTimestamp = targetData.LastSkippedFramePacingTimestamp + intervalTicks;
+		long newPacedTimestamp;
+		if (targetData.LastSkippedFramePacingTimestamp == 0L || nowTimestamp >= deadlineTimestamp) {
+			newPacedTimestamp = nowTimestamp;
+		}
+		else {
+			Thread.Sleep(Stopwatch.GetElapsedTime(nowTimestamp, deadlineTimestamp));
+			newPacedTimestamp = deadlineTimestamp;
+		}
+
+		lock (_loadedTargetDataMutationLock) {
+			_loadedTargets[windowTarget] = _loadedTargets[windowTarget] with { LastSkippedFramePacingTimestamp = newPacedTimestamp };
 		}
 	}
 

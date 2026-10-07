@@ -93,3 +93,14 @@ StartExportedFunc(get_display_mode, DisplayHandle handle, int32_t modeIndex, int
 	native_impl_display::get_display_mode(handle, modeIndex, outWidth, outHeight, outRefreshRateHz);
 	EndExportedFunc
 }
+
+int32_t native_impl_display::get_display_current_refresh_rate(DisplayHandle handle) {
+	SDL_DisplayMode mode;
+	if (SDL_GetCurrentDisplayMode(handle, &mode) != 0) return 0;
+	return mode.refresh_rate;
+}
+StartExportedFunc(get_display_current_refresh_rate, DisplayHandle handle, int32_t* outRefreshRateHz) {
+	ThrowIfNull(outRefreshRateHz, "Out refresh rate pointer was null.");
+	*outRefreshRateHz = native_impl_display::get_display_current_refresh_rate(handle);
+	EndExportedFunc
+}

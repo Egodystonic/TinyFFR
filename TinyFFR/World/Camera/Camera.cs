@@ -288,7 +288,7 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// The width of the captured scene image, divided by its height.
 	/// </summary>
 	/// <remarks>
-	/// In most cases the containing <see cref="Renderer"/> will keep this property in sync with the render target for you
+	/// In most cases the containing <see cref="Renderer"/> will keep this property in sync with its render target (or render sub-area) for you
 	/// (unless that renderer was created with <see cref="RendererCreationConfig.AutoUpdateCameraAspectRatio"/> set to <c>false</c>);
 	/// so you don't need to set it manually. 
 	/// </remarks>

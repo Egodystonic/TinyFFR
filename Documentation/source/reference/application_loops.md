@@ -75,13 +75,13 @@ The input API is described in more detail in [Keyboard / Mouse Input](keyboard_a
 
 ## Controlling Framerate
 
-By default, `ApplicationLoop`s set an unlimited framerate, resulting in your application rendering as many frames as it can (tempered on the GPU side by [vsync](controlling_render_behaviour.md)). 
+By default, `ApplicationLoop`s set an unlimited framerate, resulting in your application rendering as many frames as it can (tempered on the GPU side by [vsync](render_throughput_and_latency.md#vsync)). 
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `TargetFrameRate`
 
 :   Set to any positive value to set that as your target FPS (framerate) cap. For example, setting this to `30` means your application loop will never exceed thirty iterations per second.
 
-	Setting this to `null` removes the limit entirely (in practice, this means your framerate will be capped by the target display's current refresh rate, known as 'vsync'; this [can also be disabled](controlling_render_behaviour.md) for a truly-unlimited framerate).
+	Setting this to `null` removes the limit entirely (in practice, this means your framerate will be capped by the target display's current refresh rate, known as 'vsync'; this [can also be disabled](render_throughput_and_latency.md#vsync) for a truly-unlimited framerate).
 
 ## Total Iterated Time
 

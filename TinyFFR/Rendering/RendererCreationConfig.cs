@@ -31,9 +31,9 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	public const int MaxGpuSynchronizationFrameBufferCount = LocalFrameSynchronizationManager.MaxBufferSize;
 
 	/// <summary>
-	/// If <c>true</c>, when the created <see cref="Renderer"/>'s <see cref="Renderer.TargetWindow">TargetWindow</see> is resized,
-	/// the <see cref="Camera.AspectRatio">AspectRatio</see> of the <see cref="Renderer.TargetCamera">TargetCamera</see> will automatically
-	/// be updated to match. Defaults to <see cref="DefaultAutoUpdateCameraAspectRatio"/>.
+	/// If <c>true</c>, when the created <see cref="Renderer"/>'s <see cref="Renderer.TargetWindow">TargetWindow</see> or render sub-area
+	/// (see <see cref="Renderer.SetRenderSubAreaFraction"/>) is resized, the <see cref="Camera.AspectRatio">AspectRatio</see> of the
+	/// <see cref="Renderer.TargetCamera">TargetCamera</see> will automatically be updated to match the render sub-area. Defaults to <see cref="DefaultAutoUpdateCameraAspectRatio"/>.
 	/// </summary>
 	/// <remarks>
 	/// Generally speaking this is a useful utility to have, but if you're sharing a camera across multiple target windows you may wish to

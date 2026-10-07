@@ -186,6 +186,9 @@ nav:
         - reference/playing_skeletal_animations.md
         - reference/bounding_boxes.md
         - reference/canvas_scenes.md
+    - Rendering:
+        - reference/render_throughput_and_latency.md
+        - reference/compositing.md
 
 not_in_nav: |
 

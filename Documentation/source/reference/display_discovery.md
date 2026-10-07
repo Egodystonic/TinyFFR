@@ -92,3 +92,7 @@ In a similar vein, there are no settable/mutable properties on the `Display` typ
 <span class="def-icon">:material-card-bulleted-outline:</span> `CurrentResolution`
 
 :   Tells you the resolution of the display as it is currently set.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `CurrentRefreshRateHz`
+
+:   Tells you the refresh rate (in hertz) the display is currently running at.
