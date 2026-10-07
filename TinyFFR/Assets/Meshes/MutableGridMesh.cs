@@ -225,7 +225,8 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 
 	static readonly Lock _staticMutationLock = new();
 	static readonly HeapPool _sharedHeapPool = new();
-	static readonly ArrayPoolBackedMap<nuint, MutableGridInstance> _activeLeaseMap = new();
+	static readonly ArrayPoolBackedMap<nuint, ActiveLeaseData> _activeLeaseMap = new();
+	readonly record struct ActiveLeaseData(MutableGridInstance Instance, bool PermitLateralDisplacement, bool RecalculateNormals);
 	static readonly ArrayPoolBackedMap<ModelInstance, MutableGridInstance> _liveInstanceRegistry = new();
 	static nuint _prevLeaseId = 0U;
 	
@@ -378,102 +379,102 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	/// <param name="permitLateralDisplacement">Whether to apply each vertex's sideways offset as well as its height.
 	/// Leaving this <see langword="false"/> ignores <see cref="MutableGridVertex.NormalizedLateralOffset"/> entirely,
 	/// is cheaper and is all that is needed for a grid that only ever moves up and down.</param>
+	/// <param name="recalculateNormals">Whether to recalculate the direction the surface faces at each vertex (its normal and tangents)
+	/// from the displaced shape when the lease is disposed. Leaving this <see langword="false"/> is cheaper, but the grid is then lit as though
+	/// its vertices have not moved since the previous update.</param>
 	/// <exception cref="ObjectDisposedException">Thrown when this instance has already been disposed.</exception>
-	public unsafe ScopedSpanLease<MutableGridVertex> BorrowVerticesSpan(bool permitLateralDisplacement) {
-		static void HandleLeaseDisposalWithLateralDisplacement(object? _, nuint leaseId) {
-			MutableGridInstance @this;
-			lock (_staticMutationLock) {
-				if (!_activeLeaseMap.Remove(leaseId, out @this)) return;
-			}
-				
-			var gridVerts = @this._vertexBuffer.Span;
-			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(false);
-			using var defaultVertsLease = @this.ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
-			var gridDimensions = @this.ParentGridMesh.GridDimensions;
-			var gridArea = gridDimensions.Area;
-			var isTwoSided = defaultVertsLease.Span.Length == gridArea * 2;
-			var xDir = @this.ParentGridMesh.XDir;
-			var yDir = @this.ParentGridMesh.YDir;
-			var upDir = @this.ParentGridMesh.UpDir;
-			var scalarOffsetPerGridStep = ((gridDimensions - XYPair<int>.One).Cast<float>().Reciprocal ?? XYPair<float>.One) * 0.5f;
-			var vectorOffsetPerGridStep = (X: xDir * scalarOffsetPerGridStep.X, Y: yDir * scalarOffsetPerGridStep.Y);
-			
-			if (isTwoSided) {
-				for (var y = 0; y < gridDimensions.Y; ++y) {
-					for (var x = 0; x < gridDimensions.X; ++x) {
-						var index = gridDimensions.Index(x, y);
-						
-						innerLease.Span[index] = innerLease.Span[index] with {
-							Location = defaultVertsLease.Span[index].Location
-								+ (vectorOffsetPerGridStep.X * gridVerts[index].NormalizedLateralOffset.X)
-								+ (vectorOffsetPerGridStep.Y * gridVerts[index].NormalizedLateralOffset.Y)
-								+ (upDir * gridVerts[index].Height)
-						};
-						innerLease.Span[index + gridArea] = innerLease.Span[index + gridArea] with { Location = innerLease.Span[index].Location };
-					}	
-				}
-			}
-			else {
-				for (var y = 0; y < gridDimensions.Y; ++y) {
-					for (var x = 0; x < gridDimensions.X; ++x) {
-						var index = gridDimensions.Index(x, y);
-						
-						innerLease.Span[index] = innerLease.Span[index] with {
-							Location = defaultVertsLease.Span[index].Location
-								+ (vectorOffsetPerGridStep.X * gridVerts[index].NormalizedLateralOffset.X)
-								+ (vectorOffsetPerGridStep.Y * gridVerts[index].NormalizedLateralOffset.Y)
-								+ (upDir * gridVerts[index].Height)
-						};
-					}	
-				}
-			}
-		}
-		
+	public unsafe ScopedSpanLease<MutableGridVertex> BorrowVerticesSpan(bool permitLateralDisplacement, bool recalculateNormals = false) {
 		static void HandleLeaseDisposal(object? _, nuint leaseId) {
-			MutableGridInstance @this;
+			ActiveLeaseData leaseData;
 			lock (_staticMutationLock) {
-				if (!_activeLeaseMap.Remove(leaseId, out @this)) return;
+				if (!_activeLeaseMap.Remove(leaseId, out leaseData)) return;
 			}
-				
-			var gridVerts = @this._vertexBuffer.Span;
-			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(false);
-			using var defaultVertsLease = @this.ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
-			var gridDimensions = @this.ParentGridMesh.GridDimensions;
-			var gridArea = gridDimensions.Area;
-			var isTwoSided = defaultVertsLease.Span.Length == gridArea * 2;
-			var upDir = @this.ParentGridMesh.UpDir;
-			
-			if (isTwoSided) {
-				for (var y = 0; y < gridDimensions.Y; ++y) {
-					for (var x = 0; x < gridDimensions.X; ++x) {
-						var index = gridDimensions.Index(x, y);
-						
-						innerLease.Span[index] = innerLease.Span[index] with {
-							Location = defaultVertsLease.Span[index].Location + (upDir * gridVerts[index].Height)
-						};
-						innerLease.Span[index + gridArea] = innerLease.Span[index + gridArea] with { Location = innerLease.Span[index].Location };
-					}	
-				}
-			}
-			else {
-				for (var y = 0; y < gridDimensions.Y; ++y) {
-					for (var x = 0; x < gridDimensions.X; ++x) {
-						var index = gridDimensions.Index(x, y);
-						
-						innerLease.Span[index] = innerLease.Span[index] with {
-							Location = defaultVertsLease.Span[index].Location + (upDir * gridVerts[index].Height)
-						};
-					}	
-				}
-			}
+			leaseData.Instance.ApplyDisplacements(leaseData.PermitLateralDisplacement, leaseData.RecalculateNormals);
 		}
-		
+
 		ObjectDisposedException.ThrowIf(UnderlyingModelInstance.IsDisposed, typeof(MutableGridMesh));
-		
 		lock (_staticMutationLock) {
 			var leaseId = ++_prevLeaseId;
-			_activeLeaseMap.Add(leaseId, this);
-			return new ScopedSpanLease<MutableGridVertex>(permitLateralDisplacement ? &HandleLeaseDisposalWithLateralDisplacement : &HandleLeaseDisposal, null, leaseId, _vertexBuffer.Span);
+			_activeLeaseMap.Add(leaseId, new ActiveLeaseData(this, permitLateralDisplacement, recalculateNormals));
+			return new ScopedSpanLease<MutableGridVertex>(&HandleLeaseDisposal, null, leaseId, _vertexBuffer.Span);
+		}
+	}
+
+	void ApplyDisplacements(bool permitLateralDisplacement, bool recalculateNormals) {
+		var gridVerts = _vertexBuffer.Span;
+		using var innerLease = UnderlyingModelInstance.BorrowVerticesSpan(false);
+		using var defaultVertsLease = ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
+		var vertices = innerLease.Span;
+		var defaultVertices = defaultVertsLease.Span;
+		var gridDimensions = ParentGridMesh.GridDimensions;
+		var gridArea = gridDimensions.Area;
+		var isTwoSided = defaultVertices.Length == gridArea * 2;
+		var upDir = ParentGridMesh.UpDir;
+
+		if (permitLateralDisplacement) {
+			var scalarOffsetPerGridStep = ((gridDimensions - XYPair<int>.One).Cast<float>().Reciprocal ?? XYPair<float>.One) * 0.5f;
+			var xOffsetPerGridStep = ParentGridMesh.XDir * scalarOffsetPerGridStep.X;
+			var yOffsetPerGridStep = ParentGridMesh.YDir * scalarOffsetPerGridStep.Y;
+			for (var i = 0; i < gridArea; ++i) {
+				vertices[i] = vertices[i] with {
+					Location = defaultVertices[i].Location
+						+ (xOffsetPerGridStep * gridVerts[i].NormalizedLateralOffset.X)
+						+ (yOffsetPerGridStep * gridVerts[i].NormalizedLateralOffset.Y)
+						+ (upDir * gridVerts[i].Height)
+				};
+			}
+		}
+		else {
+			for (var i = 0; i < gridArea; ++i) {
+				vertices[i] = vertices[i] with { Location = defaultVertices[i].Location + (upDir * gridVerts[i].Height) };
+			}
+		}
+
+		if (isTwoSided) {
+			for (var i = 0; i < gridArea; ++i) {
+				vertices[i + gridArea] = vertices[i + gridArea] with { Location = vertices[i].Location };
+			}
+		}
+
+		if (recalculateNormals) RecalculateNormals(vertices, isTwoSided);
+	}
+
+	void RecalculateNormals(Span<MeshVertex> vertices, bool isTwoSided) {
+		var gridDimensions = ParentGridMesh.GridDimensions;
+		var xDir = ParentGridMesh.XDir.ToVector3();
+		var yDir = ParentGridMesh.YDir.ToVector3();
+		var upDir = ParentGridMesh.UpDir.ToVector3();
+		var normalSign = Vector3.Dot(Vector3.Cross(xDir, yDir), upDir) < 0f ? -1f : 1f;
+
+		for (var y = 0; y < gridDimensions.Y; ++y) {
+			var prevY = Int32.Max(y - 1, 0);
+			var nextY = Int32.Min(y + 1, gridDimensions.Y - 1);
+			for (var x = 0; x < gridDimensions.X; ++x) {
+				var prevX = Int32.Max(x - 1, 0);
+				var nextX = Int32.Min(x + 1, gridDimensions.X - 1);
+
+				var alongX = vertices[gridDimensions.Index(nextX, y)].Location.ToVector3() - vertices[gridDimensions.Index(prevX, y)].Location.ToVector3();
+				var alongY = vertices[gridDimensions.Index(x, nextY)].Location.ToVector3() - vertices[gridDimensions.Index(x, prevY)].Location.ToVector3();
+
+				var normal = Vector3.Cross(alongX, alongY) * normalSign;
+				var normalLengthSquared = normal.LengthSquared();
+				normal = normalLengthSquared > 1E-12f ? normal / MathF.Sqrt(normalLengthSquared) : upDir;
+
+				var tangent = alongX - normal * Vector3.Dot(alongX, normal);
+				var tangentLengthSquared = tangent.LengthSquared();
+				tangent = tangentLengthSquared > 1E-12f ? tangent / MathF.Sqrt(tangentLengthSquared) : xDir;
+
+				var bitangent = alongY - normal * Vector3.Dot(alongY, normal) - tangent * Vector3.Dot(alongY, tangent);
+				var bitangentLengthSquared = bitangent.LengthSquared();
+				bitangent = bitangentLengthSquared > 1E-12f ? bitangent / MathF.Sqrt(bitangentLengthSquared) : yDir;
+
+				var index = gridDimensions.Index(x, y);
+				vertices[index] = vertices[index] with { TangentRotation = IMeshVertex.CalculateTangentRotationManaged(tangent, bitangent, normal) };
+				if (isTwoSided) {
+					var backIndex = index + gridDimensions.Area;
+					vertices[backIndex] = vertices[backIndex] with { TangentRotation = IMeshVertex.CalculateTangentRotationManaged(tangent, -bitangent, -normal) };
+				}
+			}
 		}
 	}
 	
@@ -588,8 +589,8 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() {
 		lock (_staticMutationLock) {
-			foreach (var instance in _activeLeaseMap.Values) {
-				if (instance == this) {
+			foreach (var leaseData in _activeLeaseMap.Values) {
+				if (leaseData.Instance == this) {
 #pragma warning disable CA1065 // "Don't throw exceptions in dispose" -- Vastly preferable to leaking leases
 					throw new InvalidOperationException($"Can not dispose this {this} as there are least one active vertex span lease(s) not yet disposed.");
 #pragma warning restore CA1065

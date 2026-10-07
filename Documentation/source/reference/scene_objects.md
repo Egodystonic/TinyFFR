@@ -128,7 +128,7 @@ Model instances have a number of further capabilities, explained on their own pa
 
 * `instance.GetAnimationPlayer()` and its overloads play the animations of a [skeletal mesh](skeletal_meshes.md) on an instance. :material-arrow-right: [Playing Skeletal Animations](playing_skeletal_animations.md)
 
-* `instance.BorrowVerticesSpan()` alters an instance's vertices without affecting other instances sharing the same mesh (if the mesh was created with `AllowsVertexMutation`). :material-arrow-right: [Dynamic Meshes & Mutable Grids](dynamic_meshes_and_mutable_grids.md)
+* `instance.BorrowVerticesSpan()` alters an instance's vertices without affecting other instances sharing the same mesh (if the mesh was created with `AllowsPerInstanceVertexMutation`). :material-arrow-right: [Dynamic Meshes & Mutable Grids](dynamic_meshes_and_mutable_grids.md)
 
 * `instance.GetWorldSpaceBoundingBox()` and similar methods describe the volume an instance occupies in the world. :material-arrow-right: [Bounding Boxes](bounding_boxes.md)
 

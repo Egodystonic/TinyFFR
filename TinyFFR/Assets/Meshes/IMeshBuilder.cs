@@ -922,7 +922,9 @@ public interface IMeshBuilder {
 	/// frame is written in to. Meshes created from it are views on to a range of its indices rather than copies of its data.
 	/// </para>
 	/// <para>
-	/// The buffer grows as needed, but growing it is not free, so give capacities close to what will actually be used.
+	/// The buffer never grows automatically. It can be resized with <see cref="DynamicVertexBuffer.ResizeVertexBuffer"/> and
+	/// <see cref="DynamicVertexBuffer.ResizeIndexBuffer"/>, but only once every mesh created from it has been disposed, and resizing is
+	/// not free; so give capacities close to what will actually be used.
 	/// </para>
 	/// </remarks>
 	/// <param name="initialVertexCapacity">How many vertices the buffer should initially hold.</param>

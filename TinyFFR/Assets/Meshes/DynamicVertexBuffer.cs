@@ -1,4 +1,4 @@
-// Created on 2026-08-11 by Ben Bowen
+﻿// Created on 2026-08-11 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Resources;
@@ -58,19 +58,32 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 	/// Changes how many vertices this buffer can hold.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Existing contents are preserved as far as the new size allows. Resizing is not free, so size the buffer close to what
 	/// will actually be used rather than growing it repeatedly.
+	/// </para>
+	/// <para>
+	/// Every mesh created from this buffer must be disposed first, and no vertex or index span may be borrowed.
+	/// </para>
 	/// </remarks>
-	/// <param name="newBufferSize">The new capacity, in vertices. Must not be negative.</param>
+	/// <param name="newBufferSize">The new capacity, in vertices. Must be positive.</param>
+	/// <exception cref="ResourceDependencyException">Thrown if any mesh created from this buffer, or any vertex or index span lease taken from it, has not yet been disposed.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ResizeVertexBuffer(int newBufferSize) => Implementation.ResizeVertexBuffer(_handle, newBufferSize);
 	/// <summary>
 	/// Changes how many indices this buffer can hold.
 	/// </summary>
 	/// <remarks>
-	/// Existing contents are preserved as far as the new size allows.
+	/// <para>
+	/// Existing contents are preserved as far as the new size allows. Resizing is not free, so size the buffer close to what
+	/// will actually be used rather than growing it repeatedly.
+	/// </para>
+	/// <para>
+	/// Every mesh created from this buffer must be disposed first, and no vertex or index span may be borrowed.
+	/// </para>
 	/// </remarks>
-	/// <param name="newBufferSize">The new capacity, in indices. Must not be negative.</param>
+	/// <param name="newBufferSize">The new capacity, in indices. Must be positive.</param>
+	/// <exception cref="ResourceDependencyException">Thrown if any mesh created from this buffer, or any vertex or index span lease taken from it, has not yet been disposed.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ResizeIndexBuffer(int newBufferSize) => Implementation.ResizeIndexBuffer(_handle, newBufferSize);
 
@@ -221,8 +234,9 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 	/// Disposes this buffer, releasing its video memory.
 	/// </summary>
 	/// <remarks>
-	/// Every mesh created from this buffer must be disposed first.
+	/// Every mesh created from this buffer must be disposed first, and no vertex or index span may be borrowed.
 	/// </remarks>
+	/// <exception cref="ResourceDependencyException">Thrown if any mesh created from this buffer, or any vertex or index span lease taken from it, has not yet been disposed.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
 

@@ -150,7 +150,7 @@ TinyFFR picks the most appropriate compression format automatically from the tex
 	
 There's more information on texture compression in [Texture Compression](texture_compression.md).
 
-Compression can not be used for textures that allow dynamic writes (see [Dynamic Textures](#dynamic-textures) below).
+Compression can not be used for textures that allow dynamic writes (see [Writable Textures](#writable-textures) below).
 
 ### Mipmaps
 
@@ -197,7 +197,7 @@ var pixelArt = factory.AssetLoader.LoadTexture(
 
 :   A texture on a surface receding away from the camera (e.g. a road stretching to the horizon) turns to a blur in the distance. Raising this quality level keeps such surfaces legible much further away, at some cost in performance. Defaults to `Quality.Standard`.
 
-### Dynamic Textures
+### Writable Textures
 
 ```csharp
 var drawingSurface = factory.AssetLoader.LoadTexture(
@@ -213,7 +213,7 @@ By default, a texture's contents are fixed once it's been created. Setting `text
 
 Mipmaps and compression can not be maintained for data that changes, so setting `AllowsDynamicWrites` to `true` also disables `GenerateMipMaps` and sets `CompressionQuality` to `null` (so it's fine to use with a preset such as `ForColorMap()`, as above). However, explicitly enabling either of those *after* setting `AllowsDynamicWrites` to `true` will throw an exception.
 
-For more information on using dynamic textures, see [Dynamic Textures](dynamic_textures.md).
+For more information on using writable textures, see [Writable Textures](writable_textures.md).
 
 ### Processing
 
@@ -283,7 +283,7 @@ For reference, the following is every property on the `TextureCreationConfig`:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `AllowsDynamicWrites`
 
-:   Whether the texture's contents can be overwritten after creation; see [Dynamic Textures](#dynamic-textures). Defaults to `false`.
+:   Whether the texture's contents can be overwritten after creation; see [Writable Textures](#writable-textures). Defaults to `false`.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `RenderingConfig`
 

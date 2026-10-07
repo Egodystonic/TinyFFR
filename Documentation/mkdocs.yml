@@ -180,6 +180,9 @@ nav:
         - reference/text_instances.md
         - reference/camera-locked_objects.md
         - reference/scene_primitives.md
+        - reference/material_effects.md
+        - reference/writable_textures.md
+        - reference/dynamic_meshes_and_mutable_grids.md
 
 not_in_nav: |
 

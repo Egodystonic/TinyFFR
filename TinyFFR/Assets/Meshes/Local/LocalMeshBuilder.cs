@@ -1105,6 +1105,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	void Dispose(ResourceHandle<DynamicVertexBuffer> handle, bool removeFromMap) {
 		if (IsDynamicVertexBufferDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		if (removeFromMap) ThrowIfAnyActiveDynamicBufferLeases(handle);
 		var data = _activeDynamicVertexBuffers[handle];
 		if (_vertexBufferRefCounts.TryGetValue(data.VertexBufferHandle, out var vbRefCount)) {
 			if (vbRefCount <= 1) {
