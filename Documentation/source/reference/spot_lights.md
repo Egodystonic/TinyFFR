@@ -13,6 +13,11 @@ description: Information on how to create and adjust spot lights.
 
 </div>
 
+![A spot light illuminating a fox and several objects](spot_lights_example.jpg){ : style="width:77%;" }
+/// caption
+A spot light shining down on a fox and several objects from above and to the side, in an otherwise dark scene, with shadows enabled.
+///
+
 ## Spot Lights
 
 ```csharp

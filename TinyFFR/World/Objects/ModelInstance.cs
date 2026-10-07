@@ -411,7 +411,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
 	/// <param name="endAnimationDurationSeconds">How long one cycle of <paramref name="endAnimation"/> should take, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, startAnimationDurationSeconds, endAnimationDurationSeconds);
 	
 	/// <summary>
 	/// Borrows this instance's vertices for direct modification, so that its shape can be altered without affecting other instances sharing the same mesh.

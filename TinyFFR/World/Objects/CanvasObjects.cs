@@ -472,7 +472,8 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 	/// How much of this object’s area is actually filled with its image, from <c>0f</c> to <c>1f</c> on each axis.
 	/// </summary>
 	/// <remarks>
-	/// Reducing this reveals only part of the object, anchored at its edge. This is the usual way to build a progress bar without resizing the element itself.
+	/// Reducing this reveals only part of the object, anchored at the edge or corner given by its <see cref="ObjectAnchor"/> (or <see cref="CanvasAnchor"/> if that is <see langword="null"/>).
+	/// The image is cropped (not squashed) to match. This is the usual way to build a progress bar without resizing the element itself.
 	/// </remarks>
 	public XYPair<float> FillFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -494,10 +495,11 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 		get => Implementation.GetCanvasObjectTextureDimensions(SceneHandle, UnderlyingQuadInstance);
 	}
 	/// <summary>
-	/// Which point in the source image is drawn at this object’s origin, in pixels.
+	/// The bottom-left corner of the region of the source image this object draws, in pixels measured from the source image's bottom-left corner (with positive Y upwards).
 	/// </summary>
 	/// <remarks>
 	/// Together with the texture extent this selects a sub-rectangle of the source image, which is how several icons packed in to one image are drawn separately.
+	/// The selected region is the same regardless of this object's anchors.
 	/// </remarks>
 	public XYPair<int> TextureOffsetPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -512,8 +514,11 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTextureOffsetPixels(XYPair<int> offset) => TextureOffsetPixels = offset;
 	/// <summary>
-	/// Which point in the source image is drawn at this object’s origin, as a fraction of the image size.
+	/// The bottom-left corner of the region of the source image this object draws, as a fraction of the image size measured from the source image's bottom-left corner (with positive Y upwards).
 	/// </summary>
+	/// <remarks>
+	/// Together with the texture extent this selects a sub-rectangle of the source image. The selected region is the same regardless of this object's anchors.
+	/// </remarks>
 	public XYPair<float> TextureOffsetFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetCanvasObjectTextureOffset(SceneHandle, UnderlyingQuadInstance);
@@ -527,7 +532,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTextureOffsetFraction(XYPair<float> offset) => TextureOffsetFraction = offset;
 	/// <summary>
-	/// How much of the source image is drawn, in pixels, starting from the texture offset.
+	/// The size of the region of the source image this object draws, in pixels, extending rightwards and upwards from the texture offset.
 	/// </summary>
 	public XYPair<int> TextureExtentPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -542,7 +547,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTextureExtentPixels(XYPair<int> extent) => TextureExtentPixels = extent;
 	/// <summary>
-	/// How much of the source image is drawn, as a fraction of the image size, starting from the texture offset.
+	/// The size of the region of the source image this object draws, as a fraction of the image size, extending rightwards and upwards from the texture offset.
 	/// </summary>
 	public XYPair<float> TextureExtentFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

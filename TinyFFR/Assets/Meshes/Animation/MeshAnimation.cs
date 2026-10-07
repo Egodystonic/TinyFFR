@@ -188,6 +188,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="blendAnimation"/> does not belong to the same mesh or animation table as this animation.</exception>
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	/// <param name="node">The node whose resulting position is wanted.</param>
@@ -207,13 +208,14 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="blendAnimation"/> does not belong to the same mesh or animation table as this animation.</exception>
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	/// <param name="nodes">The nodes whose resulting positions are wanted.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void GetBlendedNodeTransforms(float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Implementation.GetBlendedNodeTransforms(_handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodes, modelSpaceTransforms);
+		Implementation.GetBlendedNodeTransforms(_handle, targetTimePointSeconds, GetBlendAnimationHandleOrThrow(blendAnimation), blendAnimTargetTimePointSeconds, interpolationDistance, nodes, modelSpaceTransforms);
 	}
 	
 	/// <summary>
@@ -225,13 +227,14 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// </remarks>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="blendAnimation"/> does not belong to the same mesh or animation table as this animation.</exception>
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	/// <param name="nodeIndices">The indices of the nodes whose resulting positions are wanted. Indices can be put on the stack where the nodes themselves can not.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void GetBlendedNodeTransforms(float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		Implementation.GetBlendedNodeTransforms(_handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodeIndices, modelSpaceTransforms);
+		Implementation.GetBlendedNodeTransforms(_handle, targetTimePointSeconds, GetBlendAnimationHandleOrThrow(blendAnimation), blendAnimTargetTimePointSeconds, interpolationDistance, nodeIndices, modelSpaceTransforms);
 	}
 	
 	/// <summary>
@@ -245,11 +248,12 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// targets are handled).</param>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="blendAnimation"/> does not belong to the same mesh or animation table as this animation.</exception>
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ApplyBlended(SceneObject targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance) {
-		Implementation.ApplyBlended(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance);
+		Implementation.ApplyBlended(targetInstance, _handle, targetTimePointSeconds, GetBlendAnimationHandleOrThrow(blendAnimation), blendAnimTargetTimePointSeconds, interpolationDistance);
 	}
 	
 	/// <summary>
@@ -263,6 +267,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// targets are handled).</param>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="blendAnimation"/> does not belong to the same mesh or animation table as this animation.</exception>
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	/// <param name="node">The node whose resulting position is wanted.</param>
@@ -284,13 +289,14 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// targets are handled).</param>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="blendAnimation"/> does not belong to the same mesh or animation table as this animation.</exception>
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	/// <param name="nodes">The nodes whose resulting positions are wanted.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ApplyBlendedAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Implementation.ApplyBlendedAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodes, modelSpaceTransforms);
+		Implementation.ApplyBlendedAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, GetBlendAnimationHandleOrThrow(blendAnimation), blendAnimTargetTimePointSeconds, interpolationDistance, nodes, modelSpaceTransforms);
 	}
 	
 	/// <summary>
@@ -304,13 +310,14 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	/// targets are handled).</param>
 	/// <param name="targetTimePointSeconds">The moment in this animation to evaluate, in seconds.</param>
 	/// <param name="blendAnimation">The animation to blend towards.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="blendAnimation"/> does not belong to the same mesh or animation table as this animation.</exception>
 	/// <param name="blendAnimTargetTimePointSeconds">The moment in <paramref name="blendAnimation"/> to evaluate, in seconds.</param>
 	/// <param name="interpolationDistance">How far between the two animations to blend, where <c>0f</c> is entirely this animation and <c>1f</c> entirely <paramref name="blendAnimation"/>.</param>
 	/// <param name="nodeIndices">The indices of the nodes whose resulting positions are wanted. Indices can be put on the stack where the nodes themselves can not.</param>
 	/// <param name="modelSpaceTransforms">Receives each node's resulting transform, relative to the model's own origin, in the same order the nodes were given. Must be at least as long as the node span.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ApplyBlendedAndGetNodeTransforms(SceneObject targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
-		Implementation.ApplyBlendedAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodeIndices, modelSpaceTransforms);
+		Implementation.ApplyBlendedAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, GetBlendAnimationHandleOrThrow(blendAnimation), blendAnimTargetTimePointSeconds, interpolationDistance, nodeIndices, modelSpaceTransforms);
 	}
 
 	/// <inheritdoc />
@@ -328,6 +335,19 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal ResourceHandle<MeshAnimation> GetHandleWithoutDisposeCheck() => _handle;
+	ResourceHandle<MeshAnimation> GetBlendAnimationHandleOrThrow(MeshAnimation blendAnimation) {
+		var result = blendAnimation.Handle;
+		if (!ReferenceEquals(blendAnimation.Implementation, Implementation)) ThrowForMismatchedBlendAnimation(blendAnimation);
+		return result;
+	}
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	void ThrowForMismatchedBlendAnimation(MeshAnimation blendAnimation) {
+		throw new ArgumentException(
+			$"Can not blend {this} with {blendAnimation} as they do not belong to the same mesh or animation table. " +
+			$"Both animations must come from the same {nameof(Mesh)} (or the same shared {nameof(MeshGroupAnimationTable)}).",
+			nameof(blendAnimation)
+		);
+	}
 	ResourceHandle<MeshAnimation> IResource<MeshAnimation>.GetHandleWithoutDisposeCheck() => GetHandleWithoutDisposeCheck();
 
 	#region Disposal

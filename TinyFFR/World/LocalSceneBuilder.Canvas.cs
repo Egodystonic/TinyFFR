@@ -280,11 +280,14 @@ sealed partial class LocalSceneBuilder {
 		}
 		else {
 			var text = itemData.Text!.Value;
+			var layout = CreateCanvasTextLayout(in dock, width, height, GetCanvasTextData(handle, text).DisableAutoHeightScaling);
+			var verticalCentreCorrection = CalculateCanvasTextVerticalCentreCorrection(text, layout, dock.EffectiveObjectAnchor);
+			if (dock.Rotation != Angle.Zero) verticalCentreCorrection *= new Rotation(dock.Rotation, CanvasElementFacingDirection);
 			text.SetTransform(
-				position,
+				position - verticalCentreCorrection,
 				CanvasElementFacingDirection,
 				uprightDirection,
-				CreateCanvasTextLayout(in dock, width, height, GetCanvasTextData(handle, text).DisableAutoHeightScaling)
+				layout
 			);
 		}
 	}
@@ -324,6 +327,17 @@ sealed partial class LocalSceneBuilder {
 		return (XYPair<float>.Zero, viewportSize.Cast<float>());
 	}
 
+	static Vect CalculateCanvasTextVerticalCentreCorrection(TextInstance text, TextLayout layout, Orientation2D anchor) {
+		if (anchor.GetVerticalComponent() != VerticalOrientation2D.None) return Vect.Zero;
+		var font = text.Font;
+		var stringSize = text.String.Size;
+		var scaling = font.GetTextInstanceScaling(stringSize, layout);
+		var boxCentreOffset = (font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.UpLeft)
+			+ font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.DownRight)) * 0.5f;
+		var baselineDiscrepancy = font.GetTextInstanceAnchorOffset(stringSize, scaling, anchor) - boxCentreOffset;
+		return CanvasElementPositiveYDirection * baselineDiscrepancy.Dot(CanvasElementPositiveYDirection);
+	}
+
 	XYPair<float> ResolveCanvasItemCentreOffset(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> containerSize, XYPair<float> signedSize) {
 		var dock = itemData.Dock;
 		var anchor = dock.EffectiveObjectAnchor;
@@ -339,7 +353,7 @@ sealed partial class LocalSceneBuilder {
 			var scaling = text.Font.GetTextInstanceScaling(stringSize, layout);
 			var centreAnchorOffset = (text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.UpLeft)
 				+ text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.DownRight)) * 0.5f;
-			unrotatedOffset = text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, anchor) - centreAnchorOffset;
+			unrotatedOffset = text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, anchor) - centreAnchorOffset - CalculateCanvasTextVerticalCentreCorrection(text, layout, anchor);
 		}
 
 		if (dock.Rotation != Angle.Zero) unrotatedOffset *= new Rotation(dock.Rotation, CanvasElementFacingDirection);
@@ -789,7 +803,7 @@ sealed partial class LocalSceneBuilder {
 		var instanceHandle = quad.UnderlyingModelInstance.Handle;
 
 		var effectiveExtent = data.UvExtent.ScaledBy(dock.FillFraction);
-		var effectiveOffset = data.UvOffset + CalculateCanvasAnchorUvFactor(dock.EffectiveObjectAnchor).ScaledBy(XYPair<float>.One - effectiveExtent);
+		var effectiveOffset = data.UvOffset + CalculateCanvasAnchorUvFactor(dock.EffectiveObjectAnchor).ScaledBy(data.UvExtent - effectiveExtent);
 
 		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(-effectiveOffset, Angle.Zero, effectiveExtent.Reciprocal ?? XYPair<float>.Zero));
 		if (data.BlendTexture is { } blendTexture) {

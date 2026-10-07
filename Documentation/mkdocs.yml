@@ -183,6 +183,9 @@ nav:
         - reference/material_effects.md
         - reference/writable_textures.md
         - reference/dynamic_meshes_and_mutable_grids.md
+        - reference/playing_skeletal_animations.md
+        - reference/bounding_boxes.md
+        - reference/canvas_scenes.md
 
 not_in_nav: |
 

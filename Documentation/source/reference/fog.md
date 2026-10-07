@@ -13,6 +13,11 @@ description: Information on how to add fog to a scene, using a preset or a fully
 
 </div>
 
+![The same scene with each fog density preset](fog_densities.jpg){ : style="width:100%;" }
+/// caption
+The same scene with no fog, and with each `FogDensity` preset (using the default fog colour).
+///
+
 ## Fog
 
 ```csharp
