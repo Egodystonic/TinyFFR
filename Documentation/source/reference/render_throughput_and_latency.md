@@ -112,7 +112,7 @@ If VSync is disabled, TinyFFR will write each rendered frame to the display's pi
 
 A display's current refresh rate is given by `display.CurrentRefreshRateHz` (the display a window is on is `window.Display`); see [Display Discovery](display_discovery.md).
 
-VSync only applies to windows. Rendering to a `RenderOutputBuffer` (for example, with the [WPF](wpf_integration.md), [Avalonia](avalonia_integration.md), or [WinForms](winforms_integration.md) integrations, or in headless mode) is never paced by a display.
+VSync only applies to windows. Rendering to a [`RenderOutputBuffer`](capturing_render_output.md) (for example, with the [WPF](wpf_integration.md), [Avalonia](avalonia_integration.md), or [WinForms](winforms_integration.md) integrations, or in headless mode) is never paced by a display.
 
 ### Minimized Windows
 
@@ -249,7 +249,7 @@ Compositors offer the same methods for all of their renderers at once: `WaitForG
 
 Waiting for the GPU means the CPU and GPU can no longer work at the same time, which severely reduces throughput; so these methods generally shouldn't be called every frame in a realtime loop. They're useful when:
 
-* **You need the frame to be finished before continuing**: For example when rendering frames one at a time to a `RenderOutputBuffer` for offline processing, or before timing how long a frame took to render.
+* **You need the frame to be finished before continuing**: For example when rendering frames one at a time to a [`RenderOutputBuffer`](capturing_render_output.md) for offline processing, or before timing how long a frame took to render.
 * **You've just disposed lots of resources**: The GPU memory used by disposed resources (meshes, textures, etc.) is only released once the GPU has finished with every frame that used them, which otherwise happens gradually over the following frames. Calling `WaitForGpu()` after disposing them (e.g. when unloading a level) releases that memory straight away.
 
 `CaptureScreenshot()` and [model picking](ray_casting_pixel_picking_projecting.md#pixel-picking) (`PickModelInstanceFromRenderSurface()`) already do their own separate render and wait for it to finish, so you don't need to call `WaitForGpu()` before using them.

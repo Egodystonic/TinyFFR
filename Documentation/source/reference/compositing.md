@@ -29,7 +29,7 @@ while (!loop.Input.UserQuitRequested) {
 }
 ```
 
-1.	Creates a compositor that renders in to `window`. Compositors can also render in to a `RenderOutputBuffer`.
+1.	Creates a compositor that renders in to `window`. Compositors can also render in to a [`RenderOutputBuffer`](capturing_render_output.md).
 
 2.	Adds the renderer for the 3D scene first, so it's drawn first. `Standard` means it replaces whatever was in the window before.
 

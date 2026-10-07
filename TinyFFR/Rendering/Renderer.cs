@@ -172,7 +172,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// </remarks>
 	/// <param name="bitmapFilePath">The file path to write the bitmap to.</param>
 	/// <param name="saveConfig">Configuration options for saving the bitmap. If <c>null</c> a 24-bit, 3-channel bitmap will be saved with no flipping.</param>
-	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c> this renderer's target window/buffer's size will be copied.</param>
+	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c>, the size of this renderer's render sub-area is used (which is the size of the entire target window/buffer if no sub-area has been set).</param>
 	/// <exception cref="System.IO.IOException">Thrown if TinyFFR could not write to the requested <paramref name="bitmapFilePath"/>.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CaptureScreenshot(ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig = null, XYPair<int>? captureResolution = null) => Implementation.CaptureScreenshot(_handle, bitmapFilePath, saveConfig, captureResolution);
@@ -192,7 +192,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// </para>
 	/// </remarks>
 	/// <param name="handler">The function that will be invoked when the rendered screenshot is ready for processing. Must not be null.</param>
-	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c> this renderer's target window/buffer's size will be copied.</param>
+	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c>, the size of this renderer's render sub-area is used (which is the size of the entire target window/buffer if no sub-area has been set).</param>
 	/// <param name="presentFrameTopToBottom">If <c>true</c>, the first row in the given texel data will be the top of the screenshot, if <c>false</c> it will be the bottom.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CaptureScreenshot(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);

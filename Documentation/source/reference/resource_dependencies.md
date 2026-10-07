@@ -100,7 +100,7 @@ Dependencies can also prevent *modifying* a resource, where the modification wou
 Some resources *own* other resources that they create, and dispose them when they're disposed themselves:
 
 * A `Font` owns its atlas texture, and every `FontPen` and `FontString` created from it.
-* A `RenderOutputBuffer` owns the texture it renders in to.
+* A `RenderOutputBuffer` owns the texture it renders in to (see [Capturing Render Output](capturing_render_output.md#using-a-buffer-as-a-texture)).
 
 Owned resources don't stop their owner being disposed. However, anything *outside* the owner that still uses something it owns *does* stop it. For example, a font can't be disposed while a `TextInstance` is still drawing with one of its pens. In that case the exception names the pen (or string) that's still in use, and the instance using it:
 
