@@ -37,6 +37,7 @@ struct pending_pick_data {
 	math::mat4 inverseViewProjection;
 	float_t viewportWidth;
 	float_t viewportHeight;
+	bool renderedVerticallyFlipped;
 };
 static std::unordered_map<uint64_t, completed_pick_data> completed_picks;
 static std::unordered_map<uint64_t, pending_pick_data> pending_picks;
@@ -50,7 +51,7 @@ static void handle_filament_pick_query_callback(View::PickingQueryResult const& 
 		auto const& pending = pendingIter->second;
 		auto const clipSpacePosition = math::double4 {
 			static_cast<double>(result.fragCoords.x) / static_cast<double>(pending.viewportWidth) * 2.0 - 1.0,
-			static_cast<double>(result.fragCoords.y) / static_cast<double>(pending.viewportHeight) * 2.0 - 1.0,
+			(static_cast<double>(result.fragCoords.y) / static_cast<double>(pending.viewportHeight) * 2.0 - 1.0) * (pending.renderedVerticallyFlipped ? -1.0 : 1.0),
 			static_cast<double>(result.fragCoords.z) * 2.0 - 1.0,
 			1.0
 		};
@@ -669,7 +670,7 @@ StartExportedFunc(get_render_targets_are_vertically_flipped, interop_bool* outRe
 	EndExportedFunc
 }
 
-void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects) {
+void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects, interop_bool renderedVerticallyFlipped) {
 	ThrowIfNull(viewDescriptor, "View was null.");
 
 	viewDescriptor->setTransparentPickingEnabled(static_cast<bool>(includeTransparentObjects));
@@ -679,14 +680,15 @@ void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, u
 	pending_picks[pickId] = pending_pick_data {
 		inverse(camera.getProjectionMatrix() * camera.getViewMatrix()),
 		static_cast<float_t>(viewport.width),
-		static_cast<float_t>(viewport.height)
+		static_cast<float_t>(viewport.height),
+		static_cast<bool>(renderedVerticallyFlipped)
 	};
 
 	auto& query = viewDescriptor->pick(x, y, nullptr, &handle_filament_pick_query_callback);
 	query.storage[0] = reinterpret_cast<void*>(static_cast<uintptr_t>(pickId));
 }
-StartExportedFunc(submit_view_pick, ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects) {
-	native_impl_render::submit_view_pick(viewDescriptor, x, y, pickId, includeTransparentObjects);
+StartExportedFunc(submit_view_pick, ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects, interop_bool renderedVerticallyFlipped) {
+	native_impl_render::submit_view_pick(viewDescriptor, x, y, pickId, includeTransparentObjects, renderedVerticallyFlipped);
 	EndExportedFunc
 }
 

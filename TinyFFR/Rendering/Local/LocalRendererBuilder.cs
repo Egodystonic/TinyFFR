@@ -927,12 +927,14 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			RefreshViewportDimensionsIfRenderTargetSizeChanged(pickRendererHandle, ref pickRendererData, ref pickViewportData);
 
 			var pickId = ++_previousPickId;
+			var pickRenderIsFlipped = IsRenderVerticallyFlipped(_loadedBuffers[buffer.GetHandleWithoutDisposeCheck()]);
 			SubmitViewPick(
 				pickViewportData.Handle,
 				(uint) viewportCoord.X,
-				(uint) (_renderTargetsAreVerticallyFlipped ? viewportCoord.Y : viewportSize.Y - 1 - viewportCoord.Y),
+				(uint) (pickRenderIsFlipped ? viewportCoord.Y : viewportSize.Y - 1 - viewportCoord.Y),
 				pickId,
-				includeTransparentObjects
+				includeTransparentObjects,
+				pickRenderIsFlipped
 			).ThrowIfFailure();
 
 			Render(pickRendererHandle);
@@ -1282,7 +1284,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		uint x,
 		uint y,
 		ulong pickId,
-		InteropBool includeTransparentObjects
+		InteropBool includeTransparentObjects,
+		InteropBool renderedVerticallyFlipped
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "try_get_pick_result")]

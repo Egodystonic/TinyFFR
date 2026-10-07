@@ -31,7 +31,7 @@ public:
 	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion, interop_bool flipVertically);
 
 	static bool render_targets_are_vertically_flipped();
-	static void submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects);
+	static void submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects, interop_bool renderedVerticallyFlipped);
 	static void try_get_pick_result(uint64_t pickId, uintptr_t* outModelInstance, float_t* outDepth, float3* outWorldPosition, interop_bool* outFound);
 
 	static void set_view_quality_configuration(

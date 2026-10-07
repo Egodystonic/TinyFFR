@@ -52,6 +52,7 @@ public sealed class ModelViewerScene : IDisposable {
 	PointLight? _overlayLight;
 	Renderer? _overlayRenderer;
 	RendererCompositor? _compositor;
+	ScenePrimitive? _pickMarker;
 
 	bool _spinX;
 	bool _spinY;
@@ -316,6 +317,18 @@ public sealed class ModelViewerScene : IDisposable {
 			overlayInstance.RotateBy((OverlayYawDegreesPerSec * deltaTime) % Direction.Up);
 			overlayInstance.RotateBy((OverlayPitchDegreesPerSec * deltaTime) % Direction.Right);
 		}
+	}
+
+	public string PickAt(XYPair<int> cursorPosition) {
+		_pickMarker?.Dispose();
+		_pickMarker = null;
+
+		if (_mainRenderer.PickModelInstanceFromRenderSurface(cursorPosition) is not { } pick) {
+			return $"Pick at {cursorPosition}: nothing there.";
+		}
+
+		_pickMarker = _scene.AddPrimitivePoint(pick.Position, new PrimitivePaintbrush(ColorVect.FromRgb24(0xFF00FF)), ScenePrimitiveSize.Large);
+		return $"Pick at {cursorPosition}: {pick.ModelInstance.GetNameAsNewStringObject()} at {pick.Position} (magenta dot should be under the cursor).";
 	}
 
 	public void Render() {
