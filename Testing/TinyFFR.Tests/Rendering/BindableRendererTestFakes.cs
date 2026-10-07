@@ -352,8 +352,8 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public int FindIntersections(ResourceHandle<Scene> handle, PositionedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
 	public int FindIntersections(ResourceHandle<Scene> handle, PositionedSphere shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) => throw new NotSupportedException();
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) => throw new NotSupportedException();
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) => throw new NotSupportedException();
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) => throw new NotSupportedException();
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) => throw new NotSupportedException();
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification) => throw new NotSupportedException();
 	public void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture) => throw new NotSupportedException();

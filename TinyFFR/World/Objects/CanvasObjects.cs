@@ -209,10 +209,10 @@ public interface ICanvasObject<TSelf> : ICanvasObject where TSelf : struct, ICan
 /// <para>
 /// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingModelInstance"/>: it has the same name and the same
 /// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
-/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasTextures"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasImages"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
 /// </para>
 /// </remarks>
-public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDisposableResource<CanvasTexture> {
+public readonly record struct CanvasImage : ICanvasObject<CanvasImage>, IDisposableResource<CanvasImage> {
 	/// <inheritdoc />
 	public CanvasScene Canvas { get; }
 	/// <summary>
@@ -414,13 +414,13 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetHeightFraction(float? heightFraction) => HeightFraction = heightFraction;
 
-	internal CanvasTexture(CanvasScene canvas, QuadInstance underlyingQuadInstance) {
+	internal CanvasImage(CanvasScene canvas, QuadInstance underlyingQuadInstance) {
 		Canvas = canvas;
 		UnderlyingQuadInstance = underlyingQuadInstance;
 	}
 
-	static bool ICanvasObject<CanvasTexture>.TryWrap(ModelInstance modelInstance, out CanvasTexture result) => TryWrap(modelInstance, out result);
-	internal static bool TryWrap(ModelInstance modelInstance, out CanvasTexture result) {
+	static bool ICanvasObject<CanvasImage>.TryWrap(ModelInstance modelInstance, out CanvasImage result) => TryWrap(modelInstance, out result);
+	internal static bool TryWrap(ModelInstance modelInstance, out CanvasImage result) {
 		if (modelInstance.Implementation.GetCanvas(modelInstance.Handle) is not { } canvas || modelInstance.Implementation.IsTextInstance(modelInstance.Handle)) {
 			result = default;
 			return false;
@@ -429,16 +429,16 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 		return true;
 	}
 
-	static CanvasTexture WrapBase(ModelInstance b) => TryWrap(b, out var result) ? result : new(default, new QuadInstance(b));
-	ResourceHandle<CanvasTexture> IResource<CanvasTexture>.Handle => UnderlyingModelInstance.Handle.AsInteger;
+	static CanvasImage WrapBase(ModelInstance b) => TryWrap(b, out var result) ? result : new(default, new QuadInstance(b));
+	ResourceHandle<CanvasImage> IResource<CanvasImage>.Handle => UnderlyingModelInstance.Handle.AsInteger;
 	ResourceHandle IResource.Handle => UnderlyingModelInstance.Handle;
 	IResourceImplProvider IResource.Implementation => UnderlyingModelInstance.Implementation;
 	ResourceIdent IResource.Ident => UnderlyingModelInstance.Handle.Ident;
 	ResourceStub IResource.AsStub => new(UnderlyingModelInstance.Handle.Ident, UnderlyingModelInstance.Implementation);
-	ResourceHandle<CanvasTexture> IResource<CanvasTexture>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
-	static CanvasTexture IResource<CanvasTexture>.CreateFromHandleAndImpl(ResourceHandle<CanvasTexture> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
-	static CanvasTexture IResource<CanvasTexture>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
-	static CanvasTexture IResource<CanvasTexture>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
+	ResourceHandle<CanvasImage> IResource<CanvasImage>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CanvasImage IResource<CanvasImage>.CreateFromHandleAndImpl(ResourceHandle<CanvasImage> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CanvasImage IResource<CanvasImage>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CanvasImage IResource<CanvasImage>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
 	
 	/// <summary>
@@ -638,7 +638,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture>, IDis
 	public void Dispose() => Implementation.DisposeCanvasObject(SceneHandle, Instance);
 
 	/// <inheritdoc />
-	public override string ToString() => $"Canvas Texture {UnderlyingQuadInstance.UnderlyingModelInstance}";
+	public override string ToString() => $"Canvas Image {UnderlyingQuadInstance.UnderlyingModelInstance}";
 }
 
 /// <summary>

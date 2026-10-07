@@ -249,7 +249,7 @@ class ResourceGroupTest {
 		using var camLockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(pen, str);
 		using var canvasSourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
 		using var canvas = factory.SceneBuilder.CreateCanvasScene();
-		var canvasTexture = canvas.Add(canvasSourceTexture);
+		var canvasImage = canvas.Add(canvasSourceTexture);
 		var canvasText = canvas.Add(str, pen);
 
 		using var viewGroup = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: false);
@@ -259,7 +259,7 @@ class ResourceGroupTest {
 		viewGroup.Add(text);
 		viewGroup.Add(camLockedText);
 		viewGroup.Add(canvas);
-		viewGroup.Add(canvasTexture);
+		viewGroup.Add(canvasImage);
 		viewGroup.Add(canvasText);
 
 		CollectionAssert.AreEqual(new[] { quadMesh }, viewGroup.QuadMeshes.ToArray());
@@ -268,10 +268,10 @@ class ResourceGroupTest {
 		CollectionAssert.AreEqual(new[] { text }, viewGroup.TextInstances.ToArray());
 		CollectionAssert.AreEqual(new[] { camLockedText }, viewGroup.CameraLockedTextInstances.ToArray());
 		CollectionAssert.AreEqual(new[] { canvas }, viewGroup.CanvasScenes.ToArray());
-		CollectionAssert.AreEqual(new[] { canvasTexture }, viewGroup.CanvasTextures.ToArray());
+		CollectionAssert.AreEqual(new[] { canvasImage }, viewGroup.CanvasImages.ToArray());
 		CollectionAssert.AreEqual(new[] { canvasText }, viewGroup.CanvasTexts.ToArray());
 		Assert.AreEqual(canvas, viewGroup.CanvasTexts[0].Canvas);
-		Assert.AreEqual(canvas, viewGroup.CanvasTextures[0].Canvas);
+		Assert.AreEqual(canvas, viewGroup.CanvasImages[0].Canvas);
 		Assert.AreEqual(0, viewGroup.Meshes.Count);
 		Assert.AreEqual(0, viewGroup.ModelInstances.Count);
 		Assert.AreEqual(0, viewGroup.Scenes.Count);
@@ -287,7 +287,7 @@ class ResourceGroupTest {
 		baseGroup.Add(text.UnderlyingModelInstance);
 		baseGroup.Add(camLockedText.UnderlyingTextInstance.UnderlyingModelInstance);
 		baseGroup.Add(canvas.UnderlyingScene);
-		baseGroup.Add(canvasTexture.UnderlyingModelInstance);
+		baseGroup.Add(canvasImage.UnderlyingModelInstance);
 		baseGroup.Add(canvasText.UnderlyingModelInstance);
 
 		Assert.AreEqual(1, baseGroup.Meshes.Count);
@@ -299,7 +299,7 @@ class ResourceGroupTest {
 		Assert.AreEqual(0, baseGroup.TextInstances.Count);
 		Assert.AreEqual(0, baseGroup.CameraLockedTextInstances.Count);
 		Assert.AreEqual(0, baseGroup.CanvasScenes.Count);
-		Assert.AreEqual(0, baseGroup.CanvasTextures.Count);
+		Assert.AreEqual(0, baseGroup.CanvasImages.Count);
 		Assert.AreEqual(0, baseGroup.CanvasTexts.Count);
 		Assert.IsInstanceOf<ModelInstance>(baseGroup.GetAllResourcesBoxed().ToArray()[1]);
 	}
@@ -354,7 +354,7 @@ class ResourceGroupTest {
 		Assert.AreEqual(0, group.TextInstances.Count);
 		Assert.AreEqual(0, group.CameraLockedTextInstances.Count);
 		Assert.AreEqual(0, group.CanvasScenes.Count);
-		Assert.AreEqual(0, group.CanvasTextures.Count);
+		Assert.AreEqual(0, group.CanvasImages.Count);
 		Assert.AreEqual(0, group.CanvasTexts.Count);
 		Assert.IsFalse(instance.Implementation.IsTextInstance(instance.Handle));
 		Assert.IsNull(instance.Implementation.GetCanvas(instance.Handle));
@@ -431,19 +431,19 @@ class ResourceGroupTest {
 		var quadMesh = factory.MeshBuilder.CreateQuad();
 		var quad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
 		var canvas = factory.SceneBuilder.CreateCanvasScene();
-		var canvasTexture = canvas.Add(material);
+		var canvasImage = canvas.Add(material);
 
 		var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
 		group.Add(quad);
 		group.Add(quadMesh);
-		group.Add(canvasTexture);
+		group.Add(canvasImage);
 		group.Add(canvas);
 
 		Assert.DoesNotThrow(() => group.Dispose());
 		Assert.IsTrue(quad.UnderlyingModelInstance.IsDisposed);
 		Assert.IsTrue(quadMesh.UnderlyingMesh.IsDisposed);
 		Assert.IsTrue(canvas.UnderlyingScene.IsDisposed);
-		Assert.IsTrue(canvasTexture.UnderlyingModelInstance.IsDisposed);
+		Assert.IsTrue(canvasImage.UnderlyingModelInstance.IsDisposed);
 	}
 
 	[Test]
@@ -451,10 +451,10 @@ class ResourceGroupTest {
 		using var factory = new LocalTinyFfrFactory();
 		using var sourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
 		var canvas = factory.SceneBuilder.CreateCanvasScene();
-		var canvasTexture = canvas.Add(sourceTexture);
+		var canvasImage = canvas.Add(sourceTexture);
 
 		var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: false);
-		group.Add(canvasTexture);
+		group.Add(canvasImage);
 
 		Assert.Throws<ResourceDependencyException>(() => canvas.Dispose());
 		Assert.IsFalse(canvas.UnderlyingScene.IsDisposed);
@@ -463,7 +463,7 @@ class ResourceGroupTest {
 		Assert.AreEqual(2, canvas.UnderlyingScene.ContainedModelInstances.Count);
 
 		group.Dispose();
-		Assert.DoesNotThrow(() => canvasTexture.Dispose());
+		Assert.DoesNotThrow(() => canvasImage.Dispose());
 		Assert.AreEqual(1, canvas.UnderlyingScene.ContainedModelInstances.Count);
 		Assert.DoesNotThrow(() => canvas.Dispose());
 		Assert.IsTrue(secondTexture.UnderlyingModelInstance.IsDisposed);
@@ -474,12 +474,12 @@ class ResourceGroupTest {
 		using var factory = new LocalTinyFfrFactory();
 		using var sourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
 		using var canvas = factory.SceneBuilder.CreateCanvasScene();
-		var canvasTexture = canvas.Add(sourceTexture);
+		var canvasImage = canvas.Add(sourceTexture);
 		var canvasText = canvas.Add("Hello", factory.AssetLoader.LoadFont().CreatePen(BuiltInFontPenStyle.Default));
 		Assert.AreEqual(2, canvas.UnderlyingScene.ContainedModelInstances.Count);
 
-		canvasTexture.UnderlyingModelInstance.Dispose();
-		Assert.IsTrue(canvasTexture.UnderlyingModelInstance.IsDisposed);
+		canvasImage.UnderlyingModelInstance.Dispose();
+		Assert.IsTrue(canvasImage.UnderlyingModelInstance.IsDisposed);
 		Assert.AreEqual(1, canvas.UnderlyingScene.ContainedModelInstances.Count);
 
 		canvasText.IsVisible = false;
@@ -493,12 +493,12 @@ class ResourceGroupTest {
 		using var factory = new LocalTinyFfrFactory();
 		using var sourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
 		using var canvas = factory.SceneBuilder.CreateCanvasScene();
-		var canvasTexture = canvas.Add(sourceTexture);
+		var canvasImage = canvas.Add(sourceTexture);
 
 		var group = factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
-		group.Add(canvasTexture);
+		group.Add(canvasImage);
 		Assert.DoesNotThrow(() => group.Dispose());
-		Assert.IsTrue(canvasTexture.UnderlyingModelInstance.IsDisposed);
+		Assert.IsTrue(canvasImage.UnderlyingModelInstance.IsDisposed);
 		Assert.AreEqual(0, canvas.UnderlyingScene.ContainedModelInstances.Count);
 	}
 }

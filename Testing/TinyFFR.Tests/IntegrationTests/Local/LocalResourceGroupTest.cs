@@ -221,7 +221,7 @@ class LocalResourceGroupTest {
 
 		using var canvasScene = factory.SceneBuilder.CreateCanvasScene();
 		using var canvasSourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
-		using var canvasTexture = canvasScene.Add(canvasSourceTexture);
+		using var canvasImage = canvasScene.Add(canvasSourceTexture);
 		using var canvasText = canvasScene.Add("Test", pen);
 
 		using var group = factory.ResourceAllocator.CreateResourceGroup(false);
@@ -233,7 +233,7 @@ class LocalResourceGroupTest {
 		group.Add(textInstance);
 		group.Add(cameraLockedTextInstance);
 		group.Add(canvasScene);
-		group.Add(canvasTexture);
+		group.Add(canvasImage);
 		group.Add(canvasText);
 
 		Assert.AreEqual(10, group.ResourceCount);
@@ -254,8 +254,8 @@ class LocalResourceGroupTest {
 		Assert.AreEqual(cameraLockedTextInstance, group.CameraLockedTextInstances[0]);
 		Assert.AreEqual(1, group.CanvasScenes.Count);
 		Assert.AreEqual(canvasScene, group.CanvasScenes[0]);
-		Assert.AreEqual(1, group.CanvasTextures.Count);
-		Assert.AreEqual(canvasTexture, group.CanvasTextures[0]);
+		Assert.AreEqual(1, group.CanvasImages.Count);
+		Assert.AreEqual(canvasImage, group.CanvasImages[0]);
 		Assert.AreEqual(1, group.CanvasTexts.Count);
 		Assert.AreEqual(canvasText, group.CanvasTexts[0]);
 
@@ -279,7 +279,7 @@ class LocalResourceGroupTest {
 
 		Assert.AreEqual(pen.Font, group.FontPens[0].Font);
 		Assert.AreEqual(fontString.Size, group.FontStrings[0].Size);
-		Assert.AreEqual(canvasScene, group.CanvasTextures[0].Canvas);
+		Assert.AreEqual(canvasScene, group.CanvasImages[0].Canvas);
 		Assert.AreEqual(canvasScene, group.CanvasTexts[0].Canvas);
 
 		Assert.AreEqual(0, group.Meshes.Count);
@@ -298,7 +298,7 @@ class LocalResourceGroupTest {
 		Assert.IsInstanceOf<TextInstance>(boxed[5]);
 		Assert.IsInstanceOf<CameraLockedTextInstance>(boxed[6]);
 		Assert.IsInstanceOf<CanvasScene>(boxed[7]);
-		Assert.IsInstanceOf<CanvasTexture>(boxed[8]);
+		Assert.IsInstanceOf<CanvasImage>(boxed[8]);
 		Assert.IsInstanceOf<CanvasText>(boxed[9]);
 		Assert.AreEqual(quadMesh, (QuadMesh) boxed[0]);
 		Assert.AreEqual(pen, (FontPen) boxed[3]);
@@ -346,20 +346,20 @@ class LocalResourceGroupTest {
 		var canvasPen = font.CreatePen(BuiltInFontPenStyle.Default);
 		var canvasScene = factory.SceneBuilder.CreateCanvasScene();
 		using var canvasSourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
-		var canvasTexture = canvasScene.Add(canvasSourceTexture);
+		var canvasImage = canvasScene.Add(canvasSourceTexture);
 		var canvasText = canvasScene.Add("Test", canvasPen);
 		var underlyingScene = canvasScene.UnderlyingScene;
-		var underlyingCanvasTextureInstance = canvasTexture.UnderlyingModelInstance;
+		var underlyingCanvasImageInstance = canvasImage.UnderlyingModelInstance;
 		var underlyingCanvasTextInstance = canvasText.UnderlyingModelInstance;
 
 		var canvasGroup = factory.ResourceAllocator.CreateResourceGroup(true);
 		canvasGroup.Add(canvasScene);
-		canvasGroup.Add(canvasTexture);
+		canvasGroup.Add(canvasImage);
 		canvasGroup.Add(canvasText);
 		canvasGroup.Dispose();
 
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(underlyingScene.GetNameAsNewStringObject()));
-		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(underlyingCanvasTextureInstance.GetNameAsNewStringObject()));
+		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(underlyingCanvasImageInstance.GetNameAsNewStringObject()));
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(underlyingCanvasTextInstance.GetNameAsNewStringObject()));
 
 		canvasPen.Dispose();
@@ -405,16 +405,16 @@ class LocalResourceGroupTest {
 
 		var canvasScene = factory.SceneBuilder.CreateCanvasScene();
 		using var canvasSourceTexture = factory.TextureBuilder.CreateCanvasTexture(ColorVect.WhiteOpaque, includeAlpha: false);
-		var canvasTexture = canvasScene.Add(canvasSourceTexture);
+		var canvasImage = canvasScene.Add(canvasSourceTexture);
 
 		var group = factory.ResourceAllocator.CreateResourceGroup(false);
-		group.Add(canvasTexture);
+		group.Add(canvasImage);
 
 		Assert.Catch<ResourceDependencyException>(() => canvasScene.Dispose());
 
 		group.Dispose();
 
-		Assert.DoesNotThrow(() => canvasTexture.Dispose());
+		Assert.DoesNotThrow(() => canvasImage.Dispose());
 		Assert.DoesNotThrow(() => canvasScene.Dispose());
 	}
 	

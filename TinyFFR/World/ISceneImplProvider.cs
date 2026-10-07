@@ -192,11 +192,11 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// <summary>
 	/// Invoked via <see cref="CanvasScene.Add(Texture, ReadOnlySpan{char})"/>.
 	/// </summary>
-	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name);
+	CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name);
 	/// <summary>
 	/// Invoked via <see cref="CanvasScene.Add(Material, ReadOnlySpan{char})"/>.
 	/// </summary>
-	CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name);
+	CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name);
 	/// <summary>
 	/// Invoked via <see cref="CanvasScene.Add(FontString, FontPen)"/>.
 	/// </summary>
@@ -298,7 +298,7 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// </summary>
 	void SetCanvasObjectHeightFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, float? newValue);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.SetPlacementPixels"/>.
+	/// Invoked via <see cref="CanvasImage.SetPlacementPixels"/>.
 	/// </summary>
 	void SetCanvasObjectPlacement(ResourceHandle<Scene> handle, ModelInstance modelInstance, Orientation2D canvasAnchor, Orientation2D? objectAnchor, XYPair<int> positionPixels, XYPair<float> positionFraction, int? widthPixels, int? heightPixels, float? widthFraction, float? heightFraction);
 	/// <summary>
@@ -338,51 +338,51 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// </summary>
 	void RotateCanvasObjectBy(ResourceHandle<Scene> handle, ModelInstance modelInstance, Angle rotation, XYPair<float> pivotPointFraction);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.SetTexture"/>.
+	/// Invoked via <see cref="CanvasImage.SetTexture"/>.
 	/// </summary>
 	void SetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture newValue);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.FillFraction"/>.
+	/// Invoked via <see cref="CanvasImage.FillFraction"/>.
 	/// </summary>
 	XYPair<float> GetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.FillFraction"/>.
+	/// Invoked via <see cref="CanvasImage.FillFraction"/>.
 	/// </summary>
 	void SetCanvasObjectFillFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<float> newValue);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.TextureDimensions"/>.
+	/// Invoked via <see cref="CanvasImage.TextureDimensions"/>.
 	/// </summary>
 	XYPair<int> GetCanvasObjectTextureDimensions(ResourceHandle<Scene> handle, QuadInstance quad);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.TextureOffsetFraction"/>.
+	/// Invoked via <see cref="CanvasImage.TextureOffsetFraction"/>.
 	/// </summary>
 	XYPair<float> GetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.TextureOffsetFraction"/>.
+	/// Invoked via <see cref="CanvasImage.TextureOffsetFraction"/>.
 	/// </summary>
 	void SetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.TextureOffsetPixels"/>.
+	/// Invoked via <see cref="CanvasImage.TextureOffsetPixels"/>.
 	/// </summary>
 	void SetCanvasObjectTextureOffsetPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.TextureExtentFraction"/>.
+	/// Invoked via <see cref="CanvasImage.TextureExtentFraction"/>.
 	/// </summary>
 	XYPair<float> GetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.TextureExtentFraction"/>.
+	/// Invoked via <see cref="CanvasImage.TextureExtentFraction"/>.
 	/// </summary>
 	void SetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.TextureExtentPixels"/>.
+	/// Invoked via <see cref="CanvasImage.TextureExtentPixels"/>.
 	/// </summary>
 	void SetCanvasObjectTextureExtentPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.SetBlendTexture"/>.
+	/// Invoked via <see cref="CanvasImage.SetBlendTexture"/>.
 	/// </summary>
 	void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.SetBlendTextureDistance"/>.
+	/// Invoked via <see cref="CanvasImage.SetBlendTextureDistance"/>.
 	/// </summary>
 	void SetCanvasBlendTextureDistance(ResourceHandle<Scene> handle, QuadInstance quad, float distance);
 	/// <summary>
@@ -426,11 +426,11 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	/// </summary>
 	void SetCanvasObjectDockParent(ResourceHandle<Scene> handle, ModelInstance modelInstance, ModelInstance? parent);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.Opacity"/>.
+	/// Invoked via <see cref="CanvasImage.Opacity"/>.
 	/// </summary>
 	float GetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad);
 	/// <summary>
-	/// Invoked via <see cref="CanvasTexture.Opacity"/>.
+	/// Invoked via <see cref="CanvasImage.Opacity"/>.
 	/// </summary>
 	void SetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad, float newValue);
 	/// <summary>

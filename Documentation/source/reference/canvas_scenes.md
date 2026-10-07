@@ -8,7 +8,7 @@ description: Information on how to draw flat, 2D content such as user interfaces
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
     * A `CanvasScene` is a scene for flat, 2D content (images and text), such as a user interface or HUD. It's usually drawn over the top of a 3D scene. :material-arrow-right: [Canvas Scenes](#canvas-scenes)
-    * Canvas textures can show part of their image, be partially filled (e.g. for progress bars), faded, and blended with a second image. :material-arrow-right: [Canvas Texture Features](#canvas-texture-features)
+    * Canvas images can show part of their texture, be partially filled (e.g. for progress bars), faded, and blended with a second texture. :material-arrow-right: [Canvas Image Features](#canvas-image-features)
     * Canvas objects under the mouse cursor can be found with `Contains()` or the canvas's `QueryProvider`. :material-arrow-right: [Hit-Testing](#hit-testing)
 
 </div>
@@ -47,7 +47,7 @@ while (!loop.Input.UserQuitRequested) {
 
 2.	Loads an image as a *canvas texture* (see [Canvas Textures](#canvas-textures)).
 
-3.	Adds the image to the canvas, returning a `CanvasTexture`.
+3.	Adds the image to the canvas, returning a `CanvasImage`.
 
 4.	Places the image 30 pixels in from the top-right corner of the canvas, 96x96 pixels in size.
 
@@ -79,7 +79,7 @@ Two kinds of object can be added to a canvas:
 
 <span class="def-icon">:material-code-block-parentheses:</span> `canvas.Add(texture)` / `canvas.Add(material)`
 
-:   Adds an image to the canvas, returning a `CanvasTexture`. The image can be given as a texture (see below) or as a [material](creating_materials.md) (niche).
+:   Adds an image to the canvas, returning a `CanvasImage`. The image can be given as a texture (see below) or as a [material](creating_materials.md) (niche).
 
 <span class="def-icon">:material-code-block-parentheses:</span> `canvas.Add(text, pen)` / `canvas.Add(fontString, pen)`
 
@@ -119,10 +119,10 @@ healthBar.WidthFraction = 0.25f; // (6)!
 
 ![Canvas objects placed at each anchor](canvas_scenes_anchors.jpg){ : style="width:77%;" }
 /// caption
-Nine canvas textures, each placed at a position of `(40, 40)` pixels from a different `CanvasAnchor` (with a docked text label showing which). The layout is slightly askew (non-uniform) due to the interpretation rules of offset values for certain corner/edge anchor values; see below.
+Nine canvas images, each placed at a position of `(40, 40)` pixels from a different `CanvasAnchor` (with a docked text label showing which). The layout is slightly askew (non-uniform) due to the interpretation rules of offset values for certain corner/edge anchor values; see below.
 ///
 
-Every canvas object (`CanvasTexture` or `CanvasText`) is placed by:
+Every canvas object (`CanvasImage` or `CanvasText`) is placed by:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `CanvasAnchor`
 
@@ -140,7 +140,7 @@ Every canvas object (`CanvasTexture` or `CanvasText`) is placed by:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `WidthPixels` / `HeightPixels` / `WidthFraction` / `HeightFraction`
 
-:   The object's size, in pixels or as a fraction of the canvas's width or height. These can be `null`, in which case that dimension is sized to fit the object's content (e.g. a texture keeps its image's aspect ratio when only its width is given, and is drawn at its image's size in pixels when neither is given). `ActualSizePixels` and `ActualSizeFraction` return the size the object actually ends up.
+:   The object's size, in pixels or as a fraction of the canvas's width or height. These can be `null`, in which case that dimension is sized to fit the object's content (e.g. an image keeps its texture's aspect ratio when only its width is given, and is drawn at its texture's size in pixels when neither is given). `ActualSizePixels` and `ActualSizeFraction` return the size the object actually ends up.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `Rotation`
 
@@ -161,7 +161,7 @@ Setting an object's `IsVisible` to `false` hides it while keeping it on the canv
 
 ```csharp
 var label = canvas.Add("Health: 70%", pen);
-label.SetDockParent<CanvasTexture>(healthBar); // (1)!
+label.SetDockParent<CanvasImage>(healthBar); // (1)!
 label.SetPlacementFraction(Orientation2D.None, (0f, 0f), 0.7f); // (2)!
 label.Layer = healthBar.Layer + 1; // (3)!
 ```
@@ -174,7 +174,7 @@ label.Layer = healthBar.Layer + 1; // (3)!
 
 Docking one canvas object inside another (with `SetDockParent()`) makes its anchor, position, and size relative to its *dock parent* rather than to the whole canvas. Docked objects therefore move and resize along with their parent, which makes it easy to build composite elements such as labelled buttons and bars. Pass `null` to undock an object.
 
-## Canvas Texture Features
+## Canvas Image Features
 
 ```csharp
 healthBar.FillFraction = (0.7f, 1f); // (1)!
@@ -198,12 +198,12 @@ portrait.SetBlendTextureDistance(0.3f);
 
 5.	Blends a second image 30% of the way over the object's own image.
 
-![Canvas texture features](canvas_scenes_texture_features.jpg){ : style="width:77%;" }
+![Canvas image features](canvas_scenes_image_features.jpg){ : style="width:77%;" }
 /// caption
-Canvas texture features: Fill fractions of 25%, 50%, 75%, and 100% (and a vertical fill of 40%); a texture shown whole, cropped with an offset and extent, and rotated; a 50%-opaque texture on a higher layer; a texture blended halfway with a second texture; and text whose height grows with its line count.
+Canvas image features: Fill fractions of 25%, 50%, 75%, and 100% (and a vertical fill of 40%); a texture shown whole, cropped with an offset and extent, and rotated; a 50%-opaque texture on a higher layer; a texture blended halfway with a second texture; and text whose height grows with its line count.
 ///
 
-`CanvasTexture`s have the following additional properties and methods:
+`CanvasImage`s have the following additional properties and methods:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `FillFraction`
 
@@ -264,7 +264,7 @@ if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.MouseLeft)) {
 	var cursor = canvas.ConvertRenderTargetCoordToLocal(kbm.MouseCursorPosition); // (1)!
 	if (playButton.Contains(cursor)) StartGame(); // (2)!
 
-	var clicked = canvas.QueryProvider.GetTopmostObjectUnderRenderTargetCoord<CanvasTexture>(kbm.MouseCursorPosition); // (3)!
+	var clicked = canvas.QueryProvider.GetTopmostObjectUnderRenderTargetCoord<CanvasImage>(kbm.MouseCursorPosition); // (3)!
 }
 ```
 
@@ -272,16 +272,16 @@ if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.MouseLeft)) {
 
 2.	Tests whether the click was on the play button. (`StartGame()` is a hypothetical method of your own.)
 
-3.	Alternatively, finds the topmost canvas texture under the cursor, if any.
+3.	Alternatively, finds the topmost canvas image under the cursor, if any.
 
 To find out whether the user has clicked (or is hovering over) a canvas object:
 
 * `canvas.ConvertRenderTargetCoordToLocal()` converts a position in the render target (e.g. the mouse cursor's position in the window) in to a position on the canvas. It accounts for display scaling (DPI) and for renderers drawing to only part of their render target. By default, positions are measured from the top-left corner (as mouse cursor positions are); pass a different `coordOrigin` if your position is measured from elsewhere. The returned position is measured from the same corner.
 * `canvasObject.Contains(canvasPosition)` returns whether a position on the canvas falls within the object.
-* `canvas.QueryProvider` finds the canvas objects under a position (in render-target or canvas coordinates): `GetTopmostObjectUnderRenderTargetCoord<T>()` returns the topmost object of type `T` (`CanvasTexture` or `CanvasText`) under the position, and `FindObjectsUnderRenderTargetCoord<T>()` writes all of them in to a span (topmost first), returning how many were written. `...LocalCoord` variants take canvas positions instead. Hidden objects are never returned.
+* `canvas.QueryProvider` finds the canvas objects under a position (in render-target or canvas coordinates): `GetTopmostObjectUnderRenderTargetCoord<T>()` returns the topmost object of type `T` (`CanvasImage` or `CanvasText`) under the position, and `FindObjectsUnderRenderTargetCoord<T>()` writes all of them in to a span (topmost first), returning how many were written. `...LocalCoord` variants take canvas positions instead. Hidden objects are never returned.
 
 ## Underlying Objects
 
-Canvas objects are built on TinyFFR's 3D objects: A `CanvasTexture` is drawn by a [quad](quads.md) and a `CanvasText` by a [text instance](text_instances.md), both accessible via the `UnderlyingModelInstance` property (and `UnderlyingQuadInstance` / `UnderlyingTextInstance` respectively). Likewise, a canvas's `UnderlyingScene` and `Camera` are an ordinary scene and camera. You shouldn't normally need these; and note that the underlying objects' transforms are managed by the canvas, so changing them directly will be overwritten.
+Canvas objects are built on TinyFFR's 3D objects: A `CanvasImage` is drawn by a [quad](quads.md) and a `CanvasText` by a [text instance](text_instances.md), both accessible via the `UnderlyingModelInstance` property (and `UnderlyingQuadInstance` / `UnderlyingTextInstance` respectively). Likewise, a canvas's `UnderlyingScene` and `Camera` are an ordinary scene and camera. You shouldn't normally need these; and note that the underlying objects' transforms are managed by the canvas, so changing them directly will be overwritten.
 
-Canvas scenes, canvas textures, and canvas texts can be added to [resource groups](resource_groups.md), where they're listed under `CanvasScenes`, `CanvasTextures`, and `CanvasTexts` respectively.
+Canvas scenes, canvas images, and canvas texts can be added to [resource groups](resource_groups.md), where they're listed under `CanvasScenes`, `CanvasImages`, and `CanvasTexts` respectively.

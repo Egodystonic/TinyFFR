@@ -169,7 +169,7 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// </summary>
 	void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance);
 	/// <summary>
-	/// Invoked internally to fade a canvas object in and out; see <see cref="CanvasTexture.Opacity"/>.
+	/// Invoked internally to fade a canvas object in and out; see <see cref="CanvasImage.Opacity"/>.
 	/// </summary>
 	void SetMaterialEffectOpacity(ResourceHandle<ModelInstance> handle, float opacity);
 

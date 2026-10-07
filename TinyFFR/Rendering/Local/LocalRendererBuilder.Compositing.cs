@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
 sealed partial class LocalRendererBuilder {
-	readonly record struct RateLimitShimResourceData(RenderOutputBuffer PrivateBuffer, Renderer ProxyRenderer, CanvasScene ProxyScene, CanvasTexture ProxyQuad, XYPair<int> PrivateBufferSize);
+	readonly record struct RateLimitShimResourceData(RenderOutputBuffer PrivateBuffer, Renderer ProxyRenderer, CanvasScene ProxyScene, CanvasImage ProxyQuad, XYPair<int> PrivateBufferSize);
 	readonly record struct CompositedRenderer(Renderer Renderer, RenderCompositionType CompositionType, bool IsEnabled) {
 		public CompositorSubRendererRateLimitHelper RateLimitHelper { get; init; } = CompositorSubRendererRateLimitHelper.Unlimited;
 		public RateLimitShimResourceData? RateLimitShimResources { get; init; } = null;

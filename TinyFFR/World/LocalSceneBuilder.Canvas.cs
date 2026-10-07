@@ -51,7 +51,7 @@ sealed partial class LocalSceneBuilder {
 		}
 	}
 
-	readonly record struct CanvasTextureData {
+	readonly record struct CanvasImageData {
 		public XYPair<int> TextureDimensions { get; init; } = XYPair<int>.One;
 		public Texture? Texture { get; init; } = null;
 		public Material? OwnedMaterial { get; init; } = null;
@@ -61,7 +61,7 @@ sealed partial class LocalSceneBuilder {
 		public float BlendDistance { get; init; } = 0f;
 		public float Opacity { get; init; } = 1f;
 
-		public CanvasTextureData() { }
+		public CanvasImageData() { }
 	}
 
 	readonly record struct CanvasTextData {
@@ -87,11 +87,11 @@ sealed partial class LocalSceneBuilder {
 	);
 
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasItemData>> _canvasItemMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasTextureData>> _canvasTextureDataMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasImageData>> _canvasTextureDataMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasTextData>> _canvasTextDataMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, CanvasSceneData> _canvasSceneDataMap = new();
 	readonly MapPool<ResourceHandle<ModelInstance>, CanvasItemData> _canvasItemMapPool;
-	readonly MapPool<ResourceHandle<ModelInstance>, CanvasTextureData> _canvasTextureDataMapPool;
+	readonly MapPool<ResourceHandle<ModelInstance>, CanvasImageData> _canvasTextureDataMapPool;
 	readonly MapPool<ResourceHandle<ModelInstance>, CanvasTextData> _canvasTextDataMapPool;
 	ModelInstance[] _canvasQueryScratchBuffer = TinyFfrArrayPool<ModelInstance>.Shared.Rent(4);
 
@@ -127,34 +127,34 @@ sealed partial class LocalSceneBuilder {
 
 	public bool IsCanvasScene(ResourceHandle<Scene> handle) => _canvasSceneDataMap.ContainsKey(handle);
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) {
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
-		var material = CreateCanvasTextureMaterial(texture);
+		var material = CreateCanvasImageMaterial(texture);
 		var quad = CreateCanvasQuadInstance(material, texture, name);
 
-		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasTextureData { Texture = texture, OwnedMaterial = material, TextureDimensions = texture.Dimensions };
+		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasImageData { Texture = texture, OwnedMaterial = material, TextureDimensions = texture.Dimensions };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
 		ApplyCanvasMaterialEffects(handle, quad);
 
 		var canvas = new CanvasScene(HandleToInstance(handle));
 		_objectBuilder.SetCanvas(quad.UnderlyingModelInstance.Handle, canvas);
-		return new CanvasTexture(canvas, quad);
+		return new CanvasImage(canvas, quad);
 	}
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) {
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
 		var quad = CreateCanvasQuadInstance(material, material, name);
 
-		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasTextureData { TextureDimensions = ResolveCanvasMaterialTextureDimensions(material) };
+		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasImageData { TextureDimensions = ResolveCanvasMaterialTextureDimensions(material) };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
 
 		var canvas = new CanvasScene(HandleToInstance(handle));
 		_objectBuilder.SetCanvas(quad.UnderlyingModelInstance.Handle, canvas);
-		return new CanvasTexture(canvas, quad);
+		return new CanvasImage(canvas, quad);
 	}
 
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) {
@@ -204,7 +204,7 @@ sealed partial class LocalSceneBuilder {
 		return XYPair<int>.One;
 	}
 
-	Material CreateCanvasTextureMaterial(Texture texture) {
+	Material CreateCanvasImageMaterial(Texture texture) {
 		return ((LocalMaterialBuilder) _assetLoader.MaterialBuilder).AllocateCanvasMaterialInstance(texture, default);
 	}
 
@@ -298,7 +298,7 @@ sealed partial class LocalSceneBuilder {
 		var height = dock.ResolveHeight(containerSize);
 
 		if (itemData.Quad is { } quad) {
-			return ResolveCanvasQuadSize(width, height, GetCanvasTextureData(handle, quad).TextureDimensions).ScaledBy(dock.FillFraction);
+			return ResolveCanvasQuadSize(width, height, GetCanvasImageData(handle, quad).TextureDimensions).ScaledBy(dock.FillFraction);
 		}
 
 		var text = itemData.Text!.Value;
@@ -499,12 +499,12 @@ sealed partial class LocalSceneBuilder {
 		SetCanvasItemTransformAndDescendants(handle, in newData, GetCanvasSceneData(handle).ViewportSize);
 	}
 
-	CanvasTextureData GetCanvasTextureData(ResourceHandle<Scene> handle, QuadInstance quad) {
+	CanvasImageData GetCanvasImageData(ResourceHandle<Scene> handle, QuadInstance quad) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _canvasTextureDataMap[handle].TryGetValue(quad.UnderlyingModelInstance.Handle, out var result) ? result : new CanvasTextureData();
+		return _canvasTextureDataMap[handle].TryGetValue(quad.UnderlyingModelInstance.Handle, out var result) ? result : new CanvasImageData();
 	}
 
-	void SetCanvasTextureData(ResourceHandle<Scene> handle, QuadInstance quad, in CanvasTextureData newData) {
+	void SetCanvasImageData(ResourceHandle<Scene> handle, QuadInstance quad, in CanvasImageData newData) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = newData;
 	}
@@ -727,22 +727,22 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public XYPair<int> GetCanvasObjectTextureDimensions(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).TextureDimensions;
+		return GetCanvasImageData(handle, quad).TextureDimensions;
 	}
 	public void SetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture newValue) {
-		var data = GetCanvasTextureData(handle, quad);
-		var newMaterial = CreateCanvasTextureMaterial(newValue);
+		var data = GetCanvasImageData(handle, quad);
+		var newMaterial = CreateCanvasImageMaterial(newValue);
 		quad.SetMaterial(newMaterial);
 		if (data.OwnedMaterial is { } previousMaterial) previousMaterial.Dispose();
-		SetCanvasTextureData(handle, quad, data with { Texture = newValue, OwnedMaterial = newMaterial, TextureDimensions = newValue.Dimensions });
+		SetCanvasImageData(handle, quad, data with { Texture = newValue, OwnedMaterial = newMaterial, TextureDimensions = newValue.Dimensions });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
 	public XYPair<float> GetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).UvOffset;
+		return GetCanvasImageData(handle, quad).UvOffset;
 	}
 	public void SetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { UvOffset = newValue });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { UvOffset = newValue });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 	public void SetCanvasObjectTextureOffsetPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue) {
@@ -750,10 +750,10 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public XYPair<float> GetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).UvExtent;
+		return GetCanvasImageData(handle, quad).UvExtent;
 	}
 	public void SetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { UvExtent = newValue });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { UvExtent = newValue });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 	public void SetCanvasObjectTextureExtentPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue) {
@@ -765,20 +765,20 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { BlendTexture = blendTexture });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { BlendTexture = blendTexture });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
 	public void SetCanvasBlendTextureDistance(ResourceHandle<Scene> handle, QuadInstance quad, float distance) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { BlendDistance = distance });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { BlendDistance = distance });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
 	public float GetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).Opacity;
+		return GetCanvasImageData(handle, quad).Opacity;
 	}
 	public void SetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad, float newValue) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { Opacity = Single.Clamp(newValue, 0f, 1f) });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { Opacity = Single.Clamp(newValue, 0f, 1f) });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
@@ -798,7 +798,7 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	void ApplyCanvasMaterialEffects(ResourceHandle<Scene> handle, QuadInstance quad) {
-		var data = GetCanvasTextureData(handle, quad);
+		var data = GetCanvasImageData(handle, quad);
 		var dock = GetCanvasDock(handle, quad.UnderlyingModelInstance);
 		var instanceHandle = quad.UnderlyingModelInstance.Handle;
 

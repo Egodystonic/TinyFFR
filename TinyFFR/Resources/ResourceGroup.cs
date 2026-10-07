@@ -198,9 +198,9 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	/// </summary>
 	public IndirectEnumerable<EnumerationInput, CanvasText> CanvasTexts => GetAllResourcesOfType<CanvasText>();
 	/// <summary>
-	/// All currently-live <see cref="CanvasTexture"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasTexture&gt;()</c>.
+	/// All currently-live <see cref="CanvasImage"/>s in this group; equivalent to <c>GetAllResourcesOfType&lt;CanvasImage&gt;()</c>.
 	/// </summary>
-	public IndirectEnumerable<EnumerationInput, CanvasTexture> CanvasTextures => GetAllResourcesOfType<CanvasTexture>();
+	public IndirectEnumerable<EnumerationInput, CanvasImage> CanvasImages => GetAllResourcesOfType<CanvasImage>();
 	#endregion
 
 	internal ResourceGroup(ResourceHandle<ResourceGroup> handle, IResourceGroupImplProvider impl) {

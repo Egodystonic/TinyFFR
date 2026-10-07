@@ -36,7 +36,7 @@ class LocalResourceDirectoryTest {
 	public void Execute() {
 		_resourceTypes = GetAllTypesInMainLibImplementingInterface(typeof(IResource), includeOtherInterfaces: false)
 			.Where(t => t != typeof(Display) && t != typeof(ResourceStub) && t != typeof(VertexBuffer) && t != typeof(IndexBuffer) 
-				&& t != typeof(CanvasScene) && t != typeof(CanvasTexture) && t != typeof(CanvasText) && t != typeof(CameraLockedTextInstance) && t != typeof(FontPen) 
+				&& t != typeof(CanvasScene) && t != typeof(CanvasImage) && t != typeof(CanvasText) && t != typeof(CameraLockedTextInstance) && t != typeof(FontPen) 
 				&& t != typeof(FontString) && t != typeof(TextInstance) && t != typeof(QuadMesh) && t != typeof(QuadInstance) && t != typeof(CameraLockedQuadInstance))
 			.ToHashSet();
 		

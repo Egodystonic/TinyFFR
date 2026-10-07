@@ -84,7 +84,7 @@ class LocalAssetBakingTest {
 	abstract class TextureEntry : BakedAssetEntry {
 		Texture? _texture;
 		TinyFfrAsyncOperation<Texture>? _pendingOperation;
-		CanvasTexture? _canvasObject;
+		CanvasImage? _canvasObject;
 
 		protected abstract XYPair<float> CanvasPosition { get; }
 		protected abstract TinyFfrAsyncOperation<Texture> DispatchSourceLoad(LocalTinyFfrFactory factory);

@@ -109,7 +109,7 @@ public readonly struct CanvasScene : IStringSpanNameEnabled, IEquatable<CanvasSc
 	/// <param name="t">The texture to draw.</param>
 	/// <param name="name">Optional name for the new object. If omitted, the object takes the name of <paramref name="t"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public CanvasTexture Add(Texture t, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, t, name);
+	public CanvasImage Add(Texture t, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, t, name);
 	/// <summary>
 	/// Adds an image to this canvas, drawn with the given material.
 	/// </summary>
@@ -119,7 +119,7 @@ public readonly struct CanvasScene : IStringSpanNameEnabled, IEquatable<CanvasSc
 	/// <param name="m">The material to draw with.</param>
 	/// <param name="name">Optional name for the new object. If omitted, the object takes the name of <paramref name="m"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public CanvasTexture Add(Material m, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, m, name);
+	public CanvasImage Add(Material m, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, m, name);
 	/// <summary>
 	/// Adds a pre-built piece of text to this canvas.
 	/// </summary>

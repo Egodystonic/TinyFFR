@@ -91,7 +91,7 @@ static partial class SmokeSections {
 		texture.SetLayer(1);
 		text.SetPlacementFraction(Orientation2D.Down, (0f, 0.05f), 0.15f);
 		text.SetLayer(2);
-		text.SetDockParent<CanvasTexture>(texture);
+		text.SetDockParent<CanvasImage>(texture);
 		_ = canvas.SizePixels;
 		_ = canvas.ConvertFractionToPixels((0.5f, 0.5f));
 

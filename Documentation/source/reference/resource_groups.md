@@ -108,7 +108,7 @@ var secondMaterial = group.Materials[1]; // (3)!
 
 3.	Enumerations can also be indexed directly.
 
-The enumeration properties cover every resource type, including: `Textures`, `Materials`, `Meshes`, `Models`, `Fonts`, `FontPens`, `FontStrings`, `BackdropTextures`, `AnimationTables`, `MeshAnimations`, `MeshNodes`, `Scenes`, `ModelInstances`, `Cameras`, `PointLights`, `SpotLights`, `DirectionalLights`, `QuadMeshes`, `QuadInstances`, `CameraLockedQuadInstances`, `TextInstances`, `CameraLockedTextInstances`, `CanvasScenes`, `CanvasTexts`, `CanvasTextures`, `Renderers`, `RenderOutputBuffers`, `RendererCompositors`, `Windows`, `Displays`, `ApplicationLoops`, and `ResourceGroups`.
+The enumeration properties cover every resource type, including: `Textures`, `Materials`, `Meshes`, `Models`, `Fonts`, `FontPens`, `FontStrings`, `BackdropTextures`, `AnimationTables`, `MeshAnimations`, `MeshNodes`, `Scenes`, `ModelInstances`, `Cameras`, `PointLights`, `SpotLights`, `DirectionalLights`, `QuadMeshes`, `QuadInstances`, `CameraLockedQuadInstances`, `TextInstances`, `CameraLockedTextInstances`, `CanvasScenes`, `CanvasTexts`, `CanvasImages`, `Renderers`, `RenderOutputBuffers`, `RendererCompositors`, `Windows`, `Displays`, `ApplicationLoops`, and `ResourceGroups`.
 
 The following methods offer the same functionality generically:
 

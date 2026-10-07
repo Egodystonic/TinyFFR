@@ -66,7 +66,7 @@ sealed class AssemblyTypeLoadOrderAnchorStage2 {
 sealed class AssemblyTypeLoadOrderAnchorStage3 {
 	CameraLockedQuadInstance _cameraLockedQuadInstance;
 	CameraLockedTextInstance _cameraLockedTextInstance;
-	CanvasTexture _canvasTexture;
+	CanvasImage _canvasImage;
 	CanvasText _canvasText;
 }
 #pragma warning restore CS0169
