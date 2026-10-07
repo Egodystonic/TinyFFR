@@ -914,23 +914,23 @@ public interface IMeshBuilder {
 	protected ScopedSpanLease<VertexTriangle> GetPooledTriangleBuffer(int triangleCount);
 	
 	/// <summary>
-	/// Creates a buffer of vertices and indices that can be rewritten at any time, from which meshes can be carved out.
+	/// Creates a buffer of vertices and triangles that can be rewritten at any time, from which meshes can be carved out.
 	/// </summary>
 	/// <remarks>
 	/// <para>
 	/// Unlike an ordinary mesh, a dynamic buffer's contents are expected to change; it is what geometry generated afresh each
-	/// frame is written in to. Meshes created from it are views on to a range of its indices rather than copies of its data.
+	/// frame is written in to. Meshes created from it are views on to a range of its triangles rather than copies of its data.
 	/// </para>
 	/// <para>
 	/// The buffer never grows automatically. It can be resized with <see cref="DynamicVertexBuffer.ResizeVertexBuffer"/> and
-	/// <see cref="DynamicVertexBuffer.ResizeIndexBuffer"/>, but only once every mesh created from it has been disposed, and resizing is
+	/// <see cref="DynamicVertexBuffer.ResizeTriangleBuffer"/>, but only once every mesh created from it has been disposed, and resizing is
 	/// not free; so give capacities close to what will actually be used.
 	/// </para>
 	/// </remarks>
 	/// <param name="initialVertexCapacity">How many vertices the buffer should initially hold.</param>
-	/// <param name="initialIndexCapacity">How many indices the buffer should initially hold.</param>
+	/// <param name="initialTriangleCapacity">How many triangles the buffer should initially hold.</param>
 	/// <param name="name">The name to give the buffer. May be left empty.</param>
-	DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, ReadOnlySpan<char> name = default);
+	DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialTriangleCapacity, ReadOnlySpan<char> name = default);
 
 	/// <summary>
 	/// Creates a mesh directly from vertices and triangles.

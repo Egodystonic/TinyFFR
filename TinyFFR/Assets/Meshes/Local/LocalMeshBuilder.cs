@@ -32,7 +32,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		int IndexCapacity,
 		bool UsesImGuiVertices,
 		PooledHeapMemory<MeshVertex>? Vertices,
-		PooledHeapMemory<ushort>? Indices,
+		PooledHeapMemory<VertexTriangle>? Triangles,
 		PositionedCuboid BoundingBox
 	);
 	readonly record struct DynamicBufferLeaseData(Range Range, bool RecalculateBoundingBox, bool OverwriteChildMeshBoundingBoxes);
@@ -45,7 +45,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, PooledHeapMemory<MeshVertex>> _defaultMutableVerticesMap = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex> _mutableVertexLeaseTracker;
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, DynamicBufferLeaseData> _dynamicVertexLeaseTracker;
-	readonly ResourceHandleBasedSpanLeaseTracker<ushort, DynamicBufferLeaseData> _dynamicIndexLeaseTracker;
+	readonly ResourceHandleBasedSpanLeaseTracker<VertexTriangle, DynamicBufferLeaseData> _dynamicTriangleLeaseTracker;
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshWireframeBufferData = new();
@@ -68,7 +68,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		MeshGroupAnimationTableImplProvider = new(globals, AnimationTableProvider);
 		_mutableVertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment);
 		_dynamicVertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleDynamicVertexLeaseDisposal, this);
-		_dynamicIndexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleDynamicIndexLeaseDisposal, this);
+		_dynamicTriangleLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleDynamicTriangleLeaseDisposal, this);
 	}
 
 	static LocalMeshPolygonGroup CreateNewPolyGroupInstance(LocalMeshBuilder arg) => new(arg, &PolyGroupHeapPoolAccessorFunc, &ReturnPolyGroup);
@@ -791,8 +791,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	Mesh HandleToInstance(ResourceHandle<Mesh> h) => new(h, this);
 
 	#region Dynamic Vertex Buffers
-	public DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, ReadOnlySpan<char> name = default) {
-		return CreateDynamicVertexBuffer(initialVertexCapacity, initialIndexCapacity, usesImGuiVertices: false, name);
+	public DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialTriangleCapacity, ReadOnlySpan<char> name = default) {
+		if (initialTriangleCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialTriangleCapacity), initialTriangleCapacity, "Initial triangle capacity must be positive.");
+		return CreateDynamicVertexBuffer(initialVertexCapacity, checked(initialTriangleCapacity * 3), usesImGuiVertices: false, name);
 	}
 	public DynamicVertexBuffer CreateImGuiDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, ReadOnlySpan<char> name = default) {
 		return CreateDynamicVertexBuffer(initialVertexCapacity, initialIndexCapacity, usesImGuiVertices: true, name);
@@ -800,24 +801,24 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	DynamicVertexBuffer CreateDynamicVertexBuffer(int initialVertexCapacity, int initialIndexCapacity, bool usesImGuiVertices, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
-		
+
 		if (initialVertexCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialVertexCapacity), initialVertexCapacity, "Initial vertex capacity must be positive.");
 		if (initialIndexCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialIndexCapacity), initialIndexCapacity, "Initial index capacity must be positive.");
 
 		var vbHandle = AllocateDynamicVertexBuffer(initialVertexCapacity, usesImGuiVertices);
-		var ibHandle = AllocateDynamicIndexBuffer(initialIndexCapacity);
+		var ibHandle = AllocateDynamicIndexBuffer(initialIndexCapacity, usesImGuiVertices);
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
 
 		PooledHeapMemory<MeshVertex>? vertexMirror = null;
-		PooledHeapMemory<ushort>? indexMirror = null;
+		PooledHeapMemory<VertexTriangle>? triangleMirror = null;
 		if (!usesImGuiVertices) {
 			var vertices = _globals.HeapPool.Borrow<MeshVertex>(initialVertexCapacity);
 			vertices.Span.Clear();
 			vertexMirror = vertices;
-			var indices = _globals.HeapPool.Borrow<ushort>(initialIndexCapacity);
-			indices.Span.Clear();
-			indexMirror = indices;
+			var triangles = _globals.HeapPool.Borrow<VertexTriangle>(initialIndexCapacity / 3);
+			triangles.Span.Clear();
+			triangleMirror = triangles;
 		}
 
 		var handle = (ResourceHandle<DynamicVertexBuffer>) (++_prevHandleId);
@@ -828,7 +829,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			initialIndexCapacity,
 			usesImGuiVertices,
 			vertexMirror,
-			indexMirror,
+			triangleMirror,
 			vertexMirror is { } mirror ? PositionedCuboid.FromBoundingBoxCalculation(mirror.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) : default
 		));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultDynamicVertexBufferName);
@@ -849,20 +850,28 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			return result;
 		}
 	}
-	UIntPtr AllocateDynamicIndexBuffer(int capacity) {
-		var buffer = _globals.CreateGpuHoldingBuffer<ushort>(capacity);
-		buffer.AsSpan<ushort>().Clear();
-		AllocateIndexBufferUShort(buffer.BufferIdentity, (ushort*) buffer.DataPtr, capacity, out var result).ThrowIfFailure();
-		return result;
+	UIntPtr AllocateDynamicIndexBuffer(int indexCount, bool usesImGuiVertices) {
+		if (usesImGuiVertices) {
+			var buffer = _globals.CreateGpuHoldingBuffer<ushort>(indexCount);
+			buffer.AsSpan<ushort>().Clear();
+			AllocateIndexBufferUShort(buffer.BufferIdentity, (ushort*) buffer.DataPtr, indexCount, out var result).ThrowIfFailure();
+			return result;
+		}
+		else {
+			var buffer = _globals.CreateGpuHoldingBuffer<VertexTriangle>(indexCount / 3);
+			buffer.AsSpan<VertexTriangle>().Clear();
+			AllocateIndexBuffer(buffer.BufferIdentity, (VertexTriangle*) buffer.DataPtr, indexCount, out var result).ThrowIfFailure();
+			return result;
+		}
 	}
 
 	public int GetVertexBufferSize(ResourceHandle<DynamicVertexBuffer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeDynamicVertexBuffers[handle].VertexCapacity;
 	}
-	public int GetIndexBufferSize(ResourceHandle<DynamicVertexBuffer> handle) {
+	public int GetTriangleBufferSize(ResourceHandle<DynamicVertexBuffer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeDynamicVertexBuffers[handle].IndexCapacity;
+		return _activeDynamicVertexBuffers[handle].IndexCapacity / 3;
 	}
 
 	public void ResizeVertexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) {
@@ -890,29 +899,44 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		_activeDynamicVertexBuffers[handle] = data with { VertexBufferHandle = newVbHandle, VertexCapacity = newBufferSize, Vertices = newVertices };
 	}
 
-	public void ResizeIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) {
+	public void ResizeTriangleBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newBufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(newBufferSize), newBufferSize, "Index capacity must be positive.");
+		if (newBufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(newBufferSize), newBufferSize, "Triangle capacity must be positive.");
+		if (_activeDynamicVertexBuffers[handle].UsesImGuiVertices) {
+			throw new InvalidOperationException($"{HandleToInstance(handle)} was created as an ImGui vertex buffer and must be resized in indices. This is a bug in TinyFFR.");
+		}
+		ResizeIndexBuffer(handle, checked(newBufferSize * 3));
+	}
+	public void ResizeImGuiIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newIndexCount) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (newIndexCount <= 0) throw new ArgumentOutOfRangeException(nameof(newIndexCount), newIndexCount, "Index capacity must be positive.");
+		if (!_activeDynamicVertexBuffers[handle].UsesImGuiVertices) {
+			throw new InvalidOperationException($"{HandleToInstance(handle)} was not created as an ImGui vertex buffer. This is a bug in TinyFFR.");
+		}
+		ResizeIndexBuffer(handle, newIndexCount);
+	}
+	void ResizeIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newIndexCount) {
 		var data = _activeDynamicVertexBuffers[handle];
-		if (data.IndexCapacity == newBufferSize) return;
+		if (data.IndexCapacity == newIndexCount) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		ThrowIfAnyActiveDynamicBufferLeases(handle);
 
 		_indexBufferRefCounts.Remove(data.IndexBufferHandle);
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.IndexBufferHandle, &DisposeIndexBuffer);
-		var newIbHandle = AllocateDynamicIndexBuffer(newBufferSize);
+		var newIbHandle = AllocateDynamicIndexBuffer(newIndexCount, data.UsesImGuiVertices);
 		_indexBufferRefCounts.Add(newIbHandle, 1);
 
-		var newIndices = data.Indices;
-		if (data.Indices is { } oldIndices) {
-			var replacement = _globals.HeapPool.Borrow<ushort>(newBufferSize);
+		var newTriangles = data.Triangles;
+		if (data.Triangles is { } oldTriangles) {
+			var newTriangleCount = newIndexCount / 3;
+			var replacement = _globals.HeapPool.Borrow<VertexTriangle>(newTriangleCount);
 			replacement.Span.Clear();
-			oldIndices.Span[..Int32.Min(oldIndices.Span.Length, newBufferSize)].CopyTo(replacement.Span);
-			oldIndices.Dispose();
-			newIndices = replacement;
-			UploadIndices(newIbHandle, replacement.Span, 0);
+			oldTriangles.Span[..Int32.Min(oldTriangles.Span.Length, newTriangleCount)].CopyTo(replacement.Span);
+			oldTriangles.Dispose();
+			newTriangles = replacement;
+			UploadTriangles(newIbHandle, replacement.Span, 0);
 		}
-		_activeDynamicVertexBuffers[handle] = data with { IndexBufferHandle = newIbHandle, IndexCapacity = newBufferSize, Indices = newIndices };
+		_activeDynamicVertexBuffers[handle] = data with { IndexBufferHandle = newIbHandle, IndexCapacity = newIndexCount, Triangles = newTriangles };
 	}
 
 	void UploadVertices(UIntPtr vertexBufferHandle, ReadOnlySpan<MeshVertex> vertices, int offset) {
@@ -920,7 +944,12 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		var holdingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
 		UpdateVertexBuffer(vertexBufferHandle, holdingBuffer.BufferIdentity, (MeshVertex*) holdingBuffer.DataPtr, vertices.Length, offset).ThrowIfFailure();
 	}
-	void UploadIndices(UIntPtr indexBufferHandle, ReadOnlySpan<ushort> indices, int offset) {
+	void UploadTriangles(UIntPtr indexBufferHandle, ReadOnlySpan<VertexTriangle> triangles, int triangleOffset) {
+		if (triangles.Length == 0) return;
+		var holdingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(triangles);
+		UpdateIndexBuffer(indexBufferHandle, holdingBuffer.BufferIdentity, (VertexTriangle*) holdingBuffer.DataPtr, triangles.Length * 3, triangleOffset * 3).ThrowIfFailure();
+	}
+	void UploadIndicesUShort(UIntPtr indexBufferHandle, ReadOnlySpan<ushort> indices, int offset) {
 		if (indices.Length == 0) return;
 		var holdingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(indices);
 		UpdateIndexBufferUShort(indexBufferHandle, holdingBuffer.BufferIdentity, (ushort*) holdingBuffer.DataPtr, indices.Length, offset).ThrowIfFailure();
@@ -940,7 +969,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	void ThrowIfAnyActiveDynamicBufferLeases(ResourceHandle<DynamicVertexBuffer> handle) {
 		var name = _globals.GetResourceName(handle.Ident, DefaultDynamicVertexBufferName);
 		_dynamicVertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(DynamicVertexBuffer), name);
-		_dynamicIndexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(DynamicVertexBuffer), name);
+		_dynamicTriangleLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(DynamicVertexBuffer), name);
 	}
 
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) {
@@ -955,15 +984,15 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			new DynamicBufferLeaseData(range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes)
 		);
 	}
-	public ScopedReadOnlySpanLease<ushort> BorrowIndicesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) {
+	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) {
 		var data = GetMirroredBufferDataOrThrow(handle);
-		return _dynamicIndexLeaseTracker.CreateScopedLeaseOrThrow(handle, (ReadOnlySpan<ushort>) data.Indices!.Value.Span);
+		return _dynamicTriangleLeaseTracker.CreateScopedLeaseOrThrow(handle, (ReadOnlySpan<VertexTriangle>) data.Triangles!.Value.Span);
 	}
-	public ScopedSpanLease<ushort> BorrowIndicesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) {
+	public ScopedSpanLease<VertexTriangle> BorrowTrianglesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) {
 		var data = GetMirroredBufferDataOrThrow(handle);
-		return _dynamicIndexLeaseTracker.CreateScopedLeaseOrThrow(
+		return _dynamicTriangleLeaseTracker.CreateScopedLeaseOrThrow(
 			handle,
-			data.Indices!.Value.Span[range],
+			data.Triangles!.Value.Span[range],
 			new DynamicBufferLeaseData(range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes)
 		);
 	}
@@ -971,8 +1000,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	static void HandleDynamicVertexLeaseDisposal(object? builder, ResourceHandle handle, DynamicBufferLeaseData leaseData, int _) {
 		((LocalMeshBuilder) builder!).ExecuteDynamicVertexMutation((ResourceHandle<DynamicVertexBuffer>) handle, leaseData);
 	}
-	static void HandleDynamicIndexLeaseDisposal(object? builder, ResourceHandle handle, DynamicBufferLeaseData leaseData, int _) {
-		((LocalMeshBuilder) builder!).ExecuteDynamicIndexMutation((ResourceHandle<DynamicVertexBuffer>) handle, leaseData);
+	static void HandleDynamicTriangleLeaseDisposal(object? builder, ResourceHandle handle, DynamicBufferLeaseData leaseData, int _) {
+		((LocalMeshBuilder) builder!).ExecuteDynamicTriangleMutation((ResourceHandle<DynamicVertexBuffer>) handle, leaseData);
 	}
 	void ExecuteDynamicVertexMutation(ResourceHandle<DynamicVertexBuffer> handle, DynamicBufferLeaseData leaseData) {
 		var data = GetMirroredBufferDataOrThrow(handle);
@@ -981,11 +1010,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		UploadVertices(data.VertexBufferHandle, mirror.Slice(startIndex, length), startIndex);
 		if (leaseData.RecalculateBoundingBox) RecalculateBoundingBox(handle, leaseData.OverwriteChildMeshBoundingBoxes);
 	}
-	void ExecuteDynamicIndexMutation(ResourceHandle<DynamicVertexBuffer> handle, DynamicBufferLeaseData leaseData) {
+	void ExecuteDynamicTriangleMutation(ResourceHandle<DynamicVertexBuffer> handle, DynamicBufferLeaseData leaseData) {
 		var data = GetMirroredBufferDataOrThrow(handle);
-		var mirror = data.Indices!.Value.Span;
+		var mirror = data.Triangles!.Value.Span;
 		var (startIndex, length) = leaseData.Range.GetOffsetAndLength(mirror.Length);
-		UploadIndices(data.IndexBufferHandle, mirror.Slice(startIndex, length), startIndex);
+		UploadTriangles(data.IndexBufferHandle, mirror.Slice(startIndex, length), startIndex);
 		if (leaseData.RecalculateBoundingBox) RecalculateBoundingBox(handle, leaseData.OverwriteChildMeshBoundingBoxes);
 	}
 
@@ -1043,38 +1072,46 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Writing {indices.Length} indices at this offset would exceed the buffer capacity of {data.IndexCapacity}.");
 		}
 
-		UploadIndices(data.IndexBufferHandle, indices, offset);
+		UploadIndicesUShort(data.IndexBufferHandle, indices, offset);
 	}
 
-	public Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range indicesRange, PositionedCuboid? boundingBoxOverride) {
+	public Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range trianglesRange, PositionedCuboid? boundingBoxOverride) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var data = _activeDynamicVertexBuffers[handle];
+		if (data.UsesImGuiVertices) {
+			throw new InvalidOperationException($"{HandleToInstance(handle)} was created as an ImGui vertex buffer, so its meshes must be created from index ranges. This is a bug in TinyFFR.");
+		}
+		var (offset, count) = GetValidatedViewRange(handle, trianglesRange, data.IndexCapacity / 3, "Triangle");
+		return CreateMeshView(handle, data, offset * 3, count * 3, boundingBoxOverride ?? data.BoundingBox);
+	}
+	public Mesh CreateImGuiMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range indicesRange, PositionedCuboid boundingBox) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var data = _activeDynamicVertexBuffers[handle];
+		if (!data.UsesImGuiVertices) throw new InvalidOperationException($"{HandleToInstance(handle)} was not created as an ImGui vertex buffer. This is a bug in TinyFFR.");
+		var (offset, count) = GetValidatedViewRange(handle, indicesRange, data.IndexCapacity, "Index");
+		return CreateMeshView(handle, data, offset, count, boundingBox);
+	}
+	(int Offset, int Count) GetValidatedViewRange(ResourceHandle<DynamicVertexBuffer> handle, Range range, int capacity, string elementName) {
 		int offset, count;
 		try {
-			(offset, count) = indicesRange.GetOffsetAndLength(data.IndexCapacity);
-			if (offset < 0) throw new ArgumentOutOfRangeException(nameof(indicesRange), indicesRange, "Index start must not be negative.");
-			if (count < 0) throw new ArgumentOutOfRangeException(nameof(indicesRange), indicesRange, "Index count must not be negative.");
-			if (offset + count > data.IndexCapacity) {
-				throw new ArgumentOutOfRangeException(nameof(indicesRange), indicesRange, $"Index range [{offset}, {offset + count}) exceeds the index buffer capacity of {data.IndexCapacity}.");
+			(offset, count) = range.GetOffsetAndLength(capacity);
+			if (offset < 0) throw new ArgumentOutOfRangeException(nameof(range), range, $"{elementName} start must not be negative.");
+			if (count < 0) throw new ArgumentOutOfRangeException(nameof(range), range, $"{elementName} count must not be negative.");
+			if (offset + count > capacity) {
+				throw new ArgumentOutOfRangeException(nameof(range), range, $"{elementName} range [{offset}, {offset + count}) exceeds the buffer capacity of {capacity}.");
 			}
 		}
 		catch (ArgumentOutOfRangeException e) {
-			throw new ArgumentOutOfRangeException($"Index range is invalid for the index buffer size of this {HandleToInstance(handle)} (size = {data.IndexCapacity}).", e);
+			throw new ArgumentOutOfRangeException($"{elementName} range is invalid for the buffer size of this {HandleToInstance(handle)} (size = {capacity}).", e);
 		}
-
-		if (boundingBoxOverride == null && data.UsesImGuiVertices) {
-			throw new InvalidOperationException(
-				$"A bounding box must be supplied explicitly when creating a {nameof(Mesh)} from {HandleToInstance(handle)} " +
-				$"because it was created as an ImGui vertex buffer and therefore can not calculate one. This is a bug in TinyFFR."
-			);
-		}
-
+		return (offset, count);
+	}
+	Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, DynamicVertexBufferData data, int indexOffset, int indexCount, PositionedCuboid boundingBox) {
 		var viewHandle = (ResourceHandle<Mesh>) (++_prevHandleId);
 		_vertexBufferRefCounts[data.VertexBufferHandle] += 1;
 		_indexBufferRefCounts[data.IndexBufferHandle] += 1;
-		var boundingBox = boundingBoxOverride ?? data.BoundingBox; 
 		_activeMeshes.Add(viewHandle, new(
-			new MeshBufferData(data.VertexBufferHandle, data.IndexBufferHandle, offset, count, 0),
+			new MeshBufferData(data.VertexBufferHandle, data.IndexBufferHandle, indexOffset, indexCount, 0),
 			boundingBox,
 			PositionedCuboid.FromSmallestEnclosingAxisAligned(boundingBox),
 			boundingBox.SmallestEnclosingSphere
@@ -1122,7 +1159,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			else _indexBufferRefCounts[data.IndexBufferHandle] = ibRefCount - 1;
 		}
 		data.Vertices?.Dispose();
-		data.Indices?.Dispose();
+		data.Triangles?.Dispose();
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeDynamicVertexBuffers.Remove(handle);
 	}
@@ -1250,6 +1287,15 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		int startingIndex
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_index_buffer")]
+	static extern InteropResult UpdateIndexBuffer(
+		UIntPtr bufferHandle,
+		nuint bufferId,
+		VertexTriangle* indicesPtr,
+		int numIndices,
+		int startingIndex
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer_ushort")]
 	static extern InteropResult AllocateIndexBufferUShort(
 		nuint bufferId,
@@ -1331,7 +1377,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
 			_mutableVertexLeaseTracker.Dispose();
 			_dynamicVertexLeaseTracker.Dispose();
-			_dynamicIndexLeaseTracker.Dispose();
+			_dynamicTriangleLeaseTracker.Dispose();
 			_defaultMutableVerticesMap.Dispose();
 			_activeMeshWireframeBufferData.Dispose();
 			_wireframeEdgeScratchMap.Dispose();

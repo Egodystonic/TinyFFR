@@ -67,7 +67,7 @@ static partial class SmokeSections {
 
 	public static void DynamicVertexBuffers() {
 		for (var repeat = 0; repeat < SmokeWorkload.DynamicBufferRepeatCount; ++repeat) {
-			using var buffer = Factory.MeshBuilder.CreateDynamicVertexBuffer(SmokeWorkload.DynamicBufferVertexCount, SmokeWorkload.DynamicBufferIndexCount, "Benchmark Dynamic Vertex Buffer");
+			using var buffer = Factory.MeshBuilder.CreateDynamicVertexBuffer(SmokeWorkload.DynamicBufferVertexCount, SmokeWorkload.DynamicBufferTriangleCount, "Benchmark Dynamic Vertex Buffer");
 
 			using (var vertexLease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
 				var span = vertexLease.Span;
@@ -77,14 +77,17 @@ static partial class SmokeSections {
 				}
 			}
 
-			using (var indexLease = buffer.BorrowIndicesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) {
-				var span = indexLease.Span;
-				for (var i = 0; i < span.Length; ++i) span[i] = (ushort) (i % SmokeWorkload.DynamicBufferVertexCount);
+			using (var triangleLease = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) {
+				var span = triangleLease.Span;
+				for (var i = 0; i < span.Length; ++i) {
+					var first = i * 3;
+					span[i] = new VertexTriangle(first % SmokeWorkload.DynamicBufferVertexCount, (first + 1) % SmokeWorkload.DynamicBufferVertexCount, (first + 2) % SmokeWorkload.DynamicBufferVertexCount);
+				}
 			}
 
 			using var view = buffer.CreateMesh();
 			_ = buffer.VertexBufferSize;
-			_ = buffer.IndexBufferSize;
+			_ = buffer.TriangleBufferSize;
 		}
 	}
 

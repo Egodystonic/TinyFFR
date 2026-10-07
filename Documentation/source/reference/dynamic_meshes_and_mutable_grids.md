@@ -9,7 +9,7 @@ description: Information on how to alter mesh geometry at runtime in TinyFFR, vi
 
     * Mutable grids are flat sheets of vertices that can be raised, lowered, and shifted; ideal for water, terrain, cloth, and graphs. :material-arrow-right: [Mutable Grids](#mutable-grids)
     * Meshes created with `AllowsPerInstanceVertexMutation` let each object reshape its own copy of the mesh's vertices. :material-arrow-right: [Per-Instance Vertex Mutation](#per-instance-vertex-mutation)
-    * A `DynamicVertexBuffer` holds vertices and indices that can be rewritten from scratch at any time, for geometry generated as your application runs. :material-arrow-right: [Dynamic Vertex Buffers](#dynamic-vertex-buffers)
+    * A `DynamicVertexBuffer` holds vertices and triangles that can be rewritten from scratch at any time, for geometry generated as your application runs. :material-arrow-right: [Dynamic Vertex Buffers](#dynamic-vertex-buffers)
 
 </div>
 
@@ -224,12 +224,12 @@ Things to note about per-instance vertex mutation:
 ```csharp
 using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(
 	initialVertexCapacity: 1000, 
-	initialIndexCapacity: 3000
+	initialTriangleCapacity: 1000
 );
 
 using (var vertices = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) // (1)!
-using (var indices = buffer.BorrowIndicesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
-	WriteMyGeometry(vertices.Span, indices.Span); // (2)!
+using (var triangles = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
+	WriteMyGeometry(vertices.Span, triangles.Span); // (2)!
 }
 
 using var mesh = buffer.CreateMesh(); // (3)!
@@ -238,7 +238,7 @@ using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
 
 1.	Borrows the buffer's vertices. When the lease is disposed, the new vertices are uploaded, and the bounding box of the buffer (and every mesh created from it) is recalculated.
 
-2.	Writes vertices in to the first span, and indices (three per triangle) in to the second, via some hypothetical method of your own.
+2.	Writes vertices in to the first span, and the triangles joining them in to the second, via some hypothetical method of your own.
 
 3.	Creates a mesh that draws the buffer's contents.
 
@@ -247,17 +247,17 @@ using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
 A spiral ribbon generated in to a dynamic vertex buffer.
 ///
 
-A `DynamicVertexBuffer` holds vertices and indices that you write yourself, and that can be rewritten at any time. It's the right choice for geometry that you generate from scratch as your application runs (rather than altering an existing mesh), especially when the amount of geometry varies.
+A `DynamicVertexBuffer` holds vertices and triangles that you write yourself, and that can be rewritten at any time. It's the right choice for geometry that you generate from scratch as your application runs (rather than altering an existing mesh), especially when the amount of geometry varies.
 
-Dynamic vertex buffers are created with `factory.MeshBuilder.CreateDynamicVertexBuffer()`, with an initial capacity of vertices and indices. Both start out filled with zeros.
+Dynamic vertex buffers are created with `factory.MeshBuilder.CreateDynamicVertexBuffer()`, with an initial capacity of vertices and triangles. Both start out filled with zeros.
 
 You can create multiple meshes as "views" from a single dynamic buffer.
 
 ### Writing Geometry
 
-`buffer.BorrowVerticesSpan()` borrows the buffer's vertices (as `MeshVertex` values; see [Creating Meshes](creating_meshes.md#meshvertex)), and `buffer.BorrowIndicesSpan()` borrows its indices. Both have an overload that takes a `Range` to borrow only part of the buffer, which is cheaper to upload; and `BorrowVerticesSpanReadOnly()` / `BorrowIndicesSpanReadOnly()` read the buffer without altering it.
+`buffer.BorrowVerticesSpan()` borrows the buffer's vertices (as `MeshVertex` values; see [Creating Meshes](creating_meshes.md#meshvertex)), and `buffer.BorrowTrianglesSpan()` borrows its triangles (as `VertexTriangle` values; see [Creating Meshes](creating_meshes.md#vertextriangle)). Both have an overload that takes a `Range` to borrow only part of the buffer, which is cheaper to upload; and `BorrowVerticesSpanReadOnly()` / `BorrowTrianglesSpanReadOnly()` read the buffer without altering it.
 
-The indices describe the triangles that join the vertices, three indices per triangle. As for [`VertexTriangle`s](creating_meshes.md#vertextriangle), each triangle's indices must be in anticlockwise order as seen from its front face. Indices are `ushort` values, so a single mesh can only refer to the first 65,536 vertices in a buffer.
+Each triangle's three indices refer to vertices in the buffer, so must each be less than the buffer's vertex capacity; and, as for every `VertexTriangle`, must be in anticlockwise order as seen from the triangle's front face. Triangles left at their default value (all three indices zero) have no area, and so draw nothing.
 
 ### Creating Meshes
 
@@ -265,17 +265,17 @@ A buffer is drawn by creating meshes from it:
 
 <span class="def-icon">:material-code-block-parentheses:</span> `buffer.CreateMesh()`
 
-:   Creates a mesh that draws every index in the buffer.
+:   Creates a mesh that draws every triangle in the buffer.
 
-<span class="def-icon">:material-code-block-parentheses:</span> `buffer.CreateMesh(indicesRange)`
+<span class="def-icon">:material-code-block-parentheses:</span> `buffer.CreateMesh(trianglesRange)`
 
-:   Creates a mesh that draws only the given range of the buffer's indices (e.g. `buffer.CreateMesh(0..300)` draws the first 100 triangles). One buffer can therefore hold several separate pieces of geometry, each drawn with its own mesh.
+:   Creates a mesh that draws only the given range of the buffer's triangles (e.g. `buffer.CreateMesh(0..100)` draws the first 100 triangles). One buffer can therefore hold several separate pieces of geometry, each drawn with its own mesh.
 
-<span class="def-icon">:material-code-block-parentheses:</span> `buffer.CreateMesh(indicesRange, boundingBoxOverride)`
+<span class="def-icon">:material-code-block-parentheses:</span> `buffer.CreateMesh(trianglesRange, boundingBoxOverride)`
 
 :   As above, but with a bounding box of your own (see below).
 
-A mesh created from a buffer is a *view* on to the buffer, __not__ a copy of it. Rewriting the buffer changes what the mesh draws, without needing to create a new mesh (this is specifically a supported workflow). A mesh's index range is fixed when the mesh is created.
+A mesh created from a buffer is a *view* on to the buffer, __not__ a copy of it. Rewriting the buffer changes what the mesh draws, without needing to create a new mesh (this is specifically a supported workflow). A mesh's triangle range is fixed when the mesh is created.
 
 ### Bounding Boxes
 
@@ -286,13 +286,13 @@ Like every mesh, meshes created from a buffer have a bounding box, which is used
 * `buffer.TriggerManualBoundingBoxRecalculation(overwriteChildMeshBoundingBoxes)` recalculates the buffer's bounding box from its current vertices.
 * `buffer.SetBoundingBox(boundingBox, overwriteChildMeshBoundingBoxes)` sets the buffer's bounding box explicitly; and `buffer.SetBoundingBox(mesh, boundingBox)` sets the bounding box of one mesh created from the buffer. Setting a box you already know is much cheaper than recalculating one.
 
-The buffer's bounding box encloses *all* of its vertices. When one buffer holds several separate pieces of geometry, give each mesh its own bounding box (via `CreateMesh(indicesRange, boundingBoxOverride)` or `SetBoundingBox(mesh, boundingBox)`) so that each piece is only drawn when it's actually on screen.
+The buffer's bounding box encloses *all* of its vertices. When one buffer holds several separate pieces of geometry, give each mesh its own bounding box (via `CreateMesh(trianglesRange, boundingBoxOverride)` or `SetBoundingBox(mesh, boundingBox)`) so that each piece is only drawn when it's actually on screen.
 
 ### Resizing & Disposal
 
-`buffer.ResizeVertexBuffer(newSize)` and `buffer.ResizeIndexBuffer(newSize)` change the buffer's capacity, keeping as much of its existing contents as fits. A buffer is never resized automatically; and resizing is relatively slow, so choose initial capacities close to what you'll actually need.
+`buffer.ResizeVertexBuffer(newSize)` and `buffer.ResizeTriangleBuffer(newSize)` change the buffer's capacity, keeping as much of its existing contents as fits. A buffer is never resized automatically; and resizing is relatively slow, so choose initial capacities close to what you'll actually need.
 
-A buffer can not be resized or disposed while any mesh created from it still exists (both throw a `ResourceDependencyException`), or while any of its spans are borrowed. Dispose every mesh created from a buffer (and every object using those meshes) first. `buffer.VertexBufferSize` and `buffer.IndexBufferSize` give the buffer's current capacities.
+A buffer can not be resized or disposed while any mesh created from it still exists (both throw a `ResourceDependencyException`), or while any of its spans are borrowed. Dispose every mesh created from a buffer (and every object using those meshes) first. `buffer.VertexBufferSize` and `buffer.TriangleBufferSize` give the buffer's current capacities.
 
 ## Leases & Bounding Boxes
 

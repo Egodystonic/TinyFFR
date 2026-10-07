@@ -226,7 +226,7 @@ static class HeadlessDpiCheck {
 		using var factory = new LocalTinyFfrFactory();
 		var failures = 0;
 
-		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(8, 12, "Check Buffer");
+		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(8, 4, "Check Buffer");
 
 		static void WriteCube(Span<MeshVertex> verts, float extent) {
 			for (var i = 0; i < verts.Length; ++i) {
@@ -243,8 +243,8 @@ static class HeadlessDpiCheck {
 		using (var lease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: false)) {
 			WriteCube(lease.Span, 1f);
 		}
-		using (var lease = buffer.BorrowIndicesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
-			for (var i = 0; i < lease.Span.Length; ++i) lease.Span[i] = (ushort) (i % 8);
+		using (var lease = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
+			for (var i = 0; i < lease.Span.Length; ++i) lease.Span[i] = new VertexTriangle((i * 3) % 8, (i * 3 + 1) % 8, (i * 3 + 2) % 8);
 		}
 
 		using var viewA = buffer.CreateMesh();

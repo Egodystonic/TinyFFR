@@ -121,7 +121,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		_meshBuilder = (LocalMeshBuilder) factory.MeshBuilder;
 		_parkingVertexBuffer = _meshBuilder.CreateImGuiDynamicVertexBuffer(3, 3, "ImGui Parking Mesh");
 		_parkingVertexBuffer.SetImGuiIndices(stackalloc ushort[] { 0, 1, 2 });
-		_parkingView = _parkingVertexBuffer.CreateMesh(0..3, MeshViewBoundingBox);
+		_parkingView = _parkingVertexBuffer.CreateImGuiMesh(0..3, MeshViewBoundingBox);
 		_parkingTexture = factory.TextureBuilder.CreateTexture(
 			stackalloc TexelRgba32[] { new TexelRgba32(255, 255, 255, 255) },
 			new TextureGenerationConfig { Dimensions = new(1, 1) },
@@ -342,7 +342,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 				var scissorHeight = (int) (clipMaxY - clipMinY);
 
 				var indexStart = (int) cmd.IdxOffset;
-				var view = mesh.CreateMesh(indexStart..(indexStart + (int) cmd.ElemCount), MeshViewBoundingBox);
+				var view = mesh.CreateImGuiMesh(indexStart..(indexStart + (int) cmd.ElemCount), MeshViewBoundingBox);
 
 				var drawCall = GetOrCreateDrawCall(_activeDrawCallCount);
 				var instance = drawCall.Instance;
@@ -494,7 +494,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		}
 		if (_meshIndexCapacities[index] < indexCount) {
 			var newCapacity = (int) (indexCount * 1.5f);
-			mesh.ResizeIndexBuffer(newCapacity);
+			mesh.ResizeImGuiIndexBuffer(newCapacity);
 			_meshIndexCapacities[index] = newCapacity;
 		}
 		return mesh;

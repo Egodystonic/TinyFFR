@@ -15,24 +15,26 @@ sealed class LocalDynamicVertexBufferImplProvider : IDynamicVertexBufferImplProv
 	}
 
 	public int GetVertexBufferSize(ResourceHandle<DynamicVertexBuffer> handle) => _owner.GetVertexBufferSize(handle);
-	public int GetIndexBufferSize(ResourceHandle<DynamicVertexBuffer> handle) => _owner.GetIndexBufferSize(handle);
+	public int GetTriangleBufferSize(ResourceHandle<DynamicVertexBuffer> handle) => _owner.GetTriangleBufferSize(handle);
 
 	public void ResizeVertexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) => _owner.ResizeVertexBuffer(handle, newBufferSize);
-	public void ResizeIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) => _owner.ResizeIndexBuffer(handle, newBufferSize);
+	public void ResizeTriangleBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize) => _owner.ResizeTriangleBuffer(handle, newBufferSize);
 
 	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) => _owner.BorrowVerticesSpan(handle, range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) => _owner.BorrowVerticesSpanReadOnly(handle);
-	public ScopedSpanLease<ushort> BorrowIndicesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) => _owner.BorrowIndicesSpan(handle, range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
-	public ScopedReadOnlySpanLease<ushort> BorrowIndicesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) => _owner.BorrowIndicesSpanReadOnly(handle);
+	public ScopedSpanLease<VertexTriangle> BorrowTrianglesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) => _owner.BorrowTrianglesSpan(handle, range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
+	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) => _owner.BorrowTrianglesSpanReadOnly(handle);
 
 	public void SetVerticesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<MeshVertexImGui> vertices, int offset) => _owner.SetVerticesImGui(handle, vertices, offset);
 	public void SetIndicesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<ushort> indices, int offset) => _owner.SetIndicesImGui(handle, indices, offset);
+	public void ResizeImGuiIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newIndexCount) => _owner.ResizeImGuiIndexBuffer(handle, newIndexCount);
+	public Mesh CreateImGuiMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range indicesRange, PositionedCuboid boundingBox) => _owner.CreateImGuiMeshView(handle, indicesRange, boundingBox);
 
 	public void TriggerManualBoundingBoxRecalculation(ResourceHandle<DynamicVertexBuffer> handle, bool overwriteChildMeshBoundingBoxes) => _owner.TriggerManualBoundingBoxRecalculation(handle, overwriteChildMeshBoundingBoxes);
 	public void SetBoundingBox(ResourceHandle<DynamicVertexBuffer> handle, PositionedCuboid newBoundingBox, bool overwriteChildMeshBoundingBoxes) => _owner.SetBoundingBox(handle, newBoundingBox, overwriteChildMeshBoundingBoxes);
 	public void SetBoundingBox(ResourceHandle<DynamicVertexBuffer> handle, Mesh mesh, PositionedCuboid newBoundingBox) => _owner.SetBoundingBox(handle, mesh, newBoundingBox);
 
-	public Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range indicesRange, PositionedCuboid? boundingBoxOverride) => _owner.CreateMeshView(handle, indicesRange, boundingBoxOverride);
+	public Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range trianglesRange, PositionedCuboid? boundingBoxOverride) => _owner.CreateMeshView(handle, trianglesRange, boundingBoxOverride);
 
 	public string GetNameAsNewStringObject(ResourceHandle<DynamicVertexBuffer> handle) => _owner.GetNameAsNewStringObject(handle);
 	public int GetNameLength(ResourceHandle<DynamicVertexBuffer> handle) => _owner.GetNameLength(handle);
