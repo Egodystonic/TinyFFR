@@ -170,7 +170,7 @@ Each takes:
 * `anchor`: Which corner or edge to measure from (or the centre, `Orientation2D.None`);
 * `anchorOffset`: How far from the anchor; positive values move *inwards* from an edge, in the same way as canvas object positions.
 
-![FindAnchoredPointIn2DCoordinateSystem and FindAnchoredAreaIn2DCoordinateSystem](2d_types_anchoring.jpg)
+[![FindAnchoredPointIn2DCoordinateSystem and FindAnchoredAreaIn2DCoordinateSystem](2d_types_anchoring.jpg)](2d_types_anchoring.jpg)
 /// caption
 A point and an area anchored 120 pixels left of and 90 pixels below the top-right corner of a 1920x1080 grid, in coordinates measured from the top-left corner.
 ///

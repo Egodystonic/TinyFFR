@@ -145,7 +145,7 @@ unsafe {
 
 ## Using a Buffer as a Texture
 
-![A monitor in the scene showing a second camera's view of the fox](capturing_render_output_dynamic_texture.jpg)
+[![A monitor in the scene showing a second camera's view of the fox](capturing_render_output_dynamic_texture.jpg)](capturing_render_output_dynamic_texture.jpg)
 /// caption
 A second camera renders in to a buffer, whose dynamic texture is shown on a quad in the scene (as a "security monitor").
 ///

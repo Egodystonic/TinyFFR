@@ -19,7 +19,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 === "Bordered, 2 Colours"
 
-	![Cube with chequerboard color map applied](texture_patterns_chequerboard.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with chequerboard color map applied](texture_patterns_chequerboard.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_chequerboard.png)
 	/// caption
 	Chequerboard texture pattern
 	///
@@ -62,7 +62,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 	There are some overloads of `ChequerboardBordered` that can take a `thirdValue` and/or `fourthValue` too if you prefer (and one that takes only a `firstValue`, for a single colour of cell separated by borders). Here's another example using four colours and an uneven repetition count:
 
-	![Image of chequerboard cube with random colours](texture_patterns_chequerboard_random.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Image of chequerboard cube with random colours](texture_patterns_chequerboard_random.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_chequerboard_random.png)
 	/// caption
 	Four colours picked at random, uneven repetition count
 	///
@@ -87,7 +87,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 	There is also a variant pattern called `Chequerboard` (instead of `ChequerboardBordered`) that does not include a border:
 
-	![Cube with non-bordered chequerboard pattern](texture_patterns_chequerboard_borderless.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with non-bordered chequerboard pattern](texture_patterns_chequerboard_borderless.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_chequerboard_borderless.png)
 	/// caption
 	Red / yellow / green / blue, no border
 	///
@@ -112,7 +112,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 === "3x3 Circles"
 
-	![Cube with bordered circles texture](texture_patterns_circles_simple.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with bordered circles texture](texture_patterns_circles_simple.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_circles_simple.png)
 	/// caption
 	Nine bordered circles
 	///
@@ -140,7 +140,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 === "Interpolated Circle"
 
-	![Circle with interpolated colouring](texture_patterns_circle_interpolated.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Circle with interpolated colouring](texture_patterns_circle_interpolated.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_circle_interpolated.png)
 	/// caption
 	A single bordered circle with interpolated colouring
 	///
@@ -184,7 +184,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 === "Simple Rectangles"
 
-	![Cube with an array of rectangles displayed](texture_patterns_simple_rectangles.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with an array of rectangles displayed](texture_patterns_simple_rectangles.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_simple_rectangles.png)
 	/// caption
 	A very simple repetition of red rectangles on a green background
 	///
@@ -203,7 +203,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 === "Bordered Squares"
 
-	![Cube with squares bordered with different colours](texture_patterns_bordered_squares.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with squares bordered with different colours](texture_patterns_bordered_squares.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_bordered_squares.png)
 	/// caption
 	Four squares each with multi-coloured borders
 	///
@@ -232,7 +232,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 === "Rectangular Studs"
 
-	![Cube with flat colour map and rectangular 'stud' normals](texture_patterns_normal_studs.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with flat colour map and rectangular 'stud' normals](texture_patterns_normal_studs.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_normal_studs.png)
 	/// caption
 	This cube has a flat color map but the normal map gives it the impression of having 'studs' on its surface
 	///
@@ -298,7 +298,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 === "Circular Indents"
 
-	![Image showing circular indents](texture_patterns_normal_indents.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Image showing circular indents](texture_patterns_normal_indents.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_normal_indents.png)
 	/// caption
 	This surface shows circular indentations.
 	///
@@ -333,7 +333,7 @@ When creating an ORM map from patterns, `CreateOcclusionRoughnessMetallicMap()` 
 
 === "Metallic Strips"
 
-	![Image showing cube with metallic strips](texture_patterns_metallic_strips.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Image showing cube with metallic strips](texture_patterns_metallic_strips.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_metallic_strips.png)
 	/// caption
 	The lines along this surface alternate between metallic and non-metallic strips.
 	///
@@ -391,7 +391,7 @@ When creating an ORM map from patterns, `CreateOcclusionRoughnessMetallicMap()` 
 
 === "Perturbed Metallic and Roughness"
 
-	![Image showing cube with various metallic and roughness perturbations](texture_patterns_orm_perturbations.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Image showing cube with various metallic and roughness perturbations](texture_patterns_orm_perturbations.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_orm_perturbations.png)
 	/// caption
 	The larger lines are metallic and non-metallic bands. The thinner lines vary in their roughness value.
 
@@ -466,7 +466,7 @@ When creating an ORM map from patterns, `CreateOcclusionRoughnessMetallicMap()` 
 
 === "Occluded Circular Divots"
 
-	![Image showing circular indents with ambient occlusion inside the divots](texture_patterns_occluded_divots.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Image showing circular indents with ambient occlusion inside the divots](texture_patterns_occluded_divots.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_occluded_divots.png)
 	/// caption
 	This surface shows circular divots where the interior of each divot has some ambient occlusion applied to dim the ambient lighting from the skybox.
 	///
@@ -506,7 +506,7 @@ When creating an ORM map from patterns, `CreateOcclusionRoughnessMetallicMap()` 
 
 === "Roughness Gradient over Plain Metal"
 
-	![Cube with metallic surface and varying smoothness](texture_patterns_gradient_roughness.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with metallic surface and varying smoothness](texture_patterns_gradient_roughness.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_gradient_roughness.png)
 	/// caption
 	A single light is shining against this dark-red metal cube.
 
@@ -533,7 +533,7 @@ When creating an ORM map from patterns, `CreateOcclusionRoughnessMetallicMap()` 
 
 === "Rainbow Square"
 
-	![Cube with rainbow gradient](texture_patterns_rainbow.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Cube with rainbow gradient](texture_patterns_rainbow.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_rainbow.png)
 	/// caption
 	Rainbow color map created with a gradient texture pattern.
 	///
@@ -676,7 +676,7 @@ using var colorMap = textureBuilder.CreateColorMap(
 
 	(Supplying `Transform2D.None` to the `transform` argument is the same as supplying no argument at all.)
 
-![Example color map](texture_patterns_transform_none.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+[![Example color map](texture_patterns_transform_none.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_transform_none.png)
 /// caption
 This color map has a transform of `None` applied, i.e. no transformation is made.
 
@@ -685,7 +685,7 @@ The  tabs below show the three different transformation types being applied to i
 
 === "Scaling"
 
-	![Transformation scaling example](texture_patterns_transform_scaling.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Transformation scaling example](texture_patterns_transform_scaling.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_transform_scaling.png)
 	/// caption
 	Scaling transform applied to the original color map. 
 	///
@@ -726,7 +726,7 @@ The  tabs below show the three different transformation types being applied to i
 
 === "Rotation"
 
-	![Transformation rotation example](texture_patterns_transform_rotation.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Transformation rotation example](texture_patterns_transform_rotation.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_transform_rotation.png)
 	/// caption
 	Rotation transform applied to the original color map. 
 	///
@@ -757,7 +757,7 @@ The  tabs below show the three different transformation types being applied to i
 
 === "Translation"
 
-	![Transformation translation example](texture_patterns_transform_translation.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	[![Transformation translation example](texture_patterns_transform_translation.png){ style="max-height:200px;max-width:200px;border-radius:12px"}](texture_patterns_transform_translation.png)
 	/// caption
 	Translation transform applied to the original color map. 
 	///

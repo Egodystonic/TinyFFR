@@ -14,7 +14,7 @@ description: Information on TinyFFR's three 3D vector types (Location, Vect, and
 
 ## The Three Vector Types
 
-![A diagram of TinyFFR's axes, two Locations, the Vect between them, and a Direction](vector_types_axes.jpg)
+[![A diagram of TinyFFR's axes, two Locations, the Vect between them, and a Direction](vector_types_axes.jpg)](vector_types_axes.jpg)
 /// caption
 TinyFFR's 3D axes: +X points left, +Y points up, and +Z points forward. `Location`s A and B are points in space; the `Vect` from A to B describes the movement between them (including its length); and the `Direction` points the same way with no particular length (it's drawn here with length 1).
 ///

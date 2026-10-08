@@ -9,7 +9,7 @@ Almost every `Material` you create in TinyFFR will require at least one `Texture
 
 ### Color Maps
 
-![Image depicting a color map texture](texture_map_types_map_color.jpg){ align=left : style="max-height:128px;" }
+[![Image depicting a color map texture](texture_map_types_map_color.jpg){ align=left : style="max-height:128px;" }](texture_map_types_map_color.jpg)
 
 | AssetLoader Method           | `LoadColorMap(...)`                                      |
 | ---------------------------: | :------------------------------------------------------- |
@@ -22,7 +22,7 @@ When alpha data is present, the RGB channels are expected to be premultiplied (u
 
 ### Normal Maps
 
-![Image depicting a normal map texture](texture_map_types_map_normal.jpg){ align=left : style="max-height:128px;" }
+[![Image depicting a normal map texture](texture_map_types_map_normal.jpg){ align=left : style="max-height:128px;" }](texture_map_types_map_normal.jpg)
 
 | AssetLoader Method           | `LoadNormalMap(...)`                                                |
 | ---------------------------: | :------------------------------------------------------------------ |
@@ -39,7 +39,7 @@ TinyFFR only reads the red and green (X and Y) channels; the Z component is alwa
 
 ### ORM(R) Maps
 
-![Image depicting an ORM map texture](texture_map_types_map_orm.jpg){ align=left : style="max-height:128px;" }
+[![Image depicting an ORM map texture](texture_map_types_map_orm.jpg){ align=left : style="max-height:128px;" }](texture_map_types_map_orm.jpg)
 
 | AssetLoader Method           | `LoadOcclusionRoughnessMetallicMap(...)` / `LoadOcclusionRoughnessMetallicReflectanceMap(...)` |
 | ---------------------------: | :--------------------------------------------------------------------------------------------- |
@@ -62,7 +62,7 @@ If you pass a 3-channel (RGB) file to `LoadOcclusionRoughnessMetallicReflectance
 
 ### Absorption-Transmission Maps
 
-![Image depicting an AT map texture](texture_map_types_map_at.jpg){ align=left : style="max-height:128px;" }
+[![Image depicting an AT map texture](texture_map_types_map_at.jpg){ align=left : style="max-height:128px;" }](texture_map_types_map_at.jpg)
 
 | AssetLoader Method           | `LoadAbsorptionTransmissionMap(...)`                     |
 | ---------------------------: | :------------------------------------------------------- |
@@ -82,7 +82,7 @@ Additionally, you may wish to use a traditional colour map as an "inverse" absor
 
 ### Emissive Maps
 
-![Image depicting an emissive map texture](texture_map_types_map_emissive.jpg){ align=left : style="max-height:128px;" }
+[![Image depicting an emissive map texture](texture_map_types_map_emissive.jpg){ align=left : style="max-height:128px;" }](texture_map_types_map_emissive.jpg)
 
 | AssetLoader Method           | `LoadEmissiveMap(...)`                                   |
 | ---------------------------: | :------------------------------------------------------- |
@@ -98,7 +98,7 @@ If a separate intensity texture is desired, an overload of `LoadEmissiveMap()` a
 
 ### Anisotropy Maps
 
-![Image depicting an anisotropy map texture](texture_map_types_map_aniso.jpg){ align=left : style="max-height:128px;" }
+[![Image depicting an anisotropy map texture](texture_map_types_map_aniso.jpg){ align=left : style="max-height:128px;" }](texture_map_types_map_aniso.jpg)
 
 | AssetLoader Method           | `LoadAnisotropyMapVectorFormatted(...)` / `LoadAnisotropyMapRadialAngleFormatted(...)` |
 | ---------------------------: | :------------------------------------------------------------------------------------- |
@@ -145,7 +145,7 @@ TinyFFR internally stores anisotropy data as a 3-channel map where the red & gre
 
 ### Clearcoat Maps
 
-![Image depicting a clearcoat map texture](texture_map_types_map_cc.jpg){ align=left : style="max-height:128px;" }
+[![Image depicting a clearcoat map texture](texture_map_types_map_cc.jpg){ align=left : style="max-height:128px;" }](texture_map_types_map_cc.jpg)
 
 | AssetLoader Method           | `LoadClearCoatMap(...)`                                               |
 | ---------------------------: | :-------------------------------------------------------------------- |

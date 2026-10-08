@@ -55,6 +55,22 @@ public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<
 	/// </summary>
 	float GetFramesPerSecondRecentMax(ResourceHandle<ApplicationLoop> handle);
 	/// <summary>
+	/// Invoked via <see cref="ApplicationLoop.FrameTimeRecentAverage"/>.
+	/// </summary>
+	TimeSpan GetFrameTimeRecentAverage(ResourceHandle<ApplicationLoop> handle);
+	/// <summary>
+	/// Invoked via <see cref="ApplicationLoop.FrameTimeLatest"/>.
+	/// </summary>
+	TimeSpan GetFrameTimeLatest(ResourceHandle<ApplicationLoop> handle);
+	/// <summary>
+	/// Invoked via <see cref="ApplicationLoop.FrameTimeRecentMin"/>.
+	/// </summary>
+	TimeSpan GetFrameTimeRecentMin(ResourceHandle<ApplicationLoop> handle);
+	/// <summary>
+	/// Invoked via <see cref="ApplicationLoop.FrameTimeRecentMax"/>.
+	/// </summary>
+	TimeSpan GetFrameTimeRecentMax(ResourceHandle<ApplicationLoop> handle);
+	/// <summary>
 	/// Invoked via <see cref="ApplicationLoop.IterateOnce"/>.
 	/// </summary>
 	TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle, bool executePendingPrimaryThreadCooperativeTasks);

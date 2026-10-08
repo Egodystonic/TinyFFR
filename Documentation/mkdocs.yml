@@ -205,6 +205,9 @@ nav:
         - reference/serialization.md
         - reference/trait_interfaces.md
         - reference/math_utility_methods.md
+    - Managing Performance:
+        - reference/measuring_framerate.md
+        - reference/render_quality.md
 
 not_in_nav: |
 

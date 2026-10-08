@@ -416,7 +416,7 @@ The __TangentRotation__ is a `Quaternion` and is not intuitive to understand; so
 
 	A diagram of these three values is shown for the highlighted vertex below:
 
-![Crude tangents diagram](creating_meshes_tbn.jpg){ : style="width:300px;" }
+[![Crude tangents diagram](creating_meshes_tbn.jpg){ : style="width:300px;" }](creating_meshes_tbn.jpg)
 /// caption
 In this crude diagram, imagine we are looking directly at the front face of a cube.
 

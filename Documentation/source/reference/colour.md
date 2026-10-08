@@ -126,7 +126,7 @@ pointLight.Color = StandardColor.LightingIncandescentBulb; // (2)!
 
 2.	Gives a light the warm colour of an incandescent bulb.
 
-![Every StandardColor](colour_standard_colors.png)
+[![Every StandardColor](colour_standard_colors.png)](colour_standard_colors.png)
 /// caption
 Every `StandardColor`. In the code, the lighting colours are prefixed with `Lighting` (e.g. `StandardColor.LightingCandle`), the surface colours with `RealWorld` (e.g. `StandardColor.RealWorldBrick`), and the metal colours with `RealWorldSpecular` (e.g. `StandardColor.RealWorldSpecularGold`).
 ///

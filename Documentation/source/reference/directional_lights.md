@@ -13,7 +13,7 @@ description: Information on how to create and adjust directional lights, such as
 
 </div>
 
-![A directional light illuminating a fox and several objects](directional_lights_example.jpg){ : style="width:77%;" }
+[![A directional light illuminating a fox and several objects](directional_lights_example.jpg){ : style="width:77%;" }](directional_lights_example.jpg)
 /// caption
 A directional light with the colour and brightness of midday sunlight, lighting a fox and several objects, with shadows enabled.
 ///

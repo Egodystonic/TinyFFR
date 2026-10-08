@@ -25,7 +25,7 @@ The three are always applied in that order: First the scaling, then the rotation
 
 `transform.To2D()` converts a transform to a `Transform2D`, the 2D equivalent.
 
-![The steps of a transform](transform_steps.jpg)
+[![The steps of a transform](transform_steps.jpg)](transform_steps.jpg)
 /// caption
 A transform with a `Scaling` of `(2, 1, 1)`, a `Rotation` of 45° around `Up`, and a `Translation` of `(0, 1, 0)`, applied to a cube one step at a time.
 ///

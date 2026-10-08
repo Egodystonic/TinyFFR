@@ -226,25 +226,25 @@ Note that wireframe data is never generated for skeletal (animated) meshes or fo
 
 		---
 
-		![Cube mesh with no wireframe.](loading_meshes_cube_wireframe_0.jpg)
+		[![Cube mesh with no wireframe.](loading_meshes_cube_wireframe_0.jpg)](loading_meshes_cube_wireframe_0.jpg)
 		
 	-	`Enabled`
 
 		---
 
-		![Cube mesh with "Enabled" wireframe.](loading_meshes_cube_wireframe_1.jpg)
+		[![Cube mesh with "Enabled" wireframe.](loading_meshes_cube_wireframe_1.jpg)](loading_meshes_cube_wireframe_1.jpg)
 		
 	-	`EnabledWithEdgeDeduplication`
 
 		---
 
-		![Cube mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_cube_wireframe_2.jpg)
+		[![Cube mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_cube_wireframe_2.jpg)](loading_meshes_cube_wireframe_2.jpg)
 		
 	-	`EnabledWithEdgeDeduplicationAndFaceClearing`
 
 		---
 
-		![Cube mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_cube_wireframe_3.jpg)
+		[![Cube mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_cube_wireframe_3.jpg)](loading_meshes_cube_wireframe_3.jpg)
 
 	</div>
 	
@@ -256,25 +256,25 @@ Note that wireframe data is never generated for skeletal (animated) meshes or fo
 
 		---
 
-		![Chess mesh with no wireframe.](loading_meshes_chess_wireframe_0.jpg)
+		[![Chess mesh with no wireframe.](loading_meshes_chess_wireframe_0.jpg)](loading_meshes_chess_wireframe_0.jpg)
 		
 	-	`Enabled`
 
 		---
 
-		![Chess mesh with "Enabled" wireframe.](loading_meshes_chess_wireframe_1.jpg)
+		[![Chess mesh with "Enabled" wireframe.](loading_meshes_chess_wireframe_1.jpg)](loading_meshes_chess_wireframe_1.jpg)
 		
 	-	`EnabledWithEdgeDeduplication`
 
 		---
 
-		![Chess mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_chess_wireframe_2.jpg)
+		[![Chess mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_chess_wireframe_2.jpg)](loading_meshes_chess_wireframe_2.jpg)
 		
 	-	`EnabledWithEdgeDeduplicationAndFaceClearing`
 
 		---
 
-		![Chess mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_chess_wireframe_3.jpg)
+		[![Chess mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_chess_wireframe_3.jpg)](loading_meshes_chess_wireframe_3.jpg)
 
 	</div>
 	
@@ -286,25 +286,25 @@ Note that wireframe data is never generated for skeletal (animated) meshes or fo
 
 		---
 
-		![Spheres mesh with no wireframe.](loading_meshes_sphere_wireframe_0.jpg)
+		[![Spheres mesh with no wireframe.](loading_meshes_sphere_wireframe_0.jpg)](loading_meshes_sphere_wireframe_0.jpg)
 		
 	-	`Enabled`
 
 		---
 
-		![Spheres mesh with "Enabled" wireframe.](loading_meshes_sphere_wireframe_1.jpg)
+		[![Spheres mesh with "Enabled" wireframe.](loading_meshes_sphere_wireframe_1.jpg)](loading_meshes_sphere_wireframe_1.jpg)
 		
 	-	`EnabledWithEdgeDeduplication`
 
 		---
 
-		![Spheres mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_sphere_wireframe_2.jpg)
+		[![Spheres mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_sphere_wireframe_2.jpg)](loading_meshes_sphere_wireframe_2.jpg)
 		
 	-	`EnabledWithEdgeDeduplicationAndFaceClearing`
 
 		---
 
-		![Spheres mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_sphere_wireframe_3.jpg)
+		[![Spheres mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_sphere_wireframe_3.jpg)](loading_meshes_sphere_wireframe_3.jpg)
 
 	</div>
 	
@@ -316,25 +316,25 @@ Note that wireframe data is never generated for skeletal (animated) meshes or fo
 
 		---
 
-		![Helmet mesh with no wireframe.](loading_meshes_helmet_wireframe_0.jpg)
+		[![Helmet mesh with no wireframe.](loading_meshes_helmet_wireframe_0.jpg)](loading_meshes_helmet_wireframe_0.jpg)
 		
 	-	`Enabled`
 
 		---
 
-		![Helmet mesh with "Enabled" wireframe.](loading_meshes_helmet_wireframe_1.jpg)
+		[![Helmet mesh with "Enabled" wireframe.](loading_meshes_helmet_wireframe_1.jpg)](loading_meshes_helmet_wireframe_1.jpg)
 		
 	-	`EnabledWithEdgeDeduplication`
 
 		---
 
-		![Helmet mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_helmet_wireframe_2.jpg)
+		[![Helmet mesh with "EnabledWithEdgeDeduplication" wireframe.](loading_meshes_helmet_wireframe_2.jpg)](loading_meshes_helmet_wireframe_2.jpg)
 		
 	-	`EnabledWithEdgeDeduplicationAndFaceClearing`
 
 		---
 
-		![Helmet mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_helmet_wireframe_3.jpg)
+		[![Helmet mesh with "EnabledWithEdgeDeduplicationAndFaceClearing" wireframe.](loading_meshes_helmet_wireframe_3.jpg)](loading_meshes_helmet_wireframe_3.jpg)
 
 	</div>
 

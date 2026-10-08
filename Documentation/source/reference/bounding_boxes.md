@@ -13,7 +13,7 @@ description: Information on what bounding boxes are, how TinyFFR uses them, and 
 
 </div>
 
-![Three kinds of world-space bounds around a fox](bounding_boxes_types.jpg){ : style="width:77%;" }
+[![Three kinds of world-space bounds around a fox](bounding_boxes_types.jpg){ : style="width:77%;" }](bounding_boxes_types.jpg)
 /// caption
 Three instances of a rotated, non-uniformly scaled fox, showing (from left to right) the results of `GetWorldSpaceBoundingBox()`, `GetWorldSpaceAxisAlignedBoundingBox()`, and `GetWorldSpaceBoundingSphere()`.
 ///

@@ -13,7 +13,7 @@ description: Information on how to create and adjust point lights, and the prope
 
 </div>
 
-![A point light illuminating a fox and several objects](point_lights_example.jpg){ : style="width:77%;" }
+[![A point light illuminating a fox and several objects](point_lights_example.jpg){ : style="width:77%;" }](point_lights_example.jpg)
 /// caption
 A warm point light (marked by the small glowing sphere) lighting a fox and several objects in an otherwise dark scene, with shadows enabled.
 ///

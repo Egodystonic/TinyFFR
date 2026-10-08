@@ -15,7 +15,7 @@ description: Information on TinyFFR's line-like types (Line, Ray, and BoundedRay
 
 ## Line Types
 
-![The three line-like types](lines_types.jpg)
+[![The three line-like types](lines_types.jpg)](lines_types.jpg)
 /// caption
 A `Line`, a `Ray`, and a `BoundedRay`.
 ///

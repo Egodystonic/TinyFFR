@@ -13,17 +13,17 @@ description: Information on how to create and use standard (physically-based, op
 
 </div>
 
-![Standard material with aniso](standard_materials_aniso.jpg){ : style="width:77%;" }
+[![Standard material with aniso](standard_materials_aniso.jpg){ : style="width:77%;" }](standard_materials_aniso.jpg)
 /// caption
 A standard material utilising an anisotropy map.
 ///
 
-![Standard material with metallic](standard_materials_norm_metal.jpg){ : style="width:77%;" }
+[![Standard material with metallic](standard_materials_norm_metal.jpg){ : style="width:77%;" }](standard_materials_norm_metal.jpg)
 /// caption
 A standard material with high metallic and reflectance map values, also utilising normal mapping to skew each hexagonal panel.
 ///
 
-![Standard material with just color](standard_materials_color.jpg){ : style="width:77%;" }
+[![Standard material with just color](standard_materials_color.jpg){ : style="width:77%;" }](standard_materials_color.jpg)
 /// caption
 A standard material using only a color map with alpha enabled in `MaskOnly` mode.
 ///

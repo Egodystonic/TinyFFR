@@ -116,7 +116,7 @@ A renderer with a sub-area behaves as if its sub-area were the whole target:
 
 ### Splitscreen
 
-![Two players' views of the same scene side-by-side](compositing_splitscreen.jpg)
+[![Two players' views of the same scene side-by-side](compositing_splitscreen.jpg)](compositing_splitscreen.jpg)
 /// caption
 Splitscreen: One scene viewed by two cameras, each rendered in to one half of the target, with a canvas HUD on each half.
 ///
@@ -151,7 +151,7 @@ Splitscreen views can share one scene (with a camera per player), or show entire
 
 ### Picture-in-Picture
 
-![A minimap view in the top-right corner of a scene](compositing_pip.jpg)
+[![A minimap view in the top-right corner of a scene](compositing_pip.jpg)](compositing_pip.jpg)
 /// caption
 Picture-in-picture: An overhead "minimap" camera rendered in to the top-right corner, over the main view.
 ///
@@ -174,7 +174,7 @@ Picture-in-picture views are useful for minimaps, rear-view mirrors, security ca
 
 ## Always-on-Top
 
-![A gizmo hidden inside a model, compared with the same gizmo drawn in an overlay scene](compositing_always_on_top.jpg)
+[![A gizmo hidden inside a model, compared with the same gizmo drawn in an overlay scene](compositing_always_on_top.jpg)](compositing_always_on_top.jpg)
 /// caption
 Left: Arrow primitives added to the same scene as the fox are hidden inside it. Right: The same arrows added to an overlay scene, rendered with the same camera, are drawn on top.
 ///

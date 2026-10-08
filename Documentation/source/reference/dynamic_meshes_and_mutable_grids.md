@@ -13,7 +13,7 @@ description: Information on how to alter mesh geometry at runtime in TinyFFR, vi
 
 </div>
 
-![A mutable grid displaced in to a ripple](dynamic_meshes_and_mutable_grids_grid.jpg){ : style="width:77%;" }
+[![A mutable grid displaced in to a ripple](dynamic_meshes_and_mutable_grids_grid.jpg){ : style="width:77%;" }](dynamic_meshes_and_mutable_grids_grid.jpg)
 /// caption
 A 128x128 mutable grid, displaced in to a ripple (with `recalculateNormals: true`, so that it's lit according to its shape).
 ///
@@ -123,7 +123,7 @@ Denser grids deform more smoothly, but cost more to draw and to update.
 
 The values are *absolute* displacements from the flat grid (not additions to the grid's current shape), and they persist between leases: Any vertex you don't write to keeps the displacement you last gave it.
 
-![Lateral displacement](dynamic_meshes_and_mutable_grids_lateral.jpg){ : style="width:77%;" }
+[![Lateral displacement](dynamic_meshes_and_mutable_grids_lateral.jpg){ : style="width:77%;" }](dynamic_meshes_and_mutable_grids_lateral.jpg)
 /// caption
 Two grids given the same swirling lateral offsets. The left grid's span was borrowed with `permitLateralDisplacement: false`, so its offsets were ignored.
 ///
@@ -185,7 +185,7 @@ using (var lease = instance.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDisp
 
 4.	Squashes and stretches the sphere in to rings. Every other property of the vertex is kept as it was.
 
-![A sphere mesh with one instance's vertices mutated](dynamic_meshes_and_mutable_grids_instance.jpg){ : style="width:77%;" }
+[![A sphere mesh with one instance's vertices mutated](dynamic_meshes_and_mutable_grids_instance.jpg){ : style="width:77%;" }](dynamic_meshes_and_mutable_grids_instance.jpg)
 /// caption
 Two instances of the same sphere mesh. The right-hand instance's vertices have been mutated as in the example above.
 ///
@@ -242,7 +242,7 @@ using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
 
 3.	Creates a mesh that draws the buffer's contents.
 
-![A ribbon generated in to a dynamic vertex buffer](dynamic_meshes_and_mutable_grids_buffer.jpg){ : style="width:77%;" }
+[![A ribbon generated in to a dynamic vertex buffer](dynamic_meshes_and_mutable_grids_buffer.jpg){ : style="width:77%;" }](dynamic_meshes_and_mutable_grids_buffer.jpg)
 /// caption
 A spiral ribbon generated in to a dynamic vertex buffer.
 ///

@@ -96,7 +96,7 @@ The `lockedUprightDirection` controls which axes a camera-locked object may turn
 * __`Direction.None`__ (the default): The object turns freely on every axis, so it always faces the camera squarely, even when the camera looks down on it from above. This suits icons, in-world diagnostic information, and 'HUD' markers.
 * __Any other direction__ (e.g. `Direction.Up`): The object only turns around that axis, so it stays upright like a tree or a signpost. When the camera looks down on it, it's seen at an angle (just as a real signpost would be). This suits objects that stand on the ground or out from a wall, and also labels that should stay upright.
 
-![Camera-locked quads with an upright direction of Up and None](camera-locked_objects_upright.jpg){ : style="width:77%;" }
+[![Camera-locked quads with an upright direction of Up and None](camera-locked_objects_upright.jpg){ : style="width:77%;" }](camera-locked_objects_upright.jpg)
 /// caption
 Camera-locked quads anchored at the red markers, seen from above. On the left, locked to stay upright (`Direction.Up`): they stand vertically like signposts. On the right, free to turn on every axis (`Direction.None`): they tilt back to face the camera squarely.
 ///
@@ -119,7 +119,7 @@ The `lockStyle` (a `CameraLockStyle`) controls what "facing the camera" means:
 
 	This is much more expensive to render than `FaceCameraPlane` and should be used sparingly.
 
-![Camera-locked text with each lock style](camera-locked_objects_lock_styles.jpg){ : style="width:77%;" }
+[![Camera-locked text with each lock style](camera-locked_objects_lock_styles.jpg){ : style="width:77%;" }](camera-locked_objects_lock_styles.jpg)
 /// caption
 A grid of camera-locked text seen through a wide field of view. On the left, `FaceCameraPosition` turns each label towards the camera, skewing those towards the edges; on the right, `FaceCameraPlane` keeps every label square-on to the screen.
 ///
@@ -141,7 +141,7 @@ In `Standard` mode, a camera-locked object is sized in world units exactly like 
 
 The `ViewportFractional` modes instead size the object as a fraction of the rendered image, so it keeps the same size on screen however far away it is (and whatever resolution the image is rendered at). A value of `1f` means the full width or height of the screen, so `0.05f` means 5% of the screen. For camera-locked text, it's the height (or width) given in its `TextLayout` that is the fraction.
 
-![Camera-locked text with Standard and fractional scaling](camera-locked_objects_scaling.jpg){ : style="width:77%;" }
+[![Camera-locked text with Standard and fractional scaling](camera-locked_objects_scaling.jpg){ : style="width:77%;" }](camera-locked_objects_scaling.jpg)
 /// caption
 Camera-locked labels at increasing distances. On the left, `Standard` scaling- they shrink with distance like any other object. On the right, `ViewportFractionalFixedHeightPlusPreservedAspectRatio`- they stay the same size on screen regardless of distance from the camera.
 ///

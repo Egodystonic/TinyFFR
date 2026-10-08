@@ -29,7 +29,7 @@ class LocalRenderQualityTest {
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 1.5f, -3f));
 		using var cameraController = camera.CreateController<InspectorCameraController>();
 
-		using var sunlight = factory.LightBuilder.CreateDirectionalLight(direction: new Direction(-0.3f, -1f, 0.2f), castsShadows: true);
+		using var sunlight = factory.LightBuilder.CreateDirectionalLight(direction: new Direction(0.1f, -0.1f, 0.2f), castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx),
 			CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx)
@@ -158,6 +158,9 @@ class LocalRenderQualityTest {
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.D)) {
 				dofEnabled = !dofEnabled;
 				camera.FocusDistance = dofEnabled ? 0.1f : null;
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				Console.WriteLine(camera.Position + " > " + camera.ViewDirection);
 			}
 
 			window.SetTitle(summary + $" [D]DoF:{BoolShortString(dofEnabled)} [F]Fog:{BoolShortString(fogEnabled)}" + " | " + loop.FramesPerSecondRecentAverage.ToString("0000") + " FPS");

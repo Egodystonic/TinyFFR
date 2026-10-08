@@ -88,7 +88,7 @@ using var bigMarker = scene.AddPrimitivePoint(
 
 A point is a round marker at a single location. Its paintbrush's primary colour is used for the body of the marker, and the secondary colour for its outline.
 
-![Point primitives at each size](scene_primitives_points.jpg){ : style="width:77%;" }
+[![Point primitives at each size](scene_primitives_points.jpg){ : style="width:77%;" }](scene_primitives_points.jpg)
 /// caption
 Point primitives at each `ScenePrimitiveSize`, with the default paintbrush (top) and a custom one (bottom).
 ///
@@ -110,7 +110,7 @@ using var warning = scene.AddPrimitiveString(
 
 A text primitive is a label drawn with TinyFFR's default font. It always sits square-on to the screen, centred on its position. The paintbrush's primary colour is used for the text, and the secondary colour (if any) for an outline around it.
 
-![Text primitives](scene_primitives_text.jpg){ : style="width:77%;" }
+[![Text primitives](scene_primitives_text.jpg){ : style="width:77%;" }](scene_primitives_text.jpg)
 /// caption
 Text primitives at different sizes, with the default paintbrush and a custom one.
 ///
@@ -133,7 +133,7 @@ using var sphere = scene.AddPrimitiveShape(
 
 Boxes (`PositionedRotatedCuboid`) and spheres (`PositionedSphere`) are drawn solid by default, or as wireframes if `wireframe` is `true`, in the paintbrush's primary colour. Solid shapes are shaded so that their shape is visible regardless of the scene's lighting (see [`Plain3D`](the_default_material.md#shading-styles)). Wireframe boxes are particularly useful for visualising bounding boxes.
 
-![Solid and wireframe box and sphere primitives](scene_primitives_shapes.jpg){ : style="width:77%;" }
+[![Solid and wireframe box and sphere primitives](scene_primitives_shapes.jpg){ : style="width:77%;" }](scene_primitives_shapes.jpg)
 /// caption
 Box and sphere primitives, solid and as wireframes.
 ///
@@ -148,7 +148,7 @@ using var segment = scene.AddPrimitiveShape(
 
 A [`BoundedRay`](lines.md#boundedray) (i.e. line segment) is drawn as a line between its two end points, with a marker at each end. Pass `includeEndpoints: false` to leave the end markers out. (See [Colours](#colours) for how each paintbrush colour is used.)
 
-![Line segment primitives](scene_primitives_line_segments.jpg){ : style="width:77%;" }
+[![Line segment primitives](scene_primitives_line_segments.jpg){ : style="width:77%;" }](scene_primitives_line_segments.jpg)
 /// caption
 Line segment primitives: with the default paintbrush, with a three-colour paintbrush at `Medium` size, and without end markers.
 ///
@@ -163,7 +163,7 @@ using var ray = scene.AddPrimitiveShape(
 
 A ray ([`Ray`](lines.md#ray)) starts at a point and continues forever in one direction. It's drawn with a marker at its start point (pass `includeStartPoint: false` to leave it out). Rays are particularly useful for visualising [ray queries](scenes.md#scene-queries) and [camera rays](ray_casting_pixel_picking_projecting.md#ray-casting); and as primitives are excluded from scene queries, drawing a ray never interferes with querying along it.
 
-![Ray primitives](scene_primitives_rays.jpg){ : style="width:77%;" }
+[![Ray primitives](scene_primitives_rays.jpg){ : style="width:77%;" }](scene_primitives_rays.jpg)
 /// caption
 Ray primitives, each starting at the marker and continuing off-screen.
 ///
@@ -178,7 +178,7 @@ using var line = scene.AddPrimitiveShape(
 
 A line ([`Line`](lines.md#line)) passes through a point and continues forever in both directions.
 
-![Line primitives](scene_primitives_lines.jpg){ : style="width:77%;" }
+[![Line primitives](scene_primitives_lines.jpg){ : style="width:77%;" }](scene_primitives_lines.jpg)
 /// caption
 Two line primitives, each continuing off-screen in both directions.
 ///
@@ -199,7 +199,7 @@ An arrow is drawn from a tail position, pointing in a given direction. Its stem 
 
 Arrows are useful for visualising directions, such as normals, velocities, or light directions.
 
-![Arrow primitives](scene_primitives_arrows.jpg){ : style="width:77%;" }
+[![Arrow primitives](scene_primitives_arrows.jpg){ : style="width:77%;" }](scene_primitives_arrows.jpg)
 /// caption
 Arrow primitives with the default paintbrush, a two-colour paintbrush, and a one-colour paintbrush.
 ///
@@ -212,7 +212,7 @@ using var ground = scene.AddPrimitiveShape(new Plane(Direction.Up, Location.Orig
 
 A plane (`Plane`) is drawn as a large, translucent, chequered surface, in the paintbrush's primary colour.
 
-![Plane primitives](scene_primitives_planes.jpg){ : style="width:77%;" }
+[![Plane primitives](scene_primitives_planes.jpg){ : style="width:77%;" }](scene_primitives_planes.jpg)
 /// caption
 A horizontal plane primitive and a vertical, blue one.
 ///
@@ -254,7 +254,7 @@ A grid is a square reference grid, useful for judging positions and distances in
 
 A grid uses all three of its paintbrush's colours: the primary for its two centre lines (axes), the secondary for its major lines, and the tertiary for its minor lines. The default is red axes, white major lines, and grey minor lines.
 
-![Grid primitives](scene_primitives_grids.jpg){ : style="width:77%;" }
+[![Grid primitives](scene_primitives_grids.jpg){ : style="width:77%;" }](scene_primitives_grids.jpg)
 /// caption
 On the left, a default grid lying flat. On the right, an upright grid with a custom paintbrush and line spacing.
 ///

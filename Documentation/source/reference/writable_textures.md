@@ -12,7 +12,7 @@ description: Information on how to create textures whose contents can be overwri
 
 </div>
 
-![A writable texture before and after overwriting a region](writable_textures_overwrite.jpg){ : style="width:77%;" }
+[![A writable texture before and after overwriting a region](writable_textures_overwrite.jpg){ : style="width:77%;" }](writable_textures_overwrite.jpg)
 /// caption
 A 16x16 writable texture before (left) and after (right) overwriting a 6x4 region of it at offset `(2, 1)`. The first row of supplied texels is drawn yellow, and the very first texel black.
 ///

@@ -185,6 +185,10 @@ static unsafe partial class SmokeSections {
 			_ = loop.FramesPerSecondRecentAverage;
 			_ = loop.FramesPerSecondRecentMin;
 			_ = loop.FramesPerSecondRecentMax;
+			_ = loop.FrameTimeLatest;
+			_ = loop.FrameTimeRecentAverage;
+			_ = loop.FrameTimeRecentMin;
+			_ = loop.FrameTimeRecentMax;
 			_ = loop.TotalIteratedTime;
 			_ = loop.TimeUntilNextIteration;
 		}

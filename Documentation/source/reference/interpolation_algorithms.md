@@ -51,7 +51,7 @@ var timed = algorithm.GetValue(start, end, MathF.Min(elapsedSeconds, 2f), 2f); /
 
 The `<T>` type argument must be anything that implements `IInterpolatable<T>` (which many, many types in TinyFFR do implement).
 
-![The built-in interpolation algorithms](interpolation_algorithms_curves.jpg)
+[![The built-in interpolation algorithms](interpolation_algorithms_curves.jpg)](interpolation_algorithms_curves.jpg)
 /// caption
 Each built-in algorithm's output (from `start` at the bottom to `end` at the top) as its input distance goes from 0 to 1 (left to right). The algorithms in the bottom row overshoot `start` or `end` on the way.
 ///
@@ -90,7 +90,7 @@ The static factory methods on `InterpolationAlgorithm<T>` can be used to select 
 
 The algorithms that take a `strength` (an `InterpolationStrength`, defaulting to `Moderate`) can be made more or less pronounced:
 
-![The effect of InterpolationStrength](interpolation_algorithms_strength.jpg)
+[![The effect of InterpolationStrength](interpolation_algorithms_strength.jpg)](interpolation_algorithms_strength.jpg)
 /// caption
 Each `InterpolationStrength` value, applied to `AccelerateFromSlow()` and `DecelerateFromFastWithOvershoot()`.
 ///

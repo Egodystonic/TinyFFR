@@ -13,7 +13,7 @@ description: Information on how to use per-instance material effects to move, ro
 
 </div>
 
-![Four cubes sharing one material with different effects](material_effects_hero.jpg){ : style="width:77%;" }
+[![Four cubes sharing one material with different effects](material_effects_hero.jpg){ : style="width:77%;" }](material_effects_hero.jpg)
 /// caption
 Four cubes all using the same material, each with different material effects applied.
 ///
@@ -85,7 +85,7 @@ instance.MaterialEffects?.SetTransform(new Transform2D(
 
 `SetTransform()` takes a `Transform2D` that moves, rotates, and/or scales the material's textures across the object's surface. A `Transform2D` here means exactly the same as it does for [texture pattern transforms](texture_patterns.md#transforms): Translation is a fraction of the texture's width/height, positive rotations are anticlockwise, and scaling factors below `1f` squash the texture (making it repeat more often) while factors above `1f` stretch it.
 
-![Texture transforms applied to the UV testing texture](material_effects_transforms.jpg){ : style="width:77%;" }
+[![Texture transforms applied to the UV testing texture](material_effects_transforms.jpg){ : style="width:77%;" }](material_effects_transforms.jpg)
 /// caption
 Four quads using the same lighting-ignoring material (displaying the [UV testing texture](built-in_textures.md#uv-testing-texture)), each with a different texture transform.
 ///
@@ -127,7 +127,7 @@ Texture blending gradually replaces one of the material's maps with a second tex
 * `SetBlendTexture()` sets the blend texture for one of the material's maps.
 * `SetBlendDistance()` sets how far the map is blended towards that blend texture: `0f` shows only the material's own map, `1f` shows only the blend texture, and values in between mix the two linearly.
 
-![Colour map blended at different distances](material_effects_blending.jpg){ : style="width:77%;" }
+[![Colour map blended at different distances](material_effects_blending.jpg){ : style="width:77%;" }](material_effects_blending.jpg)
 /// caption
 A color map blended towards a second color map at distances of `0`, `0.25`, `0.5`, `0.75`, and `1`.
 ///

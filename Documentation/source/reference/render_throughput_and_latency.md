@@ -67,7 +67,7 @@ Setting a cap *below* the display's refresh rate is still useful. For example, c
 With vsync disabled, nothing paces the loop except the GPU, so an uncapped loop renders as many frames as it can. Set a cap if you don't want that.
 
 !!! info "Measuring Framerate"
-	For frame rate statistics such as `FramesPerSecondRecentAverage`, see [Application Loops](application_loops.md#framerate-statistics).
+	For frame rate statistics such as `FramesPerSecondRecentAverage`, see [Measuring Framerate](measuring_framerate.md).
 
 ## VSync
 

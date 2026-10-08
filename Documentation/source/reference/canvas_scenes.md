@@ -13,7 +13,7 @@ description: Information on how to draw flat, 2D content such as user interfaces
 
 </div>
 
-![A canvas HUD drawn over a 3D scene](canvas_scenes_hud.jpg){ : style="width:77%;" }
+[![A canvas HUD drawn over a 3D scene](canvas_scenes_hud.jpg){ : style="width:77%;" }](canvas_scenes_hud.jpg)
 /// caption
 A canvas scene drawn over a 3D scene: A health bar (with a docked text label) in the top-left, an image in the top-right, and a title at the bottom.
 ///
@@ -117,7 +117,7 @@ healthBar.WidthFraction = 0.25f; // (6)!
 
 6.	Makes the object a quarter of the canvas's width (leaving its height as it was).
 
-![Canvas objects placed at each anchor](canvas_scenes_anchors.jpg){ : style="width:77%;" }
+[![Canvas objects placed at each anchor](canvas_scenes_anchors.jpg){ : style="width:77%;" }](canvas_scenes_anchors.jpg)
 /// caption
 Nine canvas images, each placed at a position of `(40, 40)` pixels from a different `CanvasAnchor` (with a docked text label showing which). The layout is slightly askew (non-uniform) due to the interpretation rules of offset values for certain corner/edge anchor values; see below.
 ///
@@ -198,7 +198,7 @@ portrait.SetBlendTextureDistance(0.3f);
 
 5.	Blends a second image 30% of the way over the object's own image.
 
-![Canvas image features](canvas_scenes_image_features.jpg){ : style="width:77%;" }
+[![Canvas image features](canvas_scenes_image_features.jpg){ : style="width:77%;" }](canvas_scenes_image_features.jpg)
 /// caption
 Canvas image features: Fill fractions of 25%, 50%, 75%, and 100% (and a vertical fill of 40%); a texture shown whole, cropped with an offset and extent, and rotated; a 50%-opaque texture on a higher layer; a texture blended halfway with a second texture; and text whose height grows with its line count.
 ///

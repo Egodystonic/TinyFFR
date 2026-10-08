@@ -98,7 +98,7 @@ A `FontPen` determines how text looks when it's rendered. Pens are created with 
 | `WhiteWithBackground` | White | None | Black |
 | `BlackWithBackground` | Black | None | White |
 
-![Text drawn with each built-in pen style and a custom pen](text_instances_pens.jpg){ : style="width:77%;" }
+[![Text drawn with each built-in pen style and a custom pen](text_instances_pens.jpg){ : style="width:77%;" }](text_instances_pens.jpg)
 /// caption
 Text drawn over a chequered wall with each `BuiltInFontPenStyle`, plus a custom pen (yellow text with a thin blue outline).
 ///
@@ -144,7 +144,7 @@ Strings are created with `font.CreateString(text, multiLineJustification)`. Line
 | `Left` | Every line starts at the same left-hand edge. |
 | `Right` | Every line ends at the same right-hand edge. |
 
-![Multi-line text with each justification](text_instances_justification.jpg){ : style="width:77%;" }
+[![Multi-line text with each justification](text_instances_justification.jpg){ : style="width:77%;" }](text_instances_justification.jpg)
 /// caption
 The same three lines of text with each `TextJustification`.
 ///

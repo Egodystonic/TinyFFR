@@ -7,7 +7,7 @@ This page lists the conventions TinyFFR follows throughout its API.
 
 ## 3D Axes & Units
 
-![TinyFFR's 3D axes](vector_types_axes.jpg)
+[![TinyFFR's 3D axes](vector_types_axes.jpg)](vector_types_axes.jpg)
 /// caption
 TinyFFR's 3D axes. See [Vector Types](vector_types.md) for more on locations, directions, and vects.
 ///
@@ -27,7 +27,7 @@ TinyFFR's 3D axes. See [Vector Types](vector_types.md) for more on locations, di
 * 2D rotations (e.g. in a `Transform2D`, or a canvas object's `Rotation`) also turn **anticlockwise** for positive angles.
 * 2D angles that describe a direction (e.g. `XYPair<T>.PolarAngle`, `Angle.From2DPolarAngle()`) are *polar*: 0° points right, 90° up, 180° left, and 270° down.
 
-![2D polar angles](conventions_2d_angles.jpg)
+[![2D polar angles](conventions_2d_angles.jpg)](conventions_2d_angles.jpg)
 /// caption
 2D polar angles: 0° points along `+X` (right), and angles increase anticlockwise.
 ///

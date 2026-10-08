@@ -109,7 +109,7 @@ Quad instances are created with `factory.ObjectBuilder.CreateQuadInstance()`, wh
 
 :   An optional name for the quad.
 
-![Three quads with different position anchors](quads_anchors.jpg){ : style="width:77%;" }
+[![Three quads with different position anchors](quads_anchors.jpg){ : style="width:77%;" }](quads_anchors.jpg)
 /// caption
 Three quads, each placed at one of the red markers with a different `positionAnchor`.
 ///
@@ -144,7 +144,7 @@ A quad's `Scaling` is two-dimensional (an `XYPair<float>`) because a quad has no
 
 `SetTransform(position, size, facingDirection, uprightDirection, positionAnchor)` places, orients, and sizes a quad in one call, in the same terms as the creation parameters described above. Quads also have all the usual transform members of an object (`Position`, `Rotation`, `MoveBy()`, `RotateBy()`, `ScaleBy()`, etc.; see [Scene Objects](scene_objects.md)).
 
-![Four quads with different orientations](quads_facing.jpg){ : style="width:77%;" }
+[![Four quads with different orientations](quads_facing.jpg){ : style="width:77%;" }](quads_facing.jpg)
 /// caption
 Quads with their default orientation, a turned `facingDirection`, a tilted `uprightDirection`, and facing upward.
 ///

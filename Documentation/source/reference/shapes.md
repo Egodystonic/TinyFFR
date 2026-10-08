@@ -20,7 +20,7 @@ A `Plane` is a flat surface that extends forever in every direction along its su
 * Its `Normal`: The `Direction` pointing straight out of its surface;
 * Its `PointClosestToOrigin`: The point on the plane closest to the world origin, (0, 0, 0).
 
-![A plane, its normal, and the signed distance to a location](shapes_plane.jpg)
+[![A plane, its normal, and the signed distance to a location](shapes_plane.jpg)](shapes_plane.jpg)
 /// caption
 A plane facing `Up`, 0.6m above the origin. The red location above it is 1.7m away on the side the `Normal` points towards, so its signed distance is positive.
 ///
@@ -113,7 +113,7 @@ var unit = Sphere.UnitSphere; // (4)!
 
 A `Cuboid` is a box of a given `Width` (along the X axis), `Height` (along Y), and `Depth` (along Z), centred on the origin.
 
-![A cuboid's dimensions and some of its named parts](shapes_cuboid.jpg)
+[![A cuboid's dimensions and some of its named parts](shapes_cuboid.jpg)](shapes_cuboid.jpg)
 /// caption
 A `Cuboid`'s dimensions, and some of its parts as returned by `CornerAt()`, `EdgeAt()`, and `CentroidAt()`.
 ///

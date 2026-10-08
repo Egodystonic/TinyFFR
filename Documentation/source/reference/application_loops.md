@@ -99,42 +99,7 @@ By default, `ApplicationLoop`s set an unlimited framerate, resulting in your app
 
 ## Framerate Statistics
 
-Every `ApplicationLoop` keeps a record of how long each of its most recent iterations took, and offers the following properties for inspecting its recent framerate. Each returns `0f` if the loop has not yet been iterated.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondRecentAverage`
-
-:   The mean framerate across the most recent iterations.
-
-	Because this is calculated as a mean of frame *times* rather than of frame *rates*, an occasional long frame moves it less than you might expect. Consult `FramesPerSecondRecentMin` for the worst case.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondRecentMin`
-
-:   The lowest framerate observed across the most recent iterations (i.e. derived from the single longest iteration).
-
-	This is usually the most informative figure when judging perceived smoothness, as it reflects the worst stutter a user would have noticed.
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondRecentMax`
-
-:   The highest framerate observed across the most recent iterations (i.e. derived from the single shortest iteration).
-
-<span class="def-icon">:material-card-bulleted-outline:</span> `FramesPerSecondLatest`
-
-:   The framerate implied by the single most recent iteration (i.e. the reciprocal of the last frame delta).
-
-	This fluctuates from iteration to iteration and is rarely what you want to show a user directly; `FramesPerSecondRecentAverage` is the steadier figure.
-
-??? info "Configuring the Statistics Window"
-	By default, the `FramesPerSecondRecentXyz` properties are calculated over the most recent 256 iterations. This can be changed when creating the factory by setting `FrameRateBufferSizeLog2` on a `LocalApplicationLoopBuilderConfig`:
-
-	```csharp
-	var factory = new LocalTinyFfrFactory(
-		localLoopBuilderConfig: new LocalApplicationLoopBuilderConfig { 
-			FrameRateBufferSizeLog2 = 10 // 2^10 = 1024 iterations
-		}
-	);
-	```
-
-	The value is the base-2 logarithm of the number of iterations retained, and must be between `1` and `16` (i.e. 2 to 65,536 iterations). A larger window gives steadier figures that react more slowly to changes in performance.
+Every `ApplicationLoop` tracks its recent framerate (`FramesPerSecondRecentAverage`, `FramesPerSecondRecentMin`, `FramesPerSecondRecentMax`, and `FramesPerSecondLatest`) and the equivalent frame times (`FrameTimeRecentAverage`, `FrameTimeRecentMin`, `FrameTimeRecentMax`, and `FrameTimeLatest`). See [Measuring Framerate](measuring_framerate.md) for details, and for tips on measuring and displaying your application's framerate.
 
 ## Multiplexing Loops
 

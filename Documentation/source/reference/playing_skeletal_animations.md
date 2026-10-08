@@ -13,7 +13,7 @@ description: Information on how to play, loop, speed up, blend, and query skelet
 
 </div>
 
-![A fox at four points of its walk animation](playing_skeletal_animations_walk.jpg){ : style="width:77%;" }
+[![A fox at four points of its walk animation](playing_skeletal_animations_walk.jpg){ : style="width:77%;" }](playing_skeletal_animations_walk.jpg)
 /// caption
 Four instances of the same fox model, each posed at a different fraction of the way through its "Walk" animation.
 ///
@@ -159,7 +159,7 @@ foxInstances.GetAnimationPlayer(survey, run).SetTimePoint( // (2)!
 
 4.	How far to blend from the survey animation (`0f`) to the run animation (`1f`).
 
-![A fox posed with blended animations](playing_skeletal_animations_blend.jpg){ : style="width:77%;" }
+[![A fox posed with blended animations](playing_skeletal_animations_blend.jpg){ : style="width:77%;" }](playing_skeletal_animations_blend.jpg)
 /// caption
 The fox's "Survey" and "Run" animations, blended at interpolation distances of `0`, `0.5`, and `1`.
 ///
@@ -197,7 +197,7 @@ hat.Position = Location.FromVector3(worldTransform.Translation); // (3)!
 
 3.	Moves a separate object (`hat`) to the head's position.
 
-![Markers attached to a fox's nodes](playing_skeletal_animations_nodes.jpg){ : style="width:77%;" }
+[![Markers attached to a fox's nodes](playing_skeletal_animations_nodes.jpg){ : style="width:77%;" }](playing_skeletal_animations_nodes.jpg)
 /// caption
 Green markers following the fox's head and tail nodes (raised slightly above each node so that they're not hidden inside the fox); and the yellow path of its front paw over one walk cycle.
 ///

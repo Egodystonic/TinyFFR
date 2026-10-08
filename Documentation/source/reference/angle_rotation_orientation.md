@@ -58,7 +58,7 @@ var between = direction1 ^ direction2; // (5)!
 
 :   The smallest angle between this angle and `other` when both are treated as positions around a circle, always between 0° and 180°. For example, between 315° and 45° it's 90°, not 270°.
 
-![ShortestDifferenceTo between 315° and 45°](angle_rotation_orientation_shortest_difference.jpg)
+[![ShortestDifferenceTo between 315° and 45°](angle_rotation_orientation_shortest_difference.jpg)](angle_rotation_orientation_shortest_difference.jpg)
 /// caption
 The shortest difference between 315° and 45° is 90° (the orange arc), rather than the 270° you'd get by going the other way round (the dashed arc).
 ///
@@ -71,7 +71,7 @@ The shortest difference between 315° and 45° is 90° (the orange arc), rather 
 
 :   Treats this angle as a position along a [triangle wave](https://en.wikipedia.org/wiki/Triangle_wave) that rises to `peak`, falls to `-peak` (or to 0°, for the rectified version), and rises again, returning the wave's value. This is handy for making something swing back and forth at a constant speed: Feed in an angle that increases over time (e.g. `loop.TotalIteratedTime` multiplied by some speed), and use the result to rotate something.
 
-![Triangularize and TriangularizeRectified plotted from 0° to 720°](angle_rotation_orientation_triangularize.jpg)
+[![Triangularize and TriangularizeRectified plotted from 0° to 720°](angle_rotation_orientation_triangularize.jpg)](angle_rotation_orientation_triangularize.jpg)
 /// caption
 The output of `Triangularize(90°)` and `TriangularizeRectified(90°)` as the input angle increases from 0° to 720°.
 ///
@@ -89,7 +89,7 @@ Angles also support the usual arithmetic and comparison operators: `+`, `-`, `*`
 
 A `Rotation` is a turn of some `Angle` around an *axis* (a `Direction`). For example, a rotation of 90° around `Up` turns something that faces `Forward` so that it faces `Left`.
 
-![A 90° rotation around the Up axis, turning Forward in to Left](angle_rotation_orientation_rotation.jpg)
+[![A 90° rotation around the Up axis, turning Forward in to Left](angle_rotation_orientation_rotation.jpg)](angle_rotation_orientation_rotation.jpg)
 /// caption
 A rotation (the yellow object) of 90° around `Up`. Looking down on the `Up` rotation axis (i.e. with the axis pointing towards you), positive angles turn anticlockwise: `Forward` turns in to `Left`.
 ///

@@ -121,7 +121,7 @@ Common uses include placeholder colour maps while prototyping, or supplying an a
 
 ## UV Testing Texture
 
-![Image depicting the UV Testing Texture on a Cube](built-in_textures_uvtest.jpg){ : style="max-height:384px;" }
+[![Image depicting the UV Testing Texture on a Cube](built-in_textures_uvtest.jpg){ : style="max-height:384px;" }](built-in_textures_uvtest.jpg)
 /// caption
 Image showing a cube textured using the `UvTestingTexture`.
 ///

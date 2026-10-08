@@ -13,17 +13,17 @@ description: Information on how to create and use transmissive (see-through, lig
 
 </div>
 
-![Transmissive material with refractive glass](transmissive_materials_glass.jpg){ : style="width:77%;" }
+[![Transmissive material with refractive glass](transmissive_materials_glass.jpg){ : style="width:77%;" }](transmissive_materials_glass.jpg)
 /// caption
 A transmissive material showcasing a glass (refractive) effect.
 ///
 
-![Transmissive material with mirroring](transmissive_materials_mirror.jpg){ : style="width:77%;" }
+[![Transmissive material with mirroring](transmissive_materials_mirror.jpg){ : style="width:77%;" }](transmissive_materials_mirror.jpg)
 /// caption
 A transmissive material showcasing a mirror (reflective) effect.
 ///
 
-![Transmissive material with stained-glass AT](transmissive_materials_glass_stained.jpg){ : style="width:77%;" }
+[![Transmissive material with stained-glass AT](transmissive_materials_glass_stained.jpg){ : style="width:77%;" }](transmissive_materials_glass_stained.jpg)
 /// caption
 A transmissive material showcasing a stained-glass absorption effect.
 ///
