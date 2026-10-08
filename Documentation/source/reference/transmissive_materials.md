@@ -238,6 +238,11 @@ The following two options control how a transmissive material refracts light:
 
 	Reflections of other *objects* in the scene (as opposed to the backdrop) additionally require the renderer's screen-space reflections to be enabled, i.e. a `ScreenSpaceEffectsQuality` of `Quality.High` or `Quality.VeryHigh` in its `RenderQualityConfig`.
 
+	??? warning "Performance"
+		Whenever a `FullReflectionsAndRefraction` material is visible, the renderer has to do considerable extra work every frame to capture the scene behind it, and this becomes much more expensive when screen-space reflections are also enabled (as they are in the default `High` [quality preset](render_quality.md)).
+
+		Use `FullReflectionsAndRefraction` where seeing the scene through the surface really matters, and `SkyboxOnlyReflectionsAndRefraction` elsewhere. For transmissive materials loaded from a model file, set the quality via `ModelCreationConfig.TransmissiveMaterialQuality` (see [Bundled Assets](bundled_assets.md#modelcreationconfig)).
+
 ## Transparency
 
 If the material's color map has an alpha channel (i.e. it's a four-channel RGBA texture), the alpha can be used to make parts of the surface invisible or partially transparent, exactly as with [standard materials](standard_materials.md#transparency). How the alpha is used is set by the `alphaMode` argument (or `AlphaMode` config property):

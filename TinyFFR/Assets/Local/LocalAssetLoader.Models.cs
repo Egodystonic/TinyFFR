@@ -283,6 +283,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 						matIndex,
 						resourceGroupName,
 						creationConfig.TextureConfig,
+						creationConfig.TransmissiveMaterialQuality,
 						in readConfig,
 						in pathBuffer.AsRef,
 						context.CurrentSubMeshData.TextureRegistry,

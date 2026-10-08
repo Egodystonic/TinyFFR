@@ -201,9 +201,10 @@ Measured from the default `High` preset, these are the changes to try first, rou
 
 1. **If you use depth of field, lower `DepthOfFieldQuality`.** `VeryHigh` costs around three whole frames, and `High` (the default) over half a frame; `Standard` costs about a quarter as much as `High` and looks similar.
 2. **Lower `ScreenSpaceEffectsQuality` to `Standard`.** This roughly halves the frame time, at the cost of screen-space reflections, which many scenes barely show.
-3. **Lower `InternalResolutionScalar`.** `0.75` saves about a quarter of the frame time and is hard to notice; `0.5` saves almost half. Alternatively reduce the `Window`/`RenderOutputBuffer` size.
-4. **Reduce the number of shadow-casting lights.** Each one adds to the cost of every frame. Lowering `ShadowQuality` saves comparatively little.
-5. **Use `Fxaa` rather than a TAA mode** (saving around a tenth of a frame), if the TAA modes are in use.
-6. **The rest make little difference:** Disabling ambient occlusion or bloom, or lowering `HdrColorPrecision` to `Low`, each save only a few percent; the quality levels of shadows, ambient occlusion, bloom, and dithering save almost nothing.
+3. **Use the cheaper quality for transmissive materials.** Glass and other [transmissive materials](transmissive_materials.md#refraction) using `TransmissiveMaterialQuality.FullReflectionsAndRefraction` (the default) are very expensive while they're in view, especially with screen-space reflections enabled; in testing, a few small glass objects added around 75% to the frame time. `SkyboxOnlyReflectionsAndRefraction` removes almost all of that cost. (For models loaded from a file, set `ModelCreationConfig.TransmissiveMaterialQuality`.)
+4. **Lower `InternalResolutionScalar`.** `0.75` saves about a quarter of the frame time and is hard to notice; `0.5` saves almost half. Alternatively reduce the `Window`/`RenderOutputBuffer` size.
+5. **Reduce the number of shadow-casting lights.** Each one adds to the cost of every frame. Lowering `ShadowQuality` saves comparatively little.
+6. **Use `Fxaa` rather than a TAA mode** (saving around a tenth of a frame), if the TAA modes are in use.
+7. **The rest make little difference:** Disabling ambient occlusion or bloom, or lowering `HdrColorPrecision` to `Low`, each save only a few percent; the quality levels of shadows, ambient occlusion, bloom, and dithering save almost nothing.
 
 Switching to the `Medium` preset applies most of the first two steps at once (roughly halving the frame time), while keeping anti-aliasing and every effect enabled. `Low` and `VeryLow` add a reduced internal resolution, and disable anti-aliasing and dithering.

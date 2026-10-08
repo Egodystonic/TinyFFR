@@ -104,6 +104,7 @@ class ModelConfigTest {
 				ProcessingToApply = TextureProcessingConfig.Flip(true, false),
 				Name = "Texture Aa Aa"
 			},
+			TransmissiveMaterialQuality = TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new ModelCreationConfig {
@@ -121,6 +122,7 @@ class ModelConfigTest {
 				ProcessingToApply = TextureProcessingConfig.Invert(),
 				Name = "Texture BBBbbb"
 			},
+			TransmissiveMaterialQuality = TransmissiveMaterialQuality.FullReflectionsAndRefraction,
 			Name = "BBBbbb"
 		};
 
@@ -137,6 +139,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.TextureConfig.Name.ToString(), actual.TextureConfig.Name.ToString());
 			Assert.AreEqual(expected.TextureConfig.ProcessingToApply, actual.TextureConfig.ProcessingToApply);
 			
+			Assert.AreEqual(expected.TransmissiveMaterialQuality, actual.TransmissiveMaterialQuality);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -146,18 +149,21 @@ class ModelConfigTest {
 		AssertHeapSerializationWithObjects<ModelCreationConfig>()
 			.SubConfig(testConfigA.MeshConfig)
 			.SubConfig(testConfigA.TextureConfig)
+			.Int((int) TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction)
 			.String("Aa Aa")
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ModelCreationConfig>()
 			.SubConfig(testConfigB.MeshConfig)
 			.SubConfig(testConfigB.TextureConfig)
+			.Int((int) TransmissiveMaterialQuality.FullReflectionsAndRefraction)
 			.String("BBBbbb")
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ModelCreationConfig>()
 			.Including(nameof(ModelCreationConfig.MeshConfig))
 			.Including(nameof(ModelCreationConfig.TextureConfig))
+			.Including(nameof(ModelCreationConfig.TransmissiveMaterialQuality))
 			.Including(nameof(ModelCreationConfig.Name))
 			.End();
 	}

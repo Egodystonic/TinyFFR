@@ -145,6 +145,14 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 	/// </remarks>
 	public TextureCreationConfig TextureConfig { get; init; } = new() { DataType = TextureDataType.LinearData };
 	/// <summary>
+	/// The quality used for any transmissive (e.g. glass) materials found in the file. Defaults to <see cref="TransmissiveMaterialCreationConfig.DefaultQuality"/>.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="Materials.TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction"/> is considerably cheaper to render, especially when the renderer's
+	/// screen-space reflections are enabled. See <see cref="TransmissiveMaterialCreationConfig.Quality"/>.
+	/// </remarks>
+	public TransmissiveMaterialQuality TransmissiveMaterialQuality { get; init; } = TransmissiveMaterialCreationConfig.DefaultQuality;
+	/// <summary>
 	/// The name to give the resulting resource group. May be left empty.
 	/// </summary>
 	public ReadOnlySpan<char> Name { get; init; }
@@ -157,18 +165,21 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 	internal void ThrowIfInvalid() {
 		MeshConfig.ThrowIfInvalid();
 		TextureConfig.ThrowIfInvalid();
+		if (!Enum.IsDefined(TransmissiveMaterialQuality)) throw new ArgumentOutOfRangeException(nameof(TransmissiveMaterialQuality), TransmissiveMaterialQuality, null);
 	}
 
 	/// <inheritdoc />
 	public static int GetHeapStorageFormattedLength(in ModelCreationConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
+			+	SerializationSizeOfInt() // TransmissiveMaterialQuality
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	/// <inheritdoc />
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
+		SerializationWriteInt(ref dest, (int) src.TransmissiveMaterialQuality);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	/// <inheritdoc />
@@ -176,6 +187,7 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 		return new ModelCreationConfig {
 			MeshConfig = SerializationReadSubConfig<MeshCreationConfig>(ref src),
 			TextureConfig = SerializationReadSubConfig<TextureCreationConfig>(ref src),
+			TransmissiveMaterialQuality = (TransmissiveMaterialQuality) SerializationReadInt(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

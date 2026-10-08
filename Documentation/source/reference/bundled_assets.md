@@ -146,6 +146,12 @@ You can pass a `ModelCreationConfig` and a `ModelReadConfig` to `LoadBundledAsse
 	The `DataType` property required on this `TextureCreationConfig` is used only for textures that have no specific data type or interpretation specified by the file format. In most cases all textures in a composite format file *do* have a specific data type/interpretation, so this property is largely ignored in this context.
 	
 	If in doubt, you can set it to `ColorSrgb` which covers a lot of common texture types.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TransmissiveMaterialQuality`
+
+:   The [quality](transmissive_materials.md#refraction) used for any transmissive (e.g. glass) materials found in the file. Defaults to `FullReflectionsAndRefraction`.
+
+	Setting this to `SkyboxOnlyReflectionsAndRefraction` can make scenes with visible glass or mirror surfaces considerably cheaper to render, at the cost of the glass/mirror showing only the backdrop (rather than the other objects in the scene).
 	
 ### ModelReadConfig
 

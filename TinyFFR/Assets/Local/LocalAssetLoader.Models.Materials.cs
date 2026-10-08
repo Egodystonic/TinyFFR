@@ -184,6 +184,7 @@ unsafe partial class LocalAssetLoader {
 		int ClearCoatMapSlot,
 		int AlphaFormat,
 		float RefractionThickness,
+		TransmissiveMaterialQuality TransmissiveQuality,
 		NameSlice Name
 	);
 
@@ -999,7 +1000,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	GatheredMaterialData GatherAssetMaterial(UIntPtr assetHandle, int materialIndex, ReadOnlySpan<char> assetName, in TextureCreationConfig config, in ModelReadConfig readConfig, ref readonly byte assetRootDirStrRef, ModelLoadMaterialTextureRegistry textureRegistry, ThreadSafeHeapPoolWrapper heapPool) {
+	GatheredMaterialData GatherAssetMaterial(UIntPtr assetHandle, int materialIndex, ReadOnlySpan<char> assetName, in TextureCreationConfig config, TransmissiveMaterialQuality transmissiveQuality, in ModelReadConfig readConfig, ref readonly byte assetRootDirStrRef, ModelLoadMaterialTextureRegistry textureRegistry, ThreadSafeHeapPoolWrapper heapPool) {
 		var matParamsBuffer = stackalloc AssetMaterialParam[15];
 		var matParams = new AssetMaterialParamGroup(
 			matParamsBuffer + 0,
@@ -1066,6 +1067,7 @@ unsafe partial class LocalAssetLoader {
 			clearCoatMapSlot,
 			alphaFormat,
 			refractionThickness,
+			transmissiveQuality,
 			matNameSlice
 		);
 	}
@@ -1101,6 +1103,7 @@ unsafe partial class LocalAssetLoader {
 				NormalMap = normalMap,
 				OcclusionRoughnessMetallicReflectanceMap = ormMap,
 				RefractionThickness = gathered.RefractionThickness.IsPositiveAndFinite() ? gathered.RefractionThickness : TransmissiveMaterialCreationConfig.DefaultRefractionThickness,
+				Quality = gathered.TransmissiveQuality,
 				Name = matName
 			});
 		}
