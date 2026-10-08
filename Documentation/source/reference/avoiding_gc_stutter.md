@@ -171,8 +171,106 @@ var text = SpanUtils.ConvertUtf8ToUtf16(charsLease.Span, utf8Text); // (5)!
 
 ## Configuring the GC
 
-Even with care, some garbage is sometimes unavoidable (e.g. from other libraries). Setting `System.Runtime.GCSettings.LatencyMode` to `GCLatencyMode.SustainedLowLatency` asks .NET to avoid its longest ("blocking full") collections while your application runs, at the cost of using more memory. It doesn't stop collections from happening, so it complements, rather than replaces, avoiding garbage.	
-	
+Even with care, some garbage is sometimes unavoidable (e.g. from other libraries). .NET lets you change how and when the GC runs, which can hide whatever garbage is left. These options complement, rather than replace, avoiding garbage in the first place. Most of them only work well when your application creates very little garbage per frame.
+
+### Latency Modes
+
+`System.Runtime.GCSettings.LatencyMode` tells the GC how much it should prioritize short pauses over everything else:
+
+| Mode | Effect |
+| :-- | :-- |
+| `GCLatencyMode.Interactive` | The default. Most collections of long-lived objects run in the background, alongside your application. |
+| `GCLatencyMode.SustainedLowLatency` | Avoids the longest ("blocking full") collections for as long as possible, at the cost of using more memory. Suitable for leaving on while your application runs. |
+| `GCLatencyMode.LowLatency` | Avoids collecting long-lived objects at all, unless the system is running out of memory. Only intended for short periods, as memory use can grow quickly. |
+| `GCLatencyMode.Batch` | Disables background collections, favoring overall throughput over short pauses. Not suitable for realtime applications. |
+
+```csharp
+var previousLatencyMode = GCSettings.LatencyMode;
+GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+try {
+	RunGame(); // (1)!
+}
+finally {
+	GCSettings.LatencyMode = previousLatencyMode;
+}
+```
+
+1.	Your application loop.
+
+### Pausing the GC Entirely
+
+You can stop the GC from running at all for a while by starting a *no-GC region*. While it's active, the GC won't collect as long as your code allocates no more than the number of bytes you specify:
+
+```csharp
+GC.TryStartNoGCRegion(64 * 1024 * 1024); // (1)!
+
+RunLevel(); // (2)!
+
+if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion) { // (3)!
+	GC.EndNoGCRegion();
+}
+```
+
+1.	Starts a no-GC region with a budget of 64MB: Your code can allocate up to 64MB in total before the GC has to run again. Before it returns, this method performs a full, blocking collection (to free up as much space as possible), so call it somewhere a short pause won't be noticed, e.g. behind a loading screen.
+
+2.	The time-critical part of your application, e.g. one level of a game.
+
+3.	Ends the region, if it's still active (see the warning below).
+
+???+ warning "Exceeding the Budget"
+	If your code allocates more than the budget, the region ends silently and the GC goes back to running normally. Calling `GC.EndNoGCRegion()` after that throws an `InvalidOperationException`, which is why the example checks `GCSettings.LatencyMode` first. Starting a region while one is already active also throws.
+
+	`GC.RegisterNoGCRegionCallback(totalSize, callback)` registers a callback that's invoked once `totalSize` bytes of the budget have been used; you can use it to find out when (and how often) your application runs out of budget.
+
+The GC sets aside (commits) the entire budget as soon as the region starts, so choose a budget only as large as you need. If you've followed the advice on this page, your application should create little or no garbage per frame, so a modest budget can last a long time.
+
+### Collecting at a Good Moment
+
+Loading assets, building scenes, and similar work often create garbage, which the GC might otherwise collect a few seconds later in the middle of gameplay. Triggering a collection yourself, at a moment where a short pause won't be noticed (e.g. at the end of a loading screen, in a pause menu, or between levels), cleans that garbage up while nobody's watching:
+
+```csharp
+GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce; // (1)!
+GC.Collect(); // (2)!
+```
+
+1.	Optional. Also compacts the *large object heap*, where .NET keeps large arrays (85,000 bytes or larger). It isn't compacted by default, so over time it can become fragmented, making new large allocations more likely to trigger collections.
+
+2.	Performs a full, blocking collection immediately. `GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true)` additionally returns as much free memory as possible to the operating system.
+
+### Runtime Configuration
+
+Some GC settings can only be chosen at startup, via properties in your application's `.csproj` file (or equivalently, `runtimeconfig.json` entries or `DOTNET_` environment variables). For a realtime application, the defaults are usually the right choice:
+
+| `.csproj` property | Default | Effect |
+| :-- | :-- | :-- |
+| `ServerGarbageCollection` | `false` | `true` switches to the *server* GC, which is designed for throughput on servers rather than short pauses, and uses considerably more memory and threads. Leave this `false`. |
+| `ConcurrentGarbageCollection` | `true` | `true` lets the GC collect long-lived objects in the background, alongside your application, rather than pausing it. Leave this `true`. |
+| `RetainVMGarbageCollection` | `false` | `true` makes the GC keep memory it no longer needs, rather than returning it to the operating system, so it can reuse that memory without asking for it again. Can help applications whose memory use rises and falls repeatedly. |
+
+```xml
+<PropertyGroup>
+	<RetainVMGarbageCollection>true</RetainVMGarbageCollection>
+</PropertyGroup>
+```
+
+Many more advanced settings (e.g. limits on heap size) are listed in Microsoft's [garbage collector configuration documentation](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector).
+
+### Monitoring the GC
+
+To check whether the GC is responsible for a stutter, record how many collections have happened and how long they've paused your application, e.g. once per frame alongside the [framerate statistics](measuring_framerate.md):
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GC.CollectionCount(generation)`
+
+:   The number of collections of the given *generation* since your application started. Generation `0` collections (of recently-created objects) are frequent and usually short; generation `2` collections (of everything) are rarer and usually the ones that cause stutters.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GC.GetTotalPauseDuration()`
+
+:   The total time (as a `TimeSpan`) that the GC has paused your application since it started. If this jumps on the same frame as a stutter, the GC was responsible.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GC.GetGCMemoryInfo()`
+
+:   Detailed information about the most recent collection, including its `PauseDurations`, the `Generation` it collected, and the current heap size.
+
 ## UI Frameworks
 
 UI frameworks (e.g. WPF, Avalonia, Windows Forms) tend to allocate and generate garbage as part of their typical usage loop; this is unavoidable, though there are strategies for reducing GC churn with those libraries too (review the respective framework's documentation for more details).

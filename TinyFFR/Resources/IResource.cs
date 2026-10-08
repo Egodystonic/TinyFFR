@@ -56,7 +56,7 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 	internal static void AllocateGcHandleAndSerializeResource<TResource>(TResource resource, Span<byte> dest) where TResource : IResource<TResource> {
 		var gcHandle = GCHandle.Alloc(resource.Implementation, GCHandleType.Normal);
 		BinaryPrimitives.WriteIntPtrLittleEndian(dest, GCHandle.ToIntPtr(gcHandle));
-		BinaryPrimitives.WriteUIntPtrLittleEndian(dest[IntPtr.Size..], resource.Handle);
+		BinaryPrimitives.WriteUIntPtrLittleEndian(dest[IntPtr.Size..], resource.GetHandleWithoutDisposeCheck());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -191,7 +191,7 @@ var difference = rotation1.NormalizedDifferenceTo(rotation2); // (4)!
 
 	`rotation.ToQuaternion()` and `Rotation.FromQuaternion()` convert between the two (as `System.Numerics.Quaternion`), and many TinyFFR methods that accept a `Rotation` also accept a `Quaternion` directly.
 	
-	See more here: [Quaternion vs Rotation](quaternion_vs_rotation.md).
+	See more here: [Quaternion vs Rotation](math_api_optimisations.md#quaternion-vs-rotation).
 
 ## Orientation
 

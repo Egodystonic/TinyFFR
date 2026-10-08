@@ -18,7 +18,7 @@ namespace Egodystonic.TinyFFR.Resources;
 /// <li>If you want to borrow a buffer for a long-lived operation, use <see cref="CreatePooledMemoryBuffer"/>.</li>
 /// <li>If you want to borrow a zero-allocation collection-type for a short-lived operation, use <see cref="GetSharedScratchList"/>/<see cref="GetSharedScratchDictionary"/>/<see cref="GetSharedScratchSet"/>.</li>
 /// <li>If you want to instantiate a zero-allocation collection-type for a field scoped to the entire lifetime of the application, use
-/// <see cref="CreateNewList{T}"/>/<see cref="CreateNewDictionary{TKey,TValue}"/>/<see cref="CreateNewSet{T}"/>/<see cref="CreateNewLruCache{TKey,TValue}"/>.</li>
+/// <see cref="CreateNewList{T}"/>/<see cref="CreateNewDictionary{TKey,TValue}"/>/<see cref="CreateNewSet{T}"/>/<see cref="CreateNewLruCache{TKey,TValue}(int)"/>.</li>
 /// </ul>
 /// </remarks>
 public interface IResourceAllocator {

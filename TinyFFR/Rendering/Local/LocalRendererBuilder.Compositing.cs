@@ -330,7 +330,11 @@ sealed partial class LocalRendererBuilder {
 	void DisposeRateLimitResources(Renderer renderer, RateLimitShimResourceData shimResourceData) {
 		var rendererHandle = renderer.GetHandleWithoutDisposeCheck();
 		if (!IsDisposed(rendererHandle)) {
-			SetViewRenderTarget(_loadedRenderers[rendererHandle].Viewport.Handle, UIntPtr.Zero).ThrowIfFailure();
+			var originalTarget = _loadedRenderers[rendererHandle].RenderTarget;
+			SetViewRenderTarget(
+				_loadedRenderers[rendererHandle].Viewport.Handle,
+				originalTarget.IsBuffer ? _loadedBuffers[originalTarget.AsBuffer.Handle].RenderTargetHandle : UIntPtr.Zero
+			).ThrowIfFailure();
 			_loadedRenderers[rendererHandle] = _loadedRenderers[rendererHandle] with { LastPushedCompositingMode = null };
 		}
 

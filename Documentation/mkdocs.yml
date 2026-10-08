@@ -209,6 +209,11 @@ nav:
         - reference/measuring_framerate.md
         - reference/render_quality.md
         - reference/avoiding_gc_stutter.md
+        - reference/composited_render_framerate_limiting.md
+        - reference/pre-baking_assets.md
+        - reference/controlling_ram_and_vram_usage.md
+        - reference/async_loading_time_sharing.md
+        - reference/math_api_optimisations.md
 
 not_in_nav: |
 

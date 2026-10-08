@@ -73,7 +73,7 @@ service that:
    is derived from the Software (and its source code) and substitutes wholly or partly for the software (including-but-not-limited-to making available features or integrations not otherwise provided by the software) (deliberately or incidentally); or
    
 6. makes publicly available a product, repository, fork, or codebase that
-   is generated with the assistance of an LLM/AI explicitly or implicitly instructed to use TinyFFR as a reference or training data, even if the resultant code does not resemble that of TinyFFR.
+   is generated with the assistance of an LLM/AI explicitly or implicitly instructed to use TinyFFR as a reference, training data, or input to a design document (including but not limited to using TinyFFR's source code, documentation, and API shape), even if the resultant code does not resemble that of TinyFFR.
    
 
 Permitted Purposes specifically include using the Software:
