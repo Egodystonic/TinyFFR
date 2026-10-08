@@ -302,7 +302,7 @@ var vect = direction * 3f; // (6)!
 
 	If you already have components that you know are exactly unit length, `Direction.FromVector3PreNormalized()` skips the normalization done by the constructor (but produces an invalid `Direction` if the components aren't unit length).
 
-## Converting Between Types
+### Converting Between Types
 
 Converting between the three types is always explicit, because doing so changes what the value means:
 
@@ -333,7 +333,7 @@ All three types share the following features:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `X` / `Y` / `Z` and `this[Axis]`
 
-:   The individual components. They can also be read with an indexer, e.g. `vect[Axis.Y]`. Indexing with two axes gives an `XYPair<float>` (e.g. `location[Axis.X, Axis.Z]`), and indexing with three gives a new value with its components rearranged (e.g. `vect[Axis.Z, Axis.Y, Axis.X]`; a rearranged `Direction` is re-normalized). Values can also be deconstructed: `var (x, y, z) = location;`.
+:   The individual components. They can also be read with an indexer, e.g. `vect[Axis.Y]`. Indexing with two axes gives an [`XYPair<float>`](2d_types.md#xypair) (e.g. `location[Axis.X, Axis.Z]`), and indexing with three gives a new value with its components rearranged (e.g. `vect[Axis.Z, Axis.Y, Axis.X]`; a rearranged `Direction` is re-normalized). Values can also be deconstructed: `var (x, y, z) = location;`.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `ToVector3()` / `FromVector3(vector)`
 

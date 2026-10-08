@@ -266,7 +266,7 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	/// <summary>
 	/// Converts this transform to its equivalent 2D representation, using the standard XY plane (i.e. as viewed from <see cref="Direction.Forward"/>).
 	/// </summary>
-	public Transform2D To2D() => To2D(new(Direction.Forward));
+	public Transform2D To2D() => To2D(new(Direction.Left, Direction.Up, Direction.Forward, Location.Origin));
 	/// <summary>
 	/// Converts this transform to its equivalent 2D representation, projected using <paramref name="dimensionConverter"/>.
 	/// </summary>

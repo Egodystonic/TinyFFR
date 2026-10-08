@@ -193,6 +193,18 @@ nav:
         - reference/capturing_render_output.md
     - Math API:
         - reference/vector_types.md
+        - reference/angle_rotation_orientation.md
+        - reference/lines.md
+        - reference/shapes.md
+        - reference/transform.md
+        - reference/2d_types.md
+        - reference/interpolation_algorithms.md
+        - reference/colour.md
+        - reference/conventions.md
+        - reference/equality.md
+        - reference/serialization.md
+        - reference/trait_interfaces.md
+        - reference/math_utility_methods.md
 
 not_in_nav: |
 

@@ -71,7 +71,7 @@ When a mesh's bounding box is calculated from its vertices, it's enlarged by `Me
 
 Skeletal meshes are a special case, as their bounding box must enclose every pose their animations may put them in; this is explained in [Skeletal Meshes](skeletal_meshes.md#bounding-boxes).
 
-If you need to calculate a bounding box for your own data, `PositionedCuboid.FromBoundingBoxCalculation()` calculates the smallest box enclosing a span of vertices or `Location`s (optionally with a margin).
+If you need to calculate a bounding box for your own data, [`PositionedCuboid`](shapes.md#positioned-shapes)`.FromBoundingBoxCalculation()` calculates the smallest box enclosing a span of vertices or `Location`s (optionally with a margin).
 
 ## Instance Bounds
 

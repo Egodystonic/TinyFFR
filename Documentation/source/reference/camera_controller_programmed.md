@@ -66,7 +66,7 @@ Each keyframe interpolates from the camera's existing properties at the start of
 :   Represents a single keyframe on the position track.
 
 	* `LengthSeconds` (`float`) — how long this keyframe takes to interpolate from the previous keyframe (or, for the first keyframe, from the camera's starting position) to its `TargetValue`. Must be finite and non-negative; a length of `0f` jumps straight to the `TargetValue`.
-	* `Algorithm` (`InterpolationAlgorithm<Location>`) — the interpolation algorithm to use for this keyframe (e.g. linear, ease-in, ease-out, etc.).
+	* `Algorithm` (`InterpolationAlgorithm<Location>`) — the [interpolation algorithm](interpolation_algorithms.md) to use for this keyframe (e.g. linear, ease-in, ease-out, etc.).
 	* `TargetValue` (`Location`) — the world location the camera should occupy at the end of this keyframe. Must be physically valid.
 	* `Pivot` (`Location?`) — *optional*, passed as a fourth constructor argument (or set with an initializer). When supplied, the camera sweeps around this point in an arc instead of travelling in a straight line. Must be physically valid. Defaults to `null` (straight line).
 	

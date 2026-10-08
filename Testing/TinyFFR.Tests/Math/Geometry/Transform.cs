@@ -526,6 +526,15 @@ class TransformTest {
 			(TestTransform with { Rotation = 90f % Direction.Forward }).To2D(new DimensionConverter((1f, 0f, 0f), (0f, 1f, 0f), (0f, 0f, 1f), Location.Origin)),
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			new Transform2D(
+				translation: (1f, 2f),
+				rotation: 90f,
+				scaling: (0.75f, 0.5f)
+			),
+			(TestTransform with { Rotation = 90f % Direction.Forward }).To2D(),
+			TestTolerance
+		);
 	}
 
 	[Test]

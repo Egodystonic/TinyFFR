@@ -114,7 +114,7 @@ scene.RemoveBackdrop(); // (5)!
 
 2.	Sets the backdrop to a [backdrop texture](backdrop_textures.md), at half intensity, and turned 90° around the up axis.
 
-3.	Sets the backdrop to a flat colour, which also lights the scene in that colour.
+3.	Sets the backdrop to a flat colour, which also lights the scene in that colour. (Backdrop colours are [linear](colour.md#colour-spaces), so they look lighter than the same values in a texture.)
 
 4.	Sets the backdrop to a backdrop texture that is drawn behind the scene, but contributes no light to it.
 
@@ -194,7 +194,7 @@ foreach (var instance in resultsLease.Span[..numResults]) { // (3)!
 
 #### Ray Queries
 
-`GetFirstIntersection()` returns the nearest object a `Ray` or `BoundedRay` passes through (or `null` if none). `FindIntersections()` writes every object the ray passes through in to a span, nearest first.
+`GetFirstIntersection()` returns the nearest object a [`Ray` or `BoundedRay`](lines.md) passes through (or `null` if none). `FindIntersections()` writes every object the ray passes through in to a span, nearest first.
 
 "Nearest" is measured from the start of the ray, and an object containing the ray's start point counts as nearest of all. A `BoundedRay` only reports objects up to its end point, whereas a `Ray` continues indefinitely.
 
@@ -202,7 +202,7 @@ Ray queries also accept a `rayThickness`, which sweeps the ray in to a cylinder 
 
 #### Shape Queries
 
-`GetAnyIntersection()` returns an object overlapping a `PositionedCuboid`, `PositionedRotatedCuboid`, or `PositionedSphere` (or `null` if none). `FindIntersections()` writes every object overlapping the shape in to a span.
+`GetAnyIntersection()` returns an object overlapping a [`PositionedCuboid`, `PositionedRotatedCuboid`, or `PositionedSphere`](shapes.md#positioned-shapes) (or `null` if none). `FindIntersections()` writes every object overlapping the shape in to a span.
 
 Shape query results are not ordered, so if several objects overlap the shape there's no meaningful "first"; `GetAnyIntersection()` is useful when you only want to know whether *anything* is in a region. 
 

@@ -79,6 +79,26 @@ class ColorVectTest {
 	public void ShouldBeCorrectStructSize() => AssertStructLayout<ColorVect>(16);
 
 	[Test]
+	public void LightingStandardColorsShouldAppearAsIntendedSrgbValuesWhenInterpretedAsLinear() {
+		void AssertAppearsAs(StandardColor linearPreset, uint intendedSrgb) {
+			ColorVect.LinearToSrgb(linearPreset).ToRgb24(out var r, out var g, out var b);
+			var intended = ColorVect.FromRgb24(intendedSrgb);
+			intended.ToRgb24(out var ir, out var ig, out var ib);
+			Assert.LessOrEqual(Math.Abs(r - ir), 1, linearPreset.ToString());
+			Assert.LessOrEqual(Math.Abs(g - ig), 1, linearPreset.ToString());
+			Assert.LessOrEqual(Math.Abs(b - ib), 1, linearPreset.ToString());
+		}
+
+		AssertAppearsAs(StandardColor.LightingCandle, 0xFF8701);
+		AssertAppearsAs(StandardColor.LightingIncandescentBulb, 0xFFC180);
+		AssertAppearsAs(StandardColor.LightingSunRiseSet, 0xFFA64C);
+		AssertAppearsAs(StandardColor.LightingSunMidday, 0xFFE9D7);
+		AssertAppearsAs(StandardColor.LightingAmbientDaylight, 0xFFF3F1);
+		AssertAppearsAs(StandardColor.LightingAmbientOvercast, 0xFAF6FF);
+		AssertAppearsAs(StandardColor.LightingAmbientShaded, 0xEBECFF);
+	}
+
+	[Test]
 	public void ShouldCorrectlyAssignStaticMembers() {
 		AssertToleranceEquals(new ColorVect(1f, 0f, 0f), ColorVect.FromHueSaturationLightness(ColorVect.RedHueAngle, 1f, 0.5f), TestTolerance);
 		AssertToleranceEquals(new ColorVect(0f, 1f, 0f), ColorVect.FromHueSaturationLightness(ColorVect.GreenHueAngle, 1f, 0.5f), TestTolerance);

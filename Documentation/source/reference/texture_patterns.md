@@ -323,7 +323,7 @@ Some pattern overloads (the circles with per-side values, and all of the gradien
 
 	2.	We specify each border direction's coordinate `AzimuthalOffset` as being one of the 90° right-angle values.
 
-		We deliberately flip the top/bottom and left/right borders from the [usual convention](conventions.md#2d-handedness-orientation) in order to create an "indented" rather than "outdented" effect.
+		We deliberately flip the top/bottom and left/right borders from the [usual convention](conventions.md#2d-coordinates) in order to create an "indented" rather than "outdented" effect.
 
 	Compare also to [Occluded Circular Divots](#__tabbed_4_3) below.
 

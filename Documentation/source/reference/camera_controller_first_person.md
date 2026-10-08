@@ -271,7 +271,7 @@ Position adjustments are constrained to be orthogonal to `WorldUp` and are speci
 
 If specifying an orientation, it is interpreted relative to the camera's current view direction (e.g. `Up` always points camera-forward (orthogonalized against `WorldUp`), `Left` always points camera-left (orthogonalized against `WorldUp`), etc). `Orientation2D.None` behaves as `Right`.
 
-If specifying an angle, it is interpreted as a [polar angle](conventions.md#2d-handedness-orientation) (e.g. `0°` points camera-right (orthogonalized against `WorldUp`), `90°` points camera-forward (orthogonalized against `WorldUp`), etc).
+If specifying an angle, it is interpreted as a [polar angle](conventions.md#angles-rotations) (e.g. `0°` points camera-right (orthogonalized against `WorldUp`), `90°` points camera-forward (orthogonalized against `WorldUp`), etc).
 
 #### Keyboard / Mouse
 

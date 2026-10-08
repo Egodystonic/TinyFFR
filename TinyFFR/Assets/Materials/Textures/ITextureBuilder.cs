@@ -813,7 +813,7 @@ public unsafe interface ITextureBuilder {
 	/// <summary>
 	/// The emissive colour used when none is specified: the warm yellow-white of an incandescent light bulb.
 	/// </summary>
-	static readonly ColorVect DefaultEmissiveColor = StandardColor.LightingIncandescentBulb;
+	static readonly ColorVect DefaultEmissiveColor = ColorVect.FromRgb24(0xFFC180);
 	/// <summary>
 	/// The emissive intensity used when none is specified: <c>1f</c>, i.e. glowing at full strength.
 	/// </summary>

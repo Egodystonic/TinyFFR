@@ -269,7 +269,7 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(pointsMemory); // (5)!
 
 2.	Next we define six points in a regular hexagon formation (with a radius of 0.5m) centred on the origin. We want the hexagon to face a camera that is looking in the forward direction (i.e. its front face should point *backward*, towards that camera), so we define all the points in the XY plane (Z remains constant).
 
-	Note that their ordering is important: We specify them in an anti-clockwise order as seen from the front face. Remember that in TinyFFR's [coordinate system](conventions.md), when looking forward, `+X` is to the left; so the first point (`X = -0.5f`) is on the right-hand side of the hexagon from the viewer's perspective, and each subsequent point moves anti-clockwise around it.
+	Note that their ordering is important: We specify them in an anti-clockwise order as seen from the front face. Remember that in TinyFFR's [coordinate system](conventions.md#3d-axes-units), when looking forward, `+X` is to the left; so the first point (`X = -0.5f`) is on the right-hand side of the hexagon from the viewer's perspective, and each subsequent point moves anti-clockwise around it.
 
 3.	Here we create our `Polygon` struct, passing in the `points` span as our vertices and `Direction.Backward` as the normal.
 

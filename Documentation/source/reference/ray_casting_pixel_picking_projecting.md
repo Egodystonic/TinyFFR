@@ -78,7 +78,7 @@ var clickedObject = scene.QueryProvider.GetFirstIntersection(clickRay); // (4)!
 
 4.	Finds the nearest object whose bounding box the ray passes through (see [Scene Queries](scenes.md#scene-queries)).
 
-A ray (`Ray`) is a line that starts at a point and travels forever in one direction. Rays created from the camera start at a point on the camera's near plane and travel out in to the scene, passing through everything that would be drawn at that point on screen.
+A ray ([`Ray`](lines.md#ray)) is a line that starts at a point and travels forever in one direction. Rays created from the camera start at a point on the camera's near plane and travel out in to the scene, passing through everything that would be drawn at that point on screen.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `camera.CreateRayFromNearPlane()`
 

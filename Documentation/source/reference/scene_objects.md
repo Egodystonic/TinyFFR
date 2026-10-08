@@ -59,7 +59,7 @@ Many instances can share the same mesh and material; each instance has its own t
 
 ### Transform (Position, Rotation, Scaling)
 
-Every model instance has a `Position`, `Rotation`, and `Scaling`; these three properties are sometimes referred together as an instance's `Transform`. Each can be read and set directly or manipulated with various helper methods:
+Every model instance has a `Position`, `Rotation`, and `Scaling`; these three properties are sometimes referred together as an instance's [`Transform`](transform.md). Each can be read and set directly or manipulated with various helper methods:
 
 ```csharp
 instance.Transform = Transform.None; // (6)!
@@ -259,7 +259,7 @@ using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 1f, -5f))
 
 ## SceneObject
 
-`SceneObject` is a lightweight wrapper that can represent any of the types on this page. Every one of them converts implicitly to a `SceneObject`, which makes it possible to write code that works with any kind of object:
+`SceneObject` is a lightweight wrapper that can represent any of the types on this page. Every one of them converts implicitly to a `SceneObject`, which makes it possible to write code that works with any kind of object (alternatively, see [Trait Interfaces](trait_interfaces.md#scene-objects) for writing generic code over the object types themselves):
 
 ```csharp
 static void Lift(SceneObject obj, float height) { // (1)!

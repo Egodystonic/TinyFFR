@@ -146,7 +146,7 @@ using var segment = scene.AddPrimitiveShape(
 );
 ```
 
-A `BoundedRay` (i.e. line segment) is drawn as a line between its two end points, with a marker at each end. Pass `includeEndpoints: false` to leave the end markers out. (See [Colours](#colours) for how each paintbrush colour is used.)
+A [`BoundedRay`](lines.md#boundedray) (i.e. line segment) is drawn as a line between its two end points, with a marker at each end. Pass `includeEndpoints: false` to leave the end markers out. (See [Colours](#colours) for how each paintbrush colour is used.)
 
 ![Line segment primitives](scene_primitives_line_segments.jpg){ : style="width:77%;" }
 /// caption
@@ -161,7 +161,7 @@ using var ray = scene.AddPrimitiveShape(
 );
 ```
 
-A ray (`Ray`) starts at a point and continues forever in one direction. It's drawn with a marker at its start point (pass `includeStartPoint: false` to leave it out). Rays are particularly useful for visualising [ray queries](scenes.md#scene-queries) and [camera rays](ray_casting_pixel_picking_projecting.md#ray-casting); and as primitives are excluded from scene queries, drawing a ray never interferes with querying along it.
+A ray ([`Ray`](lines.md#ray)) starts at a point and continues forever in one direction. It's drawn with a marker at its start point (pass `includeStartPoint: false` to leave it out). Rays are particularly useful for visualising [ray queries](scenes.md#scene-queries) and [camera rays](ray_casting_pixel_picking_projecting.md#ray-casting); and as primitives are excluded from scene queries, drawing a ray never interferes with querying along it.
 
 ![Ray primitives](scene_primitives_rays.jpg){ : style="width:77%;" }
 /// caption
@@ -176,7 +176,7 @@ using var line = scene.AddPrimitiveShape(
 );
 ```
 
-A line (`Line`) passes through a point and continues forever in both directions.
+A line ([`Line`](lines.md#line)) passes through a point and continues forever in both directions.
 
 ![Line primitives](scene_primitives_lines.jpg){ : style="width:77%;" }
 /// caption

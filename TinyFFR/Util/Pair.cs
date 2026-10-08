@@ -27,4 +27,9 @@ public readonly record struct Pair<TFirst, TSecond>(TFirst First, TSecond Second
 	/// </summary>
 	/// <param name="pair">The pair to convert.</param>
 	public static implicit operator (TFirst First, TSecond Second)(Pair<TFirst, TSecond> pair) => (pair.First, pair.Second);
+
+	bool PrintMembers(System.Text.StringBuilder builder) {
+		builder.Append(nameof(First)).Append(" = ").Append(First).Append(", ").Append(nameof(Second)).Append(" = ").Append(Second);
+		return true;
+	}
 }
