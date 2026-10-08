@@ -101,6 +101,11 @@ It's enabled by default as some scenes/applications may rely on screen-space ref
 Out-of-focus highlights at each depth-of-field quality level, with the camera's `FocusDistance` set to 10cm (so almost everything in view is out of focus).
 ///
 
+[![Depth of field strength compared](render_quality_depth_of_field_strength.jpg)](render_quality_depth_of_field_strength.jpg)
+/// caption
+`DepthOfFieldStrength` at `0.5`, `1` (the default), and `2`, with the camera's `FocusDistance` set to 10cm. Higher strengths blur out-of-focus areas more strongly. Notice the DoF effect strength also depends on the camera's `Aperture` setting.
+///
+
 With a focus distance set, depth of field is by far the most expensive option at its highest setting:
 
 | `DepthOfFieldQuality` | Added cost |
@@ -170,6 +175,11 @@ So if shadows are expensive in your scene, first reduce the number of lights tha
 The scene with ambient occlusion disabled, and at three quality levels (with `AmbientOcclusionStrength` set to `2f`, to make the effect easier to see). Note the darker shading in the carved grooves of the central pieces and where they meet the board.
 ///
 
+[![Ambient occlusion strength compared](render_quality_ambient_occlusion_strength.jpg)](render_quality_ambient_occlusion_strength.jpg)
+/// caption
+`AmbientOcclusionStrength` at `0.5`, `1` (the default), and `2`, at the default quality.
+///
+
 Ambient occlusion costs only a few percent of a frame, and its quality level makes almost no difference to either its cost.
 
 ### Bloom
@@ -179,6 +189,11 @@ Ambient occlusion costs only a few percent of a frame, and its quality level mak
 [![Bloom compared](render_quality_bloom.jpg)](render_quality_bloom.jpg)
 /// caption
 Ceiling lights with bloom disabled, and at three quality levels.
+///
+
+[![Bloom strength compared](render_quality_bloom_strength.jpg)](render_quality_bloom_strength.jpg)
+/// caption
+`BloomStrength` at `0.5`, `1` (the default), and `2`. Note the glow around the lights at the far end of the station.
 ///
 
 Bloom costs only a few percent of a frame, regardless of its quality level.

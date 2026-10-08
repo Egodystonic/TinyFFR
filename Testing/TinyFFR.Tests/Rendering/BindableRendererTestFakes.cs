@@ -296,14 +296,14 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	public ScopedReadOnlySpanLease<T> BorrowReadOnlySpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true) => throw new NotSupportedException();
 	public Memory<T> CreatePooledMemoryBuffer<T>(int numElements) => throw new NotSupportedException();
 	public void ReturnPooledMemoryBuffer<T>(Memory<T> buffer) => throw new NotSupportedException();
-	public IList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
-	public IDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
-	public ISet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
-	public IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null) => throw new NotSupportedException();
-	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>() => throw new NotSupportedException();
-	public IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>() => throw new NotSupportedException();
-	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache) => throw new NotSupportedException();
-	public unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => throw new NotSupportedException();
+	public INonDisposableArrayPoolBackedList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public INonDisposableArrayPoolBackedDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public INonDisposableArrayPoolBackedSet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public IArrayPoolBackedList<T> CreateNewList<T>(int? initialCapacity = null) => throw new NotSupportedException();
+	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewDictionary<TKey, TValue>() => throw new NotSupportedException();
+	public IArrayPoolBackedSet<T> CreateNewSet<T>() => throw new NotSupportedException();
+	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache) => throw new NotSupportedException();
+	public unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => throw new NotSupportedException();
 	public TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class => throw new NotSupportedException();
 	public unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, delegate*<TContext?, TResult?> work) where TContext : class where TResult : class => throw new NotSupportedException();
 }

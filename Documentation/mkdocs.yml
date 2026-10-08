@@ -208,6 +208,7 @@ nav:
     - Managing Performance:
         - reference/measuring_framerate.md
         - reference/render_quality.md
+        - reference/avoiding_gc_stutter.md
 
 not_in_nav: |
 

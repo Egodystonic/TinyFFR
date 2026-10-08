@@ -6,39 +6,6 @@ using System.Buffers;
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
-	public struct Enumerator : IEnumerator<T> {
-		readonly ArrayPoolBackedVector<T> _owner;
-		readonly int _version;
-		int _curIndex;
-
-		public T Current { get; private set; } = default!;
-		object IEnumerator.Current => Current!;
-
-		public Enumerator(ArrayPoolBackedVector<T> owner) {
-			_owner = owner;
-			_version = owner.Version;
-			Reset();
-		}
-
-		public bool MoveNext() {
-			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			if (++_curIndex < _owner.Count) {
-				Current = _owner[_curIndex];
-				return true;
-			}
-			
-			Current = default!;
-			return false;
-		}
-
-		public void Reset() {
-			_curIndex = -1;
-			Current = default!;
-		}
-
-		public void Dispose() { /* no op */ }
-	}
-
 	public const int DefaultInitialCapacity = 4;
 	T[] _backingArray;
 
@@ -147,7 +114,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 
 	public void CopyTo(T[] array, int arrayIndex) => AsSpan.CopyTo(array.AsSpan(arrayIndex));
 
-	public Enumerator GetEnumerator() => new(this);
+	public ArrayPoolBackedListEnumerator<T> GetEnumerator() => new(this);
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 

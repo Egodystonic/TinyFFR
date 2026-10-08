@@ -7,47 +7,6 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 
 // Not aiming to be anywhere near as fast or optimised or clever as I'm sure .NET's HashSet is for now-- can improve perf in future if necessary. Just trying to avoid garbage generation.
 sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
-	public struct Enumerator : IEnumerator<T> {
-		readonly ArrayPoolBackedSet<T> _owner;
-		readonly int _version;
-		int _bucketIndex;
-		int _indexInBucket;
-
-		public T Current { get; private set; } = default!;
-		object IEnumerator.Current => Current!;
-
-		public Enumerator(ArrayPoolBackedSet<T> owner) {
-			_owner = owner;
-			_version = owner.Version;
-			Reset();
-		}
-
-		public bool MoveNext() {
-			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			while (_bucketIndex < _owner._numBuckets) {
-				var bucket = _owner._buckets[_bucketIndex];
-				if (++_indexInBucket < bucket.Count) {
-					Current = bucket[_indexInBucket];
-					return true;
-				}
-
-				++_bucketIndex;
-				_indexInBucket = -1;
-			}
-
-			Current = default!;
-			return false;
-		}
-
-		public void Reset() {
-			_bucketIndex = 0;
-			_indexInBucket = -1;
-			Current = default!;
-		}
-
-		public void Dispose() { /* no op */ }
-	}
-
 	const int InitialBucketCount = 4; // Must be power of two
 	const int MaxAverageTargetBucketOccupancy = 8;
 	ArrayPoolBackedVector<T>[] _buckets;
@@ -69,6 +28,8 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	}
 
 	public int Version { get; private set; } = 0;
+	internal int BucketCount => _numBuckets;
+	internal ArrayPoolBackedVector<T> GetBucketAtIndex(int index) => _buckets[index];
 
 	public int Count => _count;
 
@@ -152,7 +113,7 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 		throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be > 0 and < Count.");
 	}
 
-	public Enumerator GetEnumerator() => new(this);
+	public ArrayPoolBackedSetEnumerator<T> GetEnumerator() => new(this);
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 

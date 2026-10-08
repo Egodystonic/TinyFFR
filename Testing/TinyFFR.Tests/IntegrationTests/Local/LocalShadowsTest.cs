@@ -52,7 +52,7 @@ class LocalShadowsTest {
 		);
 		using var floorMat = factory.MaterialBuilder.CreateStandardMaterial(factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.5f, 0.5f, 0.5f, 0.5f, true)), includeAlpha: true), alphaMode: StandardMaterialAlphaMode.FullBlending);
 
-		var cubeList = factory.ResourceAllocator.CreateNewArrayPoolBackedList<ModelInstance>();
+		var cubeList = factory.ResourceAllocator.CreateNewList<ModelInstance>();
 		
 		for (var x = -HalfGridSize; x <= HalfGridSize; ++x) {
 			for (var y = -HalfGridSize; y <= HalfGridSize; ++y) {

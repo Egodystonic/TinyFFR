@@ -87,7 +87,7 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 		((ArrayPool<T>) arrayPoolAsObj).Return(array!, clearArray: true);
 	}
 
-	public IList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) {
+	public INonDisposableArrayPoolBackedList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) {
 		var bufferMap = GetSharedScratchBufferMap(typeof(IArrayPoolBackedList<T>));
 		if (!bufferMap.TryGetValue(bufferIndex, out var bufferAsObj)) {
 			bufferAsObj = new ArrayPoolBackedVector<T>();
@@ -97,7 +97,7 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 		if (clearBuffer) result.Clear();
 		return result;
 	}
-	public IDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) {
+	public INonDisposableArrayPoolBackedDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) {
 		var bufferMap = GetSharedScratchBufferMap(typeof(IArrayPoolBackedDictionary<TKey, TValue>));
 		if (!bufferMap.TryGetValue(bufferIndex, out var bufferAsObj)) {
 			bufferAsObj = new ArrayPoolBackedMap<TKey, TValue>();
@@ -107,7 +107,7 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 		if (clearBuffer) result.Clear();
 		return result;
 	}
-	public ISet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) {
+	public INonDisposableArrayPoolBackedSet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) {
 		var bufferMap = GetSharedScratchBufferMap(typeof(IArrayPoolBackedSet<T>));
 		if (!bufferMap.TryGetValue(bufferIndex, out var bufferAsObj)) {
 			bufferAsObj = new ArrayPoolBackedSet<T>();
@@ -125,11 +125,11 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 		return result;
 	}
 
-	public IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null) => new ArrayPoolBackedVector<T>(initialCapacity ?? ArrayPoolBackedVector<T>.DefaultInitialCapacity);
-	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>() => new ArrayPoolBackedMap<TKey, TValue>();
-	public IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>() => new ArrayPoolBackedSet<T>();
-	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache);
-	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate*<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache, cacheEvictionCallback, cacheEvictionCallbackArg);
+	public IArrayPoolBackedList<T> CreateNewList<T>(int? initialCapacity = null) => new ArrayPoolBackedVector<T>(initialCapacity ?? ArrayPoolBackedVector<T>.DefaultInitialCapacity);
+	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewDictionary<TKey, TValue>() => new ArrayPoolBackedMap<TKey, TValue>();
+	public IArrayPoolBackedSet<T> CreateNewSet<T>() => new ArrayPoolBackedSet<T>();
+	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache);
+	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache, delegate*<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => new ArrayPoolBackedLruCache<TKey, TValue>(maxValuesInCache, cacheEvictionCallback, cacheEvictionCallbackArg);
 
 	public TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class {
 		static TResult? Work(Tuple<TContext?, Func<TContext?, TResult?>>? contextAndWorkTuple) {

@@ -41,14 +41,7 @@ static partial class TestMain {
 		//			Some values depend on others; for example if you set "builder.Context.Factory = null;" no other resources will be created by default.
 		//		You can use context properties to create others.
 		//			For example: "builder.Context.Loop = builder.Context.Factory!.ApplicationLoopBuilder.CreateLoop();" is completely fine.
-		
-		//builder.Context.ModelInstance = null;
-		
-		var vect = new Vect();
-		var direction = new Direction();
-		var location = new Location();
-		
-		location = direction.AsVect(
+
 	}
 
 	public static void StartTest(TestContext context) {
@@ -59,9 +52,6 @@ static partial class TestMain {
 		//		The Tick function passed to BeginDefaultLoop should return `true` to exit the loop.
 		//		If you pass a CameraController to BeginDefaultLoop, it will be possible to control the camera with keyboard/mouse or gamepad using the default controller input mapping.
 
-		context.Scene.SetBackdrop(SceneCreationConfig.DefaultInitialBackdropColor);
-		context.DirectionalLight.SetBrightness(0f);
-		
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {
 			// Write anything you like here to be executed once per frame.
