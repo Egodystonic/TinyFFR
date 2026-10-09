@@ -1,6 +1,7 @@
 ﻿// Created on 2026-07-31 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+#if TFFR_TESTCOMMON_INCLUDE_INTEGRATIONS
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -127,3 +128,4 @@ public static class ModelCatalog {
 		return result.ToArray();
 	}
 }
+#endif

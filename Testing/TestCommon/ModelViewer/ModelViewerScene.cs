@@ -1,6 +1,7 @@
 // Created on 2026-07-31 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+#if TFFR_TESTCOMMON_INCLUDE_INTEGRATIONS
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -81,6 +82,7 @@ public sealed class ModelViewerScene : IDisposable {
 
 		_scene.Add(_cameraLight);
 		_scene.Add(_sunlight);
+		_scene.AddPrimitiveGrid(Location.Origin, gridSize: 10f);
 
 		ActiveRenderer = _mainRenderer;
 	}
@@ -388,3 +390,4 @@ public sealed class ModelViewerScene : IDisposable {
 		}
 	}
 }
+#endif

@@ -3,6 +3,7 @@
     <LangVersion>preview</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 	<RestoreAdditionalProjectSources>../local_packages/</RestoreAdditionalProjectSources>
+    <DefineConstants>$(DefineConstants);TFFR_TESTCOMMON_INCLUDE_INTEGRATIONS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Platforms>AnyCPU</Platforms>
     <RootNamespace>$(TffrRootNamespace).Testing</RootNamespace>
+    <DefineConstants>$(DefineConstants);TFFR_TESTCOMMON_INCLUDE_INTEGRATIONS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

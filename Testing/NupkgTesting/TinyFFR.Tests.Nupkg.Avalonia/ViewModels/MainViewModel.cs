@@ -1,111 +1,358 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Egodystonic.TinyFFR;
-using Egodystonic.TinyFFR.Environment;
-using Egodystonic.TinyFFR.Factory.Local;
-using Egodystonic.TinyFFR.Rendering;
-using Egodystonic.TinyFFR.World;
+// Created on 2026-07-31 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2026
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Threading;
+using Avalonia.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Avalonia;
+using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Testing.ModelViewer;
 
 namespace TinyFFR.Tests.Integrations.Avalonia.ViewModels;
 
+public sealed record ResolutionOption(string DisplayName, Size? Value);
+
 public partial class MainViewModel : ViewModelBase {
-	List<IDisposable>? _disposables;
-	ModelInstance _instance;
-	SpotLight _light;
+	ModelViewerScene? _viewer;
+	IDisposable? _loop;
+	InputElement? _inputSource;
+	bool _startInFlight;
+	bool _compositorSwitchInFlight;
+	bool _hasDisplayedAModel;
+
+	public void SetInputSource(InputElement inputSource) {
+		_inputSource = inputSource;
+		if (_viewer == null) _ = StartRenderingAsync();
+	}
+
+	public IReadOnlyList<ViewerShadingStyle> ShadingStyles { get; } = Enum.GetValues<ViewerShadingStyle>();
+	public IReadOnlyList<ViewerBackdropMode> BackdropModes { get; } = Enum.GetValues<ViewerBackdropMode>();
+	public IReadOnlyList<BuiltInQualityConfiguration> QualityPresets { get; } = Enum.GetValues<BuiltInQualityConfiguration>();
+	public IReadOnlyList<ResolutionOption> ResolutionOptions { get; } = new[] {
+		new ResolutionOption("Auto (pane size)", null),
+		new ResolutionOption("320 x 180", new Size(320d, 180d)),
+		new ResolutionOption("640 x 360", new Size(640d, 360d)),
+		new ResolutionOption("1280 x 720", new Size(1280d, 720d))
+	};
+	public IReadOnlyList<ResolutionOption> MaxResolutionOptions { get; } = new[] {
+		new ResolutionOption("Unlimited", null),
+		new ResolutionOption("720p (1280 x 720)", new Size(1280d, 720d)),
+		new ResolutionOption("1080p (1920 x 1080)", new Size(1920d, 1080d)),
+		new ResolutionOption("1440p (2560 x 1440)", new Size(2560d, 1440d))
+	};
 
 	[ObservableProperty]
-	public partial RelayCommand ToggleRenderingButtonPressed { get; set; }
-
-	[ObservableProperty]
-	public partial RelayCommand ChangeLightColourButtonPressed { get; set; }
-
-	[ObservableProperty]
-	public partial RelayCommand ToggleResolutionButtonPressed { get; set; }
-
-	[ObservableProperty]
-	public partial bool Animate { get; set; } = true;
-
-	[ObservableProperty]
-	public partial RelayCommand RenderOnce { get; set; }
+	public partial IReadOnlyList<ModelListEntry> CatalogItems { get; set; } = ModelCatalog.Build();
 
 	[ObservableProperty]
 	public partial Renderer? Renderer { get; set; }
 
 	[ObservableProperty]
-	public partial Size? InternalRenderRes { get; set; }
+	public partial RendererCompositor? Compositor { get; set; }
+
+	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(RenderOnceCommand))]
+	[NotifyCanExecuteChangedFor(nameof(RandomizeColorCommand))]
+	[NotifyCanExecuteChangedFor(nameof(ShiftLightHueCommand))]
+	public partial bool IsRendering { get; set; }
+
+	[ObservableProperty]
+	public partial bool IsAwaitingFirstModel { get; set; }
+
+	[ObservableProperty]
+	public partial int LoadedModelCount { get; set; }
+
+	[ObservableProperty]
+	public partial int FailedModelCount { get; set; }
+
+	[ObservableProperty]
+	public partial int TotalModelCount { get; set; }
+
+	[ObservableProperty]
+	public partial string LoadProgressText { get; set; } = "";
+
+	[ObservableProperty]
+	public partial string StatusText { get; set; } = "Not rendering.";
+
+	[ObservableProperty]
+	public partial string ResourceListing { get; set; } = "";
+
+	[ObservableProperty]
+	public partial bool Animate { get; set; } = true;
+
+	[ObservableProperty]
+	public partial ModelListEntry? SelectedModel { get; set; }
+
+	[ObservableProperty]
+	public partial bool SpinX { get; set; }
+
+	[ObservableProperty]
+	public partial bool SpinY { get; set; }
+
+	[ObservableProperty]
+	public partial bool SpinZ { get; set; }
+
+	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(RandomizeColorCommand))]
+	public partial ViewerShadingStyle ShadingStyle { get; set; }
+
+	[ObservableProperty]
+	public partial bool RandomColorOpaque { get; set; } = true;
+
+	[ObservableProperty]
+	public partial float CameraLightBrightness { get; set; }
+
+	[ObservableProperty]
+	public partial bool SunEnabled { get; set; } = true;
+
+	[ObservableProperty]
+	public partial bool SunCastsShadows { get; set; } = true;
+
+	[ObservableProperty]
+	public partial float SunBrightness { get; set; } = 1f;
+
+	[ObservableProperty]
+	public partial ViewerBackdropMode BackdropMode { get; set; }
+
+	[ObservableProperty]
+	public partial float BackdropIntensity { get; set; } = 1f;
+
+	[ObservableProperty]
+	public partial BuiltInQualityConfiguration Quality { get; set; } = BuiltInQualityConfiguration.High;
+
+	[ObservableProperty]
+	public partial bool UseCompositor { get; set; }
+
+	[ObservableProperty]
+	public partial bool OverlayEnabled { get; set; } = true;
+
+	[ObservableProperty]
+	public partial ResolutionOption? SelectedResolution { get; set; }
+
+	[ObservableProperty]
+	public partial Size? InternalRenderResolution { get; set; }
+
+	[ObservableProperty]
+	public partial ResolutionOption? SelectedMaxResolution { get; set; }
+
+	[ObservableProperty]
+	public partial Size? InternalRenderResolutionMax { get; set; }
 
 	public MainViewModel() {
-		ToggleRenderingButtonPressed = new(ToggleRendering);
-		ChangeLightColourButtonPressed = new(ChangeLightColour);
-		ToggleResolutionButtonPressed = new(ToggleResolution);
-		RenderOnce = new(() => Renderer?.Render());
+		SelectedResolution = ResolutionOptions[0];
+		SelectedMaxResolution = MaxResolutionOptions[0];
 	}
 
+	[RelayCommand]
 	void ToggleRendering() {
-		if (_disposables == null) StartRendering();
-		else StopRendering();
+		if (_viewer == null) _ = StartRenderingAsync();
+		else Shutdown();
 	}
 
-	void ToggleResolution() {
-		if (InternalRenderRes == null) InternalRenderRes = new Size(300, 150);
-		else InternalRenderRes = null;
-	}
+	[RelayCommand(CanExecute = nameof(IsRendering))]
+	void RenderOnce() => _viewer?.Render();
 
-	void ChangeLightColour() {
-		if (_disposables == null) return;
-		_light.AdjustColorHueBy((float) Real.Random(30f, 60f));
-		_light.SetBrightness(Real.Random(0.25f, 4f));
-	}
+	[RelayCommand(CanExecute = nameof(CanRandomizeColor))]
+	void RandomizeColor() => _viewer?.RandomizeColor(RandomColorOpaque);
 
-	void StartRendering() {
-		_disposables = new List<IDisposable>();
+	bool CanRandomizeColor() => IsRendering && ShadingStyle != ViewerShadingStyle.Textured;
 
-		var factory = new LocalTinyFfrFactory();
-		var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-		var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
-		_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
-		_light = factory.LightBuilder.CreateSpotLight(_instance.Position + Direction.Up * 3f, Direction.Down, 60f, 20f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
-		var scene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.LightingSunMidday);
-		scene.RemoveBackdrop();
-		Renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator);
+	[RelayCommand(CanExecute = nameof(IsRendering))]
+	void ShiftLightHue() => _viewer?.ShiftLightHue();
 
-		scene.Add(_instance);
-		scene.Add(_light);
+	async Task StartRenderingAsync() {
+		if (_startInFlight || _viewer != null) return;
+		if (_inputSource is not { } inputSource) return;
 
-		_disposables.Add(factory);
-		_disposables.Add(camera);
-		_disposables.Add(mesh);
-		_disposables.Add(mat);
-		_disposables.Add(_instance);
-		_disposables.Add(_light);
-		_disposables.Add(scene);
-		_disposables.Add(Renderer);
-		_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(Tick));
+		_startInFlight = true;
+		try {
+			var entries = ModelCatalog.Build();
+			var selectableCount = 0;
+			foreach (var entry in entries) {
+				if (entry.FileName != null) ++selectableCount;
+			}
 
-		Renderer.Value.Render();
-	}
+			CatalogItems = entries;
+			SelectedModel = null;
+			LoadedModelCount = 0;
+			FailedModelCount = 0;
+			TotalModelCount = selectableCount;
+			_hasDisplayedAModel = false;
+			IsAwaitingFirstModel = true;
+			UpdateLoadProgress();
 
-	void StopRendering() {
-		Renderer = null;
-		foreach (var d in Enumerable.Reverse(_disposables!)) {
-			d.Dispose();
+			var viewer = new ModelViewerScene();
+			_viewer = viewer;
+
+			PushAllSettings();
+
+			Renderer = viewer.ActiveRenderer;
+			Compositor = viewer.ActiveCompositor;
+			IsRendering = true;
+			StatusText = "Rendering. Models are streaming in asynchronously.";
+
+			_loop = viewer.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput);
+
+			await viewer.LoadBackdropAsync();
+			if (!ReferenceEquals(_viewer, viewer)) return;
+
+			if (UseCompositor) {
+				await ApplyCompositorAsync(true);
+				if (!ReferenceEquals(_viewer, viewer)) return;
+			}
+
+			foreach (var entry in entries) {
+				if (entry.FileName == null) continue;
+				_ = LoadEntryAsync(viewer, entry);
+			}
 		}
-		_disposables = null;
+		catch (Exception e) {
+			StatusText = $"Failed to start rendering: {e.GetBaseException().Message}";
+		}
+		finally {
+			_startInFlight = false;
+		}
 	}
 
-	void Tick(TimeSpan deltaTime) {
-		if (Animate) Renderer!.Value.Render();
+	async Task LoadEntryAsync(ModelViewerScene viewer, ModelListEntry entry) {
+		try {
+			await viewer.LoadModelAsync(entry.FileName!);
+			if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
 
-		_instance.RotateBy((float) deltaTime.TotalSeconds * 130f % Direction.Up);
-		_instance.RotateBy((float) deltaTime.TotalSeconds * 80f % Direction.Right);
+			entry.IsLoaded = true;
+			++LoadedModelCount;
+
+			if (!_hasDisplayedAModel) {
+				_hasDisplayedAModel = true;
+				IsAwaitingFirstModel = false;
+				SelectedModel = entry;
+			}
+
+			UpdateLoadProgress();
+		}
+		catch (Exception e) {
+			if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+			entry.LoadFailed = true;
+			++FailedModelCount;
+			UpdateLoadProgress();
+			StatusText = $"Failed to load {entry.FileName}: {e.GetBaseException().Message}";
+		}
+	}
+
+	void UpdateLoadProgress() {
+		var pending = TotalModelCount - LoadedModelCount - FailedModelCount;
+		if (pending <= 0 && FailedModelCount == 0) LoadProgressText = $"All {TotalModelCount} models loaded.";
+		else if (FailedModelCount > 0) LoadProgressText = $"Loaded {LoadedModelCount} of {TotalModelCount} ({FailedModelCount} failed, {pending} pending)";
+		else LoadProgressText = $"Loaded {LoadedModelCount} of {TotalModelCount} ({pending} pending)";
+	}
+
+	public void Shutdown() {
+		if (_viewer == null && _loop == null) return;
+
+		var viewer = _viewer;
+		_viewer = null;
+
+		_loop?.Dispose();
+		_loop = null;
+
+		Renderer = null;
+		Compositor = null;
+
+		viewer?.Dispose();
+
+		IsRendering = false;
+		IsAwaitingFirstModel = false;
+		LoadedModelCount = 0;
+		FailedModelCount = 0;
+		LoadProgressText = "";
+		ResourceListing = "";
+		StatusText = "Not rendering.";
+		_hasDisplayedAModel = false;
+		SelectedModel = null;
+	}
+
+	void PushAllSettings() {
+		if (_viewer is not { } viewer) return;
+
+		viewer.SetSpin(SpinX, SpinY, SpinZ);
+		viewer.SetShadingStyle(ShadingStyle);
+		viewer.SetCameraLightBrightness(CameraLightBrightness);
+		viewer.SetSunEnabled(SunEnabled);
+		viewer.SetSunCastsShadows(SunCastsShadows);
+		viewer.SetSunBrightness(SunBrightness);
+		viewer.SetBackdropMode(BackdropMode);
+		viewer.SetBackdropIntensity(BackdropIntensity);
+		viewer.SetQuality(Quality);
+		viewer.SetOverlayEnabled(OverlayEnabled);
+	}
+
+	void TickWithInput(TimeSpan deltaTime, ILatestInputRetriever input) {
+		if (_viewer is not { } viewer) return;
+		viewer.Tick(deltaTime.AsDeltaTime(), input.KeyboardAndMouse);
+		if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.MouseRight)) {
+			StatusText = viewer.PickAt(input.KeyboardAndMouse.MouseCursorPosition);
+			if (!Animate) viewer.Render();
+		}
+		if (Animate) viewer.Render();
+	}
+
+	partial void OnSelectedModelChanged(ModelListEntry? value) {
+		if (value is { IsHeader: true }) {
+			SelectedModel = null;
+			return;
+		}
+		if (value?.FileName is not { } fileName || _viewer is not { } viewer) return;
+		if (!viewer.IsModelLoaded(fileName)) return;
+
+		StatusText = viewer.DisplayModel(fileName);
+		ResourceListing = viewer.ResourceListing;
+		viewer.Render();
+	}
+
+	partial void OnSpinXChanged(bool value) => _viewer?.SetSpin(SpinX, SpinY, SpinZ);
+	partial void OnSpinYChanged(bool value) => _viewer?.SetSpin(SpinX, SpinY, SpinZ);
+	partial void OnSpinZChanged(bool value) => _viewer?.SetSpin(SpinX, SpinY, SpinZ);
+	partial void OnShadingStyleChanged(ViewerShadingStyle value) => _viewer?.SetShadingStyle(value);
+	partial void OnCameraLightBrightnessChanged(float value) => _viewer?.SetCameraLightBrightness(value);
+	partial void OnSunEnabledChanged(bool value) => _viewer?.SetSunEnabled(value);
+	partial void OnSunCastsShadowsChanged(bool value) => _viewer?.SetSunCastsShadows(value);
+	partial void OnSunBrightnessChanged(float value) => _viewer?.SetSunBrightness(value);
+	partial void OnBackdropModeChanged(ViewerBackdropMode value) => _viewer?.SetBackdropMode(value);
+	partial void OnBackdropIntensityChanged(float value) => _viewer?.SetBackdropIntensity(value);
+	partial void OnQualityChanged(BuiltInQualityConfiguration value) => _viewer?.SetQuality(value);
+	partial void OnOverlayEnabledChanged(bool value) => _viewer?.SetOverlayEnabled(value);
+	partial void OnSelectedResolutionChanged(ResolutionOption? value) => InternalRenderResolution = value?.Value;
+
+	partial void OnSelectedMaxResolutionChanged(ResolutionOption? value) => InternalRenderResolutionMax = value?.Value;
+
+	partial void OnUseCompositorChanged(bool value) => _ = ApplyCompositorAsync(value);
+
+	async Task ApplyCompositorAsync(bool value) {
+		if (_viewer is not { } viewer || _compositorSwitchInFlight) return;
+
+		_compositorSwitchInFlight = true;
+		try {
+			Renderer = null;
+			Compositor = null;
+
+			await viewer.SetCompositeModeAsync(value);
+			if (viewer.IsDisposed || !ReferenceEquals(_viewer, viewer)) return;
+
+			Renderer = viewer.ActiveRenderer;
+			Compositor = viewer.ActiveCompositor;
+		}
+		catch (Exception e) {
+			StatusText = $"Failed to change compositor mode: {e.GetBaseException().Message}";
+		}
+		finally {
+			_compositorSwitchInFlight = false;
+		}
 	}
 }
