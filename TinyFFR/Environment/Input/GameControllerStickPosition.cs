@@ -135,9 +135,14 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	/// <remarks>
 	/// The angle starts at 0° for a stick pushed fully right and increases anticlockwise (i.e. 90° is up, 180° is left, 270° is down).
 	/// </remarks>
+	/// <param name="prioritizeCardinals">If <see langword="false"/> (the default), the deadzone is circular and the angle is the stick's exact direction.
+	/// If <see langword="true"/>, the deadzone is applied to each axis separately (see <see cref="AsXYPair"/>), so small sideways displacement is ignored and pushes close to an axis report exactly 0°, 90°, 180°, or 270°.</param>
 	/// <param name="deadzoneSize">The deadzone to apply. Defaults to <see cref="RecommendedDeadzoneSize"/>.</param>
 	/// <returns><see langword="null"/> if the stick's displacement is inside the deadzone (i.e. there is no meaningful direction to report); the angle otherwise.</returns>
-	public Angle? GetPolarAngle(float deadzoneSize = RecommendedDeadzoneSize) => Angle.From2DPolarAngle(AsXYPair(deadzoneSize));
+	public Angle? GetPolarAngle(bool prioritizeCardinals = false, float deadzoneSize = RecommendedDeadzoneSize) {
+		if (prioritizeCardinals) return Angle.From2DPolarAngle(AsXYPair(deadzoneSize));
+		return IsOutsideDeadzone(deadzoneSize) ? Angle.From2DPolarAngle(DisplacementHorizontal, DisplacementVertical) : null;
+	}
 
 	/// <summary>
 	/// Returns whether the stick is pushed further left or right than <paramref name="deadzoneSize"/>, ignoring its vertical displacement.
@@ -204,21 +209,28 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	/// <summary>
 	/// Returns whether the stick is being pushed left, right, or neither, reducing its analog position to a simple three-way direction.
 	/// </summary>
+	/// <param name="prioritizeCardinals">If <see langword="false"/> (the default), the deadzone is circular and each of the eight directions covers an equal 45° slice of the circle.
+	/// If <see langword="true"/>, the deadzone is applied to each axis separately, so the deadzone is square and pushes close to an axis always report a cardinal direction (see <see cref="GetPolarAngle"/>).</param>
 	/// <param name="deadzoneSize">The deadzone to apply; if the stick's displacement is within it, <see cref="HorizontalOrientation2D.None"/> is returned. Defaults to <see cref="RecommendedDeadzoneSize"/>.</param>
-	public HorizontalOrientation2D GetHorizontalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetHorizontalComponent();
+	public HorizontalOrientation2D GetHorizontalOrientation(bool prioritizeCardinals = false, float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(prioritizeCardinals, deadzoneSize).GetHorizontalComponent();
 	/// <summary>
 	/// Returns whether the stick is being pushed up, down, or neither, reducing its analog position to a simple three-way direction.
 	/// </summary>
+	/// <param name="prioritizeCardinals">If <see langword="false"/> (the default), the deadzone is circular and each of the eight directions covers an equal 45° slice of the circle.
+	/// If <see langword="true"/>, the deadzone is applied to each axis separately, so the deadzone is square and pushes close to an axis always report a cardinal direction (see <see cref="GetPolarAngle"/>).</param>
 	/// <param name="deadzoneSize">The deadzone to apply; if the stick's displacement is within it, <see cref="VerticalOrientation2D.None"/> is returned. Defaults to <see cref="RecommendedDeadzoneSize"/>.</param>
-	public VerticalOrientation2D GetVerticalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetVerticalComponent();
+	public VerticalOrientation2D GetVerticalOrientation(bool prioritizeCardinals = false, float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(prioritizeCardinals, deadzoneSize).GetVerticalComponent();
 	/// <summary>
 	/// Returns which of the eight compass-style directions the stick is being pushed in, reducing its analog position to a simple digital direction.
 	/// </summary>
 	/// <remarks>
-	/// This is useful for treating a stick like a directional pad (e.g. for menu navigation). Each of the eight directions covers an equal 45° slice of the circle the stick travels in.
+	/// This is useful for treating a stick like a directional pad (e.g. for menu navigation) or for selecting from a radial menu.
+	/// Set <paramref name="prioritizeCardinals"/> to <see langword="true"/> to favour the four cardinal directions (e.g. for directional-pad-style navigation).
 	/// </remarks>
+	/// <param name="prioritizeCardinals">If <see langword="false"/> (the default), the deadzone is circular and each of the eight directions covers an equal 45° slice of the circle.
+	/// If <see langword="true"/>, the deadzone is applied to each axis separately, so the deadzone is square and pushes close to an axis always report a cardinal direction (see <see cref="GetPolarAngle"/>).</param>
 	/// <param name="deadzoneSize">The deadzone to apply; if the stick's displacement is within it, <see cref="Orientation2D.None"/> is returned. Defaults to <see cref="RecommendedDeadzoneSize"/>.</param>
-	public Orientation2D GetOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetPolarAngle(deadzoneSize)?.PolarOrientation ?? Orientation2D.None;
+	public Orientation2D GetOrientation(bool prioritizeCardinals = false, float deadzoneSize = RecommendedDeadzoneSize) => GetPolarAngle(prioritizeCardinals, deadzoneSize)?.PolarOrientation ?? Orientation2D.None;
 
 	/// <summary>
 	/// Outputs the raw displacement values as reported by the hardware, without any deadzone or normalization applied.

@@ -185,7 +185,8 @@ class SceneObjectTest {
 		using var pen = font.CreatePen(ColorVect.WhiteOpaque);
 		using var @string = font.CreateString("Scene Object");
 		using var scene = factory.SceneBuilder.CreateScene();
-		using var camera = factory.CameraBuilder.CreateCamera(new Location(3f, 2f, -6f));
+		var cameraPosition = new Location(3f, 2f, -6f);
+		using var camera = factory.CameraBuilder.CreateCamera(cameraPosition, (Location.Origin - cameraPosition).Direction);
 
 		using var modelInstance = factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material);
 		var groupedInstances = new[] { factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material), factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material) };

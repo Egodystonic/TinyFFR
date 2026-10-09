@@ -169,6 +169,18 @@ The full list of buttons is:
 
 When using the `LeftStickPosition` or `RightStickPosition` property on an `ILatestGameControllerInputRetriever` you will be returned a `GameControllerStickPosition` with the following members:
 
+#### Displacement
+
+[![What each displacement property of a stick position measures](gamepad_input_stick_displacement.jpg){ : style="max-width:512px;" }](gamepad_input_stick_displacement.jpg)
+/// caption
+A stick pushed up and to the right. `DisplacementHorizontal` and `DisplacementVertical` measure how far it's pushed along each axis, `Displacement` measures how far it's pushed from the centre in any direction, and `GetPolarAngle()` gives the direction it's pushed in.
+///
+
+[![Displacement levels measured radially and horizontally](gamepad_input_stick_levels.jpg){ : style="max-width:512px;" }](gamepad_input_stick_levels.jpg)
+/// caption
+Left: `DisplacementLevel` depends only on how far the stick is from the centre, so its levels form rings (the innermost ring is also the deadzone used by `IsOutsideDeadzone()`). Right: `DisplacementLevelHorizontal` depends only on the horizontal position, so its levels form vertical bands. `DisplacementLevelVertical` is the same, but with horizontal bands.
+///
+
 <span class="def-icon">:material-card-bulleted-outline:</span> `Displacement`
 
 :   This returns a `float` in the range `0f` to `1f`, indicating how far the stick is currently moved away from its centre position in any direction.
@@ -248,6 +260,21 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 	If the magnitude of `DisplacementHorizontal` is below the deadzone value this method returns `0f`. Otherwise, it returns a value from `-1f` to `1f` which is `DisplacementHorizontal` rescaled to the remaining non-deadzone area, keeping its sign (e.g. if the deadzone is `0.2f` and `DisplacementHorizontal` is `0.6f`, this method will return `0.5f`, indicating the displacement is half way between the deadzone and the max value; if `DisplacementHorizontal` is `-0.6f` it will return `-0.5f`). Positive values indicate the right, negative the left.
 
 	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `GetRawDisplacementValues(out short horizontal, out short vertical)`
+
+:   The raw input API used by TinyFFR emits controller data as two signed 16-bit values, one each for the horizontal and vertical axes.
+
+	If you wish to bypass TinyFFR's abstractions and use these values directly, this method allows you to do that.
+
+	These are the values reported by SDL, specifically [SDL_ControllerAxisEvent](https://wiki.libsdl.org/SDL2/SDL_ControllerAxisEvent), with one exception: the vertical value is negated so that positive values indicate *up* (SDL reports positive values as down). This keeps the raw values consistent with the rest of TinyFFR's API.
+	
+#### Orientation / Angle
+
+[![The eight orientations a stick position can report](gamepad_input_stick_orientation.jpg){ : style="max-width:512px;" }](gamepad_input_stick_orientation.jpg)
+/// caption
+The `Orientation2D` returned by `GetOrientation()` for each stick position, using the recommended deadzone. Left: by default, the deadzone is a circle and the eight directions are equal slices. Right: with `prioritizeCardinals: true`, the deadzone is applied to each axis separately, so the `None` region is a square and pushing the stick close to an axis reports exactly `Up`, `Down`, `Left`, or `Right`.
+///
 
 <span class="def-icon">:material-code-block-parentheses:</span> `AsXYPair()`
 
@@ -263,15 +290,20 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
 
+	It also takes an optional `prioritizeCardinals` parameter. By default (`false`), the angle is the stick's exact direction, and `null` is returned only when `Displacement` is within the deadzone. When `true`, the deadzone is applied to each axis separately (as in `AsXYPair()`), so small sideways movements are ignored and a stick pushed close to an axis reports exactly `0°`, `90°`, `180°`, or `270°`.
+
 <span class="def-icon">:material-code-block-parentheses:</span> `GetOrientation()`
 
 :   Returns an `Orientation2D` enum value indicating which way the stick is being pushed.
 
-	The orientation is one of eight directions (e.g. `Right`, `UpRight`, `Up`, etc.), determined by which 45° sector `GetPolarAngle()` falls in. 
-
-	If both `DisplacementHorizontal` and `DisplacementVertical` are within the deadzone, returns `Orientation2D.None`.
+	The orientation is one of eight directions (e.g. `Right`, `UpRight`, `Up`, etc.), determined by which 45° sector `GetPolarAngle()` falls in. If the stick is within the deadzone, returns `Orientation2D.None`.
 
 	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+	It also takes an optional `prioritizeCardinals` parameter, which changes how the deadzone and directions are worked out (see the diagram below):
+
+	* `false` (the default): The deadzone is circular, and each of the eight directions covers an equal slice of the circle. This suits uses where every direction should be treated equally, such as a radial menu.
+	* `true`: The deadzone is applied to each axis separately, making it square, and small sideways movements are ignored; so a stick pushed close to an axis always reports `Up`, `Down`, `Left`, or `Right`. This can suit uses that favour the four main directions, such as navigating a menu like a directional pad.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `GetVerticalOrientation()`
 
@@ -279,7 +311,7 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 	This is the vertical component of `GetOrientation()`, rather than being calculated from the vertical axis alone. This means, for example, that a stick pushed mostly to the right and slightly upwards will have an orientation of `Right`, and therefore this method will return `VerticalOrientation2D.None` even if `DisplacementVertical` is outside the deadzone. If you want to inspect the vertical axis alone, use `IsOutsideDeadzoneVertical()` and `DisplacementVertical` instead.
 
-	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+	This method takes the same optional deadzone size and `prioritizeCardinals` parameters as `GetOrientation()`.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `GetHorizontalOrientation()`
 
@@ -287,15 +319,7 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 	This is the horizontal component of `GetOrientation()`, rather than being calculated from the horizontal axis alone. This means, for example, that a stick pushed mostly upwards and slightly to the right will have an orientation of `Up`, and therefore this method will return `HorizontalOrientation2D.None` even if `DisplacementHorizontal` is outside the deadzone. If you want to inspect the horizontal axis alone, use `IsOutsideDeadzoneHorizontal()` and `DisplacementHorizontal` instead.
 
-	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
-
-<span class="def-icon">:material-code-block-parentheses:</span> `GetRawDisplacementValues(out short horizontal, out short vertical)`
-
-:   The raw input API used by TinyFFR emits controller data as two signed 16-bit values, one each for the horizontal and vertical axes.
-
-	If you wish to bypass TinyFFR's abstractions and use these values directly, this method allows you to do that.
-
-	These are the values reported by SDL, specifically [SDL_ControllerAxisEvent](https://wiki.libsdl.org/SDL2/SDL_ControllerAxisEvent), with one exception: the vertical value is negated so that positive values indicate *up* (SDL reports positive values as down). This keeps the raw values consistent with the rest of TinyFFR's API.
+	This method takes the same optional deadzone size and `prioritizeCardinals` parameters as `GetOrientation()`.
 
 ### GameControllerTriggerPosition Struct
 
