@@ -166,6 +166,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	const string DefaultRenderOutputBufferName = "Unnamed Render Output Buffer";
 	const string SnapshotBufferName = "Snapshot Buffer";
 	const string SnapshotRendererName = "Snapshot Renderer";
+	const int ScreenshotWarmUpFrameCount = 1;
+	const int ScreenshotTemporalAntiAliasingWarmUpFrameCount = 32;
 
 	static readonly Lock _loadedTargetDataMutationLock = new();
 	static readonly ArrayPoolBackedVector<LocalRendererBuilder> _buildersWithPotentialLoadedTargets = new();
@@ -760,6 +762,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
 
 		try {
+			RenderScreenshotWarmUpFrames(renderer, _loadedRenderers[handle].Quality);
+
 			// This check is an optimisation where we can stop a double-flip:
 			//	Readback hands the handler whichever row order it asks for (lowest-address-is-top when "lowestAddressesRepresentFrameTop" is TRUE),
 			//	inverting the rows first if the backend's native order differs (see HandleRenderTargetReadback).
@@ -794,6 +798,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
 		
 		try {
+			RenderScreenshotWarmUpFrames(renderer, _loadedRenderers[handle].Quality);
 			buffer.ReadNextFrame(handler, presentFrameTopToBottom: lowestAddressesRepresentFrameTop);
 			renderer.RenderAndWaitForGpu();
 		}
@@ -808,6 +813,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
 
 		try {
+			RenderScreenshotWarmUpFrames(renderer, _loadedRenderers[handle].Quality);
 			buffer.ReadNextFrame(handler, presentFrameTopToBottom: lowestAddressesRepresentFrameTop);
 			renderer.RenderAndWaitForGpu();
 		}
@@ -816,6 +822,14 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			buffer.Dispose();
 		}
 	}
+	// Maintainer's note: This is required to fill various temporally-sensitive buffers (such as SSR and TAA) before taking the final screenshot
+	static void RenderScreenshotWarmUpFrames(Renderer renderer, in RenderQualityConfig quality) {
+		var frameCount = quality.AntiAliasingMode is AntiAliasingMode.TaaBalanced or AntiAliasingMode.TaaReducedGhosting or AntiAliasingMode.TaaReducedFlickering or AntiAliasingMode.TaaIncreasedSharpening
+			? ScreenshotTemporalAntiAliasingWarmUpFrameCount
+			: ScreenshotWarmUpFrameCount;
+		for (var i = 0; i < frameCount; ++i) renderer.Render();
+	}
+
 	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(RendererData data, XYPair<int>? captureResolution) {
 		var buffer = CreateRenderOutputBuffer(new() {
 			Name = SnapshotBufferName,
