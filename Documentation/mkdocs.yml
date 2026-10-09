@@ -114,6 +114,8 @@ nav:
   - index.md
   - changelog.md
   - support.md
+  - Tutorials:
+    - tutorials/hello_cube.md
   - Reference:
     - Windows & Input:
         - reference/display_discovery.md
