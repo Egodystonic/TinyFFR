@@ -113,6 +113,7 @@ strict: false
 nav:
   - index.md
   - changelog.md
+  - support.md
   - Reference:
     - Windows & Input:
         - reference/display_discovery.md
