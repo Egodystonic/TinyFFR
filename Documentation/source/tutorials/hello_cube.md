@@ -131,7 +131,7 @@ while (!appLoop.Input.UserQuitRequested) { // (12)!
 
 	The loop will continue rendering frames until the user requests a quit (typically via the X button on a window or some key combination such as Alt+F4).
 	
-	User input is updated via the `appLoop` and exposed via `appLoop.Input`. Handling user input is explained in the next tutorial; for now all you need to know is that `appLoop.Input.UserQuitRequested` will return `true` when the user wishes to exit the program.
+	User input is updated via the `appLoop` and exposed via `appLoop.Input`. Handling user input is explained in the [next tutorial](reacting_to_user_input.md); for now all you need to know is that `appLoop.Input.UserQuitRequested` will return `true` when the user wishes to exit the program.
 
 13.	`appLoop.IterateOnce()` returns a `TimeSpan` telling you how long has elapsed since the previous frame.
 

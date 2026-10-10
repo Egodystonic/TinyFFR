@@ -117,6 +117,7 @@ nav:
   - Learn:
     - Tutorials:
         - tutorials/hello_cube.md
+        - tutorials/reacting_to_user_input.md
     - Example Applications:
         - tutorials/hello_cube.md
   - Reference:
