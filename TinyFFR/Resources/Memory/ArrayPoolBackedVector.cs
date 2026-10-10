@@ -16,6 +16,8 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		get => _backingArray.AsSpan(0, Count);
 	}
 
+	public Span<T> BackingSpan => AsSpan;
+
 	public int Count { get; private set; } = 0;
 	bool ICollection<T>.IsReadOnly { get; } = false;
 
@@ -38,6 +40,39 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		IncreaseBackingArraySizeIfFull();
 		_backingArray[Count++] = item;
 		++Version;
+	}
+
+	public void AddRange(ReadOnlySpan<T> items) {
+		if (items.IsEmpty) return;
+
+		var newCount = Count + items.Length;
+		if (newCount <= _backingArray.Length) {
+			items.CopyTo(_backingArray.AsSpan(Count));
+		}
+		else {
+			var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(Math.Max(_backingArray.Length * 2, newCount));
+			AsSpan.CopyTo(newBackingArray);
+			items.CopyTo(newBackingArray.AsSpan(Count));
+			TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
+			_backingArray = newBackingArray;
+		}
+
+		Count = newCount;
+		++Version;
+	}
+
+	public void AddRange(IEnumerable<T> items) {
+		ArgumentNullException.ThrowIfNull(items);
+		if (items is ArrayPoolBackedVector<T> vector) {
+			AddRange(vector.AsSpan);
+			return;
+		}
+		if (items is T[] array) {
+			AddRange(array.AsSpan());
+			return;
+		}
+		if (items is ICollection<T> collection) EnsureCapacity(Count + collection.Count);
+		foreach (var item in items) Add(item);
 	}
 
 	public void Clear() {
@@ -122,6 +157,15 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		++Version;
 		TinyFfrArrayPool<T>.Shared.Return(_backingArray);
 		_backingArray = null!;
+	}
+
+	void EnsureCapacity(int capacity) {
+		if (capacity <= _backingArray.Length) return;
+
+		var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(Math.Max(_backingArray.Length * 2, capacity));
+		AsSpan.CopyTo(newBackingArray);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
+		_backingArray = newBackingArray;
 	}
 
 	void IncreaseBackingArraySizeIfFull() {

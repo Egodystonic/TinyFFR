@@ -179,4 +179,82 @@ class ArrayPoolBackedVectorTest {
 		Assert.AreEqual(false, _vector.Contains("vector1"));
 		Assert.AreEqual(false, _vector.Contains(null!));
 	}
+
+	[Test]
+	public void ShouldCorrectlyExposeBackingSpan() {
+		var span = _vector.BackingSpan;
+		Assert.AreEqual(6, span.Length);
+		Assert.AreEqual("hello", span[0]);
+		Assert.AreEqual("vector", span[5]);
+
+		span[1] = "you";
+		Assert.AreEqual("you", _vector[1]);
+
+		_vector.Clear();
+		Assert.AreEqual(0, _vector.BackingSpan.Length);
+	}
+
+	[Test]
+	public void ShouldCorrectlyAddRangeFromSpan() {
+		var versionBefore = _vector.Version;
+		_vector.AddRange(new[] { "and", "more" }.AsSpan());
+		Assert.AreEqual(8, _vector.Count);
+		Assert.AreEqual("and", _vector[6]);
+		Assert.AreEqual("more", _vector[7]);
+		Assert.AreNotEqual(versionBefore, _vector.Version);
+
+		versionBefore = _vector.Version;
+		_vector.AddRange(ReadOnlySpan<string>.Empty);
+		Assert.AreEqual(8, _vector.Count);
+		Assert.AreEqual(versionBefore, _vector.Version);
+	}
+
+	[Test]
+	public void ShouldCorrectlyAddRangeLargerThanCapacity() {
+		var items = Enumerable.Range(0, 1000).Select(i => i.ToString()).ToArray();
+		_vector.AddRange((ReadOnlySpan<string>) items);
+		Assert.AreEqual(1006, _vector.Count);
+		Assert.AreEqual("vector", _vector[5]);
+		for (var i = 0; i < items.Length; ++i) Assert.AreEqual(items[i], _vector[6 + i]);
+	}
+
+	[Test]
+	public void ShouldCorrectlyAddRangeFromOwnBackingSpan() {
+		for (var i = 0; i < 5; ++i) {
+			var countBefore = _vector.Count;
+			_vector.AddRange(_vector.BackingSpan);
+			Assert.AreEqual(countBefore * 2, _vector.Count);
+			for (var j = 0; j < countBefore; ++j) Assert.AreEqual(_vector[j], _vector[countBefore + j]);
+		}
+		Assert.AreEqual("hello", _vector[^6]);
+		Assert.AreEqual("vector", _vector[^1]);
+
+		_vector.AddRange(_vector.BackingSpan[1..3]);
+		Assert.AreEqual("i", _vector[^2]);
+		Assert.AreEqual("am", _vector[^1]);
+	}
+
+	[Test]
+	public void ShouldCorrectlyAddRangeFromEnumerables() {
+		_vector.AddRange(new List<string> { "x", "y" });
+		_vector.AddRange(Enumerable.Range(0, 3).Select(i => i.ToString()));
+		_vector.AddRange(new[] { "z" });
+		using (var other = new ArrayPoolBackedVector<string> { "p", "q" }) _vector.AddRange((IEnumerable<string>) other);
+		Assert.AreEqual(
+			new[] { "hello", "i", "am", "a", "test", "vector", "x", "y", "0", "1", "2", "z", "p", "q" },
+			_vector.ToArray()
+		);
+
+		_vector.AddRange((IEnumerable<string>) _vector);
+		Assert.AreEqual(28, _vector.Count);
+		Assert.AreEqual("hello", _vector[14]);
+		Assert.AreEqual("q", _vector[27]);
+	}
+
+	[Test]
+	public void AddRangeShouldInvalidateEnumerators() {
+		Assert.Throws<InvalidOperationException>(() => {
+			foreach (var _ in _vector) _vector.AddRange(new[] { "boom" }.AsSpan());
+		});
+	}
 }

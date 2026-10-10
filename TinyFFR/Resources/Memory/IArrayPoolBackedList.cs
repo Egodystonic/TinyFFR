@@ -12,6 +12,37 @@ public interface INonDisposableArrayPoolBackedList<T> : IList<T> {
 	/// Returns an enumerator that iterates through the collection without allocating any garbage.
 	/// </summary>
 	new ArrayPoolBackedListEnumerator<T> GetEnumerator();
+
+	/// <summary>
+	/// The elements currently in this list, as a <see cref="Span{T}"/> over the list's pooled backing storage (<see cref="ICollection{T}.Count"/> elements long).
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The returned span is invalidated by any subsequent modification of this list's length (e.g. adding, inserting, removing, or clearing elements),
+	/// as those operations may move the elements to new backing storage and/or return the old storage to the pool for re-use elsewhere.
+	/// Using the span after such a modification may read or write memory that no longer belongs to this list.
+	/// </para>
+	/// <para>
+	/// Therefore, do not keep the returned span beyond the current operation (e.g. across frames); retrieve it again each time it is needed.
+	/// Writing to the span's elements modifies this list's elements directly.
+	/// </para>
+	/// </remarks>
+	Span<T> BackingSpan { get; }
+
+	/// <summary>
+	/// Adds every element in <paramref name="items"/> to the end of this list, in order.
+	/// </summary>
+	/// <remarks>
+	/// Enumerating <paramref name="items"/> may generate garbage, depending on its type. Use <see cref="AddRange(ReadOnlySpan{T})"/> to add elements without generating any garbage.
+	/// </remarks>
+	/// <param name="items">The elements to add. May be this list itself.</param>
+	void AddRange(IEnumerable<T> items);
+
+	/// <summary>
+	/// Adds every element in <paramref name="items"/> to the end of this list, in order.
+	/// </summary>
+	/// <param name="items">The elements to add. May be this list's own <see cref="BackingSpan"/> (or a slice of it).</param>
+	void AddRange(ReadOnlySpan<T> items);
 }
 
 /// <summary>

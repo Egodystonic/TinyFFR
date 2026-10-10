@@ -13,6 +13,25 @@ public interface INonDisposableArrayPoolBackedDictionary<TKey, TValue> : IDictio
 	/// Returns an enumerator that iterates through the collection without allocating any garbage.
 	/// </summary>
 	new ArrayPoolBackedDictionaryEnumerator<TKey, TValue> GetEnumerator();
+
+	/// <summary>
+	/// Adds every key/value pair in <paramref name="items"/> to this dictionary, in order.
+	/// </summary>
+	/// <remarks>
+	/// Enumerating <paramref name="items"/> may generate garbage, depending on its type. Use <see cref="AddRange(ReadOnlySpan{KeyValuePair{TKey, TValue}})"/> to add pairs without generating any garbage.
+	/// </remarks>
+	/// <param name="items">The key/value pairs to add.</param>
+	/// <exception cref="ArgumentException">Thrown if a key in <paramref name="items"/> is already in this dictionary (or appears more than once in <paramref name="items"/>).
+	/// The pairs before the duplicate key will already have been added.</exception>
+	void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items);
+
+	/// <summary>
+	/// Adds every key/value pair in <paramref name="items"/> to this dictionary, in order.
+	/// </summary>
+	/// <param name="items">The key/value pairs to add.</param>
+	/// <exception cref="ArgumentException">Thrown if a key in <paramref name="items"/> is already in this dictionary (or appears more than once in <paramref name="items"/>).
+	/// The pairs before the duplicate key will already have been added.</exception>
+	void AddRange(ReadOnlySpan<KeyValuePair<TKey, TValue>> items);
 }
 
 /// <summary>

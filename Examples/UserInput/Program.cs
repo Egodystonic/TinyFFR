@@ -37,23 +37,13 @@ while (!loop.Input.UserQuitRequested) {
 
 	var spawnLocation = camera.Position + camera.GetRelativeOrientationDirection(Orientation.Forward) * 2f;
 
-	if (inProgressTextChars is { } list) {
-		foreach (var c in kbm.TranscribedText) list.Add(c);
-		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace) && list.Count > 0) list.RemoveAt(list.Count - 1);
-		inProgressTextPrimitive!.Value.SetGeometryString(
-			inProgressTextLocation, 
-			inProgressTextChars.Count > 0 ? new String(list.ToArray()) : PlaceholderText, 
-			ScenePrimitiveSize.VeryLarge
-		);
-
-		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
-			inProgressTextPrimitive!.Value.SetPaintbrush(new PrimitivePaintbrush(StandardColor.Green, StandardColor.Black));
-			loop.EnableInputTextTranscription = false;
-			inProgressTextPrimitive = null;
-			inProgressTextChars = null;
+	if (inProgressTextChars is not { } list) {
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace)) {
+			scene.RemoveAll();
+			scene.AddPrimitiveShape(groundPlaneShape);
+			mostRecentlyAddedCubePrimitive = null;
 		}
-	}
-	else {
+		
 		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 			mostRecentlyAddedCubeShape = new PositionedRotatedCuboid(new Cuboid(0.5f), spawnLocation, Rotation.None);
 			mostRecentlyAddedCubePrimitive = scene.AddPrimitiveShape(
@@ -62,10 +52,12 @@ while (!loop.Input.UserQuitRequested) {
 			);
 		}
 
-		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace)) {
-			scene.RemoveAll();
-			scene.AddPrimitiveShape(groundPlaneShape);
-			mostRecentlyAddedCubePrimitive = null;
+		if (kbm.MouseScrollWheelDelta != 0 && mostRecentlyAddedCubePrimitive is { } primitive) {
+			var adjustedShape = mostRecentlyAddedCubeShape.WithAllExtentsAdjustedBy(-kbm.MouseScrollWheelDelta * 0.05f);
+			if (adjustedShape.SmallestExtent >= 0.05f) {
+				mostRecentlyAddedCubeShape = adjustedShape;
+				primitive.SetGeometryShape(mostRecentlyAddedCubeShape);
+			}
 		}
 
 		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
@@ -75,17 +67,24 @@ while (!loop.Input.UserQuitRequested) {
 			loop.EnableInputTextTranscription = true;
 		}
 		
-		if (kbm.MouseScrollWheelDelta != 0 && mostRecentlyAddedCubePrimitive is { } primitive) {
-			var adjustedShape = mostRecentlyAddedCubeShape.WithAllExtentsAdjustedBy(-kbm.MouseScrollWheelDelta * 0.05f);
-			if (adjustedShape.SmallestExtent >= 0.05f) {
-				mostRecentlyAddedCubeShape = adjustedShape;
-				Console.WriteLine(mostRecentlyAddedCubeShape);
-				primitive.SetGeometryShape(mostRecentlyAddedCubeShape);
-			}
-		}
-		
 		cameraController.AdjustAllViaDefaultControls(kbm, deltaTime);
 		cameraController.Progress(deltaTime);
+	}
+	else {
+		list.AddRange(kbm.TranscribedText);
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace) && list.Count > 0) list.RemoveAt(list.Count - 1);
+		inProgressTextPrimitive!.Value.SetGeometryString(
+			inProgressTextLocation, 
+			list.Count > 0 ? list.BackingSpan : PlaceholderText, 
+			ScenePrimitiveSize.VeryLarge
+		);
+
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
+			inProgressTextPrimitive!.Value.SetPaintbrush(new PrimitivePaintbrush(StandardColor.Green, StandardColor.Black));
+			loop.EnableInputTextTranscription = false;
+			inProgressTextPrimitive = null;
+			inProgressTextChars = null;
+		}
 	}
 
 	renderer.Render();

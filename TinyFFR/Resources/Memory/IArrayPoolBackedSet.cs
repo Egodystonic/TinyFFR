@@ -12,6 +12,21 @@ public interface INonDisposableArrayPoolBackedSet<T> : ISet<T> {
 	/// Returns an enumerator that iterates through the collection without allocating any garbage.
 	/// </summary>
 	new ArrayPoolBackedSetEnumerator<T> GetEnumerator();
+
+	/// <summary>
+	/// Adds every element in <paramref name="items"/> to this set. Elements that are already in this set are ignored.
+	/// </summary>
+	/// <remarks>
+	/// Enumerating <paramref name="items"/> may generate garbage, depending on its type. Use <see cref="AddRange(ReadOnlySpan{T})"/> to add elements without generating any garbage.
+	/// </remarks>
+	/// <param name="items">The elements to add.</param>
+	void AddRange(IEnumerable<T> items);
+
+	/// <summary>
+	/// Adds every element in <paramref name="items"/> to this set. Elements that are already in this set are ignored.
+	/// </summary>
+	/// <param name="items">The elements to add.</param>
+	void AddRange(ReadOnlySpan<T> items);
 }
 
 /// <summary>

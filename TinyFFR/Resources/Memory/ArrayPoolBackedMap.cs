@@ -159,6 +159,23 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(TKey key, TValue value) => Add(new(key, value));
+
+	public void AddRange(ReadOnlySpan<KeyValuePair<TKey, TValue>> items) {
+		foreach (var item in items) Add(item);
+	}
+
+	public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items) {
+		ArgumentNullException.ThrowIfNull(items);
+		if (items is ArrayPoolBackedVector<KeyValuePair<TKey, TValue>> vector) {
+			AddRange(vector.AsSpan);
+			return;
+		}
+		if (items is KeyValuePair<TKey, TValue>[] array) {
+			AddRange(array.AsSpan());
+			return;
+		}
+		foreach (var item in items) Add(item);
+	}
 	public void Add(KeyValuePair<TKey, TValue> item) {
 		var bucket = GetBucket(item.Key);
 		if (GetIndexFromBucket(bucket, item.Key).HasValue) throw new ArgumentException($"Key '{item.Key}' already exists in this map.");

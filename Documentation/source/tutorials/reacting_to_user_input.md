@@ -5,32 +5,24 @@ description: An example showing how to react to keyboard and mouse input in Tiny
 
 <div class="grid cards" markdown>
 
--   :octicons-beaker-16:{ : style="margin-right:0.3em" } __Overview__
+-   :octicons-beaker-16:{ : style="margin-right:0.3em" } __Overview__ [__View Code on Github &nbsp; :simple-github:__](https://github.com/Egodystonic/TinyFFR/tree/main/Examples/UserInput){ : style="position: absolute; right: 1em;" }
 
-    ![Image showing coloured cubes and a text label floating above a chequered ground plane.](reacting_to_user_input_preview.png){ align=right : style="max-width:65%; margin: 0em; margin-left: 1em;" }
+    ![Image showing coloured cubes and a text label floating above a chequered ground plane.](reacting_to_user_input_preview.png){ align=right : style="max-width:50%; margin: 0em; margin-left: 1em;" }
     
-    This example demonstrates how to react to keyboard and mouse input. 
-    
-    It's a small console application that lets you fly a camera around a scene, add and remove cubes, and type text in to the world.
-    
-    [:simple-github: View Code on Github](https://github.com/Egodystonic/TinyFFR/tree/main/Examples/UserInput){ : style="position: absolute; bottom: 1em;" }
+    This tutorial builds on [Hello Cube](hello_cube.md). In this example, we will:
+
+	* Use a camera controller to fly the camera around the world;
+	* Add, remove, and rescale cubes in the scene;
+	* Let the user type a text label in to the scene when Enter is pressed;
+	* Exit the application when pressing Escape.
+
+	It's assumed that you've read the [Hello Cube](hello_cube.md) tutorial first, as things that were explained there won't be explained again in detail here.
 
 </div>
 
-This tutorial builds on [Hello Cube](hello_cube.md). In this example, we will:
-
-* Fly a camera around with the mouse and keyboard, using a camera controller;
-* Exit the application when Escape is pressed;
-* Add a randomly-coloured cube in front of the camera when Space is pressed;
-* Remove everything from the scene when Backspace is pressed;
-* Let the user type a text label in to the scene when Enter is pressed;
-* Grow and shrink the most recently added cube with the mouse wheel.
-
-It's assumed that you've read the [Hello Cube](hello_cube.md) tutorial first, as things that were explained there won't be explained again in detail here.
-
 ## Project Setup
 
-Unlike Hello Cube, this example is set up as an ordinary .NET console application project. You can create one in an empty folder with the following two commands:
+Unlike Hello Cube, this example is set up as an ordinary .NET project. You can create one in an empty folder with the following two commands:
 
 ```
 dotnet new console
@@ -50,17 +42,15 @@ Alternatively, create a folder containing a `UserInput.csproj` file with the fol
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Egodystonic.TinyFFR" Version="*-*" /> <!-- (1)! -->
+		<PackageReference Include="Egodystonic.TinyFFR" Version="*" />
 	</ItemGroup>
 
 </Project>
 ```
 
-1.	This adds TinyFFR to the project. `*-*` selects the latest published version of TinyFFR (including pre-release versions). You can replace it with a specific version (e.g. `Version="1.0.0"`) to pin your project to that version.
+Then, replace the contents of `Program.cs` with the code shown below.
 
-Either way, replace the contents of `Program.cs` with the code shown below in [Annotated Code](#annotated-code).
-
-#### Running the Application
+### Running the Application
 
 Open a terminal or command prompt in your project folder and run: `dotnet run -c Release`.
 
@@ -68,13 +58,13 @@ A window will appear showing a chequered ground plane, and the mouse cursor will
 
 | Input | Action |
 | :-- | :-- |
-| Mouse | Look around |
-| Arrow keys | Fly forward/backward/left/right |
-| Right Shift / Right Ctrl | Fly up / down |
+| Mouse | Look around (while not typing) |
+| Arrow keys | Fly forward/backward/left/right (while not typing) |
+| Right Shift / Right Ctrl | Fly up / down (while not typing) |
 | Space | Add a cube in front of the camera |
 | Enter | Start typing a text label in front of the camera; press Enter again to confirm it |
 | Backspace | Remove everything from the scene (or, while typing, delete the last character) |
-| Mouse wheel | Grow / shrink the last cube you added |
+| Mouse wheel | Grow / shrink the last cube you added (5cm per stop) |
 | Escape | Exit |
 
 ## Annotated Code
@@ -86,234 +76,206 @@ using System.Text;
 using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 
-using var factory = new LocalTinyFfrFactory(); // (1)!
+// Variables & constants
+// (1)!
+const string PlaceholderText = "Awaiting Text Input...";
+var inProgressTextPrimitive = (ScenePrimitive?) null;
+var inProgressTextLocation = new Location();
+var inProgressTextChars = (INonDisposableArrayPoolBackedList<char>?) null;
+var mostRecentlyAddedCubePrimitive = (ScenePrimitive?) null;
+var mostRecentlyAddedCubeShape = PositionedRotatedCuboid.UnitCubeAtOriginUnrotated;
+var groundPlaneShape = new Plane(Direction.Up, Location.Origin);
+
+// Setup
+using var factory = new LocalTinyFfrFactory();
 var primaryDisplay = factory.DisplayDiscoverer.Primary ?? throw new InvalidOperationException("No display connected!");
 using var window = factory.WindowBuilder.CreateWindow(primaryDisplay);
-window.LockCursor = true; // (2)!
 using var scene = factory.SceneBuilder.CreateScene();
 using var camera = factory.CameraBuilder.CreateCamera();
-using var cameraController = camera.CreateController<FreeFlyingCameraController>(); // (3)!
-cameraController.Position = (0f, 1f, -3f); // (4)!
+using var cameraController = camera.CreateController<FreeFlyingCameraController>(); // (2)!
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-using var appLoop = factory.ApplicationLoopBuilder.CreateLoop();
+using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 
-scene.AddPrimitiveShape(new Plane(Direction.Up, Location.Origin)); // (5)!
+window.LockCursor = true; // (3)!
+cameraController.Position = (0f, 1f, -3f); // (4)!
+scene.AddPrimitiveShape(groundPlaneShape); // (5)!
 
-ScenePrimitive? textBeingTyped = null; // (6)!
-var textLocation = Location.Origin;
-var typedText = new StringBuilder();
-const string PlaceholderText = "Awaiting Text Input...";
+// Loop
+while (!loop.Input.UserQuitRequested) {
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
+	var kbm = loop.Input.KeyboardAndMouse; // (6)!
 
-ScenePrimitive? lastCube = null; // (7)!
-var lastCubeShape = PositionedRotatedCuboid.UnitCubeAtOriginUnrotated;
+	if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) break; // (7)!
 
-while (!appLoop.Input.UserQuitRequested) {
-	var deltaTime = appLoop.IterateOnce().AsDeltaTime();
-	var keyboardAndMouse = appLoop.Input.KeyboardAndMouse; // (8)!
+	var spawnLocation = camera.Position 
+		+ camera.GetRelativeOrientationDirection(Orientation.Forward) * 2f; // (8)!
 
-	if (keyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) break; // (9)!
+	if (inProgressTextChars is not { } list) { // (9)!
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace)) { // (10)!
+			scene.RemoveAll(); // (11)!
+			scene.AddPrimitiveShape(groundPlaneShape); // (12)!
+			mostRecentlyAddedCubePrimitive = null; // (13)!
+		}
+	
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+			mostRecentlyAddedCubeShape = new PositionedRotatedCuboid( // (14)!
+				new Cuboid(0.5f), 
+				spawnLocation, 
+				Rotation.None
+			);
+			mostRecentlyAddedCubePrimitive = scene.AddPrimitiveShape( // (15)!
+				mostRecentlyAddedCubeShape, 
+				new PrimitivePaintbrush(ColorVect.RandomOpaque())
+			);
+		}
+		
+		if (kbm.MouseScrollWheelDelta != 0 && mostRecentlyAddedCubePrimitive is { } primitive) { // (16)!
+			var adjustedShape = mostRecentlyAddedCubeShape
+				.WithAllExtentsAdjustedBy(-kbm.MouseScrollWheelDelta * 0.05f); // (17)!
+			if (adjustedShape.SmallestExtent >= 0.05f) { // (18)!
+				mostRecentlyAddedCubeShape = adjustedShape; // (19)!
+				primitive.SetGeometryShape(mostRecentlyAddedCubeShape); // (20)!
+			}
+		}
 
-	var spawnLocation = camera.Position + camera.ViewDirection * 2f; // (10)!
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
+			inProgressTextChars = factory.ResourceAllocator.GetSharedScratchList<char>(); // (21)!
+			inProgressTextLocation = spawnLocation; // (22)!
+			inProgressTextPrimitive = scene.AddPrimitiveString( // (23)!
+				inProgressTextLocation, 
+				PlaceholderText, 
+				ScenePrimitiveSize.VeryLarge
+			);
+			loop.EnableInputTextTranscription = true; // (24)!
+		}
+		
+		cameraController.AdjustAllViaDefaultControls(kbm, deltaTime); // (25)!
+		cameraController.Progress(deltaTime); // (26)!
+	}
+	else { // (27)!
+		list.AddRange(kbm.TranscribedText); // (28)!
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace) && list.Count > 0) { // (29)!
+			list.RemoveAt(list.Count - 1);
+		}
+		inProgressTextPrimitive!.Value.SetGeometryString( // (30)!
+			inProgressTextLocation, 
+			list.Count > 0 ? list.BackingSpan : PlaceholderText, 
+			ScenePrimitiveSize.VeryLarge
+		);
 
-	if (textBeingTyped is { } text) { // (11)!
-		typedText.Append(keyboardAndMouse.TranscribedText); // (12)!
-		if (keyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace) && typedText.Length > 0) typedText.Length--; // (13)!
-		text.SetGeometryString(textLocation, typedText.Length > 0 ? typedText.ToString() : PlaceholderText, ScenePrimitiveSize.VeryLarge); // (14)!
-
-		if (keyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) { // (15)!
-			text.SetPaintbrush(new PrimitivePaintbrush(StandardColor.Green, StandardColor.Black));
-			appLoop.EnableInputTextTranscription = false;
-			textBeingTyped = null;
+		if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) { // (31)!
+			inProgressTextPrimitive!.Value.SetPaintbrush(new PrimitivePaintbrush(StandardColor.Green, StandardColor.Black));
+			loop.EnableInputTextTranscription = false;
+			inProgressTextPrimitive = null;
+			inProgressTextChars = null;
 		}
 	}
-	else {
-		if (keyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) { // (16)!
-			lastCubeShape = new PositionedRotatedCuboid(0.5f, 0.5f, 0.5f, spawnLocation, Rotation.None);
-			lastCube = scene.AddPrimitiveShape(lastCubeShape, new PrimitivePaintbrush(ColorVect.RandomOpaque())); // (17)!
-		}
-
-		if (keyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Backspace)) {
-			scene.RemoveAll(); // (18)!
-			scene.AddPrimitiveShape(new Plane(Direction.Up, Location.Origin)); // (19)!
-			lastCube = null;
-		}
-
-		if (keyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
-			typedText.Clear();
-			textLocation = spawnLocation;
-			textBeingTyped = scene.AddPrimitiveString(textLocation, PlaceholderText, ScenePrimitiveSize.VeryLarge); // (20)!
-			appLoop.EnableInputTextTranscription = true; // (21)!
-		}
-	}
-
-	if (keyboardAndMouse.MouseScrollWheelDelta != 0 && lastCube is { } cube) { // (22)!
-		lastCubeShape = lastCubeShape.ScaledBy(MathF.Pow(1.1f, -keyboardAndMouse.MouseScrollWheelDelta)); // (23)!
-		cube.SetGeometryShape(lastCubeShape); // (24)!
-	}
-
-	cameraController.AdjustAllViaDefaultControls(keyboardAndMouse, deltaTime); // (25)!
-	cameraController.Progress(deltaTime); // (26)!
 
 	renderer.Render();
 }
 ```
 
-1.	The factory, display, window, scene, camera, renderer, and application loop are all created in the same way as in [Hello Cube](hello_cube.md#annotated-code).
+1.	The variables declared here are each explained at the point they're used below.
 
-2.	This *locks* the mouse cursor to the window: The cursor is hidden and can't leave the window, but mouse movements are still reported (via `MouseCursorDelta`). This lets the user look around freely by moving the mouse.
+2.	Here we create a camera *controller* attached to `camera`. Whereas camera objects in TinyFFR have fundamental controls allowing you to position, rotate, orient them etc, a *camera controller* lets you operate a camera according to a specific control scheme (either via user input or programmatically).
 
-	Because the cursor can't leave the window, it's important to give the user a way to exit (in this example, the Escape key).
-
-3.	This creates a `FreeFlyingCameraController` attached to our `camera`. 
-
-	Camera controllers move and aim a camera for you according to a particular style of movement. The free-flying controller lets the camera fly freely around in 3D space, in any direction. There are several other controller types available (first-person, orbital, follow-cam, etc.); see [Camera Controllers](../reference/camera_controllers.md).
+	In this case we're creating a `FreeFlyingCameraController`, which makes it easy to "fly" the camera around the scene, using the keyboard to move the camera and the mouse to re-orient it.
 	
-	Like most other resources in TinyFFR, camera controllers must be disposed when no longer needed.
+3.	Setting `window.LockCursor` to `true` means that as soon as the window gets focus it will "steal" and lock the mouse cursor inside it.
 
-4.	This sets the camera controller's starting position: 1m up and 3m back from the world centre.
-
-	Once a controller is in charge of a camera, you set the controller's properties rather than the camera's (the controller overwrites the camera's position and orientation every frame). A new controller doesn't adopt its camera's current position, so we set its starting position here instead of passing one to `CreateCamera()`.
+	This is useful for applications where want the mouse to control the camera.
 	
-5.	This adds a plane primitive as the ground: A `Plane` facing upward (`Direction.Up`) that passes through the world centre (`Location.Origin`). Without something to look at, flying through an empty scene would give no sense of movement.
+4.	Now that we have a camera controller controlling `camera`, we must set our target position etc. via the controller.
 
-	Plane primitives are drawn as a large, translucent, chequered surface. `AddPrimitiveShape()` is also used to add the cubes below (see note 17); it accepts several different shape types.
+5.	This adds a ground plane to the scene (shown as an infinitely-large grid). 
 
-	We never need to change the ground plane, so we don't keep the returned `ScenePrimitive`. Every primitive belongs to the scene it was added to, and will be disposed along with the `scene` at the end of the program.
-
-6.	These variables keep track of the text label the user is currently typing (if any): 
-
-	* `textBeingTyped` is the text primitive being edited, or `null` when the user isn't typing.
-	* `textLocation` is where in the world the text label is being placed.
-	* `typedText` holds the text typed so far.
-	* `PlaceholderText` is shown on the label while nothing has been typed yet.
-
-7.	These variables keep track of the most recently added cube, so that the mouse wheel can resize it:
-
-	* `lastCube` is the cube's primitive, or `null` if there isn't one.
-	* `lastCubeShape` is the cube's current shape (its size, position, and rotation). Its initial value here is never used, as it's replaced whenever a cube is added.
-
-8.	`appLoop.Input` is updated every time the loop is iterated, and gives access to the latest state of every input device. Here we store its `KeyboardAndMouse` property for convenience, as we'll be using it a lot below.
-
-	Similarly, `appLoop.Input.GameControllersCombined` provides the same kind of access for gamepads (see [Gamepad Support](#gamepad-support) below).
-
-9.	`KeyWasPressedThisIteration()` returns `true` only on the single loop iteration in which the given key was pressed down. That makes it ideal for "one-off" actions like this one.
-
-	If the user presses Escape, we `break` out of the render loop, which ends the program. (`UserQuitRequested` still works as well, for when the user closes the window or presses e.g. Alt+F4.)
-
-10.	This calculates a location 2m in front of the camera, which is where we'll place any new cube or text label.
-
-	`camera.ViewDirection` is a `Direction`, and multiplying a `Direction` by a distance gives a `Vect` (a movement of that distance in that direction). Adding the `Vect` to the camera's `Position` gives us the new `Location`.
-
-11.	The application has two *modes*: Typing a text label (when `textBeingTyped` isn't `null`), or not.
-
-	The same keys do different things in each mode. For example, while typing, Space should add a space to the text rather than add a cube, and Backspace should delete one character rather than empty the whole scene. See [Input Modes](#input-modes) below.
-
-12.	`TranscribedText` contains the text the user typed this loop iteration (if any). We append it to `typedText`.
-
-	Text transcription takes in to account things like the user's keyboard layout and the Shift key, which is much more reliable than trying to work out which characters were typed from individual key presses. Transcription must be enabled first (see note 21).
-
-13.	Backspace keystrokes don't produce any transcribed text, so we handle them ourselves by removing the last character of `typedText`.
-
-14.	This updates the text primitive to show the latest `typedText`, or `PlaceholderText` if `typedText` is empty (e.g. if the user deletes everything they typed).
-
-	`ScenePrimitiveSize.VeryLarge` makes the label easy to read from a distance. Because `SetGeometryString()` replaces the primitive's geometry entirely, we pass the size again every time (otherwise it would revert to the default size).
-
-15.	When Enter is pressed while typing, we confirm the text label:
-
-	* `SetPaintbrush()` recolours the text green (with a black outline), to show it's been confirmed.
-	* Text transcription is switched off again.
-	* `textBeingTyped` is set back to `null`, ending typing mode. 
+	You don't necessarily *need* this, but it helps maintain a sense of orientation when moving the camera around.
 	
-	The text primitive itself remains in the scene, but we no longer keep track of it; it will be removed when Backspace is next pressed, or when the scene is disposed.
+6.	This sets `kbm` as a reference to the latest keyboard and mouse input data.
 
-16.	When Space is pressed (and the user isn't typing), we add a new cube.
-
-	A `PositionedRotatedCuboid` was also used in Hello Cube; here we construct a 0.5m x 0.5m x 0.5m cube at the `spawnLocation` (2m in front of the camera), with no rotation. We store it in `lastCubeShape` so that we can resize it later.
-
-17.	`AddPrimitiveShape()` adds a new primitive drawing the given shape to the scene.
-
-	The second argument is a `PrimitivePaintbrush`, which sets the colours used to draw a primitive. For a solid shape like a cube, only its primary colour is used. `ColorVect.RandomOpaque()` returns a random, fully-opaque colour, so every cube gets a different colour.
+	Iterating the loop via `loop.IterateOnce()` updates system-wide input; and the latest state + events are made available via `loop.Input`.
 	
-	We store the returned `ScenePrimitive` in `lastCube`, replacing the previous cube (if any). The previous cube stays in the scene; we just no longer keep track of it.
+7.	This asks if the 'Escape' key was pressed by the user in this frame.
 
-18.	`scene.RemoveAll()` empties the scene, disposing every primitive in it at once (including every cube, every text label, and the ground plane).
+	If it was, we `break` our application loop, which will ultimately cause the program to end.
+	
+8.	This sets a position in the scene where we'll spawn a cube or text instance, if the user has requested one.
 
-	`RemoveAll()` also removes model instances and lights by default (we don't have any here). It has optional `includeModelInstances`, `includeLights`, and `includePrimitives` parameters that let you choose which of these to remove.
+	We calculate the `spawnLocation` as being two metres in front of the camera: We take the camera's current position (`camera.Position`) then add (`+`) the camera's current forward direction (`camera.GetRelativeOrientationDirection(Orientation.Forward)`) multiplied by two metres (`* 2f`).
+	
+9.	This if-statement checks whether we're currently editing a newly-created text label. If we're not, `inProgressTextChars` will be null.
 
-19.	As `RemoveAll()` also removed the ground plane, we immediately add a new one. 
+10.	This if-statement asks whether the user pressed their 'Backspace' key in this frame.
 
-	`RemoveAll()` has also disposed the cube that `lastCube` refers to, so we set `lastCube` back to `null`. Using a primitive after it's been disposed throws an exception, so it's important not to keep using it.
+11.	As its name implies, this removes everything from the `scene` (including all the `ScenePrimitive`s we've added so far).
 
-20.	When Enter is pressed (and the user isn't already typing), we start typing a new text label 2m in front of the camera.
+12.	Because we just removed everything from the scene, we need to re-add our ground plane primitive.
 
-	`AddPrimitiveString()` adds a text primitive to the scene. It starts out showing `PlaceholderText` at `VeryLarge` size; its text will be updated as the user types (see note 14). By default, text primitives are drawn in white with a black outline.
+13.	We null-out the most-recently-added cube instance as it's no longer part of the scene.
 
-21.	This enables text transcription on the loop, so that `TranscribedText` will contain the characters the user types.
+14.	This sets the `mostRecentlyAddedCubeShape` variable to a 0.5m x 0.5m x 0.5m cube, placed at `spawnLocation` with no rotation.
 
-	Text transcription should only be enabled while the user is actually typing, as the operating system may consume some keystrokes as text input rather than reporting them as key presses. That's why we disable it again when the text is confirmed (see note 15).
+	We set the variable so we can re-use and modify the shape later if the user moves their mouse scroll wheel.
+	
+15.	This adds a new cube to the scene, using the `mostRecentlyAddedCubeShape` as its shape definition, and a random opaque colour for its colour.
 
-22.	`MouseScrollWheelDelta` returns how many 'stops' the scroll wheel has moved this loop iteration: Positive values for scrolling down, negative for scrolling up, or `0` if the wheel hasn't moved.
+16.	This asks if the user has moved the mousewheel this frame (`MouseScrollWheelDelta` will be positive when the user scrolls down, negative when scrolling up, and `0` when no scrolling occurs).
 
-	If the wheel has moved and there's a `lastCube` to resize, we resize it.
+	It also asks if the `mostRecentlyAddedCubePrimitive` is not null, indicating that there is at least one cube primitive in the scene.
+	
+17.	This adjusts the extents (the width, height, and depth) of `mostRecentlyAddedCubeShape` by 5cm multiplied by the negative of `MouseScrollWheelDelta`; and stores the result in `adjustedShape`.
 
-23.	`ScaledBy()` returns a copy of the shape scaled by the given amount, around its own centre (so the cube stays where it is).
+	This means that if we scroll up the shape gets larger, and if we scroll down the shape gets smaller.
+	
+18.	This line basically checks that the shape hasn't got too small; if it's smaller than 5cm x 5cm x 5cm we won't change anything in the scene.
 
-	`MathF.Pow(1.1f, -keyboardAndMouse.MouseScrollWheelDelta)` makes each stop scrolled up grow the cube by 10%, and each stop scrolled down shrink it by the same amount.
+	`SmallestExtent` returns whichever is smallest of the width, height, or depth.
+	
+19.	Once we're inside this if-block we're intending to update the most recently added primitive, so here we first update its shape description.
 
-24.	`SetGeometryShape()` changes the existing cube primitive to the new, resized shape. The primitive keeps its paintbrush, so the cube keeps its colour.
+20.	This line does the actual update of the scene primitive by setting its geometry to the newly-updated cube shape.
 
-	Every primitive can have its geometry changed at any time via its `SetGeometry[...]()` methods; e.g. `SetGeometryString()` in note 14.
+21.	This sets `inProgressTextChars` to a *shared scratch list* of `char`s. 
 
-25.	This adjusts the camera controller's properties according to the controller's default keyboard and mouse controls: Moving the mouse turns the camera, the arrow keys move it, and Right Shift / Right Ctrl move it up and down.
+	TinyFFR generally tries to make it easy to avoid creating GC pressure as it can lead to stuttering. The `ResourceAllocator` can give us an `IList<char>` that is reusable, that it calls a 'shared scratch' list.
+	
+	The returned list will be empty, and we'll use it store the text characters the user enters in subsequent frames.
 
-	These controls are applied whether or not the user is typing, as the arrow keys don't produce any typed text.
+22.	We retain the location we're spawning this label at so we can modify the label later as the user enters more text.
 
-26.	Finally, `Progress()` actually moves and aims the `camera` according to the controller's (newly adjusted) properties.
+23.	This adds a new type of scene primitive, a string. We set the primitive's location as the `inProgressTextLocation`, set its text to `PlaceholderText`, and make the text size `VeryLarge`.
 
-	`Progress()` must be called exactly once per frame, after adjusting the controller and before rendering. By default, the controller also applies some smoothing to the camera's movement, to make it feel more physical.
+24.	This tells the application loop that we want to transcribe all user input in to text until disabled again.
 
+	Text transcription mode makes it easy to capture text-based input strings; it accounts for the user's locale, things like modifier keys, caps-lock, etc.
+	
+25.	This adjusts all target parameters of the `FreeFlyingCameraController` according to the user's keyboard + mouse input.
 
-## Additional Notes
+	By default, the mouse moves the camera's orientation and the keyboard makes it fly through space (see [Running the Application](#running-the-application) above for the default control scheme).
+	
+26.	The line above changed the target parameters of the camera controller; but to actually move the camera *towards* those targets we must invoke `Progress()`.
 
-### Pressed vs. Held Keys
+27.	We enter this if-block only when `inProgressTextChars` is not null; indicating that the user is currently entering text.
 
-`KeyWasPressedThisIteration()` is only `true` for the one loop iteration in which a key went down, which suits one-off actions like adding a cube. 
+28.	This adds all the transcribed text from the user registered during this frame to the scratch `list`.
 
-For continuous actions (e.g. moving while a key is held), `KeyIsCurrentlyDown()` returns `true` for every iteration the key is held. That's how the camera controller moves the camera with the arrow keys. 
+29.	If the user presses the 'Backspace' key while entering text (and the scratch `list` has at least one character), we delete the most-recent character.
 
-There's also `KeyWasReleasedThisIteration()`. See [Keyboard / Mouse Input](../reference/keyboard_and_mouse_input.md) for everything else that's available.
+30.	Here we update the `inProgressTextPrimitive` with the latest text stored in `list`.
 
-### Input Modes
+	`list.BackingSpan` lets us access the `Span<char>` that backs the list, meaning we can avoid allocating a new array of chars.
+	
+31.	Finally, when the user presses 'Return' in text-edit mode we commit their text by changing it to a green colour with black outline, disable text-transcription mode, and null-out the two in-progress text data tracking variables.
 
-Many applications need the same keys to do different things at different times; for example, the movement keys in a game shouldn't move the player while they're typing in a chat box. 
-
-A simple way to handle this (as in this example) is to keep track of which mode the application is in, and only check the keys that are relevant to the current mode. 
-
-### Gamepad Support
-
-The free-flying camera controller also has default gamepad controls. Adding the following line just before `cameraController.Progress(deltaTime)` lets the user fly the camera with any connected gamepad as well:
-
-```csharp
-cameraController.AdjustAllViaDefaultControls(appLoop.Input.GameControllersCombined, deltaTime);
-```
-
-See [Gamepad Input](../reference/gamepad_input.md) for more about reading gamepad input.
+	Disabling text-transcription mode is important because it can "swallow" inputs when enabled (i.e. user input is redirected towards text capture).
 
 ## Stuff to Tinker With
 
 Here are some things you can experiment with (with links to relevant documentation pages).
 
-* [:material-book-open-page-variant: Keyboard / Mouse Input](../reference/keyboard_and_mouse_input.md): You could try making a mouse click add a cube, or letting the user move the cubes around while a key is held.
-* [:material-book-open-page-variant: Free-Flying Camera Controller](../reference/camera_controller_free_flying.md): You could try writing your own control scheme instead of using the default controls, or changing the controller's smoothing.
-* [:material-book-open-page-variant: Camera Controllers](../reference/camera_controllers.md): You could try swapping in a different camera controller, such as the first-person or orbital controller.
-* [:material-book-open-page-variant: Gamepad Input](../reference/gamepad_input.md): You could try mapping gamepad buttons to adding and removing cubes.
-* [:material-book-open-page-variant: Scene Primitives](../reference/scene_primitives.md): You could try adding spheres or arrows instead of cubes, making the mouse wheel resize whichever cube the camera is looking at, or changing the size and colours of the text labels.
-* [:material-book-open-page-variant: Colour](../reference/colour.md): You could try picking colours from a fixed palette, or varying only the hue of each cube.
-
-## Where to Get Support
-
-As you work with TinyFFR you'll inevitably need some help; or maybe you'll want to request a feature or report a bug.
-
-The [:simple-discord: Support](../support.md) page has links to the TinyFFR Discord server as well as the GitHub discussions + issues spaces; both are great places to seek help. Finally, every page on this site has a comments section at the bottom that is closely monitored-- check below to see if anyone's had the same issue as you!
+* [:material-book-open-page-variant: Gamepad Input](../reference/gamepad_input.md): You could try adding game controller support.
+* [:material-book-open-page-variant: Free-Flying Camera Controller](../reference/camera_controller_free_flying.md): You could try writing your own control scheme instead of using the default controls for the camera controller; or change the smoothing and other factors of the controller's behaviour.
+* [:material-book-open-page-variant: Camera Controllers](../reference/camera_controllers.md): You could try swapping in a different camera controller type entirely.

@@ -181,4 +181,26 @@ class ArrayPoolBackedMapTest {
 		Assert.AreEqual(false, _map.ContainsKey(-1));
 		Assert.AreEqual(false, _map.Contains(new(4, 7)));
 	}
+
+	[Test]
+	public void ShouldCorrectlyAddRange() {
+		_map.AddRange(new KeyValuePair<int, int>[] { new(NumValues, 1), new(NumValues + 1, 2) }.AsSpan());
+		_map.AddRange(Enumerable.Range(NumValues + 2, 10).Select(i => new KeyValuePair<int, int>(i, -i)));
+		_map.AddRange(new[] { new KeyValuePair<int, int>(-1, 7) });
+		Assert.AreEqual(NumValues + 13, _map.Count);
+		Assert.AreEqual(1, _map[NumValues]);
+		Assert.AreEqual(2, _map[NumValues + 1]);
+		Assert.AreEqual(-(NumValues + 11), _map[NumValues + 11]);
+		Assert.AreEqual(7, _map[-1]);
+	}
+
+	[Test]
+	public void AddRangeShouldThrowOnDuplicateKeys() {
+		Assert.Throws<ArgumentException>(() => _map.AddRange(new KeyValuePair<int, int>[] { new(-5, 0), new(3, 0) }.AsSpan()));
+		Assert.AreEqual(true, _map.ContainsKey(-5));
+		Assert.AreEqual(NumValues + 1, _map.Count);
+
+		Assert.Throws<ArgumentException>(() => _map.AddRange(new List<KeyValuePair<int, int>> { new(-6, 0), new(-6, 1) }));
+		Assert.Throws<ArgumentException>(() => _map.AddRange((IEnumerable<KeyValuePair<int, int>>) _map));
+	}
 }

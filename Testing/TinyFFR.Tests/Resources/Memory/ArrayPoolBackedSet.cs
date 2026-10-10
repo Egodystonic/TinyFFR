@@ -211,4 +211,25 @@ class ArrayPoolBackedSetTest {
 		Assert.IsFalse(_set.SetEquals(Enumerable.Range(0, NumValues - 1)));
 		Assert.IsFalse(_set.SetEquals(Enumerable.Range(1, NumValues)));
 	}
+
+	[Test]
+	public void ShouldCorrectlyAddRange() {
+		_set.AddRange(new[] { 5, NumValues, NumValues + 1, NumValues }.AsSpan());
+		Assert.AreEqual(NumValues + 2, _set.Count);
+		Assert.IsTrue(_set.Contains(NumValues));
+		Assert.IsTrue(_set.Contains(NumValues + 1));
+
+		_set.AddRange(Enumerable.Range(0, NumValues + 10));
+		Assert.AreEqual(NumValues + 10, _set.Count);
+		Assert.IsTrue(_set.SetEquals(Enumerable.Range(0, NumValues + 10)));
+
+		_set.AddRange(new List<int> { -1, -1, 3 });
+		_set.AddRange(new[] { -2 });
+		Assert.AreEqual(NumValues + 12, _set.Count);
+		Assert.IsTrue(_set.Contains(-1));
+		Assert.IsTrue(_set.Contains(-2));
+
+		_set.AddRange((IEnumerable<int>) _set);
+		Assert.AreEqual(NumValues + 12, _set.Count);
+	}
 }

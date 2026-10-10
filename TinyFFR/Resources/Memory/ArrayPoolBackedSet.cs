@@ -47,6 +47,23 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	}
 	void ICollection<T>.Add(T item) => Add(item);
 
+	public void AddRange(ReadOnlySpan<T> items) {
+		foreach (var item in items) Add(item);
+	}
+
+	public void AddRange(IEnumerable<T> items) {
+		ArgumentNullException.ThrowIfNull(items);
+		if (items is ArrayPoolBackedVector<T> vector) {
+			AddRange(vector.AsSpan);
+			return;
+		}
+		if (items is T[] array) {
+			AddRange(array.AsSpan());
+			return;
+		}
+		UnionWith(items);
+	}
+
 	public void Clear() {
 		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
 		_count = 0;

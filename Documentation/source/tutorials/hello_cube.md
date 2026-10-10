@@ -5,28 +5,26 @@ description: An example on how to make a simple cube appear using TinyFFR.
 
 <div class="grid cards" markdown>
 
--   :octicons-beaker-16:{ : style="margin-right:0.3em" } __Overview__
+-   :octicons-beaker-16:{ : style="margin-right:0.3em" } __Overview__ [__View Code on Github &nbsp; :simple-github:__](https://github.com/Egodystonic/TinyFFR/tree/main/Examples/HelloCube){ : style="position: absolute; right: 1em;" }
 
-    ![Image showing a standard cube displayed on a window.](hello_cube_preview.png){ align=right : style="max-width:65%; margin: 0em; margin-left: 1em;" }
+    ![Image showing a standard cube displayed on a window.](hello_cube_preview.png){ align=right : style="max-width:50%; margin: 0em; margin-left: 1em;" }
     
     This example demonstrates the simplest possible application using TinyFFR. 
     
-    It's a small single-file script that sets up a window and renders a spinning cube.
-    
-    [:simple-github: View Code on Github](https://github.com/Egodystonic/TinyFFR/tree/main/Examples/HelloCube){ : style="position: absolute; bottom: 1em;" }
+    This tutorial will show you how to get started with the basics of TinyFFR. In this example, we will:
+
+	* Import TinyFFR;
+	* Create a window;
+	* Create a camera;
+	* Create a cube;
+	* Make the cube spin;
+	* Render everything in realtime.
+
+	It's assumed that you have a reasonable familiarity with C# and .NET.
 
 </div>
 
-This tutorial will show you how to get started with the basics of TinyFFR. In this example, we will:
 
-* Import TinyFFR;
-* Create a window;
-* Create a camera;
-* Create a cube;
-* Make the cube spin;
-* Render everything in realtime.
-
-It's assumed that you have a reasonable familiarity with C# and .NET.
 
 ## Project Setup
 
