@@ -38,7 +38,11 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
   - pymdownx.inlinehilite
-  - pymdownx.superfences 
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.snippets:
       auto_append:
         - includes/acronym_definitions.md
@@ -120,6 +124,7 @@ nav:
         - tutorials/reacting_to_user_input.md
         - tutorials/loading_assets.md
         - tutorials/adding_a_2d_overlay.md
+        - tutorials/application_flow.md
     - Example Applications:
         - tutorials/hello_cube.md
   - Reference:
