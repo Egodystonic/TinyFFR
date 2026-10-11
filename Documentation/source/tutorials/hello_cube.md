@@ -161,7 +161,7 @@ In a toy example like "Hello Cube", this ultimately isn't that important. But fo
 
 Sometimes the best way to learn is by just getting stuck-in, so before moving on to the next tutorial here are some things you can experiment with (with links to relevant documentation pages).
 
-* [:material-book-open-page-variant: Creating / Managing Windows](../reference/creating_and_managing_windows.md): You could try programmatically changing the window's size or even its fullscreen state.
+* [:material-book-open-page-variant: Creating / Managing Windows](../reference/creating_and_managing_windows.md): You could try setting the window title + icon, or programmatically changing its size or even its fullscreen state.
 * [:material-book-open-page-variant: Camera Settings](../reference/camera_settings.md): You could try moving the camera or even animating it.
 * [:material-book-open-page-variant: Scene Primitives](../reference/scene_primitives.md): You could change the scene primitive shape, colour, render style, or add more.
 * [:material-book-open-page-variant: Scene Backdrops](../reference/scenes.md#backdrops): You could change the background colour of the scene, or even add a backdrop.

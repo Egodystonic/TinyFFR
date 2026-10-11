@@ -119,6 +119,7 @@ nav:
         - tutorials/hello_cube.md
         - tutorials/reacting_to_user_input.md
         - tutorials/loading_assets.md
+        - tutorials/adding_a_2d_overlay.md
     - Example Applications:
         - tutorials/hello_cube.md
   - Reference:

@@ -96,7 +96,7 @@ Loading the chess set model takes a few seconds, after which a window will appea
 | D | Delete all lights |
 | Escape | Exit |
 
-## Code
+## Annotated Code
 
 This is the entirety of the "Loading Assets" example's `Program.cs`.
 

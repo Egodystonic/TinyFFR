@@ -107,7 +107,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, colorMap, shaderConstants.ParamColorMap);
 
 		var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend | SupportedEffectsFlags.Opacity;
-		SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
+		SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects, colorMap);
 		_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 
 		return result;
@@ -170,7 +170,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if (config.EnablePerInstanceEffects) {
 			var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend;
 
-			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
+			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects, config.ColorMap);
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 		}
 
@@ -250,7 +250,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			if (config.EmissiveMap.HasValue) supportedEffects |= SupportedEffectsFlags.EmissiveMapBlend;
 			if (config.OcclusionRoughnessMetallicReflectanceMap.HasValue) supportedEffects |= SupportedEffectsFlags.OrmMapBlend;
 
-			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
+			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects, config.ColorMap, config.OcclusionRoughnessMetallicReflectanceMap, config.EmissiveMap);
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 		}
 
@@ -311,7 +311,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			if (config.EmissiveMap.HasValue) supportedEffects |= SupportedEffectsFlags.EmissiveMapBlend;
 			if (config.OcclusionRoughnessMetallicReflectanceMap.HasValue) supportedEffects |= SupportedEffectsFlags.OrmMapBlend;
 
-			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
+			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects, config.ColorMap, config.OcclusionRoughnessMetallicReflectanceMap, config.EmissiveMap, config.AbsorptionTransmissionMap);
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
 		}
 
@@ -393,13 +393,29 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 	#endregion
 
-	void SetUpDefaultEffectsParameters(Material mat, IShaderPackageConstants packageConstants, SupportedEffectsFlags supportedEffects) {
+	void SetUpDefaultEffectsParameters(Material mat, IShaderPackageConstants packageConstants, SupportedEffectsFlags supportedEffects, Texture colorMap, Texture? ormMap = null, Texture? emissiveMap = null, Texture? absorptionTransmissionMap = null) {
 		if ((supportedEffects & SupportedEffectsFlags.UvTransform) != 0) {
 			var identityMat = Matrix4x4.Identity;
 			ApplyMaterialParam(mat, in identityMat, packageConstants.GetEffectUvTransformParamOrThrow());
 		}
 		if ((supportedEffects & SupportedEffectsFlags.Opacity) != 0) {
 			ApplyMaterialParam(mat, 1f, packageConstants.GetEffectOpacityParamOrThrow());
+		}
+		if ((supportedEffects & SupportedEffectsFlags.ColorMapBlend) != 0) {
+			ApplyMaterialParam(mat, colorMap, packageConstants.GetEffectColorMapTexParamOrThrow());
+			ApplyMaterialParam(mat, 0f, packageConstants.GetEffectColorMapDistanceParamOrThrow());
+		}
+		if ((supportedEffects & SupportedEffectsFlags.OrmMapBlend) != 0) {
+			ApplyMaterialParam(mat, ormMap ?? colorMap, packageConstants.GetEffectOrmMapTexParamOrThrow());
+			ApplyMaterialParam(mat, 0f, packageConstants.GetEffectOrmMapDistanceParamOrThrow());
+		}
+		if ((supportedEffects & SupportedEffectsFlags.EmissiveMapBlend) != 0) {
+			ApplyMaterialParam(mat, emissiveMap ?? colorMap, packageConstants.GetEffectEmissiveMapTexParamOrThrow());
+			ApplyMaterialParam(mat, 0f, packageConstants.GetEffectEmissiveMapDistanceParamOrThrow());
+		}
+		if ((supportedEffects & SupportedEffectsFlags.AtMapBlend) != 0) {
+			ApplyMaterialParam(mat, absorptionTransmissionMap ?? colorMap, packageConstants.GetEffectAbsorptionTransmissionMapTexParamOrThrow());
+			ApplyMaterialParam(mat, 0f, packageConstants.GetEffectAbsorptionTransmissionMapDistanceParamOrThrow());
 		}
 	}
 
