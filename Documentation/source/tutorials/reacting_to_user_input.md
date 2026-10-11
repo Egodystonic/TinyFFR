@@ -243,6 +243,8 @@ while (!loop.Input.UserQuitRequested) {
 	TinyFFR generally tries to make it easy to avoid creating GC pressure as it can lead to stuttering. The `ResourceAllocator` can give us an `IList<char>` that is reusable, that it calls a 'shared scratch' list.
 	
 	The returned list will be empty, and we'll use it store the text characters the user enters in subsequent frames.
+	
+	You don't have to use this; if GC stops are not as important to you a regular `List<char>` will work fine too.
 
 22.	We retain the location we're spawning this label at so we can modify the label later as the user enters more text.
 

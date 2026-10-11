@@ -118,6 +118,7 @@ nav:
     - Tutorials:
         - tutorials/hello_cube.md
         - tutorials/reacting_to_user_input.md
+        - tutorials/loading_assets.md
     - Example Applications:
         - tutorials/hello_cube.md
   - Reference:
