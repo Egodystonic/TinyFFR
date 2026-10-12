@@ -58,6 +58,25 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 		set => Implementation.SetSize(_handle, value);
 	}
 	/// <summary>
+	/// The size of this window in the operating system's own (logical) units (<c>X</c> = width, <c>Y</c> = height); i.e. the coordinate space that mouse cursor
+	/// positions are reported in.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// On displays with scaling enabled, this differs from the window's size in pixels by the display's scale factor (for example, a window on a display with 200%
+	/// scaling has a logical size half its size in pixels). Dividing the window's pixel size (its <see cref="IRenderTarget.ViewportDimensions"/>) by this gives
+	/// the display's scale factor, which is how cursor positions can be converted to pixel positions.
+	/// </para>
+	/// <para>
+	/// Unlike <see cref="Size"/>, this is always the logical size, even whilst the window is fullscreen (where <see cref="Size"/> instead reports the display mode's
+	/// resolution).
+	/// </para>
+	/// </remarks>
+	public XYPair<int> LogicalSize {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetLogicalSize(_handle);
+	}
+	/// <summary>
 	/// Sets <see cref="Size"/>; provided as a method for use in contexts where a property setter can not be invoked.
 	/// </summary>
 	/// <param name="size">The new size for this window.</param>
@@ -146,6 +165,7 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
 	XYPair<int> IRenderTarget.ViewportDimensions => Implementation.GetViewportDimensions(_handle);
+	XYPair<int> IRenderTarget.LogicalDimensions => LogicalSize;
 
 	internal bool IsMinimized {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

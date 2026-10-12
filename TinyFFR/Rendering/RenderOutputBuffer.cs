@@ -33,6 +33,7 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
 	XYPair<int> IRenderTarget.ViewportDimensions => TextureDimensions;
+	XYPair<int> IRenderTarget.LogicalDimensions => TextureDimensions;
 
 	internal RenderOutputBuffer(ResourceHandle<RenderOutputBuffer> handle, IRenderOutputBufferImplProvider impl) {
 		_handle = handle;

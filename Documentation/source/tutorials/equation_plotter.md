@@ -1,0 +1,543 @@
+---
+title: Equation Plotter
+description: A showcase example that plots user-typed equations of three dimensions plus time as animated surfaces, vector fields, parametric surfaces, and scalar field slices, with Dear ImGui controls.
+---
+
+<div class="grid cards" markdown>
+
+-   :octicons-beaker-16:{ : style="margin-right:0.3em" } __Overview__ [__View Code on Github &nbsp; :simple-github:__](https://github.com/Egodystonic/TinyFFR/tree/main/Examples/EquationPlotter){ : style="position: absolute; right: 1em;" }
+
+	![Image showing an animated rippling surface plotted inside a wireframe box with labelled axes, with ImGui control windows around the edges of the screen.](equation_plotter_preview.png){ align=right : style="max-width:80%; margin: 0em; margin-left: 1em;" }
+    
+    This uses TinyFFR to plot graphs and vector fields in 3D in realtime.
+
+</div>
+
+## :material-flask-outline: Demonstrated Features
+
+* Parsing and compiling typed-in equations, and evaluating them quickly without generating garbage;
+* Animating a surface on a mutable grid, coloured via a writable texture;
+* Drawing a vector field with thousands of arrow model instances;
+* Generating a parametric surface in a dynamic vertex buffer;
+* Drawing the application's controls with Dear ImGui, on top of a 3D scene;
+* Orbiting the camera around the plot.
+
+## Running It
+
+Download (or clone) the whole [`Examples/EquationPlotter`](https://github.com/Egodystonic/TinyFFR/tree/main/Examples/EquationPlotter) folder, then open a terminal in that folder and run `dotnet run -c Release`.
+
+Choose a plot type and a preset from the __Equation__ window to get started, then try editing the equations.
+
+| Action | Control |
+| :-- | :-- |
+| Orbit the camera | Hold left or right mouse button + move mouse |
+| Zoom | Mouse wheel |
+| Apply an edited equation | Enter (or the Apply button) |
+| Exit | Escape |
+
+??? bug "TypeLoadWorkaround.cs (Crash with Exit Code 139)"
+	On Linux, a bug in the .NET 9 and .NET 10 runtimes can make this example crash immediately on startup, before any of its code runs. There's no exception or error message; the process simply exits with a "Segmentation fault" (exit code `139`).
+
+	The bug ([dotnet/runtime#130661](https://github.com/dotnet/runtime/issues/130661)) is in how the runtime loads certain struct types, and it's triggered when some of TinyFFR's types are used before the types they contain have been loaded. It has been fixed in .NET 11.
+
+	Until then, the example works around it with [`TypeLoadWorkaround.cs`](https://github.com/Egodystonic/TinyFFR/raw/main/Examples/EquationPlotter/TypeLoadWorkaround.cs), which makes the runtime load TinyFFR's types in a safe order before the program starts (it runs automatically via a [module initializer](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/attributes/general#moduleinitializer-attribute)).
+
+	Windows and MacOS are not affected.
+
+## Plot Types
+
+| Plot type | Equations | Drawn as |
+| :-- | :-- | :-- |
+| Surface | `y = f(x, z, t)` | A [mutable grid](../reference/dynamic_meshes_and_mutable_grids.md#mutable-grids) whose heights are rewritten every frame |
+| Vector field | `F(x, y, z, t) = (Fx, Fy, Fz)` | A lattice of arrows (one model instance each), pointing along the field and coloured by its strength |
+| Parametric surface | `(x, y, z) = f(u, v, t)` | A mesh generated in a [dynamic vertex buffer](../reference/dynamic_meshes_and_mutable_grids.md#dynamic-vertex-buffers) every frame |
+| Scalar field slice | `w = f(x, y, z, t)` | A flat grid that slices through the field, coloured by its value |
+
+In every case, `t` is time: the plot is re-evaluated every frame as `t` advances, so equations that use `t` animate.
+
+## Architecture
+
+```mermaid
+flowchart TB
+	subgraph frame ["Every frame"]
+		direction TB
+		iterate["Iterate the application loop"]:::env
+		begin["Begin the ImGui frame"]:::render
+		panel["Control panel:<br/>equations, domain & time controls"]:::step
+		camera["Orbit the camera<br/>(unless ImGui is using the mouse)"]:::world
+		clock["Advance the plot clock"]:::step
+		plot["Update the active plot:<br/>evaluate the equations at every point"]:::asset
+		finish["End the ImGui frame"]:::render
+		render["Render the plot, then ImGui on top"]:::render
+		iterate --> begin --> panel --> camera --> clock --> plot --> finish --> render --> iterate
+	end
+	parser["Expression parser:<br/>compile typed equations"]:::step
+	panel -- "Apply" --> parser --> plot
+
+	classDef env fill:#219ebc,fill-opacity:0.3,stroke:#219ebc,stroke-width:2px
+	classDef asset fill:#f4a300,fill-opacity:0.3,stroke:#e09400,stroke-width:2px
+	classDef world fill:#2a9d5c,fill-opacity:0.3,stroke:#2a9d5c,stroke-width:2px
+	classDef render fill:#8e5cc4,fill-opacity:0.3,stroke:#8e5cc4,stroke-width:2px
+	classDef step fill:#8a939b,fill-opacity:0.2,stroke:#8a939b,stroke-width:2px
+```
+
+| File | What it does |
+| :-- | :-- |
+| `Program.cs` | Creates the window, scene, camera, renderers and compositor, and runs the application loop. |
+| `ExpressionTokenizer.cs` / `ExpressionParser.cs` / `CompiledExpression.cs` | Turn a typed equation in to a compact list of instructions, and evaluate it. |
+| `PlotController.cs` | Owns the active plot and the compiled equations; switches between plot types. |
+| `PlotDomain.cs` | The ranges being plotted, the resolution of each plot, and other display settings. |
+| `SurfacePlot.cs` / `VectorFieldPlot.cs` / `ParametricSurfacePlot.cs` / `ScalarSlicePlot.cs` | One class per plot type. |
+| `GridTexture.cs` | A writable texture used to colour a grid one texel per vertex. |
+| `ColorMap.cs` | The colour maps that turn a value in to a colour. |
+| `AxesGizmo.cs` | The box, axes, labels, and floor grid around the plot. |
+| `PlotClock.cs` | The time `t`: playing, pausing, speed, and looping. |
+| `SceneSettings.cs` | The background, the camera's sensitivity and inversion settings, the label settings, and which parts of the plot box (box, axes, and grids) are shown. |
+| `ControlPanel.cs` | Every ImGui window. |
+| `Presets.cs` | The built-in example equations. |
+
+All four plot types draw in to the same 4 × 4 × 4 metre box around the origin; the ranges set in the __Domain & Display__ window decide which part of each equation that box shows (see `PlotDomain.cs`). Because the box never changes size, the camera never needs to be re-framed, whatever ranges are chosen.
+
+## Parsing & Compiling Equations
+
+Typed equations are parsed once, when they're applied, in to a flat list of instructions for a small *stack machine*. Each instruction either pushes a number (a constant, or one of the plot's variables) on to a stack, or pops some numbers off the stack, combines them, and pushes the result. For example, `2x + sin(t)` becomes: push 2, push x, multiply, push t, call sin, add.
+
+The parser is a [recursive descent parser](https://en.wikipedia.org/wiki/Recursive_descent_parser), with one method per level of operator precedence. For example, unary minus binds more loosely than `^` (so `-2^2` is `-4`), and `^` is right-associative (so `2^3^2` is `2^9`):
+
+```csharp
+void ParseUnary() {
+	if (Current.Kind == TokenKind.Minus) {
+		++_index;
+		ParseUnary();
+		Emit(OpCode.Negate, popCount: 1);
+		return;
+	}
+	if (Current.Kind == TokenKind.Plus) {
+		++_index;
+		ParseUnary();
+		return;
+	}
+	ParsePower();
+}
+
+void ParsePower() {
+	ParsePrimary();
+	if (Current.Kind != TokenKind.Caret) return;
+	++_index;
+	ParseUnary();
+	Emit(OpCode.Power, popCount: 2);
+}
+```
+
+Evaluating the compiled equation is then just a loop over the instructions, with the stack allocated on the (call) stack, so evaluating an equation never allocates any memory:
+
+```csharp
+public float Evaluate(ReadOnlySpan<float> variables) {
+	Span<float> stack = stackalloc float[MaxStackDepth];
+	var top = -1;
+	foreach (var instruction in _instructions) {
+		switch (instruction.OpCode) {
+			case OpCode.PushConstant:
+				stack[++top] = instruction.Constant;
+				break;
+			case OpCode.PushVariable:
+				stack[++top] = variables[instruction.Operand];
+				break;
+			case OpCode.Add:
+				stack[top - 1] += stack[top--];
+				break;
+			case OpCode.Subtract:
+				stack[top - 1] -= stack[top--];
+				break;
+			case OpCode.Multiply:
+				stack[top - 1] *= stack[top--];
+				break;
+			case OpCode.Divide:
+				stack[top - 1] /= stack[top--];
+				break;
+			case OpCode.Power:
+				stack[top - 1] = MathF.Pow(stack[top - 1], stack[top--]);
+				break;
+			case OpCode.Negate:
+				stack[top] = -stack[top];
+				break;
+			case OpCode.Call:
+				top = Call((MathFunction) instruction.Operand, stack, top);
+				break;
+		}
+	}
+	return stack[top];
+}
+```
+
+* In testing, evaluating the "Ripples" preset took around 96 nanoseconds; so even a 256 × 256 surface (65,536 evaluations) takes only a few milliseconds per frame.
+* A mistake in an equation (such as an unknown name, or a function given the wrong number of arguments) raises an `ExpressionException` with a description and a position, which the control panel shows in red. The previous plot stays on screen until the equation is fixed.
+* Writing a number directly before a name or bracket multiplies them, so `2x`, `3(x + 1)`, and `0.3 sqrt(x)` all work as you'd expect.
+
+## Surfaces on a Mutable Grid
+
+A surface is a [mutable grid](../reference/dynamic_meshes_and_mutable_grids.md#mutable-grids): a flat sheet of vertices whose heights can be changed at any time. Every frame, the surface plot evaluates its equation at every vertex, and writes the result as that vertex's height:
+
+```csharp
+public void Update(float time, CompiledExpression[] expressions) {
+	var expression = expressions[0];
+	Span<float> variables = stackalloc float[3];
+	variables[2] = time;
+
+	using (var lease = _grid.BorrowVerticesSpan(permitLateralDisplacement: false, recalculateNormals: true)) {
+		var vertices = lease.Span;
+		for (var i = 0; i < vertices.Length; ++i) {
+			var normalized = _grid.GetVertexCoordinateNormalized(i);
+			variables[0] = _domain.FromNormalizedX(normalized.X);
+			variables[1] = _domain.FromNormalizedZ(normalized.Y);
+			var value = expression.Evaluate(variables);
+			var height = Single.IsFinite(value) ? Math.Clamp(_domain.ToWorldY(value), -PlotDomain.WorldHalfSize, PlotDomain.WorldHalfSize) : 0f;
+			vertices[i] = new MutableGridVertex(height);
+			_colors.Set(_grid.GetVertexCoordinate(i), ColorMap.SampleTexel(_domain.ColorMap, height / (PlotDomain.WorldHalfSize * 2f) + 0.5f));
+		}
+	}
+	_colors.Upload();
+}
+```
+
+* `GetVertexCoordinateNormalized()` gives each vertex's position on the grid (from -0.5 to 0.5 in each direction), which the domain turns in to the `x` and `z` values for the equation.
+* `recalculateNormals: true` makes the grid recalculate which way each part of the surface faces, so that it's lit according to its shape.
+* The grid's bounding box is set from `maxHeightDisplacement` when it's created, so heights are clamped to the plot box; anything outside it would otherwise be culled.
+
+Mutable grid vertices don't have a colour of their own, so each surface is coloured by a [writable texture](../reference/writable_textures.md) with one texel for every vertex. The texture is stretched over the whole grid, so each texel lands on its vertex:
+
+```csharp
+public void Set(XYPair<int> gridCoordinate, TexelRgb24 texel) {
+	_texels[(Dimensions.Y - 1 - gridCoordinate.Y) * Dimensions.X + gridCoordinate.X] = texel;
+}
+```
+
+Texture data is written from the top row down, whereas the grid's coordinates count up from the bottom, so the row is flipped.
+
+## Vector Fields with Arrow Instances
+
+A vector field is drawn as a lattice of arrows: one [model instance](../reference/scene_objects.md) per lattice point, all sharing a single arrow mesh (created with `MeshBuilder.CreateArrow()`). Every frame, each arrow is rotated to point along the field, and stretched according to the field's strength:
+
+```csharp
+public void Update(float time, CompiledExpression[] expressions) {
+	UpdatePalette();
+	Span<float> variables = stackalloc float[4];
+	variables[3] = time;
+
+	var largestMagnitude = 0f;
+	for (var i = 0; i < _arrows.Length; ++i) {
+		var point = _samplePoints[i];
+		variables[0] = _domain.FromNormalizedX(point.X / (PlotDomain.WorldHalfSize * 2f));
+		variables[1] = _domain.FromNormalizedY(point.Y / (PlotDomain.WorldHalfSize * 2f));
+		variables[2] = _domain.FromNormalizedZ(point.Z / (PlotDomain.WorldHalfSize * 2f));
+		var vector = new Vect(SafeEvaluate(expressions[0], variables), SafeEvaluate(expressions[1], variables), SafeEvaluate(expressions[2], variables));
+		_vectors[i] = vector;
+		largestMagnitude = MathF.Max(largestMagnitude, vector.Length);
+	}
+	_largestMagnitude = largestMagnitude;
+
+	for (var i = 0; i < _arrows.Length; ++i) {
+		var vector = _vectors[i];
+		var magnitude = vector.Length;
+		var arrow = _arrows[i];
+		var lengthFraction = _domain.NormalizeArrowLengths
+			? (largestMagnitude > 0f ? magnitude / largestMagnitude : 0f)
+			: MathF.Min(magnitude * _domain.ArrowLengthScale, 1.5f);
+		if (lengthFraction <= 0.001f || vector.Direction == Direction.None) {
+			arrow.SetScaling(Vect.Zero);
+			continue;
+		}
+
+		var length = _cellSize * ArrowCellFraction * lengthFraction;
+		var thickness = _cellSize * ArrowCellFraction;
+		arrow.SetRotation(Rotation.FromStartAndEndDirection(Direction.Forward, vector.Direction));
+		arrow.SetScaling(new Vect(thickness, thickness, length));
+
+		var paletteIndex = largestMagnitude > 0f ? Math.Min((int) (magnitude / largestMagnitude * PaletteSize), PaletteSize - 1) : 0;
+		if (paletteIndex == _paletteIndices[i]) continue;
+		_paletteIndices[i] = paletteIndex;
+		arrow.SetMaterial(_paletteMaterials[paletteIndex]);
+	}
+}
+```
+
+* The arrow mesh points along `Direction.Forward`, so `Rotation.FromStartAndEndDirection()` turns it to face along the field, and the scaling stretches it along its length (the Z axis) only, so that thin arrows stay thin.
+* By default, the longest arrow is scaled to fill its cell and the rest are scaled relative to it. Turning off "Scale arrows to the largest" uses a fixed scale instead.
+* Arrows are coloured by choosing one of 16 shared materials (one for each band of strength), so changing an arrow's colour is just `SetMaterial()`; and it's only called when an arrow actually changes band.
+* In testing, 2,744 arrows (14 per side) still rendered in around 4.3 milliseconds per frame.
+
+## Parametric Surfaces with a Dynamic Vertex Buffer
+
+A parametric surface can fold over itself, so it can't be a mutable grid. Instead, it's generated in a [dynamic vertex buffer](../reference/dynamic_meshes_and_mutable_grids.md#dynamic-vertex-buffers). The triangles never change, so they're written once, when the plot is created; twice over, the second time facing the other way, so that both sides of the surface are drawn:
+
+```csharp
+void WriteTriangles() {
+	using var lease = _buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
+	var triangles = lease.Span;
+	var backOffset = _resolution * _resolution;
+	var t = 0;
+	for (var u = 0; u < _resolution - 1; ++u) {
+		for (var v = 0; v < _resolution - 1; ++v) {
+			var a = u * _resolution + v;
+			var b = (u + 1) * _resolution + v;
+			var c = u * _resolution + v + 1;
+			var d = (u + 1) * _resolution + v + 1;
+			triangles[t++] = new VertexTriangle(a, b, c);
+			triangles[t++] = new VertexTriangle(b, d, c);
+			triangles[t++] = new VertexTriangle(backOffset + a, backOffset + c, backOffset + b);
+			triangles[t++] = new VertexTriangle(backOffset + b, backOffset + c, backOffset + d);
+		}
+	}
+}
+```
+
+Every frame, the equations are evaluated at each `(u, v)`, and then each vertex's normal is worked out from its neighbours:
+
+```csharp
+public void Update(float time, CompiledExpression[] expressions) {
+	UpdateGradient();
+	Span<float> variables = stackalloc float[3];
+	variables[2] = time;
+	var max = Vector3.Max(Vector3.Zero, Vector3.Zero);
+	var min = max;
+	for (var u = 0; u < _resolution; ++u) {
+		variables[0] = _domain.FromNormalizedU(u / (_resolution - 1f) - 0.5f);
+		for (var v = 0; v < _resolution; ++v) {
+			variables[1] = _domain.FromNormalizedV(v / (_resolution - 1f) - 0.5f);
+			var position = new Vector3(
+				_domain.ToWorldX(SafeEvaluate(expressions[0], variables)),
+				_domain.ToWorldY(SafeEvaluate(expressions[1], variables)),
+				_domain.ToWorldZ(SafeEvaluate(expressions[2], variables))
+			);
+			_positions[u * _resolution + v] = position;
+			min = Vector3.Min(min, position);
+			max = Vector3.Max(max, position);
+		}
+	}
+
+	using (var lease = _buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: true)) {
+		var vertices = lease.Span;
+		var backOffset = _resolution * _resolution;
+		for (var u = 0; u < _resolution; ++u) {
+			for (var v = 0; v < _resolution; ++v) {
+				var index = u * _resolution + v;
+				var position = _positions[index];
+				var alongU = Vector3.Normalize(_positions[Math.Min(u + 1, _resolution - 1) * _resolution + v] - _positions[Math.Max(u - 1, 0) * _resolution + v]);
+				var alongV = Vector3.Normalize(_positions[u * _resolution + Math.Min(v + 1, _resolution - 1)] - _positions[u * _resolution + Math.Max(v - 1, 0)]);
+				var normal = Vector3.Normalize(Vector3.Cross(alongU, alongV));
+				if (!Single.IsFinite(normal.X) || !Single.IsFinite(alongU.X)) {
+					normal = Vector3.UnitY;
+					alongU = Vector3.UnitX;
+				}
+				var bitangent = Vector3.Cross(normal, alongU);
+				var colorCoord = new XYPair<float>(0.5f, Math.Clamp(position.Y / (PlotDomain.WorldHalfSize * 2f) + 0.5f, 0f, 1f));
+				var location = Location.FromVector3(position);
+				vertices[index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(bitangent), Direction.FromVector3(normal)));
+				vertices[backOffset + index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(-bitangent), Direction.FromVector3(-normal)));
+			}
+		}
+	}
+	_buffer.SetBoundingBox(PositionedCuboid.FromHalfDimensions((max.X - min.X) * 0.5f, (max.Y - min.Y) * 0.5f, (max.Z - min.Z) * 0.5f, Location.FromVector3((min + max) * 0.5f)), overwriteChildMeshBoundingBoxes: true);
+}
+```
+
+* The directions towards the vertex's neighbours along `u` and along `v` give two directions along the surface; their cross product is the surface's normal. `MeshVertex.CalculateTangentRotation()` turns the three directions in to the vertex's tangent rotation.
+* Each vertex's texture coordinate is set from its height, so it samples a different part of a gradient texture (a thin strip, made from the colour map); this is how the surface is coloured by height.
+* The bounding box is set from the smallest box that contains every vertex, so the surface is never culled incorrectly as it moves.
+
+## Scalar Field Slices
+
+A scalar field gives a single value at every point in 3D space, which is hard to show all at once. Instead, a flat grid slices through the field, coloured by the field's value on the slice. The slice can face any of the three axes, and its position can be moved through the field:
+
+```csharp
+var (xDirection, yDirection, upDirection) = _axis switch {
+	SliceAxis.FacingZ => (Direction.Left, Direction.Up, Direction.Backward),
+	SliceAxis.FacingX => (Direction.Forward, Direction.Up, Direction.Left),
+	_ => (Direction.Left, Direction.Forward, Direction.Up)
+};
+```
+
+The slice's colours are what matter, so it uses a [lighting-ignoring material](../reference/lighting_ignoring_materials.md): the colours look the same whichever way the slice faces, with no shading. The colour range adapts to the values on the slice each frame, and is shown underneath the colour map in the __Domain & Display__ window.
+
+## Time
+
+The plot clock advances `t` each frame, and can be paused, scrubbed, sped up, slowed down, run backwards, or looped over a range:
+
+```csharp
+public void Advance(float deltaTime) {
+	if (!IsPlaying) return;
+	Time += deltaTime * Speed;
+	if (!IsLooping || LoopEnd <= LoopStart) return;
+	var length = LoopEnd - LoopStart;
+	if (Time > LoopEnd || Time < LoopStart) Time = LoopStart + (((Time - LoopStart) % length) + length) % length;
+}
+```
+
+## Axes & Labels
+
+The box, axes, range labels, and floor grid are all [scene primitives](../reference/scene_primitives.md). They're only rebuilt when the plot type or the ranges change (and the labels alone are rebuilt when their settings in the __Scene__ window change):
+
+```csharp
+void AddAxisLabels(Vect length, string name, float min, float max, in PrimitivePaintbrush brush, float nameSize, float rangeSize) {
+	var end = Corner + length;
+	var outward = (Corner + length * 0.5f).AsVect().WithLength(0.3f);
+	_labels.Add(_labelScene.AddPrimitiveString(end + length.WithLength(1.1f) + outward * 2f, name, brush, nameSize, constantScreenSize: true));
+	_labels.Add(_labelScene.AddPrimitiveString(Corner + length * 0.05f + outward, Format(min), brush, rangeSize, constantScreenSize: true));
+	_labels.Add(_labelScene.AddPrimitiveString(end - length * 0.05f + outward, Format(max), brush, rangeSize, constantScreenSize: true));
+}
+```
+
+The __Scene__ window can also hide the box and the axes, and add a grid to the bottom face of each axis (by default, only the floor: the bottom of the `y` axis). Each axis can have several evenly spaced grids, starting from its bottom face; for example, two grids on the `y` axis puts a second grid halfway up the box:
+
+```csharp
+void AddGrids(int axisIndex, Vect length) {
+	if (!_settings.GridEnabled[axisIndex]) return;
+	var count = Math.Max(_settings.GridCount[axisIndex], 1);
+	for (var i = 0; i < count; ++i) {
+		var centre = Location.Origin + length * (i / (float) count - 0.5f);
+		_primitives.Add(_scene.AddPrimitiveGrid(centre, GridBrush, gridNormal: length.Direction, gridSize: Half * 2f, majorGridLineSpacing: 1f, minorGridLineSpacing: 0.25f));
+	}
+}
+```
+
+Text primitives always face the camera and stay the same size on screen (`constantScreenSize: true`), so the labels stay readable as the camera orbits. The paintbrush's primary colour is the text colour and its secondary colour is the outline; both, and the size, can be changed (or the labels hidden altogether) in the __Scene__ window.
+
+The labels are added to a second scene (`labelScene`), which has no backdrop and is rendered with the same camera, over the plot. Because it's a separate scene, nothing in the plot scene (not the surface, nor the axis arrows) can ever hide a label; they're always on top. This is the [always-on-top](../reference/compositing.md#always-on-top) technique described on the compositing page.
+
+## ImGui Controls
+
+The controls are drawn with [Dear ImGui](../reference/imgui_integration.md), on top of the 3D scene. The ImGui scene has its own renderer, which is added to a [compositor](../reference/compositing.md) after the 3D scene's renderer, so it's drawn on top:
+
+```csharp
+using var sceneRenderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+using var labelRenderer = factory.RendererBuilder.CreateRenderer(labelScene, camera, window);
+using var imguiScene = factory.SceneBuilder.CreateImGuiScene(factory);
+using var imguiRenderer = factory.RendererBuilder.CreateRenderer(imguiScene, window);
+using var compositor = factory.RendererBuilder.CreateCompositor(window);
+sceneRenderer.SetQuality(BuiltInQualityConfiguration.Medium);
+labelRenderer.SetQuality(BuiltInQualityConfiguration.DebugAndDiagnostic);
+compositor.Add(sceneRenderer, RenderCompositionType.Standard);
+compositor.Add(labelRenderer, RenderCompositionType.RetainPreviousScenes);
+compositor.Add(imguiRenderer, RenderCompositionType.RetainPreviousScenes);
+```
+
+Every frame, the UI is built between `BeginFrame()` and `EndFrame()`, and the compositor then renders both scenes:
+
+```csharp
+while (!loop.Input.UserQuitRequested) {
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
+	var input = loop.Input.KeyboardAndMouse;
+
+	imguiScene.BeginFrame(deltaTime, loop, window, imguiRenderer);
+	panel.Draw(loop);
+
+	var io = ImGui.GetIO();
+	if (!io.WantCaptureKeyboard && input.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) break;
+	if (!io.WantCaptureMouse) {
+		if (input.KeyIsCurrentlyDown(KeyboardOrMouseKey.MouseLeft) || input.KeyIsCurrentlyDown(KeyboardOrMouseKey.MouseRight)) {
+			cameraController.AdjustAngleViaMouseCursor(input, Angle.FromDegrees(0.25f * settings.OrbitSensitivity), settings.InvertHorizontal);
+			cameraController.AdjustHeightViaMouseCursor(input, 0.02f * settings.OrbitSensitivity, settings.InvertVertical);
+		}
+		cameraController.AdjustDistanceViaMouseWheel(input, 0.6f * settings.ZoomSensitivity);
+	}
+	cameraController.Progress(deltaTime);
+
+	clock.Advance(deltaTime);
+	plots.Update(clock.Time);
+
+	imguiScene.EndFrame();
+	compositor.RenderAll();
+}
+```
+
+ImGui doesn't stop the rest of the application from seeing the mouse and keyboard; so the camera only responds to the mouse when `WantCaptureMouse` is `false` (i.e. when the mouse isn't over an ImGui window), and Escape only exits when ImGui isn't using the keyboard (so pressing Escape while typing an equation doesn't close the application).
+
+Each equation is an ImGui text box. `ImGuiInputTextFlags.EnterReturnsTrue` makes it return `true` when Enter is pressed, which applies the equation:
+
+```csharp
+void DrawEquationWindow(Vector2 position, float fontSize) {
+	ImGui.SetNextWindowPos(position, ImGuiCond.FirstUseEver);
+	if (ImGui.Begin("Equation", WindowFlags)) {
+		ImGui.SetNextItemWidth(fontSize * 22f);
+		if (ImGui.BeginCombo("Plot type", Describe(_selectedType))) {
+			foreach (var type in PlotTypes) {
+				if (ImGui.Selectable(Describe(type), type == _selectedType)) {
+					_selectedType = type;
+					Apply();
+				}
+			}
+			ImGui.EndCombo();
+		}
+
+		ImGui.SetNextItemWidth(fontSize * 22f);
+		if (ImGui.BeginCombo("Presets", "Choose a preset...")) {
+			foreach (var preset in Presets.All) {
+				if (preset.Type == _selectedType && ImGui.Selectable(preset.Name)) LoadPreset(preset);
+			}
+			ImGui.EndCombo();
+		}
+
+		ImGui.Separator();
+		var labels = PlotController.GetEquationLabels(_selectedType);
+		var equations = _equations[(int) _selectedType];
+		var applyRequested = false;
+		for (var i = 0; i < labels.Length; ++i) {
+			ImGui.AlignTextToFramePadding();
+			ImGui.Text($"{labels[i],2} =");
+			ImGui.SameLine();
+			ImGui.SetNextItemWidth(fontSize * 30f);
+			if (ImGui.InputText($"##equation{i}", ref equations[i], 512, ImGuiInputTextFlags.EnterReturnsTrue)) applyRequested = true;
+		}
+		if (ImGui.Button("Apply (Enter)") || applyRequested) Apply();
+
+		ImGui.TextDisabled($"Variables: {String.Join(", ", PlotController.GetVariableNames(_selectedType))}.  Constants: pi, tau, e.");
+		ImGui.TextDisabled("Functions: sin cos tan asin acos atan atan2 sinh cosh tanh sqrt abs");
+		ImGui.TextDisabled("exp log floor ceil round sign min max clamp pow mod");
+		if (_error != null) ImGui.TextColored(ErrorColor, _error);
+	}
+	ImGui.End();
+}
+```
+
+The windows are placed relative to the size of ImGui's font (which TinyFFR scales to suit the display), so they're laid out the same way on high-DPI displays.
+
+## Orbital Camera
+
+The camera is controlled by an [orbital camera controller](../reference/camera_controller_orbital.md), which keeps it circling the centre of the plot box. The controller's default limits suit small objects, so they're widened to suit the plot. A negative `MinHeight` lets the camera go below the plot as well as above it:
+
+```csharp
+using var cameraController = camera.CreateController<OrbitalCameraController>();
+cameraController.SetConstraints(Location.Origin, Direction.Up, Direction.Forward, angleRange: null, minHeight: -10f, maxHeight: 10f, minDistance: 3f, maxDistance: 25f);
+cameraController.Angle = Angle.FromDegrees(-35f);
+cameraController.Height = 3.5f;
+cameraController.Distance = 8f;
+```
+
+The __Scene__ window (in the bottom-right corner) sets how sensitive the camera is to the mouse, and whether either axis is inverted. These are passed straight to the controller's `AdjustAngleViaMouseCursor()`, `AdjustHeightViaMouseCursor()`, and `AdjustDistanceViaMouseWheel()` methods, which each take an amount per pixel (or per mouse wheel step) and an `invertMouseControl` flag (see the main loop above). The same window also chooses the background: a solid colour, or one of TinyFFR's built-in backdrops:
+
+```csharp
+public void ApplyBackground(Scene scene) {
+	switch (Background) {
+		case BackgroundStyle.Clouds:
+			scene.SetBackdrop(BuiltInSceneBackdrop.Clouds, SceneBackdropBrightnessPreset.InsideBrightLighting);
+			break;
+		case BackgroundStyle.Starfield:
+			scene.SetBackdrop(BuiltInSceneBackdrop.Starfield, backdropIntensity: 1f);
+			break;
+		default:
+			scene.SetBackdrop(ColorVect.SrgbToLinear(new ColorVect(BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z)), indirectLightingIntensity: 0.6f);
+			break;
+	}
+}
+```
+
+The colour picker works in sRGB (as an image editor would), but backdrop colours are linear, so the colour is converted with `ColorVect.SrgbToLinear()`. The starfield is shown as it was authored (at an intensity of `1f`) rather than at a brightness preset: it's almost entirely black, so brightening it until it lit the scene like a room would turn the whole sky white.
+
+## Stuff to Tinker With
+
+* Plot more than one equation at once (for example a surface together with its gradient as a vector field).
+* Add more functions or constants to the parser (for example `noise(x, y)`, or `if(a, b, c)`).
+* Colour surfaces by something other than height, such as their slope.
+* Animate particles that flow along the vector field.
+* Show a scalar field as several stacked slices at once, or as an animated isosurface.
+* Save and load equations.

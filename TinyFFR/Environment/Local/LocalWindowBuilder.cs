@@ -280,6 +280,16 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 			).ThrowIfFailure();
 		}
 	}
+	public XYPair<int> GetLogicalSize(ResourceHandle<Window> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetWindowSize(
+			handle,
+			out var width,
+			out var height
+		).ThrowIfFailure();
+		return new(width, height);
+	}
+
 	public XYPair<int> GetViewportDimensions(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowBackBufferSizeActual(

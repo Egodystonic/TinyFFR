@@ -54,6 +54,14 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			}
 		}
 
+		public XYPair<int> LogicalDimensions {
+			get {
+				if (IsWindow) return ((IRenderTarget) AsWindow).LogicalDimensions;
+				if (IsBuffer) return ((IRenderTarget) AsBuffer).LogicalDimensions;
+				throw new InvalidOperationException();
+			}
+		}
+
 		public RenderTargetUnion(Window window) {
 			TypeHandle = ResourceHandle<Window>.TypeHandle;
 			AsWindow = window;
@@ -873,7 +881,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
 
 		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
-			pixelCoord = pixelCoord.ScaledByReal(curTargetSize.Cast<float>() / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
+			pixelCoord = pixelCoord.ScaledByReal(curTargetSize.Cast<float>() / rendererData.RenderTarget.AsWindow.LogicalSize.Cast<float>());
 		}
 
 		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(curTargetSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
@@ -916,13 +924,13 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions.Cast<float>();
 
 		if (applyDpiScaling) {
-			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize);
+			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.LogicalSize.Cast<float>() / curTargetSize);
 		}
 
 		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
 
 		if (applyDpiScaling) {
-			pixelCoord = pixelCoord.ScaledByReal(curTargetSize / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
+			pixelCoord = pixelCoord.ScaledByReal(curTargetSize / rendererData.RenderTarget.AsWindow.LogicalSize.Cast<float>());
 		}
 
 		return PickModelInstanceAtPhysicalViewportCoord(handle, pixelCoord, includeTransparentObjects);
@@ -980,7 +988,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).Size;
 		
 		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
-			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize.Cast<float>());
+			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.LogicalSize.Cast<float>() / curTargetSize.Cast<float>());
 		}
 
 		pixelCoord = MathUtils.FindAnchoredPointIn2DCoordinateSystem(viewportSize, DiagonalOrientation2D.UpLeft, coordOrigin.AsGeneralOrientation(), pixelCoord);
@@ -1047,7 +1055,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			surfaceSize = new XYPair<float>(1f, 1f);
 		}
 		else if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
-			var dpiScalar = rendererData.RenderTarget.AsWindow.Size.Cast<float>() / viewportBounds.TargetSize.Cast<float>();
+			var dpiScalar = rendererData.RenderTarget.AsWindow.LogicalSize.Cast<float>() / viewportBounds.TargetSize.Cast<float>();
 			if (Single.IsFinite(dpiScalar.X) && Single.IsFinite(dpiScalar.Y)) {
 				viewportSize = viewportSize.ScaledBy(dpiScalar);
 				viewportBottomLeft = viewportBottomLeft.ScaledBy(dpiScalar);
@@ -1149,7 +1157,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			canvasBounds.Size,
 			canvasBounds.BottomLeft,
 			rendererData.RenderTarget.ViewportDimensions,
-			rendererData.RenderTarget.IsWindow ? rendererData.RenderTarget.AsWindow.Size : rendererData.RenderTarget.ViewportDimensions
+			rendererData.RenderTarget.IsWindow ? rendererData.RenderTarget.AsWindow.LogicalSize : rendererData.RenderTarget.ViewportDimensions
 		);
 		SetViewDepthOfFieldEnabled(viewport.Handle, camera.FocusDistance != null).ThrowIfFailure(); 
 

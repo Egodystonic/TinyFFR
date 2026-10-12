@@ -163,16 +163,17 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		}
 	}
 	/// <summary>
-	/// The lowest the camera may sit above <see cref="Target"/>, in metres, or <see langword="null"/> for no limit. Must be positive. Defaults to <see cref="MinHeightDefault"/>.
+	/// The lowest the camera may sit above <see cref="Target"/>, in metres, or <see langword="null"/> for no limit. May be negative, to let the camera go below
+	/// <see cref="Target"/>. Defaults to <see cref="MinHeightDefault"/>.
 	/// </summary>
 	/// <remarks>
-	/// Setting this past <see cref="MaxHeight"/> raises that property to match, and <see cref="Height"/> is re-clamped immediately. Values that are not positive and finite are ignored
+	/// Setting this past <see cref="MaxHeight"/> raises that property to match, and <see cref="Height"/> is re-clamped immediately. Values that are not finite are ignored
 	/// rather than throwing.
 	/// </remarks>
 	public float? MinHeight {
 		get; 
 		set {
-			if (value?.IsPositiveAndFinite() == false) return;
+			if (value is { } v && !Single.IsFinite(v)) return;
 			field = value;
 			if (value > MaxHeight) MaxHeight = value;
 #pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
@@ -181,16 +182,17 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		}
 	}
 	/// <summary>
-	/// The highest the camera may sit above <see cref="Target"/>, in metres, or <see langword="null"/> for no limit. Must be positive. Defaults to <see cref="MaxHeightDefault"/>.
+	/// The highest the camera may sit above <see cref="Target"/>, in metres, or <see langword="null"/> for no limit. May be negative, to keep the camera below
+	/// <see cref="Target"/>. Defaults to <see cref="MaxHeightDefault"/>.
 	/// </summary>
 	/// <remarks>
-	/// Setting this past <see cref="MinHeight"/> lowers that property to match, and <see cref="Height"/> is re-clamped immediately. Values that are not positive and finite are ignored
+	/// Setting this past <see cref="MinHeight"/> lowers that property to match, and <see cref="Height"/> is re-clamped immediately. Values that are not finite are ignored
 	/// rather than throwing.
 	/// </remarks>
 	public float? MaxHeight {
 		get;
 		set {
-			if (value?.IsPositiveAndFinite() == false) return;
+			if (value is { } v && !Single.IsFinite(v)) return;
 			field = value;
 			if (value < MinHeight) MinHeight = value;
 #pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
@@ -236,7 +238,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 	
 	/// <summary>
-	/// How far above <see cref="Target"/> the camera orbits, in metres.
+	/// How far above <see cref="Target"/> the camera orbits, in metres (negative values put the camera below <see cref="Target"/>).
 	/// </summary>
 	/// <remarks>
 	/// Measured along <see cref="UpDirection"/>. Values are clamped to between <see cref="MinHeight"/> and <see cref="MaxHeight"/> as they are set, so reading this

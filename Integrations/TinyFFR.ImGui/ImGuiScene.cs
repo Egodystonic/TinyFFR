@@ -157,7 +157,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// <param name="window">The window being drawn to, whose size and framebuffer dimensions are used for the display size.</param>
 	public void BeginFrame(float deltaTime, ApplicationLoop loop, Window window) {
 		var framebufferSize = ((IRenderTarget) window).ViewportDimensions;
-		BeginFrame(deltaTime, loop, window.Size, framebufferSize, XYPair<int>.Zero, framebufferSize, window, null);
+		BeginFrame(deltaTime, loop, window.LogicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, window, null);
 	}
 
 	/// <summary>
@@ -172,7 +172,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// <param name="renderer">The renderer this interface will be drawn with. Its sub-area is adopted as the region the interface occupies, and the renderer is told that the sub-area is being applied here rather than by it.</param>
 	public void BeginFrame(float deltaTime, ApplicationLoop loop, Window window, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
-		BeginFrame(deltaTime, loop, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window, renderer);
+		BeginFrame(deltaTime, loop, window.LogicalSize, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window, renderer);
 	}
 
 	/// <summary>

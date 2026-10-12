@@ -6,6 +6,7 @@ using System.Numerics;
 using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.DearImGui;
 using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Testing;
@@ -115,6 +116,18 @@ while (!loop.Input.UserQuitRequested) {
 		ImGui.Checkbox("Show Demo Window", ref showDemoWindow);
 
 		ImGui.Separator();
+		ImGui.Text($"Window: {window.FullscreenStyle}");
+		ImGui.Text($"Size {window.Size}  logical {window.LogicalSize}  pixels {((IRenderTarget) window).ViewportDimensions}");
+		if (ImGui.Button("Cycle fullscreen style")) {
+			window.FullscreenStyle = window.FullscreenStyle switch {
+				WindowFullscreenStyle.NotFullscreen => WindowFullscreenStyle.FullscreenBorderless,
+				WindowFullscreenStyle.FullscreenBorderless => WindowFullscreenStyle.Fullscreen,
+				_ => WindowFullscreenStyle.NotFullscreen
+			};
+			Console.WriteLine($"Fullscreen style is now {window.FullscreenStyle}: size={window.Size} logical={window.LogicalSize} pixels={((IRenderTarget) window).ViewportDimensions}");
+		}
+
+		ImGui.Separator();
 		ImGui.Text($"[V] sub-area mode: {subAreaModes[subAreaMode].Name}");
 		ImGui.Text($"sub-area {imguiRenderer.GetRenderSubAreaPixelDimensions()} at {imguiRenderer.GetRenderSubAreaPixelOffset()}");
 
@@ -184,7 +197,7 @@ while (!loop.Input.UserQuitRequested) {
 		secondsSinceLastReport = 0f;
 		Console.WriteLine(
 			$"[{subAreaModes[subAreaMode].Name}] " +
-			$"target={((IRenderTarget) window).ViewportDimensions} logical={window.Size} " +
+			$"target={((IRenderTarget) window).ViewportDimensions} logical={window.LogicalSize} size={window.Size} " +
 			$"subArea={imguiScene.LastFrameSubAreaSize}@{imguiScene.LastFrameSubAreaOffset} | " +
 			$"controls={controlsRect.Size.X:N0}x{controlsRect.Size.Y:N0}@{controlsRect.Pos.X:N0},{controlsRect.Pos.Y:N0} " +
 			$"gamepad={gamepadRect.Size.X:N0}x{gamepadRect.Size.Y:N0}@{gamepadRect.Pos.X:N0},{gamepadRect.Pos.Y:N0}"

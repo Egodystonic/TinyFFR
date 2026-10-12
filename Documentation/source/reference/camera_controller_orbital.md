@@ -59,7 +59,7 @@ controller.Progress(deltaTime); // (7)!
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `Height`
 
-:   Sets how far above the `Target` the camera is, along the `UpDirection` axis. Clamped to between `MinHeight` and `MaxHeight`.
+:   Sets how far above the `Target` the camera is, along the `UpDirection` axis (negative values put the camera below the `Target`). Clamped to between `MinHeight` and `MaxHeight`.
 	
 	Defaults to `0.1f`.
 	
@@ -105,7 +105,7 @@ controller.Progress(deltaTime); // (7)!
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `MinHeight`
 
-:   The minimum permitted value for `Height`. Can be `null` to remove the lower bound.
+:   The minimum permitted value for `Height`. Can be `null` to remove the lower bound, or negative to let the camera go below the `Target`.
 	
 	Defaults to `0.1f`.
 	
@@ -127,7 +127,7 @@ controller.Progress(deltaTime); // (7)!
 	
 	Defaults to `2f`.
 
-All four height and distance limits must be positive (invalid values are ignored). Setting a minimum higher than its maximum (or vice versa) moves the other limit to match, and `Height` or `Distance` is re-clamped immediately.
+The height limits can be any finite value (including negative values, which are below the `Target`), but the distance limits must be positive (invalid values are ignored). Setting a minimum higher than its maximum (or vice versa) moves the other limit to match, and `Height` or `Distance` is re-clamped immediately.
 
 #### Convenience Methods
 
