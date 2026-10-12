@@ -19,7 +19,7 @@ static class WorldSettings {
 	public const int MaxFacesPerMesh = 8192;
 	public const float MaxDeltaTime = 0.1f;
 
-	public static int WorkerThreadCount => Math.Clamp(Environment.ProcessorCount - 1, 1, 8);
+	public static int MaxJobsInFlight => Environment.ProcessorCount + MaxMeshUploadsPerFrame;
 	public static float NearDetailDistance => NearRegionRadius * RegionSize;
 	public static float RenderDistance => FarSuperRegionRadius * SuperRegionSize;
 }

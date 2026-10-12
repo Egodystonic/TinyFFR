@@ -15,14 +15,12 @@ description: A showcase example that generates an infinite voxel world, streams 
 
 ## :material-flask-outline: Demonstrated Features
 
-* Procedurally generating an infinite voxel world, with hills, mountains, and biomes;
-* Building chunk meshes on background threads and streaming them in around the player;
-* Drawing distant terrain at lower levels of detail, for a view distance of around two and a half kilometres;
-* Writing geometry in to dynamic vertex buffers;
-* First-person movement with gravity, jumping, and collision against the voxel grid;
-* Keyboard, mouse, and gamepad controls;
-* A sun with shadows, distance fog, and a 2D debug readout;
-* Keeping the application free of garbage collection pauses after start-up.
+* [:material-book-open-page-variant: Dynamic Meshes & Mutable Grids](../reference/dynamic_meshes_and_mutable_grids.md#dynamic-vertex-buffers): Writing generated geometry in to dynamic vertex buffers, and re-using them as the world streams in and out;
+* [:material-book-open-page-variant: First-Person Camera Controller](../reference/camera_controller_first_person.md): Looking around with a first-person camera controller;
+* [:material-book-open-page-variant: Keyboard / Mouse Input](../reference/keyboard_and_mouse_input.md) | [:material-book-open-page-variant: Gamepad Input](../reference/gamepad_input.md): Keyboard, mouse, and gamepad controls;
+* [:material-book-open-page-variant: Directional Lights](../reference/directional_lights.md) | [:material-book-open-page-variant: Fog](../reference/fog.md): A sun with shadows, and distance fog;
+* [:material-book-open-page-variant: Canvas Scenes (2D)](../reference/canvas_scenes.md): A 2D debug readout drawn over the 3D scene;
+* [:material-book-open-page-variant: Avoiding GC Stutter](../reference/avoiding_gc_stutter.md): Keeping the application free of garbage collection pauses after start-up.
 
 ## Running It
 
@@ -63,7 +61,7 @@ The terrain is drawn at three levels of detail (see [Distant Terrain](#distant-t
 
 As the player moves, chunks and tiles that fall too far behind are removed and their resources re-used for new ones ahead.
 
-The expensive work (generating each chunk's blocks and building its mesh) happens on background *worker* threads, so that the main thread can keep rendering frames smoothly. The main thread only hands out jobs, uploads finished meshes to the GPU, moves the player, and renders:
+The expensive work (generating each chunk's blocks and building its mesh) happens on TinyFFR's background *worker* threads, so that the main thread can keep rendering frames smoothly. The main thread only hands out jobs, uploads finished meshes to the GPU, moves the player, and renders:
 
 ```mermaid
 flowchart TB
@@ -77,14 +75,14 @@ flowchart TB
 		render["Render the world and readout"]:::render
 		iterate --> manager --> upload --> player --> hud --> render --> iterate
 	end
-	subgraph workers ["Worker threads"]
+	subgraph workers ["TinyFFR worker threads"]
 		direction TB
 		generate["Terrain generator:<br/>fill a chunk's blocks,<br/>or sample a tile's heights"]:::step
 		mesh["Chunk / far terrain mesher:<br/>build vertices & triangles"]:::step
 		generate --> mesh
 	end
-	manager -- "job queue" --> generate
-	mesh -- "result queue" --> upload
+	manager -- "DispatchWorkerThreadJob()" --> generate
+	mesh -- "completed job" --> upload
 
 	classDef env fill:#219ebc,fill-opacity:0.3,stroke:#219ebc,stroke-width:2px
 	classDef asset fill:#f4a300,fill-opacity:0.3,stroke:#e09400,stroke-width:2px
@@ -93,7 +91,7 @@ flowchart TB
 	classDef step fill:#8a939b,fill-opacity:0.2,stroke:#8a939b,stroke-width:2px
 ```
 
-This is the "Streaming Open World" pattern from [Scaling Up: Application Flow](application_flow.md#streaming-open-world), with TinyFFR's own [asynchronous loading](../reference/asynchronous_loading.md) replaced by the example's own worker threads (because the work here is generating data rather than loading asset files).
+This is the "Streaming Open World" pattern from [Scaling Up: Application Flow](application_flow.md#streaming-open-world), except that the work here is generating data rather than loading asset files, so instead of TinyFFR's [asynchronous loading](../reference/asynchronous_loading.md) functions, the example hands its own jobs to the same worker threads TinyFFR uses for asynchronous loading.
 
 The code is split in to one file per responsibility:
 
@@ -107,7 +105,7 @@ The code is split in to one file per responsibility:
 | `TerrainMesh.cs` | Mesh data shared by both meshers, and the code that writes one textured square (quad) in to it. |
 | `ChunkMesher.cs` | Turns a chunk's blocks in to vertices and triangles. |
 | `FarTerrainMesher.cs` | Builds a low-detail terrain tile's mesh straight from the terrain generator's heights. |
-| `ChunkWorkerPool.cs` | The worker threads, and the queues used to talk to them. |
+| `TerrainJobScheduler.cs` | Sends terrain jobs to TinyFFR's worker threads, and collects the finished results. |
 | `Chunk.cs` / `TerrainTile.cs` / `Region.cs` | One chunk's blocks, one low-detail terrain tile, and coordinate types. Chunks and tiles each have a `GpuMeshSlot`. |
 | `GpuMeshSlot.cs` | One dynamic vertex buffer, the mesh drawing it, and the model instance placing it in the scene. |
 | `ChunkManager.cs` | The near level: decides which full-detail chunks are needed, and answers "is this block solid?" for collision. |
@@ -181,57 +179,63 @@ All of a block type's textures live side-by-side in one image, `block_atlas.png`
 
 ## Background Workers
 
-`ChunkWorkerPool` starts one worker thread per spare CPU core. Each worker waits for a job, generates and meshes a chunk (or builds a distant region's coarse mesh), then hands the result back:
+TinyFFR keeps a pool of worker threads (one per CPU core) for its own [asynchronous loading](../reference/asynchronous_loading.md), and `ResourceAllocator.DispatchWorkerThreadJob()` lets an application share that pool for its own background work. `TerrainJobScheduler` uses it to generate and mesh each chunk (or build a distant tile's coarse mesh) in the background:
 
 ```csharp
-void WorkerLoop() {
-	var cellHeights = new int[FarTerrainMesher.BorderedCellsPerSide * FarTerrainMesher.BorderedCellsPerSide];
-	var cellSurfaces = new BlockType[FarTerrainMesher.BorderedCellsPerSide * FarTerrainMesher.BorderedCellsPerSide];
+bool TryDispatch(Chunk? chunk, TerrainTile? tile, int generation) {
+	if (_freeJobCount == 0) return false;
+	var job = _freeJobs[--_freeJobCount];
+	job.Chunk = chunk;
+	job.Tile = tile;
+	job.Generation = generation;
+	_inFlight[_inFlightCount++] = _allocator.DispatchWorkerThreadJob<TerrainJob, TerrainJob>(job, &Run);
+	return true;
+}
 
-	while (true) {
-		TerrainJob job;
-		TerrainMeshData meshData;
-		lock (_lock) {
-			while (!_isStopping && (_jobsCount == 0 || _freeMeshDataCount == 0)) Monitor.Wait(_lock);
-			if (_isStopping) return;
-			job = _jobs[_jobsHead];
-			_jobs[_jobsHead] = default;
-			_jobsHead = (_jobsHead + 1) % _jobs.Length;
-			--_jobsCount;
-			meshData = _freeMeshData[--_freeMeshDataCount];
-			_freeMeshData[_freeMeshDataCount] = null!;
-			++_jobsInProgress;
-		}
-
-		if (job.Chunk is { } chunk) {
-			_generator.GenerateChunk(chunk.Coord, chunk.Blocks, chunk.ColumnHeights);
-			ChunkMesher.BuildMesh(chunk.Blocks, chunk.ColumnHeights, meshData);
-		}
-		else if (job.Tile is { } tile) {
-			FarTerrainMesher.BuildMesh(tile, _generator, cellHeights, cellSurfaces, meshData);
-		}
-
-		lock (_lock) {
-			_results[(_resultsHead + _resultsCount) % _results.Length] = new TerrainJobResult(job.Chunk, job.Tile, job.Generation, meshData);
-			++_resultsCount;
-			--_jobsInProgress;
-		}
+static TerrainJob? Run(TerrainJob? job) {
+	if (job!.Chunk is { } chunk) {
+		job.Generator.GenerateChunk(chunk.Coord, chunk.Blocks, chunk.ColumnHeights);
+		ChunkMesher.BuildMesh(chunk.Blocks, chunk.ColumnHeights, job.MeshData);
 	}
+	else if (job.Tile is { } tile) {
+		FarTerrainMesher.BuildMesh(tile, job.Generator, job.CellHeights, job.CellSurfaces, job.MeshData);
+	}
+	return job;
+}
+```
+
+`DispatchWorkerThreadJob()` returns a `TinyFfrAsyncOperation`. Each frame, the world streamer collects any finished jobs (at most four per frame, so uploading never causes a stutter):
+
+```csharp
+public bool TryTakeResult(out TerrainJobResult result) {
+	for (var i = 0; i < _inFlightCount; ++i) {
+		if (!_inFlight[i].IsResultAvailable) continue;
+		var job = _inFlight[i].GetResultAndDisposeOperation()!;
+		_inFlight[i] = _inFlight[--_inFlightCount];
+		_inFlight[_inFlightCount] = default;
+		result = new TerrainJobResult(job.Chunk, job.Tile, job.Generation, job.MeshData, job);
+		return true;
+	}
+	result = default;
+	return false;
 }
 ```
 
 A few rules keep this safe and fast:
 
-* **Workers never touch TinyFFR resources.** They only produce plain data (block arrays, vertices and triangles); creating and modifying TinyFFR resources happens on the main thread.
-* **The queues are fixed-size arrays guarded by a lock**, and workers sleep (via `Monitor.Wait()`) when there's nothing to do. Every buffer the workers write in to is allocated when the program starts.
-* **There are only a fixed number of mesh buffers.** If the main thread falls behind uploading results, the workers simply wait for a buffer to be returned, which naturally limits how much work is queued up.
+* **Jobs never touch TinyFFR resources.** They only produce plain data (block arrays, vertices and triangles); creating and modifying TinyFFR resources happens on the main thread.
+* **There are only a fixed number of jobs.** Each `TerrainJob` holds everything a job writes in to (its mesh data and scratch arrays), and every job is created when the program starts. When none are free, no more work is dispatched until a finished job's mesh has been uploaded, which naturally limits how much work is in flight at once; and because the missing chunks are always visited nearest-first (see below), the nearest ones are always dispatched first.
+* **The job is passed as the `context`, and `Run` as a function pointer** (`&Run`), so dispatching a job doesn't allocate a closure.
+* **Every operation is consumed exactly once**, with `GetResultAndDisposeOperation()`. `IsResultAvailable` checks whether a job has finished without waiting for it; and when the application exits, `Dispose()` waits for any jobs still in flight.
+
+In testing, this streamed the world in just as quickly as a dedicated pool of the example's own threads did (the full world was loaded around 2.5 seconds after start-up either way, with the same frame times), with eight fewer threads in the process.
 
 ## Streaming
 
 Each level keeps a fixed grid of *slots*. Each chunk (or tile) coordinate always maps to the same slot (by taking the coordinate modulo the grid's size), and each grid is large enough that no two chunks within range of the player ever share a slot. A slot is simply re-used whenever a new coordinate claims it:
 
 ```csharp
-public void QueueMissingChunks(ChunkWorkerPool workerPool) {
+public void QueueMissingChunks(TerrainJobScheduler workerPool) {
 	var firstChunk = _centre.FirstChunk;
 	foreach (var offset in _loadOrderOffsets) {
 		var coord = new ChunkCoord(firstChunk.X + offset.X, firstChunk.Z + offset.Z);
@@ -476,7 +480,7 @@ To avoid [garbage collection pauses](../reference/avoiding_gc_stutter.md), the e
 
 * Every array, queue, chunk object, and GPU resource is created when the program starts, and re-used for the rest of the run.
 * Per-frame code uses no LINQ, lambdas, or `string` building, and loops over arrays rather than interfaces.
-* Worker threads only write in to buffers they were given at start-up.
+* Background jobs only write in to buffers (held by their pooled `TerrainJob`) that were created at start-up.
 
 In testing, the application allocated around 1.3 MB in its first half-minute or so (inside TinyFFR, as its internal pools warmed up while the readout's text was first rendered), and then nothing more while exploring; no garbage collections happened at all during a minute of exploration.
 

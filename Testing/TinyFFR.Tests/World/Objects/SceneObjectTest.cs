@@ -236,4 +236,92 @@ class SceneObjectTest {
 		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
 		Assert.AreEqual(0, scene.ContainedLights.Count);
 	}
+
+	readonly struct ForeignSceneObject : ISceneObject {
+		public static SceneObjectType SceneObjectType => SceneObjectType.ModelInstance;
+	}
+
+	[Test]
+	public void ScenesShouldAddAndRemoveRangesOfSceneObjects() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
+		using var cuboidMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+		using var gridMesh = factory.MeshBuilder.CreateMutableGrid(new XYPair<int>(4, 4));
+		using var font = factory.AssetLoader.LoadFont();
+		using var pen = font.CreatePen(ColorVect.WhiteOpaque);
+		using var @string = font.CreateString("Scene Object");
+		using var scene = factory.SceneBuilder.CreateScene();
+		using var camera = factory.CameraBuilder.CreateCamera();
+
+		using var modelInstance = factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material);
+		var groupedInstances = new[] { factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material), factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material) };
+		using var group = factory.ObjectBuilder.GroupModelInstances(groupedInstances);
+		using var grid = factory.ObjectBuilder.CreateMutableGridInstance(gridMesh, material);
+		using var quad = factory.ObjectBuilder.CreateQuadInstance(quadMesh, material);
+		using var text = factory.ObjectBuilder.CreateTextInstance(pen, @string);
+		using var camLockedQuad = factory.ObjectBuilder.CreateCameraLockedQuadInstance(quadMesh, material);
+		using var camLockedText = factory.ObjectBuilder.CreateCameraLockedTextInstance(pen, @string);
+		using var pointLight = factory.LightBuilder.CreatePointLight();
+		using var spotLight = factory.LightBuilder.CreateSpotLight();
+		using var directionalLight = factory.LightBuilder.CreateDirectionalLight();
+
+		var expectedModelInstances = new[] {
+			modelInstance, groupedInstances[0], groupedInstances[1], grid.UnderlyingModelInstance, quad.UnderlyingModelInstance, text.UnderlyingModelInstance,
+			camLockedQuad.UnderlyingQuadInstance.UnderlyingModelInstance, camLockedText.UnderlyingTextInstance.UnderlyingModelInstance
+		};
+
+		var sceneObjects = new List<SceneObject> { modelInstance, group, grid, quad, text, camLockedQuad, camLockedText, pointLight, spotLight, directionalLight, camera, default };
+		scene.AddRange(sceneObjects);
+		CollectionAssert.AreEquivalent(expectedModelInstances, scene.ContainedModelInstances.ToArray());
+		Assert.AreEqual(3, scene.ContainedLights.Count);
+		scene.AddRange(sceneObjects);
+		Assert.AreEqual(expectedModelInstances.Length, scene.ContainedModelInstances.Count);
+		Assert.AreEqual(3, scene.ContainedLights.Count);
+		scene.RemoveRange(sceneObjects);
+		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
+		Assert.AreEqual(0, scene.ContainedLights.Count);
+
+		scene.AddRange(new List<ModelInstance> { modelInstance, grid.UnderlyingModelInstance });
+		scene.AddRange(new[] { group });
+		scene.AddRange(new[] { grid });
+		scene.AddRange(new[] { quad });
+		scene.AddRange(new[] { text });
+		scene.AddRange(new[] { camLockedQuad });
+		scene.AddRange(new[] { camLockedText });
+		scene.AddRange(new[] { pointLight });
+		scene.AddRange(new[] { spotLight, });
+		scene.AddRange(new[] { directionalLight });
+		scene.AddRange(new[] { camera });
+		CollectionAssert.AreEquivalent(expectedModelInstances, scene.ContainedModelInstances.ToArray());
+		Assert.AreEqual(3, scene.ContainedLights.Count);
+		scene.RemoveRange(new[] { modelInstance });
+		scene.RemoveRange(new[] { group });
+		scene.RemoveRange(new[] { grid });
+		scene.RemoveRange(new[] { quad });
+		scene.RemoveRange(new[] { text });
+		scene.RemoveRange(new[] { camLockedQuad });
+		scene.RemoveRange(new[] { camLockedText });
+		scene.RemoveRange(new[] { camera });
+		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
+		Assert.AreEqual(3, scene.ContainedLights.Count);
+
+		scene.RemoveRange(scene.ContainedLights.ToArray());
+		Assert.AreEqual(0, scene.ContainedLights.Count);
+		scene.AddRange(new[] { pointLight.AsBaseLight(), spotLight.AsBaseLight(), directionalLight.AsBaseLight() });
+		Assert.AreEqual(3, scene.ContainedLights.Count);
+		scene.RemoveRange(new Light[] { pointLight, directionalLight });
+		Assert.AreEqual(1, scene.ContainedLights.Count);
+		scene.RemoveRange(new[] { spotLight });
+		Assert.AreEqual(0, scene.ContainedLights.Count);
+
+		Assert.DoesNotThrow(() => scene.AddRange(Array.Empty<SceneObject>()));
+		Assert.DoesNotThrow(() => scene.RemoveRange(Enumerable.Empty<ModelInstance>()));
+		Assert.Throws<ArgumentNullException>(() => scene.AddRange((IEnumerable<SceneObject>) null!));
+		Assert.Throws<ArgumentNullException>(() => scene.RemoveRange((IEnumerable<SceneObject>) null!));
+		Assert.Throws<ArgumentException>(() => scene.AddRange(new[] { new ForeignSceneObject() }));
+		Assert.Throws<ArgumentException>(() => scene.RemoveRange(new[] { new ForeignSceneObject() }));
+		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
+		Assert.AreEqual(0, scene.ContainedLights.Count);
+	}
 }

@@ -15,12 +15,11 @@ description: A showcase example that plots user-typed equations of three dimensi
 
 ## :material-flask-outline: Demonstrated Features
 
-* Parsing and compiling typed-in equations, and evaluating them quickly without generating garbage;
-* Animating a surface on a mutable grid, coloured via a writable texture;
-* Drawing a vector field with thousands of arrow model instances;
-* Generating a parametric surface in a dynamic vertex buffer;
-* Drawing the application's controls with Dear ImGui, on top of a 3D scene;
-* Orbiting the camera around the plot.
+* [:material-book-open-page-variant: Dynamic Meshes & Mutable Grids](../reference/dynamic_meshes_and_mutable_grids.md#mutable-grids) | [:material-book-open-page-variant: Writable Textures](../reference/writable_textures.md): Animating a surface on a mutable grid, coloured via a writable texture;
+* [:material-book-open-page-variant: Creating Meshes](../reference/creating_meshes.md#arrow) | [:material-book-open-page-variant: Scene Objects](../reference/scene_objects.md): Drawing a vector field with thousands of arrow model instances;
+* [:material-book-open-page-variant: Dynamic Meshes & Mutable Grids](../reference/dynamic_meshes_and_mutable_grids.md#dynamic-vertex-buffers): Generating a parametric surface in a dynamic vertex buffer;
+* [:material-book-open-page-variant: Dear ImGui Integration](../reference/imgui_integration.md): Drawing the application's controls with Dear ImGui, on top of a 3D scene;
+* [:material-book-open-page-variant: Orbital Camera Controller](../reference/camera_controller_orbital.md): Orbiting the camera around the plot.
 
 ## Running It
 

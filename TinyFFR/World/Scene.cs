@@ -437,6 +437,72 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 				throw new ArgumentException($"Unsupported {nameof(SceneObjectType)} '{sceneObject.Type}'.", nameof(sceneObject));
 		}
 	}
+
+	/// <summary>
+	/// Adds every given object to this scene, exactly as though <see cref="Add(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being added. Use <see cref="SceneObject"/> to add objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to add.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void AddRange<T>(IEnumerable<T> sceneObjects) where T : ISceneObject {
+		ArgumentNullException.ThrowIfNull(sceneObjects);
+		ThrowIfUnsupportedRangeType<T>();
+		foreach (var sceneObject in sceneObjects) Add(ConvertToSceneObject(sceneObject));
+	}
+	/// <summary>
+	/// Removes every given object from this scene, exactly as though <see cref="Remove(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being removed. Use <see cref="SceneObject"/> to remove objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to remove.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void RemoveRange<T>(IEnumerable<T> sceneObjects) where T : ISceneObject {
+		ArgumentNullException.ThrowIfNull(sceneObjects);
+		ThrowIfUnsupportedRangeType<T>();
+		foreach (var sceneObject in sceneObjects) Remove(ConvertToSceneObject(sceneObject));
+	}
+
+	static void ThrowIfUnsupportedRangeType<T>() where T : ISceneObject {
+		if (typeof(T) == typeof(SceneObject)
+			|| typeof(T) == typeof(ModelInstance)
+			|| typeof(T) == typeof(ModelInstanceGroup)
+			|| typeof(T) == typeof(MutableGridInstance)
+			|| typeof(T) == typeof(QuadInstance)
+			|| typeof(T) == typeof(TextInstance)
+			|| typeof(T) == typeof(CameraLockedQuadInstance)
+			|| typeof(T) == typeof(CameraLockedTextInstance)
+			|| typeof(T) == typeof(PointLight)
+			|| typeof(T) == typeof(SpotLight)
+			|| typeof(T) == typeof(DirectionalLight)
+			|| typeof(T) == typeof(Light)
+			|| typeof(T) == typeof(Camera)) {
+			return;
+		}
+		throw new ArgumentException($"Unsupported scene object type '{typeof(T).Name}'.", nameof(T));
+	}
+
+	static SceneObject ConvertToSceneObject<T>(T obj) where T : ISceneObject {
+		if (typeof(T) == typeof(SceneObject)) return Unsafe.As<T, SceneObject>(ref obj);
+		if (typeof(T) == typeof(ModelInstance)) return Unsafe.As<T, ModelInstance>(ref obj);
+		if (typeof(T) == typeof(ModelInstanceGroup)) return Unsafe.As<T, ModelInstanceGroup>(ref obj);
+		if (typeof(T) == typeof(MutableGridInstance)) return Unsafe.As<T, MutableGridInstance>(ref obj);
+		if (typeof(T) == typeof(QuadInstance)) return Unsafe.As<T, QuadInstance>(ref obj);
+		if (typeof(T) == typeof(TextInstance)) return Unsafe.As<T, TextInstance>(ref obj);
+		if (typeof(T) == typeof(CameraLockedQuadInstance)) return Unsafe.As<T, CameraLockedQuadInstance>(ref obj);
+		if (typeof(T) == typeof(CameraLockedTextInstance)) return Unsafe.As<T, CameraLockedTextInstance>(ref obj);
+		if (typeof(T) == typeof(PointLight)) return Unsafe.As<T, PointLight>(ref obj);
+		if (typeof(T) == typeof(SpotLight)) return Unsafe.As<T, SpotLight>(ref obj);
+		if (typeof(T) == typeof(DirectionalLight)) return Unsafe.As<T, DirectionalLight>(ref obj);
+		if (typeof(T) == typeof(Light)) {
+			var light = Unsafe.As<T, Light>(ref obj);
+			return light.Type switch {
+				LightType.Point => light.As<PointLight>(),
+				LightType.Spot => light.As<SpotLight>(),
+				LightType.Directional => light.As<DirectionalLight>(),
+				_ => throw new ArgumentException($"Unsupported {nameof(LightType)} '{light.Type}'.", nameof(obj))
+			};
+		}
+		return default;
+	}
 	
 	/// <summary>
 	/// Empties this scene of its contents, optionally keeping some categories of them.

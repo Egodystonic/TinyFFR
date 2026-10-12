@@ -15,15 +15,14 @@ description: A showcase example that embeds TinyFFR in an Avalonia scene editor,
 
 ## :material-flask-outline: Demonstrated Features
 
-* Embedding TinyFFR in an Avalonia application;
-* Importing models asynchronously while the UI stays responsive;
-* Selecting objects by clicking on them, and dragging them around the scene;
-* Building a camera "fly-through" with a programmed camera controller;
-* Previewing and scrubbing through the camera track inside the editor;
-* Loading your own HDR/EXR sky, and controlling the backdrop's brightness;
-* Setting up fog, depth of field, and the render quality preset;
-* Adding, editing, and removing point lights and spot lights;
-* Playing the result back in a separate fullscreen window, rendered entirely by TinyFFR at an uncapped framerate.
+* [:material-book-open-page-variant: Avalonia Integration](../reference/avalonia_integration.md): Embedding TinyFFR in an Avalonia application;
+* [:material-book-open-page-variant: Asynchronous Loading](../reference/asynchronous_loading.md) | [:material-book-open-page-variant: Bundled Assets (glTF & Others)](../reference/bundled_assets.md): Importing models asynchronously while the UI stays responsive;
+* [:material-book-open-page-variant: Ray Casting, Pixel-Picking, Projecting](../reference/ray_casting_pixel_picking_projecting.md): Selecting objects by clicking on them, and dragging them around the scene;
+* [:material-book-open-page-variant: Programmed Camera Controller](../reference/camera_controller_programmed.md): Building a camera "fly-through" with a programmed camera controller, and previewing and scrubbing through it inside the editor;
+* [:material-book-open-page-variant: Backdrop Textures](../reference/backdrop_textures.md) | [:material-book-open-page-variant: Exposure & Brightness](../reference/exposure_and_brightness.md): Loading your own HDR/EXR sky, and controlling the backdrop's brightness;
+* [:material-book-open-page-variant: Fog](../reference/fog.md) | [:material-book-open-page-variant: Camera Settings](../reference/camera_settings.md#depth-of-field) | [:material-book-open-page-variant: Render Quality](../reference/render_quality.md): Setting up fog, depth of field, and the render quality preset;
+* [:material-book-open-page-variant: Point Lights](../reference/point_lights.md) | [:material-book-open-page-variant: Spot Lights](../reference/spot_lights.md): Adding, editing, and removing point lights and spot lights;
+* [:material-book-open-page-variant: Creating / Managing Windows](../reference/creating_and_managing_windows.md) | [:material-book-open-page-variant: Application Loops](../reference/application_loops.md): Playing the result back in a separate fullscreen window, rendered entirely by TinyFFR at an uncapped framerate.
 
 ## Running It
 

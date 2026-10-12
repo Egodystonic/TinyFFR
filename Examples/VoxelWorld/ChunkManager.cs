@@ -112,7 +112,7 @@ sealed class ChunkManager : ITerrainLevel, IDisposable {
 		VisibleChunkCount = visibleCount;
 	}
 
-	public void QueueMissingChunks(ChunkWorkerPool workerPool) {
+	public void QueueMissingChunks(TerrainJobScheduler workerPool) {
 		var firstChunk = _centre.FirstChunk;
 		foreach (var offset in _loadOrderOffsets) {
 			var coord = new ChunkCoord(firstChunk.X + offset.X, firstChunk.Z + offset.Z);

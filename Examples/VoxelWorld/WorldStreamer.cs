@@ -9,7 +9,7 @@ sealed class WorldStreamer : IDisposable {
 	readonly ChunkManager _nearChunks;
 	readonly TerrainLevel _midTerrain;
 	readonly TerrainLevel _farTerrain;
-	readonly ChunkWorkerPool _workerPool;
+	readonly TerrainJobScheduler _workerPool;
 
 	public int VisibleChunkCount => _nearChunks.VisibleChunkCount;
 	public int VisibleMidTileCount => _midTerrain.VisibleTileCount;
@@ -28,7 +28,7 @@ sealed class WorldStreamer : IDisposable {
 		_midTerrain.Coarser = _farTerrain;
 		_farTerrain.Finer = _midTerrain;
 
-		_workerPool = new ChunkWorkerPool(generator, _nearChunks.SlotCount + _midTerrain.SlotCount + _farTerrain.SlotCount);
+		_workerPool = new TerrainJobScheduler(factory.ResourceAllocator, generator, WorldSettings.MaxJobsInFlight);
 	}
 
 	public bool IsChunkLiveAt(float worldX, float worldZ) => _nearChunks.IsChunkLiveAt(worldX, worldZ);
@@ -48,7 +48,7 @@ sealed class WorldStreamer : IDisposable {
 			else uploaded = _farTerrain.AcceptResult(in result);
 			if (uploaded) ++uploads;
 			if (result.MeshData.Truncated) ++TruncatedMeshCount;
-			_workerPool.ReturnMeshData(result.MeshData);
+			_workerPool.ReturnJob(result.Job);
 		}
 
 		_farTerrain.UpdateVisibility();

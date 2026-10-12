@@ -99,7 +99,7 @@ sealed class TerrainLevel : ITerrainLevel, IDisposable {
 		VisibleTileCount = visibleCount;
 	}
 
-	public void QueueMissingTiles(ChunkWorkerPool workerPool) {
+	public void QueueMissingTiles(TerrainJobScheduler workerPool) {
 		var firstTileX = _centreCoverageUnit.X * _tilesPerCoverageUnit;
 		var firstTileZ = _centreCoverageUnit.Z * _tilesPerCoverageUnit;
 		foreach (var offset in _loadOrderOffsets) {
