@@ -53,7 +53,7 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 		if (InitialBackdrop != null && !Enum.IsDefined(InitialBackdrop.Value)) throw new ArgumentOutOfRangeException(nameof(InitialBackdrop.Value), InitialBackdrop.Value, null);
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in SceneCreationConfig src) {
 		return	SerializationSizeOfNullableResource() // InitialBackdropTexture
 			+	SerializationSizeOfString(src.Name) // Name
@@ -61,7 +61,7 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 			+	SerializationSizeOfFloat() // InitialBackdropIntensity
 			+	SerializationSizeOfNullableInt(); // InitialBackdrop
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in SceneCreationConfig src) {
 		SerializationWriteAndAllocateNullableResource(ref dest, src.InitialBackdropTexture);
 		SerializationWriteString(ref dest, src.Name);

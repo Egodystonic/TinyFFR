@@ -34,12 +34,12 @@ public readonly ref struct ModelInstanceCreationConfig : IConfigStruct<ModelInst
 		
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in ModelInstanceCreationConfig src) {
 		return	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOf<Transform>(); // InitialTransform
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelInstanceCreationConfig src) {
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWrite(ref dest, src.InitialTransform);

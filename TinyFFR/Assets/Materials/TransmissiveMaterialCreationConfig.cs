@@ -264,7 +264,7 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(OcclusionRoughnessMetallicReflectanceMap, TexelType.Rgba32);
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in TransmissiveMaterialCreationConfig src) {
 		return	SerializationSizeOfResource() // ColorMap
 			+	SerializationSizeOfResource() // AbsorptionTransmissionMap
@@ -277,7 +277,7 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 			+	SerializationSizeOfInt() // AlphaMode
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TransmissiveMaterialCreationConfig src) {
 		SerializationWriteAndAllocateResource(ref dest, src.ColorMap);
 		SerializationWriteAndAllocateResource(ref dest, src.AbsorptionTransmissionMap);

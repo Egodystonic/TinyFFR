@@ -75,13 +75,13 @@ public readonly ref struct RenderOutputBufferCreationConfig : IConfigStruct<Rend
 		}
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in RenderOutputBufferCreationConfig src) {
 		return	SerializationSizeOf<XYPair<int>>() // TextureDimensions
 			+	SerializationSizeOfBool() // OptimizeForTopToBottomReadback
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RenderOutputBufferCreationConfig src) {
 		SerializationWrite(ref dest, src.TextureDimensions);
 		SerializationWriteBool(ref dest, src.OptimizeForTopToBottomReadback);

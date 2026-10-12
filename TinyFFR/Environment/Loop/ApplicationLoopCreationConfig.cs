@@ -56,12 +56,12 @@ public readonly ref struct ApplicationLoopCreationConfig : IConfigStruct<Applica
 	}
 #pragma warning restore CA1822
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in ApplicationLoopCreationConfig src) {
 		return	SerializationSizeOfNullableInt() // FrameRateCapHz
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ApplicationLoopCreationConfig src) {
 		SerializationWriteNullableInt(ref dest, src.FrameRateCapHz);
 		SerializationWriteString(ref dest, src.Name);

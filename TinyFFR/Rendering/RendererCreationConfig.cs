@@ -111,7 +111,7 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 		/* no-op */
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in RendererCreationConfig src) {
 		return	SerializationSizeOfBool() // AutoUpdateCameraAspectRatio
 			+	SerializationSizeOfInt() // GpuSynchronizationFrameBufferCount
@@ -119,7 +119,7 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 			+	SerializationSizeOfSubConfig(src.Quality ?? new()) // Quality
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RendererCreationConfig src) {
 		SerializationWriteBool(ref dest, src.AutoUpdateCameraAspectRatio);
 		SerializationWriteInt(ref dest, src.GpuSynchronizationFrameBufferCount);

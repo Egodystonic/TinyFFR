@@ -58,12 +58,12 @@ public readonly ref struct MaterialCreationConfig : IConfigStruct<MaterialCreati
 		}
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in MaterialCreationConfig src) {
 		return SerializationSizeOfString(src.Name) // Name
 			 + SerializationSizeOfBool(); // EnablePerInstanceEffects
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MaterialCreationConfig src) {
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteBool(ref dest, src.EnablePerInstanceEffects);

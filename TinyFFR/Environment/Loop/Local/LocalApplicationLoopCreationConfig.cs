@@ -81,13 +81,13 @@ public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<Lo
 		BaseConfig.ThrowIfInvalid();
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in LocalApplicationLoopCreationConfig src) {
 		return	SerializationSizeOfSubConfig(src.BaseConfig) // BaseConfig
 			+	SerializationSizeOfLong() // FrameTimingPrecisionBusyWaitTime
 			+	SerializationSizeOfNullableBool(); // IterationShouldRefreshGlobalInputStates
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in LocalApplicationLoopCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
 		SerializationWriteLong(ref dest, src.FrameTimingPrecisionBusyWaitTime.Ticks);

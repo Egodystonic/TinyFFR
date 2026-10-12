@@ -152,7 +152,7 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 		}
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in CameraCreationConfig src) {
 		return	SerializationSizeOf<Location>() // Position
 			+	SerializationSizeOf<Direction>() // ViewDirection
@@ -167,7 +167,7 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 			+	SerializationSizeOf<CameraExposureParams>() // InitialExposure
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in CameraCreationConfig src) {
 		SerializationWrite(ref dest, src.Position);
 		SerializationWrite(ref dest, src.ViewDirection);

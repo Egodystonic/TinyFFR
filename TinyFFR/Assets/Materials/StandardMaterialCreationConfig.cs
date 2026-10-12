@@ -227,7 +227,7 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 		if (!Enum.IsDefined(AlphaMode)) throw new ArgumentOutOfRangeException(nameof(AlphaMode), AlphaMode, null);
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in StandardMaterialCreationConfig src) {
 		return	SerializationSizeOfResource() // ColorMap
 			+	SerializationSizeOfNullableResource() // NormalMap
@@ -238,7 +238,7 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 			+	SerializationSizeOfInt() // AlphaMode
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in StandardMaterialCreationConfig src) {
 		SerializationWriteAndAllocateResource(ref dest, src.ColorMap);
 		SerializationWriteAndAllocateNullableResource(ref dest, src.NormalMap);

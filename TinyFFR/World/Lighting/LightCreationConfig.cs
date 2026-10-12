@@ -64,14 +64,14 @@ public readonly ref struct LightCreationConfig : IConfigStruct<LightCreationConf
 		/* no op */
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in LightCreationConfig src) {
 		return	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOf<ColorVect>() // InitialColor
 			+	SerializationSizeOfFloat() // InitialBrightness
 			+	SerializationSizeOfBool(); // CastsShadows
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in LightCreationConfig src) {
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWrite(ref dest, src.InitialColor);
@@ -180,13 +180,13 @@ public readonly ref struct PointLightCreationConfig : IConfigStruct<PointLightCr
 		BaseConfig.ThrowIfInvalid();
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in PointLightCreationConfig src) {
 		return	SerializationSizeOfFloat() // InitialMaxIlluminationRadius
 			+	SerializationSizeOf<Location>() // InitialPosition
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in PointLightCreationConfig src) {
 		SerializationWriteFloat(ref dest, src.InitialMaxIlluminationRadius);
 		SerializationWrite(ref dest, src.InitialPosition);
@@ -325,7 +325,7 @@ public readonly ref struct SpotLightCreationConfig : IConfigStruct<SpotLightCrea
 		BaseConfig.ThrowIfInvalid();
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in SpotLightCreationConfig src) {
 		return	SerializationSizeOf<Location>() // InitialPosition
 			+	SerializationSizeOfFloat() // InitialMaxIlluminationDistance
@@ -335,7 +335,7 @@ public readonly ref struct SpotLightCreationConfig : IConfigStruct<SpotLightCrea
 			+	SerializationSizeOf<Angle>() // InitialIntenseBeamAngle
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in SpotLightCreationConfig src) {
 		SerializationWrite(ref dest, src.InitialPosition);
 		SerializationWriteFloat(ref dest, src.InitialMaxIlluminationDistance);
@@ -450,13 +450,13 @@ public readonly ref struct DirectionalLightCreationConfig : IConfigStruct<Direct
 		BaseConfig.ThrowIfInvalid();
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in DirectionalLightCreationConfig src) {
 		return	SerializationSizeOfBool() // ShowSunDisc
 			+	SerializationSizeOf<Direction>() // InitialDirection
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in DirectionalLightCreationConfig src) {
 		SerializationWriteBool(ref dest, src.ShowSunDisc);
 		SerializationWrite(ref dest, src.InitialDirection);

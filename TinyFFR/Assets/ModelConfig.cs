@@ -89,7 +89,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		}
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in ModelReadConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
@@ -98,7 +98,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 			+	SerializationSizeOfFloat() // EmissiveStrengthCap
 			+	SerializationSizeOfInt(); // EmbeddedTextureMapScalingStrategy
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelReadConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
@@ -168,14 +168,14 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 		if (!Enum.IsDefined(TransmissiveMaterialQuality)) throw new ArgumentOutOfRangeException(nameof(TransmissiveMaterialQuality), TransmissiveMaterialQuality, null);
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in ModelCreationConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
 			+	SerializationSizeOfInt() // TransmissiveMaterialQuality
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);

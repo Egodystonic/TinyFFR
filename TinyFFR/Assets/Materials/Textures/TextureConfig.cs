@@ -127,12 +127,12 @@ public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> 
 		}
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in TextureReadConfig src) {
 		return	SerializationSizeOfBool() // IncludeWAlphaChannel
 			+	SerializationSizeOfBool(); // ForceWAlphaChannelPresence
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureReadConfig src) {
 		SerializationWriteBool(ref dest, src.IncludeWAlphaChannel);
 		SerializationWriteBool(ref dest, src.ForceWAlphaChannelPresence);
@@ -476,7 +476,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		}
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in TextureCreationConfig src) {
 		return	SerializationSizeOfBool() // GenerateMipMaps
 			+	SerializationSizeOfBool() // AllowsDynamicWrites
@@ -490,7 +490,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 			+	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOfSubConfig(src.ProcessingToApply);
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCreationConfig src) {
 		SerializationWriteBool(ref dest, src.GenerateMipMaps);
 		SerializationWriteBool(ref dest, src.AllowsDynamicWrites);
@@ -881,7 +881,7 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 		/* no-op */
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in TextureProcessingConfig src) {
 		return SerializationSizeOfBool() // FlipX
 			+ SerializationSizeOfBool() // FlipY
@@ -898,7 +898,7 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 			+ SerializationSizeOfLong()
 			+ SerializationSizeOfLong();
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureProcessingConfig src) {
 		SerializationWriteBool(ref dest, src.FlipX);
 		SerializationWriteBool(ref dest, src.FlipY);
@@ -987,11 +987,11 @@ public readonly ref struct TextureGenerationConfig : IConfigStruct<TextureGenera
 		}
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in TextureGenerationConfig src) {
 		return	SerializationSizeOf<XYPair<int>>(); // Dimensions
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureGenerationConfig src) {
 		SerializationWrite(ref dest, src.Dimensions);
 	}

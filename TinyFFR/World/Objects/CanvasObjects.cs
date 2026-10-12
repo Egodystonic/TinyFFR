@@ -271,7 +271,7 @@ public readonly record struct CanvasImage : ICanvasObject<CanvasImage>, IDisposa
 	public bool Contains(XYPair<int> canvasLocalPixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Implementation.CanvasObjectContainsPixelCoord(SceneHandle, Instance, canvasLocalPixelCoord, coordOrigin);
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="ICanvasObject.Contains(XYPair{float}, DiagonalOrientation2D)"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(XYPair<float> canvasLocalFractionCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Contains(Implementation.ConvertCanvasFractionToPixels(SceneHandle, canvasLocalFractionCoord), coordOrigin);
@@ -618,7 +618,7 @@ public readonly record struct CanvasImage : ICanvasObject<CanvasImage>, IDisposa
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation);
-	/// <inheritdoc />
+	/// <inheritdoc cref="ITransformed2DSceneObject.RotateBy(Angle, XYPair{float})"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation, XYPair<float> pivotPoint) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation, pivotPoint);
 	/// <inheritdoc />
@@ -722,7 +722,7 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText>, IDisposabl
 	public bool Contains(XYPair<int> canvasLocalPixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Implementation.CanvasObjectContainsPixelCoord(SceneHandle, Instance, canvasLocalPixelCoord, coordOrigin);
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="ICanvasObject.Contains(XYPair{float}, DiagonalOrientation2D)"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(XYPair<float> canvasLocalFractionCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Contains(Implementation.ConvertCanvasFractionToPixels(SceneHandle, canvasLocalFractionCoord), coordOrigin);
@@ -1008,7 +1008,7 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText>, IDisposabl
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation);
-	/// <inheritdoc />
+	/// <inheritdoc cref="ITransformed2DSceneObject.RotateBy(Angle, XYPair{float})"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation, XYPair<float> pivotPoint) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation, pivotPoint);
 	/// <inheritdoc />

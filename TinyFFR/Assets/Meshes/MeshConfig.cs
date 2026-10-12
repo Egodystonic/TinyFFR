@@ -121,7 +121,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 		if (SubMeshIndex < 0) throw new ArgumentOutOfRangeException(nameof(SubMeshIndex), SubMeshIndex, $"Sub-mesh index must be null or non-negative.");
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in MeshReadConfig src) {
 		return	SerializationSizeOfBool() // FixCommonExportErrors
 			+	SerializationSizeOfBool() // OptimizeForGpu
@@ -130,7 +130,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 			+	SerializationSizeOfNullableInt() // SubMeshIndex
 			+	SerializationSizeOfNullableFloat(); // AnimationTicksPerSecondOverride
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshReadConfig src) {
 		SerializationWriteBool(ref dest, src.FixCommonExportErrors);
 		SerializationWriteBool(ref dest, src.OptimizeForGpu);
@@ -186,11 +186,11 @@ public readonly ref struct MeshGenerationConfig : IConfigStruct<MeshGenerationCo
 	}
 #pragma warning restore CA1822
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in MeshGenerationConfig src) {
 		return SerializationSizeOf<Transform2D>(); // TextureTransform
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshGenerationConfig src) {
 		SerializationWrite(ref dest, src.TextureTransform);
 	}
@@ -340,7 +340,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	}
 #pragma warning restore CA1822
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in MeshCreationConfig src) {
 		return	SerializationSizeOfBool() // FlipTriangles
 			+	SerializationSizeOfBool() // InvertTextureU
@@ -353,7 +353,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			+	SerializationSizeOfInt() // WireframeGenerationMode
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshCreationConfig src) {
 		SerializationWriteBool(ref dest, src.FlipTriangles);
 		SerializationWriteBool(ref dest, src.InvertTextureU);

@@ -80,12 +80,12 @@ public readonly ref struct LightingIgnoringMaterialCreationConfig : IConfigStruc
 		if (ColorMap == default) throw InvalidObjectException.InvalidDefault<Texture>(nameof(ColorMap));
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in LightingIgnoringMaterialCreationConfig src) {
 		return	SerializationSizeOfResource() // ColorMap
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in LightingIgnoringMaterialCreationConfig src) {
 		SerializationWriteAndAllocateResource(ref dest, src.ColorMap);
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
