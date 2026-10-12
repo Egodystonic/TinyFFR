@@ -149,17 +149,9 @@ void StartUiLoop() {
 	if (_inputSource == null) return;
 	_uiLoop = _session.Factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(_inputSource, Tick);
 }
-
-void Tick(TimeSpan deltaTime, ILatestInputRetriever input) {
-	_session.Tick(deltaTime.AsDeltaTime(), input.KeyboardAndMouse);
-	if (!IsPreviewPlaying) return;
-
-	_isUpdatingPreviewTimeFromTick = true;
-	PreviewTimeSeconds = Math.Min(_session.PreviewTimeSeconds, TrackLengthSeconds);
-	_isUpdatingPreviewTimeFromTick = false;
-	if (Wrapping == AnimationWrapStyle.Once && _session.PreviewTimeSeconds >= TrackLengthSeconds) IsPreviewPlaying = false;
-}
 ```
+
+The `Tick` callback is given the frame's delta time and the 3D view's input (as an `ILatestInputRetriever`, just like a native TinyFFR application loop's), and passes them on to the editor session.
 
 Each tick, the editor session flies the camera, handles picking and dragging, and renders a frame for the 3D view:
 
@@ -225,9 +217,8 @@ public async Task<SceneObject> ImportAsync(string filePath, Location groundPoint
 }
 ```
 
-* Importing the same file twice re-uses the already-loaded [model bundle](../reference/bundled_assets.md); only a new group of model instances is created.
-* Models are often authored in centimetres, or at the size of a whole city. Anything unreasonably large or small is scaled to around two metres across when it's imported (the scale can be changed afterwards in the properties panel).
-* Each new object is placed on the ground in the middle of the view (see `GetPlacementPointInView()` in `EditorSession.cs`).
+* Importing the same file twice re-uses the already-loaded [model bundle](../reference/bundled_assets.md); only a new group of model instances is created from it (see `CreateObject()` in `SceneDocument.cs`).
+* The bundle's `CalculateCombinedBoundingBox()` gives the size of the whole model (see [Bounding Boxes](../reference/bounding_boxes.md)), which is used to scale models that are unreasonably large or small, and to stand the model on the ground.
 
 ## Selecting & Dragging
 
@@ -271,12 +262,13 @@ void UpdatePickingAndDragging(ILatestKeyboardAndMouseInputRetriever input) {
 }
 ```
 
-* Remembering the offset between the grab point and the object's position (`_dragOffset`) stops the object from jumping so that its origin sits under the cursor.
-* Holding Shift instead raises or lowers the object, by an amount that grows with its distance from the camera, so that dragging feels about the same whether the object is near or far.
+* `PickModelInstanceFromRenderSurface()` returns both the `ModelInstance` under the cursor and the `Position` on its surface that was clicked. Pixel picking is exact (it uses the rendered image, not bounding boxes), so clicking through a gap in a model selects whatever is behind it.
+* `CreateRayFromRenderSurface()` turns the cursor position in to a ray from the camera out in to the scene, and `IntersectionWith()` finds where it crosses the drag plane (see [Shapes](../reference/shapes.md#plane)).
+* Both take the cursor position exactly as the 3D view's input reports it (see [Avalonia Integration](../reference/avalonia_integration.md)).
 
 ## Editor Overlay
 
-The ground grid, the selection box, and the camera track are all drawn with [scene primitives](../reference/scene_primitives.md). The track is redrawn whenever a keyframe changes: a line between each pair of keyframes (or a curve, sampled from the same formula the controller uses, when the keyframe has a pivot), an arrow showing where the camera faces (pink when it's looking at something), the keyframe's number, and markers for any pivots and look-at points:
+The ground grid, the selection box, and the camera track are all drawn with [scene primitives](../reference/scene_primitives.md). The track is redrawn whenever a keyframe changes: a line between each pair of keyframes (a curve when the keyframe has a pivot), an arrow showing where the camera faces (pink when it's looking at something), the keyframe's number, and markers for any pivots and look-at points:
 
 ```csharp
 public void RebuildPath() {
@@ -296,31 +288,10 @@ public void RebuildPath() {
 		}
 	}
 }
-
-void AddPathSegment(Location start, CameraKeyframe keyframe) {
-	var end = keyframe.Position;
-	if (keyframe.PivotPoint is not { } pivot) {
-		_pathPrimitives.Add(_scene.AddPrimitiveShape(new BoundedRay(start, end), PathBrush, includeEndpoints: false));
-		return;
-	}
-
-	_pathPrimitives.Add(_scene.AddPrimitivePoint(pivot, PivotBrush, ScenePrimitiveSize.Medium));
-	var startVect = start - pivot;
-	var endVect = end - pivot;
-	var previous = start;
-	for (var step = 1; step <= ArcSegmentCount; ++step) {
-		var fraction = step / (float) ArcSegmentCount;
-		var length = startVect.Length + (endVect.Length - startVect.Length) * fraction;
-		var next = startVect.Direction == Direction.None || endVect.Direction == Direction.None
-			? start + (end - start) * fraction
-			: pivot + Direction.Interpolate(startVect.Direction, endVect.Direction, fraction) * length;
-		_pathPrimitives.Add(_scene.AddPrimitiveShape(new BoundedRay(previous, next), PathBrush, includeEndpoints: false));
-		previous = next;
-	}
-}
 ```
 
-Primitives are part of the scene, so they'd also appear in the fullscreen player and in the preview. The overlay therefore removes them all while either is running, and adds them back afterwards (`SetVisible()`).
+* Each `Add[...]` method returns a `ScenePrimitive`; disposing it removes it from the scene again, which is how the old path is cleared before it's redrawn.
+* Primitives are part of the scene, so they'd also appear in the fullscreen player and in the preview. The overlay therefore removes them all while either is running, and adds them back afterwards (`SetVisible()`).
 
 ## Building the Camera Track
 
@@ -526,53 +497,27 @@ For a custom HDR/EXR backdrop, the brightness can also be set with a slider. The
 
 ### Custom HDR/EXR Backdrops
 
-__Load HDR/EXR...__ converts a high-dynamic-range image in to a [backdrop texture](../reference/backdrop_textures.md), at the resolution chosen next to the button:
+__Load HDR/EXR...__ converts a high-dynamic-range image in to a [backdrop texture](../reference/backdrop_textures.md) with `factory.AssetLoader.LoadBackdropTextureAsync(filePath, HdrQuality)`, at the resolution chosen next to the button. When the conversion finishes, the new backdrop replaces any previous one:
 
 ```csharp
-public async Task LoadCustomBackdropAsync(string filePath) {
-	IsBusy = true;
-	try {
-		StatusText = $"Converting {Path.GetFileName(filePath)} to a backdrop at {HdrQuality} quality (this can take a minute or more)...";
-		var backdrop = await _session.Factory.AssetLoader.LoadBackdropTextureAsync(filePath, HdrQuality);
-		_session.SetCustomBackdrop(backdrop);
-		if (!BackdropStyles.Contains(BackdropStyle.CustomHdr)) BackdropStyles.Insert(3, BackdropStyle.CustomHdr);
-		CustomBackdropName = $"Custom HDR: {Path.GetFileName(filePath)} ({HdrQuality})";
-		Backdrop = BackdropStyle.CustomHdr;
-		StatusText = $"Loaded backdrop {Path.GetFileName(filePath)}.";
-	}
-	catch (Exception e) {
-		StatusText = $"Backdrop load failed: {e.GetBaseException().Message}";
-	}
-	finally {
-		IsBusy = false;
-	}
+public void SetCustomBackdrop(BackdropTexture backdrop) {
+	var previous = Environment.CustomBackdrop;
+	Environment.CustomBackdrop = backdrop;
+	Environment.Backdrop = BackdropStyle.CustomHdr;
+	ApplyEnvironment();
+	previous?.Dispose();
 }
 ```
 
 * Converting an HDR image is slow (it can take minutes at the highest resolutions), so it's done asynchronously: the editor keeps rendering while the conversion runs in the background. In testing, a 4K HDR image converted in under two seconds at `Quality.Low`.
-* Loading a second backdrop replaces the first; `SetCustomBackdrop()` (in `EditorSession.cs`) only disposes the old backdrop texture after the scene has switched to the new one, because a backdrop texture can't be disposed while a scene is still using it.
+* The old backdrop texture is only disposed after the scene has switched to the new one, because a backdrop texture can't be disposed while a scene is still using it.
 * In a real application, you'd convert backdrops ahead of time instead (by preprocessing or baking them; see [Backdrop Textures](../reference/backdrop_textures.md)), so they load in moments.
 
 ### Fog
 
-The fog panel edits every property of a [`FogDescriptor`](../reference/fog.md#custom-fog). __Apply Preset__ fills the panel in from one of the `FogDensity` presets, which is a good starting point for adjusting from:
+The fog panel edits every property of a [`FogDescriptor`](../reference/fog.md#custom-fog). __Apply Preset__ fills the panel in from one of the `FogDensity` presets (using `new FogDescriptor(preset)`), which is a good starting point for adjusting from. The panel's values are turned back in to a descriptor whenever one of them changes:
 
 ```csharp
-void LoadFogPreset(FogDensity preset) {
-	var fog = new FogDescriptor(preset);
-	var srgb = ColorVect.LinearToSrgb(fog.Color);
-	_isLoadingFogPreset = true;
-	FogColor = Color.FromRgb((byte) Math.Round(srgb.Red * 255f), (byte) Math.Round(srgb.Green * 255f), (byte) Math.Round(srgb.Blue * 255f));
-	FogOpacity = fog.Color.Alpha;
-	FogDensityMultiplier = fog.DensityMultiplier;
-	FogStartDistance = fog.StartDistance;
-	FogGroundLayerHeight = fog.GroundLayerHeight;
-	FogSkywardFalloff = fog.SkywardDensityFalloffMultiplier;
-	FogSunScattering = fog.DirectionalLightScatteringStrengthMultiplier;
-	FogOccludesBackdrop = fog.OccludesBackdrop;
-	_isLoadingFogPreset = false;
-}
-
 FogDescriptor CreateFogDescriptor() {
 	var linear = ColorVect.SrgbToLinear(new ColorVect(FogColor.R / 255f, FogColor.G / 255f, FogColor.B / 255f));
 	return new FogDescriptor {

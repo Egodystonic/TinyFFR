@@ -316,12 +316,104 @@ class SceneObjectTest {
 		Assert.AreEqual(0, scene.ContainedLights.Count);
 
 		Assert.DoesNotThrow(() => scene.AddRange(Array.Empty<SceneObject>()));
-		Assert.DoesNotThrow(() => scene.RemoveRange(Enumerable.Empty<ModelInstance>()));
-		Assert.Throws<ArgumentNullException>(() => scene.AddRange((IEnumerable<SceneObject>) null!));
-		Assert.Throws<ArgumentNullException>(() => scene.RemoveRange((IEnumerable<SceneObject>) null!));
+		Assert.DoesNotThrow(() => scene.RemoveRange(new List<ModelInstance>()));
+		Assert.Throws<ArgumentNullException>(() => scene.AddRange((IReadOnlyList<SceneObject>) null!));
+		Assert.Throws<ArgumentNullException>(() => scene.RemoveRange((IReadOnlyList<SceneObject>) null!));
 		Assert.Throws<ArgumentException>(() => scene.AddRange(new[] { new ForeignSceneObject() }));
 		Assert.Throws<ArgumentException>(() => scene.RemoveRange(new[] { new ForeignSceneObject() }));
 		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
 		Assert.AreEqual(0, scene.ContainedLights.Count);
+	}
+
+	[Test]
+	public void ScenesShouldAddAndRemoveRangesFromSpansAndIndirectEnumerables() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var cuboidMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+		using var instanceA = factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material);
+		using var instanceB = factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material);
+		using var pointLight = factory.LightBuilder.CreatePointLight();
+		using var spotLight = factory.LightBuilder.CreateSpotLight();
+		using var directionalLight = factory.LightBuilder.CreateDirectionalLight();
+		using var sourceScene = factory.SceneBuilder.CreateScene();
+		using var destScene = factory.SceneBuilder.CreateScene();
+
+		var sceneObjects = new SceneObject[] { instanceA, instanceB, pointLight, spotLight, directionalLight };
+		sourceScene.AddRange((ReadOnlySpan<SceneObject>) sceneObjects);
+		CollectionAssert.AreEquivalent(new[] { instanceA, instanceB }, sourceScene.ContainedModelInstances.ToArray());
+		Assert.AreEqual(3, sourceScene.ContainedLights.Count);
+
+		destScene.AddRange(sourceScene.ContainedModelInstances);
+		destScene.AddRange(sourceScene.ContainedLights);
+		CollectionAssert.AreEquivalent(sourceScene.ContainedModelInstances.ToArray(), destScene.ContainedModelInstances.ToArray());
+		CollectionAssert.AreEquivalent(sourceScene.ContainedLights.ToArray(), destScene.ContainedLights.ToArray());
+
+		destScene.RemoveRange(sourceScene.ContainedModelInstances);
+		destScene.RemoveRange(sourceScene.ContainedLights);
+		Assert.AreEqual(0, destScene.ContainedModelInstances.Count);
+		Assert.AreEqual(0, destScene.ContainedLights.Count);
+
+		sourceScene.RemoveRange((ReadOnlySpan<SceneObject>) sceneObjects);
+		Assert.AreEqual(0, sourceScene.ContainedModelInstances.Count);
+		Assert.AreEqual(0, sourceScene.ContainedLights.Count);
+	}
+
+	[Test]
+	public void RemovingASceneRangeOfItsOwnContentsShouldThrow() {
+		using var factory = new LocalTinyFfrFactory();
+		using var pointLight = factory.LightBuilder.CreatePointLight();
+		using var spotLight = factory.LightBuilder.CreateSpotLight();
+		using var scene = factory.SceneBuilder.CreateScene();
+		scene.AddRange(new Light[] { pointLight, spotLight });
+		Assert.Throws<InvalidOperationException>(() => scene.RemoveRange(scene.ContainedLights));
+	}
+
+	[Test]
+	public void SceneRangeOverloadsShouldNotAllocate() {
+		using var factory = new LocalTinyFfrFactory();
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var cuboidMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+		using var instanceA = factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material);
+		using var instanceB = factory.ObjectBuilder.CreateModelInstance(cuboidMesh, material);
+		using var pointLight = factory.LightBuilder.CreatePointLight();
+		using var spotLight = factory.LightBuilder.CreateSpotLight();
+		using var sourceScene = factory.SceneBuilder.CreateScene();
+		using var destScene = factory.SceneBuilder.CreateScene();
+
+		var sceneObjectArray = new SceneObject[] { instanceA, instanceB, pointLight, spotLight };
+		var instanceList = new List<ModelInstance> { instanceA, instanceB };
+		IReadOnlyList<SceneObject> sceneObjectsAsList = sceneObjectArray;
+		sourceScene.AddRange(sceneObjectArray);
+
+		void AddAndRemoveViaSpan() {
+			destScene.AddRange((ReadOnlySpan<SceneObject>) sceneObjectArray);
+			destScene.RemoveRange((ReadOnlySpan<SceneObject>) sceneObjectArray);
+		}
+		void AddAndRemoveViaIndirectEnumerable() {
+			destScene.AddRange(sourceScene.ContainedModelInstances);
+			destScene.AddRange(sourceScene.ContainedLights);
+			destScene.RemoveRange(sourceScene.ContainedModelInstances);
+			destScene.RemoveRange(sourceScene.ContainedLights);
+		}
+		void AddAndRemoveViaList() {
+			destScene.AddRange(instanceList);
+			destScene.RemoveRange(instanceList);
+		}
+		void AddAndRemoveViaArrayAsList() {
+			destScene.AddRange(sceneObjectsAsList);
+			destScene.RemoveRange(sceneObjectsAsList);
+		}
+
+		static long MeasureAllocation(Action action) {
+			for (var i = 0; i < 3; ++i) action();
+			var before = GC.GetAllocatedBytesForCurrentThread();
+			action();
+			return GC.GetAllocatedBytesForCurrentThread() - before;
+		}
+
+		Assert.AreEqual(0L, MeasureAllocation(AddAndRemoveViaSpan), "Span");
+		Assert.AreEqual(0L, MeasureAllocation(AddAndRemoveViaIndirectEnumerable), "IndirectEnumerable");
+		Assert.AreEqual(0L, MeasureAllocation(AddAndRemoveViaList), "List");
+		Assert.AreEqual(0L, MeasureAllocation(AddAndRemoveViaArrayAsList), "Array as IReadOnlyList");
 	}
 }

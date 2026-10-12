@@ -49,17 +49,9 @@ You can walk up single blocks without jumping, and jump up ledges two blocks hig
 
 ## Architecture
 
-The world is divided in to *chunks*: columns of 16 × 16 blocks, 256 blocks tall. Chunks are grouped in to *regions* of 4 × 4 chunks (64 × 64 blocks), and regions in to *super-regions* of 4 × 4 regions (256 × 256 blocks).
+The world is divided in to *chunks*: columns of 16 × 16 blocks, 256 blocks tall. Near the player, each chunk is drawn as a full-detail mesh; further away, the terrain is drawn as coarser, low-detail *tiles* (see [Distant Terrain](#distant-terrain)), so that the world can be seen out to around two and a half kilometres. As the player moves, chunks and tiles that fall too far behind are removed and their GPU resources re-used for new ones ahead.
 
-The terrain is drawn at three levels of detail (see [Distant Terrain](#distant-terrain)):
-
-| Level | Drawn as | Covers |
-| :-- | :-- | :-- |
-| Near | Full-detail block chunks | The 5 × 5 regions around the player (around ±150 m) |
-| Mid | One low-detail mesh per region, built from cells of 4 × 4 blocks | The 5 × 5 super-regions around the player (around ±600 m) |
-| Far | One low-detail mesh per super-region, built from cells of 16 × 16 blocks | Out to 10 super-regions away (around ±2.5 km) |
-
-As the player moves, chunks and tiles that fall too far behind are removed and their resources re-used for new ones ahead.
+How the terrain itself is generated (from layers of noise, with biomes) isn't specific to TinyFFR, so it isn't covered on this page; see `TerrainGenerator.cs` if you're curious.
 
 The expensive work (generating each chunk's blocks and building its mesh) happens on TinyFFR's background *worker* threads, so that the main thread can keep rendering frames smoothly. The main thread only hands out jobs, uploads finished meshes to the GPU, moves the player, and renders:
 
@@ -115,65 +107,46 @@ The code is split in to one file per responsibility:
 | `DebugHud.cs` | The 2D readout in the top-left corner. |
 | `TypeLoadWorkaround.cs` | A workaround for a .NET runtime bug (see [above](#running-it)). |
 
-## Terrain Generation
+## Building Meshes
 
-Each column of the world gets a height from several layers of [noise](https://en.wikipedia.org/wiki/Simplex_noise) added together: broad, gentle "continent" variation, smaller hills, ridged mountains that only rise where a separate "mountain mask" noise allows them, and much larger (but rarer) mountain ranges that rise over 200 blocks high, so that the horizon is usually broken up by distant peaks:
-
-```csharp
-int ComputeSurfaceHeight(float worldX, float worldZ, float temperature, out float mountainHeight) {
-	var desertFactor = SmoothStep(0.1f, DesertTemperature + 0.15f, temperature);
-	var coldFactor = SmoothStep(-0.1f, -(DesertTemperature + 0.15f), temperature);
-
-	var continent = _continent.SampleFractal(worldX * 0.0025f, worldZ * 0.0025f, 3) * 14f;
-	var hills = _hills.SampleFractal(worldX * 0.012f, worldZ * 0.012f, 4) * 9f * (1f - 0.6f * desertFactor);
-
-	var mountainMask = SmoothStep(0.05f, 0.55f, _mountainMask.SampleFractal(worldX * 0.0035f, worldZ * 0.0035f, 2) + coldFactor * 0.3f);
-	var ridge = 1f - MathF.Abs(_ridges.SampleFractal(worldX * 0.007f, worldZ * 0.007f, 4));
-	mountainHeight = ridge * ridge * 62f * mountainMask * (1f - 0.75f * desertFactor);
-
-	var rangeMask = SmoothStep(0.05f, 0.45f, _rangeMask.SampleFractal(worldX * 0.0007f, worldZ * 0.0007f, 2));
-	var rangeRidge = 1f - MathF.Abs(_rangeRidges.SampleFractal(worldX * 0.0028f, worldZ * 0.0028f, 5));
-	mountainHeight += rangeRidge * rangeRidge * rangeRidge * 130f * rangeMask * (1f - 0.5f * desertFactor);
-
-	var height = BaseHeight + continent + hills + mountainHeight;
-	return Math.Clamp((int) height, 1, WorldSettings.ChunkHeight - 2);
-}
-```
-
-Biomes are chosen by a slowly-varying *temperature* noise: warm areas become desert, cold areas become snowfields, and everything in between is grassland. Rather than switching abruptly at biome borders, the temperature also smoothly scales the hills and mountains (flatter in the desert, more mountainous in the cold), so the terrain's shape never has a cliff where one biome meets another. Only the choice of surface block (grass, sand, snow, exposed stone on high peaks) switches at a threshold.
-
-Because the noise is a pure function of position and seed, any column's height can be worked out at any time without generating anything else. The generator relies on this to make chunks independent of each other: it generates a one-block border around every chunk (belonging to its neighbours), so that the mesher can tell which faces at the chunk's edges are hidden without waiting for the neighbouring chunks to be generated.
-
-## Chunk Meshing
-
-Most blocks are completely surrounded by other blocks, and therefore can't be seen. The mesher only creates a square (two triangles) for each block face that touches air:
+Each chunk is turned in to a list of square faces (only the faces of blocks that touch air are included, since the rest can never be seen). Each face is written as four `MeshVertex`es and two `VertexTriangle`s (see [Creating Meshes](../reference/creating_meshes.md#meshvertex-vertextriangle)):
 
 ```csharp
-for (var x = 0; x < WorldSettings.ChunkSize; ++x) {
-	for (var z = 0; z < WorldSettings.ChunkSize; ++z) {
-		var columnTop = borderedColumnHeights[(x + 1) * TerrainGenerator.BorderedChunkSize + (z + 1)];
-		for (var y = 0; y <= columnTop; ++y) {
-			var block = borderedBlocks[TerrainGenerator.GetBlockIndex(x + 1, y, z + 1)];
-			if (block == BlockType.Air) continue;
-
-			for (var f = 0; f < faces.Length; ++f) {
-				ref readonly var face = ref faces[f];
-				var neighbourY = y + face.NormalY;
-				if (neighbourY < 0) continue;
-				if (neighbourY < WorldSettings.ChunkHeight) {
-					var neighbour = borderedBlocks[TerrainGenerator.GetBlockIndex(x + 1 + face.NormalX, neighbourY, z + 1 + face.NormalZ)];
-					if (neighbour != BlockType.Air) continue;
-				}
-
-				var faceCentre = new Vector3(x + 0.5f + face.NormalX * 0.5f, y + 0.5f + face.NormalY * 0.5f, z + 0.5f + face.NormalZ * 0.5f);
-				if (!TerrainMeshWriter.TryAddQuad(output, faceCentre, in face, 1f, 1f, BlockTextures.GetTile(block, face.Face))) return;
-			}
-		}
+public static bool TryAddQuad(TerrainMeshData output, Vector3 faceCentre, in FaceDefinition face, float width, float height, int tile) {
+	if (output.VertexCount + 4 > output.Vertices.Length) {
+		output.Truncated = true;
+		return false;
 	}
+
+	BlockTextures.GetTileUvs(tile, out var uMin, out var vMin, out var uMax, out var vMax);
+	var halfTangent = face.Tangent * (width * 0.5f);
+	var halfBitangent = face.Bitangent * (height * 0.5f);
+	var corner0 = faceCentre - halfTangent - halfBitangent;
+	var corner1 = faceCentre + halfTangent - halfBitangent;
+	var corner2 = faceCentre + halfTangent + halfBitangent;
+	var corner3 = faceCentre - halfTangent + halfBitangent;
+
+	var firstVertex = output.VertexCount;
+	output.Vertices[firstVertex] = new MeshVertex(Location.FromVector3(corner0), new XYPair<float>(uMin, vMin), face.TangentRotation);
+	output.Vertices[firstVertex + 1] = new MeshVertex(Location.FromVector3(corner1), new XYPair<float>(uMax, vMin), face.TangentRotation);
+	output.Vertices[firstVertex + 2] = new MeshVertex(Location.FromVector3(corner2), new XYPair<float>(uMax, vMax), face.TangentRotation);
+	output.Vertices[firstVertex + 3] = new MeshVertex(Location.FromVector3(corner3), new XYPair<float>(uMin, vMax), face.TangentRotation);
+	output.VertexCount += 4;
+
+	output.Triangles[output.TriangleCount] = new VertexTriangle(firstVertex, firstVertex + 1, firstVertex + 2);
+	output.Triangles[output.TriangleCount + 1] = new VertexTriangle(firstVertex, firstVertex + 2, firstVertex + 3);
+	output.TriangleCount += 2;
+
+	var lowest = (int) MathF.Floor(MathF.Min(corner0.Y, corner2.Y));
+	var highest = (int) MathF.Ceiling(MathF.Max(corner0.Y, corner2.Y));
+	output.LowestY = Math.Min(output.LowestY, lowest);
+	output.HighestY = Math.Max(output.HighestY, highest);
+	return true;
 }
 ```
 
-Each face's vertices are given a position, texture coordinates (pointing at the right tile in the texture atlas), and a tangent rotation describing which way the face points (see [Creating Meshes](../reference/creating_meshes.md#meshvertex-vertextriangle)). The tangent rotations for the six possible face directions are calculated once, when the program starts.
+* Each vertex has a position, texture coordinates (pointing at the right tile in the texture atlas), and a tangent rotation describing which way the face points. The tangent rotations for the six possible face directions are calculated once, when the program starts, with `MeshVertex.CalculateTangentRotation()` (see `FaceDefinition` in `TerrainMesh.cs`).
+* The mesh data is written in to plain arrays (rather than straight in to a TinyFFR resource), because it's built on a worker thread; it's copied in to a dynamic vertex buffer on the main thread afterwards (see [Uploading to the GPU](#uploading-to-the-gpu)).
 
 All of a block type's textures live side-by-side in one image, `block_atlas.png`, so that the whole world can be drawn with a single [material](../reference/creating_materials.md). Each tile in the atlas is surrounded by a border of repeated edge pixels, which stops neighbouring tiles bleeding in to each other in the lower-resolution [mipmaps](../reference/loading_textures.md) used for distant blocks.
 
@@ -232,33 +205,23 @@ In testing, this streamed the world in just as quickly as a dedicated pool of th
 
 ## Streaming
 
-Each level keeps a fixed grid of *slots*. Each chunk (or tile) coordinate always maps to the same slot (by taking the coordinate modulo the grid's size), and each grid is large enough that no two chunks within range of the player ever share a slot. A slot is simply re-used whenever a new coordinate claims it:
+Rather than creating and disposing TinyFFR resources as chunks come and go, every chunk and tile is drawn by one of a fixed number of *slots*, each created when the program starts. A slot owns a `GpuMeshSlot` (see [Uploading to the GPU](#uploading-to-the-gpu)), and is simply re-used whenever a new chunk needs it. Taking a chunk off-screen (or putting it back on) is just a matter of removing its model instance from the scene, or adding it again:
 
 ```csharp
-public void QueueMissingChunks(TerrainJobScheduler workerPool) {
-	var firstChunk = _centre.FirstChunk;
-	foreach (var offset in _loadOrderOffsets) {
-		var coord = new ChunkCoord(firstChunk.X + offset.X, firstChunk.Z + offset.Z);
-		var chunk = GetSlot(coord);
-		if (chunk.State == MeshState.Pending) continue;
-		if (chunk.Coord == coord && chunk.State == MeshState.Live) continue;
+public void Show() {
+	if (IsVisible) return;
+	_scene.Add(_instance);
+	IsVisible = true;
+}
 
-		if (chunk.State == MeshState.Live) {
-			chunk.MeshSlot.Hide();
-			--LiveChunkCount;
-		}
-		chunk.Coord = coord;
-		chunk.State = MeshState.Pending;
-		++chunk.Generation;
-		if (workerPool.TryQueueJob(chunk)) continue;
-
-		chunk.State = MeshState.Free;
-		return;
-	}
+public void Hide() {
+	if (!IsVisible) return;
+	_scene.Remove(_instance);
+	IsVisible = false;
 }
 ```
 
-The coordinates to load are visited in order of distance from the player (from lists of offsets sorted when the program starts), so the chunks and tiles nearest the player are always generated first.
+Removing a model instance from a scene doesn't dispose it (see [Scenes](../reference/scenes.md)), so it can be added back at any time, at almost no cost. The chunks to load are visited in order of distance from the player, so the chunks nearest the player are always dispatched to the worker threads first.
 
 ## Uploading to the GPU
 
@@ -304,126 +267,50 @@ Every slot's buffer, mesh, and instance are created when the program starts: 358
 
 ## Distant Terrain
 
-Drawing every block out to two and a half kilometres would need hundreds of thousands of chunks; far more memory and GPU time than the view is worth, as distant terrain covers only a few pixels per block. Instead, the terrain gets coarser with distance: beyond the full-detail chunks, the world is drawn as low-detail *tiles*. Every tile (whether a 64-block region or a 256-block super-region) is built the same way, from a 16 × 16 grid of square *cells*:
+Drawing every block out to two and a half kilometres would need hundreds of thousands of chunks: far more memory and GPU time than the view is worth, as distant terrain covers only a few pixels per block. Instead, beyond the full-detail chunks the world is drawn as low-detail tiles, each built (by `FarTerrainMesher.cs`) from a 16 × 16 grid of large flat cells, using the same quads as the chunks. There are two levels of tile: 64 blocks across out to around 600 metres, and 256 blocks across beyond that.
+
+From TinyFFR's point of view, a tile is no different to a chunk: it's another slot with its own `GpuMeshSlot`, and switching between levels of detail is just a matter of hiding one slot's model instance and showing another's, so the levels never draw the same ground twice (see `TerrainLevel.cs`).
+
+Every slot's dynamic vertex buffer reserves enough GPU memory for its largest possible mesh, so the application's video memory use is fixed when it starts. In testing, at 1920 × 1080 the whole application used around 1.75 GB of video memory, of which around 0.7 GB was the slots' buffers (most of it the full-detail chunks').
+
+## Player Movement
+
+The camera's look direction is handled by a [first-person camera controller](../reference/camera_controller_first_person.md), driven by the mouse and the gamepad's right stick. The controller's built-in movement isn't used: the player's position is worked out by `Player` instead (with gravity, jumping, and collision against the blocks, none of which are TinyFFR-specific), and given to the controller each frame:
 
 ```csharp
-public static void BuildMesh(TerrainTile tile, TerrainGenerator generator, Span<int> borderedCellHeights, Span<BlockType> borderedCellSurfaces, TerrainMeshData output) {
-	output.Clear();
-	var cellSize = tile.CellSize;
-	var tileOriginX = tile.WorldMinX;
-	var tileOriginZ = tile.WorldMinZ;
+public void Update(ILatestInputRetriever input, float deltaTime) {
+	var keyboardAndMouse = input.KeyboardAndMouse;
+	var gamepad = input.GameControllersCombined;
 
-	for (var bx = 0; bx < BorderedCellsPerSide; ++bx) {
-		for (var bz = 0; bz < BorderedCellsPerSide; ++bz) {
-			var cellCentreX = tileOriginX + (bx - 1) * cellSize + cellSize * 0.5f;
-			var cellCentreZ = tileOriginZ + (bz - 1) * cellSize + cellSize * 0.5f;
-			borderedCellHeights[bx * BorderedCellsPerSide + bz] = generator.GetSurface(cellCentreX, cellCentreZ, out var surface);
-			borderedCellSurfaces[bx * BorderedCellsPerSide + bz] = surface;
-		}
+	_cameraController.AdjustYawViaMouseCursor(keyboardAndMouse);
+	_cameraController.AdjustPitchViaMouseCursor(keyboardAndMouse);
+	_cameraController.AdjustYawViaControllerStick(gamepad, deltaTime);
+	_cameraController.AdjustPitchViaControllerStick(gamepad, deltaTime);
+
+	if (_world.IsChunkLiveAt(_x, _z)) {
+		UpdateMovement(keyboardAndMouse, gamepad, deltaTime);
 	}
 
-	var faces = FaceDefinition.All;
-	for (var cx = 0; cx < CellsPerTileSide; ++cx) {
-		for (var cz = 0; cz < CellsPerTileSide; ++cz) {
-			var index = (cx + 1) * BorderedCellsPerSide + (cz + 1);
-			var height = borderedCellHeights[index];
-			var surface = borderedCellSurfaces[index];
-			var top = height + 1f;
-			var centreX = cx * cellSize + cellSize * 0.5f;
-			var centreZ = cz * cellSize + cellSize * 0.5f;
-
-			ref readonly var topFace = ref faces[0];
-			if (!TerrainMeshWriter.TryAddQuad(output, new Vector3(centreX, top, centreZ), in topFace, cellSize, cellSize, BlockTextures.GetTile(surface, BlockFace.Top))) return;
-
-			for (var f = 2; f < faces.Length; ++f) {
-				ref readonly var face = ref faces[f];
-				var neighbourHeight = borderedCellHeights[(cx + 1 + face.NormalX) * BorderedCellsPerSide + (cz + 1 + face.NormalZ)];
-				if (neighbourHeight >= height) continue;
-
-				var drop = height - neighbourHeight;
-				var sideCentre = new Vector3(centreX + face.NormalX * cellSize * 0.5f, top - drop * 0.5f, centreZ + face.NormalZ * cellSize * 0.5f);
-				if (!TerrainMeshWriter.TryAddQuad(output, sideCentre, in face, cellSize, drop, BlockTextures.GetTile(surface, BlockFace.Side))) return;
-			}
-		}
-	}
+	_cameraController.Position = new Location(_x, _y + EyeHeight, _z);
+	_cameraController.Progress(deltaTime);
 }
 ```
 
-Each cell's height and surface block come straight from the terrain generator's noise (no block arrays are generated for distant terrain at all), and each cell becomes one large flat top plus a side wherever a neighbouring cell is lower. A tile becomes a few hundred quads at most, whatever its size, so each level costs about the same as the last while covering 4 × further.
+* `GameControllersCombined` reads every connected gamepad as one, so it doesn't matter which one the player uses (see [Gamepad Input](../reference/gamepad_input.md)).
+* Because the controller only follows the player's position, its position smoothing is turned off (`SmoothingStrength.None`) so that the camera doesn't lag behind.
 
-Both low-detail levels are instances of the same `TerrainLevel` class, linked to the level finer and coarser than themselves. Each frame, every level decides which of its tiles to show:
-
-```csharp
-public void UpdateVisibility() {
-	var visibleCount = 0;
-	foreach (var tile in _slots) {
-		if (tile.State != MeshState.Live) continue;
-		var distance = CoverageDistance(tile.Coord);
-		var coarserCoversTile = Coarser == null || Coarser.IsLiveAt(tile.WorldMinX + _tileSize / 2, tile.WorldMinZ + _tileSize / 2);
-		if (distance > _coverageRadius + 1 || (distance > _coverageRadius && coarserCoversTile)) {
-			tile.MeshSlot.Hide();
-			tile.State = MeshState.Free;
-			--LiveTileCount;
-			continue;
-		}
-
-		var finerCoversTile = distance <= _coverageRadius && Finer != null && Finer.IsAreaFullyLive(tile.WorldMinX, tile.WorldMinZ, _tileSize);
-		var canReplaceCoarser = !coarserCoversTile || AreSiblingsLive(tile);
-		if (finerCoversTile || !canReplaceCoarser) tile.MeshSlot.Hide();
-		else tile.MeshSlot.Show();
-		if (tile.MeshSlot.IsVisible) ++visibleCount;
-	}
-	VisibleTileCount = visibleCount;
-}
-```
-
-* A tile is hidden once the finer level has its whole area ready, and shown again if it isn't.
-* A tile only replaces the coarser level once all of its *siblings* (the other tiles making up the same coarser tile) are ready, so a coarser tile is always swapped for its finer tiles in a single frame; never piece by piece.
-* A tile that has fallen just outside its level's area stays visible until the coarser tile covering it is ready.
-
-Together, these rules mean every point of the terrain is always drawn by exactly one level, so no gaps or overlapping terrain ever appear (in testing, sampling the whole view twice per second while travelling at 60 m/s found none). Low-detail tiles are kept for the nearer areas too, so when the program starts the whole landscape appears within moments, and the finer levels replace it as they're generated.
-
-## Player Movement & Collision
-
-The camera's look direction is handled by a [first-person camera controller](../reference/camera_controller_first_person.md), driven by the mouse and the gamepad's right stick. The controller's built-in movement isn't used: instead, `Player` works out where the player wants to move, applies gravity and jumping, and checks every step against the voxel grid.
-
-The player is treated as a box 0.6 blocks wide and 1.8 blocks tall. Moving is done in small steps, one axis at a time; a step that would put the box inside a solid block is simply not taken:
+The movement keys and the left stick are read every frame:
 
 ```csharp
-void MoveHorizontally(float moveX, float moveZ) {
-	var steps = (int) MathF.Ceiling(MathF.Max(MathF.Abs(moveX), MathF.Abs(moveZ)) / MaxCollisionStep);
-	if (steps == 0) return;
-	var stepX = moveX / steps;
-	var stepZ = moveZ / steps;
-	for (var i = 0; i < steps; ++i) {
-		if (!TryMoveTo(_x + stepX, _y, _z)) TryStepUpTo(_x + stepX, _z);
-		if (!TryMoveTo(_x, _y, _z + stepZ)) TryStepUpTo(_x, _z + stepZ);
-	}
-}
+var forwardInput = gamepad.LeftStickPosition.GetDisplacementVerticalWithDeadzone();
+var strafeInput = gamepad.LeftStickPosition.GetDisplacementHorizontalWithDeadzone();
+if (keyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.W)) forwardInput += 1f;
+if (keyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.S)) forwardInput -= 1f;
+if (keyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.D)) strafeInput += 1f;
+if (keyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.A)) strafeInput -= 1f;
 ```
 
-```csharp
-bool Collides(float x, float y, float z) {
-	var minX = (int) MathF.Floor(x - HalfWidth);
-	var maxX = (int) MathF.Floor(x + HalfWidth - CollisionEpsilon);
-	var minY = (int) MathF.Floor(y);
-	var maxY = (int) MathF.Floor(y + Height - CollisionEpsilon);
-	var minZ = (int) MathF.Floor(z - HalfWidth);
-	var maxZ = (int) MathF.Floor(z + HalfWidth - CollisionEpsilon);
-	for (var bx = minX; bx <= maxX; ++bx) {
-		for (var by = minY; by <= maxY; ++by) {
-			for (var bz = minZ; bz <= maxZ; ++bz) {
-				if (_world.IsSolid(bx, by, bz)) return true;
-			}
-		}
-	}
-	return false;
-}
-```
-
-Moving one axis at a time means that walking diagonally in to a wall slides along it rather than stopping dead; and if a horizontal step is blocked while standing on the ground, the player tries stepping up one block first. Chunks that haven't been generated yet count as solid, so the player can never fall out of the world while it's still loading.
-
-Because the controller only sets the camera's position from the player's, its position smoothing is turned off (`SmoothingStrength.None`) to avoid the camera lagging behind the physics.
+`GetDisplacementVerticalWithDeadzone()` and `GetDisplacementHorizontalWithDeadzone()` ignore the small amount a stick drifts when it isn't being touched (see [Gamepad Input](../reference/gamepad_input.md)), and `KeyIsCurrentlyDown()` reports whether a key is held (see [Keyboard / Mouse Input](../reference/keyboard_and_mouse_input.md)).
 
 ## Atmosphere
 

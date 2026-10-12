@@ -444,10 +444,31 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// <typeparam name="T">The kind of object being added. Use <see cref="SceneObject"/> to add objects of mixed kinds.</typeparam>
 	/// <param name="sceneObjects">The objects to add.</param>
 	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
-	public void AddRange<T>(IEnumerable<T> sceneObjects) where T : ISceneObject {
-		ArgumentNullException.ThrowIfNull(sceneObjects);
+	public void AddRange<T>(ReadOnlySpan<T> sceneObjects) where T : ISceneObject {
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Length; ++i) Add(ConvertToSceneObject(sceneObjects[i]));
+	}
+	/// <summary>
+	/// Adds every given object to this scene, exactly as though <see cref="Add(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="TIn">The source type of the enumerable.</typeparam>
+	/// <typeparam name="T">The kind of object being added. Use <see cref="SceneObject"/> to add objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to add.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void AddRange<TIn, T>(IndirectEnumerable<TIn, T> sceneObjects) where T : ISceneObject {
 		ThrowIfUnsupportedRangeType<T>();
 		foreach (var sceneObject in sceneObjects) Add(ConvertToSceneObject(sceneObject));
+	}
+	/// <summary>
+	/// Adds every given object to this scene, exactly as though <see cref="Add(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being added. Use <see cref="SceneObject"/> to add objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to add.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void AddRange<T>(IReadOnlyList<T> sceneObjects) where T : ISceneObject {
+		ArgumentNullException.ThrowIfNull(sceneObjects);
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Count; ++i) Add(ConvertToSceneObject(sceneObjects[i]));
 	}
 	/// <summary>
 	/// Removes every given object from this scene, exactly as though <see cref="Remove(SceneObject)"/> had been called for each one.
@@ -455,10 +476,31 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// <typeparam name="T">The kind of object being removed. Use <see cref="SceneObject"/> to remove objects of mixed kinds.</typeparam>
 	/// <param name="sceneObjects">The objects to remove.</param>
 	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
-	public void RemoveRange<T>(IEnumerable<T> sceneObjects) where T : ISceneObject {
-		ArgumentNullException.ThrowIfNull(sceneObjects);
+	public void RemoveRange<T>(ReadOnlySpan<T> sceneObjects) where T : ISceneObject {
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Length; ++i) Remove(ConvertToSceneObject(sceneObjects[i]));
+	}
+	/// <summary>
+	/// Removes every given object from this scene, exactly as though <see cref="Remove(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="TIn">The source type of the enumerable.</typeparam>
+	/// <typeparam name="T">The kind of object being removed. Use <see cref="SceneObject"/> to remove objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to remove.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void RemoveRange<TIn, T>(IndirectEnumerable<TIn, T> sceneObjects) where T : ISceneObject {
 		ThrowIfUnsupportedRangeType<T>();
 		foreach (var sceneObject in sceneObjects) Remove(ConvertToSceneObject(sceneObject));
+	}
+	/// <summary>
+	/// Removes every given object from this scene, exactly as though <see cref="Remove(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being removed. Use <see cref="SceneObject"/> to remove objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to remove.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void RemoveRange<T>(IReadOnlyList<T> sceneObjects) where T : ISceneObject {
+		ArgumentNullException.ThrowIfNull(sceneObjects);
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Count; ++i) Remove(ConvertToSceneObject(sceneObjects[i]));
 	}
 
 	static void ThrowIfUnsupportedRangeType<T>() where T : ISceneObject {

@@ -181,7 +181,7 @@ static class OverlayManager {
 		_pointLightIcon = canvas.Add(_pointLightIconTexture); // (7)!
 		_pointLightIcon.SetPlacementPixels(Orientation2D.UpLeft, (20, 20), (80, 80)); // (8)!
 		_pointLightCountText = canvas.Add("", _pen); // (9)!
-		_pointLightCountText.SetDockParent<CanvasImage>(_pointLightIcon); // (10)!
+		_pointLightCountText.SetDockParent(_pointLightIcon); // (10)!
 		_pointLightCountText.SetPlacementFraction(Orientation2D.Right, (-0.15f, 0f), 0.45f); // (11)!
 		_pointLightCountText.ObjectAnchor = Orientation2D.Left; // (12)!
 
@@ -189,7 +189,7 @@ static class OverlayManager {
 		_spotLightIcon = canvas.Add(_spotLightIconTexture);
 		_spotLightIcon.SetPlacementPixels(Orientation2D.UpLeft, (20, 110), (80, 80));
 		_spotLightCountText = canvas.Add("", _pen);
-		_spotLightCountText.SetDockParent<CanvasImage>(_spotLightIcon);
+		_spotLightCountText.SetDockParent(_spotLightIcon);
 		_spotLightCountText.SetPlacementFraction(Orientation2D.Right, (-0.15f, 0f), 0.45f);
 		_spotLightCountText.ObjectAnchor = Orientation2D.Left;
 

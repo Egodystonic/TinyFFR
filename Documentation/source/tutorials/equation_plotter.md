@@ -97,81 +97,7 @@ flowchart TB
 
 All four plot types draw in to the same 4 × 4 × 4 metre box around the origin; the ranges set in the __Domain & Display__ window decide which part of each equation that box shows (see `PlotDomain.cs`). Because the box never changes size, the camera never needs to be re-framed, whatever ranges are chosen.
 
-## Parsing & Compiling Equations
-
-Typed equations are parsed once, when they're applied, in to a flat list of instructions for a small *stack machine*. Each instruction either pushes a number (a constant, or one of the plot's variables) on to a stack, or pops some numbers off the stack, combines them, and pushes the result. For example, `2x + sin(t)` becomes: push 2, push x, multiply, push t, call sin, add.
-
-The parser is a [recursive descent parser](https://en.wikipedia.org/wiki/Recursive_descent_parser), with one method per level of operator precedence. For example, unary minus binds more loosely than `^` (so `-2^2` is `-4`), and `^` is right-associative (so `2^3^2` is `2^9`):
-
-```csharp
-void ParseUnary() {
-	if (Current.Kind == TokenKind.Minus) {
-		++_index;
-		ParseUnary();
-		Emit(OpCode.Negate, popCount: 1);
-		return;
-	}
-	if (Current.Kind == TokenKind.Plus) {
-		++_index;
-		ParseUnary();
-		return;
-	}
-	ParsePower();
-}
-
-void ParsePower() {
-	ParsePrimary();
-	if (Current.Kind != TokenKind.Caret) return;
-	++_index;
-	ParseUnary();
-	Emit(OpCode.Power, popCount: 2);
-}
-```
-
-Evaluating the compiled equation is then just a loop over the instructions, with the stack allocated on the (call) stack, so evaluating an equation never allocates any memory:
-
-```csharp
-public float Evaluate(ReadOnlySpan<float> variables) {
-	Span<float> stack = stackalloc float[MaxStackDepth];
-	var top = -1;
-	foreach (var instruction in _instructions) {
-		switch (instruction.OpCode) {
-			case OpCode.PushConstant:
-				stack[++top] = instruction.Constant;
-				break;
-			case OpCode.PushVariable:
-				stack[++top] = variables[instruction.Operand];
-				break;
-			case OpCode.Add:
-				stack[top - 1] += stack[top--];
-				break;
-			case OpCode.Subtract:
-				stack[top - 1] -= stack[top--];
-				break;
-			case OpCode.Multiply:
-				stack[top - 1] *= stack[top--];
-				break;
-			case OpCode.Divide:
-				stack[top - 1] /= stack[top--];
-				break;
-			case OpCode.Power:
-				stack[top - 1] = MathF.Pow(stack[top - 1], stack[top--]);
-				break;
-			case OpCode.Negate:
-				stack[top] = -stack[top];
-				break;
-			case OpCode.Call:
-				top = Call((MathFunction) instruction.Operand, stack, top);
-				break;
-		}
-	}
-	return stack[top];
-}
-```
-
-* In testing, evaluating the "Ripples" preset took around 96 nanoseconds; so even a 256 × 256 surface (65,536 evaluations) takes only a few milliseconds per frame.
-* A mistake in an equation (such as an unknown name, or a function given the wrong number of arguments) raises an `ExpressionException` with a description and a position, which the control panel shows in red. The previous plot stays on screen until the equation is fixed.
-* Writing a number directly before a name or bracket multiplies them, so `2x`, `3(x + 1)`, and `0.3 sqrt(x)` all work as you'd expect.
+Typed equations are turned in to something that can be evaluated quickly by the example's own small expression parser (`ExpressionParser.cs`). It isn't specific to TinyFFR, so it isn't covered on this page; but evaluating a parsed equation never allocates any memory, so the plots can re-evaluate their equations at tens of thousands of points every frame without generating garbage.
 
 ## Surfaces on a Mutable Grid
 
@@ -215,53 +141,27 @@ Texture data is written from the top row down, whereas the grid's coordinates co
 
 ## Vector Fields with Arrow Instances
 
-A vector field is drawn as a lattice of arrows: one [model instance](../reference/scene_objects.md) per lattice point, all sharing a single arrow mesh (created with `MeshBuilder.CreateArrow()`). Every frame, each arrow is rotated to point along the field, and stretched according to the field's strength:
+A vector field is drawn as a lattice of arrows: one [model instance](../reference/scene_objects.md) per lattice point, all sharing a single arrow mesh (created with `MeshBuilder.CreateArrow()`; see [Creating Meshes](../reference/creating_meshes.md#arrow)). Every frame, once the field has been evaluated at each arrow's position, each arrow is rotated to point along the field, and stretched according to the field's strength:
 
 ```csharp
-public void Update(float time, CompiledExpression[] expressions) {
-	UpdatePalette();
-	Span<float> variables = stackalloc float[4];
-	variables[3] = time;
-
-	var largestMagnitude = 0f;
-	for (var i = 0; i < _arrows.Length; ++i) {
-		var point = _samplePoints[i];
-		variables[0] = _domain.FromNormalizedX(point.X / (PlotDomain.WorldHalfSize * 2f));
-		variables[1] = _domain.FromNormalizedY(point.Y / (PlotDomain.WorldHalfSize * 2f));
-		variables[2] = _domain.FromNormalizedZ(point.Z / (PlotDomain.WorldHalfSize * 2f));
-		var vector = new Vect(SafeEvaluate(expressions[0], variables), SafeEvaluate(expressions[1], variables), SafeEvaluate(expressions[2], variables));
-		_vectors[i] = vector;
-		largestMagnitude = MathF.Max(largestMagnitude, vector.Length);
-	}
-	_largestMagnitude = largestMagnitude;
-
-	for (var i = 0; i < _arrows.Length; ++i) {
-		var vector = _vectors[i];
-		var magnitude = vector.Length;
-		var arrow = _arrows[i];
-		var lengthFraction = _domain.NormalizeArrowLengths
-			? (largestMagnitude > 0f ? magnitude / largestMagnitude : 0f)
-			: MathF.Min(magnitude * _domain.ArrowLengthScale, 1.5f);
-		if (lengthFraction <= 0.001f || vector.Direction == Direction.None) {
-			arrow.SetScaling(Vect.Zero);
-			continue;
-		}
-
-		var length = _cellSize * ArrowCellFraction * lengthFraction;
-		var thickness = _cellSize * ArrowCellFraction;
-		arrow.SetRotation(Rotation.FromStartAndEndDirection(Direction.Forward, vector.Direction));
-		arrow.SetScaling(new Vect(thickness, thickness, length));
-
-		var paletteIndex = largestMagnitude > 0f ? Math.Min((int) (magnitude / largestMagnitude * PaletteSize), PaletteSize - 1) : 0;
-		if (paletteIndex == _paletteIndices[i]) continue;
-		_paletteIndices[i] = paletteIndex;
-		arrow.SetMaterial(_paletteMaterials[paletteIndex]);
-	}
+if (lengthFraction <= 0.001f || vector.Direction == Direction.None) {
+	arrow.SetScaling(Vect.Zero);
+	continue;
 }
+
+var length = _cellSize * ArrowCellFraction * lengthFraction;
+var thickness = _cellSize * ArrowCellFraction;
+arrow.SetRotation(Rotation.FromStartAndEndDirection(Direction.Forward, vector.Direction));
+arrow.SetScaling(new Vect(thickness, thickness, length));
+
+var paletteIndex = largestMagnitude > 0f ? Math.Min((int) (magnitude / largestMagnitude * PaletteSize), PaletteSize - 1) : 0;
+if (paletteIndex == _paletteIndices[i]) continue;
+_paletteIndices[i] = paletteIndex;
+arrow.SetMaterial(_paletteMaterials[paletteIndex]);
 ```
 
 * The arrow mesh points along `Direction.Forward`, so `Rotation.FromStartAndEndDirection()` turns it to face along the field, and the scaling stretches it along its length (the Z axis) only, so that thin arrows stay thin.
-* By default, the longest arrow is scaled to fill its cell and the rest are scaled relative to it. Turning off "Scale arrows to the largest" uses a fixed scale instead.
+* An arrow with nothing to show (where the field is zero) is hidden by scaling it to zero, rather than being removed from the scene and added back later.
 * Arrows are coloured by choosing one of 16 shared materials (one for each band of strength), so changing an arrow's colour is just `SetMaterial()`; and it's only called when an arrow actually changes band.
 * In testing, 2,744 arrows (14 per side) still rendered in around 4.3 milliseconds per frame.
 
@@ -290,54 +190,32 @@ void WriteTriangles() {
 }
 ```
 
-Every frame, the equations are evaluated at each `(u, v)`, and then each vertex's normal is worked out from its neighbours:
+Every frame, the equations are evaluated at each `(u, v)` (giving each vertex's position), and then every vertex is rewritten, with a normal worked out from its neighbours:
 
 ```csharp
-public void Update(float time, CompiledExpression[] expressions) {
-	UpdateGradient();
-	Span<float> variables = stackalloc float[3];
-	variables[2] = time;
-	var max = Vector3.Max(Vector3.Zero, Vector3.Zero);
-	var min = max;
+using (var lease = _buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: true)) {
+	var vertices = lease.Span;
+	var backOffset = _resolution * _resolution;
 	for (var u = 0; u < _resolution; ++u) {
-		variables[0] = _domain.FromNormalizedU(u / (_resolution - 1f) - 0.5f);
 		for (var v = 0; v < _resolution; ++v) {
-			variables[1] = _domain.FromNormalizedV(v / (_resolution - 1f) - 0.5f);
-			var position = new Vector3(
-				_domain.ToWorldX(SafeEvaluate(expressions[0], variables)),
-				_domain.ToWorldY(SafeEvaluate(expressions[1], variables)),
-				_domain.ToWorldZ(SafeEvaluate(expressions[2], variables))
-			);
-			_positions[u * _resolution + v] = position;
-			min = Vector3.Min(min, position);
-			max = Vector3.Max(max, position);
-		}
-	}
-
-	using (var lease = _buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: true)) {
-		var vertices = lease.Span;
-		var backOffset = _resolution * _resolution;
-		for (var u = 0; u < _resolution; ++u) {
-			for (var v = 0; v < _resolution; ++v) {
-				var index = u * _resolution + v;
-				var position = _positions[index];
-				var alongU = Vector3.Normalize(_positions[Math.Min(u + 1, _resolution - 1) * _resolution + v] - _positions[Math.Max(u - 1, 0) * _resolution + v]);
-				var alongV = Vector3.Normalize(_positions[u * _resolution + Math.Min(v + 1, _resolution - 1)] - _positions[u * _resolution + Math.Max(v - 1, 0)]);
-				var normal = Vector3.Normalize(Vector3.Cross(alongU, alongV));
-				if (!Single.IsFinite(normal.X) || !Single.IsFinite(alongU.X)) {
-					normal = Vector3.UnitY;
-					alongU = Vector3.UnitX;
-				}
-				var bitangent = Vector3.Cross(normal, alongU);
-				var colorCoord = new XYPair<float>(0.5f, Math.Clamp(position.Y / (PlotDomain.WorldHalfSize * 2f) + 0.5f, 0f, 1f));
-				var location = Location.FromVector3(position);
-				vertices[index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(bitangent), Direction.FromVector3(normal)));
-				vertices[backOffset + index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(-bitangent), Direction.FromVector3(-normal)));
+			var index = u * _resolution + v;
+			var position = _positions[index];
+			var alongU = Vector3.Normalize(_positions[Math.Min(u + 1, _resolution - 1) * _resolution + v] - _positions[Math.Max(u - 1, 0) * _resolution + v]);
+			var alongV = Vector3.Normalize(_positions[u * _resolution + Math.Min(v + 1, _resolution - 1)] - _positions[u * _resolution + Math.Max(v - 1, 0)]);
+			var normal = Vector3.Normalize(Vector3.Cross(alongU, alongV));
+			if (!Single.IsFinite(normal.X) || !Single.IsFinite(alongU.X)) {
+				normal = Vector3.UnitY;
+				alongU = Vector3.UnitX;
 			}
+			var bitangent = Vector3.Cross(normal, alongU);
+			var colorCoord = new XYPair<float>(0.5f, Math.Clamp(position.Y / (PlotDomain.WorldHalfSize * 2f) + 0.5f, 0f, 1f));
+			var location = Location.FromVector3(position);
+			vertices[index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(bitangent), Direction.FromVector3(normal)));
+			vertices[backOffset + index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(-bitangent), Direction.FromVector3(-normal)));
 		}
 	}
-	_buffer.SetBoundingBox(PositionedCuboid.FromHalfDimensions((max.X - min.X) * 0.5f, (max.Y - min.Y) * 0.5f, (max.Z - min.Z) * 0.5f, Location.FromVector3((min + max) * 0.5f)), overwriteChildMeshBoundingBoxes: true);
 }
+_buffer.SetBoundingBox(PositionedCuboid.FromHalfDimensions((max.X - min.X) * 0.5f, (max.Y - min.Y) * 0.5f, (max.Z - min.Z) * 0.5f, Location.FromVector3((min + max) * 0.5f)), overwriteChildMeshBoundingBoxes: true);
 ```
 
 * The directions towards the vertex's neighbours along `u` and along `v` give two directions along the surface; their cross product is the surface's normal. `MeshVertex.CalculateTangentRotation()` turns the three directions in to the vertex's tangent rotation.
@@ -357,20 +235,6 @@ var (xDirection, yDirection, upDirection) = _axis switch {
 ```
 
 The slice's colours are what matter, so it uses a [lighting-ignoring material](../reference/lighting_ignoring_materials.md): the colours look the same whichever way the slice faces, with no shading. The colour range adapts to the values on the slice each frame, and is shown underneath the colour map in the __Domain & Display__ window.
-
-## Time
-
-The plot clock advances `t` each frame, and can be paused, scrubbed, sped up, slowed down, run backwards, or looped over a range:
-
-```csharp
-public void Advance(float deltaTime) {
-	if (!IsPlaying) return;
-	Time += deltaTime * Speed;
-	if (!IsLooping || LoopEnd <= LoopStart) return;
-	var length = LoopEnd - LoopStart;
-	if (Time > LoopEnd || Time < LoopStart) Time = LoopStart + (((Time - LoopStart) % length) + length) % length;
-}
-```
 
 ## Axes & Labels
 
@@ -413,7 +277,7 @@ using var labelRenderer = factory.RendererBuilder.CreateRenderer(labelScene, cam
 using var imguiScene = factory.SceneBuilder.CreateImGuiScene(factory);
 using var imguiRenderer = factory.RendererBuilder.CreateRenderer(imguiScene, window);
 using var compositor = factory.RendererBuilder.CreateCompositor(window);
-sceneRenderer.SetQuality(BuiltInQualityConfiguration.Medium);
+sceneRenderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.Medium) { AntiAliasingMode = AntiAliasingMode.None });
 labelRenderer.SetQuality(BuiltInQualityConfiguration.DebugAndDiagnostic);
 compositor.Add(sceneRenderer, RenderCompositionType.Standard);
 compositor.Add(labelRenderer, RenderCompositionType.RetainPreviousScenes);
@@ -451,52 +315,7 @@ while (!loop.Input.UserQuitRequested) {
 
 ImGui doesn't stop the rest of the application from seeing the mouse and keyboard; so the camera only responds to the mouse when `WantCaptureMouse` is `false` (i.e. when the mouse isn't over an ImGui window), and Escape only exits when ImGui isn't using the keyboard (so pressing Escape while typing an equation doesn't close the application).
 
-Each equation is an ImGui text box. `ImGuiInputTextFlags.EnterReturnsTrue` makes it return `true` when Enter is pressed, which applies the equation:
-
-```csharp
-void DrawEquationWindow(Vector2 position, float fontSize) {
-	ImGui.SetNextWindowPos(position, ImGuiCond.FirstUseEver);
-	if (ImGui.Begin("Equation", WindowFlags)) {
-		ImGui.SetNextItemWidth(fontSize * 22f);
-		if (ImGui.BeginCombo("Plot type", Describe(_selectedType))) {
-			foreach (var type in PlotTypes) {
-				if (ImGui.Selectable(Describe(type), type == _selectedType)) {
-					_selectedType = type;
-					Apply();
-				}
-			}
-			ImGui.EndCombo();
-		}
-
-		ImGui.SetNextItemWidth(fontSize * 22f);
-		if (ImGui.BeginCombo("Presets", "Choose a preset...")) {
-			foreach (var preset in Presets.All) {
-				if (preset.Type == _selectedType && ImGui.Selectable(preset.Name)) LoadPreset(preset);
-			}
-			ImGui.EndCombo();
-		}
-
-		ImGui.Separator();
-		var labels = PlotController.GetEquationLabels(_selectedType);
-		var equations = _equations[(int) _selectedType];
-		var applyRequested = false;
-		for (var i = 0; i < labels.Length; ++i) {
-			ImGui.AlignTextToFramePadding();
-			ImGui.Text($"{labels[i],2} =");
-			ImGui.SameLine();
-			ImGui.SetNextItemWidth(fontSize * 30f);
-			if (ImGui.InputText($"##equation{i}", ref equations[i], 512, ImGuiInputTextFlags.EnterReturnsTrue)) applyRequested = true;
-		}
-		if (ImGui.Button("Apply (Enter)") || applyRequested) Apply();
-
-		ImGui.TextDisabled($"Variables: {String.Join(", ", PlotController.GetVariableNames(_selectedType))}.  Constants: pi, tau, e.");
-		ImGui.TextDisabled("Functions: sin cos tan asin acos atan atan2 sinh cosh tanh sqrt abs");
-		ImGui.TextDisabled("exp log floor ceil round sign min max clamp pow mod");
-		if (_error != null) ImGui.TextColored(ErrorColor, _error);
-	}
-	ImGui.End();
-}
-```
+Each equation is typed in to an ImGui text box (`ImGui.InputText()`). Text boxes need the *characters* that the user's keystrokes produce, rather than just which keys were pressed, so they rely on TinyFFR's text transcription (see [Keyboard / Mouse Input](../reference/keyboard_and_mouse_input.md#text-input)). `BeginFrame()` takes care of this automatically: it turns transcription on whenever an ImGui text box has focus, and off again afterwards (see [Dear ImGui Integration](../reference/imgui_integration.md#loop)).
 
 The windows are placed relative to the size of ImGui's font (which TinyFFR scales to suit the display), so they're laid out the same way on high-DPI displays.
 

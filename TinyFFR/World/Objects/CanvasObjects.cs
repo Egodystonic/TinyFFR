@@ -252,6 +252,14 @@ public readonly record struct CanvasImage : ICanvasObject<CanvasImage>, IDisposa
 		get => Implementation.GetCanvasObjectActualSizeFraction(SceneHandle, Instance);
 	}
 
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasImage? parent) => SetDockParent<CanvasImage>(parent);
+	
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasText? parent) => SetDockParent<CanvasText>(parent);
+
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
@@ -695,6 +703,14 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText>, IDisposabl
 		get => Implementation.GetCanvasObjectActualSizeFraction(SceneHandle, Instance);
 	}
 
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasImage? parent) => SetDockParent<CanvasImage>(parent);
+	
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasText? parent) => SetDockParent<CanvasText>(parent);
+	
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
