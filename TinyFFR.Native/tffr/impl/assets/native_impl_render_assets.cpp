@@ -16,6 +16,15 @@ static void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdent
 
 static void filament_callback_noop(void* _, size_t __, BufferIdentity ___) { }
 
+void native_impl_render_assets::flush_pending_uploads(interop_bool waitForCompletion) {
+	if (waitForCompletion) filament_engine->flushAndWait();
+	else filament_engine->flush();
+}
+StartExportedFunc(flush_pending_uploads, interop_bool waitForCompletion) {
+	native_impl_render_assets::flush_pending_uploads(waitForCompletion);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
 	ThrowIfNull(vertices, "Vertices pointer was null.");
 	ThrowIfNegative(vertexCount, "Vertex count was negative.");

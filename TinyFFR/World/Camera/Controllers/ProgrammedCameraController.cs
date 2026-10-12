@@ -15,7 +15,7 @@ namespace Egodystonic.TinyFFR.World;
 /// cinematics, cut-scenes, fly-throughs and replays.
 /// </para>
 /// <para>
-/// The camera is driven by three independent tracks (position, orientation and field of view), each a sequence of keyframes. A keyframe names a value to reach, how
+/// The camera is driven by five independent tracks (position, orientation, field of view, focus distance and exposure), each a sequence of keyframes. A keyframe names a value to reach, how
 /// long to take getting there, and how to ease between the two. The tracks advance together on one clock (<see cref="CurrentTimestampSeconds"/>) but are otherwise
 /// unrelated, so a camera can be mid-way through a long sweep of movement whilst its field of view snaps between several values. The one exception is an
 /// orientation keyframe with a <see cref="OrientationKeyframe.LookAtTarget"/>: it looks at its target from wherever the position track (or anything else) has put
@@ -199,6 +199,56 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		
 		float ITimeKeyedItem.TimeKeySeconds => LengthSeconds;
 	}
+	/// <summary>
+	/// One step of a scripted camera path: a focus distance to arrive at, how long to take getting there, and how to ease along the way.
+	/// </summary>
+	/// <remarks>
+	/// A <see langword="null"/> focus distance means depth of field is switched off (see <see cref="Camera.FocusDistance"/>). There is nothing to interpolate between
+	/// an off and an on state, so when either this keyframe's target or the previous value is <see langword="null"/> the camera keeps the previous value until this
+	/// keyframe has finished, then switches to <see cref="TargetValue"/>. A keyframe with a length of <c>0f</c> therefore switches depth of field on or off immediately.
+	/// </remarks>
+	/// <param name="LengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the focus distance jump straight to <paramref name="TargetValue"/>.</param>
+	/// <param name="Algorithm">How to interpolate from the previous keyframe's focus distance to this one's (for example linearly, or easing in and out).</param>
+	/// <param name="TargetValue">The focus distance, in metres, the camera should have by the time this keyframe finishes, or <see langword="null"/> to switch depth of field off. When not <see langword="null"/>, must be finite and greater than zero.</param>
+	public readonly record struct FocusDistanceKeyframe(float LengthSeconds, InterpolationAlgorithm<Real> Algorithm, float? TargetValue) : ITimeKeyedItem {
+		internal void ThrowIfInvalid() {
+			if (!LengthSeconds.IsNonNegativeAndFinite()) {
+				throw new ArgumentException($"Keyframe length must be finite and non-negative (was {LengthSeconds}).", nameof(LengthSeconds));
+			}
+			Algorithm.ThrowIfNullAlgorithm();
+			if (TargetValue is { } targetValue && (!Single.IsFinite(targetValue) || targetValue <= 0f)) {
+				throw new ArgumentException($"Keyframe value must be finite and greater than zero, or null (was {targetValue}).", nameof(TargetValue));
+			}
+		}
+
+		float ITimeKeyedItem.TimeKeySeconds => LengthSeconds;
+	}
+	/// <summary>
+	/// One step of a scripted camera path: an exposure to arrive at, how long to take getting there, and how to ease along the way.
+	/// </summary>
+	/// <remarks>
+	/// A <see cref="CameraExposurePreset"/> can be passed directly as <see cref="TargetValue"/>. Exposures are interpolated evenly in stops
+	/// (see <see cref="CameraExposureParams.Interpolate"/>), so the brightness of the image changes smoothly over the keyframe.
+	/// </remarks>
+	/// <param name="LengthSeconds">How long this keyframe takes to play, in seconds. Must be finite and not negative; a length of <c>0f</c> makes the exposure jump straight to <paramref name="TargetValue"/>.</param>
+	/// <param name="Algorithm">How to interpolate from the previous keyframe's exposure to this one's (for example linearly, or easing in and out).</param>
+	/// <param name="TargetValue">The exposure the camera should have by the time this keyframe finishes. Each setting must be finite and within its permitted range (e.g. <see cref="CameraExposureParams.ApertureMin"/> to <see cref="CameraExposureParams.ApertureMax"/>).</param>
+	public readonly record struct ExposureKeyframe(float LengthSeconds, InterpolationAlgorithm<CameraExposureParams> Algorithm, CameraExposureParams TargetValue) : ITimeKeyedItem {
+		internal void ThrowIfInvalid() {
+			if (!LengthSeconds.IsNonNegativeAndFinite()) {
+				throw new ArgumentException($"Keyframe length must be finite and non-negative (was {LengthSeconds}).", nameof(LengthSeconds));
+			}
+			Algorithm.ThrowIfNullAlgorithm();
+			if (!IsInRange(TargetValue.Aperture, CameraExposureParams.ApertureMin, CameraExposureParams.ApertureMax)
+				|| !IsInRange(TargetValue.ShutterSpeed, CameraExposureParams.ShutterSpeedMin, CameraExposureParams.ShutterSpeedMax)
+				|| !IsInRange(TargetValue.Sensitivity, CameraExposureParams.SensitivityMin, CameraExposureParams.SensitivityMax)) {
+				throw new ArgumentException($"Keyframe value must have every setting finite and within its permitted range (was {TargetValue}).", nameof(TargetValue));
+			}
+		}
+		static bool IsInRange(float value, float min, float max) => Single.IsFinite(value) && value >= min && value <= max;
+
+		float ITimeKeyedItem.TimeKeySeconds => LengthSeconds;
+	}
 	#pragma warning disable CA1001 // Warning that KeyframeTrack owns disposable fields without disposing them; but lifetime is app-wide
 	sealed class KeyframeTrack<T> where T : struct, ITimeKeyedItem {
 		readonly ArrayPoolBackedVector<T> _keyframes = new();
@@ -255,10 +305,14 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	readonly KeyframeTrack<PositionKeyframe> _positionTrack = new();
 	readonly KeyframeTrack<OrientationKeyframe> _orientationTrack = new();
 	readonly KeyframeTrack<FieldOfViewKeyframe> _fovTrack = new();
+	readonly KeyframeTrack<FocusDistanceKeyframe> _focusDistanceTrack = new();
+	readonly KeyframeTrack<ExposureKeyframe> _exposureTrack = new();
 	Location _startPosition;
 	Direction _startOrientationView;
 	Direction _startOrientationUp;
 	Angle _startFov;
+	float? _startFocusDistance;
+	CameraExposureParams _startExposure;
 	
 	/// <summary>
 	/// What happens when the position track reaches its end, or <see langword="null"/> to let the clock run past the end without wrapping.
@@ -290,6 +344,26 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		get => _fovTrack.Wrapping;
 		set => _fovTrack.Wrapping = value;
 	}
+	/// <summary>
+	/// What happens when the focus distance track reaches its end, or <see langword="null"/> to let the clock run past the end without wrapping.
+	/// </summary>
+	/// <remarks>
+	/// Each track wraps independently, so a short looping focus distance track can run alongside a longer one on another track.
+	/// </remarks>
+	public AnimationWrapStyle? FocusDistanceTrackWrapping {
+		get => _focusDistanceTrack.Wrapping;
+		set => _focusDistanceTrack.Wrapping = value;
+	}
+	/// <summary>
+	/// What happens when the exposure track reaches its end, or <see langword="null"/> to let the clock run past the end without wrapping.
+	/// </summary>
+	/// <remarks>
+	/// Each track wraps independently, so a short looping exposure track can run alongside a longer one on another track.
+	/// </remarks>
+	public AnimationWrapStyle? ExposureTrackWrapping {
+		get => _exposureTrack.Wrapping;
+		set => _exposureTrack.Wrapping = value;
+	}
 	
 	/// <summary>
 	/// The combined length of every keyframe on the position track, in seconds; i.e. how long that track takes to play through once.
@@ -303,6 +377,14 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	/// The combined length of every keyframe on the field of view track, in seconds; i.e. how long that track takes to play through once.
 	/// </summary>
 	public float FieldOfViewTrackLengthSeconds => _fovTrack.TrackLengthSeconds;
+	/// <summary>
+	/// The combined length of every keyframe on the focus distance track, in seconds; i.e. how long that track takes to play through once.
+	/// </summary>
+	public float FocusDistanceTrackLengthSeconds => _focusDistanceTrack.TrackLengthSeconds;
+	/// <summary>
+	/// The combined length of every keyframe on the exposure track, in seconds; i.e. how long that track takes to play through once.
+	/// </summary>
+	public float ExposureTrackLengthSeconds => _exposureTrack.TrackLengthSeconds;
 	
 	/// <summary>
 	/// How far through the script playback currently is, in seconds.
@@ -357,7 +439,35 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	}
 
 	/// <summary>
-	/// Removes every keyframe from all three tracks, leaving the camera wherever it currently is.
+	/// Appends a keyframe to the end of the focus distance track.
+	/// </summary>
+	/// <remarks>
+	/// Keyframes play in the order they are added, and each one's <see cref="FocusDistanceKeyframe.LengthSeconds"/> is the time taken to reach it from the one before. The first
+	/// keyframe on a track interpolates from whatever the camera's focus distance was when playback began.
+	/// </remarks>
+	/// <param name="keyframe">The keyframe to append. Its values must satisfy the constraints described on <see cref="FocusDistanceKeyframe"/>.</param>
+	/// <exception cref="ArgumentException">Thrown when any of <paramref name="keyframe"/>'s values is outside its permitted range.</exception>
+	public void AddFocusDistanceKeyframe(FocusDistanceKeyframe keyframe) {
+		keyframe.ThrowIfInvalid();
+		_focusDistanceTrack.Add(keyframe);
+	}
+
+	/// <summary>
+	/// Appends a keyframe to the end of the exposure track.
+	/// </summary>
+	/// <remarks>
+	/// Keyframes play in the order they are added, and each one's <see cref="ExposureKeyframe.LengthSeconds"/> is the time taken to reach it from the one before. The first
+	/// keyframe on a track interpolates from whatever the camera's exposure was when playback began.
+	/// </remarks>
+	/// <param name="keyframe">The keyframe to append. Its values must satisfy the constraints described on <see cref="ExposureKeyframe"/>.</param>
+	/// <exception cref="ArgumentException">Thrown when any of <paramref name="keyframe"/>'s values is outside its permitted range.</exception>
+	public void AddExposureKeyframe(ExposureKeyframe keyframe) {
+		keyframe.ThrowIfInvalid();
+		_exposureTrack.Add(keyframe);
+	}
+
+	/// <summary>
+	/// Removes every keyframe from all five tracks, leaving the camera wherever it currently is.
 	/// </summary>
 	/// <remarks>
 	/// This does not reset <see cref="CurrentTimestampSeconds"/>; set that to <c>0f</c> as well if you intend to script a fresh sequence.
@@ -366,24 +476,30 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		_positionTrack.Clear();
 		_orientationTrack.Clear();
 		_fovTrack.Clear();
+		_focusDistanceTrack.Clear();
+		_exposureTrack.Clear();
 	}
 
 	void ICameraController.SetGlobalSmoothing(SmoothingStrength newSmoothingStrength) { /* No-op */ }
 
 	/// <inheritdoc />
 	/// <remarks>
-	/// For this controller that means discarding every keyframe, returning all three tracks to <see cref="AnimationWrapStyle.Once"/>, and rewinding
+	/// For this controller that means discarding every keyframe, returning all five tracks to <see cref="AnimationWrapStyle.Once"/>, and rewinding
 	/// <see cref="CurrentTimestampSeconds"/> to <c>0f</c>.
 	/// </remarks>
 	public void ResetParametersToDefault() {
 		_positionTrack.Reset();
 		_orientationTrack.Reset();
 		_fovTrack.Reset();
+		_focusDistanceTrack.Reset();
+		_exposureTrack.Reset();
 		CurrentTimestampSeconds = 0f;
 		_startPosition = Location.Origin;
 		_startOrientationView = Direction.Forward;
 		_startOrientationUp = Direction.Up;
 		_startFov = CameraCreationConfig.DefaultFieldOfView;
+		_startFocusDistance = null;
+		_startExposure = CameraCreationConfig.DefaultInitialExposure;
 	}
 
 	/// <inheritdoc />
@@ -398,12 +514,16 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 			_startOrientationView = Camera.ViewDirection;
 			_startOrientationUp = Camera.UpDirection;
 			_startFov = Camera.VerticalFieldOfView;
+			_startFocusDistance = Camera.FocusDistance;
+			_startExposure = Camera.Exposure;
 		}
 		
 		CurrentTimestampSeconds += deltaTime;
 		var positionTuple = _positionTrack.GetKeyframeAndInterpolationDistance(CurrentTimestampSeconds);
 		var orientationTuple = _orientationTrack.GetKeyframeAndInterpolationDistance(CurrentTimestampSeconds);
 		var fovTuple = _fovTrack.GetKeyframeAndInterpolationDistance(CurrentTimestampSeconds);
+		var focusDistanceTuple = _focusDistanceTrack.GetKeyframeAndInterpolationDistance(CurrentTimestampSeconds);
+		var exposureTuple = _exposureTrack.GetKeyframeAndInterpolationDistance(CurrentTimestampSeconds);
 		
 		Location? positionThisFrame = null;
 		if (positionTuple is { } p) {
@@ -425,7 +545,20 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 			var val = f.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(f.PrevKeyframe?.TargetValue ?? _startFov, f.Keyframe.TargetValue, f.InterpDistance);
 			Camera.SetVerticalFieldOfView(val.Clamp(Camera.FieldOfViewMin, Camera.FieldOfViewMax));
 		}
+		if (focusDistanceTuple is { } fd) {
+			var start = fd.PrevKeyframe is { } prev ? prev.TargetValue : _startFocusDistance;
+			var end = fd.Keyframe.TargetValue;
+			if (start is { } s && end is { } e) {
+				var val = fd.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(s, e, fd.InterpDistance);
+				Camera.SetFocusDistance(MathF.Max(val, FocusDistanceMinOnPlayback));
+			}
+			else Camera.SetFocusDistance(fd.InterpDistance >= 1f ? end : start);
+		}
+		if (exposureTuple is { } ex) {
+			Camera.SetExposure(ex.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(ex.PrevKeyframe?.TargetValue ?? _startExposure, ex.Keyframe.TargetValue, ex.InterpDistance));
+		}
 	}
+	const float FocusDistanceMinOnPlayback = 0.001f;
 	
 	static Location EvaluatePosition(in PositionKeyframe keyframe, Location startPosition, float interpDistance) {
 		if (keyframe.Pivot is not { } pivot) return keyframe.Algorithm.UnsafeGetValueSkipNullCheck(startPosition, keyframe.TargetValue, interpDistance);

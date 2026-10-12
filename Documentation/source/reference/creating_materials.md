@@ -106,8 +106,6 @@ See more here: [The Default Material](the_default_material.md)
 
 `factory.MaterialBuilder.CreateTestMaterial()` creates a material that displays a UV test pattern, which makes it easy to see how textures will be stretched, rotated, or repeated across a mesh's surface.
 
-See more here: [The Test Material](the_test_material.md)
-
 ## Material Lifetimes
 
 Like every other resource in TinyFFR, a material should be disposed when you're done with it. A material keeps track of the textures it was created from (and every object using a material keeps track of that material), so disposal must happen in the following order:

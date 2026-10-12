@@ -128,4 +128,4 @@ Image showing a cube textured using the `UvTestingTexture`.
 
 `UvTestingTexture` is a 2048x2048 colour map designed for checking how a mesh's texture coordinates (UVs) are laid out. Applying it to a mesh makes it immediately obvious where a texture will end up stretched, mirrored, rotated, or wrapped unexpectedly. Unlike every other built-in texture it is a real image (embedded within TinyFFR) rather than a single texel.
 
-Note: This is the same texture used by the [test material](the_test_material.md); most of the time you can just create a test-material to use where you want to see this UV test pattern.
+Note: This is the same texture used by the test material; most of the time you can just create a test-material to use where you want to see this UV test pattern.

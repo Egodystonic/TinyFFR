@@ -41,26 +41,30 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		public XYPair<int> ViewportOffset {
 			get {
-				if (IsWindow) return ((IRenderTarget) AsWindow).ViewportOffset;
-				if (IsBuffer) return ((IRenderTarget) AsBuffer).ViewportOffset;
+				if (IsWindow) return GetViewportOffset(AsWindow);
+				if (IsBuffer) return GetViewportOffset(AsBuffer);
 				throw new InvalidOperationException();
 			}
 		}
 		public XYPair<int> ViewportDimensions {
 			get {
-				if (IsWindow) return ((IRenderTarget) AsWindow).ViewportDimensions;
-				if (IsBuffer) return ((IRenderTarget) AsBuffer).ViewportDimensions;
+				if (IsWindow) return GetViewportDimensions(AsWindow);
+				if (IsBuffer) return GetViewportDimensions(AsBuffer);
 				throw new InvalidOperationException();
 			}
 		}
 
 		public XYPair<int> LogicalDimensions {
 			get {
-				if (IsWindow) return ((IRenderTarget) AsWindow).LogicalDimensions;
-				if (IsBuffer) return ((IRenderTarget) AsBuffer).LogicalDimensions;
+				if (IsWindow) return GetLogicalDimensions(AsWindow);
+				if (IsBuffer) return GetLogicalDimensions(AsBuffer);
 				throw new InvalidOperationException();
 			}
 		}
+
+		static XYPair<int> GetViewportOffset<T>(in T target) where T : IRenderTarget => target.ViewportOffset;
+		static XYPair<int> GetViewportDimensions<T>(in T target) where T : IRenderTarget => target.ViewportDimensions;
+		static XYPair<int> GetLogicalDimensions<T>(in T target) where T : IRenderTarget => target.LogicalDimensions;
 
 		public RenderTargetUnion(Window window) {
 			TypeHandle = ResourceHandle<Window>.TypeHandle;

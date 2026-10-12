@@ -174,16 +174,22 @@ sealed partial class LocalRendererBuilder {
 
 		var first = compositorData.AddedRenderers[compositorData.FirstEnabledRendererIndex];
 		var last = compositorData.AddedRenderers[compositorData.LastEnabledRendererIndex];
-		RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, fenceEmittingHandle);
+		LocalNativeUtils.EnterOpenFrameScope();
 		try {
-			for (var i = compositorData.FirstEnabledRendererIndex + 1; i < compositorData.LastEnabledRendererIndex; ++i) {
-				var middle = compositorData.AddedRenderers[i];
-				if (!middle.IsEnabled) continue;
-				RenderInternal(GetCompositedRenderHandle(in middle), RenderOrdering.Middle, middle.CompositionType, fenceEmittingHandle);
+			RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, fenceEmittingHandle);
+			try {
+				for (var i = compositorData.FirstEnabledRendererIndex + 1; i < compositorData.LastEnabledRendererIndex; ++i) {
+					var middle = compositorData.AddedRenderers[i];
+					if (!middle.IsEnabled) continue;
+					RenderInternal(GetCompositedRenderHandle(in middle), RenderOrdering.Middle, middle.CompositionType, fenceEmittingHandle);
+				}
+			}
+			finally {
+				RenderInternal(GetCompositedRenderHandle(in last), RenderOrdering.Last, last.CompositionType, fenceEmittingHandle);
 			}
 		}
 		finally {
-			RenderInternal(GetCompositedRenderHandle(in last), RenderOrdering.Last, last.CompositionType, fenceEmittingHandle);
+			LocalNativeUtils.ExitOpenFrameScope();
 		}
 	}
 

@@ -87,7 +87,7 @@ Camera-locked quads are created with `factory.ObjectBuilder.CreateCameraLockedQu
 
 Quads can also specify a `size`; text instances specify their `layout` (which includes the sizing information).
 
-The four camera-lock settings (`LockedUprightDirection`, `PositionAnchor`, `ScalingMode`, and `LockStyle`) are fixed when the object is created, and can be read back via the properties of the same names. (See [Changing Settings Later](#changing-settings-later) if you need to change them.)
+The four camera-lock settings (`LockedUprightDirection`, `PositionAnchor`, `ScalingMode`, and `LockStyle`) are fixed when the object is created, and can be read back via the properties of the same names.
 
 ## Upright Direction
 

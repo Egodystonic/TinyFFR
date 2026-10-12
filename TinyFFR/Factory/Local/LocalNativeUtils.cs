@@ -31,6 +31,8 @@ static unsafe class LocalNativeUtils {
 	static bool _nativeLibInitialized = false;
 	static bool _sdlInitialized = false;
 	static nuint _nextTemporaryBufferId = 0;
+	static int _bufferDeallocationDepth = 0;
+	static int _openFrameScopeDepth = 0;
 
 	[DllImport(NativeLibName, EntryPoint = "get_err_buffer")]
 	static extern byte* GetErrorBuffer();
@@ -81,6 +83,9 @@ static unsafe class LocalNativeUtils {
 		delegate* unmanaged<byte*, void> logNotifyDelegate
 	);
 
+	[DllImport(NativeLibName, EntryPoint = "flush_pending_uploads")]
+	static extern InteropResult FlushPendingUploads(InteropBool waitForCompletion);
+
 	[UnmanagedCallersOnly]
 	static void DeallocateRentedBufferFromNativeCaller(nuint bufferId) => DeallocateRentedBuffer(bufferId);
 
@@ -88,10 +93,28 @@ static unsafe class LocalNativeUtils {
 		if (!_activeTemporaryBuffers.Remove(bufferId, out var tuple)) {
 			throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
 		}
-		if (tuple.OptionalReadbackFunc != null) tuple.OptionalReadbackFunc(bufferId, tuple.Buffer.AsByteSpan);
+		++_bufferDeallocationDepth;
+		try {
+			if (tuple.OptionalReadbackFunc != null) tuple.OptionalReadbackFunc(bufferId, tuple.Buffer.AsByteSpan);
+		}
+		finally {
+			--_bufferDeallocationDepth;
+		}
 		var allocator = tuple.Allocator;
 		allocator.GpuHoldingBufferPool.Return(tuple.Buffer);
 		if (allocator.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(allocator);
+	}
+
+	internal static void EnterOpenFrameScope() => ++_openFrameScopeDepth;
+	internal static void ExitOpenFrameScope() => --_openFrameScopeDepth;
+	internal static bool IsInOpenFrameScope => _openFrameScopeDepth > 0;
+
+	static void ReleaseCompletedUploadsIfPoolWouldGrow(FixedByteBufferPool pool, int sizeBytes) {
+		const int MaxSpacesBeforeBlockingFlush = 16;
+		if (_activeTemporaryBuffers.Count == 0 || pool.CanRentWithoutGrowing(sizeBytes)) return;
+		FlushPendingUploads(false).ThrowIfFailure();
+		if (IsInOpenFrameScope || pool.CanRentWithoutGrowing(sizeBytes) || pool.AllocatedSpaceCount < MaxSpacesBeforeBlockingFlush) return;
+		FlushPendingUploads(true).ThrowIfFailure();
 	}
 
 	[UnmanagedCallersOnly]
@@ -130,6 +153,7 @@ static unsafe class LocalNativeUtils {
 												$"the limit can be raised by setting the {nameof(LocalTinyFfrFactoryConfig.MaxCpuToGpuAssetTransferSizeBytes)} value in " +
 												$"the {nameof(LocalTinyFfrFactoryConfig)} passed to the {nameof(LocalTinyFfrFactory)} constructor).");
 		}
+		if (optionalReadbackFunc == null && _bufferDeallocationDepth == 0) ReleaseCompletedUploadsIfPoolWouldGrow(allocator.GpuHoldingBufferPool, sizeBytes);
 		var bufferId = _nextTemporaryBufferId++;
 		var buffer = allocator.GpuHoldingBufferPool.Rent(sizeBytes);
 		_activeTemporaryBuffers.Add(bufferId, new(allocator, buffer, optionalReadbackFunc));

@@ -27,7 +27,7 @@ scene.Add(crateInstance); // (3)!
 
 	The returned `crateMesh` is a `Mesh` (explained below).
 	
-2.	This line creates a single [ModelInstance](model_instances.md) using the `crateMesh` and a [Material](creating_materials.md).
+2.	This line creates a single [ModelInstance](scene_objects.md#model-instances) using the `crateMesh` and a [Material](creating_materials.md).
 	
 3.	This line adds the newly-instantiated model instance to a pre-existing [Scene](scenes.md); ready to be rendered.
 
@@ -375,7 +375,7 @@ scene.Add(characterInstances);
 
 	If the sub-meshes have skeletal animation data, the group also contains one `MeshGroupAnimationTable` holding the skeleton and animations they share.
 
-2.	This creates one [ModelInstance](model_instances.md) per mesh in the group, all using a presumed pre-existing `characterMaterial` (pass `null` to use the default material instead).
+2.	This creates one [ModelInstance](scene_objects.md#model-instances) per mesh in the group, all using a presumed pre-existing `characterMaterial` (pass `null` to use the default material instead).
 
 3.	Passing the group's animation table links the returned `ModelInstanceGroup` to it, if it exists.
 

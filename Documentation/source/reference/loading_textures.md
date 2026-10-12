@@ -287,7 +287,7 @@ For reference, the following is every property on the `TextureCreationConfig`:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `RenderingConfig`
 
-:   How the texture should be sampled by the GPU; see [Sampling](#sampling). Defaults to a `TextureRenderingConfig` with default values.
+:   How the texture should be sampled by the GPU; see [Sampling](#renderingconfig-sampling). Defaults to a `TextureRenderingConfig` with default values.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `ProcessingToApply`
 

@@ -103,6 +103,7 @@ sealed unsafe class VectorPool<T> : IDisposable, IReleasablePool {
 	public void Return(ArrayPoolBackedVector<T> item) {
 		if (_zeroMemoryOnReturn) item.Clear();
 		else item.ClearWithoutZeroingMemory();
+		item.ShrinkToInitialCapacity();
 		_objectPool.Return(item);
 	}
 

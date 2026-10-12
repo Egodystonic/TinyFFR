@@ -153,6 +153,13 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
+	public void ShrinkToInitialCapacity() {
+		if (Count != 0 || _backingArray.Length <= TinyFfrArrayPool.MinimumBucketLength) return;
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+		_backingArray = TinyFfrArrayPool<T>.Shared.Rent(DefaultInitialCapacity);
+		++Version;
+	}
+
 	public void Dispose() {
 		++Version;
 		TinyFfrArrayPool<T>.Shared.Return(_backingArray);

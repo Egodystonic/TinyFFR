@@ -265,7 +265,7 @@ using var mesh = meshBuilder.CreateFromPolygon( // (4)!
 factory.ResourceAllocator.ReturnPooledMemoryBuffer(pointsMemory); // (5)!
 ```
 
-1.	We want to create a mesh that is six vertices defining a hexagon, so firstly we rent a 6-length `Location` span using the factory's [Resource Allocator](resources.md#pooled-memory-buffers).
+1.	We want to create a mesh that is six vertices defining a hexagon, so firstly we rent a 6-length `Location` span using the factory's resource allocator.
 
 2.	Next we define six points in a regular hexagon formation (with a radius of 0.5m) centred on the origin. We want the hexagon to face a camera that is looking in the forward direction (i.e. its front face should point *backward*, towards that camera), so we define all the points in the XY plane (Z remains constant).
 

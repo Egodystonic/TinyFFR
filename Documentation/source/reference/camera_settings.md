@@ -34,7 +34,7 @@ camera.VerticalFieldOfView = 45f; // (4)!
 
 4.	Narrows the camera's field of view to 45°, which "zooms in" slightly compared to the default of 60°.
 
-A camera is given to a [`Renderer`](using_renderers.md) along with the scene it should capture. This means the same camera can be used to capture several different scenes, and the same scene can be captured by several cameras at once. Cameras are resources, so must be disposed when no longer needed.
+A camera is given to a `Renderer` along with the scene it should capture. This means the same camera can be used to capture several different scenes, and the same scene can be captured by several cameras at once. Cameras are resources, so must be disposed when no longer needed.
 
 ### Creating Cameras
 

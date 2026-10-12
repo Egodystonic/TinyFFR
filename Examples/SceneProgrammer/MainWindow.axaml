@@ -76,6 +76,17 @@
 							<ComboBox ItemsSource="{Binding EasingStyles}" SelectedItem="{Binding SelectedKeyframe.Easing}" HorizontalAlignment="Stretch" />
 							<TextBlock Classes="Heading" Text="Vertical field of view (degrees)" />
 							<NumericUpDown Value="{Binding SelectedKeyframe.FieldOfViewDegrees}" Increment="5" Minimum="5" Maximum="170" FormatString="0.#" />
+							<TextBlock Classes="Heading" Text="Depth of field" />
+							<CheckBox Content="Enable depth of field at this keyframe" IsChecked="{Binding SelectedKeyframe.DepthOfFieldEnabled}" />
+							<StackPanel IsEnabled="{Binding SelectedKeyframe.DepthOfFieldEnabled}">
+								<TextBlock Classes="Heading" Text="Focus distance (metres)" />
+								<NumericUpDown Value="{Binding SelectedKeyframe.FocusDistance}" Increment="0.25" Minimum="0.01" FormatString="0.##" />
+							</StackPanel>
+							<Button Content="Focus on Selected Object" Command="{Binding FocusSelectedKeyframeOnSelectedObjectCommand}" IsEnabled="{Binding HasSelectedObject}" Margin="0,4,0,0" ToolTip.Tip="Sets the focus distance to the selected object's distance from this keyframe's position" />
+							<TextBlock Classes="Heading" Text="Exposure" />
+							<ComboBox ItemsSource="{Binding ExposurePresets}" SelectedItem="{Binding SelectedKeyframe.ExposurePreset}" HorizontalAlignment="Stretch" />
+							<TextBlock Classes="Heading" Text="Exposure brightness (multiplier)" />
+							<NumericUpDown Value="{Binding SelectedKeyframe.ExposureBrightness}" Increment="0.25" Minimum="0.05" Maximum="20" FormatString="0.##" />
 							<TextBlock Classes="Heading" Text="Look at" />
 							<ComboBox ItemsSource="{Binding LookAtChoices}" SelectedItem="{Binding SelectedKeyframe.LookAt}" HorizontalAlignment="Stretch" />
 							<StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">

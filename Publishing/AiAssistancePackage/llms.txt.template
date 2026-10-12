@@ -1,0 +1,7 @@
+# TinyFFR {{VERSION}}
+
+> TinyFFR (Tiny Fixed Function Renderer) is a C#/.NET library for real-time 3D rendering with physically-based materials, built on Google's Filament engine. It is published on NuGet as Egodystonic.TinyFFR, with integration packages for Avalonia, WPF, WinForms and Dear ImGui.
+
+This is an index of the TinyFFR AI assistance package. Paths are relative to this file. `SKILL.md` gives an overview and the most important rules. The documentation pages under `docs/` are the same as the website (https://tinyffr.dev). The `api/` files are the XML API documentation, one file per namespace. The `examples/` folders are complete example applications.
+
+{{INDEX}}

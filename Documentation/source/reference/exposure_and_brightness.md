@@ -7,7 +7,7 @@ description: How to calibrate a camera's exposure against the lights and backdro
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * You can control how much light a `Camera` lets in (i.e. its exposure) using real-world values. :material-arrow-right: [Camera Exposure](camera-exposure)
+    * You can control how much light a `Camera` lets in (i.e. its exposure) using real-world values. :material-arrow-right: [Camera Exposure](#camera-exposure)
     * It's also possible to set up light sources using real-world units. :material-arrow-right: [Light Sources & Their Units](#light-sources-their-units)
     * The default brightness levels of lights and scene backdrops in TinyFFR are calibrated for the default camera exposure. :material-arrow-right: [Exposure & Brightness](#exposure-brightness)
 
@@ -359,7 +359,7 @@ Emissive (glowing) parts of materials (see [Emissive Maps](texture_map_types.md#
 
 !!! note ""
 	#### The objects look right, but the background looks dark (or vice versa):
-	The background is the backdrop's own brightness, whereas the objects are lit by every light in the scene. If the objects are also lit by a bright directional light, the camera may be correctly exposed for the objects but not the backdrop. Light the scene with the backdrop alone at a matching preset (see [Matching Presets](#matching-presets)), or raise the backdrop's intensity to suit the exposure.
+	The background is the backdrop's own brightness, whereas the objects are lit by every light in the scene. If the objects are also lit by a bright directional light, the camera may be correctly exposed for the objects but not the backdrop. Light the scene with the backdrop alone at a matching preset, or raise the backdrop's intensity to suit the exposure.
 
 !!! note ""
 	#### The scene is too bright with both a sun and a sky backdrop:

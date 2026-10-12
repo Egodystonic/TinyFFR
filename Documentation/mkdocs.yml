@@ -112,12 +112,13 @@ validation:
   absolute_links: relative_to_docs
   unrecognized_links: warn
   anchors: warn
-strict: false
+strict: true
 
 nav:
   - index.md
   - changelog.md
   - support.md
+  - ai_assistance.md
   - Learn:
     - Tutorials:
         - tutorials/hello_cube.md

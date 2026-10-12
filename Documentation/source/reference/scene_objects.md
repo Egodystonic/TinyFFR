@@ -248,7 +248,7 @@ using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 1f, -5f))
 
 1.	Like objects, lights only illuminate a scene once they've been added to it.
 
-2.	Cameras are never added to a scene; instead, a camera is given to a [`Renderer`](using_renderers.md) along with the scene it should look at.
+2.	Cameras are never added to a scene; instead, a camera is given to a `Renderer` along with the scene it should look at.
 
 `Light`s are also added to a scene but are not backed by a `ModelInstance`. Light types are described in more detail in the following pages ([Point Lights](point_lights.md), [Spot Lights](spot_lights.md), [Directional Lights](directional_lights.md)).
 

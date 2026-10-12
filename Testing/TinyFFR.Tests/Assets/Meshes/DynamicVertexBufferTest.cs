@@ -77,6 +77,51 @@ class DynamicVertexBufferTest {
 	}
 
 	[Test]
+	public void ShouldZeroInitializeAndPreserveVerticesWhenResizing() {
+		using var factory = new LocalTinyFfrFactory();
+		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(8, 4);
+		using (var lease = buffer.BorrowVerticesSpanReadOnly()) {
+			foreach (var vertex in lease.Span) Assert.AreEqual(default(MeshVertex), vertex);
+		}
+		using (var lease = buffer.BorrowVerticesSpan(false, false)) {
+			for (var i = 0; i < lease.Span.Length; ++i) lease.Span[i] = CreateIndexedVertex(i);
+		}
+
+		buffer.ResizeVertexBuffer(12);
+		using (var lease = buffer.BorrowVerticesSpanReadOnly()) {
+			Assert.AreEqual(12, lease.Span.Length);
+			for (var i = 0; i < 8; ++i) Assert.AreEqual(CreateIndexedVertex(i), lease.Span[i]);
+			for (var i = 8; i < 12; ++i) Assert.AreEqual(default(MeshVertex), lease.Span[i]);
+		}
+
+		buffer.ResizeVertexBuffer(3);
+		using (var lease = buffer.BorrowVerticesSpanReadOnly()) {
+			Assert.AreEqual(3, lease.Span.Length);
+			for (var i = 0; i < 3; ++i) Assert.AreEqual(CreateIndexedVertex(i), lease.Span[i]);
+		}
+	}
+
+	[Test]
+	public void ShouldNotAllocateManagedMemoryForLiveBufferMirrors() {
+		const int LiveBufferCount = 16;
+		const int VertexCount = 8_192;
+		const int TriangleCount = 4_096;
+		const long MaxExpectedAllocationBytes = 256 * 1024;
+		using var factory = new LocalTinyFfrFactory();
+		var buffers = new DynamicVertexBuffer[LiveBufferCount];
+		factory.MeshBuilder.CreateDynamicVertexBuffer(VertexCount, TriangleCount).Dispose();
+
+		var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+		for (var i = 0; i < buffers.Length; ++i) buffers[i] = factory.MeshBuilder.CreateDynamicVertexBuffer(VertexCount, TriangleCount);
+		var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+		for (var i = 0; i < buffers.Length; ++i) buffers[i].Dispose();
+
+		Assert.Less(allocatedDuring, MaxExpectedAllocationBytes, $"Holding {LiveBufferCount} buffers of {VertexCount} vertices allocated {allocatedDuring} managed bytes; the CPU-side mirrors are being allocated on the managed heap.");
+	}
+
+	static MeshVertex CreateIndexedVertex(int index) => new(new Location(index, index * 2f, index * 3f), new XYPair<float>(index, -index), Direction.Right, Direction.Up, Direction.Backward);
+
+	[Test]
 	public void ShouldSupportVerticesBeyondSixteenBitIndexRange() {
 		const int VertexCount = 100_000;
 		using var factory = new LocalTinyFfrFactory();

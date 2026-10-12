@@ -7,8 +7,8 @@ description: How to balance asynchronous loading speed against framerate with th
 
 -   :chestnut:{ : style="margin-right:0.3em" } __In a nutshell...__
 
-    * Part of every asynchronous load runs on the primary thread, sharing time with your frames. :material-arrow-right: [Per-Frame Time Fraction](#per-frame-time-fracion)
-    * `TargetPerFrameAsyncCooperativeTaskTimeFraction` trades loading speed against framerate; the best value depends on what you're loading. :material-arrow-right: [Two Examples](#two-examples)
+    * Part of every asynchronous load runs on the primary thread, sharing time with your frames. :material-arrow-right: [Per-Frame Time Fraction](#per-frame-time-fraction)
+    * `TargetPerFrameAsyncCooperativeTaskTimeFraction` trades loading speed against framerate; the best value depends on what you're loading. :material-arrow-right: [A Few Large Assets](#a-few-large-assets), [Many Tiny Assets](#many-tiny-assets)
     * Some loads aren't affected by it at all. :material-arrow-right: [When It Makes Little Difference](#when-it-makes-little-difference)
 
 </div>

@@ -50,7 +50,7 @@ Every object using the default material has its own colour and shading style, se
 
 :   Sets the colour the object is drawn in. Defaults to opaque white.
 
-	If the colour's alpha is less than 100%, the object is drawn partially transparent (except in the [wireframe](#wireframe-rendering) style, which always draws its lines opaque). Partially-transparent objects invoke the transparency-sorting algorithm, which is not 100% accurate (for the sake of performance) and can result in 'flickering' between translucent overlapping objects.
+	If the colour's alpha is less than 100%, the object is drawn partially transparent (except in the wireframe style, which always draws its lines opaque). Partially-transparent objects invoke the transparency-sorting algorithm, which is not 100% accurate (for the sake of performance) and can result in 'flickering' between translucent overlapping objects.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style)`
 

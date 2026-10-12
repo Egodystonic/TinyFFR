@@ -57,6 +57,7 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 	}
 
 	public int MaxBufferSizeBytes => _blockSize * NumBlocksPerSpace;
+	public int AllocatedSpaceCount => _numAllocatedSpaces;
 
 	readonly int _blockSize;
 	readonly int _blockSizeLessOne;
@@ -87,6 +88,15 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 	}  
 
 	public int GetMaxBufferSize<T>() where T : unmanaged => MaxBufferSizeBytes / sizeof(T);
+
+	public bool CanRentWithoutGrowing(int numBytesMinimum) {
+		ThrowIfThisIsDisposed();
+		var numBlocksRequired = (numBytesMinimum + _blockSizeLessOne) / _blockSize;
+		for (var i = 0; i < _numAllocatedSpaces; ++i) {
+			if (_allocatedSpaces[i].LargestContiguousMemoryBlockCount >= numBlocksRequired) return true;
+		}
+		return false;
+	}
 
 	public FixedByteBuffer Rent<T>(int numElementsMinimum) where T : unmanaged => Rent(sizeof(T) * numElementsMinimum);
 	public FixedByteBuffer Rent(int numBytesMinimum) {

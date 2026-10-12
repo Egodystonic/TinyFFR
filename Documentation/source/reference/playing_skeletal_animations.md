@@ -172,7 +172,7 @@ Things to note about blending:
 
 * Each animation keeps its own time point, speed, and wrap style; so animations of different lengths can be blended (as in the example, where the walk and run cycles last different lengths of time).
 * A node that is moved by only one of the two animations is blended between that animation's pose and its default (bind pose) position.
-* Both animations must come from the same mesh (or the same shared animation table; see [Animating Groups](#animating-groups)); blending animations from different meshes or tables throws an `ArgumentException`. Note that a bundle's shared animations (e.g. `bundle.Animations`) and each of its meshes' own animations (e.g. `bundle.Meshes[0].Animations`) are separate, and can not be blended with each other.
+* Both animations must come from the same mesh (or the same shared animation table; blending animations from different meshes or tables throws an `ArgumentException`. Note that a bundle's shared animations (e.g. `bundle.Animations`) and each of its meshes' own animations (e.g. `bundle.Meshes[0].Animations`) are separate, and can not be blended with each other.
 
 ## Node Transforms
 

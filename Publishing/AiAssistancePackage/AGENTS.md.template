@@ -1,0 +1,5 @@
+# TinyFFR {{VERSION}}: AI Assistance Package
+
+This folder contains the documentation, API reference and example code for TinyFFR {{VERSION}}, a C#/.NET 3D rendering library.
+
+Read `SKILL.md` first for an overview and the most important rules, then use `llms.txt` as an index to find the relevant documentation pages, API reference files and examples. Don't try to read everything; look up only what the task needs.

@@ -76,18 +76,22 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	}
 
 	public void ShrinkToInitialBucketCount() {
-		if (_count != 0 || _numBuckets <= InitialBucketCount) return;
+		if (_count != 0) return;
 
-		for (var i = InitialBucketCount; i < _numBuckets; ++i) VectorPool<T>.Shared.Return(_buckets[i]);
+		if (_numBuckets > InitialBucketCount) {
+			for (var i = InitialBucketCount; i < _numBuckets; ++i) VectorPool<T>.Shared.Return(_buckets[i]);
 
-		var newBuckets = TinyFfrArrayPool<ArrayPoolBackedVector<T>>.Shared.Rent(InitialBucketCount);
-		for (var i = 0; i < InitialBucketCount; ++i) newBuckets[i] = _buckets[i];
-		TinyFfrArrayPool<ArrayPoolBackedVector<T>>.Shared.Return(_buckets, clearArray: true);
+			var newBuckets = TinyFfrArrayPool<ArrayPoolBackedVector<T>>.Shared.Rent(InitialBucketCount);
+			for (var i = 0; i < InitialBucketCount; ++i) newBuckets[i] = _buckets[i];
+			TinyFfrArrayPool<ArrayPoolBackedVector<T>>.Shared.Return(_buckets, clearArray: true);
 
-		_buckets = newBuckets;
-		_numBuckets = InitialBucketCount;
-		_hashMask = InitialBucketCount - 1;
-		++Version;
+			_buckets = newBuckets;
+			_numBuckets = InitialBucketCount;
+			_hashMask = InitialBucketCount - 1;
+			++Version;
+		}
+
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ShrinkToInitialCapacity();
 	}
 
 	public bool Contains(T item) => GetIndexFromBucket(GetBucket(item), item).HasValue;

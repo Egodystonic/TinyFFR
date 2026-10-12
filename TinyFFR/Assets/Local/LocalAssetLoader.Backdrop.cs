@@ -280,7 +280,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			throw new InvalidOperationException("No skybox and/or IBL file path set in context (this is a bug in TinyFFR).");
 		}
 
-		return ReadKtxFilesAndCreateBackdropTexture(context, new String(skyboxFilePath.Span), new String(iblFilePath.Span));
+		return ReadKtxFilesAndCreateBackdropTexture(context, skyboxFilePath.Span, iblFilePath.Span);
 	}
 
 	static BackdropTexture LoadBackdropTextureFromDirectory(BackdropLoadContext context, string directoryPath) {
@@ -301,14 +301,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		return ReadKtxFilesAndCreateBackdropTexture(context, skyboxFile, iblFile);
 	}
 
-	static BackdropTexture ReadKtxFilesAndCreateBackdropTexture(BackdropLoadContext context, string skyboxKtxFilePath, string iblKtxFilePath) {
+	static BackdropTexture ReadKtxFilesAndCreateBackdropTexture(BackdropLoadContext context, ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath) {
 		try {
 			context.SkyboxFileData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, skyboxKtxFilePath, "KTX file");
 			context.IblFileData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, iblKtxFilePath, "KTX file");
 		}
 		catch (Exception e) {
-			if (!File.Exists(skyboxKtxFilePath)) throw new InvalidOperationException($"File '{skyboxKtxFilePath}' does not exist.", e);
-			if (!File.Exists(iblKtxFilePath)) throw new InvalidOperationException($"File '{iblKtxFilePath}' does not exist.", e);
+			if (!File.Exists(skyboxKtxFilePath.ToString())) throw new InvalidOperationException($"File '{skyboxKtxFilePath}' does not exist.", e);
+			if (!File.Exists(iblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{iblKtxFilePath}' does not exist.", e);
 			throw new InvalidOperationException("Error occured when reading and/or loading skybox or IBL file.", e);
 		}
 

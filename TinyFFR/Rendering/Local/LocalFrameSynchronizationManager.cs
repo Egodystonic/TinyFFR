@@ -40,6 +40,7 @@ static unsafe class LocalFrameSynchronizationManager {
 	}
 
 	public const int MaxBufferSize = 5;
+	const int MaxUnassignedCallbacksBeforeImmediateFence = 4096;
 	static readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, FenceData> _rendererMap = new();
 	static readonly ArrayPoolBackedMap<UIntPtr, ArrayPoolBackedVector<QueuedResourceCallback>> _fenceCallbackMap = new();
 	static readonly VectorPool<QueuedResourceCallback> _callbackQueuePool = new(zeroMemoryOnReturn: false);
@@ -73,12 +74,7 @@ static unsafe class LocalFrameSynchronizationManager {
 
 		// Special case handling for 0-buffer rendering
 		if (currentFenceData.BufferSize == 0) {
-			CreateGpuFence(out var immediateFenceHandle).ThrowIfFailure();
-			ExecuteFence(immediateFenceHandle);
-			
-			foreach (var callback in _unassignedCallbacks) callback.Invoke();
-			_unassignedCallbacks.Clear();
-
+			ExecuteUnassignedCallbacksBehindImmediateFence();
 			return;
 		}
 		
@@ -122,6 +118,17 @@ static unsafe class LocalFrameSynchronizationManager {
 		}
 
 		_unassignedCallbacks.Add(qrc);
+		if (_unassignedCallbacks.Count >= MaxUnassignedCallbacksBeforeImmediateFence && !LocalNativeUtils.IsInOpenFrameScope) {
+			ExecuteUnassignedCallbacksBehindImmediateFence();
+		}
+	}
+
+	static void ExecuteUnassignedCallbacksBehindImmediateFence() {
+		CreateGpuFence(out var immediateFenceHandle).ThrowIfFailure();
+		ExecuteFence(immediateFenceHandle);
+
+		foreach (var callback in _unassignedCallbacks) callback.Invoke();
+		_unassignedCallbacks.Clear();
 	}
 
 	static void ExecuteFence(UIntPtr fenceHandle) {

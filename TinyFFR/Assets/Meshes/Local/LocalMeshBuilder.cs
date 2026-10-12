@@ -31,8 +31,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		int VertexCapacity,
 		int IndexCapacity,
 		bool UsesImGuiVertices,
-		PooledHeapMemory<MeshVertex>? Vertices,
-		PooledHeapMemory<VertexTriangle>? Triangles,
+		NativeHeapMemory<MeshVertex>? Vertices,
+		NativeHeapMemory<VertexTriangle>? Triangles,
 		PositionedCuboid BoundingBox
 	);
 	readonly record struct DynamicBufferLeaseData(Range Range, bool RecalculateBoundingBox, bool OverwriteChildMeshBoundingBoxes);
@@ -810,15 +810,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
 
-		PooledHeapMemory<MeshVertex>? vertexMirror = null;
-		PooledHeapMemory<VertexTriangle>? triangleMirror = null;
+		NativeHeapMemory<MeshVertex>? vertexMirror = null;
+		NativeHeapMemory<VertexTriangle>? triangleMirror = null;
 		if (!usesImGuiVertices) {
-			var vertices = _globals.HeapPool.Borrow<MeshVertex>(initialVertexCapacity);
-			vertices.Span.Clear();
-			vertexMirror = vertices;
-			var triangles = _globals.HeapPool.Borrow<VertexTriangle>(initialIndexCapacity / 3);
-			triangles.Span.Clear();
-			triangleMirror = triangles;
+			vertexMirror = NativeHeapMemory<MeshVertex>.AllocateZeroed(initialVertexCapacity);
+			triangleMirror = NativeHeapMemory<VertexTriangle>.AllocateZeroed(initialIndexCapacity / 3);
 		}
 
 		var handle = (ResourceHandle<DynamicVertexBuffer>) (++_prevHandleId);
@@ -889,8 +885,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		var newVertices = data.Vertices;
 		if (data.Vertices is { } oldVertices) {
-			var replacement = _globals.HeapPool.Borrow<MeshVertex>(newBufferSize);
-			replacement.Span.Clear();
+			var replacement = NativeHeapMemory<MeshVertex>.AllocateZeroed(newBufferSize);
 			oldVertices.Span[..Int32.Min(oldVertices.Span.Length, newBufferSize)].CopyTo(replacement.Span);
 			oldVertices.Dispose();
 			newVertices = replacement;
@@ -929,8 +924,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		var newTriangles = data.Triangles;
 		if (data.Triangles is { } oldTriangles) {
 			var newTriangleCount = newIndexCount / 3;
-			var replacement = _globals.HeapPool.Borrow<VertexTriangle>(newTriangleCount);
-			replacement.Span.Clear();
+			var replacement = NativeHeapMemory<VertexTriangle>.AllocateZeroed(newTriangleCount);
 			oldTriangles.Span[..Int32.Min(oldTriangles.Span.Length, newTriangleCount)].CopyTo(replacement.Span);
 			oldTriangles.Dispose();
 			newTriangles = replacement;

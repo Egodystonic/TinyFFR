@@ -26,6 +26,10 @@ sealed partial class CameraKeyframe : ObservableObject {
 	[ObservableProperty] public partial LookAtOption? LookAt { get; set; } = LookAtOption.None;
 	[ObservableProperty] public partial Location? LookAtPoint { get; set; }
 	[ObservableProperty] public partial Location? PivotPoint { get; set; }
+	[ObservableProperty] public partial bool DepthOfFieldEnabled { get; set; }
+	[ObservableProperty] public partial decimal FocusDistance { get; set; } = 5m;
+	[ObservableProperty] public partial CameraExposurePreset ExposurePreset { get; set; }
+	[ObservableProperty] public partial decimal ExposureBrightness { get; set; } = 1m;
 
 	public SceneObject? LookAtTarget => LookAt?.Target;
 	public Location? LookAtLocation => LookAt == LookAtOption.Point ? LookAtPoint : LookAtTarget?.CalculateWorldBoundingBox().Position;
@@ -41,7 +45,12 @@ sealed partial class CameraKeyframe : ObservableObject {
 		}
 	}
 
-	public CameraKeyframe(Camera camera) => CaptureFrom(camera);
+	public CameraKeyframe(Camera camera, CameraExposurePreset exposurePreset) {
+		CaptureFrom(camera);
+		DepthOfFieldEnabled = camera.FocusDistance != null;
+		if (camera.FocusDistance is { } focusDistance) FocusDistance = Math.Round((decimal) focusDistance, 2);
+		ExposurePreset = exposurePreset;
+	}
 
 	public void CaptureFrom(Camera camera) {
 		Position = camera.Position;
@@ -52,6 +61,15 @@ sealed partial class CameraKeyframe : ObservableObject {
 	}
 
 	public Direction GetViewDirection() => LookAtLocation is { } target ? Position.DirectionTo(target) : ViewDirection;
+
+	public float? GetFocusDistance() => DepthOfFieldEnabled ? MathF.Max((float) FocusDistance, 0.01f) : null;
+
+	public CameraExposureParams GetExposure() {
+		return (ExposurePreset.ToExposureParams() * (float) ExposureBrightness).Clamp(
+			new CameraExposureParams(CameraExposureParams.ApertureMin, CameraExposureParams.ShutterSpeedMin, CameraExposureParams.SensitivityMin),
+			new CameraExposureParams(CameraExposureParams.ApertureMax, CameraExposureParams.ShutterSpeedMax, CameraExposureParams.SensitivityMax)
+		);
+	}
 
 	partial void OnDurationSecondsChanged(decimal value) => OnPropertyChanged(nameof(Summary));
 	partial void OnEasingChanged(EasingStyle value) => OnPropertyChanged(nameof(Summary));
@@ -107,6 +125,8 @@ sealed class CameraTrack {
 		camera.Position = start.Position;
 		camera.SetViewAndUpDirection(start.GetViewDirection(), start.UpDirection);
 		camera.SetVerticalFieldOfView(Angle.FromDegrees((float) start.FieldOfViewDegrees));
+		camera.FocusDistance = start.GetFocusDistance();
+		camera.Exposure = start.GetExposure();
 
 		for (var i = 1; i < Keyframes.Count; ++i) {
 			var keyframe = Keyframes[i];
@@ -120,11 +140,15 @@ sealed class CameraTrack {
 				: new(length, GetAlgorithm<Direction>(keyframe.Easing), keyframe.ViewDirection, keyframe.UpDirection)
 			);
 			controller.AddFieldOfViewKeyframe(new(length, GetAlgorithm<Angle>(keyframe.Easing), Angle.FromDegrees((float) keyframe.FieldOfViewDegrees)));
+			controller.AddFocusDistanceKeyframe(new(length, GetAlgorithm<Real>(keyframe.Easing), keyframe.GetFocusDistance()));
+			controller.AddExposureKeyframe(new(length, GetAlgorithm<CameraExposureParams>(keyframe.Easing), keyframe.GetExposure()));
 		}
 
 		controller.PositionTrackWrapping = Wrapping;
 		controller.OrientationTrackWrapping = Wrapping;
 		controller.FieldOfViewTrackWrapping = Wrapping;
+		controller.FocusDistanceTrackWrapping = Wrapping;
+		controller.ExposureTrackWrapping = Wrapping;
 		controller.Progress(0f);
 	}
 

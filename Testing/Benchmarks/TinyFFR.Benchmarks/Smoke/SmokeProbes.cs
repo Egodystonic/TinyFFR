@@ -12,7 +12,7 @@ using static Egodystonic.TinyFFR.Benchmarks.Harness.AllocationProbe;
 
 namespace Egodystonic.TinyFFR.Benchmarks.Smoke;
 
-static class SmokeProbes {
+static partial class SmokeProbes {
 	const int LoadCount = 200;
 	const int CreateCount = 500;
 	const int EnumerationPassCount = 200;
@@ -34,7 +34,16 @@ static class SmokeProbes {
 		new("ResourceNamingAndDirectory", ProbeResourceNamingAndDirectory),
 		new("LoadModelFile", ProbeLoadModelFile),
 		new("BakeAssets", ProbeBakeAssets),
-		new("LiveInstances", ProbeLiveInstances)
+		new("LiveInstances", ProbeLiveInstances),
+		new("DynamicBuffers", ProbeDynamicBuffers),
+		new("TextWarmup", ProbeTextWarmup),
+		new("SceneGrowth", ProbeSceneGrowth),
+		new("NoRenderUploads", ProbeNoRenderUploads),
+		new("RenderVariants", ProbeRenderVariants),
+		new("AllocationTypes", ProbeAllocationTypes),
+		new("AllSections", ProbeAllSections),
+		new("ResidualSections", ProbeResidualSections),
+		new("SectionTimings", ProbeSectionTimings)
 	];
 
 	const int LiveInstanceCount = 2_000;

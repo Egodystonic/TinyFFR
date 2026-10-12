@@ -10,12 +10,86 @@ hide:
 
 ## 1.0
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.9.0)__
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v1.0.0)__
 
 ### Major Features
 
-* Added scene compositing
-* Added CPU-controlled vertex mutation capability for non-skeletal meshes
+* Added scene compositing: multiple scenes/cameras can be layered, split-screened or picture-in-pictured into one output, each with its own viewport
+	* Composited layers can be individually framerate-limited
+	* Compositors can target a window or a render output buffer
+* Added customizable viewports for renderers
+* Added Metal support on MacOS
+* Added text rendering: fonts (TTF loading plus three built-in DejaVu fonts) rendered as SDF atlases, with text instances, pens and strings, justification and layout
+* Added 2D canvas scenes for HUDs and overlays (images, text, shapes, anchoring), including canvas scene querying
+* Added a Dear ImGui integration (`TinyFFR.ImGui`), with gamepad, clipboard and viewport support
+* Added asynchronous loading for all asset types, with configurable per-frame time sharing, plus a TinyFFR synchronization context so `await` resumes on the primary thread
+* Added the asset bakery: pre-bake meshes, textures, backdrops, fonts and whole model bundles into a fast-loading format (roughly 10–1000x faster to load depending on content)
+* Added GPU texture compression (BC formats)
+* Added CPU-controlled vertex mutation for non-skeletal meshes (`DynamicVertexBuffer`), plus mutable grid meshes
+* Added scene primitives for debug/visualisation drawing (lines, rays, arrows, shapes, wireframes), plus arrow meshes
+* Added scene querying (ray and shape intersection tests against scene contents) and improved GPU pixel picking, including sub-area picking
+* Added camera-locked objects (HUD-style objects fixed relative to the camera, with several lock and scaling styles)
+* Added fog
+* Added headless rendering mode (render without creating any window or SDL context)
+* Added model bundles and mesh groups (`LoadMeshGroup()`), including shared animation tables across many instances
+* Added two new material types:
+	* **Lighting-ignoring** material (replaces the old **Simple** material)
+	* **Color-keyed** material
+
+### Improvements
+
+* Rendering:
+	* Many more render quality controls, including depth of field and strength controls for DoF, bloom and ambient occlusion
+	* Per-renderer framerate limits
+	* Reworked lighting and exposure so they are more explicit, with real-world light defaults and named presets
+	* Transmissive quality switch for transmissive materials on loaded models
+	* Projection from world space to screen space
+	* Big reduction in VRAM garbage when rendering headlessly or disposing render targets
+* Assets:
+	* Faster asset loading in general
+	* Better ergonomics for texture combination methods
+	* Building textures from pre-compressed data
+	* Better emissive import from model files (four-channel emissive textures are no longer required)
+	* Axis-aligned bounding box and bounding sphere support for meshes, with merging of AABBs
+* Scenes & objects:
+	* Added `SceneObject`, a single type that can represent any object kind; `Scene.Add`/`Remove` accept it, plus range add/remove
+	* Added `SetSize()` for scene objects
+	* Quad meshes
+	* Resource groups now support specialized resources (text, canvas items, etc.)
+	* Canvases now own their canvas items
+* Camera controllers:
+	* Better inspector camera controller
+	* Pivot and focus point for the programmed camera controller
+	* Convenience APIs on all camera controllers; default mouse sensitivity doubled
+	* Standardized camera range overload on the camera builder
+* UI framework integrations (WPF, WinForms, Avalonia):
+	* Shared input abstraction across frameworks
+	* Large performance improvements (faster RGBA readback path)
+	* Control over maximum internal render resolution
+* Input & windows:
+	* Clipboard access API
+	* Mouse cursor styles
+	* Updated default window icon
+* Performance & memory:
+	* Benchmark-driven allocation work: most hot-path APIs now allocate nothing once warm
+	* New internal array pool to reduce GC pressure
+	* `IResourceAllocator` exposes span leases and shared scratch collections for user code
+	* Larger internal handle arena so the most complex models fit
+* Fully XML-documented public API, plus a completely rewritten documentation site with tutorials and showcase example applications
+
+### Bug Fixes
+
+* Fixed black squares flickering under sharpening TAA with bloom (cherry-picked FSR/bloom fix)
+* Fixed swapchain flickering on Windows
+* Fixed a crash on Windows when a window was minimized or dragged to zero width/height
+* Fixed inverted render output buffer contents on non-OpenGL backends
+* Fixed screenshot capture issues; screenshots now render warm-up frames so SSR/TAA show correctly
+* Fixed switching from the wireframe renderer back to the full material renderer not restoring the correct mesh geometry
+* Fixed bounding box issues with skeletal meshes (bounds now come from the bind pose)
+* Fixed a glTF import issue
+* Fixed a native buffer double-free
+* Fixed segfaults caused by passing resources from a different factory to some APIs
+* Fixed the `Optimized` build configuration not actually enabling optimizations
 
 ## 0.8
 

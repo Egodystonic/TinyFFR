@@ -11,6 +11,8 @@ sealed class RenderSettings {
 
 	public void ApplyTo(Renderer renderer, Camera camera) {
 		renderer.SetQuality(new RenderQualityConfig(Quality) { DepthOfFieldStrength = DepthOfFieldStrength });
-		camera.FocusDistance = DepthOfFieldEnabled ? FocusDistance : null;
+		ApplyFocusTo(camera);
 	}
+
+	public void ApplyFocusTo(Camera camera) => camera.FocusDistance = DepthOfFieldEnabled ? FocusDistance : null;
 }

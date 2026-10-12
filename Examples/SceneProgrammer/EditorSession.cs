@@ -89,10 +89,12 @@ sealed class EditorSession : IDisposable {
 		else if (!Environment.ShowGround && _groundIsInScene) Scene.Remove(_ground);
 		_groundIsInScene = Environment.ShowGround;
 		EditorCamera.SetExposure(Environment.Exposure);
+		if (IsPreviewing) SeekPreview(PreviewTimeSeconds);
 	}
 
 	public void ApplyRenderSettings() {
 		if (_renderer is { } renderer) Rendering.ApplyTo(renderer, EditorCamera);
+		if (IsPreviewing) SeekPreview(PreviewTimeSeconds);
 	}
 
 	public void Tick(float deltaTime, ILatestKeyboardAndMouseInputRetriever input) {
@@ -172,7 +174,7 @@ sealed class EditorSession : IDisposable {
 		return new Location(ahead.X, 0f, ahead.Z);
 	}
 
-	public CameraKeyframe CaptureKeyframe() => new(EditorCamera);
+	public CameraKeyframe CaptureKeyframe() => new(EditorCamera, Environment.Exposure);
 
 	public void SetCustomBackdrop(BackdropTexture backdrop) {
 		var previous = Environment.CustomBackdrop;
@@ -202,7 +204,11 @@ sealed class EditorSession : IDisposable {
 	}
 
 	public void ExitPreview() {
-		if (IsPreviewing) EditorCamera.SetVerticalFieldOfView(_editorFieldOfView);
+		if (IsPreviewing) {
+			EditorCamera.SetVerticalFieldOfView(_editorFieldOfView);
+			EditorCamera.SetExposure(Environment.Exposure);
+			Rendering.ApplyFocusTo(EditorCamera);
+		}
 		IsPreviewing = false;
 		IsPreviewPlaying = false;
 		Overlay.SetVisible(true);

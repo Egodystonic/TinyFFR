@@ -25,7 +25,7 @@ scene.Add(carModelInstances); // (3)!
 
 	The returned `carBundle` is a `ModelBundle` (explained below) containing all loaded meshes, textures, materials, and models.
 	
-2.	This line creates a single [ModelInstance](model_instances.md) for each `Model` (explained below) loaded amongst `carBundle`.
+2.	This line creates a single [ModelInstance](scene_objects.md#model-instances) for each `Model` (explained below) loaded amongst `carBundle`.
 
 	The returned `carModelInstances` is a `ModelInstanceGroup` (essentially a specialized `ResourceGroup`) that contains all loaded model instances.
 	
@@ -122,7 +122,7 @@ When you invoke `LoadBundledAsset()` TinyFFR determines which materials are mean
 
 A `Model` does not *itself* represent any loaded data on the system; instead it is a logical pairing of a `Mesh` and `Material` that combined make up a single fully-textured object model.
 
-We can pass a `Model` or `ModelBundle` to the `factory.ObjectBuilder` to create instances of those models. Passing the whole `ModelBundle` (as in the example at the top of this page) creates an instance of every model in it. Those [ModelInstances](model_instances.md) can then be added to any [Scene](scenes.md).
+We can pass a `Model` or `ModelBundle` to the `factory.ObjectBuilder` to create instances of those models. Passing the whole `ModelBundle` (as in the example at the top of this page) creates an instance of every model in it. Those [ModelInstances](scene_objects.md#model-instances) can then be added to any [Scene](scenes.md).
 
 ??? info "Creating Models Manually"
 	If you wish to logically link a `Mesh` and `Material` together in to your own `Model`, it's as simple as invoking `factory.AssetLoader.CreateModel(mesh, material)`.
@@ -137,7 +137,7 @@ You can pass a `ModelCreationConfig` and a `ModelReadConfig` to `LoadBundledAsse
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `MeshConfig`
 
-:   This specifies the [MeshCreationConfig](loading_meshes.md#meshcreationconfig) that should be applied to every `Mesh` contained in the composite asset file.
+:   This specifies the [MeshCreationConfig](loading_meshes.md#customizing-the-load-operation) that should be applied to every `Mesh` contained in the composite asset file.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `TextureConfig`
 
@@ -157,7 +157,7 @@ You can pass a `ModelCreationConfig` and a `ModelReadConfig` to `LoadBundledAsse
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `MeshConfig`
 
-:   This specifies the [MeshReadConfig](loading_meshes.md#meshreadconfig) that should be applied to every `Mesh` contained in the composite asset file.
+:   This specifies the [MeshReadConfig](loading_meshes.md#customizing-the-load-operation) that should be applied to every `Mesh` contained in the composite asset file.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `TextureConfig`
 

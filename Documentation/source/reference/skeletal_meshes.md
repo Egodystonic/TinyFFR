@@ -66,7 +66,7 @@ The `Skeleton` also offers the following methods:
 
 <span class="def-icon">:material-code-block-parentheses:</span> `ApplyBindPose()`
 
-:   Returns the given [ModelInstance](model_instances.md) to its bind pose; use this to reset an instance after you've finished animating it. You can also pass a `ModelInstanceGroup`, in which case every instance in the group that uses this mesh is reset. Instances that do not use this mesh (and any other kind of object) are left unchanged.
+:   Returns the given [ModelInstance](scene_objects.md#model-instances) to its bind pose; use this to reset an instance after you've finished animating it. You can also pass a `ModelInstanceGroup`, in which case every instance in the group that uses this mesh is reset. Instances that do not use this mesh (and any other kind of object) are left unchanged.
 
 For a mesh without skeletal data, `Nodes` is empty, `GetBindPoseNodeTransforms()` returns identity matrices, and `ApplyBindPose()` does nothing.
 
@@ -96,7 +96,7 @@ Each `MeshAnimation` has:
 
 Animations belong to their `Mesh` and are disposed along with it.
 
-To actually play an animation on a [ModelInstance](model_instances.md), see [Playing Skeletal Animations](playing_skeletal_animations.md).
+To actually play an animation on a [ModelInstance](scene_objects.md#model-instances), see [Playing Skeletal Animations](playing_skeletal_animations.md).
 
 ## Shared Skeletons (Model Bundles)
 
@@ -121,7 +121,7 @@ instances.Skeleton.GetBindPoseNodeTransforms(head, out var headTransform); // (4
 
 Many animated assets are split in to multiple separately-skinned meshes that are all driven by one skeleton (e.g. each body part or item of clothing of a character). Each mesh loaded from such a file gets its own copy of the skeleton and animations (described above); but when every mesh is animated together, calculating the same pose separately for each mesh is wasteful.
 
-So, when loading a file via [`LoadBundledAsset()`](bundled_assets.md#animated-bundles) or [`LoadMeshGroup()`](loading_meshes.md#mesh-groups), TinyFFR also creates a single `MeshGroupAnimationTable`: One copy of the skeleton plus the animations that drive it, shared by every skinned mesh in the file. You can access its data via:
+So, when loading a file via [`LoadBundledAsset()`](bundled_assets.md) or [`LoadMeshGroup()`](loading_meshes.md), TinyFFR also creates a single `MeshGroupAnimationTable`: One copy of the skeleton plus the animations that drive it, shared by every skinned mesh in the file. You can access its data via:
 
 * `bundle.Animations` and `bundle.Skeleton` on a `ModelBundle`;
 * `group.AnimationTables[0].Animations` and `.Skeleton` on the group returned by `LoadMeshGroup()`;
@@ -167,7 +167,7 @@ Skeletal meshes do not support per-instance vertex mutation; setting `MeshCreati
 
 #### MeshVertexSkeletal
 
-Each `MeshVertexSkeletal` requires the standard vertex data as defined in [Meshes](meshes.md#meshvertex), as well as the following additional properties:
+Each `MeshVertexSkeletal` requires the standard vertex data as defined in [Creating Meshes](creating_meshes.md), as well as the following additional properties:
 
 * __BoneIndices__ :material-arrow-right: This is an [inline array](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-12.0/inline-arrays) of four bytes, each one indexes a bone in the skeleton's array of bones (bones are nodes, but not all nodes are bones). Each index is paired with a `BoneWeights` entry, together they are used to define how this vertex will be transformed in model space when applying animations to the target nodes.
 * __BoneWeights__ :material-arrow-right: This is an [inline array](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-12.0/inline-arrays) of four floats, each one defines how much 'weight' or 'pull' its corresponding bone has on this vertex. These four weights should usually sum to `1f`.

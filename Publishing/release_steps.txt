@@ -14,3 +14,4 @@
 	• git tag vM.m.p
 	• git push origin tag vM.m.p
 • Update package version to next with rc suffix in Directory.Build.props (can also test downloaded package from nuget.org here too, once it's available online)
+• The workflow also produces an "ai_assistance_package" artifact (TinyFFR-AI-Assistance-<version>.zip); check its build step for warnings (e.g. broken doc links) and attach the zip to the GitHub release

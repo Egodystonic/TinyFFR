@@ -48,17 +48,35 @@ static class AllocationProbe {
 
 	public static void Measure(string label, Action action) => Measure(label, action, 1);
 
-	public static void Measure(string label, Action action, int operationCount) {
-		for (var i = 0; i < WarmupIterations; ++i) action();
+	public static long MeasureCold(string label, Action action, int operationCount) {
+		var before = GC.GetAllocatedBytesForCurrentThread();
+		action();
+		var result = GC.GetAllocatedBytesForCurrentThread() - before;
+		Report(label + " [cold]", result, operationCount);
+		return result;
+	}
+
+	static void Report(string label, long bytes, int operationCount) {
+		var perOp = operationCount > 1 ? $" ({bytes / (double) operationCount,9:N1} B/op)" : new string(' ', 17);
+		Console.WriteLine($"  {bytes,12:N0} B{perOp}  {label}");
+	}
+
+	public static void Measure(string label, Action action, int operationCount) => Measure(label, action, operationCount, null);
+
+	public static void Measure(string label, Action action, int operationCount, Action? betweenIterations) {
+		for (var i = 0; i < WarmupIterations; ++i) {
+			action();
+			betweenIterations?.Invoke();
+		}
 
 		var best = Int64.MaxValue;
 		for (var i = 0; i < MeasuredIterations; ++i) {
 			var before = GC.GetAllocatedBytesForCurrentThread();
 			action();
 			best = Int64.Min(best, GC.GetAllocatedBytesForCurrentThread() - before);
+			betweenIterations?.Invoke();
 		}
 
-		var perOp = operationCount > 1 ? $" ({best / (double) operationCount,9:N1} B/op)" : new string(' ', 17);
-		Console.WriteLine($"  {best,12:N0} B{perOp}  {label}");
+		Report(label, best, operationCount);
 	}
 }

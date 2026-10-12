@@ -34,6 +34,7 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	public BuiltInQualityConfiguration[] RenderQualities { get; } = [BuiltInQualityConfiguration.VeryLow, BuiltInQualityConfiguration.Low, BuiltInQualityConfiguration.Medium, BuiltInQualityConfiguration.High, BuiltInQualityConfiguration.VeryHigh, BuiltInQualityConfiguration.Ultra];
 	public FogDensity[] FogPresets { get; } = Enum.GetValues<FogDensity>();
 	public LightingPreset[] LightingPresets { get; } = Enum.GetValues<LightingPreset>();
+	public CameraExposurePreset[] ExposurePresets { get; } = Enum.GetValues<CameraExposurePreset>();
 
 	[ObservableProperty] public partial Renderer? ActiveRenderer { get; set; }
 	[ObservableProperty] public partial SceneObject? SelectedObject { get; set; }
@@ -155,6 +156,14 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 		var distance = _session.EditorCamera.Position.DistanceFrom(selected.CalculateWorldBoundingBox().Position);
 		FocusDistance = Math.Round((decimal) distance, 2);
 		DepthOfFieldEnabled = true;
+	}
+
+	[RelayCommand]
+	void FocusSelectedKeyframeOnSelectedObject() {
+		if (SelectedKeyframe is not { } keyframe || SelectedObject is not { } selected) return;
+		var distance = keyframe.Position.DistanceFrom(selected.CalculateWorldBoundingBox().Position);
+		keyframe.FocusDistance = Math.Round((decimal) MathF.Max(distance, 0.01f), 2);
+		keyframe.DepthOfFieldEnabled = true;
 	}
 
 	[RelayCommand]
