@@ -22,6 +22,7 @@ sealed class EditorOverlay : IDisposable {
 	SceneObject? _selection;
 	CameraTrack? _track;
 	bool _isVisible;
+	bool _isGridVisible = true;
 
 	public EditorOverlay(Scene scene) {
 		_scene = scene;
@@ -32,17 +33,31 @@ sealed class EditorOverlay : IDisposable {
 		if (_isVisible == isVisible) return;
 		_isVisible = isVisible;
 		if (isVisible) {
-			_grid = _scene.AddPrimitiveGrid(new Location(0f, 0.005f, 0f), GridBrush, gridNormal: Direction.Up, gridSize: 100f, majorGridLineSpacing: 10f, minorGridLineSpacing: 1f);
 			RebuildPath();
 			RebuildLights();
 		}
 		else {
-			_grid?.Dispose();
-			_grid = null;
 			ClearPath();
 			RebuildLights();
 		}
+		UpdateGrid();
 		UpdateSelectionBox();
+	}
+
+	public void SetGridVisible(bool isGridVisible) {
+		_isGridVisible = isGridVisible;
+		UpdateGrid();
+	}
+
+	void UpdateGrid() {
+		var shouldShow = _isVisible && _isGridVisible;
+		if (shouldShow && _grid == null) {
+			_grid = _scene.AddPrimitiveGrid(new Location(0f, 0.005f, 0f), GridBrush, gridNormal: Direction.Up, gridSize: 100f, majorGridLineSpacing: 10f, minorGridLineSpacing: 1f);
+		}
+		else if (!shouldShow && _grid is { } grid) {
+			grid.Dispose();
+			_grid = null;
+		}
 	}
 
 	public void SetSelection(SceneObject? selection) {

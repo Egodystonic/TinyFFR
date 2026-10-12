@@ -9,19 +9,21 @@ description: A showcase example that embeds TinyFFR in an Avalonia scene editor,
 
 	![Image showing the Scene Programmer editor: a list of scene objects on the left, a 3D view in the middle with a camera track drawn over a grid, and keyframe settings on the right.](scene_programmer_preview.png){ align=right : style="max-width:80%; margin: 0em; margin-left: 1em;" }
     
-    This showcase application is a small scene editor built with [Avalonia](https://avaloniaui.net/). It demonstrates:
-
-	* Embedding TinyFFR in an Avalonia application;
-	* Importing models asynchronously while the UI stays responsive;
-	* Selecting objects by clicking on them, and dragging them around the scene;
-	* Building a camera "fly-through" with a programmed camera controller;
-	* Previewing and scrubbing through the camera track inside the editor;
-	* Loading your own HDR/EXR sky, and controlling the backdrop's brightness;
-	* Setting up fog, depth of field, and the render quality preset;
-	* Adding, editing, and removing point lights and spot lights;
-	* Playing the result back in a separate fullscreen window, rendered entirely by TinyFFR at an uncapped framerate.
+    This uses TinyFFR and [Avalonia](https://avaloniaui.net/) to create simple scene editor + camera programmer.
 
 </div>
+
+## :material-flask-outline: Demonstrated Features
+
+* Embedding TinyFFR in an Avalonia application;
+* Importing models asynchronously while the UI stays responsive;
+* Selecting objects by clicking on them, and dragging them around the scene;
+* Building a camera "fly-through" with a programmed camera controller;
+* Previewing and scrubbing through the camera track inside the editor;
+* Loading your own HDR/EXR sky, and controlling the backdrop's brightness;
+* Setting up fog, depth of field, and the render quality preset;
+* Adding, editing, and removing point lights and spot lights;
+* Playing the result back in a separate fullscreen window, rendered entirely by TinyFFR at an uncapped framerate.
 
 ## Running It
 
@@ -506,11 +508,14 @@ public void ApplyTo(Scene scene, DirectionalLight sun) {
 	if (Fog is { } fog) scene.AddFog(fog);
 	else scene.RemoveFog();
 
-	sun.SetBrightness(SunBrightness);
+	sun.SetBrightness(SunBrightness.ToBrightnessValue() * SunBrightnessMultiplier);
+	sun.Color = SunColor;
 	sun.Direction = SunDirection;
 	sun.CastsShadows = SunCastsShadows;
 }
 ```
+
+The sun's brightness can also be scaled (relative to the lighting preset's brightness, so `1×` stays correctly exposed) and tinted with a colour picker; as with every other light colour, the picked sRGB colour is converted to a linear one for the light. The ground grid is part of the [editor overlay](#editor-overlay), so it can be hidden with "Show grid" without affecting the preview or fullscreen playback (where it's never shown anyway).
 
 The fullscreen player's camera copies the same exposure when it's created.
 
@@ -637,13 +642,3 @@ public void ApplyTo(Renderer renderer, Camera camera) {
 ## Avoiding Garbage
 
 Avalonia (like most UI frameworks) allocates memory as it runs, so the editor doesn't try to avoid generating garbage. The fullscreen player's loop, however, allocates nothing at all: in testing, three runs of around 2,500 frames each allocated zero bytes after the first second. Combined with the uncapped framerate, this keeps playback as smooth as possible (see [Avoiding GC Stutter](../reference/avoiding_gc_stutter.md)).
-
-## Stuff to Tinker With
-
-* Save and load projects (the model file paths, transforms, keyframes, and environment settings) to a JSON file.
-* Animate the focus distance along the camera track (for example, a "rack focus" from one object to another), by adding it to each keyframe and interpolating it yourself each frame.
-* Let the user rotate the backdrop (`SetBackdrop()` takes a `rotation`), so that a custom sky's sun lines up with the scene's sun.
-* Add a timeline that shows each keyframe's position in time, and drag keyframes along it.
-* Let the camera track animate the lights too (for example, a spot light that follows the camera).
-* Show a picture-in-picture preview of the track camera while editing, using a [compositor](../reference/compositing.md).
-* Add translate/rotate/scale "gizmo" handles to the selected object, drawn with [scene primitives](../reference/scene_primitives.md).

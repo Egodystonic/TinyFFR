@@ -131,8 +131,20 @@
 					<Slider Minimum="0" Maximum="360" Value="{Binding SunAzimuthDegrees}" />
 					<TextBlock Classes="Heading" Text="Sun height" />
 					<Slider Minimum="5" Maximum="90" Value="{Binding SunElevationDegrees}" />
+					<TextBlock Classes="Heading" Text="Sun brightness" />
+					<DockPanel>
+						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding SunBrightnessMultiplier, StringFormat='{}{0:0.00}×'}" />
+						<Slider Minimum="0" Maximum="3" Value="{Binding SunBrightnessMultiplier}" />
+					</DockPanel>
+					<DockPanel Margin="0,4">
+						<TextBlock Text="Sun colour" VerticalAlignment="Center" />
+						<ColorPicker Color="{Binding SunColor}" IsAlphaEnabled="False" HorizontalAlignment="Right" />
+					</DockPanel>
 					<CheckBox Content="Sun casts shadows" IsChecked="{Binding SunCastsShadows}" Margin="0,8,0,0" />
-					<CheckBox Content="Show ground" IsChecked="{Binding ShowGround}" />
+					<StackPanel Orientation="Horizontal" Spacing="12">
+						<CheckBox Content="Show ground" IsChecked="{Binding ShowGround}" />
+						<CheckBox Content="Show grid" IsChecked="{Binding ShowGrid}" ToolTip.Tip="The grid is only shown in the editor; never in the preview or in fullscreen playback" />
+					</StackPanel>
 
 					<TextBlock Classes="Heading" Text="Fog" />
 					<CheckBox Content="Enable fog" IsChecked="{Binding FogEnabled}" />

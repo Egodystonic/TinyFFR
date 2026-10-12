@@ -532,12 +532,3 @@ public void ApplyBackground(Scene scene) {
 ```
 
 The colour picker works in sRGB (as an image editor would), but backdrop colours are linear, so the colour is converted with `ColorVect.SrgbToLinear()`. The starfield is shown as it was authored (at an intensity of `1f`) rather than at a brightness preset: it's almost entirely black, so brightening it until it lit the scene like a room would turn the whole sky white.
-
-## Stuff to Tinker With
-
-* Plot more than one equation at once (for example a surface together with its gradient as a vector field).
-* Add more functions or constants to the parser (for example `noise(x, y)`, or `if(a, b, c)`).
-* Colour surfaces by something other than height, such as their slope.
-* Animate particles that flow along the vector field.
-* Show a scalar field as several stacked slices at once, or as an animated isosurface.
-* Save and load equations.

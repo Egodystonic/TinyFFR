@@ -483,11 +483,3 @@ In testing, the application allocated around 1.3 MB in its first half-minute or 
 ## Asset Credits
 
 * `block_atlas.png`: Block textures from Kenney's [Voxel Pack](https://kenney.nl/assets/voxel-pack) by Kenney Vleugels ([www.kenney.nl](https://www.kenney.nl)). Licensed under [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
-
-## Stuff to Tinker With
-
-* [:material-book-open-page-variant: World Settings](https://github.com/Egodystonic/TinyFFR/blob/main/Examples/VoxelWorld/WorldSettings.cs): Try changing the radius of each level of detail, the number of meshes uploaded per frame, or the default seed.
-* [:material-book-open-page-variant: Fog](../reference/fog.md) and [Scenes](../reference/scenes.md#backdrops): Try a different sky colour, or thicker fog for a misty world.
-* [:material-book-open-page-variant: Scene Queries](../reference/scenes.md#scene-queries): Try letting the player break and place blocks; a ray stepped through the voxel grid from the camera can find the block being looked at, and re-meshing that chunk updates the world.
-* [:material-book-open-page-variant: Creating Meshes](../reference/creating_meshes.md): Try adding trees, caves, or water to the terrain generator and mesher.
-* [:material-book-open-page-variant: Directional Lights](../reference/directional_lights.md): Try a day/night cycle by rotating the sun and changing its colour and brightness over time.

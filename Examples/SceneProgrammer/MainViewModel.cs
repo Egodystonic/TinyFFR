@@ -52,6 +52,9 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	[ObservableProperty] public partial double SunElevationDegrees { get; set; } = 50d;
 	[ObservableProperty] public partial bool SunCastsShadows { get; set; } = true;
 	[ObservableProperty] public partial bool ShowGround { get; set; } = true;
+	[ObservableProperty] public partial bool ShowGrid { get; set; } = true;
+	[ObservableProperty] public partial double SunBrightnessMultiplier { get; set; } = 1d;
+	[ObservableProperty] public partial Color SunColor { get; set; } = Colors.White;
 	[ObservableProperty] public partial SceneBackdropBrightnessPreset BackdropBrightness { get; set; } = SceneBackdropBrightnessPreset.Midday;
 	[ObservableProperty] public partial bool UseBackdropBrightnessSlider { get; set; }
 	[ObservableProperty] public partial double BackdropBrightnessPercent { get; set; } = 100d;
@@ -417,6 +420,9 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	partial void OnSunElevationDegreesChanged(double value) => ApplyEnvironment();
 	partial void OnSunCastsShadowsChanged(bool value) => ApplyEnvironment();
 	partial void OnShowGroundChanged(bool value) => ApplyEnvironment();
+	partial void OnShowGridChanged(bool value) => _session.Overlay.SetGridVisible(value);
+	partial void OnSunBrightnessMultiplierChanged(double value) => ApplyEnvironment();
+	partial void OnSunColorChanged(Color value) => ApplyEnvironment();
 
 	void ApplyEnvironment() {
 		if (_isLoadingFogPreset) return;
@@ -427,6 +433,8 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 		environment.SunAzimuthDegrees = (float) SunAzimuthDegrees;
 		environment.SunElevationDegrees = (float) SunElevationDegrees;
 		environment.SunCastsShadows = SunCastsShadows;
+		environment.SunBrightnessMultiplier = (float) SunBrightnessMultiplier;
+		environment.SunColor = ColorVect.SrgbToLinear(new ColorVect(SunColor.R / 255f, SunColor.G / 255f, SunColor.B / 255f));
 		environment.ShowGround = ShowGround;
 		environment.BackdropBrightness = BackdropBrightness;
 		environment.UseBackdropBrightnessSlider = IsBackdropBrightnessSliderActive;

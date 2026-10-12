@@ -29,6 +29,8 @@ sealed class EnvironmentSettings {
 	public float SunElevationDegrees { get; set; } = 50f;
 	public bool SunCastsShadows { get; set; } = true;
 	public bool ShowGround { get; set; } = true;
+	public float SunBrightnessMultiplier { get; set; } = 1f;
+	public ColorVect SunColor { get; set; } = ColorVect.WhiteOpaque;
 	public BackdropTexture? CustomBackdrop { get; set; }
 	public SceneBackdropBrightnessPreset BackdropBrightness { get; set; } = SceneBackdropBrightnessPreset.Midday;
 	public bool UseBackdropBrightnessSlider { get; set; }
@@ -95,7 +97,8 @@ sealed class EnvironmentSettings {
 		if (Fog is { } fog) scene.AddFog(fog);
 		else scene.RemoveFog();
 
-		sun.SetBrightness(SunBrightness);
+		sun.SetBrightness(SunBrightness.ToBrightnessValue() * SunBrightnessMultiplier);
+		sun.Color = SunColor;
 		sun.Direction = SunDirection;
 		sun.CastsShadows = SunCastsShadows;
 	}
