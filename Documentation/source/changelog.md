@@ -45,6 +45,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) 
 	* Transmissive quality switch for transmissive materials on loaded models
 	* Projection from world space to screen space
 	* Big reduction in VRAM garbage when rendering headlessly or disposing render targets
+	* Sharper, steadier directional-light shadows in large scenes, plus per-light `MaxShadowDistance` and optional shadow stabilization
 * Assets:
 	* Faster asset loading in general
 	* Better ergonomics for texture combination methods

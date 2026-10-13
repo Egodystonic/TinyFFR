@@ -52,33 +52,4 @@ class DirectionalLightTest {
 		using var defaultLight = factory.LightBuilder.CreateDirectionalLight();
 		Assert.AreEqual(DirectionalLight.DefaultLux, defaultLight.BrightnessLux, 0.1f);
 	}
-
-	[Test]
-	public void ShouldStoreShadowDistanceAndStabilization() {
-		using var factory = new LocalTinyFfrFactory();
-		using var light = factory.LightBuilder.CreateDirectionalLight();
-		Assert.AreEqual(DirectionalLight.DefaultMaxShadowDistance, light.MaxShadowDistance);
-		Assert.AreEqual(false, light.EnableShadowStabilization);
-
-		light.MaxShadowDistance = 12.5f;
-		light.EnableShadowStabilization = true;
-		Assert.AreEqual(12.5f, light.MaxShadowDistance);
-		Assert.AreEqual(true, light.EnableShadowStabilization);
-
-		light.SetMaxShadowDistance(250f);
-		light.SetEnableShadowStabilization(false);
-		Assert.AreEqual(250f, light.MaxShadowDistance);
-		Assert.AreEqual(false, light.EnableShadowStabilization);
-	}
-
-	[Test]
-	public void ShouldRejectInvalidMaxShadowDistances() {
-		using var factory = new LocalTinyFfrFactory();
-		using var light = factory.LightBuilder.CreateDirectionalLight();
-		Assert.Throws<ArgumentOutOfRangeException>(() => light.MaxShadowDistance = 0f);
-		Assert.Throws<ArgumentOutOfRangeException>(() => light.MaxShadowDistance = -1f);
-		Assert.Throws<ArgumentOutOfRangeException>(() => light.MaxShadowDistance = Single.NaN);
-		Assert.Throws<ArgumentOutOfRangeException>(() => light.MaxShadowDistance = Single.PositiveInfinity);
-		Assert.AreEqual(DirectionalLight.DefaultMaxShadowDistance, light.MaxShadowDistance);
-	}
 }

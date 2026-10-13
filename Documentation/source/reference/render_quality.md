@@ -157,6 +157,8 @@ The TAA modes cost moderately more than `Fxaa` (around a tenth of a frame). `Taa
 
 `ShadowsEnabled` turns shadows on or off for every light rendered by the renderer, and `ShadowQuality` sets the resolution of each light's shadow map: Lower levels give blockier, blurrier shadows.
 
+How a directional light's shadow detail is spread across the scene is set on the light itself; see [Shadow Distance & Stabilization](directional_lights.md#shadow-distance-stabilization).
+
 [![Shadows compared](render_quality_shadows.jpg)](render_quality_shadows.jpg)
 /// caption
 Shadows disabled, and at each quality level. Note the blocky shadow edges at `VeryLow` and `Low`.

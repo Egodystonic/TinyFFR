@@ -261,9 +261,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDir
 	}
 	public void SetDirectionalLightMaxShadowDistance(ResourceHandle<DirectionalLight> handle, float newDistance) {
 		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
-		if (!Single.IsFinite(newDistance) || newDistance <= 0f) {
-			throw new ArgumentOutOfRangeException(nameof(newDistance), newDistance, "Must be a finite value greater than zero.");
-		}
+		if (!newDistance.IsPositiveAndFinite()) newDistance = DirectionalLight.DefaultMaxShadowDistance;
 		_activeLightMap[handle] = _activeLightMap[handle] with { MaxShadowDistance = newDistance };
 	}
 

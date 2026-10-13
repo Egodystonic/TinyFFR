@@ -133,3 +133,35 @@ light.CastsShadows = true;
 Shadows are calculated separately for each light that casts them, and are one of the more expensive things a scene can ask for. It's therefore common to enable shadows only for the one or two lights that most define a scene's look, and leave the rest without shadows.
 
 The quality of shadows (and whether they're rendered at all) is set per renderer, via the `ShadowQuality` and `ShadowsEnabled` properties of its `RenderQualityConfig`; see [Render Quality](render_quality.md).
+
+### Shadow Distance & Stabilization
+
+A directional light's shadows cover everything the camera can see, so their detail has to be shared across every distance from the camera. Two properties control how:
+
+```csharp
+sun.MaxShadowDistance = 40f; // (1)!
+sun.EnableShadowStabilization = true; // (2)!
+```
+
+1.	Concentrates the light's shadow detail within 40 metres of the camera.
+
+2.	Holds the shadows steady as the camera moves and turns, at the cost of some sharpness.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `MaxShadowDistance`
+
+:   How far from the camera the light's shadows are drawn in detail. Defaults to `100f` (`DirectionalLight.DefaultMaxShadowDistance`). Smaller values give sharper shadows close to the camera; beyond the distance, shadows fade out.
+
+:   In compact scenes (a room, a tabletop) the default rarely needs changing, as shadow detail is already focused on the scene's contents. In large scenes (terrain, long halls, open landscapes), set it to roughly the furthest distance at which shadows still need to look good.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `EnableShadowStabilization`
+
+:   Whether the light's shadows are stabilized against camera movement. Defaults to `false`.
+
+:   By default, shadows are refitted to the camera's view and the scene's contents every frame. This gives the sharpest result, but shadow edges can shimmer or crawl slightly as the camera moves or turns. Enabling stabilization holds them steady, but they're no longer fitted to the scene's contents, so their detail is spread across the whole view up to `MaxShadowDistance`. 
+
+	When enabling shadow stabilization, you should set `MaxShadowDistance` as low as possible to cover your scene.
+
+???+ tip "Low Suns"
+	A low sun (one close to the horizon) stretches each part of a shadow across a long stretch of ground, which makes blocky or shimmering shadow edges much more visible on floors and terrain.
+
+	If long shadows from a low sun look blocky, reduce `MaxShadowDistance` towards the distance you actually need. If they shimmer as the camera moves in a large open scene, also enable `EnableShadowStabilization`. Avoid stabilization in compact scenes, where it makes shadows noticeably blurrier (and can make small shadows disappear entirely at low `ShadowQuality` levels).

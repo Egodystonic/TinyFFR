@@ -162,6 +162,11 @@
 						<ColorPicker Color="{Binding SunColor}" IsAlphaEnabled="False" HorizontalAlignment="Right" />
 					</DockPanel>
 					<CheckBox Content="Sun casts shadows" IsChecked="{Binding SunCastsShadows}" Margin="0,8,0,0" />
+					<DockPanel IsEnabled="{Binding SunCastsShadows}" Margin="0,4,0,0" ToolTip.Tip="How far from the camera the sun's shadows are drawn in detail; lower values give sharper shadows close to the camera">
+						<NumericUpDown DockPanel.Dock="Right" Width="130" Value="{Binding SunMaxShadowDistance}" Minimum="0.1" Increment="10" FormatString="0.#" />
+						<TextBlock Text="Max shadow distance (m)" VerticalAlignment="Center" />
+					</DockPanel>
+					<CheckBox Content="Stabilize sun shadows" IsChecked="{Binding SunShadowStabilization}" IsEnabled="{Binding SunCastsShadows}" Margin="0,4,0,0" ToolTip.Tip="Stops shadow edges shimmering as the camera moves, at the cost of blurrier shadows in compact scenes; works best with a low max shadow distance" />
 					<StackPanel Orientation="Horizontal" Spacing="12">
 						<CheckBox Content="Show ground" IsChecked="{Binding ShowGround}" />
 						<CheckBox Content="Show grid" IsChecked="{Binding ShowGrid}" ToolTip.Tip="The grid is only shown in the editor; never in the preview or in fullscreen playback" />

@@ -106,6 +106,9 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 	/// How many lux a directional light casts at a <see cref="Brightness"/> of <c>1f</c>: <c>600</c>, roughly that of indoor bright lighting.
 	/// </summary>
 	public const float DefaultLux = 600f;
+	/// <summary>
+	/// The default value of <see cref="MaxShadowDistance"/>: <c>100f</c> (metres).
+	/// </summary>
 	public const float DefaultMaxShadowDistance = 100f;
 
 	readonly ResourceHandle<DirectionalLight> _handle;
@@ -339,22 +342,65 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 	/// <param name="config">How the disc should look.</param>
 	public void SetSunDiscParameters(SunDiscConfig config) => Implementation.SetDirectionalLightSunDiscParameters(Handle, config);
 
+	/// <summary>
+	/// How far (from the camera) this light's shadows are drawn in detail. Defaults to <see cref="DefaultMaxShadowDistance"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// A directional light's shadow detail is spread across the distances between the camera and this value, so smaller values give sharper, steadier shadows
+	/// close to the camera. Beyond this distance, shadows fade out (or, when <see cref="EnableShadowStabilization"/> is <see langword="true"/>, are drawn at
+	/// reduced detail instead, except at <see cref="Quality.VeryLow"/> <see cref="Rendering.RenderQualityConfig.ShadowQuality"/>).
+	/// </para>
+	/// <para>
+	/// In compact scenes the default rarely needs changing, as shadow detail is already focused on the scene's contents. In large scenes (e.g. terrain or long
+	/// interiors), set this to roughly the furthest distance at which shadows still need to look good. Values beyond the camera's
+	/// <see cref="Camera.FarPlaneDistance"/> behave the same as the far plane distance.
+	/// </para>
+	/// <para>
+	/// Must be a finite value greater than zero; otherwise an <see cref="ArgumentOutOfRangeException"/> is thrown.
+	/// </para>
+	/// </remarks>
 	public float MaxShadowDistance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetDirectionalLightMaxShadowDistance(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetDirectionalLightMaxShadowDistance(Handle, value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	/// <summary>
+	/// Sets <see cref="MaxShadowDistance"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="distance">The new value for <see cref="MaxShadowDistance"/>, in metres.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetMaxShadowDistance(float distance) => MaxShadowDistance = distance;
 
+	/// <summary>
+	/// Whether this light's shadows are stabilized against camera movement. Defaults to <see langword="false"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// By default, a directional light's shadows are fitted to the camera's view and the scene's contents every frame. This gives the sharpest shadows,
+	/// but their edges can shimmer or crawl slightly as the camera moves or turns; most noticeably with a low sun over large surfaces.
+	/// </para>
+	/// <para>
+	/// Enabling stabilization holds the shadows steady as the camera moves, but they are no longer fitted to the scene's contents, so their detail is spread
+	/// across the whole view up to <see cref="MaxShadowDistance"/>. This is a good trade in large open scenes, but makes shadows noticeably blurrier in
+	/// compact scenes (and may make small shadows disappear entirely at low <see cref="Rendering.RenderQualityConfig.ShadowQuality"/> levels).
+	/// </para>
+	/// <para>
+	/// when enabling this option, it's recommended to set <see cref="MaxShadowDistance"/> as low as possible to retain maximum fidelity.
+	/// </para>
+	/// </remarks>
 	public bool EnableShadowStabilization {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetDirectionalLightShadowStabilization(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetDirectionalLightShadowStabilization(Handle, value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	/// <summary>
+	/// Sets <see cref="EnableShadowStabilization"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="enable">The new value for <see cref="EnableShadowStabilization"/>.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetEnableShadowStabilization(bool enable) => EnableShadowStabilization = enable;
 
 	/// <summary>

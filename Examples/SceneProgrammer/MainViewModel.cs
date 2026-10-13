@@ -52,6 +52,8 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	[ObservableProperty] public partial double SunAzimuthDegrees { get; set; } = 35d;
 	[ObservableProperty] public partial double SunElevationDegrees { get; set; } = 50d;
 	[ObservableProperty] public partial bool SunCastsShadows { get; set; } = true;
+	[ObservableProperty] public partial decimal SunMaxShadowDistance { get; set; } = (decimal) DirectionalLight.DefaultMaxShadowDistance;
+	[ObservableProperty] public partial bool SunShadowStabilization { get; set; }
 	[ObservableProperty] public partial bool ShowGround { get; set; } = true;
 	[ObservableProperty] public partial bool ShowGrid { get; set; } = true;
 	[ObservableProperty] public partial double SunBrightnessMultiplier { get; set; } = 1d;
@@ -434,6 +436,8 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	partial void OnSunAzimuthDegreesChanged(double value) => ApplyEnvironment();
 	partial void OnSunElevationDegreesChanged(double value) => ApplyEnvironment();
 	partial void OnSunCastsShadowsChanged(bool value) => ApplyEnvironment();
+	partial void OnSunMaxShadowDistanceChanged(decimal value) => ApplyEnvironment();
+	partial void OnSunShadowStabilizationChanged(bool value) => ApplyEnvironment();
 	partial void OnShowGroundChanged(bool value) => ApplyEnvironment();
 	partial void OnShowGridChanged(bool value) => _session.Overlay.SetGridVisible(value);
 	partial void OnSunBrightnessMultiplierChanged(double value) => ApplyEnvironment();
@@ -448,6 +452,8 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 		environment.SunAzimuthDegrees = (float) SunAzimuthDegrees;
 		environment.SunElevationDegrees = (float) SunElevationDegrees;
 		environment.SunCastsShadows = SunCastsShadows;
+		environment.SunMaxShadowDistance = (float) Math.Max(SunMaxShadowDistance, 0.1m);
+		environment.SunShadowStabilization = SunShadowStabilization;
 		environment.SunBrightnessMultiplier = (float) SunBrightnessMultiplier;
 		environment.SunColor = ColorVect.SrgbToLinear(new ColorVect(SunColor.R / 255f, SunColor.G / 255f, SunColor.B / 255f));
 		environment.ShowGround = ShowGround;

@@ -31,7 +31,9 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	readonly ArrayPoolBackedVector<RayIntersectionData> _rayIntersectionBuffer = new();
 	readonly SetPool<ModelInstance> _modelInstanceSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, (Quality Preset, LightShadowFidelityData Directional)> _shadowQualityActivePresetMap = new();
+	readonly record struct ShadowFidelityInputs(Quality Preset, DirectionalLight DirectionalLight, float MaxShadowDistance, bool Stable, float CameraNear, float CameraFar);
+
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ShadowFidelityInputs> _shadowQualityActivePresetMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, DirectionalLight> _directionalLightMap = new();
 	readonly SetPool<Light> _lightSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
@@ -205,6 +207,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		var instanceVector = _lightMap[handle];
 		if (!instanceVector.Remove(light.AsBaseLight())) return;
 		if (light.Type == LightType.Directional) _directionalLightMap.Remove(handle);
+		_shadowQualityActivePresetMap.Remove(handle);
 
 		RemoveLightFromScene(
 			handle,
@@ -216,10 +219,15 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 	public void SetLightShadowFidelity(ResourceHandle<Scene> handle, Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, uint directionalLightMapSize, byte directionalCascadeCount, float cameraNear, float cameraFar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var directionalLightFidelity = _directionalLightMap.TryGetValue(handle, out var directionalLight)
-			? CreateDirectionalShadowFidelity(directionalLightMapSize, directionalCascadeCount, directionalLight.EnableShadowStabilization, directionalLight.MaxShadowDistance, cameraNear, cameraFar)
+		var hasDirectionalLight = _directionalLightMap.TryGetValue(handle, out var directionalLight);
+		var inputs = hasDirectionalLight
+			? new ShadowFidelityInputs(qualityPreset, directionalLight, directionalLight.MaxShadowDistance, directionalLight.EnableShadowStabilization, cameraNear, cameraFar)
+			: new ShadowFidelityInputs(qualityPreset, default, 0f, false, 0f, 0f);
+		if (_shadowQualityActivePresetMap.TryGetValue(handle, out var active) && active == inputs) return;
+
+		var directionalLightFidelity = hasDirectionalLight
+			? CreateDirectionalShadowFidelity(directionalLightMapSize, directionalCascadeCount, inputs.Stable, inputs.MaxShadowDistance, cameraNear, cameraFar)
 			: new LightShadowFidelityData(directionalLightMapSize, directionalCascadeCount);
-		if (_shadowQualityActivePresetMap.TryGetValue(handle, out var active) && active.Preset == qualityPreset && active.Directional == directionalLightFidelity) return;
 
 		foreach (var light in _lightMap[handle]) {
 			switch (light.Type) {
@@ -237,7 +245,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			}
 		}
 
-		_shadowQualityActivePresetMap[handle] = (qualityPreset, directionalLightFidelity);
+		_shadowQualityActivePresetMap[handle] = inputs;
 	}
 
 	static LightShadowFidelityData CreateDirectionalShadowFidelity(uint mapSize, byte cascadeCount, bool stable, float shadowDistance, float cameraNear, float cameraFar) {
@@ -654,6 +662,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			
 			lightInstanceVector.Clear();
 			_directionalLightMap.Remove(handle);
+			_shadowQualityActivePresetMap.Remove(handle);
 		}
 	}
 
@@ -842,6 +851,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
 		_directionalLightMap.Remove(handle);
+		_shadowQualityActivePresetMap.Remove(handle);
 		
 		_activeSceneHandles.Remove(handle);
 	}

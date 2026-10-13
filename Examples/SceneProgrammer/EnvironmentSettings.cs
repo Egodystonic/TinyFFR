@@ -28,6 +28,8 @@ sealed class EnvironmentSettings {
 	public float SunAzimuthDegrees { get; set; } = 35f;
 	public float SunElevationDegrees { get; set; } = 50f;
 	public bool SunCastsShadows { get; set; } = true;
+	public float SunMaxShadowDistance { get; set; } = DirectionalLight.DefaultMaxShadowDistance;
+	public bool SunShadowStabilization { get; set; }
 	public bool ShowGround { get; set; } = true;
 	public float SunBrightnessMultiplier { get; set; } = 1f;
 	public ColorVect SunColor { get; set; } = ColorVect.WhiteOpaque;
@@ -105,5 +107,7 @@ sealed class EnvironmentSettings {
 		sun.Color = SunColor;
 		sun.Direction = SunDirection;
 		sun.CastsShadows = SunCastsShadows;
+		sun.MaxShadowDistance = SunMaxShadowDistance;
+		sun.EnableShadowStabilization = SunShadowStabilization;
 	}
 }
