@@ -223,6 +223,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		var self = context.Self;
 		var creationConfig = config.CreationConfig;
 		var readConfig = config.ReadConfig;
+		context.CurrentSubMeshData.TextureRegistry.JobExecutionFacade = self._globals.ThreadPoolWorkScheduler;
 
 		try {
 			var pathBuffer = self.AssetFilePathBuffer;

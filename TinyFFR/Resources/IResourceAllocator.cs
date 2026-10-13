@@ -181,4 +181,9 @@ public interface IResourceAllocator {
 	TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class;
 	/// <inheritdoc cref="DispatchWorkerThreadJob{TContext,TResult}(TContext,Func{TContext,TResult})"/>
 	unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, delegate* managed<TContext?, TResult?> work) where TContext : class where TResult : class;
+	
+	/// <summary>
+	/// Represents a job-execution-facade that enables using TinyFFR's worker thread pool to parallelize certain jobs.
+	/// </summary>
+	IJobExecutionFacade ParallelizingFacade { get; }
 }

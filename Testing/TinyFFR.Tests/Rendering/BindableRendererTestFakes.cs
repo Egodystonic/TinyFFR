@@ -283,6 +283,7 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	nuint _previousHandleId = 0;
 	public readonly List<FakeResourceGroupImplProvider> CreatedGroups = new();
 
+	public IJobExecutionFacade ParallelizingFacade { get; set; }
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, 0);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, initialCapacity);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, name, 0);

@@ -18,6 +18,8 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 	nuint _prevLeaseId = 0U;
 	bool _isDisposed = false;
 
+	public IJobExecutionFacade ParallelizingFacade => _globals.ThreadPoolWorkScheduler;
+
 	public LocalResourceAllocator(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;

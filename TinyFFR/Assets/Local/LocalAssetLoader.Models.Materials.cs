@@ -198,6 +198,8 @@ unsafe partial class LocalAssetLoader {
 		readonly ArrayPoolBackedVector<char> _nameChars = new();
 		int _count = 0;
 
+		public IJobExecutionFacade JobExecutionFacade { get; set; } = IJobExecutionFacade.Synchronous;
+
 		public NameSlice AppendName(ReadOnlySpan<char> name) {
 			var startIndex = _nameChars.Count;
 			for (var i = 0; i < name.Length; ++i) _nameChars.Add(name[i]);
@@ -226,7 +228,7 @@ unsafe partial class LocalAssetLoader {
 			metadata.IsRgba = TTexel.BlitType == TexelType.Rgba32;
 			ApplyCreationConfigToMetadata(metadata, in config);
 
-			CompressTextureIfRequested(metadata, heapPool);
+			CompressTextureIfRequested(metadata, heapPool, JobExecutionFacade);
 
 			_names.Add(AppendName(config.Name));
 			return _count++;

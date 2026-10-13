@@ -227,7 +227,8 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 				compressionQuality,
 				dataType,
 				generateMipMaps,
-				compressedBuffer.AsSpan<byte>()
+				compressedBuffer.AsSpan<byte>(),
+				_globals.ThreadPoolWorkScheduler
 			);
 		}
 		finally {

@@ -4,7 +4,9 @@
 using System;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using System.Threading;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
@@ -57,12 +59,42 @@ public enum TextureCompressionFormat {
 /// Compresses and decompresses texture data, and reports which compressed formats the current machine supports.
 /// </summary>
 /// <remarks>
-/// The library compresses textures itself when asked to, so this class is mostly provided as a utility for advanced users.
+/// The library compresses textures itself when asked to (spreading the work across its worker threads), so this class is mostly
+/// provided as a utility for advanced users.
 /// </remarks>
 public static unsafe class TextureCompressor {
 	#region Format Selection
 	static readonly TextureCompressionFormat[] _allCompressionFormatEnumValues = Enum.GetValues<TextureCompressionFormat>();
 	static readonly HeapPool _compressionPool = new();
+	const int BandedCompressionStateSlotCount = 256;
+	const int MinBlockRowsPerBand = 16;
+	const int BandsPerParticipant = 4;
+	static readonly UnmanagedBuffer<BandedCompressionState> _bandedCompressionStates = CreateBandedCompressionStates();
+
+	struct BandedCompressionState {
+		public TexelRgba32* Source;
+		public byte* Destination;
+		public uint Width;
+		public uint Height;
+		public int FormatId;
+		public int EffortLevel;
+		public int BlocksWide;
+		public int BlocksHigh;
+		public int BlockSizeBytes;
+		public int BlockRowsPerBand;
+		public int BandCount;
+		public int NextBand;
+		public int CompletedBands;
+		public int RemainingParticipants;
+		public int Failed;
+		public int InUse;
+	}
+
+	static UnmanagedBuffer<BandedCompressionState> CreateBandedCompressionStates() {
+		var result = new UnmanagedBuffer<BandedCompressionState>(BandedCompressionStateSlotCount);
+		result.AsSpan.Clear();
+		return result;
+	}
 	static uint _supportFlags = 0;
 
 	internal static void AscertainCompressionSupport() {
@@ -217,7 +249,15 @@ public static unsafe class TextureCompressor {
 	/// Compresses a texture's texels in to the given buffer.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Compression is slow relative to simply uploading a texture; and the speed depends on the selected <paramref name="quality"/>.
+	/// </para>
+	/// <para>
+	/// Each texture level is split in to horizontal bands that can be compressed at the same time. Passing
+	/// <see cref="Resources.IResourceAllocator.ParallelizingFacade"/> as <paramref name="jobExecutionFacade"/> spreads those bands across
+	/// TinyFFR's worker threads (the calling thread works on them too), which makes compression many times faster on multi-core
+	/// machines. The output is identical either way.
+	/// </para>
 	/// </remarks>
 	/// <typeparam name="TTexel">The type of the texels being compressed.</typeparam>
 	/// <param name="texels">The texels to compress, laid out row by row.</param>
@@ -227,7 +267,11 @@ public static unsafe class TextureCompressor {
 	/// <param name="dataType">What the texels represent, which determines how they are combined.</param>
 	/// <param name="includeMipMapGeneration">Whether to also produce the successively smaller copies of the texture.</param>
 	/// <param name="destination">The buffer to write the compressed data in to. Size it from <c>GetCompressedSizeBytes</c> first.</param>
-	public static void Compress<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, TextureCompressionFormat format, Quality quality, TextureDataType dataType, bool includeMipMapGeneration, Span<byte> destination) where TTexel : unmanaged, ITexel<TTexel> {
+	/// <param name="jobExecutionFacade">Where to run the work, or <see langword="null"/> (the default) to run it on the calling thread
+	/// (equivalent to <see cref="IJobExecutionFacade.Synchronous"/>). Pass <see cref="Resources.IResourceAllocator.ParallelizingFacade"/> to
+	/// spread the work across TinyFFR's worker threads.</param>
+	public static void Compress<TTexel>(ReadOnlySpan<TTexel> texels, XYPair<int> dimensions, TextureCompressionFormat format, Quality quality, TextureDataType dataType, bool includeMipMapGeneration, Span<byte> destination, IJobExecutionFacade? jobExecutionFacade = null) where TTexel : unmanaged, ITexel<TTexel> {
+		jobExecutionFacade ??= IJobExecutionFacade.Synchronous;
 		if (dimensions.X <= 0 || dimensions.Y <= 0) throw new ArgumentException($"Both X and Y must be positive (was {dimensions}).", nameof(dimensions));
 		if (!Enum.IsDefined(format) || format == TextureCompressionFormat.None) throw new ArgumentOutOfRangeException(nameof(format), format, null);
 		if (!Enum.IsDefined(quality)) throw new ArgumentOutOfRangeException(nameof(quality), quality, null);
@@ -271,14 +315,15 @@ public static unsafe class TextureCompressor {
 			}
 
 			var levelSizeBytes = GetMipLevelSizeBytes(sourceDimensions, format);
-			CompressSingleLevel(mipLevelSource[..sourceDimensions.Area], sourceDimensions, format, effortLevel, destination.Slice(destinationOffset, levelSizeBytes));
+			CompressSingleLevel(mipLevelSource[..sourceDimensions.Area], sourceDimensions, format, effortLevel, destination.Slice(destinationOffset, levelSizeBytes), jobExecutionFacade);
 			destinationOffset += levelSizeBytes;
 		}
 	}
 
-	static void CompressSingleLevel(ReadOnlySpan<TexelRgba32> texels, XYPair<int> dimensions, TextureCompressionFormat format, int effortLevel, Span<byte> destination) {
+	static void CompressSingleLevel(ReadOnlySpan<TexelRgba32> texels, XYPair<int> dimensions, TextureCompressionFormat format, int effortLevel, Span<byte> destination, IJobExecutionFacade jobExecutionFacade) {
 		fixed (TexelRgba32* sourcePtr = texels)
 		fixed (byte* destinationPtr = destination) {
+			if (TryCompressSingleLevelInBands(sourcePtr, dimensions, format, effortLevel, destinationPtr, destination.Length, jobExecutionFacade)) return;
 			CompressTextureLevel(
 				sourcePtr,
 				(uint) dimensions.X,
@@ -289,6 +334,112 @@ public static unsafe class TextureCompressor {
 				destination.Length
 			).ThrowIfFailure();
 		}
+	}
+
+	static bool TryCompressSingleLevelInBands(TexelRgba32* sourcePtr, XYPair<int> dimensions, TextureCompressionFormat format, int effortLevel, byte* destinationPtr, int destinationLength, IJobExecutionFacade jobExecutionFacade) {
+		static void CompressClaimedBands(BandedCompressionState* state) {
+			while (true) {
+				var band = Interlocked.Increment(ref state->NextBand) - 1;
+				if (band >= state->BandCount) return;
+				
+				var succeeded = false;
+				try {
+					var firstBlockRow = band * state->BlockRowsPerBand;
+					var blockRowCount = Int32.Min(state->BlockRowsPerBand, state->BlocksHigh - firstBlockRow);
+					var firstTexelRow = firstBlockRow * 4;
+					var texelRowCount = Int32.Min(blockRowCount * 4, (int) state->Height - firstTexelRow);
+					var bandSizeBytes = blockRowCount * state->BlocksWide * state->BlockSizeBytes;
+					succeeded = CompressTextureLevel(
+						state->Source + (nint) firstTexelRow * state->Width,
+						state->Width,
+						(uint) texelRowCount,
+						state->FormatId,
+						state->EffortLevel,
+						state->Destination + (nint) firstBlockRow * state->BlocksWide * state->BlockSizeBytes,
+						bandSizeBytes
+					);
+				}
+				finally {
+					if (!succeeded) Volatile.Write(ref state->Failed, 1);
+					Interlocked.Increment(ref state->CompletedBands);
+				}
+			}
+		}
+		
+		static void ReleaseParticipation(BandedCompressionState* state) {
+			if (Interlocked.Decrement(ref state->RemainingParticipants) == 0) Volatile.Write(ref state->InUse, 0);
+		}
+
+		static byte CompressBandsAsHelper(nint statePtr) {
+			CompressClaimedBands((BandedCompressionState*) statePtr);
+			return 0;
+		}
+
+		static void ReleaseHelperParticipation(nint statePtr, Exception? _, byte __) => ReleaseParticipation((BandedCompressionState*) statePtr);
+		
+		static BandedCompressionState* ClaimBandedCompressionState() {
+			var states = _bandedCompressionStates.BufferPointer;
+			for (var i = 0; i < BandedCompressionStateSlotCount; ++i) {
+				if (Interlocked.CompareExchange(ref states[i].InUse, 1, 0) == 0) return states + i;
+			}
+			return null;
+		}
+		
+		if (!jobExecutionFacade.HasWorkerThreads || jobExecutionFacade.WorkerThreadCount <= 0) return false;
+		
+		var blocksHigh = (dimensions.Y + 3) / 4;
+		if (blocksHigh < MinBlockRowsPerBand * 2) return false;
+		if (GetMipLevelSizeBytes(dimensions, format) > destinationLength) return false;
+		
+		var blocksWide = (dimensions.X + 3) / 4;
+		var maxParticipantCount = jobExecutionFacade.WorkerThreadCount + 1;
+		var bandCount = Int32.Min(blocksHigh / MinBlockRowsPerBand, maxParticipantCount * BandsPerParticipant);
+		var blockRowsPerBand = (blocksHigh + bandCount - 1) / bandCount;
+		bandCount = (blocksHigh + blockRowsPerBand - 1) / blockRowsPerBand;
+		
+		var state = ClaimBandedCompressionState();
+		if (state == null) return false;
+		
+		var helperCount = Int32.Min(bandCount - 1, jobExecutionFacade.WorkerThreadCount);
+		*state = new BandedCompressionState {
+			Source = sourcePtr,
+			Destination = destinationPtr,
+			Width = (uint) dimensions.X,
+			Height = (uint) dimensions.Y,
+			FormatId = (int) format,
+			EffortLevel = effortLevel,
+			BlocksWide = blocksWide,
+			BlocksHigh = blocksHigh,
+			BlockSizeBytes = GetFormatBlockSizeBytes(format),
+			BlockRowsPerBand = blockRowsPerBand,
+			BandCount = bandCount,
+			RemainingParticipants = 1 + helperCount,
+			InUse = 1
+		};
+		
+		for (var i = 0; i < helperCount; ++i) {
+			try {
+				jobExecutionFacade.AddWorkerThreadJob(ThreadJob.CreateWithUnmanagedContextUnmanagedResult<nint, byte>((nint) state, &CompressBandsAsHelper, &ReleaseHelperParticipation));
+			}
+#pragma warning disable CA1031 // "Don't catch/swallow Exception" -- A failed enqueue already released that helper's participation; the caller compresses the remaining bands itself
+			catch (Exception) {
+#pragma warning restore CA1031
+				for (var j = i + 1; j < helperCount; ++j) ReleaseParticipation(state);
+				break;
+			}
+		}
+		
+		try {
+			CompressClaimedBands(state);
+		}
+		finally {
+			var spinWait = new SpinWait();
+			while (Volatile.Read(ref state->CompletedBands) < bandCount) spinWait.SpinOnce();
+		}
+		
+		var succeeded = Volatile.Read(ref state->Failed) == 0;
+		ReleaseParticipation(state);
+		return succeeded;
 	}
 
 	/// <summary>

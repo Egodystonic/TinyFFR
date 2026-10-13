@@ -87,6 +87,8 @@ When you specify a compression quality, TinyFFR chooses the format automatically
 
 The quality level also controls how much effort the compressor spends searching for the best encoding of each block: `Quality.VeryLow` is the fastest and loses the most detail, whereas `Quality.VeryHigh` is by far the slowest and loses the least.
 
+When TinyFFR compresses a texture for you (when loading a texture or model file, or creating a texture), it splits each texture into bands and compresses them in parallel on its worker threads, so higher quality levels cost much less time on multi-core machines. If you've limited TinyFFR to no worker threads, compression runs on the calling thread instead.
+
 A few further rules apply:
 
 * If the chosen format isn't supported by the current GPU, TinyFFR falls back to another format (`Bc7Srgb` falls back to `Bc1Srgb`/`Bc3Srgb`; `Bc5` falls back to `Bc7Linear`), or leaves the texture uncompressed if no fallback is supported. Note that almost all modern hardware supports all formats listed here, so in practice this rule almost never is actually effected.
@@ -134,7 +136,8 @@ TextureCompressor.Compress<TexelRgba32>( // (4)!
 	Quality.VeryHigh,
 	TextureDataType.ColorSrgb,
 	includeMipMapGeneration: true,
-	compressedData
+	compressedData,
+	factory.ResourceAllocator.ParallelizingFacade // (7)!
 );
 
 SaveToMyAssetFormat(compressedData, dimensions, format); // (5)!
@@ -156,7 +159,9 @@ SaveToMyAssetFormat(compressedData, dimensions, format); // (5)!
 
 6.	This borrows a span without allocating on the managed heap, thus preventing GC stutter. Explained further in [Avoiding GC Stutter](avoiding_gc_stutter.md).
 
-`TextureCompressor` can be used from any thread and doesn't require a factory to exist at all. That means you can use it in a standalone tool (e.g. as part of your build pipeline) to compress textures for your application ahead of time.(1)
+7.	Spreads the work across TinyFFR's worker threads, which makes compression many times faster on multi-core machines. This argument is optional; omit it (or pass `IJobExecutionFacade.Synchronous`) to compress entirely on the calling thread. The compressed data is identical either way.
+
+`TextureCompressor` can be used from any thread and doesn't require a factory to exist at all (without one, simply leave out the final parallelizing argument and compression runs on the calling thread). That means you can use it in a standalone tool (e.g. as part of your build pipeline) to compress textures for your application ahead of time.(1)
 { .annotate }
 
 1.	One caveat to this is format support querying; see the [note below](#format-support).
