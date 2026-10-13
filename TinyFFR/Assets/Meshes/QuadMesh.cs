@@ -445,6 +445,9 @@ public readonly struct QuadInstance : IQuadInstance, ITransformedSceneObject, IM
 	/// <param name="style">The shading style to use.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => UnderlyingModelInstance.SetDefaultMaterialShadingStyle(style);
+	/// <inheritdoc cref="IMaterialReceivingSceneObject.SetMaterialEmissiveStrengthMultiplier"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) => UnderlyingModelInstance.SetMaterialEmissiveStrengthMultiplier(multiplier);
 
 	/// <summary>
 	/// Disposes the underlying model instance, removing this quad from any scene it is in.
@@ -700,6 +703,9 @@ public readonly struct CameraLockedQuadInstance : IQuadInstance, IScaledSceneObj
 	/// <param name="style">The shading style to use.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => UnderlyingQuadInstance.SetDefaultMaterialShadingStyle(style);
+	/// <inheritdoc cref="IMaterialReceivingSceneObject.SetMaterialEmissiveStrengthMultiplier"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) => UnderlyingQuadInstance.SetMaterialEmissiveStrengthMultiplier(multiplier);
 
 	/// <summary>
 	/// Disposes the underlying quad instance, removing this quad from any scene it is in.

@@ -152,6 +152,10 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// </summary>
 	void SetDefaultMaterialShadingStyle(ResourceHandle<ModelInstance> handle, DefaultMaterialShadingStyle newStyle);
 	/// <summary>
+	/// Invoked via <see cref="ModelInstance.SetMaterialEmissiveStrengthMultiplier"/>.
+	/// </summary>
+	void SetMaterialEmissiveStrengthMultiplier(ResourceHandle<ModelInstance> handle, float multiplier);
+	/// <summary>
 	/// Invoked via <see cref="ModelInstance.SetKeyedMaterialColor"/>.
 	/// </summary>
 	void SetKeyedMaterialColor(ResourceHandle<ModelInstance> handle, ColorChannel key, ColorVect color);

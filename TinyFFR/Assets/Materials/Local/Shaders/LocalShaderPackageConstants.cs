@@ -133,6 +133,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> ParamNormalMap => "normal_map"u8;
 		public ReadOnlySpan<byte> ParamOrmMap => "orm_map"u8;
 		public ReadOnlySpan<byte> ParamEmissiveMap => "emissive_map"u8;
+		public ReadOnlySpan<byte> ParamEmissiveStrengthMultiplier => "emissive_strength_multiplier"u8;
 		public ReadOnlySpan<byte> ParamAnisotropyMap => "anisotropy_map"u8;
 		public ReadOnlySpan<byte> ParamClearCoatMap => "clearcoat_map"u8;
 		public ReadOnlySpan<byte> ParamEffectUvTransform => "uv_transform"u8;
@@ -277,6 +278,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> ParamNormalMap => "normal_map"u8;
 		public ReadOnlySpan<byte> ParamOrmMap => "orm_map"u8;
 		public ReadOnlySpan<byte> ParamEmissiveMap => "emissive_map"u8;
+		public ReadOnlySpan<byte> ParamEmissiveStrengthMultiplier => "emissive_strength_multiplier"u8;
 		public ReadOnlySpan<byte> ParamAnisotropyMap => "anisotropy_map"u8;
 		public ReadOnlySpan<byte> ParamEffectUvTransform => "uv_transform"u8;
 		public ReadOnlySpan<byte> ParamEffectColorMapBlend => "color_map_blend"u8;

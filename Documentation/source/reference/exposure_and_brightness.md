@@ -346,6 +346,8 @@ In general, when sources are combined, add up their illuminances and divide the 
 
 Emissive (glowing) parts of materials (see [Emissive Maps](texture_map_types.md#emissive-maps)) are calibrated to look as authored through a camera with the default exposure. Like real glowing objects (screens, signs, lamps), they look dimmer through a less sensitive exposure. An emissive surface that glows strongly indoors may barely register in a sunlit scene exposed with `CameraExposurePreset.OutsideMidday`.
 
+It's possible to adjust individual objects' emissive map strength via [`SetMaterialEmissiveStrengthMultiplier()`](scene_objects.md#more-on-model-instances).
+
 ## Troubleshooting
 
 !!! note ""

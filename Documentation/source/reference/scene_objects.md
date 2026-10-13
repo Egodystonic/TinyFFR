@@ -134,6 +134,8 @@ Model instances have a number of further capabilities, explained on their own pa
 
 * `instance.SetKeyedMaterialColor()` sets the colours an instance is painted in when using a colour-keyed material. :material-arrow-right: [Color Keyed Materials](color_keyed_materials.md)
 
+* `instance.SetMaterialEmissiveStrengthMultiplier()` allows you to adjust the strength of any emissive materials on the instance. :material-arrow-right: [Emissive Maps](texture_map_types.md#emissive-maps)
+
 ## Model Instance Groups
 
 A `ModelInstanceGroup` is a set of model instances that can be moved, rotated, and scaled together as though they were one object. They're most commonly created from a [bundled asset](bundled_assets.md), whose models are usually intended to be placed together:

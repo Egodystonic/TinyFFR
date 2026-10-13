@@ -37,11 +37,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		AtMapBlend = 1 << 4,
 		Opacity = 1 << 5,
 	}
-	readonly record struct MaterialData(IShaderPackageConstants PackageConstants, SupportedEffectsFlags SupportedEffects, Texture? EffectBlendColorMap, Texture? EffectBlendOrmMap, Texture? EffectBlendEmissiveMap, Texture? EffectBlendAbsorptionTransmissionMap) {
+	readonly record struct MaterialData(IShaderPackageConstants PackageConstants, SupportedEffectsFlags SupportedEffects, Texture? EffectBlendColorMap, Texture? EffectBlendOrmMap, Texture? EffectBlendEmissiveMap, Texture? EffectBlendAbsorptionTransmissionMap, bool SupportsEmissiveStrengthMultiplier = false) {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool SupportsEffect(SupportedEffectsFlags effect) => (SupportedEffects & effect) == effect;
 	}
 
+	internal const float DefaultEmissiveStrengthMultiplier = 1f;
 	internal const string TestMaterialName = "Test Material";
 	const string DefaultMaterialName = "Unnamed Material";
 	internal const string DefaultMaterialInstanceName = "Default Material";
@@ -244,6 +245,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
 		ApplyMaterialParam(result, config.NormalMap, shaderConstants.ParamNormalMap);
 		ApplyMaterialParam(result, config.OcclusionRoughnessMetallicReflectanceMap, shaderConstants.ParamOrmMap);
+		if (config.EmissiveMap.HasValue) {
+			ApplyMaterialParam(result, DefaultEmissiveStrengthMultiplier, shaderConstants.ParamEmissiveStrengthMultiplier);
+			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportsEmissiveStrengthMultiplier = true };
+		}
 
 		if (config.EnablePerInstanceEffects) {
 			var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend;
@@ -305,6 +310,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
 		ApplyMaterialParam(result, config.NormalMap, shaderConstants.ParamNormalMap);
 		ApplyMaterialParam(result, config.OcclusionRoughnessMetallicReflectanceMap, shaderConstants.ParamOrmMap);
+		if (config.EmissiveMap.HasValue) {
+			ApplyMaterialParam(result, DefaultEmissiveStrengthMultiplier, shaderConstants.ParamEmissiveStrengthMultiplier);
+			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportsEmissiveStrengthMultiplier = true };
+		}
 
 		if (config.EnablePerInstanceEffects) {
 			var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend | SupportedEffectsFlags.AtMapBlend;
@@ -651,6 +660,27 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if (!Single.IsFinite(distance)) distance = 0f;
 		ApplyMaterialParam(HandleToInstance(handle), distance, param);
 	}
+	public bool GetSupportsEmissiveStrengthMultiplier(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMaterials[handle].SupportsEmissiveStrengthMultiplier;
+	}
+
+	public void SetEmissiveStrengthMultiplier(ResourceHandle<Material> handle, float multiplier) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var matData = _activeMaterials[handle];
+		if (!matData.SupportsEmissiveStrengthMultiplier) return;
+
+		var param = matData.PackageConstants switch {
+			StandardMaterialShaderConstants standard => standard.ParamEmissiveStrengthMultiplier,
+			TransmissiveMaterialShaderConstants transmissive => transmissive.ParamEmissiveStrengthMultiplier,
+			_ => default
+		};
+		if (param.IsEmpty) return;
+
+		if (!Single.IsFinite(multiplier)) multiplier = DefaultEmissiveStrengthMultiplier;
+		ApplyMaterialParam(HandleToInstance(handle), Single.Max(multiplier, 0f), param);
+	}
+
 	public void SetEffectOpacity(ResourceHandle<Material> handle, float opacity) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var matData = _activeMaterials[handle];

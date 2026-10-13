@@ -199,6 +199,7 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 	public delegate* managed<in SceneObject, Material, void> SetMaterial { get; private set; }
 	public delegate* managed<in SceneObject, ColorVect, void> SetDefaultMaterialBaseColor { get; private set; }
 	public delegate* managed<in SceneObject, DefaultMaterialShadingStyle, void> SetDefaultMaterialShadingStyle { get; private set; }
+	public delegate* managed<in SceneObject, float, void> SetMaterialEmissiveStrengthMultiplier { get; private set; }
 
 	public delegate* managed<in SceneObject, Angle> GetColorHue { get; private set; }
 	public delegate* managed<in SceneObject, Angle, void> SetColorHue { get; private set; }
@@ -254,6 +255,7 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		SetMaterial = &NoOp<Material>;
 		SetDefaultMaterialBaseColor = &NoOp<ColorVect>;
 		SetDefaultMaterialShadingStyle = &NoOp<DefaultMaterialShadingStyle>;
+		SetMaterialEmissiveStrengthMultiplier = &NoOp<float>;
 
 		GetColorHue = &NoOpGetColorHue;
 		SetColorHue = &NoOp<Angle>;
@@ -350,10 +352,12 @@ internal unsafe sealed class SceneObjectAdapterFunctionTable {
 		static void SetMaterialAdapter(in SceneObject sceneObject, Material material) => TConverter.FromSceneObject(sceneObject).SetMaterial(material);
 		static void SetDefaultMaterialBaseColorAdapter(in SceneObject sceneObject, ColorVect baseColor) => TConverter.FromSceneObject(sceneObject).SetDefaultMaterialBaseColor(baseColor);
 		static void SetDefaultMaterialShadingStyleAdapter(in SceneObject sceneObject, DefaultMaterialShadingStyle style) => TConverter.FromSceneObject(sceneObject).SetDefaultMaterialShadingStyle(style);
+		static void SetMaterialEmissiveStrengthMultiplierAdapter(in SceneObject sceneObject, float multiplier) => TConverter.FromSceneObject(sceneObject).SetMaterialEmissiveStrengthMultiplier(multiplier);
 
 		SetMaterial = &SetMaterialAdapter;
 		SetDefaultMaterialBaseColor = &SetDefaultMaterialBaseColorAdapter;
 		SetDefaultMaterialShadingStyle = &SetDefaultMaterialShadingStyleAdapter;
+		SetMaterialEmissiveStrengthMultiplier = &SetMaterialEmissiveStrengthMultiplierAdapter;
 	}
 
 	void AddColored<T, TConverter>() where T : IColoredSceneObject where TConverter : IStubConverter<T> {
@@ -883,6 +887,9 @@ public readonly unsafe record struct SceneObject : ITransformedSceneObject, ICol
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => FunctionTable.SetDefaultMaterialShadingStyle(this, style);
+	/// <inheritdoc />
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) => FunctionTable.SetMaterialEmissiveStrengthMultiplier(this, multiplier);
 
 	/// <inheritdoc />
 	public Angle ColorHue {

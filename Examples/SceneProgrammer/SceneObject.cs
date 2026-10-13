@@ -18,6 +18,7 @@ sealed partial class SceneObject : ObservableObject {
 	[ObservableProperty] public partial decimal PitchDegrees { get; set; }
 	[ObservableProperty] public partial decimal RollDegrees { get; set; }
 	[ObservableProperty] public partial decimal Scale { get; set; } = 1m;
+	[ObservableProperty] public partial decimal EmissiveStrengthMultiplier { get; set; } = 1m;
 
 	public Location Position {
 		get => new((float) PositionX, (float) PositionY, (float) PositionZ);
@@ -42,6 +43,7 @@ sealed partial class SceneObject : ObservableObject {
 	partial void OnPitchDegreesChanged(decimal value) => ApplyTransform();
 	partial void OnRollDegreesChanged(decimal value) => ApplyTransform();
 	partial void OnScaleChanged(decimal value) => ApplyTransform();
+	partial void OnEmissiveStrengthMultiplierChanged(decimal value) => Instances.SetMaterialEmissiveStrengthMultiplier((float) Math.Max(value, 0m));
 
 	public void ApplyTransform() {
 		var rotation = (Angle.FromDegrees((float) YawDegrees) % Direction.Up)

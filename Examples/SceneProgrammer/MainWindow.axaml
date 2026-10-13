@@ -46,6 +46,8 @@
 					<NumericUpDown Value="{Binding SelectedObject.RollDegrees}" Increment="15" FormatString="0.#°" />
 					<TextBlock Classes="Heading" Text="Scale" />
 					<NumericUpDown Value="{Binding SelectedObject.Scale}" Increment="0.1" Minimum="0.001" FormatString="0.###" />
+					<TextBlock Classes="Heading" Text="Emissive strength" />
+					<NumericUpDown Value="{Binding SelectedObject.EmissiveStrengthMultiplier}" Increment="0.1" Minimum="0" FormatString="0.##" ToolTip.Tip="Scales how brightly this object's glowing (emissive) surfaces shine; 1 is as authored, 0 turns the glow off" />
 				</StackPanel>
 			</StackPanel>
 		</ScrollViewer>

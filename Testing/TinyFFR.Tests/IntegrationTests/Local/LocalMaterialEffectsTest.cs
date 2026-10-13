@@ -200,6 +200,7 @@ class LocalMaterialEffectsTest {
 		var cycleEmissiveTex = false;
 		var cycleOrmTex = false;
 		var cycleAtTex = false;
+		var emissiveStrengthMultiplier = 1f;
 
 		void SetTransforms(Transform2D t) {
 			leftInstance.MaterialEffects?.SetTransform(t);
@@ -254,6 +255,13 @@ class LocalMaterialEffectsTest {
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.E)) cycleEmissiveTex = !cycleEmissiveTex;
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.O)) cycleOrmTex = !cycleOrmTex;
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) cycleAtTex = !cycleAtTex;
+			if (kbm.MouseScrollWheelDelta != 0) {
+				emissiveStrengthMultiplier = MathF.Max(0f, emissiveStrengthMultiplier - kbm.MouseScrollWheelDelta * 0.1f);
+				leftInstance.SetMaterialEmissiveStrengthMultiplier(emissiveStrengthMultiplier);
+				midInstance.SetMaterialEmissiveStrengthMultiplier(emissiveStrengthMultiplier);
+				rightInstance.SetMaterialEmissiveStrengthMultiplier(emissiveStrengthMultiplier);
+				Console.WriteLine($"Emissive strength multiplier: {emissiveStrengthMultiplier:0.00}");
+			}
 
 			foreach (var key in kbm.NewKeyDownEvents) {
 				if (key.GetNumericValue() is { } number) {

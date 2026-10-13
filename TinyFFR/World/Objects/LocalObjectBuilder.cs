@@ -583,6 +583,14 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetOrCreateEffectMaterialCopy(handle)?.SetEffectBlendDistance(mapType, distance);
 	}
+	public void SetMaterialEmissiveStrengthMultiplier(ResourceHandle<ModelInstance> handle, float multiplier) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var hasPrivateCopy = _privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsDefault;
+		var currentMaterial = hasPrivateCopy ? privateMatData.Material : GetMaterial(handle);
+		if (!currentMaterial.SupportsEmissiveStrengthMultiplier) return;
+		if (!hasPrivateCopy && multiplier == LocalMaterialBuilder.DefaultEmissiveStrengthMultiplier) return;
+		GetOrCreatePrivateMaterialCopy(handle).SetEmissiveStrengthMultiplier(multiplier);
+	}
 	public void SetMaterialEffectOpacity(ResourceHandle<ModelInstance> handle, float opacity) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetOrCreateEffectMaterialCopy(handle)?.SetEffectOpacity(opacity);

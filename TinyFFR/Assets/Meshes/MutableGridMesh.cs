@@ -581,6 +581,9 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	/// <param name="style">The shading style to use.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => UnderlyingModelInstance.SetDefaultMaterialShadingStyle(style);
+	/// <inheritdoc cref="IMaterialReceivingSceneObject.SetMaterialEmissiveStrengthMultiplier"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) => UnderlyingModelInstance.SetMaterialEmissiveStrengthMultiplier(multiplier);
 	
 	/// <summary>
 	/// Disposes the underlying model instance and releases this grid's displacement buffers.

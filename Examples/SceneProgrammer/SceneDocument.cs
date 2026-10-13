@@ -47,6 +47,7 @@ sealed class SceneDocument : IDisposable {
 	public SceneObject Duplicate(SceneObject source) {
 		var copy = CreateObject(source.Name, source.Bundle);
 		copy.Scale = source.Scale;
+		copy.EmissiveStrengthMultiplier = source.EmissiveStrengthMultiplier;
 		copy.YawDegrees = source.YawDegrees;
 		copy.PitchDegrees = source.PitchDegrees;
 		copy.RollDegrees = source.RollDegrees;

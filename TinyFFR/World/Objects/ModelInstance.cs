@@ -590,6 +590,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => Implementation.SetDefaultMaterialBaseColor(_handle, baseColor);
 	/// <inheritdoc />
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => Implementation.SetDefaultMaterialShadingStyle(_handle, style);
+	/// <inheritdoc />
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) => Implementation.SetMaterialEmissiveStrengthMultiplier(_handle, multiplier);
 	/// <summary>
 	/// Sets one of the colours used when this object is painted with a colour-keyed material.
 	/// </summary>

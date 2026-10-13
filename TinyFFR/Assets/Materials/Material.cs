@@ -106,6 +106,13 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetEffectOpacity(float opacity) => Implementation.SetEffectOpacity(_handle, opacity);
 
+	internal bool SupportsEmissiveStrengthMultiplier {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSupportsEmissiveStrengthMultiplier(_handle);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEmissiveStrengthMultiplier(float multiplier) => Implementation.SetEmissiveStrengthMultiplier(_handle, multiplier);
+
 	internal void SetScissorRect(XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions) => Implementation.SetScissorRect(_handle, viewportRelativeBottomLeftOffset, dimensions);
 	internal void ClearScissorRect() => Implementation.ClearScissorRect(_handle);
 	

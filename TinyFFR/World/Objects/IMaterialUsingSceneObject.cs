@@ -34,6 +34,12 @@ public interface IMaterialReceivingSceneObject : ISceneObject {
 	/// </remarks>
 	/// <param name="style">The shading style to draw this object with.</param>
 	void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style);
+	/// <summary>
+	/// Scales how brightly this object's material glows, for this object only. Defaults to <c>1f</c>.
+	/// </summary>
+	/// <param name="multiplier">The factor to scale this object's emissive brightness by. <c>0f</c> turns the glow off, <c>1f</c> leaves it as authored, and higher values make
+	/// it brighter. Negative values are treated as <c>0f</c>, and non-finite values as <c>1f</c>. This has no effect if the object's material has no emissive map.</param>
+	void SetMaterialEmissiveStrengthMultiplier(float multiplier);
 }
 
 /// <summary>

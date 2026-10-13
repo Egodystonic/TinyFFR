@@ -311,6 +311,11 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialRe
 		ThrowIfDisposed();
 		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetDefaultMaterialShadingStyle(style);
 	}
+	/// <inheritdoc />
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) {
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetMaterialEmissiveStrengthMultiplier(multiplier);
+	}
 	
 	/// <summary>
 	/// Returns a player that runs the given animation on this group at its natural speed.
