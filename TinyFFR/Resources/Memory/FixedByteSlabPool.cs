@@ -72,7 +72,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 	SlabRecord* _slabRecords;
 	int* _freeSlabRecordIndices;
 	int _returnedUnusedSlabRecordCounter; // This lets us re-use records at the start of _slabRecords before attempting to allocate more
-	int _allocatedSlabCount = 0;
+	int _slabRecordMaxConcurrentUsageCount = 0;
 	
 	// Slab rental ledgers
 	SizeClassIntArray _nonFullSlabRecordLinkHeadMap;
@@ -165,7 +165,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 		rental.ThrowIfInvalid();
 
 		var slabIndex = rental.SlabIndex;
-		if ((uint) slabIndex >= (uint) _allocatedSlabCount || _slabRecords[slabIndex].AllocationPtr == null) {
+		if ((uint) slabIndex >= (uint) _slabRecordMaxConcurrentUsageCount || _slabRecords[slabIndex].AllocationPtr == null) {
 			throw new ArgumentException($"Given rental refers to slab {slabIndex}, which is not allocated in this pool.", nameof(rental));
 		}
 
@@ -180,7 +180,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 
 #if DEBUG
 		for (var freeSlot = slab->FreeListHead; freeSlot != null; freeSlot = *(byte**) freeSlot) {
-			if (freeSlot == slot) throw new ArgumentException("Given rental has already been returned to this pool.", nameof(rental));
+			if (freeSlot == slotPtr) throw new ArgumentException("Given rental has already been returned to this pool.", nameof(rental));
 		}
 #endif
 
@@ -247,23 +247,21 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 	}
 
 	int AllocateSlab(int sizeClassIndex) {
-		int slabIndex;
-		if (_returnedUnusedSlabRecordCounter > 0) {
-			slabIndex = _freeSlabRecordIndices[--_returnedUnusedSlabRecordCounter];
-		}
-		else {
-			// Resize the slab record buffer if we have to
-			if (_allocatedSlabCount == _slabRecordsLength) {
-				var newCapacity = _slabRecordsLength * 2;
-				_slabRecords = (SlabRecord*) NativeMemory.Realloc(_slabRecords, (nuint) (newCapacity * sizeof(SlabRecord)));
-				_freeSlabRecordIndices = (int*) NativeMemory.Realloc(_freeSlabRecordIndices, (nuint) (newCapacity * sizeof(int)));
-				_slabRecordsLength = newCapacity;
-			}
-			slabIndex = _allocatedSlabCount++;
+		// Resize the slab record buffer if we have to
+		if (_returnedUnusedSlabRecordCounter == 0 && _slabRecordMaxConcurrentUsageCount == _slabRecordsLength) {
+			var newCapacity = _slabRecordsLength * 2;
+			_slabRecords = (SlabRecord*) NativeMemory.Realloc(_slabRecords, (nuint) (newCapacity * sizeof(SlabRecord)));
+			_freeSlabRecordIndices = (int*) NativeMemory.Realloc(_freeSlabRecordIndices, (nuint) (newCapacity * sizeof(int)));
+			_slabRecordsLength = newCapacity;
 		}
 
+		var allocationPtr = (byte*) NativeMemory.AlignedAlloc((nuint) _slabSizePrecalculationTable[sizeClassIndex], (nuint) _slabAlignmentPrecalculationTable[sizeClassIndex]);
+		var slabIndex = _returnedUnusedSlabRecordCounter > 0
+			? _freeSlabRecordIndices[--_returnedUnusedSlabRecordCounter]
+			: _slabRecordMaxConcurrentUsageCount++;
+
 		_slabRecords[slabIndex] = new SlabRecord {
-			AllocationPtr = (byte*) NativeMemory.AlignedAlloc((nuint) _slabSizePrecalculationTable[sizeClassIndex], (nuint) _slabAlignmentPrecalculationTable[sizeClassIndex]),
+			AllocationPtr = allocationPtr,
 			SizeClassIndex = sizeClassIndex,
 			NextNonFullSlabIndex = NullSlab,
 			PrevNonFullSlabIndex = NullSlab
@@ -300,7 +298,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			for (var i = 0; i < _allocatedSlabCount; ++i) {
+			for (var i = 0; i < _slabRecordMaxConcurrentUsageCount; ++i) {
 				if (_slabRecords[i].AllocationPtr != null) NativeMemory.AlignedFree(_slabRecords[i].AllocationPtr);
 			}
 			NativeMemory.Free(_slabRecords);

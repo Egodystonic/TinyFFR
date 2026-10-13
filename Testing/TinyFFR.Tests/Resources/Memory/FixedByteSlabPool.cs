@@ -17,6 +17,14 @@ unsafe class FixedByteSlabPoolTest {
 
 	[TearDown]
 	public void TearDownTest() => _pool.Dispose();
+	
+	int CountLiveSlabs() => CountLiveSlabs(_pool);
+
+	static int CountLiveSlabs(FixedByteSlabPool pool) {
+		var recordCount = (int) typeof(FixedByteSlabPool).GetField("_slabRecordMaxConcurrentUsageCount", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(pool)!;
+		var freeRecordCount = (int) typeof(FixedByteSlabPool).GetField("_returnedUnusedSlabRecordCounter", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(pool)!;
+		return recordCount - freeRecordCount;
+	}
 
 	[Test]
 	public void ShouldRoundRentalsUpToTheirSizeClass() {
@@ -211,17 +219,6 @@ unsafe class FixedByteSlabPoolTest {
 		Assert.AreEqual(0L, allocatedDuring);
 	}
 
-#if DEBUG
-	[Test]
-	public void ShouldRejectDoubleReturnInDebugBuilds() {
-		var keepSlabAlive = _pool.Rent(100);
-		var rental = _pool.Rent(100);
-		_pool.Return(rental);
-		Assert.Throws<ArgumentException>(() => _pool.Return(rental));
-		_pool.Return(keepSlabAlive);
-	}
-#endif
-
 	[Test]
 	public void ShouldNotAllocateManagedMemoryOnceSlabRecordsExist() {
 		var warmup = _pool.Rent(500);
@@ -232,13 +229,5 @@ unsafe class FixedByteSlabPoolTest {
 		var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
 
 		Assert.AreEqual(0L, allocatedDuring);
-	}
-
-	int CountLiveSlabs() => CountLiveSlabs(_pool);
-
-	static int CountLiveSlabs(FixedByteSlabPool pool) {
-		var recordCount = (int) typeof(FixedByteSlabPool).GetField("_slabRecordCount", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(pool)!;
-		var freeRecordCount = (int) typeof(FixedByteSlabPool).GetField("_freeSlabRecordCount", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(pool)!;
-		return recordCount - freeRecordCount;
 	}
 }

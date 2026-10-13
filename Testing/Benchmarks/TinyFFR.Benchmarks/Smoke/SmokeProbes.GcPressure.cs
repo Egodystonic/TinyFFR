@@ -573,8 +573,8 @@ static partial class SmokeProbes {
 				result += $"; block pool {spaces} spaces ({spaces * (long) spaceBytes / (1024 * 1024)} MiB reserved)";
 			}
 			else {
-				var liveSlabs = (int) poolType.GetField("_slabRecordCount", Instance)!.GetValue(pool)! - (int) poolType.GetField("_freeSlabRecordCount", Instance)!.GetValue(pool)!;
-				var outstandingBytes = (long) poolType.GetProperty("OutstandingBytes")!.GetValue(pool)!;
+				var liveSlabs = (int) poolType.GetField("_slabRecordMaxConcurrentUsageCount", Instance)!.GetValue(pool)! - (int) poolType.GetField("_returnedUnusedSlabRecordCounter", Instance)!.GetValue(pool)!;
+				var outstandingBytes = (long) poolType.GetProperty("CurrentlyLeasedTotalBytes")!.GetValue(pool)!;
 				result += $"; slab pool {liveSlabs} live slabs, {outstandingBytes / 1024:N0} KiB outstanding";
 			}
 		}
