@@ -1,6 +1,8 @@
 ﻿// Created on 2024-11-26 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Reflection;
+
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 [TestFixture]
@@ -100,7 +102,7 @@ class ArrayPoolBackedMapTest {
 		_map.Add(1, 2);
 		_map.Add(2, 4);
 		_map.Add(3, 6);
-		_map.ClearWithoutZeroingMemory();
+		_map.Clear();
 		Assert.AreEqual(0, _map.Count);
 		foreach (var kvp in _map) result += 1;
 		Assert.AreEqual(0, result);
@@ -202,5 +204,34 @@ class ArrayPoolBackedMapTest {
 
 		Assert.Throws<ArgumentException>(() => _map.AddRange(new List<KeyValuePair<int, int>> { new(-6, 0), new(-6, 1) }));
 		Assert.Throws<ArgumentException>(() => _map.AddRange((IEnumerable<KeyValuePair<int, int>>) _map));
+	}
+
+	[Test]
+	public void ClearShouldZeroReferenceValuesInBuckets() {
+		var map = new ArrayPoolBackedMap<int, string>();
+		for (var i = 0; i < 100; ++i) map.Add(i, i.ToString());
+
+		map.Clear();
+		Assert.AreEqual(0, map.Count);
+
+		var buckets = (Array) typeof(ArrayPoolBackedMap<int, string>).GetField("_buckets", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(map)!;
+		var numBuckets = (int) typeof(ArrayPoolBackedMap<int, string>).GetField("_numBuckets", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(map)!;
+		var backingArrayField = typeof(ArrayPoolBackedVector<KeyValuePair<int, string>>).GetField("_backingArray", BindingFlags.NonPublic | BindingFlags.Instance)!;
+		for (var b = 0; b < numBuckets; ++b) {
+			var backingArray = (KeyValuePair<int, string>[]) backingArrayField.GetValue(buckets.GetValue(b))!;
+			foreach (var kvp in backingArray) Assert.IsNull(kvp.Value, $"Bucket {b} still holds a stale value.");
+		}
+		map.Dispose();
+	}
+
+	[Test]
+	public void ClearingAnEmptyMapShouldLeaveItUsable() {
+		var map = new ArrayPoolBackedMap<int, int>();
+		map.Clear();
+		map.Clear();
+		map.Clear();
+		map.Add(1, 2);
+		Assert.AreEqual(2, map[1]);
+		map.Dispose();
 	}
 }

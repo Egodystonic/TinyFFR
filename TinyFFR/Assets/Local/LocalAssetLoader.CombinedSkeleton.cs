@@ -179,15 +179,15 @@ unsafe partial class LocalAssetLoader {
 		}
 
 		public void Reset() {
-			_uniqueNodes.ClearWithoutZeroingMemory();
+			_uniqueNodes.Clear();
 			_uniqueNodeIndicesByPointer.Clear();
-			_uniqueNodeParents.ClearWithoutZeroingMemory();
-			_boneSetBoneCounts.ClearWithoutZeroingMemory();
-			_boneToUniqueNodeIndices.ClearWithoutZeroingMemory();
-			_rawBindPoseInversions.ClearWithoutZeroingMemory();
+			_uniqueNodeParents.Clear();
+			_boneSetBoneCounts.Clear();
+			_boneToUniqueNodeIndices.Clear();
+			_rawBindPoseInversions.Clear();
 			_boneSetMeshes.Clear();
-			_combinedNodes.ClearWithoutZeroingMemory();
-			_boneToCombinedNodeIndices.ClearWithoutZeroingMemory();
+			_combinedNodes.Clear();
+			_boneToCombinedNodeIndices.Clear();
 			_modelImportTransformMatrix = Matrix4x4.Identity;
 			_isBuilt = false;
 			GatheredData.DisposeUntransferredBuffersAndReset();

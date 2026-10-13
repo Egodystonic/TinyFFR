@@ -1,7 +1,9 @@
 // Created on 2026-10-12 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Diagnostics;
 using System.Reflection;
+using System.Threading;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
@@ -9,11 +11,13 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 unsafe class FixedByteSlabPoolTest {
 	const int SlabSizeBytes = 1024 * 1024;
 	const long DefaultRetainedBudgetBytes = 512L * 1024 * 1024;
+	static readonly TimeSpan RetentionTime = TimeSpan.FromSeconds(4d);
+	static readonly long RetentionWindowTicks = (long) (RetentionTime.TotalSeconds * Stopwatch.Frequency / 2d);
 	const int LargestTestedRentalBytes = 1024 * 1024 * 1024;
 	FixedByteSlabPool _pool = null!;
 
 	[SetUp]
-	public void SetUpTest() => _pool = new FixedByteSlabPool(DefaultRetainedBudgetBytes);
+	public void SetUpTest() => _pool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, RetentionTime);
 
 	[TearDown]
 	public void TearDownTest() => _pool.Dispose();
@@ -92,10 +96,11 @@ unsafe class FixedByteSlabPoolTest {
 	[Test]
 	public void ShouldRejectInvalidRentalsAndSizes() {
 		Assert.Throws<ArgumentOutOfRangeException>(() => _pool.Rent(-1));
-		Assert.Throws<ArgumentOutOfRangeException>(() => new FixedByteSlabPool(-1));
+		Assert.Throws<ArgumentOutOfRangeException>(() => new FixedByteSlabPool(-1, RetentionTime));
+		Assert.Throws<ArgumentOutOfRangeException>(() => new FixedByteSlabPool(DefaultRetainedBudgetBytes, TimeSpan.FromTicks(-1L)));
 		Assert.Throws<InvalidObjectException>(() => _pool.Return(default));
 
-		using var otherPool = new FixedByteSlabPool(DefaultRetainedBudgetBytes);
+		using var otherPool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, RetentionTime);
 		var foreign = otherPool.Rent(100);
 		var local = _pool.Rent(100);
 		Assert.Throws<ArgumentException>(() => _pool.Return(new FixedByteSlabPool.SlabRental(foreign.SlotPtr, foreign.SizeBytes, 0)));
@@ -153,19 +158,85 @@ unsafe class FixedByteSlabPoolTest {
 	[Test]
 	public void ShouldReleaseIdleLargeSlotsWhenRetentionWindowsPassWithoutDemand() {
 		const int LargeRentalBytes = 6 * 1024 * 1024;
-		var rentals = new[] { _pool.Rent(LargeRentalBytes), _pool.Rent(LargeRentalBytes), _pool.Rent(LargeRentalBytes) };
-		foreach (var rental in rentals) _pool.Return(rental);
-		Assert.AreEqual(3, CountLiveSlabs());
+		using var pool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, RetentionTime);
+		var windowEnd = Stopwatch.GetTimestamp() + RetentionWindowTicks;
+		var rentals = new[] { pool.Rent(LargeRentalBytes), pool.Rent(LargeRentalBytes), pool.Rent(LargeRentalBytes) };
+		foreach (var rental in rentals) pool.Return(rental);
+		Assert.AreEqual(3, CountLiveSlabs(pool));
 
-		_pool.EndRetentionWindow();
-		Assert.AreEqual(3, CountLiveSlabs(), "The window in which the slots were used should still be honoured.");
+		pool.RollRetentionWindowsIfElapsed(windowEnd - RetentionWindowTicks / 2L);
+		Assert.AreEqual(3, CountLiveSlabs(pool), "No window has ended yet.");
 
-		_pool.Return(_pool.Rent(LargeRentalBytes));
-		_pool.EndRetentionWindow();
-		Assert.AreEqual(1, CountLiveSlabs(), "Only one slot was needed during the last window.");
+		var now = windowEnd + 1L;
+		pool.RollRetentionWindowsIfElapsed(now);
+		Assert.AreEqual(3, CountLiveSlabs(pool), "The window in which the slots were used should still be honoured.");
 
-		_pool.EndRetentionWindow();
-		Assert.AreEqual(0, CountLiveSlabs(), "No slots were needed during the last window.");
+		pool.Return(pool.Rent(LargeRentalBytes));
+		now += RetentionWindowTicks;
+		pool.RollRetentionWindowsIfElapsed(now);
+		Assert.AreEqual(1, CountLiveSlabs(pool), "Only one slot was needed during the last window.");
+
+		now += RetentionWindowTicks;
+		pool.RollRetentionWindowsIfElapsed(now);
+		Assert.AreEqual(0, CountLiveSlabs(pool), "No slots were needed during the last window.");
+	}
+
+	[Test]
+	public void ShouldReleaseAllIdleLargeSlotsWhenTwoWindowsPassInOneCheck() {
+		const int LargeRentalBytes = 6 * 1024 * 1024;
+		using var pool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, RetentionTime);
+		var windowEnd = Stopwatch.GetTimestamp() + RetentionWindowTicks;
+		var rentals = new[] { pool.Rent(LargeRentalBytes), pool.Rent(LargeRentalBytes) };
+		foreach (var rental in rentals) pool.Return(rental);
+		Assert.AreEqual(2, CountLiveSlabs(pool));
+
+		pool.RollRetentionWindowsIfElapsed(windowEnd + RetentionWindowTicks + 1L);
+		Assert.AreEqual(0, CountLiveSlabs(pool));
+	}
+
+	[Test]
+	public void ShouldRollRetentionWindowsLazilyWhenRentingAfterTheRetentionTime() {
+		const int LargeRentalBytes = 6 * 1024 * 1024;
+		using var pool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, TimeSpan.FromMilliseconds(20d));
+		var rentals = new[] { pool.Rent(LargeRentalBytes), pool.Rent(LargeRentalBytes) };
+		foreach (var rental in rentals) pool.Return(rental);
+		Assert.AreEqual(2, CountLiveSlabs(pool));
+
+		Thread.Sleep(50);
+		pool.Return(pool.Rent(100));
+		Assert.AreEqual(1, CountLiveSlabs(pool), "Only the small slab used after the retention time should remain.");
+	}
+
+	[Test]
+	public void ReleaseAllPooledMemoryShouldReleaseEveryLiveInstancesIdleSlabsOnly() {
+		using var firstPool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, RetentionTime);
+		using var secondPool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, RetentionTime);
+		var stillRented = firstPool.Rent(6 * 1024 * 1024);
+		stillRented.AsByteSpan.Fill(0x5A);
+		firstPool.Return(firstPool.Rent(100));
+		firstPool.Return(firstPool.Rent(8 * 1024 * 1024));
+		secondPool.Return(secondPool.Rent(100));
+		secondPool.Return(secondPool.Rent(6 * 1024 * 1024));
+		Assert.AreEqual(3, CountLiveSlabs(firstPool));
+		Assert.AreEqual(2, CountLiveSlabs(secondPool));
+
+		FixedByteSlabPool.ReleaseAllPooledMemory();
+		Assert.AreEqual(1, CountLiveSlabs(firstPool));
+		Assert.AreEqual(0, CountLiveSlabs(secondPool));
+		Assert.AreEqual(-1, stillRented.AsByteSpan.IndexOfAnyExcept((byte) 0x5A));
+
+		firstPool.Return(stillRented);
+		Assert.AreEqual(0L, firstPool.CurrentlyLeasedTotalBytes);
+	}
+
+	[Test]
+	public void DisposedInstancesShouldBeRemovedFromTheLiveInstanceRegistry() {
+		var pool = new FixedByteSlabPool(DefaultRetainedBudgetBytes, RetentionTime);
+		var liveInstances = (List<FixedByteSlabPool>) typeof(FixedByteSlabPool).GetField("_liveInstances", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+		Assert.IsTrue(liveInstances.Contains(pool));
+		pool.Dispose();
+		Assert.IsFalse(liveInstances.Contains(pool));
+		Assert.DoesNotThrow(FixedByteSlabPool.ReleaseAllPooledMemory);
 	}
 
 	[Test]
@@ -173,7 +244,7 @@ unsafe class FixedByteSlabPoolTest {
 		const int LargeRentalBytes = 6 * 1024 * 1024;
 		const int RentalCount = 40;
 		const long RetainedBudgetBytes = 64L * 1024 * 1024;
-		using var budgetedPool = new FixedByteSlabPool(RetainedBudgetBytes);
+		using var budgetedPool = new FixedByteSlabPool(RetainedBudgetBytes, RetentionTime);
 		var rentals = new List<FixedByteSlabPool.SlabRental>();
 		for (var i = 0; i < RentalCount; ++i) rentals.Add(budgetedPool.Rent(LargeRentalBytes));
 		Assert.AreEqual(RentalCount, CountLiveSlabs(budgetedPool));
@@ -186,7 +257,7 @@ unsafe class FixedByteSlabPoolTest {
 
 	[Test]
 	public void ShouldRetainNothingWithAZeroBudget() {
-		using var unretainingPool = new FixedByteSlabPool(0L);
+		using var unretainingPool = new FixedByteSlabPool(0L, RetentionTime);
 		var small = unretainingPool.Rent(300);
 		var large = unretainingPool.Rent(6 * 1024 * 1024);
 		Assert.AreEqual(2, CountLiveSlabs(unretainingPool));
@@ -199,7 +270,7 @@ unsafe class FixedByteSlabPoolTest {
 
 	[Test]
 	public void ShouldCountEmptySmallSlabsAgainstTheRetainedBudget() {
-		using var budgetedPool = new FixedByteSlabPool(SlabSizeBytes);
+		using var budgetedPool = new FixedByteSlabPool(SlabSizeBytes, RetentionTime);
 		var first = budgetedPool.Rent(300);
 		var second = budgetedPool.Rent(1_000);
 		Assert.AreEqual(2, CountLiveSlabs(budgetedPool));

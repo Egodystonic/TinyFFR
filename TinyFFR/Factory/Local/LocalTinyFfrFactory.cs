@@ -38,6 +38,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 #pragma warning disable CA2213 // We don't dispose this pool here because it needs to be disposed only when the native lib is done with the memory. This might be after disposal of this factory.
 	readonly FixedByteSlabPool _gpuHoldingBufferPool;
 #pragma warning restore CA2213
+	readonly long _gpuHoldingBufferFlushThresholdBytes;
+	readonly long _gpuHoldingBufferStallThresholdBytes;
 
 	readonly CooperativeThreadPool _threadPool;
 	readonly LocalDisplayDiscoverer _displayDiscoverer;
@@ -82,6 +84,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	/// <inheritdoc/>
 	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceAllocator;
 	FixedByteSlabPool ILocalGpuHoldingBufferAllocator.GpuHoldingBufferPool => _gpuHoldingBufferPool;
+	long ILocalGpuHoldingBufferAllocator.GpuHoldingBufferFlushThresholdBytes => _gpuHoldingBufferFlushThresholdBytes;
+	long ILocalGpuHoldingBufferAllocator.GpuHoldingBufferStallThresholdBytes => _gpuHoldingBufferStallThresholdBytes;
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 	/// <inheritdoc/>
 	public IResourceDirectory ResourceDirectory => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceDirectory;
@@ -129,6 +133,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	/// <param name="rendererBuilderConfig">Configuration for the <see cref="IRendererBuilder"/>. Defaults to <see langword="new"/> <see cref="RendererBuilderConfig"/>() if <see langword="null"/>.</param>
 	/// <param name="assetBakeryConfig">Configuration for the <see cref="IAssetBakery"/>. Defaults to <see langword="new"/> <see cref="AssetBakeryConfig"/>() if <see langword="null"/>.</param>
 	/// <exception cref="InvalidOperationException">Thrown if another <see cref="LocalTinyFfrFactory"/> is already live.</exception>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="factoryConfig"/>'s <see cref="LocalTinyFfrFactoryConfig.UploadMemoryBufferStallThresholdBytes"/> is less than its <see cref="LocalTinyFfrFactoryConfig.UploadMemoryBufferFlushThresholdBytes"/>.</exception>
 	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null, AssetBakeryConfig? assetBakeryConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
@@ -137,6 +142,13 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		LocalFileSystemUtils.AttemptToEnsureApplicationDataFolderExists();
 
 		factoryConfig ??= new();
+		if (factoryConfig.UploadMemoryBufferStallThresholdBytes < factoryConfig.UploadMemoryBufferFlushThresholdBytes) {
+			throw new ArgumentException(
+				$"{nameof(LocalTinyFfrFactoryConfig.UploadMemoryBufferStallThresholdBytes)} ({factoryConfig.UploadMemoryBufferStallThresholdBytes}) must not be less than " +
+				$"{nameof(LocalTinyFfrFactoryConfig.UploadMemoryBufferFlushThresholdBytes)} ({factoryConfig.UploadMemoryBufferFlushThresholdBytes}).",
+				nameof(factoryConfig)
+			);
+		}
 		LocalNativeUtils.InitializeNativeLibIfNecessary(factoryConfig.HeadlessMode);
 
 		windowBuilderConfig ??= new();
@@ -166,7 +178,9 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			}
 			var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
 			var bakeryRef = new DeferredRef<LocalAssetBakery>();
-			_gpuHoldingBufferPool = new FixedByteSlabPool(factoryConfig.MaxRetainedUploadMemoryBytes);
+			_gpuHoldingBufferPool = new FixedByteSlabPool(factoryConfig.MaxRetainedUploadMemoryBytes, factoryConfig.UploadMemoryBufferMaxRetentionTime);
+			_gpuHoldingBufferFlushThresholdBytes = factoryConfig.UploadMemoryBufferFlushThresholdBytes;
+			_gpuHoldingBufferStallThresholdBytes = factoryConfig.UploadMemoryBufferStallThresholdBytes;
 			var globals = new LocalFactoryGlobalObjectGroup(
 				this,
 				_threadPool,

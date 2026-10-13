@@ -65,19 +65,19 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 	}
 
 	public void Clear() {
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
-		_count = 0;
-		++Version;
-	}
-	public void ClearWithoutZeroingMemory() {
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
+		if (_count != 0) {
+			for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
+		}
 		_count = 0;
 		++Version;
 	}
 
-	public void ShrinkToInitialBucketCount() {
-		if (_count != 0) return;
+	public void ClearAndShrinkToInitialBucketCount() {
+		Clear();
+		ShrinkToInitialBucketCount();
+	}
 
+	void ShrinkToInitialBucketCount() {
 		if (_numBuckets > InitialBucketCount) {
 			for (var i = InitialBucketCount; i < _numBuckets; ++i) VectorPool<T>.Shared.Return(_buckets[i]);
 
@@ -91,7 +91,7 @@ sealed class ArrayPoolBackedSet<T> : IArrayPoolBackedSet<T> {
 			++Version;
 		}
 
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ShrinkToInitialCapacity();
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearAndShrinkToInitialCapacity();
 	}
 
 	public bool Contains(T item) => GetIndexFromBucket(GetBucket(item), item).HasValue;

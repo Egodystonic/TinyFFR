@@ -49,14 +49,14 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_assetLoader = assetLoader;
 		_cameraBuilder = cameraBuilder;
 		_objectBuilder = objectBuilder;
-		_modelInstanceSetPool = new(zeroMemoryOnReturn: true);
-		_camLockedAbridgedInstanceMapPool = new(zeroMemoryOnReturn: true);
-		_camLockedFullInstanceMapPool = new(zeroMemoryOnReturn: true);
-		_canvasItemMapPool = new(zeroMemoryOnReturn: true);
-		_canvasTextureDataMapPool = new(zeroMemoryOnReturn: true);
-		_canvasTextDataMapPool = new(zeroMemoryOnReturn: true);
-		_lightSetPool = new(zeroMemoryOnReturn: true);
-		_primitiveMapPool = new(zeroMemoryOnReturn: true);
+		_modelInstanceSetPool = new();
+		_camLockedAbridgedInstanceMapPool = new();
+		_camLockedFullInstanceMapPool = new();
+		_canvasItemMapPool = new();
+		_canvasTextureDataMapPool = new();
+		_canvasTextDataMapPool = new();
+		_lightSetPool = new();
+		_primitiveMapPool = new();
 	}
 
 	public Scene CreateScene(in SceneCreationConfig config) {

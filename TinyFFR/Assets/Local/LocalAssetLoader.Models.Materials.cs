@@ -119,7 +119,7 @@ unsafe partial class LocalAssetLoader {
 
 		public void Clear() {
 			for (var i = 0; i < _entries.Count; ++i) _entries[i].Buffer.Dispose();
-			_entries.ClearWithoutZeroingMemory();
+			_entries.Clear();
 			_cachedBytes = 0L;
 		}
 
@@ -237,8 +237,8 @@ unsafe partial class LocalAssetLoader {
 		public void DisposeBuffersAndReset() {
 			for (var i = 0; i < _count; ++i) _entries[i].TearDown();
 			_count = 0;
-			_names.ClearWithoutZeroingMemory();
-			_nameChars.ClearWithoutZeroingMemory();
+			_names.Clear();
+			_nameChars.Clear();
 		}
 
 		public void Dispose() {

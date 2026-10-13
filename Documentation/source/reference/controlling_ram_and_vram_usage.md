@@ -91,9 +91,25 @@ using var factory = new LocalTinyFfrFactory(
 
 :   The most memory, in bytes, that TinyFFR keeps for reuse after uploading data to the GPU. Defaults to 512 MB.
 
-	Everything uploaded to the GPU (meshes, textures, and frames being read back) is held in RAM until the GPU has received it, which normally happens by the next rendered frame. Afterwards, TinyFFR keeps some of that memory so that similar uploads can reuse it, up to this limit. Memory that goes unused for a few seconds of rendering is returned.
+	Everything uploaded to the GPU (meshes, textures, and frames being read back) is held in RAM until the GPU has received it, which normally happens by the next rendered frame. Afterwards, TinyFFR keeps some of that memory so that similar uploads can reuse it (as a performance optimisation), up to this limit. Memory that goes unused for `UploadMemoryBufferMaxRetentionTime` (4 seconds by default) is returned.
 
-	Lowering this saves RAM, but setting it too low can slow down large uploads that repeat every frame (e.g. reading back every frame at 4K). Set it to `0` to never keep memory for reuse. There is no limit on the size of a single upload.
+	Lowering this saves RAM, but setting it too low can slow down large uploads that repeat every frame (e.g. reading back every frame at 4K). Set it to `0` to never keep memory for reuse.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `UploadMemoryBufferMaxRetentionTime`
+
+:   How long memory kept for reuse after uploading data to the GPU (see `MaxRetainedUploadMemoryBytes`) can go unused before it's released. Defaults to 4 seconds. 
+
+	If you have an allocation pattern where you're loading large bursts of assets once every N seconds, it might help to increase this to something just larger than N for performance.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `UploadMemoryBufferFlushThresholdBytes`
+
+:   Once this many bytes of data are waiting to be uploaded to the GPU, TinyFFR asks the GPU driver to start processing them rather than waiting for the next rendered frame. Defaults to 256 MB.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `UploadMemoryBufferStallThresholdBytes`
+
+:   Once this many bytes of data are waiting to be uploaded to the GPU, TinyFFR waits for the GPU to catch up before continuing. This is what limits how much RAM pending uploads can use. Defaults to 1 GB, and must not be lower than `UploadMemoryBufferFlushThresholdBytes`.
+
+	Both thresholds are normally only reached when loading a lot of data without rendering any frames in between. Lowering them uses less RAM during large loads, but can make those loads take longer.
 
 Some other settings also affect RAM usage:
 
@@ -107,8 +123,20 @@ TinyFFR reuses memory wherever it can rather than returning it to the operating 
 The following can make that peak higher:
 
 * **Loading large assets.** Loading needs temporary space for the file's data, the decoded images, the processed meshes, and so on. The space is kept for reuse afterwards.
-* **Loading many assets at once.** Each [asynchronous load](asynchronous_loading.md) in progress needs its own temporary space, and data waiting to be uploaded to the GPU uses memory until the GPU has received it (normally by the next rendered frame). If you load a lot without rendering, TinyFFR periodically waits for the GPU to catch up so that this memory stays bounded. Limit how many large loads you run at once if RAM is tight.
+* **Loading many assets at once.** Each [asynchronous load](asynchronous_loading.md) in progress needs its own temporary space, and data waiting to be uploaded to the GPU uses memory until the GPU has received it (normally by the next rendered frame). If you load a lot without rendering, this can reach `UploadMemoryBufferStallThresholdBytes` (1 GB by default) before TinyFFR waits for the GPU to catch up. Limit how many large loads you run at once if RAM is tight.
 * **Enabling the asset bakery.** While enabled, the bakery keeps a copy of every resource's data until it's baked or discarded. In testing, loading a large model with the bakery enabled used around 70% more RAM. Only enable the bakery while baking (see [Asset Bakery](asset_bakery.md#baking-rules)).
 * **Large collections and buffers.** Memory borrowed from the factory's `ResourceAllocator` (see [Avoiding GC Stutter](avoiding_gc_stutter.md)) is pooled, so the largest amount you've borrowed at once stays reserved for reuse.
 
 Disposing the factory releases all of TinyFFR's pooled memory.
+
+## Releasing Pooled Memory
+
+To release the memory TinyFFR is keeping for reuse without disposing the factory (e.g. after loading a large level), call `TrimPooledMemory()`:
+
+```csharp
+factory.ResourceAllocator.TrimPooledMemory();
+```
+
+This releases pooled arrays, collections, and upload buffers that aren't currently in use. Nothing in use is affected, and the pools grow again as they're needed, so calling it often costs performance over the following frames. It also releases memory back to the GC so you may see GC stuttering.
+
+`TrimPooledMemory()` must be called from the main thread, and does nothing while any [asynchronous operation](asynchronous_loading.md) is still in progress.

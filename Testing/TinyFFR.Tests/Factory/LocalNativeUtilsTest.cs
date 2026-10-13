@@ -24,8 +24,13 @@ class LocalNativeUtilsTest {
 	public void OutstandingUploadBytesShouldStayBoundedWhenUploadingLargeBuffersWithoutRendering() {
 		const int LargeUploadCount = 2_000;
 		const int VertexCount = 16_384;
-		const long MaxExpectedOutstandingBytes = 256L * 1024 * 1024 + 2L * 1024 * 1024;
-		using var factory = new LocalTinyFfrFactory();
+		const long FlushThresholdBytes = 32L * 1024 * 1024;
+		const long StallThresholdBytes = 64L * 1024 * 1024;
+		const long MaxExpectedOutstandingBytes = StallThresholdBytes + 2L * 1024 * 1024;
+		using var factory = new LocalTinyFfrFactory(new LocalTinyFfrFactoryConfig {
+			UploadMemoryBufferFlushThresholdBytes = FlushThresholdBytes,
+			UploadMemoryBufferStallThresholdBytes = StallThresholdBytes
+		});
 		var pool = ((ILocalGpuHoldingBufferAllocator) factory).GpuHoldingBufferPool;
 
 		var maxOutstandingBytes = 0L;

@@ -32,6 +32,16 @@ public interface INonDisposableArrayPoolBackedDictionary<TKey, TValue> : IDictio
 	/// <exception cref="ArgumentException">Thrown if a key in <paramref name="items"/> is already in this dictionary (or appears more than once in <paramref name="items"/>).
 	/// The pairs before the duplicate key will already have been added.</exception>
 	void AddRange(ReadOnlySpan<KeyValuePair<TKey, TValue>> items);
+
+	/// <summary>
+	/// Removes all elements from this dictionary (like <see cref="ICollection{T}.Clear"/>) and then returns any pooled storage it has grown into, shrinking it back to its initial capacity.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="ICollection{T}.Clear"/> keeps this dictionary's current capacity so that refilling it to a similar size costs nothing extra.
+	/// Use this method instead after an unusually large use, so that the grown storage is made available for re-use elsewhere rather than being held by this dictionary
+	/// (and so that operations whose cost depends on capacity, such as enumeration, become cheap again).
+	/// </remarks>
+	void ClearAndShrinkToInitialBucketCount();
 }
 
 /// <summary>

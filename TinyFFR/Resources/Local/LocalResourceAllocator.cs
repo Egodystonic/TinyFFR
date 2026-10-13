@@ -64,6 +64,13 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 	}
 	public ScopedReadOnlySpanLease<T> BorrowReadOnlySpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true) => BorrowSpan<T>(numElements, clearMemoryOnLeaseEnd);
 
+	public void TrimPooledMemory() {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		if (OutstandingAsyncOperationRegistry.OutstandingCount > 0) return;
+		FixedByteSlabPool.ReleaseAllPooledMemory();
+		TinyFfrArrayPool.ReleaseAllPooledMemory();
+	}
+
 	public Memory<T> CreatePooledMemoryBuffer<T>(int numElements) {
 		var arrayPool = GetArrayPool<T>();
 		var rentedArray = arrayPool.Rent(numElements);

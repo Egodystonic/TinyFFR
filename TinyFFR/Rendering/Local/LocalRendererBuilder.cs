@@ -511,10 +511,11 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			}
 		}
 
-		if (ordering is RenderOrdering.Standalone or RenderOrdering.Last && _loadedRenderers[fenceEmittingHandle].EmitFences) {
-			LocalFrameSynchronizationManager.EmitFenceAndCycleBuffer(fenceEmittingHandle);
+		
+		if (ordering is RenderOrdering.Standalone or RenderOrdering.Last) {
+			FixedByteSlabPool.NudgeLiveInstanceTimers();
+			if (_loadedRenderers[fenceEmittingHandle].EmitFences) LocalFrameSynchronizationManager.EmitFenceAndCycleBuffer(fenceEmittingHandle);
 		}
-		if (ordering is RenderOrdering.Standalone or RenderOrdering.Last) _globals.NotifyFrameRendered();
 	}
 
 	void PaceSkippedWindowFrame(RenderTargetUnion windowTarget) {

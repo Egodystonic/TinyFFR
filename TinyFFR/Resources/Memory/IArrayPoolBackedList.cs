@@ -43,6 +43,15 @@ public interface INonDisposableArrayPoolBackedList<T> : IList<T> {
 	/// </summary>
 	/// <param name="items">The elements to add. May be this list's own <see cref="BackingSpan"/> (or a slice of it).</param>
 	void AddRange(ReadOnlySpan<T> items);
+
+	/// <summary>
+	/// Removes all elements from this list (like <see cref="ICollection{T}.Clear"/>) and then returns any pooled storage it has grown into, shrinking it back to its initial capacity.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="ICollection{T}.Clear"/> keeps this list's current capacity so that refilling it to a similar size costs nothing extra.
+	/// Use this method instead after an unusually large use, so that the grown storage is made available for re-use elsewhere rather than being held by this list.
+	/// </remarks>
+	void ClearAndShrinkToInitialCapacity();
 }
 
 /// <summary>

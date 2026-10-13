@@ -153,6 +153,26 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsPerInstanceVertexMutation"/> is <c>false</c>.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowDefaultVerticesSpan(Range range) => Implementation.BorrowDefaultVerticesSpan(_handle, range);
+	/// <summary>
+	/// Borrows this mesh's triangles for reading. <see cref="AllowsPerInstanceVertexMutation"/> must be <c>true</c> to use this method.
+	/// </summary>
+	/// <remarks>
+	/// Each triangle indexes in to the vertices given by <see cref="BorrowDefaultVerticesSpan()"/>. Together they describe the mesh exactly
+	/// as it was created, so they can be used to create a modified copy of it.
+	/// </remarks>
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsPerInstanceVertexMutation"/> is <c>false</c>.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpan() => BorrowTrianglesSpan(Range.All);
+	/// <summary>
+	/// Borrows part of this mesh's triangles for reading. <see cref="AllowsPerInstanceVertexMutation"/> must be <c>true</c> to use this method.
+	/// </summary>
+	/// <remarks>
+	/// Each triangle indexes in to the vertices given by <see cref="BorrowDefaultVerticesSpan()"/>.
+	/// </remarks>
+	/// <param name="range">Which stretch of the triangle list to borrow.</param>
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsPerInstanceVertexMutation"/> is <c>false</c>.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpan(Range range) => Implementation.BorrowTrianglesSpan(_handle, range);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(MeshAnimationType? type) => Implementation.GetAnimations(_handle, type);

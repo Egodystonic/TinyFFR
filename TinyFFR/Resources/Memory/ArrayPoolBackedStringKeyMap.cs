@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 unsafe abstract class ArrayPoolBackedStringKeyMap {
 	protected static readonly ManagedStringPool StringPool = new();
 	static readonly Lock StringHandleVectorPoolLock = new();
-	static readonly VectorPool<ManagedStringPool.RentedStringHandle> StringHandleVectorPool = new(zeroMemoryOnReturn: true, &CreateVector);
+	static readonly VectorPool<ManagedStringPool.RentedStringHandle> StringHandleVectorPool = new(&CreateVector);
 
 	static ArrayPoolBackedVector<ManagedStringPool.RentedStringHandle> CreateVector() => new(initialCapacity: 1);
 

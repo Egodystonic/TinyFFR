@@ -29,11 +29,6 @@ static unsafe class LocalNativeUtils {
 	static readonly ArrayPoolBackedMap<nuint, ActiveBufferData> _activeTemporaryBuffers = new();
 
 	public const string NativeLibName = "TinyFFR.Native";
-	const long UnrenderedUploadBytesBeforeFlush = 64L * 1024 * 1024;
-	const long MinUnrenderedUploadBytesBeforeBlockingFlush = 256L * 1024 * 1024;
-	const int RenderedFramesPerRetentionWindow = 120;
-	static long _uploadBytesSinceLastRenderedFrame = 0L;
-	static int _renderedFramesInRetentionWindow = 0;
 	static bool _nativeLibInitialized = false;
 	static bool _sdlInitialized = false;
 	static nuint _nextTemporaryBufferId = 0;
@@ -110,20 +105,13 @@ static unsafe class LocalNativeUtils {
 		if (allocator.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(allocator);
 	}
 
-	static void ReleaseCompletedUploadsIfOverBudget(FixedByteSlabPool pool, int sizeBytes) {
-		_uploadBytesSinceLastRenderedFrame += sizeBytes;
-		if (Int64.Min(_uploadBytesSinceLastRenderedFrame, pool.CurrentlyLeasedTotalBytes + sizeBytes) <= UnrenderedUploadBytesBeforeFlush) return;
+	static void ReleaseCompletedUploadsIfOverBudget(ILocalGpuHoldingBufferAllocator allocator, int sizeBytes) {
+		var pool = allocator.GpuHoldingBufferPool;
+		if (pool.CurrentlyLeasedTotalBytes + sizeBytes <= allocator.GpuHoldingBufferFlushThresholdBytes) return;
 		FlushPendingUploads(false).ThrowIfFailure();
-		var blockingFlushThreshold = Int64.Max(MinUnrenderedUploadBytesBeforeBlockingFlush, 2L * sizeBytes);
-		if (LocalFrameSynchronizationManager.IsInOpenFrameScope || pool.CurrentlyLeasedTotalBytes + sizeBytes <= blockingFlushThreshold) return;
+		var stallThreshold = Int64.Max(allocator.GpuHoldingBufferStallThresholdBytes, 2L * sizeBytes);
+		if (LocalFrameSynchronizationManager.IsInOpenFrameScope || pool.CurrentlyLeasedTotalBytes + sizeBytes <= stallThreshold) return;
 		FlushPendingUploads(true).ThrowIfFailure();
-	}
-
-	internal static void NotifyFrameRendered(ILocalGpuHoldingBufferAllocator allocator) {
-		_uploadBytesSinceLastRenderedFrame = 0L;
-		if (++_renderedFramesInRetentionWindow < RenderedFramesPerRetentionWindow) return;
-		_renderedFramesInRetentionWindow = 0;
-		allocator.GpuHoldingBufferPool.EndRetentionWindow();
 	}
 
 	[UnmanagedCallersOnly]
@@ -156,7 +144,7 @@ static unsafe class LocalNativeUtils {
 
 	internal static TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(ILocalGpuHoldingBufferAllocator allocator, int sizeBytes, delegate* managed<nuint, Span<byte>, void> optionalReadbackFunc) {
 		ObjectDisposedException.ThrowIf(allocator.IsDisposed, allocator);
-		if (optionalReadbackFunc == null && _bufferDeallocationDepth == 0) ReleaseCompletedUploadsIfOverBudget(allocator.GpuHoldingBufferPool, sizeBytes);
+		if (optionalReadbackFunc == null && _bufferDeallocationDepth == 0) ReleaseCompletedUploadsIfOverBudget(allocator, sizeBytes);
 		var bufferId = _nextTemporaryBufferId++;
 		var rental = allocator.GpuHoldingBufferPool.Rent(sizeBytes);
 		_activeTemporaryBuffers.Add(bufferId, new(allocator, rental, optionalReadbackFunc));

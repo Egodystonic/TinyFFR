@@ -651,6 +651,62 @@ static partial class SmokeProbes {
 		}
 	}
 
+	static void ProbeNodePerfAfterModels() {
+		var creationConfig = new ModelCreationConfig { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing } };
+		var readConfig = new ModelReadConfig { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true };
+		var precedingSpec = System.Environment.GetEnvironmentVariable("TINYFFR_PROBE_PRECEDING_MODELS") ?? "all";
+		var preceding = precedingSpec == "all"
+			? ModelLoadingTestFiles.Where(f => f != "NodePerformanceTest.glb").ToArray()
+			: precedingSpec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var disposePreceding = System.Environment.GetEnvironmentVariable("TINYFFR_PROBE_KEEP_PRECEDING") != "1";
+		using var scene = Factory.SceneBuilder.CreateScene(name: "Probe NodePerf Scene");
+		using var camera = Factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), name: "Probe NodePerf Camera");
+		using var renderer = BenchmarkEnvironment.RenderTarget.CreateRenderer(scene, camera, new RendererCreationConfig { Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) });
+
+		var kept = new List<ModelBundle>();
+		ModelBundle? group = null;
+		ModelInstanceGroup? instances = null;
+		void Unload() {
+			if (instances is { } i) {
+				scene.Remove(i);
+				i.Dispose();
+			}
+			instances = null;
+			if (group is { } g) {
+				if (disposePreceding) g.Dispose();
+				else kept.Add(g);
+			}
+			group = null;
+		}
+		foreach (var file in preceding) {
+			Unload();
+			var start = System.Diagnostics.Stopwatch.GetTimestamp();
+			group = Factory.AssetLoader.LoadBundledAsset(Testing.CommonTestAssets.FindAsset("models/" + file), creationConfig, readConfig);
+			instances = Factory.ObjectBuilder.CreateModelInstances(group.Value.Models);
+			scene.Add(instances.Value);
+			renderer.RenderAndWaitForGpu();
+			Console.WriteLine($"  preceding {file}: {System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds:N0} ms");
+		}
+		Unload();
+		renderer.RenderAndWaitForGpu();
+
+		var edgeMap = typeof(LocalMeshBuilder).GetField("_wireframeEdgeScratchMap", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(Factory.MeshBuilder)!;
+		var bucketCountField = edgeMap.GetType().GetField("_numBuckets", BindingFlags.NonPublic | BindingFlags.Instance)!;
+		Console.WriteLine($"  wireframe edge scratch map buckets before NodePerf: {bucketCountField.GetValue(edgeMap)}");
+		if (System.Environment.GetEnvironmentVariable("TINYFFR_PROBE_SHRINK_EDGE_MAP") == "1") {
+			edgeMap.GetType().GetMethod("ClearAndShrinkToInitialBucketCount")!.Invoke(edgeMap, null);
+			Console.WriteLine($"  shrunk wireframe edge scratch map to {bucketCountField.GetValue(edgeMap)} buckets");
+		}
+		Console.WriteLine($"NODEPERF_LOAD_START pid={System.Environment.ProcessId}");
+		var nodeStart = System.Diagnostics.Stopwatch.GetTimestamp();
+		group = Factory.AssetLoader.LoadBundledAsset(Testing.CommonTestAssets.FindAsset("models/NodePerformanceTest.glb"), creationConfig, readConfig);
+		var loadMs = System.Diagnostics.Stopwatch.GetElapsedTime(nodeStart).TotalMilliseconds;
+		Console.WriteLine($"NODEPERF_LOAD_MS {loadMs:N0} (after {preceding.Length} preceding models: {precedingSpec})");
+		group.Value.Dispose();
+		foreach (var g in kept) g.Dispose();
+		renderer.RenderAndWaitForGpu();
+	}
+
 	static void ProbeModelLoadingWithoutNodePerf() {
 		const int Passes = 2;
 		var creationConfig = new ModelCreationConfig { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing } };
@@ -690,5 +746,11 @@ static partial class SmokeProbes {
 		for (var f = 0; f < 300; ++f) renderer.Render();
 		renderer.WaitForGpu();
 		Console.WriteLine($"        after 300 idle frames: {GetOutstandingUploadBufferCount()}");
+		Thread.Sleep(LocalTinyFfrFactoryConfig.DefaultUploadMemoryBufferMaxRetentionTime + TimeSpan.FromMilliseconds(500d));
+		Factory.MeshBuilder.CreateDynamicVertexBuffer(16, 16).Dispose();
+		renderer.RenderAndWaitForGpu();
+		Console.WriteLine($"        after the retention time + one upload: {GetOutstandingUploadBufferCount()}");
+		Factory.ResourceAllocator.TrimPooledMemory();
+		Console.WriteLine($"        after TrimPooledMemory: {GetOutstandingUploadBufferCount()}");
 	}
 }

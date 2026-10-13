@@ -84,7 +84,7 @@ class ArrayPoolBackedVectorTest {
 		_vector.Add("test1");
 		_vector.Add("test2");
 		_vector.Add("test3");
-		_vector.ClearWithoutZeroingMemory();
+		_vector.Clear();
 		Assert.AreEqual(0, _vector.Count);
 		foreach (var str in _vector) result += str + " ";
 		Assert.AreEqual("", result);
@@ -256,5 +256,29 @@ class ArrayPoolBackedVectorTest {
 		Assert.Throws<InvalidOperationException>(() => {
 			foreach (var _ in _vector) _vector.AddRange(new[] { "boom" }.AsSpan());
 		});
+	}
+
+	[Test]
+	public void ClearShouldZeroReferenceSlots() {
+		var vector = new ArrayPoolBackedVector<string>(16) { "a", "b", "c", "d" };
+		ref var firstSlot = ref vector.GetValueByRef(0);
+
+		vector.Clear();
+
+		for (var i = 0; i < 4; ++i) Assert.IsNull(System.Runtime.CompilerServices.Unsafe.Add(ref firstSlot, i), $"Slot {i} still holds a stale reference.");
+		vector.Dispose();
+	}
+
+	sealed class DisposalMarker;
+
+	[Test]
+	public void DisposeShouldReturnReferenceSlotsZeroedToArrayPool() {
+		var vector = new ArrayPoolBackedVector<DisposalMarker>(16);
+		for (var i = 0; i < 4; ++i) vector.Add(new DisposalMarker());
+		var backingArray = (DisposalMarker[]) typeof(ArrayPoolBackedVector<DisposalMarker>).GetField("_backingArray", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(vector)!;
+
+		vector.Dispose();
+
+		for (var i = 0; i < backingArray.Length; ++i) Assert.IsNull(backingArray[i], $"Slot {i} still holds a stale reference after disposal.");
 	}
 }

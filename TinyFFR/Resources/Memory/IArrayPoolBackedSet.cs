@@ -27,6 +27,16 @@ public interface INonDisposableArrayPoolBackedSet<T> : ISet<T> {
 	/// </summary>
 	/// <param name="items">The elements to add.</param>
 	void AddRange(ReadOnlySpan<T> items);
+
+	/// <summary>
+	/// Removes all elements from this set (like <see cref="ICollection{T}.Clear"/>) and then returns any pooled storage it has grown into, shrinking it back to its initial capacity.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="ICollection{T}.Clear"/> keeps this set's current capacity so that refilling it to a similar size costs nothing extra.
+	/// Use this method instead after an unusually large use, so that the grown storage is made available for re-use elsewhere rather than being held by this set
+	/// (and so that operations whose cost depends on capacity, such as enumeration, become cheap again).
+	/// </remarks>
+	void ClearAndShrinkToInitialBucketCount();
 }
 
 /// <summary>

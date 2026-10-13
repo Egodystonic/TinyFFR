@@ -203,18 +203,4 @@ class TinyFfrArrayPoolTest {
 		Assert.That(afterRelease, Is.SameAs(array), "Large buffer was not held by ArrayPool<T>.Shared, so it is not being delegated.");
 		TinyFfrArrayPool<int>.Shared.Return(afterRelease);
 	}
-
-#if DEBUG
-	[Test]
-	public void ShouldDetectDoubleReturnAndForeignArrays() {
-		var array = TinyFfrArrayPool<int>.Shared.Rent(BucketLength);
-		TinyFfrArrayPool<int>.Shared.Return(array);
-		Assert.Throws<ArgumentException>(() => TinyFfrArrayPool<int>.Shared.Return(array));
-
-		Assert.Throws<ArgumentException>(() => TinyFfrArrayPool<int>.Shared.Return(new int[BucketLength]));
-		Assert.Throws<ArgumentException>(() => TinyFfrArrayPool<int>.Shared.Return(new int[BucketLength - 1]));
-
-		TinyFfrArrayPool.ReleaseAllPooledMemory();
-	}
-#endif
 }

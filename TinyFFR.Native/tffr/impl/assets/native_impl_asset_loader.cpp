@@ -17,6 +17,7 @@
 #include <string>
 #include "assimp/GltfMaterial.h"
 #include "assimp/commonMetaData.h"
+#include "assimp/config.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 #include "stb/stb_truetype.h" // Re-included here (after the initial inclusion via our own header) so that STB_TRUETYPE_IMPLEMENTATION takes effect
@@ -48,7 +49,11 @@ void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath
 			   | aiProcess_OptimizeMeshes
 			   | aiProcess_FindInstances;
 	}
-	*outAssetHandle = aiImportFile(filePath, flags);
+	auto importProperties = aiCreatePropertyStore();
+	// We remove lines and points because they get "triangulated" to 0-triangle meshes which later on causes problems on the managed side
+	aiSetImportPropertyInteger(importProperties, AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+	*outAssetHandle = aiImportFileExWithProperties(filePath, flags, nullptr, importProperties);
+	aiReleasePropertyStore(importProperties);
 	ThrowIfNull(*outAssetHandle, "Could not load asset '", filePath, "': ", aiGetErrorString());
 }
 StartExportedFunc(load_asset_file_in_to_memory, const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {

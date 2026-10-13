@@ -48,7 +48,8 @@ static partial class SmokeProbes {
 		new("ModelLoadingPath", ProbeModelLoadingPath),
 		new("ModelLoadingAllModels", ProbeModelLoadingAllModels),
 		new("LargeUploadsPerFrame", ProbeLargeUploadsPerFrame),
-		new("ModelLoadingWithoutNodePerf", ProbeModelLoadingWithoutNodePerf)
+		new("ModelLoadingWithoutNodePerf", ProbeModelLoadingWithoutNodePerf),
+		new("NodePerfAfterModels", ProbeNodePerfAfterModels)
 	];
 
 	const int LiveInstanceCount = 2_000;

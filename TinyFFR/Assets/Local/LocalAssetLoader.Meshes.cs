@@ -75,8 +75,8 @@ unsafe partial class LocalAssetLoader {
 			}
 			NumAnimationsWithTransferredOwnership = 0;
 			Animations.Clear();
-			NameChars.ClearWithoutZeroingMemory();
-			NodeNameSlices.ClearWithoutZeroingMemory();
+			NameChars.Clear();
+			NodeNameSlices.Clear();
 		}
 
 		public void Dispose() {

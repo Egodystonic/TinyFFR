@@ -43,7 +43,7 @@ static unsafe class LocalFrameSynchronizationManager {
 	const int MaxUnassignedCallbacksBeforeImmediateFence = 4096;
 	static readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, FenceData> _rendererMap = new();
 	static readonly ArrayPoolBackedMap<UIntPtr, ArrayPoolBackedVector<QueuedResourceCallback>> _fenceCallbackMap = new();
-	static readonly VectorPool<QueuedResourceCallback> _callbackQueuePool = new(zeroMemoryOnReturn: false);
+	static readonly VectorPool<QueuedResourceCallback> _callbackQueuePool = new();
 	static ArrayPoolBackedVector<QueuedResourceCallback> _unassignedCallbacks = _callbackQueuePool.Rent();
 	static int _openFrameScopeDepth = 0;
 

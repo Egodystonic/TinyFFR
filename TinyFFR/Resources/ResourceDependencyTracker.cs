@@ -8,7 +8,7 @@ using StubMap = Egodystonic.TinyFFR.Resources.Memory.ArrayPoolBackedMap<Egodysto
 namespace Egodystonic.TinyFFR.Resources;
 
 sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDisposable {
-	readonly SetPool<ResourceStub> _setPool = new(zeroMemoryOnReturn: false);
+	readonly SetPool<ResourceStub> _setPool = new();
 	readonly StubMap _targetsToDependentsMap = new();
 	readonly StubMap _dependentsToTargetsMap = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ResourceIdent> _ownedToOwnerMap = new();
@@ -194,14 +194,14 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 			for (var i = 0; i < resources.Length; ++i) _orderingNodeMap.Remove(resources[i].Ident);
 			for (var c = 0; c < _orderingClosure.Count; ++c) _orderingNodeMap.Remove(_orderingClosure[c].Ident);
 			ResetScratchVector(_orderingClosure);
-			_orderingClosureNodes.ClearWithoutZeroingMemory();
-			_orderingEdges.ClearWithoutZeroingMemory();
+			_orderingClosureNodes.Clear();
+			_orderingEdges.Clear();
 		}
 	}
 
 	static void ResetScratchVector<T>(ArrayPoolBackedVector<T> vector) {
 		vector.AsSpan[..vector.Count].Clear();
-		vector.ClearWithoutZeroingMemory();
+		vector.Clear();
 	}
 
 	bool TryTopologicallySort(ReadOnlySpan<ResourceStub> resources, Span<int> orderDest, out DisposalOrderFailure failure) {

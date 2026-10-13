@@ -96,7 +96,7 @@ class ArrayPoolBackedSetTest {
 		_set.Add(1);
 		_set.Add(2);
 		_set.Add(3);
-		_set.ClearWithoutZeroingMemory();
+		_set.Clear();
 		Assert.AreEqual(0, _set.Count);
 		foreach (var _ in _set) result += 1;
 		Assert.AreEqual(0, result);

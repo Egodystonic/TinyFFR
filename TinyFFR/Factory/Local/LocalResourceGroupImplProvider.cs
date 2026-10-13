@@ -220,7 +220,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		}
 		finally {
 			for (var i = 0; i < _cycleCheckStack.Count; ++i) _cycleCheckVisited.Remove(_cycleCheckStack[i]);
-			_cycleCheckStack.ClearWithoutZeroingMemory();
+			_cycleCheckStack.Clear();
 		}
 	}
 

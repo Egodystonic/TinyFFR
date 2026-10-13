@@ -18,7 +18,7 @@ sealed partial class MainWindow : Window {
 			Title = "Import Models",
 			AllowMultiple = true,
 			FileTypeFilter = [
-				new FilePickerFileType("3D models") { Patterns = ["*.glb", "*.gltf", "*.fbx", "*.obj", "*.dae", "*.blend", "*.3ds", "*.ply", "*.stl"] },
+				new FilePickerFileType("3D models") { Patterns = ["*.glb", "*.gltf", "*.fbx", "*.obj", "*.dae", "*.blend", "*.3ds", "*.ply", "*.stl", "*.tffr"] },
 				new FilePickerFileType("All files") { Patterns = ["*"] }
 			]
 		});

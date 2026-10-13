@@ -53,7 +53,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 			var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(Math.Max(_backingArray.Length * 2, newCount));
 			AsSpan.CopyTo(newBackingArray);
 			items.CopyTo(newBackingArray.AsSpan(Count));
-			TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
+			TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 			_backingArray = newBackingArray;
 		}
 
@@ -76,19 +76,19 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	}
 
 	public void Clear() {
-		Array.Clear(_backingArray);
+		if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) Array.Clear(_backingArray, 0, Count);
 		Count = 0;
 		++Version;
+	}
+
+	public void ClearAndShrinkToInitialCapacity() {
+		Clear();
+		ShrinkToInitialCapacity();
 	}
 
 	public ref T GetValueByRef(int index) {
 		if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count.");
 		return ref _backingArray[index];
-	}
-
-	public void ClearWithoutZeroingMemory() {
-		Count = 0;
-		++Version;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -153,16 +153,16 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-	public void ShrinkToInitialCapacity() {
-		if (Count != 0 || _backingArray.Length <= TinyFfrArrayPool.MinimumBucketLength) return;
-		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+	void ShrinkToInitialCapacity() {
+		if (_backingArray.Length <= TinyFfrArrayPool.MinimumBucketLength) return;
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray);
 		_backingArray = TinyFfrArrayPool<T>.Shared.Rent(DefaultInitialCapacity);
 		++Version;
 	}
 
 	public void Dispose() {
 		++Version;
-		TinyFfrArrayPool<T>.Shared.Return(_backingArray);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		_backingArray = null!;
 	}
 
@@ -171,7 +171,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 
 		var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(Math.Max(_backingArray.Length * 2, capacity));
 		AsSpan.CopyTo(newBackingArray);
-		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		_backingArray = newBackingArray;
 	}
 
@@ -180,7 +180,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 
 		var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(_backingArray.Length * 2);
 		_backingArray.CopyTo(newBackingArray, 0);
-		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		_backingArray = newBackingArray;
 	}
 }

@@ -42,12 +42,12 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalTextureBuilder _textureBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
-	readonly MapPool<Rune, AtlasRuneData> _runeMapPool = new(false);
-	readonly MapPool<ulong, float> _kerningMapPool = new(false);
-	readonly MapPool<ResourceHandle<FontPen>, PenData> _penMapPool = new(false);
-	readonly MapPool<ResourceHandle<FontString>, StringData> _stringMapPool = new(false);
+	readonly MapPool<Rune, AtlasRuneData> _runeMapPool = new();
+	readonly MapPool<ulong, float> _kerningMapPool = new();
+	readonly MapPool<ResourceHandle<FontPen>, PenData> _penMapPool = new();
+	readonly MapPool<ResourceHandle<FontString>, StringData> _stringMapPool = new();
 	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedLruCache<int, RenderedTextData>, LocalFontLoader> _renderedTextCachePool;
-	readonly MapPool<Rune, int> _fontLoadRuneToGlyphMapMap = new(zeroMemoryOnReturn: false);
+	readonly MapPool<Rune, int> _fontLoadRuneToGlyphMapMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Font>, FontData> _activeFonts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<FontPen>, ResourceHandle<Font>> _activePenOwners = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<FontString>, ResourceHandle<Font>> _activeStringOwners = new();
@@ -290,7 +290,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			fontLoadInteropResult.Value.ThrowIfFailure();
 			var runes = config.SupportedRunes;
 		
-			context.FontLoadRuneToGlyphMap.ClearWithoutZeroingMemory();
+			context.FontLoadRuneToGlyphMap.Clear();
 			for (var r = 0; r < runes.Length; ++r) {
 				FontGetCodepointGlyphIndex(
 					fontHandle,

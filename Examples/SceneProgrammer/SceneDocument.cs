@@ -8,6 +8,7 @@ namespace SceneProgrammer;
 
 sealed class SceneDocument : IDisposable {
 	const float ImportedModelTargetSize = 2f;
+	const string BakedAssetExtension = ".tffr";
 
 	readonly ILocalTinyFfrFactory _factory;
 	readonly Scene _scene;
@@ -25,15 +26,18 @@ sealed class SceneDocument : IDisposable {
 	}
 
 	public async Task<SceneObject> ImportAsync(string filePath, Location groundPoint) {
+		var isBaked = Path.GetExtension(filePath).Equals(BakedAssetExtension, StringComparison.OrdinalIgnoreCase);
 		if (!_bundlesByPath.TryGetValue(filePath, out var bundle)) {
-			bundle = await _factory.AssetLoader.LoadBundledAssetAsync(filePath);
+			bundle = isBaked
+				? await _factory.AssetLoader.LoadBakedBundledAssetAsync(filePath)
+				: await _factory.AssetLoader.LoadBundledAssetAsync(filePath);
 			_bundlesByPath[filePath] = bundle;
 		}
 
 		var sceneObject = CreateObject(Path.GetFileNameWithoutExtension(filePath), bundle);
 		var boundingBox = bundle.CalculateCombinedBoundingBox();
 		var largestDimension = MathF.Max(boundingBox.Width, MathF.Max(boundingBox.Height, boundingBox.Depth));
-		var scale = largestDimension is > 0.1f and < 25f ? 1f : ImportedModelTargetSize / largestDimension;
+		var scale = isBaked || largestDimension is > 0.1f and < 25f ? 1f : ImportedModelTargetSize / largestDimension;
 		var bottom = boundingBox.Position.Y - boundingBox.HalfHeight;
 		sceneObject.Scale = Math.Round((decimal) scale, 4);
 		sceneObject.Position = new Location(groundPoint.X, groundPoint.Y - bottom * scale, groundPoint.Z);

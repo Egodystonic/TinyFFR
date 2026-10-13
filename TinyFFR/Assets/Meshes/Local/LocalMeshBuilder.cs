@@ -43,7 +43,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, ResourceHandle<DynamicVertexBuffer>> _meshViewParents = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, PooledHeapMemory<MeshVertex>> _defaultMutableVerticesMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, PooledHeapMemory<VertexTriangle>> _defaultTrianglesMap = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex> _mutableVertexLeaseTracker;
+	readonly ResourceHandleBasedSpanLeaseTracker<VertexTriangle> _defaultTriangleLeaseTracker;
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, DynamicBufferLeaseData> _dynamicVertexLeaseTracker;
 	readonly ResourceHandleBasedSpanLeaseTracker<VertexTriangle, DynamicBufferLeaseData> _dynamicTriangleLeaseTracker;
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
@@ -67,6 +69,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		AnimationTableProvider = new(globals);
 		MeshGroupAnimationTableImplProvider = new(globals, AnimationTableProvider);
 		_mutableVertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment);
+		_defaultTriangleLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment);
 		_dynamicVertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleDynamicVertexLeaseDisposal, this);
 		_dynamicTriangleLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleDynamicTriangleLeaseDisposal, this);
 	}
@@ -312,6 +315,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertexCount, out vbHandle).ThrowIfFailure();
 			if (allowsPerInstanceVertexMutation) {
 				_defaultMutableVerticesMap[handle] = _globals.HeapPool.BorrowAndCopy(tempVertexBuffer.AsSpan<MeshVertex>());
+				_defaultTrianglesMap[handle] = _globals.HeapPool.BorrowAndCopy(tempIndexBuffer.AsSpan<VertexTriangle>()[..triangleCount]);
 			}
 		}
 		else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
@@ -543,7 +547,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			}
 		}
 		finally {
-			_wireframeEdgeScratchMap.Clear();
+			_wireframeEdgeScratchMap.ClearAndShrinkToInitialBucketCount();
 		}
 	}
 
@@ -575,6 +579,18 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		}
 
 		return _mutableVertexLeaseTracker.CreateScopedLeaseOrThrow(handle, result.Span[range]);
+	}
+
+	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpan(ResourceHandle<Mesh> handle, Range range) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_defaultTrianglesMap.TryGetValue(handle, out var result)) {
+			throw new InvalidOperationException(
+				$"Can not read triangles of {HandleToInstance(handle)} as it was not created " +
+				$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+			);
+		}
+
+		return _defaultTriangleLeaseTracker.CreateScopedLeaseOrThrow(handle, result.Span[range]);
 	}
 
 	public MeshAnimation AttachAnimation(
@@ -1322,6 +1338,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	void Dispose(ResourceHandle<Mesh> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		_mutableVertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(Mesh), _globals.GetResourceName(handle.Ident, DefaultMeshName));
+		_defaultTriangleLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(Mesh), _globals.GetResourceName(handle.Ident, DefaultMeshName));
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.Bakery.DiscardBakeryDataIfPresent(HandleToInstance(handle));
 		
@@ -1333,6 +1350,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		
 		if (_defaultMutableVerticesMap.Remove(handle, out var mutableVerts)) {
 			mutableVerts.Dispose();
+		}
+		if (_defaultTrianglesMap.Remove(handle, out var defaultTriangles)) {
+			defaultTriangles.Dispose();
 		}
 		if (_activeMeshWireframeBufferData.Remove(handle, out var wireframeBufferData)) {
 			LocalFrameSynchronizationManager.QueueResourceDisposal(wireframeBufferData.VertexBufferHandle, &DisposeVertexBuffer);
@@ -1370,9 +1390,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			foreach (var kvp in _activeDynamicVertexBuffers) Dispose(kvp.Key, removeFromMap: false);
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
 			_mutableVertexLeaseTracker.Dispose();
+			_defaultTriangleLeaseTracker.Dispose();
 			_dynamicVertexLeaseTracker.Dispose();
 			_dynamicTriangleLeaseTracker.Dispose();
 			_defaultMutableVerticesMap.Dispose();
+			_defaultTrianglesMap.Dispose();
 			_activeMeshWireframeBufferData.Dispose();
 			_wireframeEdgeScratchMap.Dispose();
 			_activeMeshes.Dispose();

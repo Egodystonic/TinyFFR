@@ -110,9 +110,9 @@ sealed unsafe class LocalLatestGameControllerState : ILatestGameControllerInputR
 
 	public void ClearForNextIteration() {
 		ThrowIfThisIsDisposed();
-		NewButtonEvents.ClearWithoutZeroingMemory();
-		NewButtonDownEvents.ClearWithoutZeroingMemory();
-		NewButtonUpEvents.ClearWithoutZeroingMemory();
+		NewButtonEvents.Clear();
+		NewButtonDownEvents.Clear();
+		NewButtonUpEvents.Clear();
 	}
 
 	public void ApplyEvent(RawLocalGameControllerButtonEvent rawEvent) {

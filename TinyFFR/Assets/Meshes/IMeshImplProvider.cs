@@ -39,6 +39,10 @@ public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	/// </summary>
 	ScopedReadOnlySpanLease<MeshVertex> BorrowDefaultVerticesSpan(ResourceHandle<Mesh> handle, Range range);
 	/// <summary>
+	/// Invoked via <see cref="Mesh.BorrowTrianglesSpan()"/>, <see cref="Mesh.BorrowTrianglesSpan(Range)"/>.
+	/// </summary>
+	ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpan(ResourceHandle<Mesh> handle, Range range);
+	/// <summary>
 	/// Invoked via <see cref="MeshAnimationIndex.All"/>, <see cref="MeshAnimationIndex.Skeletal"/>, <see cref="MeshAnimationIndex.Morphing"/>.
 	/// </summary>
 	IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(ResourceHandle<Mesh> handle, MeshAnimationType? type);

@@ -29,7 +29,7 @@ sealed partial class LocalRendererBuilder {
 	const string RateLimitBufferName = "Frame Rate Limit Buffer";
 	const string RateLimitSceneName = "Frame Rate Limit Canvas";
 	const string RateLimitProxyRendererName = "Frame Rate Limit Proxy Renderer";
-	readonly VectorPool<CompositedRenderer> _compositedRendererVectorPool = new(true);
+	readonly VectorPool<CompositedRenderer> _compositedRendererVectorPool = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<RendererCompositor>, RendererCompositorData> _loadedCompositors = new();
 	readonly LocalSceneBuilder _sceneBuilder;
 	readonly LocalRendererCompositorImplProvider _rendererCompositorImplProvider;

@@ -197,14 +197,16 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	}
 
 	public void Clear() {
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
+		if (_count != 0) {
+			for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
+		}
 		_count = 0;
 		++Version;
 	}
-	public void ClearWithoutZeroingMemory() {
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
-		_count = 0;
-		++Version;
+
+	public void ClearAndShrinkToInitialBucketCount() {
+		Clear();
+		ShrinkToInitialBucketCount();
 	}
 
 	public bool ContainsKey(TKey key) => GetIndexFromBucket(GetBucket(key), key).HasValue;
@@ -316,9 +318,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		}
 	}
 
-	public void ShrinkToInitialBucketCount() {
-		if (_count != 0) return;
-
+	void ShrinkToInitialBucketCount() {
 		if (_numBuckets > InitialBucketCount) {
 			for (var i = InitialBucketCount; i < _numBuckets; ++i) VectorPool<KeyValuePair<TKey, TValue>>.Shared.Return(_buckets[i]);
 
@@ -332,7 +332,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 			++Version;
 		}
 
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ShrinkToInitialCapacity();
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearAndShrinkToInitialCapacity();
 	}
 
 	public void Dispose() {

@@ -296,6 +296,7 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	public ScopedReadOnlySpanLease<T> BorrowReadOnlySpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true) => throw new NotSupportedException();
 	public Memory<T> CreatePooledMemoryBuffer<T>(int numElements) => throw new NotSupportedException();
 	public void ReturnPooledMemoryBuffer<T>(Memory<T> buffer) => throw new NotSupportedException();
+	public void TrimPooledMemory() => throw new NotSupportedException();
 	public INonDisposableArrayPoolBackedList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
 	public INonDisposableArrayPoolBackedDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
 	public INonDisposableArrayPoolBackedSet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();

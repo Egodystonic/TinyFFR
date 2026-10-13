@@ -1,6 +1,10 @@
 // Created on 2026-10-12 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.Diagnostics;
+using System.Threading;
+using Egodystonic.TinyFFR.Threading;
+
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 sealed unsafe class FixedByteSlabPool : IDisposable {
@@ -58,7 +62,12 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 	[InlineArray(SizeClassIntArrayLength)]
 	struct SizeClassIntArray { int _; }
 
+	static readonly Lock _liveInstancesLock = new();
+	static readonly List<FixedByteSlabPool> _liveInstances = new();
+
 	readonly long _maxRetainedEmptySlabBytes;
+	readonly long _retentionWindowDurationTicks;
+	long _currentRetentionWindowEndTimestamp;
 	bool _isDisposed = false;
 	
 	// Precalculated values
@@ -84,7 +93,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 	
 	public long CurrentlyLeasedTotalBytes { get; private set; }
 
-	public FixedByteSlabPool(long maxRetainedEmptySlabBytes) {
+	public FixedByteSlabPool(long maxRetainedEmptySlabBytes, TimeSpan maxRetentionTime) {
 		static int GetSlotSizeBytes(int sizeClassIndex) {
 			if (!IsLargeSizeClass(sizeClassIndex)) return MinSlotSizeBytes << sizeClassIndex;
 			var largeIndex = sizeClassIndex - NumSmallSizeClasses;
@@ -94,7 +103,10 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 		}
 		
 		ArgumentOutOfRangeException.ThrowIfNegative(maxRetainedEmptySlabBytes);
+		ArgumentOutOfRangeException.ThrowIfLessThan(maxRetentionTime, TimeSpan.Zero);
 		_maxRetainedEmptySlabBytes = maxRetainedEmptySlabBytes;
+		_retentionWindowDurationTicks = (long) Double.Clamp(maxRetentionTime.TotalSeconds * Stopwatch.Frequency / 2d, 1d, Int64.MaxValue / 4L);
+		_currentRetentionWindowEndTimestamp = Stopwatch.GetTimestamp() + _retentionWindowDurationTicks;
 
 		_slabRecordsLength = InitialSlabRecordCapacity;
 		_slabRecords = (SlabRecord*) NativeMemory.Alloc((nuint) _slabRecordsLength, (nuint) sizeof(SlabRecord));
@@ -106,6 +118,21 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 			_slotCountPrecalculationTable[i] = IsLargeSizeClass(i) ? 1 : (SmallSlabSizeBytes / GetSlotSizeBytes(i));
 			_slabSizePrecalculationTable[i] = IsLargeSizeClass(i) ? GetSlotSizeBytes(i) : SmallSlabSizeBytes;
 			_slabAlignmentPrecalculationTable[i] = _slabSizePrecalculationTable[i] >= HugePageSlabAlignmentBytes ? HugePageSlabAlignmentBytes : DefaultSlabAlignmentBytes;
+		}
+
+		lock (_liveInstancesLock) _liveInstances.Add(this);
+	}
+
+	public static void ReleaseAllPooledMemory() {
+		lock (_liveInstancesLock) {
+			foreach (var instance in _liveInstances) instance.ReleasePooledMemory();
+		}
+	}
+	
+	public static void NudgeLiveInstanceTimers() {
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		lock (_liveInstancesLock) {
+			foreach (var instance in _liveInstances) instance.RollRetentionWindowsIfElapsed(Stopwatch.GetTimestamp());
 		}
 	}
 
@@ -125,6 +152,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 	public SlabRental Rent(int numBytes) {
 		ThrowIfThisIsDisposed();
 		ArgumentOutOfRangeException.ThrowIfNegative(numBytes);
+		RollRetentionWindowsIfElapsed(Stopwatch.GetTimestamp());
 
 		var sizeClassIndex = GetSizeClassIndex(numBytes);
 		var slotSizeBytes = _slotSizePrecalculationTable[sizeClassIndex];
@@ -163,6 +191,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 	public void Return(SlabRental rental) {
 		ThrowIfThisIsDisposed();
 		rental.ThrowIfInvalid();
+		RollRetentionWindowsIfElapsed(Stopwatch.GetTimestamp());
 
 		var slabIndex = rental.SlabIndex;
 		if ((uint) slabIndex >= (uint) _slabRecordMaxConcurrentUsageCount || _slabRecords[slabIndex].AllocationPtr == null) {
@@ -215,14 +244,14 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 
 		for (var otherSizeClassIndex = NumSizeClasses - 1; otherSizeClassIndex >= NumSmallSizeClasses; --otherSizeClassIndex) {
 			if (otherSizeClassIndex == sizeClassIndex) continue;
-			while (_emptySlabCountMap[otherSizeClassIndex] > _currentRetentionWindowLargeSizeClassRentalCountPeakMap[otherSizeClassIndex] && TryReleaseOneEmptyLargeSlab(otherSizeClassIndex)) {
+			while (_emptySlabCountMap[otherSizeClassIndex] > _currentRetentionWindowLargeSizeClassRentalCountPeakMap[otherSizeClassIndex] && TryReleaseOneEmptySlab(otherSizeClassIndex)) {
 				if (_retainedEmptySlabBytesTotal + slabSizeBytes <= _maxRetainedEmptySlabBytes) return true;
 			}
 		}
 		return false;
 	}
 
-	bool TryReleaseOneEmptyLargeSlab(int sizeClassIndex) {
+	bool TryReleaseOneEmptySlab(int sizeClassIndex) {
 		for (var slabIndex = _nonFullSlabRecordLinkHeadMap[sizeClassIndex]; slabIndex != NullSlab; slabIndex = _slabRecords[slabIndex].NextNonFullSlabIndex) {
 			if (_slabRecords[slabIndex].UsedSlotCount != 0) continue;
 			--_emptySlabCountMap[sizeClassIndex];
@@ -236,13 +265,19 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 
 	int GetRetainedLargeSlotLimit(int sizeClassIndex) => Int32.Max(_previousRetentionWindowLargeSizeClassRentalCountPeakMap[sizeClassIndex], _currentRetentionWindowLargeSizeClassRentalCountPeakMap[sizeClassIndex]);
 
-	public void EndRetentionWindow() {
-		ThrowIfThisIsDisposed();
+	internal void RollRetentionWindowsIfElapsed(long nowTimestamp) {
+		if (nowTimestamp < _currentRetentionWindowEndTimestamp) return;
+		RollRetentionWindow();
+		if (nowTimestamp >= _currentRetentionWindowEndTimestamp + _retentionWindowDurationTicks) RollRetentionWindow();
+		_currentRetentionWindowEndTimestamp = nowTimestamp + _retentionWindowDurationTicks;
+	}
+
+	void RollRetentionWindow() {
 		for (var sizeClassIndex = NumSmallSizeClasses; sizeClassIndex < NumSizeClasses; ++sizeClassIndex) {
 			_previousRetentionWindowLargeSizeClassRentalCountPeakMap[sizeClassIndex] = _currentRetentionWindowLargeSizeClassRentalCountPeakMap[sizeClassIndex];
 			_currentRetentionWindowLargeSizeClassRentalCountPeakMap[sizeClassIndex] = _largeSizeClassRentalCountMap[sizeClassIndex];
 
-			while (_emptySlabCountMap[sizeClassIndex] > GetRetainedLargeSlotLimit(sizeClassIndex) && TryReleaseOneEmptyLargeSlab(sizeClassIndex)) { }
+			while (_emptySlabCountMap[sizeClassIndex] > GetRetainedLargeSlotLimit(sizeClassIndex) && TryReleaseOneEmptySlab(sizeClassIndex)) { }
 		}
 	}
 
@@ -271,6 +306,17 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 		return slabIndex;
 	}
 
+	void ReleasePooledMemory() {
+		if (_isDisposed) return;
+		for (var sizeClassIndex = 0; sizeClassIndex < NumSizeClasses; ++sizeClassIndex) {
+			while (TryReleaseOneEmptySlab(sizeClassIndex)) { }
+			if (!IsLargeSizeClass(sizeClassIndex)) continue;
+			_previousRetentionWindowLargeSizeClassRentalCountPeakMap[sizeClassIndex] = _largeSizeClassRentalCountMap[sizeClassIndex];
+			_currentRetentionWindowLargeSizeClassRentalCountPeakMap[sizeClassIndex] = _largeSizeClassRentalCountMap[sizeClassIndex];
+		}
+		_currentRetentionWindowEndTimestamp = Stopwatch.GetTimestamp() + _retentionWindowDurationTicks;
+	}
+
 	void ReleaseSlab(int slabIndex) {
 		NativeMemory.AlignedFree(_slabRecords[slabIndex].AllocationPtr);
 		_slabRecords[slabIndex] = default;
@@ -297,6 +343,7 @@ sealed unsafe class FixedByteSlabPool : IDisposable {
 
 	public void Dispose() {
 		if (_isDisposed) return;
+		lock (_liveInstancesLock) _liveInstances.Remove(this);
 		try {
 			for (var i = 0; i < _slabRecordMaxConcurrentUsageCount; ++i) {
 				if (_slabRecords[i].AllocationPtr != null) NativeMemory.AlignedFree(_slabRecords[i].AllocationPtr);

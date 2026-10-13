@@ -10,5 +10,7 @@ namespace Egodystonic.TinyFFR.Factory.Local;
 
 interface ILocalGpuHoldingBufferAllocator {
 	FixedByteSlabPool GpuHoldingBufferPool { get; }
+	long GpuHoldingBufferFlushThresholdBytes { get; }
+	long GpuHoldingBufferStallThresholdBytes { get; }
 	bool IsDisposed { get; }
 }

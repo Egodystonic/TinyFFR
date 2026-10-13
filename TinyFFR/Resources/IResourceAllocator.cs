@@ -106,6 +106,22 @@ public interface IResourceAllocator {
 	void ReturnPooledMemoryBuffer<T>(Memory<T> buffer);
 
 	/// <summary>
+	/// Releases memory that TinyFFR is currently keeping for reuse (e.g. pooled arrays and collections, and buffers used for uploading data to the GPU),
+	/// returning it to the runtime and operating system. Memory that is currently in use is not affected.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// TinyFFR keeps memory for reuse rather than freeing it so that it doesn't need to allocate it again later. Invoke this after a large one-off
+	/// workload (such as loading a large number of assets) if you want that memory back. Pools are rebuilt as they are used again afterwards,
+	/// so invoking this frequently costs performance.
+	/// </para>
+	/// <para>
+	/// This method must be invoked from the main thread, and does nothing if any asynchronous operation (<see cref="TinyFfrAsyncOperation"/>) is still in progress.
+	/// </para>
+	/// </remarks>
+	void TrimPooledMemory();
+
+	/// <summary>
 	/// Returns a scratch (temporary, reusable) collection. The returned collection is reused/recycled (i.e. every invocation of this function returns the same object when passing the same type parameters).
 	/// </summary>
 	/// <remarks>

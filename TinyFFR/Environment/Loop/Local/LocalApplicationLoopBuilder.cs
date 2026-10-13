@@ -139,6 +139,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var maxCpuBusyWaitTime = _handleDataMap[handle].MaxCpuBusyWaitTime;
 
 		if (executePendingPrimaryThreadCooperativeTasks) {
+			FixedByteSlabPool.NudgeLiveInstanceTimers();
 			ExecuteCooperativeTasksAndRecordElapsedTime(handle);
 			waitTime = GetWaitTimeUntilNextFrameStart(handle);
 		}
@@ -167,6 +168,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
 		if (executePendingPrimaryThreadCooperativeTasks) {
+			FixedByteSlabPool.NudgeLiveInstanceTimers();
 			ExecuteCooperativeTasksAndRecordElapsedTime(handle);
 		}
 
