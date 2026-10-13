@@ -41,6 +41,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		public XYPair<int> ViewportOffset {
 			get {
+				static XYPair<int> GetViewportOffset<T>(in T target) where T : IRenderTarget => target.ViewportOffset;
 				if (IsWindow) return GetViewportOffset(AsWindow);
 				if (IsBuffer) return GetViewportOffset(AsBuffer);
 				throw new InvalidOperationException();
@@ -48,6 +49,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		}
 		public XYPair<int> ViewportDimensions {
 			get {
+				static XYPair<int> GetViewportDimensions<T>(in T target) where T : IRenderTarget => target.ViewportDimensions;
 				if (IsWindow) return GetViewportDimensions(AsWindow);
 				if (IsBuffer) return GetViewportDimensions(AsBuffer);
 				throw new InvalidOperationException();
@@ -56,15 +58,12 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 		public XYPair<int> LogicalDimensions {
 			get {
+				static XYPair<int> GetLogicalDimensions<T>(in T target) where T : IRenderTarget => target.LogicalDimensions;
 				if (IsWindow) return GetLogicalDimensions(AsWindow);
 				if (IsBuffer) return GetLogicalDimensions(AsBuffer);
 				throw new InvalidOperationException();
 			}
 		}
-
-		static XYPair<int> GetViewportOffset<T>(in T target) where T : IRenderTarget => target.ViewportOffset;
-		static XYPair<int> GetViewportDimensions<T>(in T target) where T : IRenderTarget => target.ViewportDimensions;
-		static XYPair<int> GetLogicalDimensions<T>(in T target) where T : IRenderTarget => target.LogicalDimensions;
 
 		public RenderTargetUnion(Window window) {
 			TypeHandle = ResourceHandle<Window>.TypeHandle;
@@ -515,6 +514,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		if (ordering is RenderOrdering.Standalone or RenderOrdering.Last && _loadedRenderers[fenceEmittingHandle].EmitFences) {
 			LocalFrameSynchronizationManager.EmitFenceAndCycleBuffer(fenceEmittingHandle);
 		}
+		if (ordering is RenderOrdering.Standalone or RenderOrdering.Last) _globals.NotifyFrameRendered();
 	}
 
 	void PaceSkippedWindowFrame(RenderTargetUnion windowTarget) {

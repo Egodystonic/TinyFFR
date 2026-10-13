@@ -28,7 +28,8 @@ class ModelConfigTest {
 			HandleUriEscapedStrings = true,
 			EmissiveStrengthScalar = 1f,
 			EmissiveStrengthCap = 0.5f,
-			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
+			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile,
+			ShininessMapInterpretation = ShininessMapInterpretation.Roughness
 		};
 		var testConfigB = new ModelReadConfig {
 			MeshConfig = new() {
@@ -42,7 +43,8 @@ class ModelConfigTest {
 			HandleUriEscapedStrings = false,
 			EmissiveStrengthScalar = 0.3f,
 			EmissiveStrengthCap = 0f,
-			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale
+			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale,
+			ShininessMapInterpretation = ShininessMapInterpretation.Glossiness
 		};
 
 		void AssertConfigsMatch(ModelReadConfig expected, ModelReadConfig actual) {
@@ -54,6 +56,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.EmissiveStrengthScalar, actual.EmissiveStrengthScalar);
 			Assert.AreEqual(expected.EmissiveStrengthCap, actual.EmissiveStrengthCap);
 			Assert.AreEqual(expected.EmbeddedTextureMapScalingStrategy, actual.EmbeddedTextureMapScalingStrategy);
+			Assert.AreEqual(expected.ShininessMapInterpretation, actual.ShininessMapInterpretation);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
@@ -66,6 +69,7 @@ class ModelConfigTest {
 			.Float(1f)
 			.Float(0.5f)
 			.Int((int) TextureCombinationScalingStrategy.RepeatingTile)
+			.Int((int) ShininessMapInterpretation.Roughness)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ModelReadConfig>()
@@ -75,6 +79,7 @@ class ModelConfigTest {
 			.Float(0.3f)
 			.Float(0f)
 			.Int((int) TextureCombinationScalingStrategy.PixelUpscale)
+			.Int((int) ShininessMapInterpretation.Glossiness)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ModelReadConfig>()
@@ -84,6 +89,7 @@ class ModelConfigTest {
 			.Including(nameof(ModelReadConfig.EmissiveStrengthScalar))
 			.Including(nameof(ModelReadConfig.EmissiveStrengthCap))
 			.Including(nameof(ModelReadConfig.EmbeddedTextureMapScalingStrategy))
+			.Including(nameof(ModelReadConfig.ShininessMapInterpretation))
 			.End();
 	}
 
@@ -197,7 +203,8 @@ class ModelConfigTest {
 				HandleUriEscapedStrings = true,
 				EmissiveStrengthScalar = 0.25f,
 				EmissiveStrengthCap = 0.75f,
-				EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
+				EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile,
+				ShininessMapInterpretation = ShininessMapInterpretation.Roughness
 			}
 		};
 
@@ -219,6 +226,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.ReadConfig.EmissiveStrengthScalar, actual.ReadConfig.EmissiveStrengthScalar);
 			Assert.AreEqual(expected.ReadConfig.EmissiveStrengthCap, actual.ReadConfig.EmissiveStrengthCap);
 			Assert.AreEqual(expected.ReadConfig.EmbeddedTextureMapScalingStrategy, actual.ReadConfig.EmbeddedTextureMapScalingStrategy);
+			Assert.AreEqual(expected.ReadConfig.ShininessMapInterpretation, actual.ReadConfig.ShininessMapInterpretation);
 		});
 
 		AssertHeapSerializationWithObjects<ModelLoadConfig>()

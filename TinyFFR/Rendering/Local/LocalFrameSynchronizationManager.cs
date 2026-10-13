@@ -45,6 +45,11 @@ static unsafe class LocalFrameSynchronizationManager {
 	static readonly ArrayPoolBackedMap<UIntPtr, ArrayPoolBackedVector<QueuedResourceCallback>> _fenceCallbackMap = new();
 	static readonly VectorPool<QueuedResourceCallback> _callbackQueuePool = new(zeroMemoryOnReturn: false);
 	static ArrayPoolBackedVector<QueuedResourceCallback> _unassignedCallbacks = _callbackQueuePool.Rent();
+	static int _openFrameScopeDepth = 0;
+
+	public static bool IsInOpenFrameScope => _openFrameScopeDepth > 0;
+	public static void EnterOpenFrameScope() => ++_openFrameScopeDepth;
+	public static void ExitOpenFrameScope() => --_openFrameScopeDepth;
 
 	public static void RegisterRenderer(ResourceHandle<Renderer> renderer, int bufferSize) {
 		if (bufferSize is < 0 or > MaxBufferSize) {
@@ -118,7 +123,7 @@ static unsafe class LocalFrameSynchronizationManager {
 		}
 
 		_unassignedCallbacks.Add(qrc);
-		if (_unassignedCallbacks.Count >= MaxUnassignedCallbacksBeforeImmediateFence && !LocalNativeUtils.IsInOpenFrameScope) {
+		if (_unassignedCallbacks.Count >= MaxUnassignedCallbacksBeforeImmediateFence && !IsInOpenFrameScope) {
 			ExecuteUnassignedCallbacksBehindImmediateFence();
 		}
 	}

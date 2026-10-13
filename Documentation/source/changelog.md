@@ -75,6 +75,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) 
 	* New internal array pool to reduce GC pressure
 	* `IResourceAllocator` exposes span leases and shared scratch collections for user code
 	* Larger internal handle arena so the most complex models fit
+	* Converted internal native memory allocator to a slab allocator for better memory usage performance
 * Fully XML-documented public API, plus a completely rewritten documentation site with tutorials and showcase example applications
 
 ### Bug Fixes

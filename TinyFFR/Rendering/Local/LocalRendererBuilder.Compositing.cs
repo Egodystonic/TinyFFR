@@ -174,7 +174,7 @@ sealed partial class LocalRendererBuilder {
 
 		var first = compositorData.AddedRenderers[compositorData.FirstEnabledRendererIndex];
 		var last = compositorData.AddedRenderers[compositorData.LastEnabledRendererIndex];
-		LocalNativeUtils.EnterOpenFrameScope();
+		LocalFrameSynchronizationManager.EnterOpenFrameScope();
 		try {
 			RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, fenceEmittingHandle);
 			try {
@@ -189,7 +189,7 @@ sealed partial class LocalRendererBuilder {
 			}
 		}
 		finally {
-			LocalNativeUtils.ExitOpenFrameScope();
+			LocalFrameSynchronizationManager.ExitOpenFrameScope();
 		}
 	}
 

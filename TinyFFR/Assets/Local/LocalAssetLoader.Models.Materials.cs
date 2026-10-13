@@ -22,6 +22,8 @@ unsafe partial class LocalAssetLoader {
 	const string TexNameSuffix = " texture map_";
 	const int TexNameTypeSpaceMax = 20;
 	const int MaxExternalAssetFilePathLength = 2048;
+	const int AssetAlphaFormatNone = 0;
+	const int AssetAlphaFormatBlended = 2;
 	
 	enum AssetMaterialParamDataFormat : int { NotIncluded = 0, Numerical = 1, TextureMap = 2 }
 	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)] 
@@ -29,7 +31,7 @@ unsafe partial class LocalAssetLoader {
 		public TexelRgba32 ToTexel() => TexelRgba32.FromNormalizedFloats(NumericalValueR, NumericalValueG, NumericalValueB, NumericalValueA);
 		public ColorVect ToColorVect() => new(NumericalValueR, NumericalValueG, NumericalValueB, NumericalValueA);
 	}
-	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8 * 15)] 
+	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8 * 16)] 
 	readonly struct AssetMaterialParamGroup {
 		public readonly AssetMaterialParam* ColorParamsPtr;
 		public readonly AssetMaterialParam* NormalParamsPtr;
@@ -46,8 +48,9 @@ unsafe partial class LocalAssetLoader {
 		public readonly AssetMaterialParam* AnisotropyStrengthParamsPtr;
 		public readonly AssetMaterialParam* ClearCoatStrengthParamsPtr;
 		public readonly AssetMaterialParam* ClearCoatRoughnessParamsPtr;
+		public readonly AssetMaterialParam* OpacityParamsPtr;
 
-		public AssetMaterialParamGroup(AssetMaterialParam* colorParamsPtr, AssetMaterialParam* normalParamsPtr, AssetMaterialParam* ambientOcclusionParamsPtr, AssetMaterialParam* roughnessParamsPtr, AssetMaterialParam* glossinessParamsPtr, AssetMaterialParam* metallicParamsPtr, AssetMaterialParam* ioRParamsPtr, AssetMaterialParam* absorptionParamsPtr, AssetMaterialParam* transmissionParamsPtr, AssetMaterialParam* emissiveColorParamsPtr, AssetMaterialParam* emissiveIntensityParamsPtr, AssetMaterialParam* anisotropyAngleParamsPtr, AssetMaterialParam* anisotropyStrengthParamsPtr, AssetMaterialParam* clearCoatStrengthParamsPtr, AssetMaterialParam* clearCoatRoughnessParamsPtr) {
+		public AssetMaterialParamGroup(AssetMaterialParam* colorParamsPtr, AssetMaterialParam* normalParamsPtr, AssetMaterialParam* ambientOcclusionParamsPtr, AssetMaterialParam* roughnessParamsPtr, AssetMaterialParam* glossinessParamsPtr, AssetMaterialParam* metallicParamsPtr, AssetMaterialParam* ioRParamsPtr, AssetMaterialParam* absorptionParamsPtr, AssetMaterialParam* transmissionParamsPtr, AssetMaterialParam* emissiveColorParamsPtr, AssetMaterialParam* emissiveIntensityParamsPtr, AssetMaterialParam* anisotropyAngleParamsPtr, AssetMaterialParam* anisotropyStrengthParamsPtr, AssetMaterialParam* clearCoatStrengthParamsPtr, AssetMaterialParam* clearCoatRoughnessParamsPtr, AssetMaterialParam* opacityParamsPtr) {
 			ColorParamsPtr = colorParamsPtr;
 			NormalParamsPtr = normalParamsPtr;
 			AmbientOcclusionParamsPtr = ambientOcclusionParamsPtr;
@@ -63,6 +66,7 @@ unsafe partial class LocalAssetLoader {
 			AnisotropyStrengthParamsPtr = anisotropyStrengthParamsPtr;
 			ClearCoatStrengthParamsPtr = clearCoatStrengthParamsPtr;
 			ClearCoatRoughnessParamsPtr = clearCoatRoughnessParamsPtr;
+			OpacityParamsPtr = opacityParamsPtr;
 		}
 	};
 	sealed class AssetTextureDecodeCache : IDisposable {
@@ -446,8 +450,13 @@ unsafe partial class LocalAssetLoader {
 		return aSpan.SequenceEqual(bSpan);
 	}
 	
-	int GatherAssetColorMap(AssetMaterialParam* paramPtr, in AssetMaterialCreationParameters creationParams) {
+	int GatherAssetColorMap(AssetMaterialParam* paramPtr, AssetMaterialParam* opacityParamPtr, in AssetMaterialCreationParameters creationParams, out bool opacityRequiresBlending) {
 		const string TextureTypeName = "color";
+		opacityRequiresBlending = false;
+		if (opacityParamPtr->Format == AssetMaterialParamDataFormat.TextureMap) {
+			return GatherAssetColorMapWithOpacity(paramPtr, opacityParamPtr, in creationParams, out opacityRequiresBlending);
+		}
+		
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
 				return creationParams.TextureRegistry.Add(
@@ -479,6 +488,79 @@ unsafe partial class LocalAssetLoader {
 					creationParams.HeapPool
 				);
 		}
+	}
+	
+	int GatherAssetColorMapWithOpacity(AssetMaterialParam* colorParamPtr, AssetMaterialParam* opacityParamPtr, in AssetMaterialCreationParameters creationParams, out bool opacityRequiresBlending) {
+		const string TextureTypeName = "color";
+		
+		var defaultColorTexel = new TexelRgba32(ITextureBuilder.DefaultColor);
+		var defaultOpacityTexel = new TexelRgba32(ITextureBuilder.DefaultColor);
+		
+		var colorTexels = AbstractTexelSpanFromParamPtr(
+			colorParamPtr,
+			creationParams.AssetHandle,
+			creationParams.MaterialIndex,
+			creationParams.UriUnescapeEmbeddedResourceStrings,
+			in creationParams.AssetRootDirStrRef,
+			ref defaultColorTexel,
+			creationParams.HeapPool,
+			out var colorEmbeddedTex
+		);
+		var opacityTexels = AbstractTexelSpanFromParamPtr(
+			opacityParamPtr,
+			creationParams.AssetHandle,
+			creationParams.MaterialIndex,
+			creationParams.UriUnescapeEmbeddedResourceStrings,
+			in creationParams.AssetRootDirStrRef,
+			ref defaultOpacityTexel,
+			creationParams.HeapPool,
+			out var opacityEmbeddedTex
+		);
+		
+		try {
+			opacityRequiresBlending = OpacityTexelsRequireBlending(opacityTexels);
+			var aDim = colorEmbeddedTex?.Dimensions ?? XYPair<int>.One;
+			var bDim = opacityEmbeddedTex?.Dimensions ?? XYPair<int>.One;
+			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
+			using var destinationBuffer = creationParams.HeapPool.Borrow<TexelRgba32>(destDim.Area);
+			TextureUtils.CombineTextures(
+				colorTexels, aDim,
+				opacityTexels, bDim,
+				new TextureCombinationConfig(
+					creationParams.TextureCombinationStrategy,
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
+				),
+				destinationBuffer.Span
+			);
+			return creationParams.TextureRegistry.Add(
+				destinationBuffer.Span,
+				destDim,
+				creationParams.Config with {
+					Name = creationParams.CreateTextureName(TextureTypeName),
+					DataType = colorEmbeddedTex.HasValue ? TextureDataType.ColorSrgb : TextureDataType.LinearData
+				},
+				creationParams.HeapPool
+			);
+		}
+		finally {
+			colorEmbeddedTex?.Dispose();
+			opacityEmbeddedTex?.Dispose();
+		}
+	}
+	
+	static bool OpacityTexelsRequireBlending(ReadOnlySpan<TexelRgba32> opacityTexels) {
+		const byte PartialOpacityMin = 6;
+		const byte PartialOpacityMax = 249;
+		const int BlendingRequiredPartialTexelsPerThousand = 20;
+		
+		var partialCount = 0L;
+		for (var i = 0; i < opacityTexels.Length; ++i) {
+			if (opacityTexels[i].R is >= PartialOpacityMin and <= PartialOpacityMax) ++partialCount;
+		}
+		return partialCount * 1000L >= opacityTexels.Length * (long) BlendingRequiredPartialTexelsPerThousand;
 	}
 	
 	int GatherAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, in AssetMaterialCreationParameters creationParams) {
@@ -1001,7 +1083,7 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	GatheredMaterialData GatherAssetMaterial(UIntPtr assetHandle, int materialIndex, ReadOnlySpan<char> assetName, in TextureCreationConfig config, TransmissiveMaterialQuality transmissiveQuality, in ModelReadConfig readConfig, ref readonly byte assetRootDirStrRef, ModelLoadMaterialTextureRegistry textureRegistry, ThreadSafeHeapPoolWrapper heapPool) {
-		var matParamsBuffer = stackalloc AssetMaterialParam[15];
+		var matParamsBuffer = stackalloc AssetMaterialParam[16];
 		var matParams = new AssetMaterialParamGroup(
 			matParamsBuffer + 0,
 			matParamsBuffer + 1,
@@ -1017,12 +1099,14 @@ unsafe partial class LocalAssetLoader {
 			matParamsBuffer + 11,
 			matParamsBuffer + 12,
 			matParamsBuffer + 13,
-			matParamsBuffer + 14
+			matParamsBuffer + 14,
+			matParamsBuffer + 15
 		);
 
 		GetLoadedAssetMaterialData(
 			assetHandle,
 			materialIndex,
+			readConfig.ShininessMapInterpretation,
 			&matParams,
 			out var alphaFormat,
 			out var refractionThickness
@@ -1049,7 +1133,8 @@ unsafe partial class LocalAssetLoader {
 			textureRegistry,
 			heapPool
 		);
-		var colorMapSlot = GatherAssetColorMap(matParams.ColorParamsPtr, assetMaterialCreationParams);
+		var colorMapSlot = GatherAssetColorMap(matParams.ColorParamsPtr, matParams.OpacityParamsPtr, assetMaterialCreationParams, out var opacityRequiresBlending);
+		if (alphaFormat == AssetAlphaFormatNone && opacityRequiresBlending) alphaFormat = AssetAlphaFormatBlended;
 		var atMapSlot = GatherAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetMaterialCreationParams);
 		var normalMapSlot = GatherAssetNormalMap(matParams.NormalParamsPtr, assetMaterialCreationParams);
 		var ormMapSlot = GatherAssetOrmrMap(matParams.AmbientOcclusionParamsPtr, matParams.RoughnessParamsPtr, matParams.GlossinessParamsPtr, matParams.MetallicParamsPtr, matParams.IoRParamsPtr, atMapSlot >= 0, assetMaterialCreationParams);

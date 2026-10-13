@@ -2,6 +2,8 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System.Reflection;
+using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Assets.Text;
@@ -121,7 +123,11 @@ static partial class SmokeProbes {
 			("DynamicVertexBuffers", SmokeSections.DynamicVertexBuffers),
 			("TextInstances", SmokeSections.TextInstances),
 			("CanvasScenes", SmokeSections.CanvasScenes),
-			("LoadModelFile", SmokeSections.LoadModelFile)
+			("LoadModelFile", SmokeSections.LoadModelFile),
+			("FrameReadback", SmokeSections.FrameReadback),
+			("BufferAsDynamicTexture", SmokeSections.BufferAsDynamicTexture),
+			("LoadTextureFiles", SmokeSections.LoadTextureFiles),
+			("TextureMipmappingAndCompression", SmokeSections.TextureMipmappingAndCompression)
 		];
 		const int Rounds = 15;
 		Span<double> totals = stackalloc double[targets.Length];
@@ -143,6 +149,163 @@ static partial class SmokeProbes {
 		}
 		for (var i = 0; i < targets.Length; ++i) Console.WriteLine($"  timing {targets[i].Name}: {totals[i] / Rounds:N2} ms ({totalsWithPump[i] / Rounds:N2} ms incl. reclamation frames)");
 		Console.WriteLine($"        after timings: {GetOutstandingUploadBufferCount()}");
+	}
+
+	static void ProbeUploadBursts() {
+		const int Rounds = 5;
+		const int TinyTextureCount = 1_000;
+		var nodeModelPath = Testing.CommonTestAssets.FindAsset("models/NodePerformanceTest.glb");
+		var textures = new Texture[TinyTextureCount];
+		var tinyPattern = TexturePattern.PlainFill(new ColorVect(0.5f, 0.25f, 0.75f));
+		Console.WriteLine($"        tiny texture pattern dimensions: {tinyPattern.Dimensions}");
+
+		(string Name, Action Run)[] cases = [
+			($"{TinyTextureCount} live 1x1 textures", () => {
+				for (var i = 0; i < textures.Length; ++i) textures[i] = Factory.TextureBuilder.CreateColorMap(tinyPattern, includeAlpha: false);
+				for (var i = 0; i < textures.Length; ++i) textures[i].Dispose();
+			}),
+			("LoadBundledAsset(NodePerformanceTest.glb)", () => Factory.AssetLoader.LoadBundledAsset(nodeModelPath).Dispose()),
+			("LoadBundledAsset(NodePerformanceTest.glb) + CreateModelInstances", () => {
+				using var group = Factory.AssetLoader.LoadBundledAsset(nodeModelPath);
+				Factory.ObjectBuilder.CreateModelInstances(group.Models).Dispose();
+			})
+		];
+		foreach (var (name, run) in cases) {
+			run();
+			BenchmarkEnvironment.PumpGpuResourceReclamation();
+			var total = 0.0;
+			var totalWithFrame = 0.0;
+			for (var round = 0; round < Rounds; ++round) {
+				var start = System.Diagnostics.Stopwatch.GetTimestamp();
+				run();
+				total += System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+				BenchmarkEnvironment.PumpGpuResourceReclamation();
+				totalWithFrame += System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+			}
+			Console.WriteLine($"  burst {name}: {total / Rounds:N1} ms ({totalWithFrame / Rounds:N1} ms incl. reclamation frames); {GetOutstandingUploadBufferCount()}");
+		}
+	}
+
+	static readonly string[] ModelLoadingTestFiles = [
+		"BoxTextured.gltf", "BoxTextured.glb", "BoxTexturedSelfContained.gltf", "BoxTexturedNonPowerOfTwo.glb", "Box With Spaces.gltf",
+		"NormalTangentMirrorTest.glb", "NegativeScaleTest.glb", "TextureCoordinateTest.glb", "CompareNormal.glb",
+		"CompareRoughness.glb", "CompareMetallic.glb", "MetalRoughSpheres.glb", "CompareAmbientOcclusion.glb",
+		"AnisotropyStrengthTest.glb", "AnisotropyDiscTest.glb", "EmissiveStrengthTest.glb",
+		"TransmissionTest.glb", "CompareTransmission.glb", "TransmissionRoughnessTest.glb", "AttenuationTest.glb", "CompareIor.glb",
+		"ClearCoatTest.glb", "BarramundiFish.glb", "Avocado.glb", "DamagedHelmet.glb",
+		"showcase_ABeautifulGame.glb", "showcase_GlassHurricaneCandleHolder.glb", "showcase_MaterialsVariantsShoe.glb", "showcase_MosquitoInAmber.glb",
+		"showcase_PotOfCoals.glb", "showcase_ToyCar.glb", "showcase_AnisotropyBarnLamp.glb", "showcase_CarConcept.glb",
+		"showcase_ChronographWatch.glb", "showcase_CommercialRefrigerator.glb", "NodePerformanceTest.glb"
+	];
+
+	static void ProbeModelLoadingAllModels() {
+		const int Passes = 3;
+		const int FramesAfterLoad = 10;
+		var creationConfig = new ModelCreationConfig { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing } };
+		var readConfig = new ModelReadConfig { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true };
+		using var scene = Factory.SceneBuilder.CreateScene(name: "Probe All Models Scene");
+		using var camera = Factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), name: "Probe All Models Camera");
+		using var renderer = BenchmarkEnvironment.RenderTarget.CreateRenderer(scene, camera, new RendererCreationConfig { Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) });
+		renderer.RenderAndWaitForGpu();
+
+		ModelBundle? group = null;
+		ModelInstanceGroup? instances = null;
+		for (var pass = 0; pass < Passes; ++pass) {
+			foreach (var file in ModelLoadingTestFiles) {
+				var path = Testing.CommonTestAssets.FindAsset("models/" + file);
+				var start = System.Diagnostics.Stopwatch.GetTimestamp();
+				if (instances is { } i) {
+					scene.Remove(i);
+					i.Dispose();
+				}
+				group?.Dispose();
+				var disposeMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+				start = System.Diagnostics.Stopwatch.GetTimestamp();
+				group = Factory.AssetLoader.LoadBundledAsset(path, creationConfig, readConfig);
+				var loadMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+				start = System.Diagnostics.Stopwatch.GetTimestamp();
+				instances = Factory.ObjectBuilder.CreateModelInstances(group.Value.Models);
+				scene.Add(instances.Value);
+				var instanceMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+				start = System.Diagnostics.Stopwatch.GetTimestamp();
+				renderer.RenderAndWaitForGpu();
+				var firstFrameMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+				start = System.Diagnostics.Stopwatch.GetTimestamp();
+				for (var f = 0; f < FramesAfterLoad; ++f) renderer.Render();
+				renderer.WaitForGpu();
+				var laterFramesMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds / FramesAfterLoad;
+
+				Console.WriteLine($"MODELROW|{pass}|{file}|{disposeMs:F1}|{loadMs:F1}|{instanceMs:F1}|{firstFrameMs:F1}|{laterFramesMs:F2}");
+			}
+		}
+
+		if (instances is { } last) {
+			scene.Remove(last);
+			last.Dispose();
+		}
+		group?.Dispose();
+		renderer.RenderAndWaitForGpu();
+	}
+
+	static void ProbeModelLoadingPath() {
+		const int Rounds = 4;
+		const int FramesBetweenLoads = 10;
+		var nodeModelPath = Testing.CommonTestAssets.FindAsset("models/NodePerformanceTest.glb");
+		var creationConfig = new ModelCreationConfig { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing } };
+		var readConfig = new ModelReadConfig { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true };
+		using var scene = Factory.SceneBuilder.CreateScene(name: "Probe Model Path Scene");
+		using var camera = Factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), name: "Probe Model Path Camera");
+		using var renderer = BenchmarkEnvironment.RenderTarget.CreateRenderer(scene, camera, new RendererCreationConfig { Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) });
+
+		ModelBundle? group = null;
+		ModelInstanceGroup? instances = null;
+		var disposeTotal = 0.0;
+		var loadTotal = 0.0;
+		var instanceTotal = 0.0;
+		var firstFramesTotal = 0.0;
+		for (var round = 0; round <= Rounds; ++round) {
+			for (var f = 0; f < FramesBetweenLoads; ++f) renderer.Render();
+
+			var start = System.Diagnostics.Stopwatch.GetTimestamp();
+			if (instances is { } i) {
+				scene.Remove(i);
+				i.Dispose();
+			}
+			group?.Dispose();
+			var disposeMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+			start = System.Diagnostics.Stopwatch.GetTimestamp();
+			group = Factory.AssetLoader.LoadBundledAsset(nodeModelPath, creationConfig, readConfig);
+			var loadMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+			start = System.Diagnostics.Stopwatch.GetTimestamp();
+			instances = Factory.ObjectBuilder.CreateModelInstances(group.Value.Models);
+			scene.Add(instances.Value);
+			var instanceMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+			start = System.Diagnostics.Stopwatch.GetTimestamp();
+			renderer.RenderAndWaitForGpu();
+			var firstFrameMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+
+			Console.WriteLine($"  path round {round}: dispose {disposeMs:N0} ms, load {loadMs:N0} ms, instances+add {instanceMs:N0} ms, first frame {firstFrameMs:N0} ms; {GetOutstandingUploadBufferCount()}");
+			if (round == 0) continue;
+			disposeTotal += disposeMs;
+			loadTotal += loadMs;
+			instanceTotal += instanceMs;
+			firstFramesTotal += firstFrameMs;
+		}
+		Console.WriteLine($"  path mean (rounds 1-{Rounds}): dispose {disposeTotal / Rounds:N0} ms, load {loadTotal / Rounds:N0} ms, instances+add {instanceTotal / Rounds:N0} ms, first frame {firstFramesTotal / Rounds:N0} ms, total {(disposeTotal + loadTotal + instanceTotal + firstFramesTotal) / Rounds:N0} ms");
+
+		if (instances is { } last) {
+			scene.Remove(last);
+			last.Dispose();
+		}
+		group?.Dispose();
+		renderer.RenderAndWaitForGpu();
 	}
 
 	static void ProbeDynamicBuffers() {
@@ -396,10 +559,136 @@ static partial class SmokeProbes {
 	}
 
 	static string GetOutstandingUploadBufferCount() {
-		var pool = ((ILocalGpuHoldingBufferAllocator) Factory).GpuHoldingBufferPool;
-		var spaces = (int) typeof(FixedByteBufferPool).GetField("_numAllocatedSpaces", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(pool)!;
+		const BindingFlags Instance = BindingFlags.NonPublic | BindingFlags.Instance;
 		var map = typeof(LocalNativeUtils).GetField("_activeTemporaryBuffers", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
 		var outstanding = (int) map.GetType().GetProperty("Count")!.GetValue(map)!;
-		return $"{outstanding} buffers, {spaces} native pool spaces ({spaces * (long) pool.MaxBufferSizeBytes / (1024 * 1024)} MiB reserved)";
+		var result = $"{outstanding} buffers";
+		foreach (var fieldName in new[] { "_gpuHoldingBufferPool", "_gpuHoldingSlabPool" }) {
+			var pool = Factory.GetType().GetField(fieldName, Instance)?.GetValue(Factory);
+			if (pool == null) continue;
+			var poolType = pool.GetType();
+			if (poolType.GetField("_numAllocatedSpaces", Instance) is { } spacesField) {
+				var spaces = (int) spacesField.GetValue(pool)!;
+				var spaceBytes = (int) poolType.GetProperty("MaxBufferSizeBytes")!.GetValue(pool)!;
+				result += $"; block pool {spaces} spaces ({spaces * (long) spaceBytes / (1024 * 1024)} MiB reserved)";
+			}
+			else {
+				var liveSlabs = (int) poolType.GetField("_slabRecordCount", Instance)!.GetValue(pool)! - (int) poolType.GetField("_freeSlabRecordCount", Instance)!.GetValue(pool)!;
+				var outstandingBytes = (long) poolType.GetProperty("OutstandingBytes")!.GetValue(pool)!;
+				result += $"; slab pool {liveSlabs} live slabs, {outstandingBytes / 1024:N0} KiB outstanding";
+			}
+		}
+		return result + $"; RSS {ReadResidentSetMiB():N0} MiB";
+	}
+
+	static long ReadResidentSetMiB() {
+		foreach (var line in File.ReadLines("/proc/self/status")) {
+			if (!line.StartsWith("VmRSS:")) continue;
+			return Int64.Parse(line.AsSpan(6).Trim().TrimEnd("kB").Trim()) / 1024;
+		}
+		return -1;
+	}
+
+	static long _largeReadbackTexelCount;
+	static void CountLargeReadbackTexels(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) => _largeReadbackTexelCount += texels.Length;
+
+	static unsafe void ProbeLargeUploadsPerFrame() {
+		const int WarmupFrames = 20;
+		const int MeasuredFrames = 120;
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Probe Large Upload Mesh");
+		using var material = Factory.MaterialBuilder.CreateTestMaterial();
+		using var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Probe Large Upload Instance");
+		using var scene = Factory.SceneBuilder.CreateScene(name: "Probe Large Upload Scene");
+		using var camera = Factory.CameraBuilder.CreateCamera(Location.Origin, name: "Probe Large Upload Camera");
+		scene.Add(instance);
+
+		foreach (var dimensions in new XYPair<int>[] { (1920, 1080), (3840, 2160) }) {
+			using var buffer = Factory.RendererBuilder.CreateRenderOutputBuffer(dimensions, "Probe Readback Buffer");
+			using var renderer = Factory.RendererBuilder.CreateRenderer(scene, camera, buffer, "Probe Readback Renderer");
+			buffer.StartReadingFrames(&CountLargeReadbackTexels);
+			for (var f = 0; f < WarmupFrames; ++f) renderer.Render();
+			renderer.WaitForGpu();
+			var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+			var start = System.Diagnostics.Stopwatch.GetTimestamp();
+			for (var f = 0; f < MeasuredFrames; ++f) renderer.Render();
+			renderer.WaitForGpu();
+			var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+			var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+			buffer.StopReadingFrames(cancelQueuedFrames: false);
+			renderer.WaitForGpu();
+			Console.WriteLine($"  large readback {dimensions.X}x{dimensions.Y}: {elapsed / MeasuredFrames:N2} ms/frame, {allocated / (double) MeasuredFrames:N1} B/frame; {GetOutstandingUploadBufferCount()}");
+		}
+
+		using var mainRenderer = BenchmarkEnvironment.RenderTarget.CreateRenderer(scene, camera);
+		foreach (var side in new[] { 1024, 2048 }) {
+			var texels = new TexelRgba32[side * side];
+			using var texture = Factory.TextureBuilder.CreateTexture(
+				texels.AsSpan(),
+				new TextureGenerationConfig { Dimensions = (side, side) },
+				new TextureCreationConfig { RenderingConfig = new(true, false, Quality.Standard), AllowsDynamicWrites = true, DataType = TextureDataType.ColorSrgb }
+			);
+			using var textureMaterial = Factory.MaterialBuilder.CreateStandardMaterial(texture, name: "Probe Dynamic Texture Material");
+			instance.SetMaterial(textureMaterial);
+			for (var f = 0; f < WarmupFrames; ++f) {
+				texels[f % texels.Length] = new TexelRgba32((byte) f, 0, 0, 255);
+				texture.OverwriteTexels<TexelRgba32>(texels);
+				mainRenderer.Render();
+			}
+			mainRenderer.WaitForGpu();
+			var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+			var start = System.Diagnostics.Stopwatch.GetTimestamp();
+			for (var f = 0; f < MeasuredFrames; ++f) {
+				texels[f % texels.Length] = new TexelRgba32((byte) f, 0, 0, 255);
+				texture.OverwriteTexels<TexelRgba32>(texels);
+				mainRenderer.Render();
+			}
+			mainRenderer.WaitForGpu();
+			var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+			var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+			instance.SetMaterial(material);
+			mainRenderer.WaitForGpu();
+			Console.WriteLine($"  dynamic texture {side}x{side} rewrite: {elapsed / MeasuredFrames:N2} ms/frame, {allocated / (double) MeasuredFrames:N1} B/frame; {GetOutstandingUploadBufferCount()}");
+		}
+	}
+
+	static void ProbeModelLoadingWithoutNodePerf() {
+		const int Passes = 2;
+		var creationConfig = new ModelCreationConfig { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing } };
+		var readConfig = new ModelReadConfig { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true };
+		using var scene = Factory.SceneBuilder.CreateScene(name: "Probe No NodePerf Scene");
+		using var camera = Factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), name: "Probe No NodePerf Camera");
+		using var renderer = BenchmarkEnvironment.RenderTarget.CreateRenderer(scene, camera, new RendererCreationConfig { Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Ultra) });
+		ModelBundle? group = null;
+		ModelInstanceGroup? instances = null;
+		var total = 0.0;
+		for (var pass = 0; pass < Passes; ++pass) {
+			foreach (var file in ModelLoadingTestFiles) {
+				if (file == "NodePerformanceTest.glb") continue;
+				var path = Testing.CommonTestAssets.FindAsset("models/" + file);
+				var start = System.Diagnostics.Stopwatch.GetTimestamp();
+				if (instances is { } i) {
+					scene.Remove(i);
+					i.Dispose();
+				}
+				group?.Dispose();
+				group = Factory.AssetLoader.LoadBundledAsset(path, creationConfig, readConfig);
+				instances = Factory.ObjectBuilder.CreateModelInstances(group.Value.Models);
+				scene.Add(instances.Value);
+				renderer.RenderAndWaitForGpu();
+				if (pass > 0) total += System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+				for (var f = 0; f < 5; ++f) renderer.Render();
+			}
+		}
+		Console.WriteLine($"  models (no NodePerf) warm pass: {total:N0} ms total; {GetOutstandingUploadBufferCount()}");
+		if (instances is { } last) {
+			scene.Remove(last);
+			last.Dispose();
+		}
+		group?.Dispose();
+		renderer.RenderAndWaitForGpu();
+		Console.WriteLine($"        after unloading: {GetOutstandingUploadBufferCount()}");
+		for (var f = 0; f < 300; ++f) renderer.Render();
+		renderer.WaitForGpu();
+		Console.WriteLine($"        after 300 idle frames: {GetOutstandingUploadBufferCount()}");
 	}
 }

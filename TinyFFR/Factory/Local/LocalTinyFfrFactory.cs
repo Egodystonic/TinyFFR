@@ -36,7 +36,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap = new();
 	readonly LocalResourceGroupImplProvider _resourceGroupProvider;
 #pragma warning disable CA2213 // We don't dispose this pool here because it needs to be disposed only when the native lib is done with the memory. This might be after disposal of this factory.
-	readonly FixedByteBufferPool _gpuHoldingBufferPool;
+	readonly FixedByteSlabPool _gpuHoldingBufferPool;
 #pragma warning restore CA2213
 
 	readonly CooperativeThreadPool _threadPool;
@@ -81,7 +81,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
 	/// <inheritdoc/>
 	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceAllocator;
-	FixedByteBufferPool ILocalGpuHoldingBufferAllocator.GpuHoldingBufferPool => _gpuHoldingBufferPool;
+	FixedByteSlabPool ILocalGpuHoldingBufferAllocator.GpuHoldingBufferPool => _gpuHoldingBufferPool;
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 	/// <inheritdoc/>
 	public IResourceDirectory ResourceDirectory => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceDirectory;
@@ -166,7 +166,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			}
 			var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
 			var bakeryRef = new DeferredRef<LocalAssetBakery>();
-			_gpuHoldingBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
+			_gpuHoldingBufferPool = new FixedByteSlabPool(factoryConfig.MaxRetainedUploadMemoryBytes);
 			var globals = new LocalFactoryGlobalObjectGroup(
 				this,
 				_threadPool,

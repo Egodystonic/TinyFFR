@@ -762,6 +762,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	static extern InteropResult GetLoadedAssetMaterialData(
 		UIntPtr assetHandle,
 		int materialIndex,
+		ShininessMapInterpretation shininessMapInterpretation,
 		AssetMaterialParamGroup* paramGroupPtr,
 		out int outAlphaFormat,
 		out float outRefractionThickness

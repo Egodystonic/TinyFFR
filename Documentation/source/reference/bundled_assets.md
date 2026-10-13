@@ -186,3 +186,9 @@ You can pass a `ModelCreationConfig` and a `ModelReadConfig` to `LoadBundledAsse
 :   Sometimes composite asset files provide multiple texture files for different material properties that must be combined in to a single map file. 
 
 	In the case those texture files have differing resolutions, this property controls how the lower-resolution textures should be upscaled. 
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `ShininessMapInterpretation`
+
+:   Older file formats (such as FBX and OBJ) have no dedicated slot for a roughness map, so some exporters store one in the "shininess" slot instead of the glossiness map that slot is meant to hold. Most notably, Blender does this. Reading the map the wrong way round makes glossy surfaces look rough and vice versa.
+
+	By default (`Auto`), TinyFFR treats the map as roughness when the file reports that it was exported from Blender, and as glossiness otherwise. Set this to `Roughness` or `Glossiness` to override that choice; for example, Blender-exported OBJ files do not record where they came from, so they need `Roughness` set explicitly.

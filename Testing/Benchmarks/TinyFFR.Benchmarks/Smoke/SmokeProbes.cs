@@ -43,7 +43,12 @@ static partial class SmokeProbes {
 		new("AllocationTypes", ProbeAllocationTypes),
 		new("AllSections", ProbeAllSections),
 		new("ResidualSections", ProbeResidualSections),
-		new("SectionTimings", ProbeSectionTimings)
+		new("SectionTimings", ProbeSectionTimings),
+		new("UploadBursts", ProbeUploadBursts),
+		new("ModelLoadingPath", ProbeModelLoadingPath),
+		new("ModelLoadingAllModels", ProbeModelLoadingAllModels),
+		new("LargeUploadsPerFrame", ProbeLargeUploadsPerFrame),
+		new("ModelLoadingWithoutNodePerf", ProbeModelLoadingWithoutNodePerf)
 	];
 
 	const int LiveInstanceCount = 2_000;

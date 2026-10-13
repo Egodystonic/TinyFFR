@@ -62,20 +62,20 @@ However, VRAM is freed a few frames after a resource is disposed. Disposing a re
 
 ## Controlling RAM Usage
 
-The `LocalTinyFfrFactoryConfig` passed to the factory controls the largest fixed amounts of RAM that TinyFFR uses:
+The `LocalTinyFfrFactoryConfig` passed to the factory controls the largest amounts of RAM that TinyFFR reserves or keeps for reuse:
 
 ```csharp
 using var factory = new LocalTinyFfrFactory(
 	factoryConfig: new LocalTinyFfrFactoryConfig {
 		MemoryUsageRubric = MemoryUsageRubric.UseLessMemory, // (1)!
-		MaxCpuToGpuAssetTransferSizeBytes = 64 * 1024 * 1024 // (2)!
+		MaxRetainedUploadMemoryBytes = 128 * 1024 * 1024 // (2)!
 	}
 );
 ```
 
 1.	Reduces the memory reserved by the rendering engine.
 
-2.	Reduces the largest asset that can be uploaded to the GPU (and the buffer reserved for doing so) from 100 MB to 64 MB.
+2.	Reduces how much memory TinyFFR keeps for reuse after uploading data to the GPU, from 512 MB to 128 MB.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `MemoryUsageRubric`
 
@@ -87,11 +87,13 @@ using var factory = new LocalTinyFfrFactory(
 
 	In testing, a detailed scene rendered identically and at the same speed with all three settings. However, the reserved space is used to record each frame's work for the GPU, and a frame that needs more than has been reserved (e.g. one with an extremely large number of objects or animated meshes) will crash the application. Only lower this setting if your scenes are relatively simple, and test with your most demanding scene.
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `MaxCpuToGpuAssetTransferSizeBytes`
+<span class="def-icon">:material-card-bulleted-outline:</span> `MaxRetainedUploadMemoryBytes`
 
-:   The size of the largest single piece of data (e.g. one texture or mesh) that can be uploaded to the GPU, in bytes. Defaults to 100 MB; the maximum is 512 MB.
+:   The most memory, in bytes, that TinyFFR keeps for reuse after uploading data to the GPU. Defaults to 512 MB.
 
-	TinyFFR reserves a buffer of this size for staging uploads when the factory is created, so lowering it saves RAM. Loading anything larger throws an `InvalidOperationException` explaining that the limit should be raised.
+	Everything uploaded to the GPU (meshes, textures, and frames being read back) is held in RAM until the GPU has received it, which normally happens by the next rendered frame. Afterwards, TinyFFR keeps some of that memory so that similar uploads can reuse it, up to this limit. Memory that goes unused for a few seconds of rendering is returned.
+
+	Lowering this saves RAM, but setting it too low can slow down large uploads that repeat every frame (e.g. reading back every frame at 4K). Set it to `0` to never keep memory for reuse. There is no limit on the size of a single upload.
 
 Some other settings also affect RAM usage:
 
@@ -105,7 +107,7 @@ TinyFFR reuses memory wherever it can rather than returning it to the operating 
 The following can make that peak higher:
 
 * **Loading large assets.** Loading needs temporary space for the file's data, the decoded images, the processed meshes, and so on. The space is kept for reuse afterwards.
-* **Loading many assets at once.** Each [asynchronous load](asynchronous_loading.md) in progress needs its own temporary space, and the buffer used for uploading data to the GPU grows to hold every upload that's happening at once. In testing, loading the same model 8 times concurrently raised RAM usage around 5.5x as much as loading it once. Limit how many large loads you run at once if RAM is tight.
+* **Loading many assets at once.** Each [asynchronous load](asynchronous_loading.md) in progress needs its own temporary space, and data waiting to be uploaded to the GPU uses memory until the GPU has received it (normally by the next rendered frame). If you load a lot without rendering, TinyFFR periodically waits for the GPU to catch up so that this memory stays bounded. Limit how many large loads you run at once if RAM is tight.
 * **Enabling the asset bakery.** While enabled, the bakery keeps a copy of every resource's data until it's baked or discarded. In testing, loading a large model with the bakery enabled used around 70% more RAM. Only enable the bakery while baking (see [Asset Bakery](asset_bakery.md#baking-rules)).
 * **Large collections and buffers.** Memory borrowed from the factory's `ResourceAllocator` (see [Avoiding GC Stutter](avoiding_gc_stutter.md)) is pooled, so the largest amount you've borrowed at once stays reserved for reuse.
 

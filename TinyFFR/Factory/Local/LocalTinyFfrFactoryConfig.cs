@@ -28,13 +28,9 @@ public enum MemoryUsageRubric {
 /// </summary>
 public sealed class LocalTinyFfrFactoryConfig {
 	/// <summary>
-	/// The maximum permitted value for <see cref="MaxCpuToGpuAssetTransferSizeBytes"/>: <c>536,870,912</c>.
+	/// The default value for <see cref="MaxRetainedUploadMemoryBytes"/>: <c>536,870,912</c> (512 MB).
 	/// </summary>
-	public const int MaxMaxCpuToGpuAssetTransferSizeBytes = 1 << 29;
-	/// <summary>
-	/// The default value for <see cref="MaxCpuToGpuAssetTransferSizeBytes"/>: <c>104,857,600</c>.
-	/// </summary>
-	public const int DefaultMaxCpuToGpuAssetTransferSizeBytes = 1024 * 1024 * 100; // 100 MB  
+	public const long DefaultMaxRetainedUploadMemoryBytes = 512L * 1024 * 1024;
 	/// <summary>
 	/// The default value for <see cref="MemoryUsageRubric"/>: <c>Standard</c>.
 	/// </summary>
@@ -49,20 +45,22 @@ public sealed class LocalTinyFfrFactoryConfig {
 	public const bool DefaultHeadlessMode = false;
 
 	/// <summary>
-	/// Maximum size, in bytes, of any loaded asset (mesh, texture, etc). Higher values must reserve more RAM.
-	/// Defaults to <see cref="DefaultMaxCpuToGpuAssetTransferSizeBytes"/>.
+	/// The maximum amount of memory, in bytes, that TinyFFR keeps for reuse after data (e.g. a mesh, a texture, or a frame being read back)
+	/// has finished being uploaded to the GPU. Lower values use less RAM, but values that are too low can slow down large uploads that repeat
+	/// every frame (e.g. reading back every frame at 4K). Defaults to <see cref="DefaultMaxRetainedUploadMemoryBytes"/>.
 	/// </summary>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown if non-positive or greater than <see cref="MaxMaxCpuToGpuAssetTransferSizeBytes"/>.</exception>
-	public int MaxCpuToGpuAssetTransferSizeBytes {
+	/// <remarks>
+	/// Memory used by uploads that are still in progress is not limited by this value; it is normally released by the next rendered frame.
+	/// Memory kept for reuse is returned once it has gone unused for a short while. Set to <c>0</c> to never keep memory for reuse.
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if negative.</exception>
+	public long MaxRetainedUploadMemoryBytes {
 		get;
 		init {
-			if (value is <= 0 or > MaxMaxCpuToGpuAssetTransferSizeBytes) {
-				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset size must be between 1 and {MaxMaxCpuToGpuAssetTransferSizeBytes} bytes.");
-			}
-
+			ArgumentOutOfRangeException.ThrowIfNegative(value);
 			field = value;
 		}
-	} = DefaultMaxCpuToGpuAssetTransferSizeBytes;
+	} = DefaultMaxRetainedUploadMemoryBytes;
 
 	/// <summary>
 	/// Setting this property allows you to moderate how much RAM TinyFFR uses (at the cost of its performance ceiling).

@@ -26,6 +26,12 @@ public:
 		Numerical = 1,
 		TextureMap = 2
 	};
+	enum class ShininessMapInterpretation : int32_t
+	{
+		Auto = 0,
+		Glossiness = 1,
+		Roughness = 2
+	};
 	PushSafeStructPacking
 	struct AssetMaterialParam
 	{
@@ -56,9 +62,10 @@ public:
 		AssetMaterialParam* AnisotropyStrengthParamsPtr;
 		AssetMaterialParam* ClearCoatStrengthParamsPtr;
 		AssetMaterialParam* ClearCoatRoughnessParamsPtr;
+		AssetMaterialParam* OpacityParamsPtr;
 	};
 	PopSafeStructPacking
-	static_assert(sizeof(AssetMaterialParamGroup) == 15 * 8);
+	static_assert(sizeof(AssetMaterialParamGroup) == 16 * 8);
 	PushSafeStructPacking
 	struct NodeHandle
 	{
@@ -85,7 +92,7 @@ public:
 	static void get_loaded_asset_texture_data(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight);
 	static void get_loaded_asset_texture_path_len(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength);
 	static void get_loaded_asset_texture_path(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, char* strBuffer, int32_t bufferLengthBytes);
-	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness);
+	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, ShininessMapInterpretation shininessMapInterpretation, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness);
 	static void unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle);
 	
 	static void get_loaded_asset_mesh_skeletal_node_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount);

@@ -36,6 +36,10 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// </summary>
 	public static readonly TextureCombinationScalingStrategy DefaultEmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale;
 	/// <summary>
+	/// The default value for <see cref="ModelReadConfig.ShininessMapInterpretation"/>: <see cref="Assets.ShininessMapInterpretation.Auto"/>.
+	/// </summary>
+	public static readonly ShininessMapInterpretation DefaultShininessMapInterpretation = ShininessMapInterpretation.Auto;
+	/// <summary>
 	/// How the file's mesh data is interpreted as it is read.
 	/// </summary>
 	public MeshReadConfig MeshConfig { get; init; } = new();
@@ -72,6 +76,17 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// Defaults to <see cref="DefaultEmbeddedTextureMapScalingStrategy"/>: <see cref="TextureCombinationScalingStrategy.PixelUpscale"/>.
 	/// </summary>
 	public TextureCombinationScalingStrategy EmbeddedTextureMapScalingStrategy { get; init; } = DefaultEmbeddedTextureMapScalingStrategy;
+	/// <summary>
+	/// How a texture map found in a material's shininess slot is interpreted.
+	/// Defaults to <see cref="DefaultShininessMapInterpretation"/>: <see cref="Assets.ShininessMapInterpretation.Auto"/>.
+	/// </summary>
+	/// <remarks>
+	/// FBX and OBJ files have no dedicated slot for a roughness map, and some exporters (most notably Blender's) store one in the
+	/// shininess slot instead of the glossiness map the slot is meant for. <see cref="Assets.ShininessMapInterpretation.Auto"/> detects
+	/// files that report being exported from Blender; set this explicitly if imported surfaces look glossy where they should be rough
+	/// (or vice versa). Whenever a shininess map is present it takes precedence over any single roughness value in the material.
+	/// </remarks>
+	public ShininessMapInterpretation ShininessMapInterpretation { get; init; } = DefaultShininessMapInterpretation;
 	
 	/// <summary>
 	/// Constructs a new <see cref="ModelReadConfig"/> with default values for every property.
@@ -87,6 +102,9 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		if (!Enum.IsDefined(EmbeddedTextureMapScalingStrategy)) {
 			throw new ArgumentOutOfRangeException(nameof(EmbeddedTextureMapScalingStrategy), EmbeddedTextureMapScalingStrategy, null);
 		}
+		if (!Enum.IsDefined(ShininessMapInterpretation)) {
+			throw new ArgumentOutOfRangeException(nameof(ShininessMapInterpretation), ShininessMapInterpretation, null);
+		}
 	}
 
 	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
@@ -96,7 +114,8 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 			+	SerializationSizeOfBool() // HandleUriEscapedStrings
 			+	SerializationSizeOfFloat() // EmissiveStrengthScalar
 			+	SerializationSizeOfFloat() // EmissiveStrengthCap
-			+	SerializationSizeOfInt(); // EmbeddedTextureMapScalingStrategy
+			+	SerializationSizeOfInt() // EmbeddedTextureMapScalingStrategy
+			+	SerializationSizeOfInt();
 	}
 	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelReadConfig src) {
@@ -106,6 +125,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		SerializationWriteFloat(ref dest, src.EmissiveStrengthScalar);
 		SerializationWriteFloat(ref dest, src.EmissiveStrengthCap);
 		SerializationWriteInt(ref dest, (int) src.EmbeddedTextureMapScalingStrategy);
+		SerializationWriteInt(ref dest, (int) src.ShininessMapInterpretation);
 	}
 	/// <inheritdoc />
 	public static ModelReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -115,7 +135,8 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 			HandleUriEscapedStrings = SerializationReadBool(ref src),
 			EmissiveStrengthScalar = SerializationReadFloat(ref src),
 			EmissiveStrengthCap = SerializationReadFloat(ref src),
-			EmbeddedTextureMapScalingStrategy = (TextureCombinationScalingStrategy) SerializationReadInt(ref src)
+			EmbeddedTextureMapScalingStrategy = (TextureCombinationScalingStrategy) SerializationReadInt(ref src),
+			ShininessMapInterpretation = (ShininessMapInterpretation) SerializationReadInt(ref src)
 		};
 	}
 	/// <inheritdoc />

@@ -21,7 +21,7 @@ using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable, ILocalResourceImplProvider {
-	readonly record struct RenderedTextData(ManagedStringPool.RentedStringHandle Text, TextJustification Justification, NativeHeapMemory<MeshVertex> Vertices, NativeHeapMemory<VertexTriangle> Triangles, XYPair<float> Size);
+	readonly record struct RenderedTextData(ManagedStringPool.RentedStringHandle Text, TextJustification Justification, PooledHeapMemory<MeshVertex> Vertices, PooledHeapMemory<VertexTriangle> Triangles, XYPair<float> Size);
 	readonly record struct AtlasRuneData(XYPair<float> AtlasUVOffset, XYPair<float> AtlasUVSize, XYPair<float> NibOffset, float AdvanceWidth);
 	readonly record struct TextLineRecord(int StartVertexIndex, float Width, float MinX, float MaxX);
 	readonly record struct FontData(Texture Atlas, float Ascent, float Descent, float LineAdvance, Rune LineBreakRune, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<ulong, float> KerningMap, ArrayPoolBackedMap<ResourceHandle<FontPen>, PenData> ActivePens, ArrayPoolBackedMap<ResourceHandle<FontString>, StringData> ActiveStrings, ArrayPoolBackedLruCache<int, RenderedTextData> RenderedTextCache);
@@ -601,8 +601,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			if (rune == fontData.LineBreakRune) ++lineCount;
 		}
 
-		var vertexBuffer = NativeHeapMemory<MeshVertex>.Allocate(runeCount * 4 + 4);
-		var triangleBuffer = NativeHeapMemory<VertexTriangle>.Allocate(runeCount * 2 + 2);
+		var vertexBuffer = _globals.HeapPool.Borrow<MeshVertex>(runeCount * 4 + 4);
+		var triangleBuffer = _globals.HeapPool.Borrow<VertexTriangle>(runeCount * 2 + 2);
 		using var lineRecordBuffer = _globals.HeapPool.Borrow<TextLineRecord>(lineCount);
 		var runeMap = fontData.RuneMap;
 		var kerningMap = fontData.KerningMap;
