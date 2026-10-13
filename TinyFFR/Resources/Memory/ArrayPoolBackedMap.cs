@@ -7,47 +7,6 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 
 // Not aiming to be anywhere near as fast or optimised or clever as I'm sure .NET's Dictionary is for now-- can improve perf in future if necessary. Just trying to avoid garbage generation.
 sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey, TValue> {
-	public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>> {
-		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
-		readonly int _version;
-		int _bucketIndex;
-		int _indexInBucket;
-
-		public KeyValuePair<TKey, TValue> Current { get; private set; } = default;
-		object IEnumerator.Current => Current!;
-
-		public Enumerator(ArrayPoolBackedMap<TKey, TValue> owner) {
-			_owner = owner;
-			_version = owner.Version;
-			Reset();
-		}
-
-		public bool MoveNext() {
-			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			while (_bucketIndex < _owner._numBuckets) {
-				var bucket = _owner._buckets[_bucketIndex];
-				if (++_indexInBucket < bucket.Count) {
-					Current = bucket[_indexInBucket];
-					return true;
-				}
-
-				++_bucketIndex;
-				_indexInBucket = -1;
-			}
-
-			Current = default!;
-			return false;
-		}
-
-		public void Reset() {
-			_bucketIndex = 0;
-			_indexInBucket = -1;
-			Current = default!;
-		}
-
-		public void Dispose() { /* no op */ }
-	}
-
 	public struct KeyEnumerator : IEnumerator<TKey>, IEnumerable<TKey> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
 		readonly int _version;
@@ -159,6 +118,8 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	}
 
 	public int Version { get; private set; } = 0;
+	internal int BucketCount => _numBuckets;
+	internal ArrayPoolBackedVector<KeyValuePair<TKey, TValue>> GetBucketAtIndex(int index) => _buckets[index];
 
 	public int Count => _count;
 
@@ -198,6 +159,23 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(TKey key, TValue value) => Add(new(key, value));
+
+	public void AddRange(ReadOnlySpan<KeyValuePair<TKey, TValue>> items) {
+		foreach (var item in items) Add(item);
+	}
+
+	public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items) {
+		ArgumentNullException.ThrowIfNull(items);
+		if (items is ArrayPoolBackedVector<KeyValuePair<TKey, TValue>> vector) {
+			AddRange(vector.AsSpan);
+			return;
+		}
+		if (items is KeyValuePair<TKey, TValue>[] array) {
+			AddRange(array.AsSpan());
+			return;
+		}
+		foreach (var item in items) Add(item);
+	}
 	public void Add(KeyValuePair<TKey, TValue> item) {
 		var bucket = GetBucket(item.Key);
 		if (GetIndexFromBucket(bucket, item.Key).HasValue) throw new ArgumentException($"Key '{item.Key}' already exists in this map.");
@@ -219,14 +197,16 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	}
 
 	public void Clear() {
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
+		if (_count != 0) {
+			for (var i = 0; i < _numBuckets; ++i) _buckets[i].Clear();
+		}
 		_count = 0;
 		++Version;
 	}
-	public void ClearWithoutZeroingMemory() {
-		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
-		_count = 0;
-		++Version;
+
+	public void ClearAndShrinkToInitialBucketCount() {
+		Clear();
+		ShrinkToInitialBucketCount();
 	}
 
 	public bool ContainsKey(TKey key) => GetIndexFromBucket(GetBucket(key), key).HasValue;
@@ -259,7 +239,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be > 0 and < Count.");
 	}
 
-	public Enumerator GetEnumerator() => new(this);
+	public ArrayPoolBackedDictionaryEnumerator<TKey, TValue> GetEnumerator() => new(this);
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => GetEnumerator();
 
@@ -338,19 +318,21 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		}
 	}
 
-	public void ShrinkToInitialBucketCount() {
-		if (_count != 0 || _numBuckets <= InitialBucketCount) return;
+	void ShrinkToInitialBucketCount() {
+		if (_numBuckets > InitialBucketCount) {
+			for (var i = InitialBucketCount; i < _numBuckets; ++i) VectorPool<KeyValuePair<TKey, TValue>>.Shared.Return(_buckets[i]);
 
-		for (var i = InitialBucketCount; i < _numBuckets; ++i) VectorPool<KeyValuePair<TKey, TValue>>.Shared.Return(_buckets[i]);
+			var newBuckets = TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(InitialBucketCount);
+			for (var i = 0; i < InitialBucketCount; ++i) newBuckets[i] = _buckets[i];
+			TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
 
-		var newBuckets = TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(InitialBucketCount);
-		for (var i = 0; i < InitialBucketCount; ++i) newBuckets[i] = _buckets[i];
-		TinyFfrArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets, clearArray: true);
+			_buckets = newBuckets;
+			_numBuckets = InitialBucketCount;
+			_hashMask = InitialBucketCount - 1;
+			++Version;
+		}
 
-		_buckets = newBuckets;
-		_numBuckets = InitialBucketCount;
-		_hashMask = InitialBucketCount - 1;
-		++Version;
+		for (var i = 0; i < _numBuckets; ++i) _buckets[i].ClearAndShrinkToInitialCapacity();
 	}
 
 	public void Dispose() {

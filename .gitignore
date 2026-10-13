@@ -418,6 +418,7 @@ Publishing/TinyFFR.Avalonia.NuGet/build_output/**
 Publishing/TinyFFR.Wpf.NuGet/build_output/**
 Publishing/TinyFFR.WinForms.NuGet/build_output/**
 Publishing/TinyFFR.ImGui.NuGet/build_output/**
+Publishing/AiAssistancePackage/build_output/**
 
 # TinyFFR - ignore generated documentation 
 Documentation/output/**

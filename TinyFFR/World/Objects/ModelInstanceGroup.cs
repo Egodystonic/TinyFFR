@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
@@ -15,11 +16,23 @@ namespace Egodystonic.TinyFFR.World;
 /// A set of <see cref="ModelInstance"/>s that can be moved, rotated and scaled together as though they were one object.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Useful wherever several instances make up one conceptual thing, such as a vehicle assembled from separate parts. Transforming the group applies the same change
 /// to every instance in it.
+/// </para>
+/// <para>
+/// A group can also carry a shared <see cref="MeshGroupAnimationTable"/> (for example when created from a <see cref="Assets.ModelBundle"/>), in which case its
+/// <see cref="Animations"/> can be played on the whole group at once.
+/// </para>
 /// </remarks>
-public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
+public readonly struct ModelInstanceGroup : ITransformedSceneObject, IMaterialReceivingSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup>, ISizableSceneObject {
 #pragma warning restore CA1710
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstanceGroup;
+	static readonly ArrayPool<ModelInstance> _instanceArrayPool = TinyFfrArrayPool<ModelInstance>.Shared;
+	static readonly ArrayPoolBackedMap<ResourceGroup, (ModelInstance[] Instances, int Count)> _borrowedInstanceArrayLedger = new();
+
+	readonly MeshGroupAnimationTable _animTable;
+	
 	/// <summary>
 	/// The <see cref="ResourceGroup"/> instance backing this instance group, which is what actually owns the contained instances.
 	/// </summary>
@@ -27,30 +40,105 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	/// <summary>
 	/// Every model instance in this group.
 	/// </summary>
-	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance> Instances { get; }
+	public ReadOnlySpan<ModelInstance> Instances {
+		get {
+			ThrowIfDisposed();
+			return new ReadOnlySpan<ModelInstance>(InstanceArray, 0, Count);
+		}
+	}
 	/// <summary>
 	/// How many model instances are in this group.
 	/// </summary>
 	public int Count { get; }
 	
-	ModelInstance? FirstInstance => Count > 0 ? Instances[0] : null;
+	internal ModelInstance[] InstanceArray { get; }
+	
+	ModelInstance? FirstInstance {
+		get {
+			ThrowIfDisposed();
+			return Count > 0 ? GetInstanceAtPreValidatedIndex(0) : null;
+		}
+	}
 	
 	/// <summary>
 	/// Returns the model instance at the given position in this group.
 	/// </summary>
 	/// <param name="index">The position of the instance to return. Must be in the range <c>0 &lt;= n &lt; </c><see cref="Count"/>.</param>
-	/// <exception cref="IndexOutOfRangeException">Thrown if <paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
-	public ModelInstance this[int index] => Instances[index];
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
+	public ModelInstance this[int index] {
+		get {
+			ThrowIfDisposed();
+			return index >= 0 && index < Count
+				? GetInstanceAtPreValidatedIndex(index)
+				: throw new ArgumentOutOfRangeException(nameof(index), index, $"Must be non-negative and smaller than {nameof(Count)} ({Count}).");
+		}
+	}
 
-	/// <summary>
-	/// Constructs a new <see cref="ModelInstanceGroup"/> over an existing resource group.
-	/// </summary>
-	/// <param name="underlyingResourceGroup">The resource group whose model instances this group should transform together.</param>
-	public ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	ModelInstance GetInstanceAtPreValidatedIndex(int index) => InstanceArray[index];
+
+	internal ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
 		if (!underlyingResourceGroup.IsSealed) throw new ArgumentException("Resource group must be sealed.", nameof(underlyingResourceGroup));
 		UnderlyingResourceGroup = underlyingResourceGroup;
-		Instances = UnderlyingResourceGroup.ModelInstances;
-		Count = Instances.Count;
+		_animTable = UnderlyingResourceGroup.AnimationTables.Count > 0 ? UnderlyingResourceGroup.AnimationTables[0] : MeshGroupAnimationTable.Empty;
+		
+		var modelInstances = UnderlyingResourceGroup.ModelInstances;
+		Count = modelInstances.Count;
+		if (_borrowedInstanceArrayLedger.TryGetValue(underlyingResourceGroup, out var preExistingEntry)) {
+			InstanceArray = preExistingEntry.Instances;
+			
+		}
+		else {
+			InstanceArray = _instanceArrayPool.Rent(Count);
+			modelInstances.CopyTo(InstanceArray);
+			_borrowedInstanceArrayLedger.Add(underlyingResourceGroup, (InstanceArray, Count));
+		}
+	}
+
+	ModelInstanceGroup(ResourceGroup underlyingResourceGroup, ModelInstance[] instanceArray, int count) {
+		UnderlyingResourceGroup = underlyingResourceGroup;
+		InstanceArray = instanceArray;
+		Count = count;
+		_animTable = MeshGroupAnimationTable.Empty;
+	}
+
+	internal static ModelInstanceGroup CreateTempIterableInstanceFromLedger(ResourceGroup underlyingResourceGroup) {
+		try {
+			var entry = _borrowedInstanceArrayLedger[underlyingResourceGroup];
+			return new(underlyingResourceGroup, entry.Instances, entry.Count);
+		}
+		catch (KeyNotFoundException e) {
+			throw new ObjectDisposedException("Underlying ModelInstanceGroup has been disposed.", e);
+		}
+	}
+	
+	/// <summary>
+	/// The animations of the shared animation table attached to this group, addressable by name, by position or by kind.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Playing one of these on this group (see <see cref="GetAnimationPlayer(MeshAnimation)"/>) evaluates the skeleton's pose once and then poses every instance whose
+	/// mesh is part of the table; any other instances are left unchanged.
+	/// </para>
+	/// <para>
+	/// This is empty if the group has no animation table, which is the case unless it was created from a <see cref="Assets.ModelBundle"/>, from a mesh group containing a
+	/// table, or with an explicit table (see <see cref="IObjectBuilder"/>).
+	/// </para>
+	/// </remarks>
+	public MeshGroupAnimationIndex Animations {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _animTable.Animations;
+	}
+	
+	/// <summary>
+	/// The skeleton of the shared animation table attached to this group.
+	/// </summary>
+	/// <remarks>
+	/// This has no joints if the group has no animation table (see <see cref="Animations"/>).
+	/// </remarks>
+	public MeshGroupSkeleton Skeleton {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _animTable.Skeleton;
 	}
 
 	/// <inheritdoc />
@@ -58,7 +146,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Transform ?? Transform.None;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetTransform(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetTransform(value);
 		}
 	}
 	/// <summary>
@@ -73,7 +162,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Position ?? Location.Origin;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetPosition(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetPosition(value);
 		}
 	}
 	/// <summary>
@@ -88,7 +178,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Rotation ?? Rotation.None;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetRotation(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetRotation(value);
 		}
 	}
 	/// <summary>
@@ -103,7 +194,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.RotationQuaternion ?? Quaternion.Identity;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetRotationQuaternion(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetRotationQuaternion(value);
 		}
 	}
 	/// <summary>
@@ -118,7 +210,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FirstInstance?.Scaling ?? Vect.One;
 		set {
-			for (var i = 0; i < Count; ++i) Instances[i].SetScaling(value);
+			ThrowIfDisposed();
+			for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetScaling(value);
 		}
 	}
 	/// <summary>
@@ -134,42 +227,164 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
+	void ISizableSceneObject.SetSize(Vect size) => SetSize(size);
+	/// <inheritdoc cref="ISizableSceneObject.SetSize" />
+	/// <param name="size">The size to set this group to, along each of its own axes (i.e. before <see cref="Rotation"/> is applied).</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding boxes were created with (see <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>), which is
+	/// removed before calculating the scaling. Defaults to <see cref="MeshCreationConfig.DefaultBoundingBoxAdditionalMargin"/>.</param>
+	/// <remarks>
+	/// <para>
+	/// The object group's combined model-space bounding box (see <see cref="PositionedCuboidExtensions.CalculateCombinedBoundingBox(ModelInstanceGroup)"/>) is used to
+	/// calculate the scaling factor to correctly set the requested size. This means the accuracy of the resulting size depends on how well the bounding box fits each object's
+	/// <see cref="Mesh"/>. The result replaces <see cref="Scaling"/> on every instance in the group; any previous scaling is discarded.
+	/// </para>
+	/// <para>
+	/// An axis along which the combined bounding box has no thickness can not be resized; its scaling is set to <c>1f</c>.
+	/// </para>
+	/// <para>
+	/// This calculation also requires cumulative bounding box calculations and a vector division; if you want to set the size for multiple groups of the same mesh group,
+	/// pre-calculate the <see cref="Scaling"/> value once using <see cref="ModelBundle.CalculateScalingForSize"/> or <see cref="PositionedCuboid.CalculateScalingForSize"/>.
+	/// </para>
+	/// </remarks>
+	public void SetSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) {
+		SetScaling(this.CalculateCombinedBoundingBox().WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size));
+	}
+
 	/// <inheritdoc />
 	public void MoveBy(Vect translation) {
-		for (var i = 0; i < Count; ++i) Instances[i].MoveBy(translation);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).MoveBy(translation);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Rotation rotation) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotation);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotation);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Rotation rotation, Location pivotPoint) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotation, pivotPoint);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotation, pivotPoint);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Quaternion rotationQuaternion) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotationQuaternion);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotationQuaternion);
 	}
 	/// <inheritdoc />
 	public void RotateBy(Quaternion rotationQuaternion, Location pivotPoint) {
-		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotationQuaternion, pivotPoint);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).RotateBy(rotationQuaternion, pivotPoint);
 	}
 	/// <inheritdoc />
 	public void ScaleBy(float scalar) {
-		for (var i = 0; i < Count; ++i) Instances[i].ScaleBy(scalar);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).ScaleBy(scalar);
 	}
 	/// <inheritdoc />
 	public void ScaleBy(Vect vect) {
-		for (var i = 0; i < Count; ++i) Instances[i].ScaleBy(vect);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).ScaleBy(vect);
 	}
 	/// <inheritdoc />
 	public void AdjustScaleBy(float scalar) {
-		for (var i = 0; i < Count; ++i) Instances[i].AdjustScaleBy(scalar);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).AdjustScaleBy(scalar);
 	}
 	/// <inheritdoc />
 	public void AdjustScaleBy(Vect vect) {
-		for (var i = 0; i < Count; ++i) Instances[i].AdjustScaleBy(vect);
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).AdjustScaleBy(vect);
 	}
+
+	/// <inheritdoc />
+	public void SetMaterial(Material material) {
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetMaterial(material);
+	}
+	/// <inheritdoc />
+	public void SetDefaultMaterialBaseColor(ColorVect baseColor) {
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetDefaultMaterialBaseColor(baseColor);
+	}
+	/// <inheritdoc />
+	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) {
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetDefaultMaterialShadingStyle(style);
+	}
+	/// <inheritdoc />
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) {
+		ThrowIfDisposed();
+		for (var i = 0; i < Count; ++i) GetInstanceAtPreValidatedIndex(i).SetMaterialEmissiveStrengthMultiplier(multiplier);
+	}
+	
+	/// <summary>
+	/// Returns a player that runs the given animation on this group at its natural speed.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="animation">The animation to play.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayer(MeshAnimation animation) => new(this, animation);
+	
+	/// <summary>
+	/// Returns a player that runs the given animation on this group at a multiple of its natural speed.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="animation">The animation to play.</param>
+	/// <param name="animationSpeedMultiplier">How much faster than natural to play, where <c>1f</c> is natural speed and <c>2f</c> is twice as fast.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation animation, float animationSpeedMultiplier) => MeshAnimationPlayer.CreateWithSpeedMultiplier(this, animation, animationSpeedMultiplier);
+	
+	/// <summary>
+	/// Returns a player that runs the given animation on this group stretched or compressed to a chosen duration.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="animation">The animation to play.</param>
+	/// <param name="animationDurationSeconds">How long one cycle of the animation should take, in seconds.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation animation, float animationDurationSeconds) => MeshAnimationPlayer.CreateWithTargetDuration(this, animation, animationDurationSeconds);
+	
+	/// <summary>
+	/// Returns a player that blends between two animations on this group, so that one can be cross-faded in to the other.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
+	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayer(MeshAnimation startAnimation, MeshAnimation endAnimation) => new(this, startAnimation, endAnimation);
+	
+	/// <summary>
+	/// Returns a player that blends between two animations on this group, each running at a multiple of its natural speed.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
+	/// <param name="startAnimationSpeedMultiplier">How much faster than natural to play <paramref name="startAnimation"/>.</param>
+	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
+	/// <param name="endAnimationSpeedMultiplier">How much faster than natural to play <paramref name="endAnimation"/>.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation startAnimation, float startAnimationSpeedMultiplier, MeshAnimation endAnimation, float endAnimationSpeedMultiplier) => MeshBlendedAnimationPlayer.CreateWithSpeedMultiplier(this, startAnimation, endAnimation, startAnimationSpeedMultiplier, endAnimationSpeedMultiplier);
+	
+	/// <summary>
+	/// Returns a player that blends between two animations on this group, each stretched or compressed to a chosen duration.
+	/// </summary>
+	/// <remarks>
+	/// It's okay to 'create' many <see cref="MeshBlendedAnimationPlayer"/>s per group per frame (they are lightweight and do not generate GC pressure).
+	/// </remarks>
+	/// <param name="startAnimation">The animation blended towards at one end of the range.</param>
+	/// <param name="startAnimationDurationSeconds">How long one cycle of <paramref name="startAnimation"/> should take, in seconds.</param>
+	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
+	/// <param name="endAnimationDurationSeconds">How long one cycle of <paramref name="endAnimation"/> should take, in seconds.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, startAnimationDurationSeconds, endAnimationDurationSeconds);
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -181,21 +396,38 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingResourceGroup.CopyName(destinationBuffer);
 
-	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-	IEnumerator<ModelInstance> IEnumerable<ModelInstance>.GetEnumerator() => GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<ModelInstance>) this).GetEnumerator();
+	IEnumerator<ModelInstance> IEnumerable<ModelInstance>.GetEnumerator() {
+		ThrowIfDisposed();
+		return new ArraySegment<ModelInstance>(InstanceArray, 0, Count).GetEnumerator();
+	}
 	/// <summary>
 	/// Returns an enumerator over the model instances in this group.
 	/// </summary>
-	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance>.Enumerator GetEnumerator() => Instances.GetEnumerator();
+	public ReadOnlySpan<ModelInstance>.Enumerator GetEnumerator() => Instances.GetEnumerator();
 
 	#region Disposal
 	/// <inheritdoc />
-	public void Dispose() => UnderlyingResourceGroup.Dispose();
+	public void Dispose() {
+		UnderlyingResourceGroup.Dispose();
+		ReleaseBorrowedInstanceArray();
+	}
 	/// <summary>
 	/// Disposes this group, optionally disposing the model instances in it as well.
 	/// </summary>
 	/// <param name="disposeContainedInstances">If <see langword="true"/>, every instance in this group is disposed too; if <see langword="false"/>, only the grouping itself is discarded and the instances remain usable.</param>
-	public void Dispose(bool disposeContainedInstances) => UnderlyingResourceGroup.Dispose(disposeContainedInstances);
+	public void Dispose(bool disposeContainedInstances) {
+		UnderlyingResourceGroup.Dispose(disposeContainedInstances);
+		ReleaseBorrowedInstanceArray();
+	}
+	
+	void ThrowIfDisposed() {
+		if (UnderlyingResourceGroup.IsDisposed) throw new ObjectDisposedException(nameof(ModelInstanceGroup));
+	}
+
+	void ReleaseBorrowedInstanceArray() {
+		if (_borrowedInstanceArrayLedger.Remove(UnderlyingResourceGroup, out var entry)) _instanceArrayPool.Return(entry.Instances, clearArray: true);
+	}
 	#endregion
 
 	/// <inheritdoc />

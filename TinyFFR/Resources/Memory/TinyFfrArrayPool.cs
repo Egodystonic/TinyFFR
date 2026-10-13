@@ -13,6 +13,7 @@ interface IReleasablePool {
 
 static class TinyFfrArrayPool {
 	public const int LargeBufferThresholdBytes = 1024 * 1024;
+	public const int MinimumBucketLength = 16;
 
 	// Object pools must be released before array pools: releasing a pooled object returns its backing array
 	// to an array pool, so doing it the other way round would leave those arrays retained after the valve.
@@ -55,7 +56,7 @@ static class TinyFfrArrayPool {
 // Buffers larger than LargeBufferThresholdBytes are delegated to ArrayPool<T>.Shared, which was measured to
 // handle multi-megabyte asset buffers better than we would and whose bounded retention is desirable there.
 sealed class TinyFfrArrayPool<T> : ArrayPool<T>, IReleasablePool {
-	const int MinimumBucketLength = 16;
+	const int MinimumBucketLength = TinyFfrArrayPool.MinimumBucketLength;
 	const int MinimumBucketLengthLog2 = 4;
 	const int InitialBucketStoreCapacity = 16;
 

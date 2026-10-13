@@ -39,7 +39,7 @@ class LocalDynamicVertexBufferTest {
 	}
 
 	static int VertexCountFor(int dim) => dim * dim;
-	static int IndexCountFor(int dim) => (dim - 1) * (dim - 1) * 6;
+	static int TriangleCountFor(int dim) => (dim - 1) * (dim - 1) * 2;
 
 	static void WriteGridVertices(Span<MeshVertex> dest, int dim, float extent, float time, float frequency, float amplitude) {
 		for (var z = 0; z < dim; ++z) {
@@ -60,27 +60,23 @@ class LocalDynamicVertexBufferTest {
 		}
 	}
 
-	static void WriteGridIndices(Span<ushort> dest, int dim, int vertexOffset) {
+	static void WriteGridTriangles(Span<VertexTriangle> dest, int dim, int vertexOffset) {
 		var i = 0;
 		for (var z = 0; z < dim - 1; ++z) {
 			for (var x = 0; x < dim - 1; ++x) {
-				var topLeft = (ushort) (vertexOffset + z * dim + x);
-				var topRight = (ushort) (topLeft + 1);
-				var bottomLeft = (ushort) (vertexOffset + (z + 1) * dim + x);
-				var bottomRight = (ushort) (bottomLeft + 1);
-				dest[i++] = topLeft;
-				dest[i++] = bottomLeft;
-				dest[i++] = topRight;
-				dest[i++] = topRight;
-				dest[i++] = bottomLeft;
-				dest[i++] = bottomRight;
+				var topLeft = vertexOffset + z * dim + x;
+				var topRight = topLeft + 1;
+				var bottomLeft = vertexOffset + (z + 1) * dim + x;
+				var bottomRight = bottomLeft + 1;
+				dest[i++] = new VertexTriangle(topLeft, bottomLeft, topRight);
+				dest[i++] = new VertexTriangle(topRight, bottomLeft, bottomRight);
 			}
 		}
 	}
 
 	public void DoAnimatedGridTest() {
 		var vertexCount = VertexCountFor(SingleGridDim);
-		var indexCount = IndexCountFor(SingleGridDim);
+		var triangleCount = TriangleCountFor(SingleGridDim);
 
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
@@ -90,9 +86,9 @@ class LocalDynamicVertexBufferTest {
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(vertexCount, indexCount, "Animated Grid Buffer");
-		using (var lease = buffer.BorrowIndicesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
-			WriteGridIndices(lease.Span, SingleGridDim, 0);
+		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(vertexCount, triangleCount, "Animated Grid Buffer");
+		using (var lease = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
+			WriteGridTriangles(lease.Span, SingleGridDim, 0);
 		}
 		using (var lease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) {
 			WriteGridVertices(lease.Span, SingleGridDim, GridExtent, 0f, 2f, 0.25f);
@@ -155,9 +151,9 @@ class LocalDynamicVertexBufferTest {
 
 	public void DoSharedBufferViewsTest() {
 		var blockVertexCount = VertexCountFor(BlockGridDim);
-		var blockIndexCount = IndexCountFor(BlockGridDim);
+		var blockTriangleCount = TriangleCountFor(BlockGridDim);
 		var vertexCount = blockVertexCount * NumBlocks;
-		var indexCount = blockIndexCount * NumBlocks;
+		var triangleCount = blockTriangleCount * NumBlocks;
 
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
@@ -167,14 +163,14 @@ class LocalDynamicVertexBufferTest {
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(vertexCount, indexCount, "Shared Block Buffer");
+		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(vertexCount, triangleCount, "Shared Block Buffer");
 
 		var indexShift = 0;
 		void WriteAllIndices() {
-			using var lease = buffer.BorrowIndicesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
+			using var lease = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
 			for (var b = 0; b < NumBlocks; ++b) {
 				var sourceBlock = (b + indexShift) % NumBlocks;
-				WriteGridIndices(lease.Span.Slice(b * blockIndexCount, blockIndexCount), BlockGridDim, sourceBlock * blockVertexCount);
+				WriteGridTriangles(lease.Span.Slice(b * blockTriangleCount, blockTriangleCount), BlockGridDim, sourceBlock * blockVertexCount);
 			}
 		}
 		WriteAllIndices();
@@ -188,7 +184,7 @@ class LocalDynamicVertexBufferTest {
 
 		void CreateViewsAndInstances() {
 			for (var b = 0; b < NumBlocks; ++b) {
-				views[b] = buffer.CreateMesh((b * blockIndexCount)..((b + 1) * blockIndexCount));
+				views[b] = buffer.CreateMesh((b * blockTriangleCount)..((b + 1) * blockTriangleCount));
 				instances[b] = factory.ObjectBuilder.CreateModelInstance(views[b], mat, positions[b]);
 				scene.Add(instances[b]);
 			}
@@ -251,7 +247,7 @@ class LocalDynamicVertexBufferTest {
 		void RefreshStatus() {
 			statusText.SetText(
 				$"recalculate={recalculateBoundingBox}   overwrite={overwriteChildBoxes}   indexShift={indexShift}\n" +
-				$"buffer={buffer.VertexBufferSize} verts / {buffer.IndexBufferSize} indices\n" +
+				$"buffer={buffer.VertexBufferSize} verts / {buffer.TriangleBufferSize} triangles\n" +
 				lastAction,
 				TextJustification.Left
 			);
@@ -324,7 +320,7 @@ class LocalDynamicVertexBufferTest {
 
 					DestroyViewsAndInstances();
 					buffer.ResizeVertexBuffer((int) (buffer.VertexBufferSize * 1.5f));
-					buffer.ResizeIndexBuffer((int) (buffer.IndexBufferSize * 1.5f));
+					buffer.ResizeTriangleBuffer((int) (buffer.TriangleBufferSize * 1.5f));
 					CreateViewsAndInstances();
 
 					var preserved = true;

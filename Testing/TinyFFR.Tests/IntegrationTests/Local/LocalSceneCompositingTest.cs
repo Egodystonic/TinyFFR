@@ -37,7 +37,7 @@ class LocalSceneCompositingTest {
 		using var cubeScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.None);
 		using var cubeCamera = factory.CameraBuilder.CreateCamera();
 		using var cubeRenderer = factory.RendererBuilder.CreateRenderer(cubeScene, cubeCamera, window);
-		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		using var cubeMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		using var cubeTex = factory.TextureBuilder.CreateColorMap(StandardColor.Red, false);
 		using var cubeMat = factory.MaterialBuilder.CreateStandardMaterial(cubeTex);
 		using var cubeInstances = factory.ObjectBuilder.GroupModelInstances(
@@ -50,7 +50,7 @@ class LocalSceneCompositingTest {
 		using var pipScene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Starfield);
 		using var pipCamera = factory.CameraBuilder.CreateCamera();
 		using var pipRenderer = factory.RendererBuilder.CreateRenderer(pipScene, pipCamera, window);
-		using var pipMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere);
+		using var pipMesh = factory.MeshBuilder.CreateSphere(Sphere.OneMeterCubedVolumeSphere);
 		using var pipTex = factory.TextureBuilder.CreateColorMap(StandardColor.Green, false);
 		using var pipMat = factory.MaterialBuilder.CreateStandardMaterial(pipTex);
 		using var pipInstances = factory.ObjectBuilder.GroupModelInstances(

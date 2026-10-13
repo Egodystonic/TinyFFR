@@ -6,39 +6,6 @@ using System.Buffers;
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
-	public struct Enumerator : IEnumerator<T> {
-		readonly ArrayPoolBackedVector<T> _owner;
-		readonly int _version;
-		int _curIndex;
-
-		public T Current { get; private set; } = default!;
-		object IEnumerator.Current => Current!;
-
-		public Enumerator(ArrayPoolBackedVector<T> owner) {
-			_owner = owner;
-			_version = owner.Version;
-			Reset();
-		}
-
-		public bool MoveNext() {
-			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
-			if (++_curIndex < _owner.Count) {
-				Current = _owner[_curIndex];
-				return true;
-			}
-			
-			Current = default!;
-			return false;
-		}
-
-		public void Reset() {
-			_curIndex = -1;
-			Current = default!;
-		}
-
-		public void Dispose() { /* no op */ }
-	}
-
 	public const int DefaultInitialCapacity = 4;
 	T[] _backingArray;
 
@@ -48,6 +15,8 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _backingArray.AsSpan(0, Count);
 	}
+
+	public Span<T> BackingSpan => AsSpan;
 
 	public int Count { get; private set; } = 0;
 	bool ICollection<T>.IsReadOnly { get; } = false;
@@ -73,20 +42,53 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		++Version;
 	}
 
+	public void AddRange(ReadOnlySpan<T> items) {
+		if (items.IsEmpty) return;
+
+		var newCount = Count + items.Length;
+		if (newCount <= _backingArray.Length) {
+			items.CopyTo(_backingArray.AsSpan(Count));
+		}
+		else {
+			var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(Math.Max(_backingArray.Length * 2, newCount));
+			AsSpan.CopyTo(newBackingArray);
+			items.CopyTo(newBackingArray.AsSpan(Count));
+			TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+			_backingArray = newBackingArray;
+		}
+
+		Count = newCount;
+		++Version;
+	}
+
+	public void AddRange(IEnumerable<T> items) {
+		ArgumentNullException.ThrowIfNull(items);
+		if (items is ArrayPoolBackedVector<T> vector) {
+			AddRange(vector.AsSpan);
+			return;
+		}
+		if (items is T[] array) {
+			AddRange(array.AsSpan());
+			return;
+		}
+		if (items is ICollection<T> collection) EnsureCapacity(Count + collection.Count);
+		foreach (var item in items) Add(item);
+	}
+
 	public void Clear() {
-		Array.Clear(_backingArray);
+		if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) Array.Clear(_backingArray, 0, Count);
 		Count = 0;
 		++Version;
+	}
+
+	public void ClearAndShrinkToInitialCapacity() {
+		Clear();
+		ShrinkToInitialCapacity();
 	}
 
 	public ref T GetValueByRef(int index) {
 		if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count.");
 		return ref _backingArray[index];
-	}
-
-	public void ClearWithoutZeroingMemory() {
-		Count = 0;
-		++Version;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -147,14 +149,30 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 
 	public void CopyTo(T[] array, int arrayIndex) => AsSpan.CopyTo(array.AsSpan(arrayIndex));
 
-	public Enumerator GetEnumerator() => new(this);
+	public ArrayPoolBackedListEnumerator<T> GetEnumerator() => new(this);
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
+	void ShrinkToInitialCapacity() {
+		if (_backingArray.Length <= TinyFfrArrayPool.MinimumBucketLength) return;
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray);
+		_backingArray = TinyFfrArrayPool<T>.Shared.Rent(DefaultInitialCapacity);
+		++Version;
+	}
+
 	public void Dispose() {
 		++Version;
-		TinyFfrArrayPool<T>.Shared.Return(_backingArray);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		_backingArray = null!;
+	}
+
+	void EnsureCapacity(int capacity) {
+		if (capacity <= _backingArray.Length) return;
+
+		var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(Math.Max(_backingArray.Length * 2, capacity));
+		AsSpan.CopyTo(newBackingArray);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+		_backingArray = newBackingArray;
 	}
 
 	void IncreaseBackingArraySizeIfFull() {
@@ -162,7 +180,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 
 		var newBackingArray = TinyFfrArrayPool<T>.Shared.Rent(_backingArray.Length * 2);
 		_backingArray.CopyTo(newBackingArray, 0);
-		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: true);
+		TinyFfrArrayPool<T>.Shared.Return(_backingArray, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		_backingArray = newBackingArray;
 	}
 }

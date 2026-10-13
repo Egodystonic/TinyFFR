@@ -29,7 +29,7 @@ unsafe partial class LocalAssetLoader {
 			var name = ctx.StoredOrOverridingName;
 
 			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, name);
-			var resolver = new BakedAssetResolver(assetData, group, self);
+			using var resolver = new BakedAssetResolver(assetData, group, self);
 			try {
 				resolver.MaterializeAll();
 				group.Add(CreateMaterialFromBakedAsset(self, assetData, name, BakedPoolKind.Root, -1, in resolver));

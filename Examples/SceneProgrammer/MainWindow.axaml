@@ -1,0 +1,278 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SceneProgrammer"
+        xmlns:tffr="clr-namespace:Egodystonic.TinyFFR.Avalonia;assembly=TinyFFR.Avalonia"
+        x:Class="SceneProgrammer.MainWindow"
+        x:DataType="local:MainViewModel"
+        Title="TinyFFR Scene Programmer"
+        Width="1600" Height="900">
+	<Window.Styles>
+		<Style Selector="TextBlock.Heading">
+			<Setter Property="FontWeight" Value="SemiBold" />
+			<Setter Property="Margin" Value="0,12,0,4" />
+		</Style>
+		<Style Selector="NumericUpDown">
+			<Setter Property="Margin" Value="0,2" />
+		</Style>
+	</Window.Styles>
+
+	<DockPanel>
+		<Border DockPanel.Dock="Top" Padding="8" Background="#20000000">
+			<DockPanel>
+				<Button DockPanel.Dock="Left" Content="Import Models..." Click="OnImportClicked" IsEnabled="{Binding !IsBusy}" />
+				<Button DockPanel.Dock="Right" Content="▶  Play Fullscreen" Command="{Binding PlayFullscreenCommand}" IsEnabled="{Binding CanPlay}" FontWeight="Bold" />
+				<ProgressBar DockPanel.Dock="Left" Width="120" Margin="12,0" IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+				<TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Margin="12,0" />
+			</DockPanel>
+		</Border>
+
+		<ScrollViewer DockPanel.Dock="Left" Width="280">
+			<StackPanel Margin="10">
+				<TextBlock Classes="Heading" Text="Scene Objects" Margin="0,0,0,4" />
+				<ListBox ItemsSource="{Binding Objects}" SelectedItem="{Binding SelectedObject}" Height="220" />
+				<StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6">
+					<Button Content="Duplicate" Command="{Binding DuplicateSelectedObjectCommand}" IsEnabled="{Binding HasSelectedObject}" />
+					<Button Content="Delete" Command="{Binding DeleteSelectedObjectCommand}" IsEnabled="{Binding HasSelectedObject}" />
+				</StackPanel>
+
+				<StackPanel IsVisible="{Binding HasSelectedObject}">
+					<TextBlock Classes="Heading" Text="Position" />
+					<NumericUpDown Value="{Binding SelectedObject.PositionX}" Increment="0.1" FormatString="0.###" />
+					<NumericUpDown Value="{Binding SelectedObject.PositionY}" Increment="0.1" FormatString="0.###" />
+					<NumericUpDown Value="{Binding SelectedObject.PositionZ}" Increment="0.1" FormatString="0.###" />
+					<TextBlock Classes="Heading" Text="Rotation (yaw, pitch, roll)" />
+					<NumericUpDown Value="{Binding SelectedObject.YawDegrees}" Increment="15" FormatString="0.#°" />
+					<NumericUpDown Value="{Binding SelectedObject.PitchDegrees}" Increment="15" FormatString="0.#°" />
+					<NumericUpDown Value="{Binding SelectedObject.RollDegrees}" Increment="15" FormatString="0.#°" />
+					<TextBlock Classes="Heading" Text="Scale" />
+					<NumericUpDown Value="{Binding SelectedObject.Scale}" Increment="0.1" Minimum="0.001" FormatString="0.###" />
+					<TextBlock Classes="Heading" Text="Emissive strength" />
+					<NumericUpDown Value="{Binding SelectedObject.EmissiveStrengthMultiplier}" Increment="0.1" Minimum="0" FormatString="0.##" ToolTip.Tip="Scales how brightly this object's glowing (emissive) surfaces shine; 1 is as authored, 0 turns the glow off" />
+				</StackPanel>
+			</StackPanel>
+		</ScrollViewer>
+
+		<TabControl DockPanel.Dock="Right" Width="340">
+			<TabItem Header="Camera Track">
+				<ScrollViewer>
+					<StackPanel Margin="4">
+						<StackPanel Orientation="Horizontal" Spacing="6">
+							<Button Content="Add Keyframe (K)" Command="{Binding AddKeyframeCommand}" />
+							<Button Content="↑" Command="{Binding MoveSelectedKeyframeUpCommand}" IsEnabled="{Binding HasSelectedKeyframe}" />
+							<Button Content="↓" Command="{Binding MoveSelectedKeyframeDownCommand}" IsEnabled="{Binding HasSelectedKeyframe}" />
+							<Button Content="Delete" Command="{Binding DeleteSelectedKeyframeCommand}" IsEnabled="{Binding HasSelectedKeyframe}" />
+						</StackPanel>
+						<ListBox ItemsSource="{Binding Keyframes}" SelectedItem="{Binding SelectedKeyframe}" Height="200" Margin="0,6">
+							<ListBox.ItemTemplate>
+								<DataTemplate x:DataType="local:CameraKeyframe">
+									<TextBlock Text="{Binding Summary}" />
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+
+						<StackPanel IsVisible="{Binding HasSelectedKeyframe}">
+							<Button Content="Move Keyframe to Current View" Command="{Binding RecaptureSelectedKeyframeCommand}" />
+							<TextBlock Classes="Heading" Text="Time to reach this keyframe (seconds)" />
+							<NumericUpDown Value="{Binding SelectedKeyframe.DurationSeconds}" Increment="0.5" Minimum="0" FormatString="0.##" />
+							<TextBlock Classes="Heading" Text="Easing" />
+							<ComboBox ItemsSource="{Binding EasingStyles}" SelectedItem="{Binding SelectedKeyframe.Easing}" HorizontalAlignment="Stretch" />
+							<TextBlock Classes="Heading" Text="Vertical field of view (degrees)" />
+							<NumericUpDown Value="{Binding SelectedKeyframe.FieldOfViewDegrees}" Increment="5" Minimum="5" Maximum="170" FormatString="0.#" />
+							<TextBlock Classes="Heading" Text="Depth of field" />
+							<CheckBox Content="Enable depth of field at this keyframe" IsChecked="{Binding SelectedKeyframe.DepthOfFieldEnabled}" />
+							<StackPanel IsEnabled="{Binding SelectedKeyframe.DepthOfFieldEnabled}">
+								<TextBlock Classes="Heading" Text="Focus distance (metres)" />
+								<NumericUpDown Value="{Binding SelectedKeyframe.FocusDistance}" Increment="0.25" Minimum="0.01" FormatString="0.##" />
+							</StackPanel>
+							<Button Content="Focus on Selected Object" Command="{Binding FocusSelectedKeyframeOnSelectedObjectCommand}" IsEnabled="{Binding HasSelectedObject}" Margin="0,4,0,0" ToolTip.Tip="Sets the focus distance to the selected object's distance from this keyframe's position" />
+							<TextBlock Classes="Heading" Text="Exposure" />
+							<ComboBox ItemsSource="{Binding ExposurePresets}" SelectedItem="{Binding SelectedKeyframe.ExposurePreset}" HorizontalAlignment="Stretch" />
+							<TextBlock Classes="Heading" Text="Exposure brightness (multiplier)" />
+							<NumericUpDown Value="{Binding SelectedKeyframe.ExposureBrightness}" Increment="0.25" Minimum="0.05" Maximum="20" FormatString="0.##" />
+							<TextBlock Classes="Heading" Text="Look at" />
+							<ComboBox ItemsSource="{Binding LookAtChoices}" SelectedItem="{Binding SelectedKeyframe.LookAt}" HorizontalAlignment="Stretch" />
+							<StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+								<Button Content="Look at Camera Position" Command="{Binding SetLookAtPointToCameraCommand}" ToolTip.Tip="Fly the editor camera to the point this keyframe should look at, then press this" />
+								<Button Content="Clear" Command="{Binding ClearLookAtCommand}" />
+							</StackPanel>
+							<TextBlock Text="{Binding SelectedKeyframe.LookAtPointDescription}" IsVisible="{Binding SelectedKeyframe.LookAtPointDescription, Converter={x:Static ObjectConverters.IsNotNull}}" FontSize="12" Opacity="0.7" />
+							<TextBlock Classes="Heading" Text="Pivot (sweep around a point on the way here)" TextWrapping="Wrap" />
+							<StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding SelectedKeyframe.CanHavePivot}">
+								<Button Content="Pivot at Camera Position" Command="{Binding SetPivotToCameraCommand}" ToolTip.Tip="Fly the editor camera to the point the camera should sweep around, then press this" />
+								<Button Content="Clear" Command="{Binding ClearPivotCommand}" />
+							</StackPanel>
+							<TextBlock Text="{Binding SelectedKeyframe.PivotDescription}" IsVisible="{Binding SelectedKeyframe.PivotDescription, Converter={x:Static ObjectConverters.IsNotNull}}" FontSize="12" Opacity="0.7" />
+						</StackPanel>
+
+						<TextBlock Classes="Heading" Text="When the track ends" />
+						<ComboBox ItemsSource="{Binding WrapStyles}" SelectedItem="{Binding Wrapping}" HorizontalAlignment="Stretch" />
+
+						<TextBlock Classes="Heading" Text="Preview" />
+						<ToggleSwitch IsChecked="{Binding IsPreviewing}" OnContent="Viewing through track camera" OffContent="Viewing through editor camera" />
+						<Slider Minimum="0" Maximum="{Binding TrackLengthSeconds}" Value="{Binding PreviewTimeSeconds}" />
+						<DockPanel>
+							<Button DockPanel.Dock="Left" Content="Play / Pause Preview" Command="{Binding TogglePreviewPlaybackCommand}" />
+							<TextBlock VerticalAlignment="Center" HorizontalAlignment="Right">
+								<Run Text="{Binding PreviewTimeSeconds, StringFormat='{}{0:0.0}'}" />
+								<Run Text=" / " />
+								<Run Text="{Binding TrackLengthSeconds, StringFormat='{}{0:0.0}s'}" />
+							</TextBlock>
+						</DockPanel>
+					</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+			<TabItem Header="Environment">
+				<ScrollViewer>
+				<StackPanel Margin="4">
+					<TextBlock Classes="Heading" Text="Backdrop" Margin="0,0,0,4" />
+					<ComboBox ItemsSource="{Binding BackdropStyles}" SelectedItem="{Binding Backdrop}" HorizontalAlignment="Stretch" />
+					<DockPanel Margin="0,6,0,0">
+						<ComboBox DockPanel.Dock="Right" ItemsSource="{Binding HdrQualities}" SelectedItem="{Binding HdrQuality}" Width="120" Margin="6,0,0,0" ToolTip.Tip="Backdrop resolution: higher is sharper, but converts more slowly and uses more video memory" />
+						<Button Content="Load HDR/EXR..." Click="OnLoadBackdropClicked" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Stretch" />
+					</DockPanel>
+					<TextBlock Text="{Binding CustomBackdropName}" IsVisible="{Binding CustomBackdropName, Converter={x:Static ObjectConverters.IsNotNull}}" FontSize="12" Opacity="0.7" Margin="0,4,0,0" TextWrapping="Wrap" />
+					<TextBlock Classes="Heading" Text="Lighting" />
+					<ComboBox ItemsSource="{Binding LightingPresets}" SelectedItem="{Binding Lighting}" HorizontalAlignment="Stretch" />
+					<TextBlock Classes="Heading" Text="Backdrop brightness" />
+					<ToggleSwitch IsChecked="{Binding UseBackdropBrightnessSlider}" IsEnabled="{Binding CanUseBackdropBrightnessSlider}" OffContent="Preset" OnContent="Slider" ToolTip.Tip="The slider is available for custom HDR/EXR backdrops" />
+					<ComboBox ItemsSource="{Binding BackdropBrightnessPresets}" SelectedItem="{Binding BackdropBrightness}" HorizontalAlignment="Stretch" IsVisible="{Binding !IsBackdropBrightnessSliderActive}" />
+					<DockPanel IsVisible="{Binding IsBackdropBrightnessSliderActive}">
+						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding BackdropBrightnessPercent, StringFormat='{}{0:0}%'}" />
+						<Slider Minimum="0" Maximum="300" Value="{Binding BackdropBrightnessPercent}" />
+					</DockPanel>
+					<TextBlock Classes="Heading" Text="Backdrop rotation (horizontal)" />
+					<DockPanel IsEnabled="{Binding CanRotateBackdrop}" ToolTip.Tip="Turns the sky (and the lighting it provides) around the vertical axis">
+						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding BackdropHorizontalRotationDegrees, StringFormat='{}{0:0}°'}" />
+						<Slider Minimum="0" Maximum="360" Value="{Binding BackdropHorizontalRotationDegrees}" />
+					</DockPanel>
+					<TextBlock Classes="Heading" Text="Backdrop rotation (vertical)" />
+					<DockPanel IsEnabled="{Binding CanRotateBackdrop}" ToolTip.Tip="Tilts the sky (and the lighting it provides) up or down">
+						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding BackdropVerticalRotationDegrees, StringFormat='{}{0:0}°'}" />
+						<Slider Minimum="-180" Maximum="180" Value="{Binding BackdropVerticalRotationDegrees}" />
+					</DockPanel>
+					<TextBlock Classes="Heading" Text="Sun compass direction" />
+					<Slider Minimum="0" Maximum="360" Value="{Binding SunAzimuthDegrees}" />
+					<TextBlock Classes="Heading" Text="Sun height" />
+					<Slider Minimum="5" Maximum="90" Value="{Binding SunElevationDegrees}" />
+					<TextBlock Classes="Heading" Text="Sun brightness" />
+					<DockPanel>
+						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding SunBrightnessMultiplier, StringFormat='{}{0:0.00}×'}" />
+						<Slider Minimum="0" Maximum="3" Value="{Binding SunBrightnessMultiplier}" />
+					</DockPanel>
+					<DockPanel Margin="0,4">
+						<TextBlock Text="Sun colour" VerticalAlignment="Center" />
+						<ColorPicker Color="{Binding SunColor}" IsAlphaEnabled="False" HorizontalAlignment="Right" />
+					</DockPanel>
+					<CheckBox Content="Sun casts shadows" IsChecked="{Binding SunCastsShadows}" Margin="0,8,0,0" />
+					<DockPanel IsEnabled="{Binding SunCastsShadows}" Margin="0,4,0,0" ToolTip.Tip="How far from the camera the sun's shadows are drawn in detail; lower values give sharper shadows close to the camera">
+						<NumericUpDown DockPanel.Dock="Right" Width="130" Value="{Binding SunMaxShadowDistance}" Minimum="0.1" Increment="10" FormatString="0.#" />
+						<TextBlock Text="Max shadow distance (m)" VerticalAlignment="Center" />
+					</DockPanel>
+					<CheckBox Content="Stabilize sun shadows" IsChecked="{Binding SunShadowStabilization}" IsEnabled="{Binding SunCastsShadows}" Margin="0,4,0,0" ToolTip.Tip="Stops shadow edges shimmering as the camera moves, at the cost of blurrier shadows in compact scenes; works best with a low max shadow distance" />
+					<StackPanel Orientation="Horizontal" Spacing="12">
+						<CheckBox Content="Show ground" IsChecked="{Binding ShowGround}" />
+						<CheckBox Content="Show grid" IsChecked="{Binding ShowGrid}" ToolTip.Tip="The grid is only shown in the editor; never in the preview or in fullscreen playback" />
+					</StackPanel>
+
+					<TextBlock Classes="Heading" Text="Fog" />
+					<CheckBox Content="Enable fog" IsChecked="{Binding FogEnabled}" />
+					<StackPanel IsEnabled="{Binding FogEnabled}">
+						<DockPanel Margin="0,4">
+							<Button DockPanel.Dock="Right" Content="Apply Preset" Command="{Binding ApplyFogPresetCommand}" Margin="6,0,0,0" />
+							<ComboBox ItemsSource="{Binding FogPresets}" SelectedItem="{Binding FogPreset}" HorizontalAlignment="Stretch" />
+						</DockPanel>
+						<DockPanel Margin="0,4">
+							<TextBlock Text="Colour" VerticalAlignment="Center" />
+							<ColorPicker Color="{Binding FogColor}" IsAlphaEnabled="False" HorizontalAlignment="Right" />
+						</DockPanel>
+						<TextBlock Text="{Binding FogOpacity, StringFormat='Opacity: {0:0.00}'}" />
+						<Slider Minimum="0" Maximum="1" Value="{Binding FogOpacity}" />
+						<TextBlock Text="{Binding FogDensityMultiplier, StringFormat='Density: {0:0.00}×'}" />
+						<Slider Minimum="0" Maximum="3" Value="{Binding FogDensityMultiplier}" />
+						<TextBlock Text="{Binding FogStartDistance, StringFormat='Start distance: {0:0.0} m'}" />
+						<Slider Minimum="0" Maximum="100" Value="{Binding FogStartDistance}" />
+						<TextBlock Text="{Binding FogGroundLayerHeight, StringFormat='Ground layer height: {0:0.0} m'}" />
+						<Slider Minimum="-10" Maximum="50" Value="{Binding FogGroundLayerHeight}" />
+						<TextBlock Text="{Binding FogSkywardFalloff, StringFormat='Thinning with height: {0:0.00}×'}" />
+						<Slider Minimum="0" Maximum="5" Value="{Binding FogSkywardFalloff}" />
+						<TextBlock Text="{Binding FogSunScattering, StringFormat='Sun glow: {0:0.00}×'}" />
+						<Slider Minimum="0" Maximum="3" Value="{Binding FogSunScattering}" />
+						<CheckBox Content="Fog also covers the sky" IsChecked="{Binding FogOccludesBackdrop}" />
+					</StackPanel>
+				</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+			<TabItem Header="Lights">
+				<ScrollViewer>
+					<StackPanel Margin="4">
+						<StackPanel Orientation="Horizontal" Spacing="6">
+							<Button Content="Add Point Light" Command="{Binding AddPointLightCommand}" />
+							<Button Content="Add Spot Light" Command="{Binding AddSpotLightCommand}" />
+						</StackPanel>
+						<TextBlock Text="New lights are placed at the editor camera's position (spot lights point where the camera is looking). Lights use real-world brightness, so they barely show in daylight; try the Twilight or Indoors lighting preset." TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,6" />
+						<ListBox ItemsSource="{Binding Lights}" SelectedItem="{Binding SelectedLight}" Height="140" />
+						<Button Content="Delete Light" Command="{Binding DeleteSelectedLightCommand}" IsEnabled="{Binding HasSelectedLight}" Margin="0,6" />
+
+						<StackPanel IsVisible="{Binding HasSelectedLight}">
+							<TextBlock Classes="Heading" Text="Position" />
+							<NumericUpDown Value="{Binding SelectedLight.PositionX}" Increment="0.1" FormatString="0.###" />
+							<NumericUpDown Value="{Binding SelectedLight.PositionY}" Increment="0.1" FormatString="0.###" />
+							<NumericUpDown Value="{Binding SelectedLight.PositionZ}" Increment="0.1" FormatString="0.###" />
+							<Button Content="Move to Camera Position" Command="{Binding MoveSelectedLightToCameraCommand}" Margin="0,4,0,0" />
+
+							<DockPanel Margin="0,10,0,0">
+								<TextBlock Text="Colour" VerticalAlignment="Center" />
+								<ColorPicker Color="{Binding SelectedLight.Color}" IsAlphaEnabled="False" HorizontalAlignment="Right" />
+							</DockPanel>
+
+							<TextBlock Classes="Heading" Text="Brightness" />
+							<ComboBox ItemsSource="{Binding PointBrightnessPresets}" SelectedItem="{Binding SelectedLight.PointBrightnessPreset}" HorizontalAlignment="Stretch" IsVisible="{Binding !SelectedLight.IsSpotLight}" />
+							<ComboBox ItemsSource="{Binding SpotBrightnessPresets}" SelectedItem="{Binding SelectedLight.SpotBrightnessPreset}" HorizontalAlignment="Stretch" IsVisible="{Binding SelectedLight.IsSpotLight}" />
+							<DockPanel>
+								<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding SelectedLight.BrightnessMultiplier, StringFormat='{}{0:0.0}×'}" />
+								<Slider Minimum="0" Maximum="20" Value="{Binding SelectedLight.BrightnessMultiplier}" />
+							</DockPanel>
+
+							<TextBlock Classes="Heading" Text="Range (metres)" />
+							<NumericUpDown Value="{Binding SelectedLight.Range}" Increment="1" Minimum="0.1" FormatString="0.#" />
+							<CheckBox Content="Casts shadows" IsChecked="{Binding SelectedLight.CastsShadows}" Margin="0,6,0,0" />
+
+							<StackPanel IsVisible="{Binding SelectedLight.IsSpotLight}">
+								<TextBlock Classes="Heading" Text="Cone angle (degrees)" />
+								<NumericUpDown Value="{Binding SelectedLight.ConeAngleDegrees}" Increment="5" Minimum="1" Maximum="180" FormatString="0.#" />
+								<TextBlock Classes="Heading" Text="Intense beam angle (degrees)" />
+								<NumericUpDown Value="{Binding SelectedLight.IntenseBeamAngleDegrees}" Increment="5" Minimum="0" Maximum="180" FormatString="0.#" />
+								<StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6,0,0">
+									<Button Content="Aim Along Camera View" Command="{Binding AimSelectedLightAlongViewCommand}" />
+									<Button Content="Aim at Selected Object" Command="{Binding AimSelectedLightAtSelectedObjectCommand}" IsEnabled="{Binding HasSelectedObject}" />
+								</StackPanel>
+							</StackPanel>
+						</StackPanel>
+					</StackPanel>
+				</ScrollViewer>
+			</TabItem>
+			<TabItem Header="Rendering">
+				<StackPanel Margin="4">
+					<TextBlock Classes="Heading" Text="Quality preset (editor and playback)" Margin="0,0,0,4" />
+					<ComboBox ItemsSource="{Binding RenderQualities}" SelectedItem="{Binding RenderQuality}" HorizontalAlignment="Stretch" />
+					<TextBlock Classes="Heading" Text="Depth of field" />
+					<CheckBox Content="Enable depth of field" IsChecked="{Binding DepthOfFieldEnabled}" />
+					<StackPanel IsEnabled="{Binding DepthOfFieldEnabled}">
+						<TextBlock Classes="Heading" Text="Focus distance (metres)" />
+						<NumericUpDown Value="{Binding FocusDistance}" Increment="0.25" Minimum="0.01" FormatString="0.##" />
+					</StackPanel>
+					<Button Content="Focus on Selected Object" Command="{Binding FocusOnSelectedObjectCommand}" IsEnabled="{Binding HasSelectedObject}" Margin="0,6,0,0" />
+					<TextBlock Text="{Binding DepthOfFieldStrength, StringFormat='Blur strength: {0:0.00}×'}" Margin="0,8,0,0" />
+					<Slider Minimum="0" Maximum="3" Value="{Binding DepthOfFieldStrength}" IsEnabled="{Binding DepthOfFieldEnabled}" />
+				</StackPanel>
+			</TabItem>
+		</TabControl>
+
+		<Grid>
+			<tffr:TinyFfrSceneView x:Name="SceneView" Renderer="{Binding ActiveRenderer}" FallbackBrush="#202020" />
+			<Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8" Padding="8,4" CornerRadius="4" Background="#A0000000" IsHitTestVisible="False">
+				<TextBlock Foreground="White" FontSize="12" Text="Click: select  ·  Drag: move  ·  Shift+drag: raise/lower  ·  Hold right mouse + WASD/QE: fly  ·  Wheel: fly speed  ·  K: add keyframe  ·  Del: delete" />
+			</Border>
+		</Grid>
+	</DockPanel>
+</Window>

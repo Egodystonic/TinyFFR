@@ -15,18 +15,18 @@ public interface IDynamicVertexBufferImplProvider : IDisposableResourceImplProvi
 	/// </summary>
 	int GetVertexBufferSize(ResourceHandle<DynamicVertexBuffer> handle);
 	/// <summary>
-	/// Invoked via <see cref="DynamicVertexBuffer.IndexBufferSize"/>.
+	/// Invoked via <see cref="DynamicVertexBuffer.TriangleBufferSize"/>.
 	/// </summary>
-	int GetIndexBufferSize(ResourceHandle<DynamicVertexBuffer> handle);
+	int GetTriangleBufferSize(ResourceHandle<DynamicVertexBuffer> handle);
 
 	/// <summary>
 	/// Invoked via <see cref="DynamicVertexBuffer.ResizeVertexBuffer"/>.
 	/// </summary>
 	void ResizeVertexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize);
 	/// <summary>
-	/// Invoked via <see cref="DynamicVertexBuffer.ResizeIndexBuffer"/>.
+	/// Invoked via <see cref="DynamicVertexBuffer.ResizeTriangleBuffer"/>.
 	/// </summary>
-	void ResizeIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize);
+	void ResizeTriangleBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newBufferSize);
 
 	/// <summary>
 	/// Invoked via <see cref="DynamicVertexBuffer.BorrowVerticesSpan(bool, bool)"/>, <see cref="DynamicVertexBuffer.BorrowVerticesSpan(bool, bool, Range)"/>.
@@ -37,16 +37,18 @@ public interface IDynamicVertexBufferImplProvider : IDisposableResourceImplProvi
 	/// </summary>
 	ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle);
 	/// <summary>
-	/// Invoked via <see cref="DynamicVertexBuffer.BorrowIndicesSpan(bool, bool)"/>, <see cref="DynamicVertexBuffer.BorrowIndicesSpan(bool, bool, Range)"/>.
+	/// Invoked via <see cref="DynamicVertexBuffer.BorrowTrianglesSpan(bool, bool)"/>, <see cref="DynamicVertexBuffer.BorrowTrianglesSpan(bool, bool, Range)"/>.
 	/// </summary>
-	ScopedSpanLease<ushort> BorrowIndicesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes);
+	ScopedSpanLease<VertexTriangle> BorrowTrianglesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes);
 	/// <summary>
-	/// Invoked via <see cref="DynamicVertexBuffer.BorrowIndicesSpanReadOnly"/>.
+	/// Invoked via <see cref="DynamicVertexBuffer.BorrowTrianglesSpanReadOnly"/>.
 	/// </summary>
-	ScopedReadOnlySpanLease<ushort> BorrowIndicesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle);
+	ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle);
 
 	internal void SetVerticesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<MeshVertexImGui> vertices, int offset);
 	internal void SetIndicesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<ushort> indices, int offset);
+	internal void ResizeImGuiIndexBuffer(ResourceHandle<DynamicVertexBuffer> handle, int newIndexCount);
+	internal Mesh CreateImGuiMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range indicesRange, PositionedCuboid boundingBox);
 
 	/// <summary>
 	/// Invoked via <see cref="DynamicVertexBuffer.TriggerManualBoundingBoxRecalculation"/>.
@@ -64,5 +66,5 @@ public interface IDynamicVertexBufferImplProvider : IDisposableResourceImplProvi
 	/// <summary>
 	/// Invoked via <see cref="DynamicVertexBuffer.CreateMesh()"/>, <see cref="DynamicVertexBuffer.CreateMesh(Range)"/>, <see cref="DynamicVertexBuffer.CreateMesh(Range, PositionedCuboid)"/>.
 	/// </summary>
-	Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range indicesRange, PositionedCuboid? boundingBoxOverride);
+	Mesh CreateMeshView(ResourceHandle<DynamicVertexBuffer> handle, Range trianglesRange, PositionedCuboid? boundingBoxOverride);
 }

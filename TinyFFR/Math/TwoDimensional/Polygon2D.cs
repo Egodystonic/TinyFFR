@@ -93,10 +93,20 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 
 		return true;
 	}
-	/// <inheritdoc/>
+	/// <summary>
+	/// Determines whether two polygons are equal.
+	/// </summary>
+	/// <param name="left">The first polygon to compare.</param>
+	/// <param name="right">The second polygon to compare.</param>
+	/// <returns><see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> are equal (see <see cref="Equals(Polygon2D)"/>); otherwise <see langword="false"/>.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Polygon2D left, Polygon2D right) => left.Equals(right);
-	/// <inheritdoc/>
+	/// <summary>
+	/// Determines whether two polygons are not equal.
+	/// </summary>
+	/// <param name="left">The first polygon to compare.</param>
+	/// <param name="right">The second polygon to compare.</param>
+	/// <returns><see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> are not equal (see <see cref="Equals(Polygon2D)"/>); otherwise <see langword="false"/>.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(Polygon2D left, Polygon2D right) => !left.Equals(right);
 	/// <summary>

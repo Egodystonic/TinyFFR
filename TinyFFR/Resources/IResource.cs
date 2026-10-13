@@ -51,11 +51,12 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 	internal IResourceImplProvider Implementation { get; }
 	internal ResourceIdent Ident { get; }
 	internal ResourceStub AsStub => new(Ident, Implementation);
+	internal static virtual object BoxFromStub(ResourceStub stub) => stub;
 
 	internal static void AllocateGcHandleAndSerializeResource<TResource>(TResource resource, Span<byte> dest) where TResource : IResource<TResource> {
 		var gcHandle = GCHandle.Alloc(resource.Implementation, GCHandleType.Normal);
 		BinaryPrimitives.WriteIntPtrLittleEndian(dest, GCHandle.ToIntPtr(gcHandle));
-		BinaryPrimitives.WriteUIntPtrLittleEndian(dest[IntPtr.Size..], resource.Handle);
+		BinaryPrimitives.WriteUIntPtrLittleEndian(dest[IntPtr.Size..], resource.GetHandleWithoutDisposeCheck());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,6 +73,8 @@ public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : I
 
 	internal static abstract TSelf CreateFromHandleAndImpl(ResourceHandle<TSelf> handle, IResourceImplProvider impl);
 	internal static virtual TSelf CreateFromStub(ResourceStub stub) => TSelf.CreateFromHandleAndImpl(stub.CreateTypedHandleWithTypeCheck<TSelf>(), stub.Implementation);
+	internal static virtual TSelf FastCreateFromStub(ResourceStub stub) => TSelf.CreateFromHandleAndImpl((ResourceHandle<TSelf>) stub.Handle, stub.Implementation);
+	static object IResource.BoxFromStub(ResourceStub stub) => TSelf.CreateFromStub(stub);
 	internal ResourceHandle<TSelf> GetHandleWithoutDisposeCheck();
 	internal static virtual TSelf CreateFromSerializedAndFreeAllocatedGcHandle(ReadOnlySpan<byte> src) {
 		var gcHandle = ReadGcHandleFromSerializedResource(src);

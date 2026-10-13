@@ -129,87 +129,60 @@ sealed partial class LocalSceneBuilder {
 			var modelInstance = inst.ModelInstance;
 			var storedTransform = modelInstance.Transform;
 			var worldScaling = CalculateWorldScaling(inst.ScalingMode, storedTransform.Scaling, storedTransform.Translation, in screenScaling);
-			var billboard = storedTransform with { Scaling = worldScaling };
-			var anchorOffset = inst.GetGeneralAnchorOffset(worldScaling);
-			ApplyGeneralCameraLockedFacing(ref billboard, anchorOffset, inst.LockStyle, inst.LockedUprightDirection, cameraPosition, cameraUpDirection, planeFacingDirection);
-			CommitCameraLockedTransform(modelInstance, in billboard, inst.ScalingMode, storedTransform.Scaling);
+			var storedAnchorOffset = inst.GetGeneralAnchorOffset(storedTransform.Scaling);
+			var worldAnchorOffset = inst.ScalingMode == CameraLockedScalingMode.Standard ? storedAnchorOffset : inst.GetGeneralAnchorOffset(worldScaling);
+			CalculateCameraLockedTransforms(
+				in storedTransform,
+				worldScaling,
+				storedAnchorOffset,
+				worldAnchorOffset,
+				inst.LockStyle,
+				inst.LockedUprightDirection,
+				cameraPosition,
+				cameraUpDirection,
+				planeFacingDirection,
+				out var newStoredTransform,
+				out var worldTransform
+			);
+			CommitCameraLockedTransform(modelInstance, in newStoredTransform, in worldTransform, inst.ScalingMode);
 		}
 	}
 
-	static void ApplyGeneralCameraLockedFacing(ref Transform billboard, Vect anchorOffset, CameraLockStyle lockStyle, Direction lockedUprightDirection, Location cameraPosition, Direction cameraUpDirection, Direction planeFacingDirection) {
-		if (lockStyle == CameraLockStyle.FaceCameraPlane) {
-			if (lockedUprightDirection == Direction.None) GetPlanarSphericalCameraLockedTransform(ref billboard, anchorOffset, planeFacingDirection, cameraUpDirection);
-			else GetPlanarCylindricalCameraLockedTransform(ref billboard, anchorOffset, planeFacingDirection, lockedUprightDirection);
+	internal static void CalculateCameraLockedTransforms(in Transform storedTransform, Vect worldScaling, Vect storedAnchorOffset, Vect worldAnchorOffset, CameraLockStyle lockStyle, Direction lockedUprightDirection, Location cameraPosition, Direction cameraUpDirection, Direction planeFacingDirection, out Transform newStoredTransform, out Transform worldTransform) {
+		var anchorPosition = (storedTransform.Translation - Rotation.Rotate(storedAnchorOffset, storedTransform.RotationQuaternion)).AsLocation();
+		var rotationQuaternion = TryCalculateCameraLockedFacing(anchorPosition, lockStyle, lockedUprightDirection, cameraPosition, cameraUpDirection, planeFacingDirection, out var facingDirection, out var upDirection)
+			? CalculateCameraLockedRotation(facingDirection, upDirection)
+			: storedTransform.RotationQuaternion;
+		newStoredTransform = new Transform(anchorPosition.AsVect() + Rotation.Rotate(storedAnchorOffset, rotationQuaternion), rotationQuaternion, storedTransform.Scaling);
+		worldTransform = new Transform(anchorPosition.AsVect() + Rotation.Rotate(worldAnchorOffset, rotationQuaternion), rotationQuaternion, worldScaling);
+	}
+
+	static bool TryCalculateCameraLockedFacing(Location anchorPosition, CameraLockStyle lockStyle, Direction lockedUprightDirection, Location cameraPosition, Direction cameraUpDirection, Direction planeFacingDirection, out Direction facingDirection, out Direction upDirection) {
+		Direction? facingOrNull = lockStyle == CameraLockStyle.FaceCameraPlane ? planeFacingDirection : anchorPosition.DirectionTo(cameraPosition);
+		if (lockedUprightDirection != Direction.None) facingOrNull = facingOrNull.Value.OrthogonalizedAgainst(lockedUprightDirection);
+		if (facingOrNull is not { } facing || facing == Direction.None) {
+			facingDirection = Direction.None;
+			upDirection = Direction.None;
+			return false;
 		}
-		else {
-			if (lockedUprightDirection == Direction.None) GetSphericalCameraLockedTransform(ref billboard, anchorOffset, cameraPosition, cameraUpDirection);
-			else GetCylindricalCameraLockedTransform(ref billboard, anchorOffset, cameraPosition, lockedUprightDirection);
-		}
+		facingDirection = facing;
+		upDirection = lockedUprightDirection != Direction.None
+			? lockedUprightDirection
+			: cameraUpDirection.OrthogonalizedAgainst(facing) ?? facing.AnyOrthogonal();
+		return true;
 	}
 	
-	static Transform BuildCameraLockedTransform(Location anchorPosition, Vect meshSpaceAnchorOffset, Vect scaling, Direction facingDirection, Direction upDirection) {
+	static Quaternion CalculateCameraLockedRotation(Direction facingDirection, Direction upDirection) {
 		var localX = Direction.FastFromDualOrthogonalization(facingDirection, upDirection).ToVector3();
 		var localY = upDirection.ToVector3();
 		var localZ = -facingDirection.ToVector3();
 
-		var rotationQuaternion = Quaternion.CreateFromRotationMatrix(new Matrix4x4(
+		return Quaternion.CreateFromRotationMatrix(new Matrix4x4(
 			localX.X, localX.Y, localX.Z, 0f,
 			localY.X, localY.Y, localY.Z, 0f,
 			localZ.X, localZ.Y, localZ.Z, 0f,
 			0f, 0f, 0f, 1f
 		));
-
-		var rotatedAnchorOffset = localX * meshSpaceAnchorOffset.X + localY * meshSpaceAnchorOffset.Y + localZ * meshSpaceAnchorOffset.Z;
-		return new Transform(
-			anchorPosition.AsVect() + Vect.FromVector3(rotatedAnchorOffset),
-			rotationQuaternion,
-			scaling
-		);
-	}
-
-	static void GetSphericalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction cameraUpDirection) {
-		var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
-		var facingDirection = anchorPosition.DirectionTo(cameraPosition);
-		if (facingDirection == Direction.None) return;
-
-		var upDirection = cameraUpDirection.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal();
-		transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection, upDirection);
-	}
-
-	static void GetCylindricalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Location cameraPosition, Direction lockedUpDirection) {
-		// var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
-		// // When the locked axis points ~straight at/away from the camera the facing can not be resolved; fall back to
-		// // any valid facing rather than leaving a stale (edge-on) transform frozen from a previous frame.
-		// var facingOrNull = anchorPosition.DirectionTo(cameraPosition).OrthogonalizedAgainst(lockedUpDirection);
-		// var facingDirection = facingOrNull == null || facingOrNull == Direction.None ? lockedUpDirection.AnyOrthogonal() : facingOrNull.Value;
-		//
-		// transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection, lockedUpDirection);
-		var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
-		var facingDirection = anchorPosition.DirectionTo(cameraPosition).OrthogonalizedAgainst(lockedUpDirection);
-		if (facingDirection == Direction.None || facingDirection == null) return;
-		transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection.Value, lockedUpDirection);
-	}
-
-	static void GetPlanarSphericalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Direction planeFacingDirection, Direction cameraUpDirection) {
-		var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
-		var upDirection = cameraUpDirection.OrthogonalizedAgainst(planeFacingDirection) ?? planeFacingDirection.AnyOrthogonal();
-		transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, planeFacingDirection, upDirection);
-	}
-
-	static void GetPlanarCylindricalCameraLockedTransform(ref Transform transform, Vect meshSpaceAnchorOffset, Direction planeFacingDirection, Direction lockedUpDirection) {
-		// // When the locked axis points ~straight at/away from the camera the facing can not be resolved. Rather than
-		// // leaving a stale transform (which freezes the quad edge-on), fall back to any valid facing: the quad stays on
-		// // its axis and foreshortens to a point naturally under projection.
-		// var facingOrNull = planeFacingDirection.OrthogonalizedAgainst(lockedUpDirection);
-		// var facingDirection = facingOrNull == null || facingOrNull == Direction.None ? lockedUpDirection.AnyOrthogonal() : facingOrNull.Value;
-		//
-		// var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
-		// transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection, lockedUpDirection);
-		
-		var facingDirection = planeFacingDirection.OrthogonalizedAgainst(lockedUpDirection);
-		if (facingDirection == Direction.None || facingDirection == null) return;
-		var anchorPosition = (transform.Translation - Rotation.Rotate(meshSpaceAnchorOffset, transform.RotationQuaternion)).AsLocation();
-		transform = BuildCameraLockedTransform(anchorPosition, meshSpaceAnchorOffset, transform.Scaling, facingDirection.Value, lockedUpDirection);
 	}
 
 	static Vect CalculateWorldScaling(CameraLockedScalingMode mode, Vect storedScaling, Vect translation, in ScreenScalingContext scalingContext) {
@@ -229,13 +202,13 @@ sealed partial class LocalSceneBuilder {
 		};
 	}
 
-	static void CommitCameraLockedTransform(ModelInstance modelInstance, in Transform billboard, CameraLockedScalingMode mode, Vect storedScaling) {
+	static void CommitCameraLockedTransform(ModelInstance modelInstance, in Transform newStoredTransform, in Transform worldTransform, CameraLockedScalingMode mode) {
 		if (mode == CameraLockedScalingMode.Standard) {
-			modelInstance.SetTransform(billboard);
+			modelInstance.SetTransform(newStoredTransform);
 		}
 		else {
-			modelInstance.SetWorldMatrixWithoutUpdatingTransform(billboard.ToMatrix());
-			modelInstance.SetTransformWithoutUpdatingWorldMatrix(billboard with { Scaling = storedScaling });
+			modelInstance.SetWorldMatrixWithoutUpdatingTransform(worldTransform.ToMatrix());
+			modelInstance.SetTransformWithoutUpdatingWorldMatrix(newStoredTransform);
 		}
 	}
 	

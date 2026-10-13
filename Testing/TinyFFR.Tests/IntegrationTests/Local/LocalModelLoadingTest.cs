@@ -101,9 +101,10 @@ class LocalModelLoadingTest {
 
 		scene.Add(light);
 		scene.Add(sunlight);
+		sunlight.Brightness = 0.2f;
 		
 		var curFileIndex = -1;
-		ResourceGroup? loadedResources = null; 
+		ModelBundle? loadedResources = null; 
 		ModelInstanceGroup? modelInstances = null;
 		var nextPrimitiveColorIsOpaque = true;
 		
@@ -151,9 +152,9 @@ class LocalModelLoadingTest {
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 
 				Console.WriteLine(_filesToLoad[curFileIndex]);
-				loadedResources = factory.AssetLoader.LoadAll(
+				loadedResources = factory.AssetLoader.LoadBundledAsset(
 					CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), 
-					new ModelCreationConfig() { MeshConfig = new() { GenerateWireframeData = true }}, 
+					new ModelCreationConfig() { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing }}, 
 					new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }
 				);
 				Console.WriteLine("\tMeshes:");
@@ -193,8 +194,8 @@ class LocalModelLoadingTest {
 				UpdateBoundingBoxes();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.W)) {
-				if (modelInstances?.Instances is { } enumerable) {
-					foreach (var inst in enumerable) {
+				if (modelInstances is { } instanceGroup) {
+					foreach (var inst in instanceGroup.Instances) {
 						inst.SetMaterial(factory.MaterialBuilder.DefaultMaterial);
 						inst.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Wireframe);
 						inst.SetDefaultMaterialBaseColor(ColorVect.RandomOpaque());
@@ -202,15 +203,15 @@ class LocalModelLoadingTest {
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.T)) {
-				if (modelInstances?.Instances is { } enumerable && loadedResources is { } lr) {
-					foreach (var inst in enumerable) {
+				if (modelInstances is { } instanceGroup && loadedResources is { } lr) {
+					foreach (var inst in instanceGroup.Instances) {
 						inst.SetMaterial(lr.Models.First(m => m.Mesh == inst.Mesh).Material);
 					}
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
-				if (modelInstances?.Instances is { } enumerable) {
-					foreach (var inst in enumerable) {
+				if (modelInstances is { } instanceGroup) {
+					foreach (var inst in instanceGroup.Instances) {
 						inst.SetMaterial(factory.MaterialBuilder.DefaultMaterial);
 						inst.SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle.Plain3D);
 						inst.SetDefaultMaterialBaseColor(nextPrimitiveColorIsOpaque ? ColorVect.RandomOpaque() : ColorVect.Random().WithPremultipliedAlpha());

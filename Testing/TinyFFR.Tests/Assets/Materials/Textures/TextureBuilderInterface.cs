@@ -33,6 +33,11 @@ unsafe class TextureBuilderInterfaceTest {
 			CreateTextureAssertionAction = null;
 			return new Texture(0, null!);
 		}
+		public (byte[] Data, XYPair<int> Dimensions, TextureCompressionFormat Format, int LevelCount, TexelType SourceTexelType, TextureDataType DataType, TextureRenderingConfig RenderingConfig, string Name)? LastCompressedDataCall;
+		public Texture CreateTextureFromCompressedData(ReadOnlySpan<byte> compressedData, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+			LastCompressedDataCall = (compressedData.ToArray(), dimensions, compressionFormat, levelCount, sourceTexelType, dataType, renderingConfig, name.ToString());
+			return new Texture(0, null!);
+		}
 		public void ProcessTexture<TTexel>(Span<TTexel> texels, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 			Assert.NotNull(ProcessTextureAssertionAction);
 			ProcessTextureAssertionAction(texels.ToArray(), dimensions, config);

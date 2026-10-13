@@ -75,15 +75,11 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	/// <summary>
 	/// Invoked via <see cref="Camera.Exposure"/>.
 	/// </summary>
-	public float GetExposure(ResourceHandle<Camera> handle);
+	public CameraExposureParams GetExposure(ResourceHandle<Camera> handle);
 	/// <summary>
 	/// Invoked via <see cref="Camera.Exposure"/>.
 	/// </summary>
-	public void SetExposure(ResourceHandle<Camera> handle, float newExposure);
-	/// <summary>
-	/// Invoked via <see cref="Camera.SetExposure(float, float, float)"/>.
-	/// </summary>
-	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity);
+	public void SetExposure(ResourceHandle<Camera> handle, CameraExposureParams newExposure);
 	
 	/// <summary>
 	/// Invoked via <see cref="Camera.FocusDistance"/>.
@@ -161,4 +157,12 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	/// Invoked via <see cref="Camera.CreateRayFromNearPlane(XYPair{float})"/>.
 	/// </summary>
 	Ray CreateRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord);
+	/// <summary>
+	/// Invoked via <see cref="Camera.ProjectOnToNearPlane"/>.
+	/// </summary>
+	XYPair<float>? ProjectOnToNearPlane(ResourceHandle<Camera> handle, Location location);
+	/// <summary>
+	/// Invoked via <see cref="Camera.ProjectOnToNearPlaneClamped(Location, out bool)"/>.
+	/// </summary>
+	XYPair<float> ProjectOnToNearPlaneClamped(ResourceHandle<Camera> handle, Location location, out bool wasClamped);
 }

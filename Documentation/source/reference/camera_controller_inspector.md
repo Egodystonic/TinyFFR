@@ -1,5 +1,6 @@
 ---
 title: Inspector Camera Controller
+description: Information on the InspectorCameraController, the "model viewer" camera that orbits a target on the surface of a sphere, always pointing at it.
 ---
 
 ## Summary
@@ -9,6 +10,8 @@ The `InspectorCameraController` orbits a camera around a `Target` location on a 
 * Adjusting `Yaw` rotates the camera around the target;
 * Adjusting `Pitch` tilts the camera up or down relative to the target;
 * Adjusting `Distance` moves the camera toward or away from the target.
+
+For an overview of how camera controllers work in general, see [Camera Controllers](camera_controllers.md).
 
 ### Example Usage
 
@@ -27,7 +30,7 @@ controller.Progress(deltaTime); // (6)!
 1.	This creates the controller, attached to the given `camera`.
 2.	This sets which way is "up" — the axis the camera yaws around, and the reference for what "up" means when tilting via `Pitch`.
 
-3.	This sets the camera's `Target`, `MinDistance`, `MaxDistance` and `Distance` properties according to the bounding box of the mesh you want to inspect.
+3.	This sets the camera's `Target`, `MinDistance`, `MaxDistance` and `Distance` properties according to the bounding box of the mesh you want to inspect (see `SetConstraints()` below).
 
 	For multiple models/meshes (e.g. as loaded by `LoadAll()`) you can calculate an amalgamated bounding box via e.g. `loadedAssetData.Models.CalculateCombinedBoundingBox()`.
 
@@ -53,6 +56,8 @@ controller.Progress(deltaTime); // (6)!
 
 	Increasing this value turns the camera anticlockwise around the target (when `WorldUp` is pointing towards you); decreasing turns clockwise.
 
+	The value read back is always normalized to between `0°` and `360°` (e.g. setting `-30°` reads back as `330°`).
+
 	Defaults to `0°`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `Pitch`
@@ -63,13 +68,15 @@ controller.Progress(deltaTime); // (6)!
 	
 	By default, this value is automatically clamped to ±90° during `Progress()` so that the camera never flips upside-down. Set `AllowUpsideDownFlip` to `true` to disable this behavior.
 	
+	Like `Yaw`, the value read back is normalized to between `0°` and `360°` (so a pitch of `-30°` reads back as `330°`, and `-90°` as `270°`).
+	
 	Defaults to `0°`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `Distance`
 
 :   Sets how far from the `Target` the camera is.
 
-	This value will be clamped between `MinDistance` and `MaxDistance` when either are non-null.
+	This value will be clamped between `MinDistance` and `MaxDistance` when either are non-null. Negative or non-finite values are ignored.
 	
 	Defaults to `0.6f`.
 	
@@ -109,18 +116,34 @@ controller.Progress(deltaTime); // (6)!
 	
 	Defaults to `2f`.
 
+Both distance limits must be positive (invalid values are ignored). Setting `MinDistance` higher than `MaxDistance` raises `MaxDistance` to match (and vice versa), and `Distance` is re-clamped immediately.
+
 ----
 
-<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(...)`
+<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(boundingBox)` / `SetConstraints(boundingBox, worldUp)`
 
-:   A convenience method for inspecting a single object or set of models: sets `Target`, `MinDistance`, `MaxDistance`, and `Distance` together from the supplied `boundingBox`.
+:   A convenience method for inspecting a single object or set of models: sets `Target`, `MinDistance`, `MaxDistance`, and `Distance` together from the supplied `boundingBox` (a `PositionedCuboid`). The second overload also sets `WorldUp`.
 
 	Specifically, the smallest sphere enclosing the cuboid is calculated; then:
 	
 	* `Target` is set to the centre of that sphere.
-	* `MinDistance` is set to the smaller of the sphere's radius and the cuboid's smallest half-extent (so the camera can never end up inside the model, even for very flat objects).
+	* `MinDistance` is set to the smaller of the sphere's radius and the cuboid's smallest half-extent, letting the camera come in close to thin objects. If the cuboid is completely flat (its smallest half-extent is `0`), the sphere's radius is used instead.
 	* `MaxDistance` is set to three times the sphere's radius.
 	* `Distance` is set to one-and-a-half times the sphere's radius (a sensible default starting offset).
+	
+	If the cuboid has no size at all, only `Target` (and `WorldUp`) are changed.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(target, worldUp, allowUpsideDownFlip, minDistance, maxDistance)`
+
+:   Sets `Target`, `WorldUp`, `AllowUpsideDownFlip`, `MinDistance`, and `MaxDistance` in one call. (Unlike the bounding box overloads, this does not set `Distance`, though `Distance` is still re-clamped to the new limits.)
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Progress(deltaTime, yaw, pitch, distance)`
+
+:   Sets `Yaw`, `Pitch`, and `Distance`, then calls `Progress(deltaTime)`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `ResetParametersToDefault()`
+
+:   Resets every property (including smoothing) to its default value.
 	
 ## Reacting to Input
 
@@ -156,7 +179,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Pitch` for each second this key is depressed. If null, `DefaultPitchSensitivityKeyOrButtonPress` will be used.
 	
@@ -184,7 +207,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the angle to add to `Pitch` when the trigger is fully displaced. If null, `DefaultPitchSensitivityControllerTrigger` will be used.
 	
-	If `leftTriggerPitchesUp` is true, the left trigger will pitch up and the right trigger pitch down; otherwise these directions will be reversed. Defaults to `true`.
+	If `leftTriggerPitchesUp` is true, the left trigger will increase `Pitch` (raising the camera up over the target) and the right trigger decrease it; otherwise these directions will be reversed. Defaults to `true`.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustPitchViaButtonPress(...)`
 
@@ -194,7 +217,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Pitch` for each second this button is depressed. If null, `DefaultPitchSensitivityKeyOrButtonPress` will be used.
 	
@@ -236,7 +259,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Yaw` for each second this key is depressed. If null, `DefaultYawSensitivityKeyOrButtonPress` will be used.
 	
@@ -274,7 +297,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Yaw` for each second this button is depressed. If null, `DefaultYawSensitivityKeyOrButtonPress` will be used.
 	
@@ -316,7 +339,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Distance` for each second this key is depressed. If null, `DefaultDistanceSensitivityKeyOrButtonPress` will be used.
 	
@@ -334,7 +357,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
-	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
+	By default, pushing the stick upward moves the camera closer to the target. If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistanceViaControllerTriggers(...)`
 
@@ -354,7 +377,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Distance` for each second this button is depressed. If null, `DefaultDistanceSensitivityKeyOrButtonPress` will be used.
 	
@@ -382,7 +405,7 @@ If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to add
 
 	The `axis` sets which cursor movement direction will be used (defaults to `Y`, e.g. up/down).
 	
-	The `adjustmentPerPixel` value is the percentage of the distance range to add for each pixel moved according to the given `axis`. If null, `DefaultDistancePercentageSensitivityMouseCursor` will be used.
+	The `adjustmentPerPixel` value is the fraction of the distance range (where `1f` is the whole range) to add for each pixel moved according to the given `axis`. If null, `DefaultDistancePercentageSensitivityMouseCursor` will be used.
 	
 	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
 	
@@ -390,7 +413,7 @@ If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to add
 
 :   Adjusts `Distance` according to the captured mouse wheel movement for this frame, scaled by the current distance range.
 	
-	The `adjustmentPerWheelIncrement` value is the percentage of the distance range to add for each scroll increment on the mouse wheel. If null, `DefaultDistancePercentageSensitivityMouseWheel` will be used.
+	The `adjustmentPerWheelIncrement` value is the fraction of the distance range to add for each scroll increment on the mouse wheel. If null, `DefaultDistancePercentageSensitivityMouseWheel` will be used.
 	
 	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
 	
@@ -402,9 +425,9 @@ If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to add
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
-	The `adjustmentPerSec` value is the percentage of the distance range to add for each second this key is depressed. If null, `DefaultDistancePercentageSensitivityKeyOrButtonPress` will be used.
+	The `adjustmentPerSec` value is the fraction of the distance range to add for each second this key is depressed. If null, `DefaultDistancePercentageSensitivityKeyOrButtonPress` will be used.
 	
 #### Gamepad
 	
@@ -416,11 +439,11 @@ If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to add
 	
 	The `axis` sets which stick movement direction will be used (defaults to `Y`, e.g. up/down).
 	
-	The `maxAdjustmentPerSec` value is the percentage of the distance range to add when the stick is fully displaced along the given `axis`. If null, `DefaultDistancePercentageSensitivityControllerStick` will be used.
+	The `maxAdjustmentPerSec` value is the fraction of the distance range to add when the stick is fully displaced along the given `axis`. If null, `DefaultDistancePercentageSensitivityControllerStick` will be used.
 	
 	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
-	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
+	By default, pushing the stick upward moves the camera closer to the target. If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentageViaControllerTriggers(...)`
 
@@ -428,7 +451,7 @@ If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to add
 	
 	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
 	
-	The `maxAdjustmentPerSec` value is the percentage of the distance range to add when the trigger is fully displaced. If null, `DefaultDistancePercentageSensitivityControllerTrigger` will be used.
+	The `maxAdjustmentPerSec` value is the fraction of the distance range to add when the trigger is fully displaced. If null, `DefaultDistancePercentageSensitivityControllerTrigger` will be used.
 	
 	If `leftTriggerIncreasesDistance` is true, the left trigger will increase distance from the target and the right trigger decrease it; otherwise these directions will be reversed. Defaults to `true`.
 	
@@ -440,9 +463,9 @@ If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to add
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
-	The `adjustmentPerSec` value is the percentage of the distance range to add for each second this button is depressed. If null, `DefaultDistancePercentageSensitivityKeyOrButtonPress` will be used.
+	The `adjustmentPerSec` value is the fraction of the distance range to add for each second this button is depressed. If null, `DefaultDistancePercentageSensitivityKeyOrButtonPress` will be used.
 	
 #### Other
 	
@@ -450,11 +473,13 @@ If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to add
 
 :   Adjusts `Distance` according to the given rate (`adjustmentPerSec`) and time step (`deltaTime`), scaled by the current distance range.
 
+	A second overload, `AdjustDistancePercentage(adjustment)`, applies a single one-off adjustment (as a fraction of the distance range) with no time step; e.g. `AdjustDistancePercentage(-0.1f)` moves the camera 10% of the range closer.
+
 	This method does not inspect any user input data but is provided as a convenience for building custom per-frame control code.
 	
 ### Default Controls
 
-The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively:
+The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively. Every parameter after `deltaTime` is optional: `invertPitchControl`, `invertYawControl`, and `invertDistanceControl` reverse each control, and the sensitivity parameters (`pitchAdjustmentPerPixel`, `yawAdjustmentPerPixel`, and `distancePercentageAdjustmentPerWheelIncrement` for keyboard/mouse; `maxPitchAdjustmentPerSec`, `maxYawAdjustmentPerSec`, and `maxDistancePercentageAdjustmentPerSec` for gamepad) fall back to the default sensitivity constants when `null`:
 
 ```csharp
 // AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime):
@@ -480,11 +505,11 @@ The `Yaw`, `Pitch`, and `Distance` target properties can have smoothing applied.
 
 ```csharp
 // Set properties' smoothing individually:
-controller.RotationSmoothingStrength = Strength.VeryMild; // Applies to both Yaw and Pitch
-controller.DistanceSmoothingStrength = Strength.VeryMild;
+controller.RotationSmoothingStrength = SmoothingStrength.VeryMild; // Applies to both Yaw and Pitch
+controller.DistanceSmoothingStrength = SmoothingStrength.VeryMild;
 
-// Set all properties' smoothing simutaneously:
-controller.SetGlobalSmoothing(Strength.VeryMild);
+// Set all properties' smoothing simultaneously:
+controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 ```
 
 The default smoothing for all properties is `VeryMild`. You can choose from `VeryMild`, `Mild`, `Moderate`, `Strong`, `VeryStrong`, or `None`. 
@@ -494,10 +519,10 @@ The default smoothing for all properties is `VeryMild`. You can choose from `Ver
 * Setting the smoothing to `None` disables smoothing entirely. This means the camera will always be updated to meet exactly the target value of each property on each frame; reducing latency to 0 but making the camera feel less physical.
 
 ??? abstract "Custom Smoothing Values"
-	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via a method named like "`SetCustom[...]SmoothingStrength`".
+	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via `SetCustomRotationSmoothingStrength()` or `SetCustomDistanceSmoothingStrength()`.
 	
-	This method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. 
+	Each method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. A half-life of `0f` disables smoothing. 
 	
-	For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second, and then 87.5 after the next second, and so-on.
+	The half-life is the time (in seconds) the camera takes to cover half the distance to a new target value, starting from rest. For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second. Because the smoothing carries momentum (see below), X would then be at roughly 92 after the next second, rather than 87.5.
 	
-	Advanced: Smoothing is implemented via critically-damped spring. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.
+	Advanced: Smoothing is implemented via a critically-damped spring, which is why it carries momentum. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.

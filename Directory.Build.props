@@ -28,7 +28,7 @@
 
   <!-- Testing properties -->
   <PropertyGroup>
-    <TffrNugetTestingReferenceVersion>0.8.0-rc001</TffrNugetTestingReferenceVersion>
+    <TffrNugetTestingReferenceVersion>1.0.0-rc001</TffrNugetTestingReferenceVersion>
   </PropertyGroup>
 
 

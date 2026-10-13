@@ -17,7 +17,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
+sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 	readonly record struct PrivateMaterialData(Material Material, bool IsDefault, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
@@ -34,6 +34,9 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, PrivateMaterialData> _privateMaterialInstances = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, TextInstanceData> _activeInstanceTextInstanceData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CameraLockConfig> _activeInstanceCameraLockData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Orientation2D> _activeInstanceQuadAnchors = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasScene> _activeInstanceCanvases = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, int> _activeInstanceDrawOrderDeferralAmounts = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
 	readonly LocalMaterialBuilder _materialBuilder;
@@ -48,6 +51,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	public ModelInstance CreateModelInstance(Mesh mesh, Material? material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
+		ResourceUtils.ThrowIfNotLocal(mesh);
+		if (material is { } m) ResourceUtils.ThrowIfNotLocal(m);
 		var meshBufferData = mesh.BufferData;
 		var aabb = mesh.BoundingBox;
 		
@@ -81,24 +86,65 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		return result;
 	}
 
-	public ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, in ModelInstanceCreationConfig config) {
+	public ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
-		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: models.Length > 0 ? models.Length : 1, name: config.Name);
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: models.Length + 1, name: config.Name);
 		for (var i = 0; i < models.Length; ++i) {
 			resourceGroup.Add(CreateModelInstance(models[i].Mesh, models[i].Material, in config));
 		}
+		if (animationTable is { } table) AttachSharedAnimationTable(resourceGroup, table);
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
 	}
-	public ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model> {
+	public ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model> {
 		ThrowIfThisIsDisposed();
-		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: models.Count > 0 ? models.Count : 1, name: config.Name);
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: models.Count + 1, name: config.Name);
 		for (var i = 0; i < models.Count; ++i) {
 			resourceGroup.Add(CreateModelInstance(models[i].Mesh, models[i].Material, in config));
 		}
+		if (animationTable is { } table) AttachSharedAnimationTable(resourceGroup, table);
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
 	}
+	public ModelInstanceGroup CreateModelInstances(ModelBundle bundle, in ModelInstanceCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		var models = bundle.Models;
+		var modelCount = models.Count;
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: modelCount + 1, name: config.Name);
+		for (var i = 0; i < modelCount; ++i) {
+			var model = models[i];
+			resourceGroup.Add(CreateModelInstance(model.Mesh, model.Material, in config));
+		}
+		AttachSharedAnimationTable(resourceGroup, bundle.AnimationTable);
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Mesh> meshes, Material? material, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: meshes.Length + 1, name: config.Name);
+		for (var i = 0; i < meshes.Length; ++i) {
+			resourceGroup.Add(CreateModelInstance(meshes[i], material, in config));
+		}
+		if (animationTable is { } table) AttachSharedAnimationTable(resourceGroup, table);
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup CreateModelInstances<TMeshList>(TMeshList meshes, Material? material, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config) where TMeshList : IReadOnlyList<Mesh> {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: meshes.Count + 1, name: config.Name);
+		for (var i = 0; i < meshes.Count; ++i) {
+			resourceGroup.Add(CreateModelInstance(meshes[i], material, in config));
+		}
+		if (animationTable is { } table) AttachSharedAnimationTable(resourceGroup, table);
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+
+	static void AttachSharedAnimationTable(ResourceGroup group, MeshGroupAnimationTable animationTable) {
+		group.Add(animationTable);
+		group.ExcludeFromDisposal(animationTable);
+	}
+
 	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
 		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Length > 0 ? instances.Length : 1, name: name);
@@ -114,6 +160,27 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		for (var i = 0; i < instances.Count; ++i) {
 			resourceGroup.Add(instances[i]);
 		}
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+
+	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Length + 1, name: name);
+		for (var i = 0; i < instances.Length; ++i) {
+			resourceGroup.Add(instances[i]);
+		}
+		AttachSharedAnimationTable(resourceGroup, animationTable);
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance> {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Count + 1, name: name);
+		for (var i = 0; i < instances.Count; ++i) {
+			resourceGroup.Add(instances[i]);
+		}
+		AttachSharedAnimationTable(resourceGroup, animationTable);
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
 	}
@@ -228,6 +295,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ResourceUtils.ThrowIfNotLocal(newMesh);
 		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
 		
 		var newMeshBufferData = newMesh.BufferData;
@@ -373,6 +441,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		ResourceUtils.ThrowIfNotLocal(newMaterial);
 
 		var oldMat = GetMaterial(handle);
 		var oldIsDefault = oldMat == _materialBuilder.DefaultMaterial;
@@ -514,6 +583,14 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetOrCreateEffectMaterialCopy(handle)?.SetEffectBlendDistance(mapType, distance);
 	}
+	public void SetMaterialEmissiveStrengthMultiplier(ResourceHandle<ModelInstance> handle, float multiplier) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var hasPrivateCopy = _privateMaterialInstances.TryGetValue(handle, out var privateMatData) && !privateMatData.IsDefault;
+		var currentMaterial = hasPrivateCopy ? privateMatData.Material : GetMaterial(handle);
+		if (!currentMaterial.SupportsEmissiveStrengthMultiplier) return;
+		if (!hasPrivateCopy && multiplier == LocalMaterialBuilder.DefaultEmissiveStrengthMultiplier) return;
+		GetOrCreatePrivateMaterialCopy(handle).SetEmissiveStrengthMultiplier(multiplier);
+	}
 	public void SetMaterialEffectOpacity(ResourceHandle<ModelInstance> handle, float opacity) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetOrCreateEffectMaterialCopy(handle)?.SetEffectOpacity(opacity);
@@ -610,8 +687,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		var font = @string.Font;
 		
 		var currentTransform = _activeInstanceTransforms[handle];
-		var currentScaling = font.GetTextInstanceScaling(data.String.Size, layout);
-		var currentOffset = font.GetTextInstanceAnchorOffset(data.String.Size, currentScaling, layout.PositionAnchor);
+		var currentScaling = new XYPair<float>(currentTransform.Scaling.X, currentTransform.Scaling.Y);
+		var currentOffset = data.String.Font.GetTextInstanceAnchorOffset(data.String.Size, currentScaling, layout.PositionAnchor);
 		
 		var anchorPoint = currentTransform.Translation - currentOffset * currentTransform.Rotation;
 		var newScaling = font.GetTextInstanceScaling(@string.Size, layout);
@@ -626,6 +703,40 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	public FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceTextInstanceData[handle].String;
+	}
+	public TextLayout GetTextInstanceLayout(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData[handle].Layout;
+	}
+	public Orientation2D GetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceQuadAnchors.TryGetValue(handle, out var result) ? result : Orientation2D.None;
+	}
+	public void SetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle, Orientation2D positionAnchor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (positionAnchor == Orientation2D.None) _activeInstanceQuadAnchors.Remove(handle);
+		else _activeInstanceQuadAnchors[handle] = positionAnchor;
+	}
+
+	public void SetCameraLockConfig(ResourceHandle<ModelInstance> handle, CameraLockConfig config) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceCameraLockData[handle] = config;
+	}
+	public CameraLockConfig? GetCameraLockConfig(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceCameraLockData.TryGetValue(handle, out var result) ? result : null;
+	}
+	public bool IsTextInstance(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData.ContainsKey(handle);
+	}
+	public CanvasScene? GetCanvas(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceCanvases.TryGetValue(handle, out var result) ? result : null;
+	}
+	internal void SetCanvas(ResourceHandle<ModelInstance> handle, CanvasScene? canvas) {
+		if (canvas is { } c) _activeInstanceCanvases[handle] = c;
+		else _activeInstanceCanvases.Remove(handle);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
@@ -761,6 +872,11 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	void Dispose(ResourceHandle<ModelInstance> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		if (removeFromMap && _activeInstanceCanvases.TryGetValue(handle, out var canvas)) {
+			_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+			canvas.UnderlyingScene.Implementation.DisposeCanvasObject(canvas.UnderlyingScene.GetHandleWithoutDisposeCheck(), HandleToInstance(handle));
+			return;
+		}
 		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
@@ -768,6 +884,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		DisposePrivateMaterialIfPresent(handle);
 		DisposeMutationDataIfPresent(handle);
 		DisposeTextInstanceDataIfPresent(handle);
+		DisposeViewDataIfPresent(handle);
 		_activeInstanceDrawOrderDeferralAmounts.Remove(handle);
 		_activeInstanceData.Remove(handle);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
@@ -786,6 +903,11 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	
 	void DisposeTextInstanceDataIfPresent(ResourceHandle<ModelInstance> handle) => _activeInstanceTextInstanceData.Remove(handle);
+	void DisposeViewDataIfPresent(ResourceHandle<ModelInstance> handle) {
+		_activeInstanceCameraLockData.Remove(handle);
+		_activeInstanceQuadAnchors.Remove(handle);
+		_activeInstanceCanvases.Remove(handle);
+	}
 
 	public void Dispose() {
 		try {
@@ -797,6 +919,9 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();
 			_activeInstanceTextInstanceData.Dispose();
+			_activeInstanceCameraLockData.Dispose();
+			_activeInstanceQuadAnchors.Dispose();
+			_activeInstanceCanvases.Dispose();
 			_activeInstanceDrawOrderDeferralAmounts.Dispose();
 		}
 		finally {

@@ -15,7 +15,7 @@ static partial class SmokeSections {
 		group.Add(material);
 
 		for (var i = 0; i < SmokeWorkload.ResourceGroupResourceCount; ++i) {
-			var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Grouped Mesh");
+			var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Grouped Mesh");
 			var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, name: "Benchmark Grouped Instance");
 			group.Add(mesh);
 			group.Add(instance);
@@ -39,7 +39,7 @@ static partial class SmokeSections {
 		Span<char> nameBuffer = stackalloc char[NamedMeshName.Length];
 
 		for (var i = 0; i < SmokeWorkload.NamedResourceCount; ++i) {
-			meshes.Add(Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: NamedMeshName));
+			meshes.Add(Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: NamedMeshName));
 		}
 
 		try {

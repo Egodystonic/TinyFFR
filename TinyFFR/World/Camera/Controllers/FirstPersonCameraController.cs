@@ -122,7 +122,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	public Direction WorldUp {
 		get;
 		set {
-			if (!value.IsPhysicallyValid) return;
+			if (!value.IsPhysicallyValidAndNotNone) return;
 			field = value;
 			_forwardDir = value.AnyOrthogonal();
 		}
@@ -359,7 +359,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pitch"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultPitchSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pitch"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultPitchSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="rightTriggerPitchesUp">If <see langword="true"/> (the default), the right trigger pitches up and the left trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool rightTriggerPitchesUp = true) {
@@ -511,7 +511,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Yaw"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultYawSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Yaw"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultYawSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="leftTriggerYawsLeft">If <see langword="true"/> (the default), the left trigger yaws left and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsLeft = true) {
@@ -684,7 +684,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var angle = stickPosition.GetPolarAngle();
 		if (angle == null) return;
-		AdjustPosition(angle.Value, (maxSpeed ?? DefaultPositionSensitivityControllerStick) * stickPosition.Displacement, deltaTime);
+		AdjustPosition(angle.Value, (maxSpeed ?? DefaultPositionSensitivityControllerStick) * stickPosition.GetDisplacementWithDeadzone(), deltaTime);
 	}
 
 	/// <summary>

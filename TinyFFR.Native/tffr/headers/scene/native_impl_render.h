@@ -28,9 +28,10 @@ public:
 	static void set_view_compositing_mode(ViewDescriptorHandle viewDescriptor, interop_bool blendTranslucent, interop_bool clearDepth);
 	static void set_view_render_target(ViewDescriptorHandle viewDescriptor, RenderTargetHandle optionalRenderTarget);
 	static void render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain, interop_bool invokeBeginFrame, interop_bool invokeEndFrame);
-	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion);
+	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion, interop_bool flipVertically);
 
-	static void submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects);
+	static bool render_targets_are_vertically_flipped();
+	static void submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects, interop_bool renderedVerticallyFlipped);
 	static void try_get_pick_result(uint64_t pickId, uintptr_t* outModelInstance, float_t* outDepth, float3* outWorldPosition, interop_bool* outFound);
 
 	static void set_view_quality_configuration(
@@ -49,7 +50,8 @@ public:
 		int32_t depthOfFieldQuality,
 		float_t depthOfFieldStrength,
 		interop_bool dithering,
-		interop_bool guardBand
+		interop_bool guardBand,
+		uint8_t vsmMsaaSamples
 	);
 	static void set_view_frustum_culling_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);
 	static void set_view_depth_of_field_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);

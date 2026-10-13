@@ -24,9 +24,9 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// </summary>
 	public static readonly bool DefaultHandleUriEscapedStrings = false;
 	/// <summary>
-	/// The default value for <see cref="ModelReadConfig.GltfEmissiveStrengthScalar"/>: <c>0.05f</c>.
+	/// The default value for <see cref="ModelReadConfig.EmissiveStrengthScalar"/>: <c>0.05f</c>.
 	/// </summary>
-	public static readonly float DefaultGltfEmissiveStrengthScalar = 0.05f;
+	public static readonly float DefaultEmissiveStrengthScalar = 0.05f;
 	/// <summary>
 	/// The default value for <see cref="ModelReadConfig.EmissiveStrengthCap"/>: <c>1f</c>.
 	/// </summary>
@@ -35,6 +35,10 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// The default value for <see cref="ModelReadConfig.EmbeddedTextureMapScalingStrategy"/>: <see cref="TextureCombinationScalingStrategy.PixelUpscale"/>.
 	/// </summary>
 	public static readonly TextureCombinationScalingStrategy DefaultEmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale;
+	/// <summary>
+	/// The default value for <see cref="ModelReadConfig.ShininessMapInterpretation"/>: <see cref="Assets.ShininessMapInterpretation.Auto"/>.
+	/// </summary>
+	public static readonly ShininessMapInterpretation DefaultShininessMapInterpretation = ShininessMapInterpretation.Auto;
 	/// <summary>
 	/// How the file's mesh data is interpreted as it is read.
 	/// </summary>
@@ -52,14 +56,14 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// </remarks>
 	public bool HandleUriEscapedStrings { get; init; } = DefaultHandleUriEscapedStrings;
 	/// <summary>
-	/// A factor applied to emissive strengths read from glTF files. Defaults to <see cref="DefaultGltfEmissiveStrengthScalar"/>: <c>0.05f</c>.
+	/// A factor applied to emissive strengths read from the file. Defaults to <see cref="DefaultEmissiveStrengthScalar"/>: <c>0.05f</c>.
 	/// </summary>
 	/// <remarks>
-	/// glTF records emissive strength on a scale that does not correspond to TinyFFR's, so a file's values are scaled down to
-	/// keep glowing surfaces from overwhelming the scene. Raise this if imported emissive surfaces look too dim; lower it if
-	/// they seem too bright.
+	/// Some formats (most notably glTF) record emissive strength on a scale that does not correspond to TinyFFR's, so a file's values
+	/// are scaled down to keep glowing surfaces from overwhelming the scene. Raise this if imported emissive surfaces look too dim;
+	/// lower it if they seem too bright.
 	/// </remarks>
-	public float GltfEmissiveStrengthScalar { get; init; } = DefaultGltfEmissiveStrengthScalar;
+	public float EmissiveStrengthScalar { get; init; } = DefaultEmissiveStrengthScalar;
 	/// <summary>
 	/// The largest emissive strength any imported material may take. Defaults to <see cref="DefaultEmissiveStrengthCap"/>: <c>1f</c>.
 	/// </summary>
@@ -72,6 +76,17 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	/// Defaults to <see cref="DefaultEmbeddedTextureMapScalingStrategy"/>: <see cref="TextureCombinationScalingStrategy.PixelUpscale"/>.
 	/// </summary>
 	public TextureCombinationScalingStrategy EmbeddedTextureMapScalingStrategy { get; init; } = DefaultEmbeddedTextureMapScalingStrategy;
+	/// <summary>
+	/// How a texture map found in a material's shininess slot is interpreted.
+	/// Defaults to <see cref="DefaultShininessMapInterpretation"/>: <see cref="Assets.ShininessMapInterpretation.Auto"/>.
+	/// </summary>
+	/// <remarks>
+	/// FBX and OBJ files have no dedicated slot for a roughness map, and some exporters (most notably Blender's) store one in the
+	/// shininess slot instead of the glossiness map the slot is meant for. <see cref="Assets.ShininessMapInterpretation.Auto"/> detects
+	/// files that report being exported from Blender; set this explicitly if imported surfaces look glossy where they should be rough
+	/// (or vice versa). Whenever a shininess map is present it takes precedence over any single roughness value in the material.
+	/// </remarks>
+	public ShininessMapInterpretation ShininessMapInterpretation { get; init; } = DefaultShininessMapInterpretation;
 	
 	/// <summary>
 	/// Constructs a new <see cref="ModelReadConfig"/> with default values for every property.
@@ -87,25 +102,30 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		if (!Enum.IsDefined(EmbeddedTextureMapScalingStrategy)) {
 			throw new ArgumentOutOfRangeException(nameof(EmbeddedTextureMapScalingStrategy), EmbeddedTextureMapScalingStrategy, null);
 		}
+		if (!Enum.IsDefined(ShininessMapInterpretation)) {
+			throw new ArgumentOutOfRangeException(nameof(ShininessMapInterpretation), ShininessMapInterpretation, null);
+		}
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in ModelReadConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
 			+	SerializationSizeOfBool() // HandleUriEscapedStrings
-			+	SerializationSizeOfFloat() // GltfEmissiveStrengthScalar
+			+	SerializationSizeOfFloat() // EmissiveStrengthScalar
 			+	SerializationSizeOfFloat() // EmissiveStrengthCap
-			+	SerializationSizeOfInt(); // EmbeddedTextureMapScalingStrategy
+			+	SerializationSizeOfInt() // EmbeddedTextureMapScalingStrategy
+			+	SerializationSizeOfInt();
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelReadConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
 		SerializationWriteBool(ref dest, src.HandleUriEscapedStrings);
-		SerializationWriteFloat(ref dest, src.GltfEmissiveStrengthScalar);
+		SerializationWriteFloat(ref dest, src.EmissiveStrengthScalar);
 		SerializationWriteFloat(ref dest, src.EmissiveStrengthCap);
 		SerializationWriteInt(ref dest, (int) src.EmbeddedTextureMapScalingStrategy);
+		SerializationWriteInt(ref dest, (int) src.ShininessMapInterpretation);
 	}
 	/// <inheritdoc />
 	public static ModelReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -113,9 +133,10 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 			MeshConfig = SerializationReadSubConfig<MeshReadConfig>(ref src),
 			TextureConfig = SerializationReadSubConfig<TextureReadConfig>(ref src),
 			HandleUriEscapedStrings = SerializationReadBool(ref src),
-			GltfEmissiveStrengthScalar = SerializationReadFloat(ref src),
+			EmissiveStrengthScalar = SerializationReadFloat(ref src),
 			EmissiveStrengthCap = SerializationReadFloat(ref src),
-			EmbeddedTextureMapScalingStrategy = (TextureCombinationScalingStrategy) SerializationReadInt(ref src)
+			EmbeddedTextureMapScalingStrategy = (TextureCombinationScalingStrategy) SerializationReadInt(ref src),
+			ShininessMapInterpretation = (ShininessMapInterpretation) SerializationReadInt(ref src)
 		};
 	}
 	/// <inheritdoc />
@@ -145,6 +166,14 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 	/// </remarks>
 	public TextureCreationConfig TextureConfig { get; init; } = new() { DataType = TextureDataType.LinearData };
 	/// <summary>
+	/// The quality used for any transmissive (e.g. glass) materials found in the file. Defaults to <see cref="TransmissiveMaterialCreationConfig.DefaultQuality"/>.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="Materials.TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction"/> is considerably cheaper to render, especially when the renderer's
+	/// screen-space reflections are enabled. See <see cref="TransmissiveMaterialCreationConfig.Quality"/>.
+	/// </remarks>
+	public TransmissiveMaterialQuality TransmissiveMaterialQuality { get; init; } = TransmissiveMaterialCreationConfig.DefaultQuality;
+	/// <summary>
 	/// The name to give the resulting resource group. May be left empty.
 	/// </summary>
 	public ReadOnlySpan<char> Name { get; init; }
@@ -157,18 +186,21 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 	internal void ThrowIfInvalid() {
 		MeshConfig.ThrowIfInvalid();
 		TextureConfig.ThrowIfInvalid();
+		if (!Enum.IsDefined(TransmissiveMaterialQuality)) throw new ArgumentOutOfRangeException(nameof(TransmissiveMaterialQuality), TransmissiveMaterialQuality, null);
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in ModelCreationConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
+			+	SerializationSizeOfInt() // TransmissiveMaterialQuality
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
+		SerializationWriteInt(ref dest, (int) src.TransmissiveMaterialQuality);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	/// <inheritdoc />
@@ -176,6 +208,7 @@ public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConf
 		return new ModelCreationConfig {
 			MeshConfig = SerializationReadSubConfig<MeshCreationConfig>(ref src),
 			TextureConfig = SerializationReadSubConfig<TextureCreationConfig>(ref src),
+			TransmissiveMaterialQuality = (TransmissiveMaterialQuality) SerializationReadInt(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

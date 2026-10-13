@@ -85,17 +85,21 @@ StartExportedFunc(set_light_shadow_caster, LightHandle light, interop_bool isSha
 	EndExportedFunc
 }
 
-void native_impl_lights::set_light_shadow_fidelity(LightHandle light, uint32_t mapSize, uint8_t cascadeCount) {
+void native_impl_lights::set_light_shadow_fidelity(LightHandle light, uint32_t mapSize, uint8_t cascadeCount, float_t shadowFar, float_t splitA, float_t splitB, float_t splitC, interop_bool stable, interop_bool lispsm) {
 	auto entity = Entity::import(light);
 	auto& manager = filament_engine->getLightManager();
 	auto instance = manager.getInstance(entity);
 	manager.setShadowOptions(instance, LightManager::ShadowOptions{
 		.mapSize = mapSize,
-		.shadowCascades = cascadeCount // This only affects directional/sunlights but we set it anyway
+		.shadowCascades = cascadeCount,
+		.cascadeSplitPositions = { splitA, splitB, splitC },
+		.shadowFar = shadowFar,
+		.stable = static_cast<bool>(stable),
+		.lispsm = static_cast<bool>(lispsm)
 	});
 }
-StartExportedFunc(set_light_shadow_fidelity, LightHandle light, uint32_t mapSize, uint8_t cascadeCount) {
-	native_impl_lights::set_light_shadow_fidelity(light, mapSize, cascadeCount);
+StartExportedFunc(set_light_shadow_fidelity, LightHandle light, uint32_t mapSize, uint8_t cascadeCount, float_t shadowFar, float_t splitA, float_t splitB, float_t splitC, interop_bool stable, interop_bool lispsm) {
+	native_impl_lights::set_light_shadow_fidelity(light, mapSize, cascadeCount, shadowFar, splitA, splitB, splitC, stable, lispsm);
 	EndExportedFunc
 }
 

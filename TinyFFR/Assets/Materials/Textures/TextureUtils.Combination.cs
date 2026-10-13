@@ -281,7 +281,7 @@ public readonly record struct TextureCombinationConfig(TextureCombinationScaling
 		return new TextureCombinationSource(sourceTexture, sourceChannel);
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in TextureCombinationConfig src) {
 		return	SerializationSizeOfInt() // ScalingStrategy
 			+	SerializationSizeOfSource() // OutputTextureXRedChannelSource
@@ -290,7 +290,7 @@ public readonly record struct TextureCombinationConfig(TextureCombinationScaling
 			+	SerializationSizeOfBool() // OutputTextureWAlphaChannelSource.HasValue
 			+	SerializationSizeOfSource(); // OutputTextureWAlphaChannelSource
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCombinationConfig src) {
 		SerializationWriteInt(ref dest, (int) src.ScalingStrategy);
 		SerializationWriteSource(ref dest, src.OutputTextureXRedChannelSource);

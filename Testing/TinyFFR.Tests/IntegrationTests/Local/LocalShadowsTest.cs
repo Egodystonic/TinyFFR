@@ -39,7 +39,7 @@ class LocalShadowsTest {
 		scene.SetBackdrop(cubemap, backdropIntensity: 1f, rotation: 180f % Direction.Forward);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(CubeSize));
+		using var cubeMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(CubeSize));
 		using var cubeMat = factory.MaterialBuilder.CreateStandardMaterial(
 			colorMap: factory.TextureBuilder.CreateColorMap(
 				TexturePattern.Chequerboard(
@@ -52,7 +52,7 @@ class LocalShadowsTest {
 		);
 		using var floorMat = factory.MaterialBuilder.CreateStandardMaterial(factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.5f, 0.5f, 0.5f, 0.5f, true)), includeAlpha: true), alphaMode: StandardMaterialAlphaMode.FullBlending);
 
-		var cubeList = factory.ResourceAllocator.CreateNewArrayPoolBackedList<ModelInstance>();
+		var cubeList = factory.ResourceAllocator.CreateNewList<ModelInstance>();
 		
 		for (var x = -HalfGridSize; x <= HalfGridSize; ++x) {
 			for (var y = -HalfGridSize; y <= HalfGridSize; ++y) {

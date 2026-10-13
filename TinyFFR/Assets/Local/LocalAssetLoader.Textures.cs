@@ -220,7 +220,7 @@ unsafe partial class LocalAssetLoader {
 			throw new InvalidOperationException("No file path or built-in source set in context (this is a bug in TinyFFR).");
 		}
 
-		CompressTextureIfRequested(creationMetadata, context.HeapPool);
+		CompressTextureIfRequested(creationMetadata, context.HeapPool, context.Self._globals.ThreadPoolWorkScheduler);
 
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}
@@ -233,7 +233,7 @@ unsafe partial class LocalAssetLoader {
 		data.DataType = config.DataType;
 	}
 
-	static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool) {
+	static void CompressTextureIfRequested(TextureCreationMetadata data, ThreadSafeHeapPoolWrapper heapPool, IJobExecutionFacade jobExecutionFacade) {
 		var sourceTexelType = data.IsRgba ? TexelType.Rgba32 : TexelType.Rgb24;
 		var format = TextureCompressor.GetRecommendedFormat(
 			data.Dimensions,
@@ -251,10 +251,10 @@ unsafe partial class LocalAssetLoader {
 
 		try {
 			if (data.IsRgba) {
-				TextureCompressor.Compress(data.Rgba32Texels, data.Dimensions, format, data.CompressionQuality!.Value, data.DataType, data.GenerateMipMaps, destination.Span);
+				TextureCompressor.Compress(data.Rgba32Texels, data.Dimensions, format, data.CompressionQuality!.Value, data.DataType, data.GenerateMipMaps, destination.Span, jobExecutionFacade);
 			}
 			else {
-				TextureCompressor.Compress(data.Rgb24Texels, data.Dimensions, format, data.CompressionQuality!.Value, data.DataType, data.GenerateMipMaps, destination.Span);
+				TextureCompressor.Compress(data.Rgb24Texels, data.Dimensions, format, data.CompressionQuality!.Value, data.DataType, data.GenerateMipMaps, destination.Span, jobExecutionFacade);
 			}
 		}
 		catch {
@@ -356,7 +356,7 @@ unsafe partial class LocalAssetLoader {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 
 		if (data.CompressionFormat != TextureCompressionFormat.None && data.CompressedData is { } compressedData) {
-			return self._textureBuilder.CreateTextureFromCompressedBlocks(
+			return self._textureBuilder.CreateTextureFromCompressedData(
 				compressedData.Span,
 				data.Dimensions,
 				data.CompressionFormat,
@@ -781,7 +781,7 @@ unsafe partial class LocalAssetLoader {
 			TextureUtils.ProcessTexture(destSpan, destDimensions, creationConfig.ProcessingToApply);
 		}
 
-		CompressTextureIfRequested(data, context.HeapPool);
+		CompressTextureIfRequested(data, context.HeapPool, context.Self._globals.ThreadPoolWorkScheduler);
 
 		return context.GenerateResourceOnPrimaryAndWait(&CompleteTextureLoad);
 	}
@@ -960,7 +960,7 @@ unsafe partial class LocalAssetLoader {
 		};
 
 		if (compressionFormat != TextureCompressionFormat.None) {
-			return self._textureBuilder.CreateTextureFromCompressedBlocks(
+			return self._textureBuilder.CreateTextureFromCompressedData(
 				assetData.ExtractSpan<byte>(BakedResourceSchemata.TextureBakingSchema.TexelData),
 				dimensions,
 				compressionFormat,

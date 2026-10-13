@@ -298,6 +298,10 @@ public partial class MainViewModel : ViewModelBase {
 	void TickWithInput(TimeSpan deltaTime, ILatestInputRetriever input) {
 		if (_viewer is not { } viewer) return;
 		viewer.Tick(deltaTime.AsDeltaTime(), input.KeyboardAndMouse);
+		if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.MouseRight)) {
+			StatusText = viewer.PickAt(input.KeyboardAndMouse.MouseCursorPosition);
+			if (!Animate) viewer.Render();
+		}
 		if (Animate) viewer.Render();
 	}
 

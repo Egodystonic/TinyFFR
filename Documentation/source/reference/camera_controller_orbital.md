@@ -1,5 +1,6 @@
 ---
 title: Orbital Camera Controller
+description: Information on the OrbitalCameraController, which circles a camera around a target at a set height and distance, always pointing at it.
 ---
 
 ## Summary
@@ -9,6 +10,8 @@ The `OrbitalCameraController` orbits a camera around a `Target` location, always
 * Adjusting `Angle` rotates the camera around the target;
 * Adjusting `Height` raises or lowers the camera along the `UpDirection` axis;
 * Adjusting `Distance` moves the camera toward or away from the target on the orbital plane.
+
+For an overview of how camera controllers work in general, see [Camera Controllers](camera_controllers.md).
 
 ### Example Usage
 
@@ -50,17 +53,19 @@ controller.Progress(deltaTime); // (7)!
 
 	Increasing this value rotates the camera anticlockwise around `UpDirection`; decreasing rotates it clockwise.
 	
+	The value read back is always normalized to between `0°` and `360°` (e.g. setting `-30°` reads back as `330°`).
+	
 	Defaults to `0°`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `Height`
 
-:   Sets how far above (or below) the `Target` the camera is, along the `UpDirection` axis.
+:   Sets how far above the `Target` the camera is, along the `UpDirection` axis (negative values put the camera below the `Target`). Clamped to between `MinHeight` and `MaxHeight`.
 	
 	Defaults to `0.1f`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `Distance`
 
-:   Sets how far from the `Target` the camera is on the orbital plane (the plane perpendicular to `UpDirection`).
+:   Sets how far from the `Target` the camera is on the orbital plane (the plane perpendicular to `UpDirection`). Clamped to between `MinDistance` and `MaxDistance`.
 	
 	Defaults to `0.6f`.
 	
@@ -94,13 +99,13 @@ controller.Progress(deltaTime); // (7)!
 
 	This value is applied 50% in either direction equally (i.e. a value of `160°` results in the camera being able to orbit 80° anticlockwise and 80° clockwise).
 	
-	Can be set to `null` to remove any limit (allowing full 360° orbits).
+	Can be set to `null` to remove any limit (allowing full 360° orbits). Values larger than `360°` are also treated as `null`, and a value of `0°` locks the camera at its `ZeroAngleDirection`.
 	
 	Defaults to `null`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `MinHeight`
 
-:   The minimum permitted value for `Height`. Can be `null` to remove the lower bound.
+:   The minimum permitted value for `Height`. Can be `null` to remove the lower bound, or negative to let the camera go below the `Target`.
 	
 	Defaults to `0.1f`.
 	
@@ -121,6 +126,22 @@ controller.Progress(deltaTime); // (7)!
 :   The maximum permitted value for `Distance`. Can be `null` to remove the upper bound.
 	
 	Defaults to `2f`.
+
+The height limits can be any finite value (including negative values, which are below the `Target`), but the distance limits must be positive (invalid values are ignored). Setting a minimum higher than its maximum (or vice versa) moves the other limit to match, and `Height` or `Distance` is re-clamped immediately.
+
+#### Convenience Methods
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Progress(deltaTime, angle, height, distance)`
+
+:   Sets `Angle`, `Height`, and `Distance`, then calls `Progress(deltaTime)`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(target, upDirection, zeroAngleDirection, angleRange, minHeight, maxHeight, minDistance, maxDistance)`
+
+:   Sets all of the configuration properties above in one call.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `ResetParametersToDefault()`
+
+:   Resets every property (including smoothing) to its default value.
 
 ## Reacting to Input
 
@@ -156,7 +177,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Angle` for each second this key is depressed. If null, `DefaultAngleSensitivityKeyOrButtonPress` will be used.
 	
@@ -194,7 +215,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Angle` for each second this button is depressed. If null, `DefaultAngleSensitivityKeyOrButtonPress` will be used.
 	
@@ -236,7 +257,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Height` for each second this key is depressed. If null, `DefaultHeightSensitivityKeyOrButtonPress` will be used.
 	
@@ -274,7 +295,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Height` for each second this button is depressed. If null, `DefaultHeightSensitivityKeyOrButtonPress` will be used.
 	
@@ -316,7 +337,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Distance` for each second this key is depressed. If null, `DefaultDistanceSensitivityKeyOrButtonPress` will be used.
 	
@@ -354,7 +375,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Distance` for each second this button is depressed. If null, `DefaultDistanceSensitivityKeyOrButtonPress` will be used.
 	
@@ -368,7 +389,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 ### Default Controls
 
-The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively:
+The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively. Every parameter after `deltaTime` is optional: the `invert[...]Control` flags (`invertAngleControl`, `invertHeightControl`, `invertDistanceControl`) reverse each control, and the sensitivity parameters fall back to the default sensitivity constants when `null`:
 
 ```csharp
 // AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime):
@@ -394,12 +415,12 @@ The `Angle`, `Height`, and `Distance` target properties can have smoothing appli
 
 ```csharp
 // Set properties' smoothing individually:
-controller.AngleSmoothingStrength = Strength.VeryMild;
-controller.HeightSmoothingStrength = Strength.VeryMild;
-controller.DistanceSmoothingStrength = Strength.VeryMild;
+controller.AngleSmoothingStrength = SmoothingStrength.VeryMild;
+controller.HeightSmoothingStrength = SmoothingStrength.VeryMild;
+controller.DistanceSmoothingStrength = SmoothingStrength.VeryMild;
 
-// Set all properties' smoothing simutaneously:
-controller.SetGlobalSmoothing(Strength.VeryMild);
+// Set all properties' smoothing simultaneously:
+controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 ```
 
 The default smoothing for all properties is `VeryMild`. You can choose from `VeryMild`, `Mild`, `Moderate`, `Strong`, `VeryStrong`, or `None`. 
@@ -409,10 +430,10 @@ The default smoothing for all properties is `VeryMild`. You can choose from `Ver
 * Setting the smoothing to `None` disables smoothing entirely. This means the camera will always be updated to meet exactly the target value of each property on each frame; reducing latency to 0 but making the camera feel less physical.
 
 ??? abstract "Custom Smoothing Values"
-	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via a method named like "`SetCustom[...]SmoothingStrength`".
+	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via `SetCustomAngleSmoothingStrength()`, `SetCustomHeightSmoothingStrength()`, or `SetCustomDistanceSmoothingStrength()`.
 	
-	This method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. 
+	Each method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. A half-life of `0f` disables smoothing. 
 	
-	For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second, and then 87.5 after the next second, and so-on.
+	The half-life is the time (in seconds) the camera takes to cover half the distance to a new target value, starting from rest. For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second. Because the smoothing carries momentum (see below), X would then be at roughly 92 after the next second, rather than 87.5.
 	
-	Advanced: Smoothing is implemented via critically-damped spring. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.
+	Advanced: Smoothing is implemented via a critically-damped spring, which is why it carries momentum. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.

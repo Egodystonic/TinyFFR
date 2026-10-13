@@ -6,7 +6,16 @@ using System;
 
 namespace Egodystonic.TinyFFR.World;
 
-readonly record struct LightShadowFidelityData(uint MapSize, byte CascadeCount);
+readonly record struct LightShadowFidelityData(
+	uint MapSize,
+	byte CascadeCount,
+	float ShadowFarDistance = 0f,
+	float CascadeSplitA = 0.125f,
+	float CascadeSplitB = 0.25f,
+	float CascadeSplitC = 0.5f,
+	bool Stable = false,
+	bool LiSpsm = true
+);
 
 /// <summary>
 /// Represents a light in a scene, of any kind.

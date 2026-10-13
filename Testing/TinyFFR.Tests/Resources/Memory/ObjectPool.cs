@@ -5,6 +5,10 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 
 [TestFixture]
 unsafe class ArrayPoolBackedObjectPoolTest {
+	readonly record struct ConstantHashKey(int Value) {
+		public override int GetHashCode() => 0;
+	}
+	
 	class MockDisposable : IDisposable {
 		public bool IsDisposed { get; set; } = false;
 		public void Dispose() => IsDisposed = true;
@@ -21,8 +25,8 @@ unsafe class ArrayPoolBackedObjectPoolTest {
 	public void SetUpTest() {
 		_simplePool = new(&DefaultCreateNewListMethod, InitialPoolCount);
 		_argPool = new(&ArgCreateNewListMethod, ArgPoolArg, InitialPoolCount);
-		_vectorPool = new(true, &CreateNewVectorMethod);
-		_mapPool = new(true, &CreateNewMapMethod);
+		_vectorPool = new(&CreateNewVectorMethod);
+		_mapPool = new(&CreateNewMapMethod);
 	}
 
 	[TearDown]
@@ -275,5 +279,91 @@ unsafe class ArrayPoolBackedObjectPoolTest {
 			var v = _mapPool.Rent();
 			Assert.AreEqual(0, v.Count);
 		}
+	}
+	
+	[Test]
+	public void ShouldReturnGrownVectorBackingArrayToArrayPoolWhenVectorIsReturnedToItsPool() {
+		const int GrownLength = 64;
+		
+		static void AssertArrayPoolCanRentWithoutAllocating<T>() {
+			var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+			var array = TinyFfrArrayPool<T>.Shared.Rent(GrownLength);
+			var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+			TinyFfrArrayPool<T>.Shared.Return(array);
+
+			Assert.AreEqual(0L, allocatedDuring, $"A {GrownLength}-element {typeof(T).Name} array had to be freshly allocated, so the grown backing array was kept by the pooled collection instead of being returned.");
+		}
+		
+		var pool = new VectorPool<int>();
+		var vector = pool.Rent();
+		for (var i = 0; i < GrownLength; ++i) vector.Add(i);
+		pool.Return(vector);
+
+		AssertArrayPoolCanRentWithoutAllocating<int>();
+		pool.Dispose();
+	}
+	
+	[Test]
+	public void ShouldReturnGrownVectorBackingArrayToArrayPoolWhenVectorIsShrunk() {
+		const int GrownLength = 64;
+		
+		static void AssertArrayPoolCanRentWithoutAllocating<T>() {
+			var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+			var array = TinyFfrArrayPool<T>.Shared.Rent(GrownLength);
+			var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+			TinyFfrArrayPool<T>.Shared.Return(array);
+
+			Assert.AreEqual(0L, allocatedDuring, $"A {GrownLength}-element {typeof(T).Name} array had to be freshly allocated, so the grown backing array was kept by the pooled collection instead of being returned.");
+		}
+		
+		var vector = new ArrayPoolBackedVector<int>();
+		for (var i = 0; i < GrownLength; ++i) vector.Add(i);
+		vector.ClearAndShrinkToInitialCapacity();
+
+		Assert.AreEqual(0, vector.Count);
+		AssertArrayPoolCanRentWithoutAllocating<int>();
+		vector.Dispose();
+	}
+	
+	[Test]
+	public void ShouldReturnGrownBucketArraysToArrayPoolWhenSetIsShrunk() {
+		const int GrownLength = 64;
+		
+		static void AssertArrayPoolCanRentWithoutAllocating<T>() {
+			var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+			var array = TinyFfrArrayPool<T>.Shared.Rent(GrownLength);
+			var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+			TinyFfrArrayPool<T>.Shared.Return(array);
+
+			Assert.AreEqual(0L, allocatedDuring, $"A {GrownLength}-element {typeof(T).Name} array had to be freshly allocated, so the grown backing array was kept by the pooled collection instead of being returned.");
+		}
+		
+		var set = new ArrayPoolBackedSet<ConstantHashKey>();
+		for (var i = 0; i < GrownLength; ++i) set.Add(new ConstantHashKey(i));
+		set.ClearAndShrinkToInitialBucketCount();
+
+		AssertArrayPoolCanRentWithoutAllocating<ConstantHashKey>();
+		set.Dispose();
+	}
+	
+	[Test]
+	public void ShouldReturnGrownBucketArraysToArrayPoolWhenMapIsShrunk() {
+		const int GrownLength = 64;
+		
+		static void AssertArrayPoolCanRentWithoutAllocating<T>() {
+			var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+			var array = TinyFfrArrayPool<T>.Shared.Rent(GrownLength);
+			var allocatedDuring = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+			TinyFfrArrayPool<T>.Shared.Return(array);
+
+			Assert.AreEqual(0L, allocatedDuring, $"A {GrownLength}-element {typeof(T).Name} array had to be freshly allocated, so the grown backing array was kept by the pooled collection instead of being returned.");
+		}
+		
+		var map = new ArrayPoolBackedMap<ConstantHashKey, int>();
+		for (var i = 0; i < GrownLength; ++i) map.Add(new ConstantHashKey(i), i);
+		map.ClearAndShrinkToInitialBucketCount();
+
+		AssertArrayPoolCanRentWithoutAllocating<KeyValuePair<ConstantHashKey, int>>();
+		map.Dispose();
 	}
 }

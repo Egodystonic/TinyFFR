@@ -69,7 +69,7 @@ class LocalMutableGridAndDynamicTextureTest {
 				mesh!.Value.Dispose();
 			}
 			
-			mesh = factory.MeshBuilder.CreateMutableGridMesh(
+			mesh = factory.MeshBuilder.CreateMutableGrid(
 				Dimensions,
 				twoSided: twoSided,
 				xDir: flipX ? -IMeshBuilder.DefaultMutableGridMeshXDir : IMeshBuilder.DefaultMutableGridMeshXDir,

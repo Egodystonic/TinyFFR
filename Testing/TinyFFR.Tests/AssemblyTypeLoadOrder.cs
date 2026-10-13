@@ -31,6 +31,8 @@ sealed class AssemblyTypeLoadOrderAnchor {
 	DynamicVertexBuffer _dynamicVertexBuffer;
 	Display _display;
 	Font _font;
+	FontPen _fontPen;
+	FontString _fontString;
 	Light _light;
 	Material _material;
 	Mesh _mesh;
@@ -38,6 +40,7 @@ sealed class AssemblyTypeLoadOrderAnchor {
 	MeshNode _meshNode;
 	Model _model;
 	ModelInstance _modelInstance;
+	MeshGroupAnimationTable _meshGroupAnimationTable;
 	ModelInstanceGroup _modelInstanceGroup;
 	PointLight _pointLight;
 	Renderer _renderer;
@@ -54,10 +57,12 @@ sealed class AssemblyTypeLoadOrderAnchor {
 // safely here because the first anchor has already forced their embedded resource types to load.
 sealed class AssemblyTypeLoadOrderAnchorStage2 {
 	CanvasScene _canvasScene;
-	FontPen _fontPen;
-	FontString _fontString;
+	ModelBundle _modelBundle;
+	MeshGroupAnimationIndex _meshGroupAnimationIndex;
+	MeshGroupSkeleton _meshGroupSkeleton;
 	QuadInstance _quadInstance;
 	QuadMesh _quadMesh;
+	SceneObject _sceneObject;
 	TextInstance _textInstance;
 }
 
@@ -65,7 +70,8 @@ sealed class AssemblyTypeLoadOrderAnchorStage2 {
 sealed class AssemblyTypeLoadOrderAnchorStage3 {
 	CameraLockedQuadInstance _cameraLockedQuadInstance;
 	CameraLockedTextInstance _cameraLockedTextInstance;
-	CanvasTexture _canvasTexture;
+	CanvasImage _canvasImage;
 	CanvasText _canvasText;
+	MeshGroupNodeIndex _meshGroupNodeIndex;
 }
 #pragma warning restore CS0169

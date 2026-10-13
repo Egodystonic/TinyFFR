@@ -28,13 +28,21 @@ public enum MemoryUsageRubric {
 /// </summary>
 public sealed class LocalTinyFfrFactoryConfig {
 	/// <summary>
-	/// The maximum permitted value for <see cref="MaxCpuToGpuAssetTransferSizeBytes"/>: <c>536,870,912</c>.
+	/// The default value for <see cref="MaxRetainedUploadMemoryBytes"/>: <c>536,870,912</c> (512 MB).
 	/// </summary>
-	public const int MaxMaxCpuToGpuAssetTransferSizeBytes = 1 << 29;
+	public const long DefaultMaxRetainedUploadMemoryBytes = 512L * 1024 * 1024;
 	/// <summary>
-	/// The default value for <see cref="MaxCpuToGpuAssetTransferSizeBytes"/>: <c>104,857,600</c>.
+	/// The default value for <see cref="UploadMemoryBufferMaxRetentionTime"/>: 4 seconds.
 	/// </summary>
-	public const int DefaultMaxCpuToGpuAssetTransferSizeBytes = 1024 * 1024 * 100; // 100 MB  
+	public static readonly TimeSpan DefaultUploadMemoryBufferMaxRetentionTime = TimeSpan.FromSeconds(4d);
+	/// <summary>
+	/// The default value for <see cref="UploadMemoryBufferFlushThresholdBytes"/>: <c>268,435,456</c> (256 MB).
+	/// </summary>
+	public const long DefaultUploadMemoryBufferFlushThresholdBytes = 256L * 1024 * 1024;
+	/// <summary>
+	/// The default value for <see cref="UploadMemoryBufferStallThresholdBytes"/>: <c>1,073,741,824</c> (1 GB).
+	/// </summary>
+	public const long DefaultUploadMemoryBufferStallThresholdBytes = 1024L * 1024 * 1024;
 	/// <summary>
 	/// The default value for <see cref="MemoryUsageRubric"/>: <c>Standard</c>.
 	/// </summary>
@@ -49,20 +57,76 @@ public sealed class LocalTinyFfrFactoryConfig {
 	public const bool DefaultHeadlessMode = false;
 
 	/// <summary>
-	/// Maximum size, in bytes, of any loaded asset (mesh, texture, etc). Higher values must reserve more RAM.
-	/// Defaults to <see cref="DefaultMaxCpuToGpuAssetTransferSizeBytes"/>.
+	/// The maximum amount of memory, in bytes, that TinyFFR keeps for reuse after data (e.g. a mesh, a texture, or a frame being read back)
+	/// has finished being uploaded to the GPU. Lower values use less RAM, but values that are too low can slow down large uploads that repeat
+	/// every frame (e.g. reading back every frame at 4K). Defaults to <see cref="DefaultMaxRetainedUploadMemoryBytes"/>.
 	/// </summary>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown if non-positive or greater than <see cref="MaxMaxCpuToGpuAssetTransferSizeBytes"/>.</exception>
-	public int MaxCpuToGpuAssetTransferSizeBytes {
+	/// <remarks>
+	/// Memory used by uploads that are still in progress is not limited by this value; it is normally released by the next rendered frame
+	/// (see <see cref="UploadMemoryBufferFlushThresholdBytes"/> and <see cref="UploadMemoryBufferStallThresholdBytes"/> for how it is limited).
+	/// Memory kept for reuse is returned once it has gone unused for <see cref="UploadMemoryBufferMaxRetentionTime"/>, or immediately when
+	/// <see cref="Egodystonic.TinyFFR.Resources.IResourceAllocator.TrimPooledMemory"/> is invoked. Set to <c>0</c> to never keep memory for reuse.
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if negative.</exception>
+	public long MaxRetainedUploadMemoryBytes {
 		get;
 		init {
-			if (value is <= 0 or > MaxMaxCpuToGpuAssetTransferSizeBytes) {
-				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset size must be between 1 and {MaxMaxCpuToGpuAssetTransferSizeBytes} bytes.");
-			}
-
+			ArgumentOutOfRangeException.ThrowIfNegative(value);
 			field = value;
 		}
-	} = DefaultMaxCpuToGpuAssetTransferSizeBytes;
+	} = DefaultMaxRetainedUploadMemoryBytes;
+
+	/// <summary>
+	/// How long memory kept for reuse after uploading data to the GPU (see <see cref="MaxRetainedUploadMemoryBytes"/>) may go unused
+	/// before it is released. Defaults to <see cref="DefaultUploadMemoryBufferMaxRetentionTime"/>.
+	/// </summary>
+	/// <remarks>
+	/// Unused memory is checked for and released whenever new uploads happen. If your application stops uploading data entirely, memory that
+	/// was being kept for reuse stays allocated until <see cref="Egodystonic.TinyFFR.Resources.IResourceAllocator.TrimPooledMemory"/> is invoked
+	/// or the factory is disposed.
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if negative.</exception>
+	public TimeSpan UploadMemoryBufferMaxRetentionTime {
+		get;
+		init {
+			ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero);
+			field = value;
+		}
+	} = DefaultUploadMemoryBufferMaxRetentionTime;
+
+	/// <summary>
+	/// Once this many bytes of data are waiting to be uploaded to the GPU, TinyFFR asks the GPU driver to start processing them rather than
+	/// waiting for the next rendered frame. Defaults to <see cref="DefaultUploadMemoryBufferFlushThresholdBytes"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is normally only reached when loading a large amount of data without rendering any frames in between.
+	/// Must not be greater than <see cref="UploadMemoryBufferStallThresholdBytes"/> (checked when the factory is created).
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if not positive.</exception>
+	public long UploadMemoryBufferFlushThresholdBytes {
+		get;
+		init {
+			ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+			field = value;
+		}
+	} = DefaultUploadMemoryBufferFlushThresholdBytes;
+
+	/// <summary>
+	/// Once this many bytes of data are waiting to be uploaded to the GPU, TinyFFR waits for the GPU to catch up before continuing, which
+	/// bounds how much memory pending uploads can use. Defaults to <see cref="DefaultUploadMemoryBufferStallThresholdBytes"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is normally only reached when loading a large amount of data without rendering any frames in between.
+	/// Must not be less than <see cref="UploadMemoryBufferFlushThresholdBytes"/> (checked when the factory is created).
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if not positive.</exception>
+	public long UploadMemoryBufferStallThresholdBytes {
+		get;
+		init {
+			ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+			field = value;
+		}
+	} = DefaultUploadMemoryBufferStallThresholdBytes;
 
 	/// <summary>
 	/// Setting this property allows you to moderate how much RAM TinyFFR uses (at the cost of its performance ceiling).

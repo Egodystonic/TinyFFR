@@ -51,11 +51,11 @@ public readonly ref struct CanvasSceneCreationConfig : IConfigStruct<CanvasScene
 
 	internal SceneCreationConfig ToSceneCreationConfig() => BaseConfig;
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in CanvasSceneCreationConfig src) {
 		return SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in CanvasSceneCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
 	}

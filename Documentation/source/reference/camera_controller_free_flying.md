@@ -1,5 +1,6 @@
 ---
 title: Free-Flying Camera Controller
+description: Information on the FreeFlyingCameraController, which controls a camera that flies freely through space in any direction, unconstrained by a ground plane.
 ---
 
 ## Summary
@@ -11,6 +12,8 @@ The `FreeFlyingCameraController` controls a camera that can fly freely around in
 * Adjusting `Pitch` tilts the camera up or down.
 
 By default, `Pitch` is automatically clamped to ±90° each frame so the camera never flips upside-down. This can be disabled via `AllowUpsideDownFlip`.
+
+For an overview of how camera controllers work in general, see [Camera Controllers](camera_controllers.md).
 
 ### Example Usage
 
@@ -28,9 +31,9 @@ controller.Progress(deltaTime); // (7)!
 ```
 
 1.	This creates the controller, attached to the given `camera`.
-2.	This sets the "forward" direction of the world. Any direction orthogonal to `WorldUp` is permitted.
+2.	This sets the "forward" direction of the world. Any valid direction (other than `Direction.None`) is permitted; `WorldUp` is re-orthogonalized against it.
 
-3.	This sets the "up" direction of the world. Any direction orthogonal to `WorldForward` is permitted.
+3.	This sets the "up" direction of the world. Any direction is permitted; it is orthogonalized against `WorldForward` (so set `WorldForward` first).
 
 	When `AllowUpsideDownFlip` is `false` this value sets the maximum upward-pitch direction (and its reverse sets the maximum downward-pitch direction).
 	
@@ -62,6 +65,8 @@ controller.Progress(deltaTime); // (7)!
 
 	Increasing this value turns the camera to the left; decreasing to the right.
 	
+	The value read back is always normalized to between `0°` and `360°` (e.g. setting `-30°` reads back as `330°`).
+	
 	Defaults to `0°`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `Pitch`
@@ -70,7 +75,7 @@ controller.Progress(deltaTime); // (7)!
 	
 	A value of `0°` means the camera is looking horizontally; positive values tilt downward, negative values tilt upward.
 	
-	Unless `AllowUpsideDownFlip` is `true`, `Pitch` is automatically clamped to ±90° during `Progress()` so that the camera never flips upside-down.
+	Unless `AllowUpsideDownFlip` is `true`, `Pitch` is automatically clamped to ±90° during `Progress()` so that the camera never flips upside-down. Like `Yaw`, the value read back is normalized to between `0°` and `360°` (so a pitch of `-30°` reads back as `330°`).
 	
 	Defaults to `0°`.
 
@@ -79,6 +84,8 @@ controller.Progress(deltaTime); // (7)!
 <span class="def-icon">:material-card-bulleted-outline:</span> `WorldForward`
 
 :   The "forward" direction in the world that corresponds to the camera's view direction when both `Yaw` and `Pitch` are `0°`.
+
+	Setting this re-orthogonalizes `WorldUp` against it. Invalid values (including `Direction.None`) are ignored.
 	
 	Defaults to `Direction.Forward`.
 	
@@ -86,7 +93,9 @@ controller.Progress(deltaTime); // (7)!
 
 :   The "up" axis in the world. `Yaw` rotates the camera around this axis.
 	
-	When set, `WorldUp` is automatically orthogonalized against `WorldForward` — if you supply a value that is not perpendicular to `WorldForward`, the component parallel to `WorldForward` will be removed. Setting `WorldForward` after `WorldUp` will also re-orthogonalize `WorldUp`.
+	When set, `WorldUp` is automatically orthogonalized against `WorldForward` — if you supply a value that is not perpendicular to `WorldForward`, the component parallel to `WorldForward` will be removed. If the value is parallel to `WorldForward` (or invalid), an arbitrary perpendicular direction is chosen instead.
+	
+	Because setting `WorldForward` also re-orthogonalizes `WorldUp`, it's best to set `WorldForward` first and `WorldUp` second (or use `SetConstraints()`, which does this for you).
 	
 	Defaults to `Direction.Up`.
 	
@@ -97,6 +106,20 @@ controller.Progress(deltaTime); // (7)!
 	When `true`, this clamp is removed and `Pitch` may take any angle, allowing the camera to flip upside-down (useful for flight-sim style controllers).
 	
 	Defaults to `false`.
+
+#### Convenience Methods
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Progress(deltaTime, position, yaw, pitch)`
+
+:   Sets `Position`, `Yaw`, and `Pitch`, then calls `Progress(deltaTime)`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(worldForward, worldUp, allowUpsideDownFlip)`
+
+:   Sets `WorldForward`, `WorldUp`, and `AllowUpsideDownFlip` (in that order).
+
+<span class="def-icon">:material-code-block-parentheses:</span> `ResetParametersToDefault()`
+
+:   Resets every property (including smoothing) to its default value.
 
 ## Reacting to Input
 
@@ -132,7 +155,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Pitch` for each second this key is depressed. If null, `DefaultPitchSensitivityKeyOrButtonPress` will be used.
 	
@@ -170,7 +193,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Pitch` for each second this button is depressed. If null, `DefaultPitchSensitivityKeyOrButtonPress` will be used.
 	
@@ -212,7 +235,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Yaw` for each second this key is depressed. If null, `DefaultYawSensitivityKeyOrButtonPress` will be used.
 	
@@ -250,7 +273,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Yaw` for each second this button is depressed. If null, `DefaultYawSensitivityKeyOrButtonPress` will be used.
 	
@@ -361,7 +384,9 @@ Each `AdjustPositionVia*` method below provides both overloads. The `Orientation
 	
 ### Default Controls
 
-The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively:
+The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively. Every parameter after `deltaTime` is optional: `invertPitchControl`, `invertYawControl`, and `invertUpDownPositionalControl` reverse their respective controls, and the sensitivity parameters (`pitchAdjustmentPerPixel`, `yawAdjustmentPerPixel`, and `positionAdjustmentSpeed` for keyboard/mouse; `maxPitchAdjustmentPerSec`, `maxYawAdjustmentPerSec`, and `maxPositionAdjustmentSpeed` for gamepad) fall back to the default sensitivity constants when `null`.
+
+By default, the right shift and right control keys fly the camera up and down respectively; on a gamepad, the left trigger flies down and the right trigger flies up:
 
 ```csharp
 // AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime):
@@ -396,11 +421,11 @@ The `Position`, `Yaw`, and `Pitch` target properties can have smoothing applied.
 
 ```csharp
 // Set properties' smoothing individually:
-controller.PositionSmoothingStrength = Strength.VeryMild;
-controller.RotationSmoothingStrength = Strength.VeryMild; // Applies to both Yaw and Pitch
+controller.PositionSmoothingStrength = SmoothingStrength.VeryMild;
+controller.RotationSmoothingStrength = SmoothingStrength.VeryMild; // Applies to both Yaw and Pitch
 
-// Set all properties' smoothing simutaneously:
-controller.SetGlobalSmoothing(Strength.VeryMild);
+// Set all properties' smoothing simultaneously:
+controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 ```
 
 The default smoothing for all properties is `VeryMild`. You can choose from `VeryMild`, `Mild`, `Moderate`, `Strong`, `VeryStrong`, or `None`. 
@@ -410,10 +435,10 @@ The default smoothing for all properties is `VeryMild`. You can choose from `Ver
 * Setting the smoothing to `None` disables smoothing entirely. This means the camera will always be updated to meet exactly the target value of each property on each frame; reducing latency to 0 but making the camera feel less physical.
 
 ??? abstract "Custom Smoothing Values"
-	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via a method named like "`SetCustom[...]SmoothingStrength`".
+	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via `SetCustomPositionSmoothingStrength()` or `SetCustomRotationSmoothingStrength()`.
 	
-	This method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. 
+	Each method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. A half-life of `0f` disables smoothing. 
 	
-	For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second, and then 87.5 after the next second, and so-on.
+	The half-life is the time (in seconds) the camera takes to cover half the distance to a new target value, starting from rest. For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second. Because the smoothing carries momentum (see below), X would then be at roughly 92 after the next second, rather than 87.5.
 	
-	Advanced: Smoothing is implemented via critically-damped spring. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.
+	Advanced: Smoothing is implemented via a critically-damped spring, which is why it carries momentum. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.

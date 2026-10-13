@@ -8,6 +8,54 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
+/// <summary>
+/// Enumeration used to select whether and how wireframe data is generated for a mesh, via <see cref="MeshCreationConfig.WireframeGenerationMode"/>.
+/// </summary>
+public enum WireframeGenerationMode {
+	/// <summary>
+	/// No wireframe data is generated, and the mesh can not be drawn as a wireframe.
+	/// </summary>
+	Disabled = 0,
+	/// <summary>
+	/// Wireframe data is generated, and every edge of every triangle is drawn.
+	/// </summary>
+	/// <remarks>
+	/// This mode does no cleanup processing of the vertex data and is therefore the most "true" representation of the mesh data. You should
+	/// use this option when you want to inspect the true, unaltered vertex/polygon layout of a given mesh.
+	/// </remarks>
+	Enabled,
+	/// <summary>
+	/// Wireframe data is generated, and every edge shared by two triangles is drawn by only one of them.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This removes the doubled thickness that <see cref="Enabled"/> gives shared edges, which on curved or otherwise closed surfaces (such as spheres)
+	/// is nearly every edge. Every <i>edge</i> is still shown, but this mode removes some triangles, meaning shared edges are only drawn once.
+	/// </para>
+	/// <para>
+	/// You should use this option when you want to show the general "hull" of a mesh with a more consistent line thickness;
+	/// and the specific 100% accuracy of <see cref="Enabled"/> is not absolutely required.
+	/// </para>
+	/// </remarks>
+	EnabledWithEdgeDeduplication,
+	/// <summary>
+	/// Wireframe data is generated, every edge shared by two triangles is drawn at most once,
+	/// and additionally edges shared by two triangles lying on the same flat surface and facing the same direction are not drawn at all.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This mode removes repeated edges/triangles across flat surfaces (for example diagonal lines or triangle subdivisions across boxes/surfaces).
+	/// This provides a very clear outline of the target mesh, accentuating only the key edges and facets of its overall shape, but removes a lot of the
+	/// actual polygon/triangle data actually included in the parent mesh.
+	/// </para>
+	/// <para>
+	/// You should use this option when you want to use wireframe mode to show the outline shape of a mesh but are not concerned with the actual polygon/triangle
+	/// data.
+	/// </para>
+	/// </remarks>
+	EnabledWithEdgeDeduplicationAndFaceClearing
+}
+
 // Read Config for just how to read the file in (e.g. any preprocessing and the file path)
 // Generation Config for live generation of new ones
 // Creation Config for general processing in the local builder when creating the resource
@@ -73,7 +121,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 		if (SubMeshIndex < 0) throw new ArgumentOutOfRangeException(nameof(SubMeshIndex), SubMeshIndex, $"Sub-mesh index must be null or non-negative.");
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in MeshReadConfig src) {
 		return	SerializationSizeOfBool() // FixCommonExportErrors
 			+	SerializationSizeOfBool() // OptimizeForGpu
@@ -82,7 +130,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 			+	SerializationSizeOfNullableInt() // SubMeshIndex
 			+	SerializationSizeOfNullableFloat(); // AnimationTicksPerSecondOverride
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshReadConfig src) {
 		SerializationWriteBool(ref dest, src.FixCommonExportErrors);
 		SerializationWriteBool(ref dest, src.OptimizeForGpu);
@@ -138,11 +186,11 @@ public readonly ref struct MeshGenerationConfig : IConfigStruct<MeshGenerationCo
 	}
 #pragma warning restore CA1822
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in MeshGenerationConfig src) {
 		return SerializationSizeOf<Transform2D>(); // TextureTransform
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshGenerationConfig src) {
 		SerializationWrite(ref dest, src.TextureTransform);
 	}
@@ -170,7 +218,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	/// <summary>
 	/// The default value for <see cref="BoundingBoxAdditionalMargin"/>: <c>0.03f</c>.
 	/// </summary>
-	public static readonly float DefaultBoundingBoxAdditionalMargin = 0.03f;
+	public const float DefaultBoundingBoxAdditionalMargin = 0.03f;
 
 	/// <summary>
 	/// Whether to reverse the winding order of every triangle, turning the mesh inside out. Defaults to <see langword="false"/>.
@@ -257,15 +305,25 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	/// </remarks>
 	public bool AllowsPerInstanceVertexMutation { get; init; } = false;
 	/// <summary>
-	/// Whether to prepare the extra data needed to draw this mesh as a wireframe. Defaults to <see langword="false"/>.
-	/// Setting this to <c>true</c> enables setting the <see cref="DefaultMaterialShadingStyle.Wireframe"/> shading type
+	/// Whether and how to prepare the extra data needed to draw this mesh as a wireframe. Defaults to <see cref="Meshes.WireframeGenerationMode.Disabled"/>.
+	/// Any value other than <see cref="Meshes.WireframeGenerationMode.Disabled"/> enables setting the <see cref="DefaultMaterialShadingStyle.Wireframe"/> shading type
 	/// on the <see cref="IMaterialBuilder.DefaultMaterial"/> for <see cref="ModelInstance"/>s using this mesh.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Wireframe drawing shows a mesh's triangle edges rather than its surfaces, which is useful diagnostically. The extra data
-	/// costs video memory whether or not it is ever drawn.
+	/// costs video memory whether or not it is ever drawn. All of the enabled modes cost the same amount of video memory and render time;
+	/// the modes that leave out edges do their extra work once, when the mesh is created.
+	/// </para>
+	/// <para>
+	/// Wireframe data is never generated for meshes whose <see cref="AllowsPerInstanceVertexMutation"/> is <see langword="true"/>, or for
+	/// skeletal meshes; this setting is ignored for those.
+	/// </para>
+	/// <para>
+	/// See <see cref="Meshes.WireframeGenerationMode"/> for a description of each option.
+	/// </para>
 	/// </remarks>
-	public bool GenerateWireframeData { get; init; } = false;
+	public WireframeGenerationMode WireframeGenerationMode { get; init; } = WireframeGenerationMode.Disabled;
 	/// <summary>
 	/// The name to give the mesh. May be left empty.
 	/// </summary>
@@ -282,7 +340,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	}
 #pragma warning restore CA1822
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in MeshCreationConfig src) {
 		return	SerializationSizeOfBool() // FlipTriangles
 			+	SerializationSizeOfBool() // InvertTextureU
@@ -292,10 +350,10 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			+	SerializationSizeOfNullable<PositionedCuboid>() // BoundingBoxOverride
 			+	SerializationSizeOfFloat() // BoundingBoxAdditionalMargin
 			+	SerializationSizeOfBool() // AllowPerInstanceVertexMutation
-			+	SerializationSizeOfBool() // GenerateWireframeData
+			+	SerializationSizeOfInt() // WireframeGenerationMode
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshCreationConfig src) {
 		SerializationWriteBool(ref dest, src.FlipTriangles);
 		SerializationWriteBool(ref dest, src.InvertTextureU);
@@ -305,7 +363,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 		SerializationWriteNullable(ref dest, src.BoundingBoxOverride);
 		SerializationWriteFloat(ref dest, src.BoundingBoxAdditionalMargin);
 		SerializationWriteBool(ref dest, src.AllowsPerInstanceVertexMutation);
-		SerializationWriteBool(ref dest, src.GenerateWireframeData);
+		SerializationWriteInt(ref dest, (int) src.WireframeGenerationMode);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	/// <inheritdoc />
@@ -319,7 +377,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			BoundingBoxOverride = SerializationReadNullable<PositionedCuboid>(ref src),
 			BoundingBoxAdditionalMargin = SerializationReadFloat(ref src),
 			AllowsPerInstanceVertexMutation = SerializationReadBool(ref src),
-			GenerateWireframeData = SerializationReadBool(ref src),
+			WireframeGenerationMode = (WireframeGenerationMode) SerializationReadInt(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

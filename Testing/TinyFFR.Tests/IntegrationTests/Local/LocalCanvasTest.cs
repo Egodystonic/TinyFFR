@@ -246,8 +246,8 @@ class LocalCanvasTest {
 		ApplyDockParent();
 
 		void ApplyDockParent() {
-			if (childIsDocked) dockedChild.SetDockParent<CanvasTexture>(canvasTex);
-			else dockedChild.SetDockParent<CanvasTexture>(null);
+			if (childIsDocked) dockedChild.SetDockParent<CanvasImage>(canvasTex);
+			else dockedChild.SetDockParent<CanvasImage>(null);
 		}
 
 		var cursorOverTexture = false;
@@ -291,7 +291,7 @@ class LocalCanvasTest {
 			0.02f
 		);
 
-		var queryTextureResults = new CanvasTexture[16];
+		var queryTextureResults = new CanvasImage[16];
 		var queryTextResults = new CanvasText[16];
 		using var queryResultText = canvas.Add("[LMB] Query Hits: <none>", fontPen);
 		queryResultText.SetPlacementFraction(

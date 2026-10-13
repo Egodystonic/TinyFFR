@@ -15,4 +15,5 @@ public:
 	static DisplayHandle get_primary_display();
 	static int32_t get_display_mode_count(DisplayHandle handle);
 	static void get_display_mode(DisplayHandle handle, int32_t modeIndex, int32_t* outWidth, int32_t* outHeight, int32_t* outRefreshRateHz);
+	static int32_t get_display_current_refresh_rate(DisplayHandle handle);
 };

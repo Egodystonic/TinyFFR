@@ -53,9 +53,9 @@ fragment {
 		float divisor = max(fwidth(minComponent), 1E-6);
 		float edgeDistancePx = minComponent / divisor;
 
-		const float lineWorldThickness = 0.5;
-		const float minScreenSpaceThickness = 0.1;
-		const float maxScreenSpaceThickness = 1.0;
+		const float lineWorldThickness = 1.7;
+		const float minScreenSpaceThickness = 1.0;
+		const float maxScreenSpaceThickness = 2.5;
 		float camDistance = max(distance(getWorldPosition(), getWorldCameraPosition()), 1E-4);
 		float lineHalfWidthPx = clamp(lineWorldThickness / camDistance, minScreenSpaceThickness, maxScreenSpaceThickness);
 

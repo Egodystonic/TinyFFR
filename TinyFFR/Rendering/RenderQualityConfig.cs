@@ -366,7 +366,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 		}
 	}
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in RenderQualityConfig src) {
 		return SerializationSizeOfInt()  // ShadowQuality
 			 + SerializationSizeOfInt()  // ScreenSpaceEffectsQuality
@@ -383,7 +383,7 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 			 + SerializationSizeOfFloat()  // DepthOfFieldStrength
 			 + SerializationSizeOfBool(); // DitheringEnabled
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RenderQualityConfig src) {
 		SerializationWriteInt(ref dest, (int) src.ShadowQuality);
 		SerializationWriteInt(ref dest, (int) src.ScreenSpaceEffectsQuality);

@@ -246,7 +246,7 @@ public partial interface IAssetLoader {
 	/// <param name="compressionQuality">How aggressively to compress the texture in video memory, or <see langword="null"/> not to compress it at all. Note that compression takes time, slowing the load process down. Lower compression quality levels are faster; higher levels should generally only be used when baking assets (via the <see cref="IAssetBakery" />) as they take a considerable amount of time.</param>
 	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
 		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)));
-		else return LoadOcclusionRoughnessMetallicReflectanceMap(filePath, BuiltInTexturePaths.DefaultReflectanceMap);
+		else return LoadOcclusionRoughnessMetallicReflectanceMap(filePath, BuiltInTexturePaths.DefaultReflectanceValue);
 	}
 	/// <summary>
 	/// Loads an ORMR (occlusion, roughness, metallic, reflectance) map by combining a three-channel ORM file with a separate reflectance file.
@@ -337,7 +337,7 @@ public partial interface IAssetLoader {
 	/// <param name="compressionQuality">How aggressively to compress the texture in video memory, or <see langword="null"/> not to compress it at all. Note that compression takes time, slowing the load process down. Lower compression quality levels are faster; higher levels should generally only be used when baking assets (via the <see cref="IAssetBakery" />) as they take a considerable amount of time.</param>
 	TinyFfrAsyncOperation<Texture> LoadOcclusionRoughnessMetallicReflectanceMapAsync(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
 		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)));
-		else return LoadOcclusionRoughnessMetallicReflectanceMapAsync(filePath, BuiltInTexturePaths.DefaultReflectanceMap);
+		else return LoadOcclusionRoughnessMetallicReflectanceMapAsync(filePath, BuiltInTexturePaths.DefaultReflectanceValue);
 	}
 	/// <summary>
 	/// Asynchronously loads an ORMR map by combining a three-channel ORM file with a separate reflectance file.
@@ -431,7 +431,7 @@ public partial interface IAssetLoader {
 	/// <param name="compressionQuality">How aggressively to compress the texture in video memory, or <see langword="null"/> not to compress it at all. Note that compression takes time, slowing the load process down. Lower compression quality levels are faster; higher levels should generally only be used when baking assets (via the <see cref="IAssetBakery" />) as they take a considerable amount of time.</param>
 	Texture LoadAbsorptionTransmissionMap(ReadOnlySpan<char> filePath, bool invertAbsorption = false, Quality? compressionQuality = null) {
 		var includesTransmission = ReadTextureMetadata(filePath).IncludesAlphaChannel;
-		if (!includesTransmission) return LoadAbsorptionTransmissionMap(filePath, BuiltInTexturePaths.DefaultTransmissionMap, invertAbsorption, compressionQuality);
+		if (!includesTransmission) return LoadAbsorptionTransmissionMap(filePath, BuiltInTexturePaths.DefaultTransmissionValue, invertAbsorption, compressionQuality);
 		if (!invertAbsorption) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 
 		return LoadTexture(
@@ -501,7 +501,7 @@ public partial interface IAssetLoader {
 	/// <param name="compressionQuality">How aggressively to compress the texture in video memory, or <see langword="null"/> not to compress it at all. Note that compression takes time, slowing the load process down. Lower compression quality levels are faster; higher levels should generally only be used when baking assets (via the <see cref="IAssetBakery" />) as they take a considerable amount of time.</param>
 	TinyFfrAsyncOperation<Texture> LoadAbsorptionTransmissionMapAsync(ReadOnlySpan<char> filePath, bool invertAbsorption = false, Quality? compressionQuality = null) {
 		var includesTransmission = ReadTextureMetadata(filePath).IncludesAlphaChannel;
-		if (!includesTransmission) return LoadAbsorptionTransmissionMapAsync(filePath, BuiltInTexturePaths.DefaultTransmissionMap, invertAbsorption, compressionQuality);
+		if (!includesTransmission) return LoadAbsorptionTransmissionMapAsync(filePath, BuiltInTexturePaths.DefaultTransmissionValue, invertAbsorption, compressionQuality);
 		if (!invertAbsorption) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
 
 		return LoadTextureAsync(
@@ -568,7 +568,7 @@ public partial interface IAssetLoader {
 	/// <param name="compressionQuality">How aggressively to compress the texture in video memory, or <see langword="null"/> not to compress it at all. Note that compression takes time, slowing the load process down. Lower compression quality levels are faster; higher levels should generally only be used when baking assets (via the <see cref="IAssetBakery" />) as they take a considerable amount of time.</param>
 	Texture LoadEmissiveMap(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
 		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTexture(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
-		else return LoadEmissiveMap(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityMap);
+		else return LoadEmissiveMap(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityValue);
 	}
 	/// <summary>
 	/// Loads an emissive map by combining separate colour and intensity files.
@@ -628,7 +628,7 @@ public partial interface IAssetLoader {
 	/// <param name="compressionQuality">How aggressively to compress the texture in video memory, or <see langword="null"/> not to compress it at all. Note that compression takes time, slowing the load process down. Lower compression quality levels are faster; higher levels should generally only be used when baking assets (via the <see cref="IAssetBakery" />) as they take a considerable amount of time.</param>
 	TinyFfrAsyncOperation<Texture> LoadEmissiveMapAsync(ReadOnlySpan<char> filePath, Quality? compressionQuality = null) {
 		if (ReadTextureMetadata(filePath).IncludesAlphaChannel) return LoadTextureAsync(filePath, TextureCreationConfig.ForColorTexture(compressionQuality, Path.GetFileName(filePath)));
-		else return LoadEmissiveMapAsync(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityMap);
+		else return LoadEmissiveMapAsync(filePath, BuiltInTexturePaths.DefaultEmissiveIntensityValue);
 	}
 	/// <summary>
 	/// Asynchronously loads an emissive map by combining separate colour and intensity files.
@@ -752,7 +752,7 @@ public partial interface IAssetLoader {
 		return strengthChannel switch {
 			B => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath))),
 			A => LoadTexture(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
-			_ => LoadAnisotropyMapVectorFormatted(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap, compressionQuality)
+			_ => LoadAnisotropyMapVectorFormatted(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthValue, compressionQuality)
 		};
 	}
 	/// <summary>
@@ -817,7 +817,7 @@ public partial interface IAssetLoader {
 		return strengthChannel switch {
 			B => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath))),
 			A => LoadTextureAsync(filePath, TextureCreationConfig.ForDataTexture(TextureDataType.LinearData, compressionQuality, Path.GetFileName(filePath)) with { ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
-			_ => LoadAnisotropyMapVectorFormattedAsync(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap, compressionQuality)
+			_ => LoadAnisotropyMapVectorFormattedAsync(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthValue, compressionQuality)
 		};
 	}
 	/// <summary>

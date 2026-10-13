@@ -48,7 +48,8 @@ public enum BuiltInFontPenStyle {
 /// </para>
 /// <para>
 /// A font on its own draws nothing. Create a <see cref="FontPen"/> from it for the colours to draw in, and a
-/// <see cref="FontString"/> for the text itself; both must be disposed before the font is.
+/// <see cref="FontString"/> for the text itself. Disposing the font also disposes every pen and string made from it, so
+/// anything still using those pens or strings (such as a text instance) must be disposed before the font is.
 /// </para>
 /// <para>
 /// Preparing a string is not free, so where text changes every frame it
@@ -197,10 +198,12 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 
 	#region Disposal
 	/// <summary>
-	/// Disposes this font, releasing the texture its characters were drawn in to.
+	/// Disposes this font, releasing the texture its characters were drawn in to, along with every pen and prepared string
+	/// made from it.
 	/// </summary>
 	/// <remarks>
-	/// Every pen and prepared string made from this font must be disposed first.
+	/// The font's pens and prepared strings do not need to be disposed first, but anything still using them (such as a text
+	/// instance) must be; otherwise this throws a <see cref="ResourceDependencyException"/>.
 	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);

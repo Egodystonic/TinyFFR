@@ -208,6 +208,29 @@ sealed unsafe class WorkerJobSyncHelper<TSelf, TContext, TConfig> : IDisposable 
 			return result;
 		}
 		
+		public TinyFfrAsyncOperation<TWrapper> DispatchWrappedResourceReturningAsynchronousOperation<TResource, TWrapper>(delegate* managed<TContext, in TConfig, TResource> work, in TConfig config) where TResource : struct, IResource<TResource> where TWrapper : IResourceWrapper<TWrapper, TResource> {
+			static TResource Work(WorkerJobSyncContextWrapper? contextWrapper) {
+				if (contextWrapper == null || contextWrapper.WorkPtr == null) {
+					throw new InvalidOperationException("Context wrapper or its work pointer was null (this is a bug in TinyFFR).");
+				}
+
+				try {
+					return ((delegate* managed<TContext, in TConfig, TResource>) contextWrapper.WorkPtr)(contextWrapper.Context, contextWrapper.Context.Config);
+				}
+				finally {
+					contextWrapper.Context.JobDispatcher.AddPrimaryThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult(contextWrapper, &TearDownContextOnPrimaryThread, &ReturnContextToPoolIfNoErrorOnPrimaryThread));
+				}
+			}
+			
+			SetUpContextOnPrimaryThread(false);
+			Context.SetConfig(in config);
+			WorkPtr = work;
+			var result = new TinyFfrAsyncOperation<TWrapper>(OwningHelper._primaryThreadDispatcher);
+			var job = ThreadJob.CreateWithAsyncOpWrappedResourceResult<WorkerJobSyncContextWrapper, TResource, TWrapper>(this, &Work, result);
+			OwningHelper._asynchronousJobDispatcher.AddWorkerThreadJob(job);
+			return result;
+		}
+
 		public TinyFfrAsyncOperation<TResult> DispatchResourceReturningAsynchronousOperation<TResult>(delegate* managed<TContext, in TConfig, TResult> work, in TConfig config) where TResult : struct, IResource<TResult> {
 			static TResult Work(WorkerJobSyncContextWrapper? contextWrapper) {
 				if (contextWrapper == null || contextWrapper.WorkPtr == null) {

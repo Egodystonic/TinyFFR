@@ -33,7 +33,12 @@ static class BenchmarkEnvironment {
 
 		BenchmarkAssets.Initialize();
 		_factory = new LocalTinyFfrFactory(
-			factoryConfig: new LocalTinyFfrFactoryConfig { HeadlessMode = kind != BenchmarkRenderTargetKind.Window },
+			factoryConfig: new LocalTinyFfrFactoryConfig {
+				HeadlessMode = kind != BenchmarkRenderTargetKind.Window,
+				MaxRetainedUploadMemoryBytes = Int64.TryParse(System.Environment.GetEnvironmentVariable("TINYFFR_BENCH_RETAINED_UPLOAD_BYTES"), out var retainedUploadBytes)
+					? retainedUploadBytes
+					: LocalTinyFfrFactoryConfig.DefaultMaxRetainedUploadMemoryBytes
+			},
 			rendererBuilderConfig: new RendererBuilderConfig { EnableVSync = false }
 		);
 		_renderTarget = new BenchmarkRenderTarget(_factory, kind);

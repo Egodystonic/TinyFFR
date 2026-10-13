@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
@@ -59,7 +60,8 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		typeof(Texture),
 		typeof(Matrix4x4),
 		typeof(PositionedCuboid),
-		typeof(ResourceGroup)
+		typeof(ResourceGroup),
+		typeof(MeshGroupAnimationTable)
 	};
 #pragma warning disable CA1859 // "Don't use readonlydict for increased performance" -- I don't need perf, I need the intentionality of read-only; that's why I chose that interface :/
 	static readonly IReadOnlyDictionary<Type, int> _typeToTypeIdMap = _typeIdToTypeMap.Select((t, i) => (Type: t, Id: i)).ToDictionary(tuple => tuple.Type, tuple => tuple.Id);
@@ -89,6 +91,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	readonly ArrayPoolBackedVector<ResourceStub> _poolMaterials = new();
 	readonly ArrayPoolBackedVector<ResourceStub> _poolMeshes = new();
 	readonly ArrayPoolBackedVector<ResourceStub> _poolModels = new();
+	readonly ArrayPoolBackedVector<ResourceStub> _poolAnimationTables = new();
+	readonly ArrayPoolBackedVector<ResourceStub> _poolFonts = new();
+	readonly ArrayPoolBackedVector<ResourceStub> _poolBackdropTextures = new();
 	readonly ArrayPoolBackedLruCache<ResourceStub, BakedData> _resourcesReadyForBaking;
 	readonly ArrayPoolBackedObjectPool<LoadedBakedAsset, LocalAssetBakery> _loadedAssetPool;
 	readonly WorkerJobSyncHelper<LocalAssetBakery, AssetLoadContext, AssetLoadConfig> _loadSyncHelper;
@@ -149,6 +154,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		BakedPoolKind.Material => _poolMaterials,
 		BakedPoolKind.Mesh => _poolMeshes,
 		BakedPoolKind.Model => _poolModels,
+		BakedPoolKind.AnimationTable => _poolAnimationTables,
+		BakedPoolKind.Font => _poolFonts,
+		BakedPoolKind.BackdropTexture => _poolBackdropTextures,
 		_ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
 	};
 
@@ -166,14 +174,6 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposedOrDisabled();
 		
-		var bakeableCount = resource.Textures.Count + resource.Materials.Count + resource.Meshes.Count + resource.Models.Count;
-		if (bakeableCount != resource.ResourceCount) {
-			throw new AssetBakeException(
-				$"Can not bake resource group at least one of its constituent resources are not of a bakeable type. " +
-				$"Only {nameof(Texture)}, {nameof(Material)}, {nameof(Mesh)} and {nameof(Model)} resources can be baked as part of a group."
-			);
-		}
-		
 		var rootStub = GetStub(resource);
 		StartResourceBake(resource);
 		try {
@@ -184,6 +184,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			foreach (var material in resource.Materials) AddToPool(GetStub(material), BakedPoolKind.Material);
 			foreach (var mesh in resource.Meshes) AddToPool(GetStub(mesh), BakedPoolKind.Mesh);
 			foreach (var model in resource.Models) AddToPool(GetStub(model), BakedPoolKind.Model);
+			foreach (var animationTable in resource.AnimationTables) AddToPool(GetStub(animationTable), BakedPoolKind.AnimationTable);
+			foreach (var font in resource.Fonts) AddToPool(GetStub(font), BakedPoolKind.Font);
+			foreach (var backdropTexture in resource.BackdropTextures) AddToPool(GetStub(backdropTexture), BakedPoolKind.BackdropTexture);
 			FormalizePendingPoolReferences(rootStub);
 			WritePoolsAndReferenceTable(rootStub);
 
@@ -331,7 +334,14 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	
 	PooledHeapMemory<byte> EnsureSpace(ResourceStub stub, BakedData tuple, int requiredLength) {
 		if (tuple.Buffer.Span.Length - tuple.CursorPos >= requiredLength) return tuple.Buffer;
-		var newBuffer = _globals.HeapPool.Borrow(Int32.Max(tuple.Buffer.Span.Length * 2, tuple.CursorPos + requiredLength));
+		var requiredTotalLength = (long) tuple.CursorPos + requiredLength;
+		if (requiredTotalLength > LocalAssetLoader.MaxAssetBufferSizeBytes) {
+			throw new AssetBakeException(
+				$"Can not bake resource '{_globals.GetResourceName(stub.Ident, default)}' as its baked data would exceed the maximum size TinyFFR can load " +
+				$"for a single baked asset ({LocalAssetLoader.MaxAssetBufferSizeBytes} bytes). Consider baking its sub-resources separately or reducing texture sizes."
+			);
+		}
+		var newBuffer = _globals.HeapPool.Borrow((int) Int64.Min(Int64.Max((long) tuple.Buffer.Span.Length * 2L, requiredTotalLength), LocalAssetLoader.MaxAssetBufferSizeBytes));
 		_inProgressResources[stub] = new(newBuffer, tuple.CursorPos);
 		tuple.Buffer.Span.CopyTo(newBuffer.Span);
 		tuple.Buffer.Dispose();
@@ -415,6 +425,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		_poolMaterials.Clear();
 		_poolMeshes.Clear();
 		_poolModels.Clear();
+		_poolAnimationTables.Clear();
+		_poolFonts.Clear();
+		_poolBackdropTextures.Clear();
 	}
 
 	void AddToPool(ResourceStub stub, BakedPoolKind kind) {
@@ -454,6 +467,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		WritePool(root, BakedPoolKind.Material, sectionNameBuffer);
 		WritePool(root, BakedPoolKind.Mesh, sectionNameBuffer);
 		WritePool(root, BakedPoolKind.Model, sectionNameBuffer);
+		WritePool(root, BakedPoolKind.AnimationTable, sectionNameBuffer);
+		WritePool(root, BakedPoolKind.Font, sectionNameBuffer);
+		WritePool(root, BakedPoolKind.BackdropTexture, sectionNameBuffer);
 
 		using var entries = _globals.HeapPool.Borrow<AssetPoolSchema.BakedReferenceEntry>(Int32.Max(_references.Count, 1));
 		var entryCount = 0;
@@ -647,6 +663,19 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 		ctxWrapper.Context.This = @this;
 		return ctxWrapper.DispatchResourceReturningAsynchronousOperation(&Execute, new AssetLoadConfig { Callback = callback });
 	}
+
+	public TinyFfrAsyncOperation<TWrapper> LoadWrappedAsync<TAsset, TResult, TWrapper, TThis>(TThis @this, ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> nameOverride, delegate* managed<AssetLoadContext, TResult> callback) where TAsset : IResource where TResult : struct, IResource<TResult> where TWrapper : IResourceWrapper<TWrapper, TResult> where TThis : class {
+		static TResult Execute(AssetLoadContext ctx, in AssetLoadConfig cfg) {
+			ctx.AssetData = ctx.Self.Load<TAsset>(ctx.AssetFilePath!.Value.Span);
+			return ((delegate* managed<AssetLoadContext, TResult>) cfg.Callback)(ctx);
+		}
+
+		var ctxWrapper = _loadSyncHelper.CreateContextWrapper();
+		ctxWrapper.Context.SetName(nameOverride);
+		ctxWrapper.Context.AssetFilePath = ctxWrapper.Context.HeapPool.BorrowAndCopy(bakedAssetFilePath);
+		ctxWrapper.Context.This = @this;
+		return ctxWrapper.DispatchWrappedResourceReturningAsynchronousOperation<TResult, TWrapper>(&Execute, new AssetLoadConfig { Callback = callback });
+	}
 	#endregion
 	
 	public void ClearBakeryMemory() {
@@ -686,6 +715,9 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 			_poolMaterials.Dispose();
 			_poolMeshes.Dispose();
 			_poolModels.Dispose();
+			_poolAnimationTables.Dispose();
+			_poolFonts.Dispose();
+			_poolBackdropTextures.Dispose();
 			lock (_loadedAssetPoolLock) {
 				_loadedAssetPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 			}

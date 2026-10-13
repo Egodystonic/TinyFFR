@@ -34,6 +34,7 @@
                 <Button Command="{Binding ToggleRenderingCommand}" Content="Start / stop rendering" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
                 <CheckBox Content="Animate (render every tick)" IsChecked="{Binding Animate}" />
                 <Button Command="{Binding RenderOnceCommand}" Content="Render once" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                <TextBlock FontSize="11" Opacity="0.75" Text="Right-click the scene to pick a model instance (a magenta dot marks the picked point)." TextWrapping="Wrap" />
                 <CheckBox Content="Composite mode" IsChecked="{Binding UseCompositor}" />
                 <CheckBox Content="Overlay enabled" IsChecked="{Binding OverlayEnabled}" IsEnabled="{Binding UseCompositor}" />
                 <TextBlock Text="Internal render resolution" />

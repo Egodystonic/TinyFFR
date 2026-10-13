@@ -26,6 +26,7 @@ class CameraCreationConfigTest {
 			NearPlaneDistance = 10f,
 			FarPlaneDistance = 20f,
 			ProjectionType = CameraProjectionType.Orthographic,
+			InitialExposure = CameraExposurePreset.OutsideStarlight,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new CameraCreationConfig {
@@ -39,6 +40,7 @@ class CameraCreationConfigTest {
 			NearPlaneDistance = 100f,
 			FarPlaneDistance = 200f,
 			ProjectionType = CameraProjectionType.Perspective,
+			InitialExposure = new CameraExposureParams(5.6f, 1f / 500f, 1_600f),
 			Name = "BBBbbb"
 		};
 
@@ -53,6 +55,7 @@ class CameraCreationConfigTest {
 			Assert.AreEqual(expected.NearPlaneDistance, actual.NearPlaneDistance);
 			Assert.AreEqual(expected.FarPlaneDistance, actual.FarPlaneDistance);
 			Assert.AreEqual(expected.ProjectionType, actual.ProjectionType);
+			Assert.AreEqual(expected.InitialExposure, actual.InitialExposure);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -70,6 +73,7 @@ class CameraCreationConfigTest {
 			.Float(testConfigA.NearPlaneDistance)
 			.Float(testConfigA.FarPlaneDistance)
 			.Int((int) testConfigA.ProjectionType)
+			.Obj(testConfigA.InitialExposure)
 			.String("Aa Aa")
 			.For(testConfigA);
 
@@ -84,6 +88,7 @@ class CameraCreationConfigTest {
 			.Float(testConfigB.NearPlaneDistance)
 			.Float(testConfigB.FarPlaneDistance)
 			.Int((int) testConfigB.ProjectionType)
+			.Obj(testConfigB.InitialExposure)
 			.String("BBBbbb")
 			.For(testConfigB);
 
@@ -98,6 +103,7 @@ class CameraCreationConfigTest {
 			.Including(nameof(CameraCreationConfig.NearPlaneDistance))
 			.Including(nameof(CameraCreationConfig.FarPlaneDistance))
 			.Including(nameof(CameraCreationConfig.ProjectionType))
+			.Including(nameof(CameraCreationConfig.InitialExposure))
 			.Including(nameof(CameraCreationConfig.Name))
 			.End();
 	}

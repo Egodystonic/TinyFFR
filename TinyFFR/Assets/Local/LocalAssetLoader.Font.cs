@@ -69,21 +69,11 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Font> {
 			var name = ctx.StoredOrOverridingName;
 
 			var group = self._globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: false);
-			var resolver = new BakedAssetResolver(assetData, group, self);
+			using var resolver = new BakedAssetResolver(assetData, group, self);
 			try {
 				resolver.MaterializeAll();
 				var atlas = resolver.ResolveTexture(BakedPoolKind.Root, -1, BakedReferenceSlot.FontAtlas);
-
-				return self._fontLoader.CreateFontFromBakedData(
-					atlas,
-					assetData.Extract<float>(FontBakingSchema.Ascent),
-					assetData.Extract<float>(FontBakingSchema.Descent),
-					assetData.Extract<float>(FontBakingSchema.LineAdvance),
-					new Rune(assetData.Extract<int>(FontBakingSchema.LineBreakRune)),
-					assetData.ExtractSpan<FontBakingSchema.BakedRuneEntry>(FontBakingSchema.RuneMap),
-					assetData.ExtractSpan<FontBakingSchema.BakedKerningEntry>(FontBakingSchema.KerningMap),
-					name
-				);
+				return CreateFontFromBakedAsset(self, assetData, atlas, name);
 			}
 			catch {
 				group.Dispose(disposeContainedResources: true);
@@ -95,6 +85,19 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Font> {
 		}
 
 		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static Font CreateFontFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, Texture atlas, ReadOnlySpan<char> name) {
+		return self._fontLoader.CreateFontFromBakedData(
+			atlas,
+			assetData.Extract<float>(FontBakingSchema.Ascent),
+			assetData.Extract<float>(FontBakingSchema.Descent),
+			assetData.Extract<float>(FontBakingSchema.LineAdvance),
+			new Rune(assetData.Extract<int>(FontBakingSchema.LineBreakRune)),
+			assetData.ExtractSpan<FontBakingSchema.BakedRuneEntry>(FontBakingSchema.RuneMap),
+			assetData.ExtractSpan<FontBakingSchema.BakedKerningEntry>(FontBakingSchema.KerningMap),
+			name
+		);
 	}
 	#endregion
 }

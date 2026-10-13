@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
 // This provides the implementation for textures created via RenderOutputBuffer.CreateDynamicTexture()
-sealed class LocalRenderOutputBufferTextureImplProvider : ITextureImplProvider {
+sealed class LocalRenderOutputBufferTextureImplProvider : ITextureImplProvider, ILocalResourceImplProvider {
 	const string NamePrefix = "Dynamic texture for ";
 	readonly LocalRendererBuilder _owner;
 
@@ -26,6 +26,7 @@ sealed class LocalRenderOutputBufferTextureImplProvider : ITextureImplProvider {
 		_owner.CopyName(GetOwningBuffer(handle), destinationBuffer[NamePrefix.Length..]);
 	}
 	public bool IsDisposed(ResourceHandle<Texture> handle) => TryGetOwningBuffer(handle) == null;
+	internal bool GetStoresRowsTopToBottom(ResourceHandle<Texture> handle) => _owner.GetBufferStoresRowsTopToBottom(GetOwningBuffer(handle));
 	public void Dispose(ResourceHandle<Texture> handle) { /* no-op */ }
 	public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner.GetBufferTextureDimensions(GetOwningBuffer(handle));
 	public TexelType GetTexelType(ResourceHandle<Texture> handle) => TexelType.Rgba32;

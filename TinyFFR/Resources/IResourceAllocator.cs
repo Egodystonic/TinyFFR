@@ -18,7 +18,7 @@ namespace Egodystonic.TinyFFR.Resources;
 /// <li>If you want to borrow a buffer for a long-lived operation, use <see cref="CreatePooledMemoryBuffer"/>.</li>
 /// <li>If you want to borrow a zero-allocation collection-type for a short-lived operation, use <see cref="GetSharedScratchList"/>/<see cref="GetSharedScratchDictionary"/>/<see cref="GetSharedScratchSet"/>.</li>
 /// <li>If you want to instantiate a zero-allocation collection-type for a field scoped to the entire lifetime of the application, use
-/// <see cref="CreateNewArrayPoolBackedList"/>/<see cref="CreateNewArrayPoolBackedDictionary"/>/<see cref="CreateNewArrayPoolBackedSet"/>/<see cref="CreateNewArrayPoolBackedLruCache(int)"/>.</li>
+/// <see cref="CreateNewList{T}"/>/<see cref="CreateNewDictionary{TKey,TValue}"/>/<see cref="CreateNewSet{T}"/>/<see cref="CreateNewLruCache{TKey,TValue}(int)"/>.</li>
 /// </ul>
 /// </remarks>
 public interface IResourceAllocator {
@@ -106,6 +106,22 @@ public interface IResourceAllocator {
 	void ReturnPooledMemoryBuffer<T>(Memory<T> buffer);
 
 	/// <summary>
+	/// Releases memory that TinyFFR is currently keeping for reuse (e.g. pooled arrays and collections, and buffers used for uploading data to the GPU),
+	/// returning it to the runtime and operating system. Memory that is currently in use is not affected.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// TinyFFR keeps memory for reuse rather than freeing it so that it doesn't need to allocate it again later. Invoke this after a large one-off
+	/// workload (such as loading a large number of assets) if you want that memory back. Pools are rebuilt as they are used again afterwards,
+	/// so invoking this frequently costs performance.
+	/// </para>
+	/// <para>
+	/// This method must be invoked from the main thread, and does nothing if any asynchronous operation (<see cref="TinyFfrAsyncOperation"/>) is still in progress.
+	/// </para>
+	/// </remarks>
+	void TrimPooledMemory();
+
+	/// <summary>
 	/// Returns a scratch (temporary, reusable) collection. The returned collection is reused/recycled (i.e. every invocation of this function returns the same object when passing the same type parameters).
 	/// </summary>
 	/// <remarks>
@@ -117,16 +133,16 @@ public interface IResourceAllocator {
 	/// this method with a new <c>bufferIndex</c> a new collection will be created, each subsequent invocation returns the same buffer. Can be any value but each new value creates a new buffer that
 	/// will be internally stored, so use sparingly.</param>
 	/// <param name="clearBuffer">If <see langword="true"/> the collection will be cleared before being handed to you. Can set to <c>false</c> if you don't need the collection cleared.</param>
-	IList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true);
+	INonDisposableArrayPoolBackedList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true);
 	/// <inheritdoc cref="GetSharedScratchList{T}"/>
-	IDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true);
+	INonDisposableArrayPoolBackedDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true);
 	/// <inheritdoc cref="GetSharedScratchList{T}"/>
-	ISet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true);
+	INonDisposableArrayPoolBackedSet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true);
 
-	/// <inheritdoc cref="CreateNewArrayPoolBackedDictionary" />
+	/// <inheritdoc cref="CreateNewDictionary{TKey,TValue}" />
 	/// <param name="initialCapacity">A hint for how many elements the list is expected to eventually contain, used to reduce the number of internal resizes needed as elements are added.
 	/// Defaults to an implementation-defined value if <see langword="null"/>.</param>
-	IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null);
+	IArrayPoolBackedList<T> CreateNewList<T>(int? initialCapacity = null);
 	/// <summary>
 	/// Creates a new collection, backed by pooled storage. Must be disposed when no longer needed.
 	/// </summary>
@@ -140,17 +156,17 @@ public interface IResourceAllocator {
 	/// Unlike the shared scratch collections, the returned instance is not shared with any other caller: you own it, and must dispose it yourself once you are finished with it.
 	/// </para>
 	/// </remarks>
-	IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>();
-	/// <inheritdoc cref="CreateNewArrayPoolBackedDictionary" />
-	IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>();
-	/// <inheritdoc cref="CreateNewArrayPoolBackedDictionary" />
+	IArrayPoolBackedDictionary<TKey, TValue> CreateNewDictionary<TKey, TValue>();
+	/// <inheritdoc cref="CreateNewDictionary{TKey,TValue}" />
+	IArrayPoolBackedSet<T> CreateNewSet<T>();
+	/// <inheritdoc cref="CreateNewDictionary{TKey,TValue}" />
 	/// <param name="maxValuesInCache">The maximum number of entries the cache may hold before it starts evicting its least-recently-used entries. Must be positive.</param>
-	IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache);
-	/// <inheritdoc cref="CreateNewArrayPoolBackedDictionary" />
+	IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache);
+	/// <inheritdoc cref="CreateNewDictionary{TKey,TValue}" />
 	/// <param name="maxValuesInCache">The maximum number of entries the cache may hold before it starts evicting its least-recently-used entries. Must be positive.</param>
 	/// <param name="cacheEvictionCallback">A callback invoked whenever a value leaves the cache (see the remarks on <see cref="IArrayPoolBackedLruCache{TKey,TValue}"/>).</param>
 	/// <param name="cacheEvictionCallbackArg">An arbitrary value passed through to <paramref name="cacheEvictionCallback"/> unchanged on every invocation.</param>
-	unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null);
+	unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null);
 
 	/// <summary>
 	/// Schedules <paramref name="work"/> to run on one of TinyFFR's own shared worker threads, returning a <see cref="TinyFfrAsyncOperation{T}"/> representing its eventual result.
@@ -165,4 +181,9 @@ public interface IResourceAllocator {
 	TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class;
 	/// <inheritdoc cref="DispatchWorkerThreadJob{TContext,TResult}(TContext,Func{TContext,TResult})"/>
 	unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, delegate* managed<TContext?, TResult?> work) where TContext : class where TResult : class;
+	
+	/// <summary>
+	/// Represents a job-execution-facade that enables using TinyFFR's worker thread pool to parallelize certain jobs.
+	/// </summary>
+	IJobExecutionFacade ParallelizingFacade { get; }
 }

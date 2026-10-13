@@ -65,7 +65,7 @@ public readonly ref struct WindowCreationConfig : IConfigStruct<WindowCreationCo
 	}
 #pragma warning restore CA1822
 
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in WindowCreationConfig src) {
 		return	SerializationSizeOfResource() // Display
 			+	SerializationSizeOfString(src.Title) // Title
@@ -73,7 +73,7 @@ public readonly ref struct WindowCreationConfig : IConfigStruct<WindowCreationCo
 			+	SerializationSizeOf<XYPair<int>>() // Size
 			+	SerializationSizeOfInt(); // FullscreenStyle
 	}
-	/// <inheritdoc/>
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in WindowCreationConfig src) {
 		SerializationWriteAndAllocateResource(ref dest, src.Display);
 		SerializationWriteString(ref dest, src.Title);

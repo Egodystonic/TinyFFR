@@ -25,11 +25,11 @@ public readonly ref struct BackdropTextureCreationConfig : IConfigStruct<Backdro
 		
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in BackdropTextureCreationConfig src) {
 		return SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in BackdropTextureCreationConfig src) {
 		SerializationWriteString(ref dest, src.Name);
 	}

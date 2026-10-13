@@ -110,7 +110,7 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastReflectedBy(Plane plane) => plane.FastReflectionOf(this);
 	/// <summary>
-	/// <inheritdoc/>
+	/// Returns this vector's projection on to <paramref name="plane"/> (i.e. the part of this vector that lies parallel to the plane's surface).
 	/// </summary>
 	/// <remarks>
 	/// Unlike the general <see cref="IProjectable{TSelf,TOther}"/> contract, this never returns <see langword="null"/>: projecting a <see cref="Vect"/> on to a plane is always well-defined (it may just come out zero-length, if this vector was exactly orthogonal to the plane).

@@ -38,6 +38,8 @@ if (OperatingSystem.IsLinux()) {
 	Environment.SetEnvironmentVariable("CXXFLAGS", "-stdlib=libc++");
 }
 
+var windowsToolsetArg = OperatingSystem.IsWindows() ? "-T v143 " : "";
+
 //		Assimp
 if (OperatingSystem.IsMacOS()) {
 	commandLists[LibAssimp].AddRange(
@@ -48,7 +50,7 @@ if (OperatingSystem.IsMacOS()) {
 }
 else {
 	commandLists[LibAssimp].AddRange(
-		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DCMAKE_BUILD_TYPE={ConfigurationToken} -DASSIMP_INSTALL=ON -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"cmake {windowsToolsetArg}-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DCMAKE_BUILD_TYPE={ConfigurationToken} -DASSIMP_INSTALL=ON -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
 		$"cmake --build . --config {ConfigurationToken}",
 		$"cmake --build . --target install --config {ConfigurationToken}"
 	);
@@ -56,7 +58,7 @@ else {
 
 //		SDL
 commandLists[LibSdl].AddRange(
-	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DCMAKE_BUILD_TYPE={ConfigurationToken} \"{RepoRootDirToken}/CMakeLists.txt\"",
+	$"cmake {windowsToolsetArg}-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DCMAKE_BUILD_TYPE={ConfigurationToken} \"{RepoRootDirToken}/CMakeLists.txt\"",
 	$"cmake --build . --config {ConfigurationToken}",
 	$"cmake --build . --target install --config {ConfigurationToken}"
 );
@@ -73,7 +75,7 @@ if (OperatingSystem.IsMacOS()) {
 else {
 	if (OperatingSystem.IsWindows()) {
 		commandLists[LibFilament].AddRange(
-			$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
+			$"cmake {windowsToolsetArg}-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
 				$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
 				$"\"{RepoRootDirToken}/CMakeLists.txt\"",
 			$"cmake --build . --config {ConfigurationToken}"

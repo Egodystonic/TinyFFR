@@ -46,7 +46,7 @@ class LocalCuboidRenderTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Cuboid Render Test");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		using var colorMap = factory.AssetLoader.TextureBuilder.CreateColorMap(_colorPattern, includeAlpha: false);
 		using var normalMap = factory.AssetLoader.TextureBuilder.CreateNormalMap(_normalPattern);
 		using var ormMap = factory.AssetLoader.TextureBuilder.CreateOcclusionRoughnessMetallicMap(_occlusionPattern, _roughnessPattern, _metallicPattern);

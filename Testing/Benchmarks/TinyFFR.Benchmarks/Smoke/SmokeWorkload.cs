@@ -10,7 +10,7 @@ static class SmokeWorkload {
 	public const int MeshBuildRepeatCount = 2;
 	public const int MutableMeshVertexPassCount = 260;
 	public const int DynamicBufferVertexCount = 65_536;
-	public const int DynamicBufferIndexCount = 98_304;
+	public const int DynamicBufferTriangleCount = 32_768;
 	public const int DynamicBufferRepeatCount = 30;
 	public const int GridDimension = 192;
 	public const int GridRepeatCount = 16;

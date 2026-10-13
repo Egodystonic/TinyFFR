@@ -60,10 +60,10 @@ static partial class SmokeSections {
 			using var defaultNormal = Factory.AssetLoader.LoadTexture(paths.DefaultNormalMap, TextureDataType.LinearDataUnitVector, "Benchmark Built In Normal Map");
 			using var defaultOrm = Factory.AssetLoader.LoadTexture(paths.DefaultOcclusionRoughnessMetallicMap, TextureDataType.LinearData, "Benchmark Built In ORM Map");
 			using var defaultOrmr = Factory.AssetLoader.LoadTexture(paths.DefaultOcclusionRoughnessMetallicReflectanceMap, TextureDataType.LinearData, "Benchmark Built In ORMR Map");
-			using var defaultOcclusion = Factory.AssetLoader.LoadTexture(paths.DefaultOcclusionMap, TextureDataType.LinearData, "Benchmark Built In Occlusion Map");
-			using var defaultRoughness = Factory.AssetLoader.LoadTexture(paths.DefaultRoughnessMap, TextureDataType.LinearData, "Benchmark Built In Roughness Map");
-			using var defaultMetallic = Factory.AssetLoader.LoadTexture(paths.DefaultMetallicMap, TextureDataType.LinearData, "Benchmark Built In Metallic Map");
-			using var defaultReflectance = Factory.AssetLoader.LoadTexture(paths.DefaultReflectanceMap, TextureDataType.LinearData, "Benchmark Built In Reflectance Map");
+			using var defaultOcclusion = Factory.AssetLoader.LoadTexture(paths.DefaultOcclusionValue, TextureDataType.LinearData, "Benchmark Built In Occlusion Map");
+			using var defaultRoughness = Factory.AssetLoader.LoadTexture(paths.DefaultRoughnessValue, TextureDataType.LinearData, "Benchmark Built In Roughness Map");
+			using var defaultMetallic = Factory.AssetLoader.LoadTexture(paths.DefaultMetallicValue, TextureDataType.LinearData, "Benchmark Built In Metallic Map");
+			using var defaultReflectance = Factory.AssetLoader.LoadTexture(paths.DefaultReflectanceValue, TextureDataType.LinearData, "Benchmark Built In Reflectance Map");
 			using var defaultAbsorption = Factory.AssetLoader.LoadTexture(paths.DefaultAbsorptionTransmissionMap, TextureDataType.ColorSrgb, "Benchmark Built In Absorption Map");
 			using var defaultEmissive = Factory.AssetLoader.LoadTexture(paths.DefaultEmissiveMap, TextureDataType.ColorSrgb, "Benchmark Built In Emissive Map");
 			using var defaultAnisotropy = Factory.AssetLoader.LoadTexture(paths.DefaultAnisotropyMap, TextureDataType.LinearData, "Benchmark Built In Anisotropy Map");

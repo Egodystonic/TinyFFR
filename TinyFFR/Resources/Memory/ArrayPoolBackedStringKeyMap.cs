@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 unsafe abstract class ArrayPoolBackedStringKeyMap {
 	protected static readonly ManagedStringPool StringPool = new();
 	static readonly Lock StringHandleVectorPoolLock = new();
-	static readonly VectorPool<ManagedStringPool.RentedStringHandle> StringHandleVectorPool = new(zeroMemoryOnReturn: true, &CreateVector);
+	static readonly VectorPool<ManagedStringPool.RentedStringHandle> StringHandleVectorPool = new(&CreateVector);
 
 	static ArrayPoolBackedVector<ManagedStringPool.RentedStringHandle> CreateVector() => new(initialCapacity: 1);
 
@@ -61,7 +61,7 @@ sealed class ArrayPoolBackedStringKeyMap<TValue> : ArrayPoolBackedStringKeyMap, 
 	
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, TValue>.KeyEnumerator Keys => _handlesToValuesMap.Keys;
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, TValue>.ValueEnumerator Values => _handlesToValuesMap.Values;
-	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, TValue>.Enumerator GetEnumerator() => _handlesToValuesMap.GetEnumerator();
+	public ArrayPoolBackedDictionaryEnumerator<ManagedStringPool.RentedStringHandle, TValue> GetEnumerator() => _handlesToValuesMap.GetEnumerator();
 
 	public void Add(ReadOnlySpan<char> key, TValue value) {
 		ManagedStringPool.RentedStringHandle handle;

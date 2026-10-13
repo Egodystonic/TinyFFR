@@ -9,7 +9,7 @@ hide:
   - footer
 ---
 
-# :material-cube: TinyFFR || Realtime .NET 3D
+# ![Image showing a standard cube displayed on a window.](tinyffr_logo_and_title.svg)
 
 TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to help you render things in 3D:
 

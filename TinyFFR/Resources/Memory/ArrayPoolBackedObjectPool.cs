@@ -76,23 +76,21 @@ sealed unsafe class ArrayPoolBackedObjectPool<T, TArg> : IDisposable {
 sealed unsafe class VectorPool<T> : IDisposable, IReleasablePool {
 	public static VectorPool<T> Shared { get; } = CreateSharedInstance();
 
-	readonly bool _zeroMemoryOnReturn;
 	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedVector<T>> _objectPool;
 
 	public int ReleaseOrder => TinyFfrArrayPool.ObjectPoolReleaseOrder;
 
 	static VectorPool<T> CreateSharedInstance() {
-		var result = new VectorPool<T>(zeroMemoryOnReturn: true);
+		var result = new VectorPool<T>();
 		TinyFfrArrayPool.Register(result);
 		return result;
 	}
 
 	public void ReleaseAllPooledMemory() => _objectPool.ReleasePooledObjects(invokeDisposeOnEachItemBeforeRelease: true);
 
-	public VectorPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewVector, initialPoolCount) { }
+	public VectorPool(int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) : this(&CreateNewVector, initialPoolCount) { }
 
-	public VectorPool(bool zeroMemoryOnReturn, delegate*<ArrayPoolBackedVector<T>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) {
-		_zeroMemoryOnReturn = zeroMemoryOnReturn;
+	public VectorPool(delegate*<ArrayPoolBackedVector<T>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) {
 		_objectPool = new(newItemCreationFunc, initialPoolCount);
 	}
 
@@ -101,8 +99,7 @@ sealed unsafe class VectorPool<T> : IDisposable, IReleasablePool {
 	public ArrayPoolBackedVector<T> Rent() => _objectPool.Rent();
 
 	public void Return(ArrayPoolBackedVector<T> item) {
-		if (_zeroMemoryOnReturn) item.Clear();
-		else item.ClearWithoutZeroingMemory();
+		item.ClearAndShrinkToInitialCapacity();
 		_objectPool.Return(item);
 	}
 
@@ -110,13 +107,11 @@ sealed unsafe class VectorPool<T> : IDisposable, IReleasablePool {
 }
 
 sealed unsafe class MapPool<TKey, TValue> : IDisposable {
-	readonly bool _zeroMemoryOnReturn;
 	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedMap<TKey, TValue>> _objectPool;
 
-	public MapPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<MapPool<TKey, TValue>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewMap, initialPoolCount) { }
+	public MapPool(int initialPoolCount = ArrayPoolBackedVector<MapPool<TKey, TValue>>.DefaultInitialCapacity) : this(&CreateNewMap, initialPoolCount) { }
 
-	public MapPool(bool zeroMemoryOnReturn, delegate*<ArrayPoolBackedMap<TKey, TValue>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<MapPool<TKey, TValue>>.DefaultInitialCapacity) {
-		_zeroMemoryOnReturn = zeroMemoryOnReturn;
+	public MapPool(delegate*<ArrayPoolBackedMap<TKey, TValue>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<MapPool<TKey, TValue>>.DefaultInitialCapacity) {
 		_objectPool = new(newItemCreationFunc, initialPoolCount);
 	}
 
@@ -125,9 +120,7 @@ sealed unsafe class MapPool<TKey, TValue> : IDisposable {
 	public ArrayPoolBackedMap<TKey, TValue> Rent() => _objectPool.Rent();
 
 	public void Return(ArrayPoolBackedMap<TKey, TValue> item) {
-		if (_zeroMemoryOnReturn) item.Clear();
-		else item.ClearWithoutZeroingMemory();
-		item.ShrinkToInitialBucketCount();
+		item.ClearAndShrinkToInitialBucketCount();
 		_objectPool.Return(item);
 	}
 
@@ -156,13 +149,11 @@ sealed unsafe class StringKeyMapPool<TValue> : IDisposable {
 }
 
 sealed unsafe class SetPool<T> : IDisposable {
-	readonly bool _zeroMemoryOnReturn;
 	readonly ArrayPoolBackedObjectPool<ArrayPoolBackedSet<T>> _objectPool;
 
-	public SetPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<SetPool<T>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewSet, initialPoolCount) { }
+	public SetPool(int initialPoolCount = ArrayPoolBackedVector<SetPool<T>>.DefaultInitialCapacity) : this(&CreateNewSet, initialPoolCount) { }
 
-	public SetPool(bool zeroMemoryOnReturn, delegate*<ArrayPoolBackedSet<T>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<SetPool<T>>.DefaultInitialCapacity) {
-		_zeroMemoryOnReturn = zeroMemoryOnReturn;
+	public SetPool(delegate*<ArrayPoolBackedSet<T>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<SetPool<T>>.DefaultInitialCapacity) {
 		_objectPool = new(newItemCreationFunc, initialPoolCount);
 	}
 
@@ -171,9 +162,7 @@ sealed unsafe class SetPool<T> : IDisposable {
 	public ArrayPoolBackedSet<T> Rent() => _objectPool.Rent();
 
 	public void Return(ArrayPoolBackedSet<T> item) {
-		if (_zeroMemoryOnReturn) item.Clear();
-		else item.ClearWithoutZeroingMemory();
-		item.ShrinkToInitialBucketCount();
+		item.ClearAndShrinkToInitialBucketCount();
 		_objectPool.Return(item);
 	}
 

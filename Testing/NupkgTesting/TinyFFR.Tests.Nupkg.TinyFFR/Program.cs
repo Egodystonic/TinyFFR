@@ -53,7 +53,7 @@ using var orm = factory.AssetLoader.LoadCombinedTexture(
 		new(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
 		new(TextureCombinationSourceTexture.TextureC, ColorChannel.R)
 	),
-	finalOutputConfig: new TextureCreationConfig { DataType = TextureDataType.Linear, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
+	finalOutputConfig: new TextureCreationConfig { DataType = TextureDataType.LinearData, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
 );
 using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(albedo, normal, orm);
 using var mesh = factory.AssetLoader.LoadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() });
@@ -83,10 +83,10 @@ while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSe
 }
 
 scene.Remove(instance);
+scene.SetBackdrop(cubemap, 1f);
 
-var animResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/BrainStem.glb"));
-var animInstanceGroup = factory.ObjectBuilder.CreateModelInstances(animResources.Models);
-animInstanceGroup.RotateBy(90f % Direction.Right);
+var animResources = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/BrainStem.glb"));
+var animInstanceGroup = factory.ObjectBuilder.CreateModelInstances(animResources);
 scene.Add(animInstanceGroup);
 
 window.SetTitle("Close window when ready with ESC");
@@ -96,9 +96,7 @@ camera.LookAt((0f, 0.85f, 0f), Direction.Up);
 while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
 	var deltaTime = loop.IterateOnce().AsDeltaTime();
 
-	foreach (var i in animInstanceGroup) {
-		i.GetAnimationPlayerWithSpeedMultiplier(i.Animations[0], 0.8f).SetTimePoint(loop.TotalIteratedTime.AsDeltaTime(), AnimationWrapStyle.Loop);
-	}
+	animInstanceGroup.GetAnimationPlayerWithSpeedMultiplier(animInstanceGroup.Animations[0], 0.8f).SetTimePoint(loop.TotalIteratedTime.AsDeltaTime(), AnimationWrapStyle.Loop);
 
 	renderer.Render();
 }

@@ -260,4 +260,108 @@ class ResourceDependencyTrackerTest {
 		_tracker.DeregisterDependency(_bravoResources[0], _alphaResources[0]);
 		AssertIteratorInvalid(iterator4);
 	}
+
+	ResourceStub Stub(int alphaIndex) => ResourceUtils.ToStub(_alphaResources[alphaIndex]);
+
+	ResourceStub[] GetOrderedResources(ResourceStub[] resources, ResourceIdent ignoredDependent = default) {
+		var order = new int[resources.Length];
+		Assert.IsTrue(_tracker.TryGetDisposalOrder(resources, ignoredDependent, order, out _));
+		Assert.That(order, Is.Unique);
+		return order.Select(i => resources[i]).ToArray();
+	}
+
+	[Test]
+	public void DisposalOrderShouldBeReverseOfInputOrderWhenUnconstrained() {
+		var resources = new[] { Stub(0), Stub(1), Stub(2), Stub(3) };
+		Assert.AreEqual(new[] { Stub(3), Stub(2), Stub(1), Stub(0) }, GetOrderedResources(resources));
+		Assert.AreEqual(Array.Empty<ResourceStub>(), GetOrderedResources(Array.Empty<ResourceStub>()));
+	}
+
+	[Test]
+	public void DisposalOrderShouldRespectDependencyChains() {
+		_tracker.RegisterDependency(_alphaResources[1], _alphaResources[0]);
+		_tracker.RegisterDependency(_alphaResources[2], _alphaResources[1]);
+
+		Assert.AreEqual(new[] { Stub(2), Stub(1), Stub(0) }, GetOrderedResources(new[] { Stub(0), Stub(1), Stub(2) }));
+		Assert.AreEqual(new[] { Stub(2), Stub(1), Stub(0) }, GetOrderedResources(new[] { Stub(2), Stub(1), Stub(0) }));
+		Assert.AreEqual(new[] { Stub(2), Stub(1), Stub(0) }, GetOrderedResources(new[] { Stub(1), Stub(0), Stub(2) }));
+	}
+
+	[Test]
+	public void DisposalOrderShouldRespectDiamondDependencies() {
+		_tracker.RegisterDependency(_alphaResources[3], _alphaResources[1]);
+		_tracker.RegisterDependency(_alphaResources[3], _alphaResources[2]);
+		_tracker.RegisterDependency(_alphaResources[1], _alphaResources[0]);
+		_tracker.RegisterDependency(_alphaResources[2], _alphaResources[0]);
+
+		foreach (var input in new[] { new[] { 0, 1, 2, 3 }, new[] { 3, 2, 1, 0 }, new[] { 1, 3, 0, 2 } }) {
+			var ordered = GetOrderedResources(input.Select(Stub).ToArray()).ToList();
+			Assert.Less(ordered.IndexOf(Stub(3)), ordered.IndexOf(Stub(1)));
+			Assert.Less(ordered.IndexOf(Stub(3)), ordered.IndexOf(Stub(2)));
+			Assert.Less(ordered.IndexOf(Stub(1)), ordered.IndexOf(Stub(0)));
+			Assert.Less(ordered.IndexOf(Stub(2)), ordered.IndexOf(Stub(0)));
+		}
+	}
+
+	[Test]
+	public void DisposalOrderShouldFailForExternalDependentsAndIgnoreTheGivenDependent() {
+		_tracker.RegisterDependency(_alphaResources[1], _alphaResources[0]);
+		_tracker.RegisterDependency(_bravoResources[0], _alphaResources[0]);
+		var order = new int[1];
+
+		Assert.IsFalse(_tracker.TryGetDisposalOrder(new[] { Stub(0) }, ResourceUtils.ToStub(_bravoResources[0]).Ident, order, out var failure));
+		Assert.AreEqual(Stub(0), failure.BlockedResource);
+		Assert.AreEqual(Stub(1), failure.BlockingDependent);
+
+		_tracker.DeregisterDependency(_alphaResources[1], _alphaResources[0]);
+		Assert.IsTrue(_tracker.TryGetDisposalOrder(new[] { Stub(0) }, ResourceUtils.ToStub(_bravoResources[0]).Ident, order, out _));
+		Assert.IsFalse(_tracker.TryGetDisposalOrder(new[] { Stub(0) }, default, order, out failure));
+		Assert.AreEqual(ResourceUtils.ToStub(_bravoResources[0]), failure.BlockingDependent);
+	}
+
+	[Test]
+	public void DisposalOrderShouldFailForCycles() {
+		_tracker.RegisterDependency(_alphaResources[0], _alphaResources[1]);
+		_tracker.RegisterDependency(_alphaResources[1], _alphaResources[2]);
+		_tracker.RegisterDependency(_alphaResources[2], _alphaResources[0]);
+		var order = new int[4];
+
+		Assert.IsFalse(_tracker.TryGetDisposalOrder(new[] { Stub(0), Stub(1), Stub(2), Stub(3) }, default, order, out var failure));
+		Assert.IsNull(failure.BlockingDependent);
+		Assert.Contains(failure.BlockedResource, new[] { Stub(0), Stub(1), Stub(2) });
+	}
+
+	[Test]
+	public void OwnershipShouldExtendPrematureDisposalChecksToOwnedResources() {
+		_tracker.RegisterOwnership(_alphaResources[0], _alphaResources[1]);
+		_tracker.RegisterOwnership(_alphaResources[0], _alphaResources[2]);
+		_tracker.RegisterDependency(_alphaResources[2], _alphaResources[1]);
+		Assert.DoesNotThrow(() => _tracker.ThrowForPrematureDisposalIfTargetHasDependents(_alphaResources[0]));
+
+		_tracker.RegisterDependency(_alphaResources[3], _alphaResources[1]);
+		var exception = Assert.Throws<ResourceDependencyException>(() => _tracker.ThrowForPrematureDisposalIfTargetHasDependents(_alphaResources[0]));
+		StringAssert.Contains("0x0000000000000003", exception!.Message);
+
+		_tracker.DeregisterDependency(_alphaResources[3], _alphaResources[1]);
+		Assert.DoesNotThrow(() => _tracker.ThrowForPrematureDisposalIfTargetHasDependents(_alphaResources[0]));
+
+		_tracker.DeregisterAllDependencies(_alphaResources[2]);
+		_tracker.RegisterDependency(_alphaResources[2], _alphaResources[0]);
+		Assert.Throws<ResourceDependencyException>(() => _tracker.ThrowForPrematureDisposalIfTargetHasDependents(_alphaResources[0]));
+	}
+
+	[Test]
+	public void DisposalOrderShouldSeeThroughOwnedResources() {
+		_tracker.RegisterOwnership(_alphaResources[0], _alphaResources[1]);
+		_tracker.RegisterDependency(_alphaResources[2], _alphaResources[1]);
+
+		Assert.AreEqual(new[] { Stub(2), Stub(0) }, GetOrderedResources(new[] { Stub(2), Stub(0) }));
+		Assert.AreEqual(new[] { Stub(2), Stub(0) }, GetOrderedResources(new[] { Stub(0), Stub(2) }));
+		Assert.AreEqual(new[] { Stub(1), Stub(0) }, GetOrderedResources(new[] { Stub(0), Stub(1) }, ResourceUtils.ToStub(_alphaResources[2]).Ident));
+
+		var order = new int[1];
+		Assert.IsFalse(_tracker.TryGetDisposalOrder(new[] { Stub(0) }, default, order, out var failure));
+		Assert.AreEqual(Stub(1), failure.BlockedResource);
+		Assert.AreEqual(Stub(2), failure.BlockingDependent);
+	}
 }

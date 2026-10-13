@@ -26,7 +26,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Environment.Input;
 
 using var factory = new LocalTinyFfrFactory();
-using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+using var cubeMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 using var cubeMaterial = factory.MaterialBuilder.CreateTestMaterial();
 using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, cubeMaterial, initialPosition: (0f, 0f, 1.5f));
 using var light = factory.LightBuilder.CreatePointLight(Location.Origin);

@@ -46,6 +46,14 @@ public interface IMaterialImplProvider : IDisposableResourceImplProvider<Materia
 	/// </summary>
 	void SetEffectOpacity(ResourceHandle<Material> handle, float opacity);
 	/// <summary>
+	/// Invoked internally to determine whether this material has an emissive map whose brightness can be scaled.
+	/// </summary>
+	bool GetSupportsEmissiveStrengthMultiplier(ResourceHandle<Material> handle);
+	/// <summary>
+	/// Invoked internally to scale the brightness of this material's emissive map.
+	/// </summary>
+	void SetEmissiveStrengthMultiplier(ResourceHandle<Material> handle, float multiplier);
+	/// <summary>
 	/// Invoked internally to restrict an object's drawing to a rectangular region of the viewport.
 	/// </summary>
 	void SetScissorRect(ResourceHandle<Material> handle, XYPair<int> viewportRelativeBottomLeftOffset, XYPair<int> dimensions);

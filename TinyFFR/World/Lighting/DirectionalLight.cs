@@ -9,6 +9,85 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
+/// A preset brightness for a <see cref="DirectionalLight"/>, named after the lighting condition it matches.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Use with <see cref="DirectionalLight.SetBrightness(DirectionalLightBrightnessPreset)"/>, or <see cref="DirectionalLightBrightnessExtensions.ToBrightnessValue"/> to get the
+/// equivalent <see cref="DirectionalLight.Brightness"/> value (for example, to pass when creating a light).
+/// </para>
+/// <para>
+/// Each preset lights a scene completely on its own: a directional light at a given preset, viewed through a camera using the <see cref="CameraExposurePreset"/> of the same name,
+/// is correctly exposed with no other lights needed. The same is true of the <see cref="SceneBackdropBrightnessPreset"/> of the same name. Using both together adds their light,
+/// so lower the camera's exposure (or the brightness of one of them) to compensate.
+/// </para>
+/// </remarks>
+public enum DirectionalLightBrightnessPreset {
+	/// <summary>
+	/// The light of a well-lit interior, such as an office (600 lux).
+	/// Pairs with <see cref="CameraExposurePreset.InsideBrightLighting"/> (the default camera exposure).
+	/// </summary>
+	InsideBrightLighting = 0,
+	/// <summary>
+	/// Direct midday sunlight on a clear day (125,000 lux). This is the default brightness of a <see cref="DirectionalLight"/>.
+	/// Pairs with <see cref="CameraExposurePreset.OutsideMidday"/>.
+	/// </summary>
+	Midday,
+	/// <summary>
+	/// The light of an overcast day, as a single directional light (10,000 lux).
+	/// Pairs with <see cref="CameraExposurePreset.OutsideOvercast"/>.
+	/// </summary>
+	Overcast,
+	/// <summary>
+	/// The low sun shortly after sunrise or before sunset (2,500 lux).
+	/// Pairs with <see cref="CameraExposurePreset.OutsideSunriseSunset"/>.
+	/// </summary>
+	SunriseSunset,
+	/// <summary>
+	/// The fading light just after sunset, as a single directional light (40 lux).
+	/// Pairs with <see cref="CameraExposurePreset.OutsideTwilight"/>.
+	/// </summary>
+	Twilight,
+	/// <summary>
+	/// The light of a full moon (0.25 lux). Pairs with <see cref="CameraExposurePreset.OutsideFullMoon"/>.
+	/// </summary>
+	FullMoon,
+	/// <summary>
+	/// The light of a moonless night, lit only by starlight and airglow, as a single directional light (0.005 lux).
+	/// Pairs with <see cref="CameraExposurePreset.OutsideStarlight"/>.
+	/// </summary>
+	Starlight,
+}
+
+/// <summary>
+/// Extension methods for <see cref="DirectionalLightBrightnessPreset"/>.
+/// </summary>
+public static class DirectionalLightBrightnessExtensions {
+	extension(DirectionalLightBrightnessPreset @this) {
+		/// <summary>
+		/// Returns the illuminance, in lux, of the lighting condition this preset represents.
+		/// </summary>
+		public float ToLux() {
+			return @this switch {
+				DirectionalLightBrightnessPreset.Midday => 125_000f,
+				DirectionalLightBrightnessPreset.Overcast => 10_000f,
+				DirectionalLightBrightnessPreset.SunriseSunset => 2_500f,
+				DirectionalLightBrightnessPreset.Twilight => 40f,
+				DirectionalLightBrightnessPreset.FullMoon => 0.25f,
+				DirectionalLightBrightnessPreset.Starlight => 0.005f,
+				_ /* InsideBrightLighting */ => DirectionalLight.DefaultLux
+			};
+		}
+
+		/// <summary>
+		/// Returns the <see cref="DirectionalLight.Brightness"/> value that this preset represents.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public float ToBrightnessValue() => DirectionalLight.LuxToBrightness(@this.ToLux());
+	}
+}
+
+/// <summary>
 /// A light that arrives from one direction across the entire scene, like sunlight. Created via the factory's <see cref="ILightBuilder"/>.
 /// </summary>
 /// <remarks>
@@ -17,17 +96,20 @@ namespace Egodystonic.TinyFFR.World;
 /// <see cref="SetSunDiscParameters"/>.
 /// </remarks>
 public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.DirectionalLight;
+
 	/// <summary>
 	/// The largest permitted <see cref="Brightness"/>: <c>1E+15f</c>.
 	/// </summary>
 	public const float MaxBrightness = 1E+15f;
 	/// <summary>
-	/// How many lux a directional light casts at a <see cref="Brightness"/> of <c>1f</c>: <c>125,000</c>.
+	/// How many lux a directional light casts at a <see cref="Brightness"/> of <c>1f</c>: <c>600</c>, roughly that of indoor bright lighting.
 	/// </summary>
-	/// <remarks>
-	/// For reference, direct midday sunlight is on the order of 100,000 lux, so the default brightness is roughly "a bright sunny day".
-	/// </remarks>
-	public const float DefaultLux = 125_000f;
+	public const float DefaultLux = 600f;
+	/// <summary>
+	/// The default value of <see cref="MaxShadowDistance"/>: <c>100f</c> (metres).
+	/// </summary>
+	public const float DefaultMaxShadowDistance = 100f;
 
 	readonly ResourceHandle<DirectionalLight> _handle;
 	readonly ILightImplProvider _impl;
@@ -136,13 +218,13 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 	public void SetColorLightness(float lightness) => ColorLightness = lightness;
 
 	/// <summary>
-	/// How much light this casts, where <c>1f</c> corresponds to <see cref="DefaultLux"/>. Clamped to between <c>0f</c> and <see cref="MaxBrightness"/>.
+	/// How much light this emits as a unitless scalar. Doubling this value corresponds to a perceived doubling
+	/// in output brightness, halving corresponds to a perceived halving of brightness, etc.
 	/// </summary>
 	/// <remarks>
-	/// Unlike <see cref="PointLight.Brightness"/> and <see cref="SpotLight.Brightness"/>, which are quadratic, this relationship is <i>linear</i>: the light cast is
-	/// <see cref="DefaultLux"/> multiplied by this value, so doubling the brightness doubles the light. Use <see cref="LuxToBrightness"/> and
-	/// <see cref="BrightnessToLux"/> to work in lux directly. Negative and non-finite values are treated as <c>0f</c>.
+	/// You can also use <see cref="SetBrightness(DirectionalLightBrightnessPreset)"/> to set a value using a preset.
 	/// </remarks>
+	/// <seealso cref="BrightnessLux"/>
 	public float Brightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetUniversalBrightness(_handle);
@@ -150,11 +232,28 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 		set => Implementation.SetUniversalBrightness(_handle, value);
 	}
 	/// <summary>
+	/// How much light this emits in lux. This property is offered as an alternative to the unitless <see cref="Brightness"/>
+	/// for workflows that prefer real-world light setups.
+	/// </summary>
+	public float BrightnessLux {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => BrightnessToLux(Brightness);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Brightness = LuxToBrightness(value);
+	}
+	/// <summary>
 	/// Sets <see cref="Brightness"/>; provided as a method for use in contexts where a property setter can not be invoked.
 	/// </summary>
 	/// <param name="brightness">The new value for <see cref="Brightness"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetBrightness(float brightness) => Brightness = brightness;
+	/// <summary>
+	/// Sets <see cref="Brightness"/> to match the given time of day or weather.
+	/// </summary>
+	/// <param name="preset">The preset to apply.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="preset"/> is not a defined <see cref="DirectionalLightBrightnessPreset"/> value.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBrightness(DirectionalLightBrightnessPreset preset) => Brightness = preset.ToBrightnessValue();
 
 	/// <inheritdoc />
 	public bool CastsShadows {
@@ -242,6 +341,67 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 	/// </remarks>
 	/// <param name="config">How the disc should look.</param>
 	public void SetSunDiscParameters(SunDiscConfig config) => Implementation.SetDirectionalLightSunDiscParameters(Handle, config);
+
+	/// <summary>
+	/// How far (from the camera) this light's shadows are drawn in detail. Defaults to <see cref="DefaultMaxShadowDistance"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// A directional light's shadow detail is spread across the distances between the camera and this value, so smaller values give sharper, steadier shadows
+	/// close to the camera. Beyond this distance, shadows fade out (or, when <see cref="EnableShadowStabilization"/> is <see langword="true"/>, are drawn at
+	/// reduced detail instead, except at <see cref="Quality.VeryLow"/> <see cref="Rendering.RenderQualityConfig.ShadowQuality"/>).
+	/// </para>
+	/// <para>
+	/// In compact scenes the default rarely needs changing, as shadow detail is already focused on the scene's contents. In large scenes (e.g. terrain or long
+	/// interiors), set this to roughly the furthest distance at which shadows still need to look good. Values beyond the camera's
+	/// <see cref="Camera.FarPlaneDistance"/> behave the same as the far plane distance.
+	/// </para>
+	/// <para>
+	/// Must be a finite value greater than zero; otherwise an <see cref="ArgumentOutOfRangeException"/> is thrown.
+	/// </para>
+	/// </remarks>
+	public float MaxShadowDistance {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetDirectionalLightMaxShadowDistance(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetDirectionalLightMaxShadowDistance(Handle, value);
+	}
+	/// <summary>
+	/// Sets <see cref="MaxShadowDistance"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="distance">The new value for <see cref="MaxShadowDistance"/>, in metres.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetMaxShadowDistance(float distance) => MaxShadowDistance = distance;
+
+	/// <summary>
+	/// Whether this light's shadows are stabilized against camera movement. Defaults to <see langword="false"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// By default, a directional light's shadows are fitted to the camera's view and the scene's contents every frame. This gives the sharpest shadows,
+	/// but their edges can shimmer or crawl slightly as the camera moves or turns; most noticeably with a low sun over large surfaces.
+	/// </para>
+	/// <para>
+	/// Enabling stabilization holds the shadows steady as the camera moves, but they are no longer fitted to the scene's contents, so their detail is spread
+	/// across the whole view up to <see cref="MaxShadowDistance"/>. This is a good trade in large open scenes, but makes shadows noticeably blurrier in
+	/// compact scenes (and may make small shadows disappear entirely at low <see cref="Rendering.RenderQualityConfig.ShadowQuality"/> levels).
+	/// </para>
+	/// <para>
+	/// when enabling this option, it's recommended to set <see cref="MaxShadowDistance"/> as low as possible to retain maximum fidelity.
+	/// </para>
+	/// </remarks>
+	public bool EnableShadowStabilization {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetDirectionalLightShadowStabilization(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetDirectionalLightShadowStabilization(Handle, value);
+	}
+	/// <summary>
+	/// Sets <see cref="EnableShadowStabilization"/>; provided as a method for use in contexts where a property setter can not be invoked.
+	/// </summary>
+	/// <param name="enable">The new value for <see cref="EnableShadowStabilization"/>.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetEnableShadowStabilization(bool enable) => EnableShadowStabilization = enable;
 
 	/// <summary>
 	/// Converts an illuminance in lux to the equivalent <see cref="Brightness"/> value.

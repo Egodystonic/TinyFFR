@@ -92,8 +92,8 @@ public readonly record struct MaterialEffectController {
 /// </summary>
 /// <remarks>
 /// This applies only to objects using the built-in default material. Objects opt in to using the default material either by supplying
-/// <c>null</c> as their material parameter in the <see cref="IObjectBuilder"/>, or by invoking <see cref="IMaterialUsingSceneObject.SetDefaultMaterialShadingStyle">SetDefaultMaterialShadingStyle()</see>
-/// of <see cref="IMaterialUsingSceneObject.SetDefaultMaterialBaseColor">SetDefaultMaterialBaseColor()</see>.
+/// <c>null</c> as their material parameter in the <see cref="IObjectBuilder"/>, or by invoking <see cref="IMaterialReceivingSceneObject.SetDefaultMaterialShadingStyle">SetDefaultMaterialShadingStyle()</see>
+/// of <see cref="IMaterialReceivingSceneObject.SetDefaultMaterialBaseColor">SetDefaultMaterialBaseColor()</see>.
 /// </remarks>
 #pragma warning disable CA1027 // This isn't a bitfield enum
 public enum DefaultMaterialShadingStyle {
@@ -126,14 +126,16 @@ public enum DefaultMaterialShadingStyle {
 }
 
 /// <summary>
-/// A single occurrence of a model in a scene: a <see cref="Assets.Meshes.Mesh"/> giving its shape, a <see cref="Assets.Materials.Material"/> giving its surface,
+/// A single occurrence of a model in a scene: a <see cref="Mesh"/> giving its shape, a <see cref="Material"/> giving its surface,
 /// and a transform (<see cref="Position"/>/<see cref="Scaling"/>/<see cref="Rotation"/> and/or <see cref="Transform"/>) placing it in the world. Created via the factory's <see cref="IObjectBuilder"/>.
 /// </summary>
 /// <remarks>
 /// The mesh and material are shared resources, whilst the instance is cheap; this is what lets a scene contain a thousand copies of the same tree without holding a
 /// thousand copies of its geometry. An instance must be added to a <see cref="Scene"/> before it is rendered.
 /// </remarks>
-public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject {
+public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject, IMaterialUsingSceneObject, ISizableSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.ModelInstance;
+
 	readonly ResourceHandle<ModelInstance> _handle;
 	readonly IModelInstanceImplProvider _impl;
 
@@ -244,6 +246,29 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// <param name="uniformScaling">The scaling to apply on all three axes, where <c>1f</c> is the object's unmodified size.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
+
+	void ISizableSceneObject.SetSize(Vect size) => SetSize(size);
+	/// <inheritdoc cref="ISizableSceneObject.SetSize" />
+	/// <param name="size">The size to set this object to, along each of its own axes (i.e. before <see cref="Rotation"/> is applied).</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with (see <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>), which is
+	/// removed before calculating the scaling. Defaults to <see cref="MeshCreationConfig.DefaultBoundingBoxAdditionalMargin"/>.</param>
+	/// <remarks>
+	/// <para>
+	/// This object's model-space bounding box (see <see cref="GetModelSpaceBoundingBox"/>) is used to calculate the scaling factor to correctly set the requested size.
+	/// This means the accuracy of the resulting size depends on how well the bounding box fits this object's <see cref="Mesh"/>.
+	/// The result replaces <see cref="Scaling"/>; any previous scaling is discarded.
+	/// </para>
+	/// <para>
+	/// An axis along which the bounding box has no thickness (for example, the depth of a flat quad) can not be resized; its scaling is set to <c>1f</c>.
+	/// </para>
+	/// <para>
+	/// This calculation also requires fetching the bounding box and a vector division; if you want to set the size for multiple instances of the same mesh, pre-calculate
+	/// the <see cref="Scaling"/> value once using the mesh's <see cref="Assets.Meshes.Mesh.CalculateScalingForSize">CalculateScalingForSize()</see> function.
+	/// </para>
+	/// </remarks>
+	public void SetSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) {
+		SetScaling(GetModelSpaceBoundingBox().WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size));
+	}
 
 	/// <inheritdoc />
 	public Material Material {
@@ -386,7 +411,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	/// <param name="endAnimation">The animation blended towards at the other end of the range.</param>
 	/// <param name="endAnimationDurationSeconds">How long one cycle of <paramref name="endAnimation"/> should take, in seconds.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, startAnimationDurationSeconds, endAnimationDurationSeconds);
 	
 	/// <summary>
 	/// Borrows this instance's vertices for direct modification, so that its shape can be altered without affecting other instances sharing the same mesh.
@@ -565,6 +590,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void SetDefaultMaterialBaseColor(ColorVect baseColor) => Implementation.SetDefaultMaterialBaseColor(_handle, baseColor);
 	/// <inheritdoc />
 	public void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style) => Implementation.SetDefaultMaterialShadingStyle(_handle, style);
+	/// <inheritdoc />
+	public void SetMaterialEmissiveStrengthMultiplier(float multiplier) => Implementation.SetMaterialEmissiveStrengthMultiplier(_handle, multiplier);
 	/// <summary>
 	/// Sets one of the colours used when this object is painted with a colour-keyed material.
 	/// </summary>

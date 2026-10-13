@@ -33,7 +33,7 @@ class LocalMeshVertexMutationTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Mesh Vertex Mutation Test Part 1/2 (Standard Cube)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, generationConfig: new(), config: new() { AllowsPerInstanceVertexMutation = true });
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube, centreTextureOrigin: false, generationConfig: new(), config: new() { AllowsPerInstanceVertexMutation = true });
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
@@ -88,7 +88,7 @@ class LocalMeshVertexMutationTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Mesh Vertex Mutation Test Part 2/2 (Minefield)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 6, generationConfig: new(), config: new() { AllowsPerInstanceVertexMutation = true });
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateSphere(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 6, generationConfig: new(), config: new() { AllowsPerInstanceVertexMutation = true });
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);

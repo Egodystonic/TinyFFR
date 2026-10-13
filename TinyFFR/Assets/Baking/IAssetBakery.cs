@@ -66,9 +66,23 @@ public interface IAssetBakery {
 	/// <summary>
 	/// Writes the given group of resources to a baked asset file.
 	/// </summary>
+	/// <remarks>
+	/// Every <see cref="Texture"/>, <see cref="Material"/>, <see cref="Mesh"/>, <see cref="Model"/>, <see cref="MeshGroupAnimationTable"/>,
+	/// <see cref="Font"/> and <see cref="BackdropTexture"/> in the group is baked (along with any resources they use). Any other resources in the group
+	/// (such as cameras or lights) are ignored. Load the result with <see cref="IAssetLoader.LoadBakedResourceGroup"/>.
+	/// </remarks>
 	/// <param name="resource">The resource to bake.</param>
 	/// <param name="filePath">The path of the baked asset file to write. Any existing file at that path is overwritten.</param>
 	void Bake(ResourceGroup resource, ReadOnlySpan<char> filePath);
+	/// <summary>
+	/// Writes the given model bundle (every texture, material, mesh, model and animation table in it) to a baked asset file.
+	/// </summary>
+	/// <remarks>
+	/// Load the result with <see cref="IAssetLoader.LoadBakedBundledAsset"/> to get the bundle back.
+	/// </remarks>
+	/// <param name="resource">The resource to bake.</param>
+	/// <param name="filePath">The path of the baked asset file to write. Any existing file at that path is overwritten.</param>
+	void Bake(ModelBundle resource, ReadOnlySpan<char> filePath) => Bake(resource.UnderlyingResourceGroup, filePath);
 	/// <summary>
 	/// Writes the given texture to a baked asset file.
 	/// </summary>

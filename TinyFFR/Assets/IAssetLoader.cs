@@ -756,7 +756,7 @@ public partial interface IAssetLoader {
 
 	#region Load Backdrop Texture
 	/// <summary>
-	/// Loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format.
+	/// Loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file.
 	/// </summary>
 	/// <remarks>
 	/// A backdrop supplies both the sky you see behind the scene and the ambient light that sky casts on to everything in it,
@@ -772,7 +772,7 @@ public partial interface IAssetLoader {
 		);
 	}
 	/// <summary>
-	/// Loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format, using the given
+	/// Loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file, using the given
 	/// config.
 	/// </summary>
 	/// <param name="skyboxKtxFilePath">The path of the file holding the visible sky.</param>
@@ -781,7 +781,7 @@ public partial interface IAssetLoader {
 	BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
 
 	/// <summary>
-	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format.
+	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file.
 	/// </summary>
 	/// <remarks>
 	/// The asynchronous counterpart to <c>LoadPreprocessedBackdropTexture</c>. The returned operation must be consumed exactly
@@ -797,7 +797,7 @@ public partial interface IAssetLoader {
 		);
 	}
 	/// <summary>
-	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to <c>.ktx</c> and <c>.ibl</c> format, using
+	/// Asynchronously loads a scene backdrop from a pair of files that have already been converted to a skybox <c>.ktx</c> file and an image-based lighting <c>.ktx</c> file, using
 	/// the given config.
 	/// </summary>
 	/// <remarks>
@@ -929,8 +929,8 @@ public partial interface IAssetLoader {
 	/// Loads a mesh from a 3D model file.
 	/// </summary>
 	/// <remarks>
-	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadAll</c> to load a composite file's meshes and
-	/// materials together.
+	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadBundledAsset</c> to load a composite file's meshes and
+	/// materials together, or <c>LoadMeshGroup</c> to load each of its sub-meshes as a separate mesh (along with any skeletal animations they share).
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
@@ -947,8 +947,8 @@ public partial interface IAssetLoader {
 	/// Loads a mesh from a 3D model file, using the given creation config.
 	/// </summary>
 	/// <remarks>
-	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadAll</c> to load a composite file's meshes and
-	/// materials together.
+	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadBundledAsset</c> to load a composite file's meshes and
+	/// materials together, or <c>LoadMeshGroup</c> to load each of its sub-meshes as a separate mesh (along with any skeletal animations they share).
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
@@ -958,8 +958,8 @@ public partial interface IAssetLoader {
 	/// Loads a mesh from a 3D model file, using the given creation and read configs.
 	/// </summary>
 	/// <remarks>
-	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadAll</c> to load a composite file's meshes and
-	/// materials together.
+	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadBundledAsset</c> to load a composite file's meshes and
+	/// materials together, or <c>LoadMeshGroup</c> to load each of its sub-meshes as a separate mesh (along with any skeletal animations they share).
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
@@ -976,8 +976,8 @@ public partial interface IAssetLoader {
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadAll</c> to load a composite file's meshes and
-	/// materials together.
+	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadBundledAsset</c> to load a composite file's meshes and
+	/// materials together, or <c>LoadMeshGroup</c> to load each of its sub-meshes as a separate mesh (along with any skeletal animations they share).
 	/// </para>
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
@@ -1000,8 +1000,8 @@ public partial interface IAssetLoader {
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadAll</c> to load a composite file's meshes and
-	/// materials together.
+	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadBundledAsset</c> to load a composite file's meshes and
+	/// materials together, or <c>LoadMeshGroup</c> to load each of its sub-meshes as a separate mesh (along with any skeletal animations they share).
 	/// </para>
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
@@ -1017,8 +1017,8 @@ public partial interface IAssetLoader {
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadAll</c> to load a composite file's meshes and
-	/// materials together.
+	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadBundledAsset</c> to load a composite file's meshes and
+	/// materials together, or <c>LoadMeshGroup</c> to load each of its sub-meshes as a separate mesh (along with any skeletal animations they share).
 	/// </para>
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
@@ -1026,6 +1026,189 @@ public partial interface IAssetLoader {
 	/// <param name="config">Controls how the mesh is created, such as whether its bounding box is overridden.</param>
 	/// <param name="readConfig">Controls how the file's geometry is interpreted as it is read.</param>
 	TinyFfrAsyncOperation<Mesh> LoadMeshAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
+
+	/// <summary>
+	/// Loads every sub-mesh in a 3D model file as a separate mesh, along with any skeletal animations they share, in to a new resource group.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Each sub-mesh in the file becomes its own <see cref="Mesh"/>. If any of them carry skeletal animation data, the group also contains one
+	/// <see cref="MeshGroupAnimationTable"/> holding the skeleton and animations they share. To animate every part together, pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> and that table to <c>IObjectBuilder.CreateModelInstances</c> (or pass instances you have created yourself, along with the
+	/// table, to <c>IObjectBuilder.GroupModelInstances</c>).
+	/// </para>
+	/// <para>
+	/// No materials, textures or models are created; use <c>LoadBundledAsset</c> to load those as well. <see cref="MeshReadConfig.SubMeshIndex"/> is ignored, as
+	/// every sub-mesh is always loaded.
+	/// </para>
+	/// <para>
+	/// Disposing the returned group disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
+	/// companion data files alongside it.</param>
+	/// <param name="name">The name to give the resource group. May be left empty, in which case the file's own name is used. Each mesh
+	/// is named after the group with its sub-mesh index appended.</param>
+	ResourceGroup LoadMeshGroup(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadMeshGroup(
+			filePath,
+			new MeshCreationConfig {
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	/// <summary>
+	/// Loads every sub-mesh in a 3D model file as a separate mesh, along with any skeletal animations they share, in to a new resource group, using the given creation config.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Each sub-mesh in the file becomes its own <see cref="Mesh"/>. If any of them carry skeletal animation data, the group also contains one
+	/// <see cref="MeshGroupAnimationTable"/> holding the skeleton and animations they share. To animate every part together, pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> and that table to <c>IObjectBuilder.CreateModelInstances</c> (or pass instances you have created yourself, along with the
+	/// table, to <c>IObjectBuilder.GroupModelInstances</c>).
+	/// </para>
+	/// <para>
+	/// No materials, textures or models are created; use <c>LoadBundledAsset</c> to load those as well. <see cref="MeshReadConfig.SubMeshIndex"/> is ignored, as
+	/// every sub-mesh is always loaded.
+	/// </para>
+	/// <para>
+	/// Disposing the returned group disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
+	/// companion data files alongside it.</param>
+	/// <param name="config">Controls how each mesh is created. Its <see cref="MeshCreationConfig.Name"/> is used as the group's name (or the file's own name if
+	/// empty), and each mesh is named after the group with its sub-mesh index appended.</param>
+	ResourceGroup LoadMeshGroup(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMeshGroup(filePath, config, new MeshReadConfig());
+	/// <summary>
+	/// Loads every sub-mesh in a 3D model file as a separate mesh, along with any skeletal animations they share, in to a new resource group, using the given creation and read configs.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Each sub-mesh in the file becomes its own <see cref="Mesh"/>. If any of them carry skeletal animation data, the group also contains one
+	/// <see cref="MeshGroupAnimationTable"/> holding the skeleton and animations they share. To animate every part together, pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> and that table to <c>IObjectBuilder.CreateModelInstances</c> (or pass instances you have created yourself, along with the
+	/// table, to <c>IObjectBuilder.GroupModelInstances</c>).
+	/// </para>
+	/// <para>
+	/// No materials, textures or models are created; use <c>LoadBundledAsset</c> to load those as well. <see cref="MeshReadConfig.SubMeshIndex"/> is ignored, as
+	/// every sub-mesh is always loaded.
+	/// </para>
+	/// <para>
+	/// Disposing the returned group disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
+	/// companion data files alongside it.</param>
+	/// <param name="config">Controls how each mesh is created. Its <see cref="MeshCreationConfig.Name"/> is used as the group's name (or the file's own name if
+	/// empty), and each mesh is named after the group with its sub-mesh index appended.</param>
+	/// <param name="readConfig">Controls how the file's geometry is interpreted as it is read.</param>
+	ResourceGroup LoadMeshGroup(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
+
+	/// <summary>
+	/// Asynchronously loads every sub-mesh in a 3D model file as a separate mesh, along with any skeletal animations they share, in to a new resource group.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The asynchronous counterpart to <c>LoadMeshGroup</c>. The returned operation must be consumed exactly once; see
+	/// <see cref="TinyFfrAsyncOperation{T}"/>.
+	/// </para>
+	/// <para>
+	/// Unlike most other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large file
+	/// never stalls a frame. That makes it essentially free for files with a few dozen sub-meshes, but considerably slower in
+	/// total than the synchronous version for files with many thousands of them.
+	/// </para>
+	/// <para>
+	/// Each sub-mesh in the file becomes its own <see cref="Mesh"/>. If any of them carry skeletal animation data, the group also contains one
+	/// <see cref="MeshGroupAnimationTable"/> holding the skeleton and animations they share. To animate every part together, pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> and that table to <c>IObjectBuilder.CreateModelInstances</c> (or pass instances you have created yourself, along with the
+	/// table, to <c>IObjectBuilder.GroupModelInstances</c>).
+	/// </para>
+	/// <para>
+	/// No materials, textures or models are created; use <c>LoadBundledAsset</c> to load those as well. <see cref="MeshReadConfig.SubMeshIndex"/> is ignored, as
+	/// every sub-mesh is always loaded.
+	/// </para>
+	/// <para>
+	/// Disposing the returned group disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
+	/// companion data files alongside it.</param>
+	/// <param name="name">The name to give the resource group. May be left empty, in which case the file's own name is used. Each mesh
+	/// is named after the group with its sub-mesh index appended.</param>
+	TinyFfrAsyncOperation<ResourceGroup> LoadMeshGroupAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadMeshGroupAsync(
+			filePath,
+			new MeshCreationConfig {
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	/// <summary>
+	/// Asynchronously loads every sub-mesh in a 3D model file as a separate mesh, along with any skeletal animations they share, in to a new resource group, using the given creation config.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The asynchronous counterpart to <c>LoadMeshGroup</c>. The returned operation must be consumed exactly once; see
+	/// <see cref="TinyFfrAsyncOperation{T}"/>.
+	/// </para>
+	/// <para>
+	/// Unlike most other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large file
+	/// never stalls a frame. That makes it essentially free for files with a few dozen sub-meshes, but considerably slower in
+	/// total than the synchronous version for files with many thousands of them.
+	/// </para>
+	/// <para>
+	/// Each sub-mesh in the file becomes its own <see cref="Mesh"/>. If any of them carry skeletal animation data, the group also contains one
+	/// <see cref="MeshGroupAnimationTable"/> holding the skeleton and animations they share. To animate every part together, pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> and that table to <c>IObjectBuilder.CreateModelInstances</c> (or pass instances you have created yourself, along with the
+	/// table, to <c>IObjectBuilder.GroupModelInstances</c>).
+	/// </para>
+	/// <para>
+	/// No materials, textures or models are created; use <c>LoadBundledAsset</c> to load those as well. <see cref="MeshReadConfig.SubMeshIndex"/> is ignored, as
+	/// every sub-mesh is always loaded.
+	/// </para>
+	/// <para>
+	/// Disposing the returned group disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
+	/// companion data files alongside it.</param>
+	/// <param name="config">Controls how each mesh is created. Its <see cref="MeshCreationConfig.Name"/> is used as the group's name (or the file's own name if
+	/// empty), and each mesh is named after the group with its sub-mesh index appended.</param>
+	TinyFfrAsyncOperation<ResourceGroup> LoadMeshGroupAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMeshGroupAsync(filePath, config, new MeshReadConfig());
+	/// <summary>
+	/// Asynchronously loads every sub-mesh in a 3D model file as a separate mesh, along with any skeletal animations they share, in to a new resource group, using the given creation and read configs.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The asynchronous counterpart to <c>LoadMeshGroup</c>. The returned operation must be consumed exactly once; see
+	/// <see cref="TinyFfrAsyncOperation{T}"/>.
+	/// </para>
+	/// <para>
+	/// Unlike most other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large file
+	/// never stalls a frame. That makes it essentially free for files with a few dozen sub-meshes, but considerably slower in
+	/// total than the synchronous version for files with many thousands of them.
+	/// </para>
+	/// <para>
+	/// Each sub-mesh in the file becomes its own <see cref="Mesh"/>. If any of them carry skeletal animation data, the group also contains one
+	/// <see cref="MeshGroupAnimationTable"/> holding the skeleton and animations they share. To animate every part together, pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> and that table to <c>IObjectBuilder.CreateModelInstances</c> (or pass instances you have created yourself, along with the
+	/// table, to <c>IObjectBuilder.GroupModelInstances</c>).
+	/// </para>
+	/// <para>
+	/// No materials, textures or models are created; use <c>LoadBundledAsset</c> to load those as well. <see cref="MeshReadConfig.SubMeshIndex"/> is ignored, as
+	/// every sub-mesh is always loaded.
+	/// </para>
+	/// <para>
+	/// Disposing the returned group disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
+	/// companion data files alongside it.</param>
+	/// <param name="config">Controls how each mesh is created. Its <see cref="MeshCreationConfig.Name"/> is used as the group's name (or the file's own name if
+	/// empty), and each mesh is named after the group with its sub-mesh index appended.</param>
+	/// <param name="readConfig">Controls how the file's geometry is interpreted as it is read.</param>
+	TinyFfrAsyncOperation<ResourceGroup> LoadMeshGroupAsync(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
 
 	/// <summary>
 	/// Reports how many vertices, triangles and sub-meshes a model file holds without loading it, so that buffers for its
@@ -1179,7 +1362,7 @@ public partial interface IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The asynchronous counterpart to <see cref="LoadBakedModel"/>. The returned operation must be consumed exactly once; see
+	/// The asynchronous counterpart to <see cref="LoadBakedResourceGroup"/>. The returned operation must be consumed exactly once; see
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
@@ -1192,24 +1375,62 @@ public partial interface IAssetLoader {
 	TinyFfrAsyncOperation<ResourceGroup> LoadBakedResourceGroupAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
 
 	/// <summary>
+	/// Loads a bundled asset (i.e. a <see cref="ModelBundle"/>) from a previously baked asset file.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The file must have been produced by baking a <see cref="ModelBundle"/> (via <see cref="Baking.IAssetBakery.Bake(ModelBundle, ReadOnlySpan{char})"/>).
+	/// </para>
+	/// <para>
+	/// Disposing the returned bundle disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="bakedAssetFilePath">The path of the baked asset file to load. Must name an existing file previously
+	/// produced by an <see cref="Baking.IAssetBakery"/>.</param>
+	/// <param name="name">The name to give the bundle. May be left empty.</param>
+	ModelBundle LoadBakedBundledAsset(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+	/// <summary>
+	/// Asynchronously loads a bundled asset (i.e. a <see cref="ModelBundle"/>) from a previously baked asset file.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The asynchronous counterpart to <see cref="LoadBakedBundledAsset"/>. The returned operation must be consumed exactly once; see
+	/// <see cref="TinyFfrAsyncOperation{T}"/>.
+	/// </para>
+	/// <para>
+	/// The file must have been produced by baking a <see cref="ModelBundle"/> (via <see cref="Baking.IAssetBakery.Bake(ModelBundle, ReadOnlySpan{char})"/>).
+	/// Disposing the returned bundle disposes every resource in it.
+	/// </para>
+	/// </remarks>
+	/// <param name="bakedAssetFilePath">The path of the baked asset file to load. Must name an existing file previously
+	/// produced by an <see cref="Baking.IAssetBakery"/>.</param>
+	/// <param name="name">The name to give the bundle. May be left empty.</param>
+	TinyFfrAsyncOperation<ModelBundle> LoadBakedBundledAssetAsync(ReadOnlySpan<char> bakedAssetFilePath, ReadOnlySpan<char> name = default);
+
+	/// <summary>
 	/// Loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar).
 	/// </summary>
 	/// <remarks>
 	/// <para>
 	/// This is the counterpart to loading a mesh and its textures separately, and is the only option for formats that pack
-	/// everything in to one binary file. The returned group's models can be handed straight to the object builder to create an
-	/// instance of each.
+	/// everything in to one binary file. The returned bundle can be handed straight to
+	/// <see cref="IObjectBuilder.CreateModelInstances(ModelBundle, Location?, Rotation?, Vect?, ReadOnlySpan{char})"/> to create an instance of each of its models.
 	/// </para>
 	/// <para>
-	/// Disposing the returned group disposes every resource in it.
+	/// If the file contains skeletal animation data, the bundle also contains one <see cref="MeshGroupAnimationTable"/> shared by all of its skinned meshes (see
+	/// <see cref="ModelBundle.Animations"/> and <see cref="ModelBundle.Skeleton"/>). Its animations can be played on the instance group created from the bundle to
+	/// animate every part together.
+	/// </para>
+	/// <para>
+	/// Disposing the returned bundle disposes every resource in it.
 	/// </para>
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
-	/// <param name="name">The name to give the resource group. May be left empty, in which case the file's own name is
+	/// <param name="name">The name to give the bundle. May be left empty, in which case the file's own name is
 	/// used.</param>
-	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
-		return LoadAll(
+	ModelBundle LoadBundledAsset(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadBundledAsset(
 			filePath,
 			new ModelCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
@@ -1220,47 +1441,47 @@ public partial interface IAssetLoader {
 	/// Loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar), using the given creation config.
 	/// </summary>
 	/// <remarks>
-	/// Disposing the returned group disposes every resource in it.
+	/// Disposing the returned bundle disposes every resource in it.
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
-	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadAll(filePath, in config, new ModelReadConfig());
+	ModelBundle LoadBundledAsset(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadBundledAsset(filePath, in config, new ModelReadConfig());
 	/// <summary>
 	/// Loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar), using the given creation and read configs.
 	/// </summary>
 	/// <remarks>
-	/// Disposing the returned group disposes every resource in it.
+	/// Disposing the returned bundle disposes every resource in it.
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
 	/// <param name="readConfig">Controls how the file's contents are interpreted as they are read.</param>
-	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
+	ModelBundle LoadBundledAsset(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
 
 	/// <summary>
 	/// Asynchronously loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar).
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The asynchronous counterpart to <c>LoadAll</c>. The returned operation must be consumed exactly once; see
+	/// The asynchronous counterpart to <c>LoadBundledAsset</c>. The returned operation must be consumed exactly once; see
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Unlike the other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large model
+	/// Unlike most other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large model
 	/// never stalls a frame. That makes it essentially free for files with a few dozen sub-meshes, but considerably slower in
 	/// total than the synchronous version for files with many thousands of them.
 	/// </para>
 	/// <para>
-	/// Disposing the returned group disposes every resource in it.
+	/// Disposing the returned bundle disposes every resource in it.
 	/// </para>
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
-	/// <param name="name">The name to give the resource group. May be left empty, in which case the file's own name is
+	/// <param name="name">The name to give the bundle. May be left empty, in which case the file's own name is
 	/// used.</param>
-	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
-		return LoadAllAsync(
+	TinyFfrAsyncOperation<ModelBundle> LoadBundledAssetAsync(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadBundledAssetAsync(
 			filePath,
 			new ModelCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
@@ -1273,44 +1494,44 @@ public partial interface IAssetLoader {
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The asynchronous counterpart to <c>LoadAll</c>. The returned operation must be consumed exactly once; see
+	/// The asynchronous counterpart to <c>LoadBundledAsset</c>. The returned operation must be consumed exactly once; see
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Unlike the other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large model
+	/// Unlike most other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large model
 	/// never stalls a frame. That makes it essentially free for files with a few dozen sub-meshes, but considerably slower in
 	/// total than the synchronous version for files with many thousands of them.
 	/// </para>
 	/// <para>
-	/// Disposing the returned group disposes every resource in it.
+	/// Disposing the returned bundle disposes every resource in it.
 	/// </para>
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
-	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadAllAsync(filePath, in config, new ModelReadConfig());
+	TinyFfrAsyncOperation<ModelBundle> LoadBundledAssetAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadBundledAssetAsync(filePath, in config, new ModelReadConfig());
 	/// <summary>
 	/// Asynchronously loads every mesh, texture, material and model contained in a composite file (such as <c>glTF</c>/<c>glb</c> and similar), using the given creation and
 	/// read configs.
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// The asynchronous counterpart to <c>LoadAll</c>. The returned operation must be consumed exactly once; see
+	/// The asynchronous counterpart to <c>LoadBundledAsset</c>. The returned operation must be consumed exactly once; see
 	/// <see cref="TinyFfrAsyncOperation{T}"/>.
 	/// </para>
 	/// <para>
-	/// Unlike the other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large model
+	/// Unlike most other asynchronous loads, this one advances roughly one sub-mesh per frame, so that loading a large model
 	/// never stalls a frame. That makes it essentially free for files with a few dozen sub-meshes, but considerably slower in
 	/// total than the synchronous version for files with many thousands of them.
 	/// </para>
 	/// <para>
-	/// Disposing the returned group disposes every resource in it.
+	/// Disposing the returned bundle disposes every resource in it.
 	/// </para>
 	/// </remarks>
 	/// <param name="filePath">The path of the model file to load. Must name an existing file in a supported format, with any
 	/// companion data files alongside it.</param>
 	/// <param name="config">Controls how the resources are created.</param>
 	/// <param name="readConfig">Controls how the file's contents are interpreted as they are read.</param>
-	TinyFfrAsyncOperation<ResourceGroup> LoadAllAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
+	TinyFfrAsyncOperation<ModelBundle> LoadBundledAssetAsync(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
 	#endregion
 }

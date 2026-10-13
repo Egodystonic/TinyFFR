@@ -38,7 +38,7 @@ class LocalNormalMapConversionTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Expectation: Outdent Circles");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		using var colorMap = factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false);
 		using var normalMap = factory.AssetLoader.TextureBuilder.CreateNormalMap(_normalPattern);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(colorMap, normalMap);

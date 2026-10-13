@@ -51,7 +51,7 @@ sealed partial class LocalSceneBuilder {
 		}
 	}
 
-	readonly record struct CanvasTextureData {
+	readonly record struct CanvasImageData {
 		public XYPair<int> TextureDimensions { get; init; } = XYPair<int>.One;
 		public Texture? Texture { get; init; } = null;
 		public Material? OwnedMaterial { get; init; } = null;
@@ -61,7 +61,7 @@ sealed partial class LocalSceneBuilder {
 		public float BlendDistance { get; init; } = 0f;
 		public float Opacity { get; init; } = 1f;
 
-		public CanvasTextureData() { }
+		public CanvasImageData() { }
 	}
 
 	readonly record struct CanvasTextData {
@@ -87,11 +87,11 @@ sealed partial class LocalSceneBuilder {
 	);
 
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasItemData>> _canvasItemMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasTextureData>> _canvasTextureDataMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasImageData>> _canvasTextureDataMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedMap<ResourceHandle<ModelInstance>, CanvasTextData>> _canvasTextDataMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, CanvasSceneData> _canvasSceneDataMap = new();
 	readonly MapPool<ResourceHandle<ModelInstance>, CanvasItemData> _canvasItemMapPool;
-	readonly MapPool<ResourceHandle<ModelInstance>, CanvasTextureData> _canvasTextureDataMapPool;
+	readonly MapPool<ResourceHandle<ModelInstance>, CanvasImageData> _canvasTextureDataMapPool;
 	readonly MapPool<ResourceHandle<ModelInstance>, CanvasTextData> _canvasTextDataMapPool;
 	ModelInstance[] _canvasQueryScratchBuffer = TinyFfrArrayPool<ModelInstance>.Shared.Rent(4);
 
@@ -127,30 +127,34 @@ sealed partial class LocalSceneBuilder {
 
 	public bool IsCanvasScene(ResourceHandle<Scene> handle) => _canvasSceneDataMap.ContainsKey(handle);
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) {
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
-		var material = CreateCanvasTextureMaterial(texture);
+		var material = CreateCanvasImageMaterial(texture);
 		var quad = CreateCanvasQuadInstance(material, texture, name);
 
-		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasTextureData { Texture = texture, OwnedMaterial = material, TextureDimensions = texture.Dimensions };
+		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasImageData { Texture = texture, OwnedMaterial = material, TextureDimensions = texture.Dimensions };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
 		ApplyCanvasMaterialEffects(handle, quad);
 
-		return new CanvasTexture(new CanvasScene(HandleToInstance(handle)), quad);
+		var canvas = new CanvasScene(HandleToInstance(handle));
+		_objectBuilder.SetCanvas(quad.UnderlyingModelInstance.Handle, canvas);
+		return new CanvasImage(canvas, quad);
 	}
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) {
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var sceneData = GetCanvasSceneData(handle);
 
 		var quad = CreateCanvasQuadInstance(material, material, name);
 
-		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasTextureData { TextureDimensions = ResolveCanvasMaterialTextureDimensions(material) };
+		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = new CanvasImageData { TextureDimensions = ResolveCanvasMaterialTextureDimensions(material) };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), quad), sceneData.ViewportSize);
 
-		return new CanvasTexture(new CanvasScene(HandleToInstance(handle)), quad);
+		var canvas = new CanvasScene(HandleToInstance(handle));
+		_objectBuilder.SetCanvas(quad.UnderlyingModelInstance.Handle, canvas);
+		return new CanvasImage(canvas, quad);
 	}
 
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) {
@@ -172,7 +176,9 @@ sealed partial class LocalSceneBuilder {
 		_canvasTextDataMap[handle][text.UnderlyingModelInstance.Handle] = new CanvasTextData { OwnedString = ownedString };
 		AddCanvasItem(handle, new CanvasItemData(new CanvasDock(), text), sceneData.ViewportSize);
 
-		return new CanvasText(new CanvasScene(HandleToInstance(handle)), text);
+		var canvas = new CanvasScene(HandleToInstance(handle));
+		_objectBuilder.SetCanvas(text.UnderlyingModelInstance.Handle, canvas);
+		return new CanvasText(canvas, text);
 	}
 
 	QuadInstance CreateCanvasQuadInstance<TNameSource>(Material material, TNameSource nameSource, ReadOnlySpan<char> name) where TNameSource : IStringSpanNameEnabled {
@@ -186,7 +192,8 @@ sealed partial class LocalSceneBuilder {
 	void AddCanvasItem(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> viewportSize) {
 		var modelInstance = itemData.ModelInstance;
 		_canvasItemMap[handle][modelInstance.Handle] = itemData;
-		Add(handle, modelInstance);
+		AddModelInstanceWithoutTrackingDependency(handle, modelInstance);
+		_globals.DependencyTracker.RegisterOwnership(HandleToInstance(handle), modelInstance);
 		SetCanvasItemTransformAccordingToViewport(handle, in itemData, viewportSize);
 	}
 
@@ -197,7 +204,7 @@ sealed partial class LocalSceneBuilder {
 		return XYPair<int>.One;
 	}
 
-	Material CreateCanvasTextureMaterial(Texture texture) {
+	Material CreateCanvasImageMaterial(Texture texture) {
 		return ((LocalMaterialBuilder) _assetLoader.MaterialBuilder).AllocateCanvasMaterialInstance(texture, default);
 	}
 
@@ -273,11 +280,14 @@ sealed partial class LocalSceneBuilder {
 		}
 		else {
 			var text = itemData.Text!.Value;
+			var layout = CreateCanvasTextLayout(in dock, width, height, GetCanvasTextData(handle, text).DisableAutoHeightScaling);
+			var verticalCentreCorrection = CalculateCanvasTextVerticalCentreCorrection(text, layout, dock.EffectiveObjectAnchor);
+			if (dock.Rotation != Angle.Zero) verticalCentreCorrection *= new Rotation(dock.Rotation, CanvasElementFacingDirection);
 			text.SetTransform(
-				position,
+				position - verticalCentreCorrection,
 				CanvasElementFacingDirection,
 				uprightDirection,
-				CreateCanvasTextLayout(in dock, width, height, GetCanvasTextData(handle, text).DisableAutoHeightScaling)
+				layout
 			);
 		}
 	}
@@ -288,7 +298,7 @@ sealed partial class LocalSceneBuilder {
 		var height = dock.ResolveHeight(containerSize);
 
 		if (itemData.Quad is { } quad) {
-			return ResolveCanvasQuadSize(width, height, GetCanvasTextureData(handle, quad).TextureDimensions).ScaledBy(dock.FillFraction);
+			return ResolveCanvasQuadSize(width, height, GetCanvasImageData(handle, quad).TextureDimensions).ScaledBy(dock.FillFraction);
 		}
 
 		var text = itemData.Text!.Value;
@@ -317,6 +327,17 @@ sealed partial class LocalSceneBuilder {
 		return (XYPair<float>.Zero, viewportSize.Cast<float>());
 	}
 
+	static Vect CalculateCanvasTextVerticalCentreCorrection(TextInstance text, TextLayout layout, Orientation2D anchor) {
+		if (anchor.GetVerticalComponent() != VerticalOrientation2D.None) return Vect.Zero;
+		var font = text.Font;
+		var stringSize = text.String.Size;
+		var scaling = font.GetTextInstanceScaling(stringSize, layout);
+		var boxCentreOffset = (font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.UpLeft)
+			+ font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.DownRight)) * 0.5f;
+		var baselineDiscrepancy = font.GetTextInstanceAnchorOffset(stringSize, scaling, anchor) - boxCentreOffset;
+		return CanvasElementPositiveYDirection * baselineDiscrepancy.Dot(CanvasElementPositiveYDirection);
+	}
+
 	XYPair<float> ResolveCanvasItemCentreOffset(ResourceHandle<Scene> handle, in CanvasItemData itemData, XYPair<int> containerSize, XYPair<float> signedSize) {
 		var dock = itemData.Dock;
 		var anchor = dock.EffectiveObjectAnchor;
@@ -332,7 +353,7 @@ sealed partial class LocalSceneBuilder {
 			var scaling = text.Font.GetTextInstanceScaling(stringSize, layout);
 			var centreAnchorOffset = (text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.UpLeft)
 				+ text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, Orientation2D.DownRight)) * 0.5f;
-			unrotatedOffset = text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, anchor) - centreAnchorOffset;
+			unrotatedOffset = text.Font.GetTextInstanceAnchorOffset(stringSize, scaling, anchor) - centreAnchorOffset - CalculateCanvasTextVerticalCentreCorrection(text, layout, anchor);
 		}
 
 		if (dock.Rotation != Angle.Zero) unrotatedOffset *= new Rotation(dock.Rotation, CanvasElementFacingDirection);
@@ -441,13 +462,6 @@ sealed partial class LocalSceneBuilder {
 		return _canvasQueryScratchBuffer.AsSpan(0, instanceCount);
 	}
 
-	public bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (typeof(TCanvasObject) == typeof(CanvasTexture)) return _canvasTextureDataMap[handle].ContainsKey(modelInstance.Handle);
-		if (typeof(TCanvasObject) == typeof(CanvasText)) return _canvasTextDataMap[handle].ContainsKey(modelInstance.Handle);
-		return false;
-	}
-
 	public static Location CalculateCanvasLocation(XYPair<int> canvasSizePixels, Orientation2D anchor, XYPair<int> anchorOffset, int layer) {
 		return CanvasDimensionConverter.ConvertLocation(CalculateCanvasCenterRelativeCoord(canvasSizePixels, anchor, anchorOffset), layer);
 	}
@@ -485,12 +499,12 @@ sealed partial class LocalSceneBuilder {
 		SetCanvasItemTransformAndDescendants(handle, in newData, GetCanvasSceneData(handle).ViewportSize);
 	}
 
-	CanvasTextureData GetCanvasTextureData(ResourceHandle<Scene> handle, QuadInstance quad) {
+	CanvasImageData GetCanvasImageData(ResourceHandle<Scene> handle, QuadInstance quad) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _canvasTextureDataMap[handle].TryGetValue(quad.UnderlyingModelInstance.Handle, out var result) ? result : new CanvasTextureData();
+		return _canvasTextureDataMap[handle].TryGetValue(quad.UnderlyingModelInstance.Handle, out var result) ? result : new CanvasImageData();
 	}
 
-	void SetCanvasTextureData(ResourceHandle<Scene> handle, QuadInstance quad, in CanvasTextureData newData) {
+	void SetCanvasImageData(ResourceHandle<Scene> handle, QuadInstance quad, in CanvasImageData newData) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_canvasTextureDataMap[handle][quad.UnderlyingModelInstance.Handle] = newData;
 	}
@@ -529,7 +543,7 @@ sealed partial class LocalSceneBuilder {
 
 		ResourceHandle<ModelInstance>? newParentHandle = null;
 		if (parent is { } parentInstance) {
-			newParentHandle = parentInstance.Handle;
+			newParentHandle = parentInstance.GetLocalHandle();
 			if (newParentHandle == instanceHandle) {
 				SetCanvasDock(handle, modelInstance, GetCanvasDock(handle, modelInstance) with { DockParent = null });
 				return;
@@ -584,14 +598,8 @@ sealed partial class LocalSceneBuilder {
 	}
 	public void SetCanvasObjectVisibility(ResourceHandle<Scene> handle, ModelInstance modelInstance, bool newValue) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newValue) {
-			Add(handle, modelInstance);
-		}
-		else {
-			Remove(handle, modelInstance);
-			// Remove de-links the dependency but we want to maintain it
-			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), modelInstance);
-		}
+		if (newValue) AddModelInstanceWithoutTrackingDependency(handle, modelInstance);
+		else RemoveModelInstanceWithoutTrackingDependency(handle, modelInstance);
 	}
 
 	public XYPair<int> GetCanvasObjectPositionPixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
@@ -719,22 +727,22 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public XYPair<int> GetCanvasObjectTextureDimensions(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).TextureDimensions;
+		return GetCanvasImageData(handle, quad).TextureDimensions;
 	}
 	public void SetCanvasObjectTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture newValue) {
-		var data = GetCanvasTextureData(handle, quad);
-		var newMaterial = CreateCanvasTextureMaterial(newValue);
+		var data = GetCanvasImageData(handle, quad);
+		var newMaterial = CreateCanvasImageMaterial(newValue);
 		quad.SetMaterial(newMaterial);
 		if (data.OwnedMaterial is { } previousMaterial) previousMaterial.Dispose();
-		SetCanvasTextureData(handle, quad, data with { Texture = newValue, OwnedMaterial = newMaterial, TextureDimensions = newValue.Dimensions });
+		SetCanvasImageData(handle, quad, data with { Texture = newValue, OwnedMaterial = newMaterial, TextureDimensions = newValue.Dimensions });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
 	public XYPair<float> GetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).UvOffset;
+		return GetCanvasImageData(handle, quad).UvOffset;
 	}
 	public void SetCanvasObjectTextureOffset(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { UvOffset = newValue });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { UvOffset = newValue });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 	public void SetCanvasObjectTextureOffsetPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue) {
@@ -742,10 +750,10 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public XYPair<float> GetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).UvExtent;
+		return GetCanvasImageData(handle, quad).UvExtent;
 	}
 	public void SetCanvasObjectTextureExtent(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<float> newValue) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { UvExtent = newValue });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { UvExtent = newValue });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 	public void SetCanvasObjectTextureExtentPixels(ResourceHandle<Scene> handle, QuadInstance quad, XYPair<int> newValue) {
@@ -757,20 +765,20 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	public void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { BlendTexture = blendTexture });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { BlendTexture = blendTexture });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
 	public void SetCanvasBlendTextureDistance(ResourceHandle<Scene> handle, QuadInstance quad, float distance) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { BlendDistance = distance });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { BlendDistance = distance });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
 	public float GetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad) {
-		return GetCanvasTextureData(handle, quad).Opacity;
+		return GetCanvasImageData(handle, quad).Opacity;
 	}
 	public void SetCanvasObjectOpacity(ResourceHandle<Scene> handle, QuadInstance quad, float newValue) {
-		SetCanvasTextureData(handle, quad, GetCanvasTextureData(handle, quad) with { Opacity = Single.Clamp(newValue, 0f, 1f) });
+		SetCanvasImageData(handle, quad, GetCanvasImageData(handle, quad) with { Opacity = Single.Clamp(newValue, 0f, 1f) });
 		ApplyCanvasMaterialEffects(handle, quad);
 	}
 
@@ -790,12 +798,12 @@ sealed partial class LocalSceneBuilder {
 	}
 
 	void ApplyCanvasMaterialEffects(ResourceHandle<Scene> handle, QuadInstance quad) {
-		var data = GetCanvasTextureData(handle, quad);
+		var data = GetCanvasImageData(handle, quad);
 		var dock = GetCanvasDock(handle, quad.UnderlyingModelInstance);
 		var instanceHandle = quad.UnderlyingModelInstance.Handle;
 
 		var effectiveExtent = data.UvExtent.ScaledBy(dock.FillFraction);
-		var effectiveOffset = data.UvOffset + CalculateCanvasAnchorUvFactor(dock.EffectiveObjectAnchor).ScaledBy(XYPair<float>.One - effectiveExtent);
+		var effectiveOffset = data.UvOffset + CalculateCanvasAnchorUvFactor(dock.EffectiveObjectAnchor).ScaledBy(data.UvExtent - effectiveExtent);
 
 		_objectBuilder.SetMaterialEffectTransform(instanceHandle, new Transform2D(-effectiveOffset, Angle.Zero, effectiveExtent.Reciprocal ?? XYPair<float>.Zero));
 		if (data.BlendTexture is { } blendTexture) {
@@ -877,10 +885,10 @@ sealed partial class LocalSceneBuilder {
 				OrphanCanvasDockChildren(handle, canvasItemMap, instanceHandle);
 				canvasItemMap.Remove(instanceHandle);
 			}
-			Remove(handle, modelInstance);
-			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
+			RemoveModelInstanceWithoutTrackingDependency(handle, modelInstance);
 		}
 
+		_objectBuilder.SetCanvas(instanceHandle, null);
 		modelInstance.Dispose();
 		ownedMaterial?.Dispose();
 		ownedString?.Dispose();

@@ -26,9 +26,10 @@ class ModelConfigTest {
 				ForceWAlphaChannelPresence = true
 			},
 			HandleUriEscapedStrings = true,
-			GltfEmissiveStrengthScalar = 1f,
+			EmissiveStrengthScalar = 1f,
 			EmissiveStrengthCap = 0.5f,
-			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
+			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile,
+			ShininessMapInterpretation = ShininessMapInterpretation.Roughness
 		};
 		var testConfigB = new ModelReadConfig {
 			MeshConfig = new() {
@@ -40,9 +41,10 @@ class ModelConfigTest {
 				ForceWAlphaChannelPresence = false
 			},
 			HandleUriEscapedStrings = false,
-			GltfEmissiveStrengthScalar = 0.3f,
+			EmissiveStrengthScalar = 0.3f,
 			EmissiveStrengthCap = 0f,
-			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale
+			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale,
+			ShininessMapInterpretation = ShininessMapInterpretation.Glossiness
 		};
 
 		void AssertConfigsMatch(ModelReadConfig expected, ModelReadConfig actual) {
@@ -51,9 +53,10 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.TextureConfig.IncludeWAlphaChannel, actual.TextureConfig.IncludeWAlphaChannel);
 			Assert.AreEqual(expected.TextureConfig.ForceWAlphaChannelPresence, actual.TextureConfig.ForceWAlphaChannelPresence);
 			Assert.AreEqual(expected.HandleUriEscapedStrings, actual.HandleUriEscapedStrings);
-			Assert.AreEqual(expected.GltfEmissiveStrengthScalar, actual.GltfEmissiveStrengthScalar);
+			Assert.AreEqual(expected.EmissiveStrengthScalar, actual.EmissiveStrengthScalar);
 			Assert.AreEqual(expected.EmissiveStrengthCap, actual.EmissiveStrengthCap);
 			Assert.AreEqual(expected.EmbeddedTextureMapScalingStrategy, actual.EmbeddedTextureMapScalingStrategy);
+			Assert.AreEqual(expected.ShininessMapInterpretation, actual.ShininessMapInterpretation);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
@@ -66,6 +69,7 @@ class ModelConfigTest {
 			.Float(1f)
 			.Float(0.5f)
 			.Int((int) TextureCombinationScalingStrategy.RepeatingTile)
+			.Int((int) ShininessMapInterpretation.Roughness)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ModelReadConfig>()
@@ -75,15 +79,17 @@ class ModelConfigTest {
 			.Float(0.3f)
 			.Float(0f)
 			.Int((int) TextureCombinationScalingStrategy.PixelUpscale)
+			.Int((int) ShininessMapInterpretation.Glossiness)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ModelReadConfig>()
 			.Including(nameof(ModelReadConfig.MeshConfig))
 			.Including(nameof(ModelReadConfig.TextureConfig))
 			.Including(nameof(ModelReadConfig.HandleUriEscapedStrings))
-			.Including(nameof(ModelReadConfig.GltfEmissiveStrengthScalar))
+			.Including(nameof(ModelReadConfig.EmissiveStrengthScalar))
 			.Including(nameof(ModelReadConfig.EmissiveStrengthCap))
 			.Including(nameof(ModelReadConfig.EmbeddedTextureMapScalingStrategy))
+			.Including(nameof(ModelReadConfig.ShininessMapInterpretation))
 			.End();
 	}
 
@@ -104,6 +110,7 @@ class ModelConfigTest {
 				ProcessingToApply = TextureProcessingConfig.Flip(true, false),
 				Name = "Texture Aa Aa"
 			},
+			TransmissiveMaterialQuality = TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new ModelCreationConfig {
@@ -121,6 +128,7 @@ class ModelConfigTest {
 				ProcessingToApply = TextureProcessingConfig.Invert(),
 				Name = "Texture BBBbbb"
 			},
+			TransmissiveMaterialQuality = TransmissiveMaterialQuality.FullReflectionsAndRefraction,
 			Name = "BBBbbb"
 		};
 
@@ -137,6 +145,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.TextureConfig.Name.ToString(), actual.TextureConfig.Name.ToString());
 			Assert.AreEqual(expected.TextureConfig.ProcessingToApply, actual.TextureConfig.ProcessingToApply);
 			
+			Assert.AreEqual(expected.TransmissiveMaterialQuality, actual.TransmissiveMaterialQuality);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -146,18 +155,21 @@ class ModelConfigTest {
 		AssertHeapSerializationWithObjects<ModelCreationConfig>()
 			.SubConfig(testConfigA.MeshConfig)
 			.SubConfig(testConfigA.TextureConfig)
+			.Int((int) TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction)
 			.String("Aa Aa")
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ModelCreationConfig>()
 			.SubConfig(testConfigB.MeshConfig)
 			.SubConfig(testConfigB.TextureConfig)
+			.Int((int) TransmissiveMaterialQuality.FullReflectionsAndRefraction)
 			.String("BBBbbb")
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ModelCreationConfig>()
 			.Including(nameof(ModelCreationConfig.MeshConfig))
 			.Including(nameof(ModelCreationConfig.TextureConfig))
+			.Including(nameof(ModelCreationConfig.TransmissiveMaterialQuality))
 			.Including(nameof(ModelCreationConfig.Name))
 			.End();
 	}
@@ -189,9 +201,10 @@ class ModelConfigTest {
 					ForceWAlphaChannelPresence = true
 				},
 				HandleUriEscapedStrings = true,
-				GltfEmissiveStrengthScalar = 0.25f,
+				EmissiveStrengthScalar = 0.25f,
 				EmissiveStrengthCap = 0.75f,
-				EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
+				EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile,
+				ShininessMapInterpretation = ShininessMapInterpretation.Roughness
 			}
 		};
 
@@ -210,9 +223,10 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.ReadConfig.TextureConfig.IncludeWAlphaChannel, actual.ReadConfig.TextureConfig.IncludeWAlphaChannel);
 			Assert.AreEqual(expected.ReadConfig.TextureConfig.ForceWAlphaChannelPresence, actual.ReadConfig.TextureConfig.ForceWAlphaChannelPresence);
 			Assert.AreEqual(expected.ReadConfig.HandleUriEscapedStrings, actual.ReadConfig.HandleUriEscapedStrings);
-			Assert.AreEqual(expected.ReadConfig.GltfEmissiveStrengthScalar, actual.ReadConfig.GltfEmissiveStrengthScalar);
+			Assert.AreEqual(expected.ReadConfig.EmissiveStrengthScalar, actual.ReadConfig.EmissiveStrengthScalar);
 			Assert.AreEqual(expected.ReadConfig.EmissiveStrengthCap, actual.ReadConfig.EmissiveStrengthCap);
 			Assert.AreEqual(expected.ReadConfig.EmbeddedTextureMapScalingStrategy, actual.ReadConfig.EmbeddedTextureMapScalingStrategy);
+			Assert.AreEqual(expected.ReadConfig.ShininessMapInterpretation, actual.ReadConfig.ShininessMapInterpretation);
 		});
 
 		AssertHeapSerializationWithObjects<ModelLoadConfig>()

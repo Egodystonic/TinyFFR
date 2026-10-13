@@ -17,20 +17,20 @@ static partial class SmokeSections {
 			}
 
 			for (var repeat = 0; repeat < SmokeWorkload.MeshBuildRepeatCount; ++repeat) {
-				using var cuboid = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Cuboid Mesh");
-				using var sphere = Factory.MeshBuilder.CreateMesh(new Sphere(0.5f), subdivisionLevel: SmokeWorkload.SphereSubdivisionLevel, name: "Benchmark Sphere Mesh");
-				using var configuredCuboid = Factory.MeshBuilder.CreateMesh(
+				using var cuboid = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Cuboid Mesh");
+				using var sphere = Factory.MeshBuilder.CreateSphere(new Sphere(0.5f), subdivisionLevel: SmokeWorkload.SphereSubdivisionLevel, name: "Benchmark Sphere Mesh");
+				using var configuredCuboid = Factory.MeshBuilder.CreateCuboid(
 					new Cuboid(0.8f),
 					centreTextureOrigin: false,
 					new MeshGenerationConfig { TextureTransform = Transform2D.None },
-					new MeshCreationConfig { Name = "Benchmark Configured Cuboid Mesh", GenerateWireframeData = true }
+					new MeshCreationConfig { Name = "Benchmark Configured Cuboid Mesh", WireframeGenerationMode = WireframeGenerationMode.Enabled }
 				);
 
 				using var polygonGroup = Factory.MeshBuilder.AllocateNewPolygonGroup();
 				polygonGroup.Add(new Polygon(vertexSpan, Direction.Up), Direction.Right, Direction.Forward, Location.Origin);
-				using var polygonMesh = Factory.MeshBuilder.CreateMesh(polygonGroup, name: "Benchmark Polygon Mesh");
+				using var polygonMesh = Factory.MeshBuilder.CreateFromPolygonGroup(polygonGroup, name: "Benchmark Polygon Mesh");
 
-				using var quadMesh = Factory.MeshBuilder.CreateQuadMesh(name: "Benchmark Quad Mesh");
+				using var quadMesh = Factory.MeshBuilder.CreateQuad(name: "Benchmark Quad Mesh");
 			}
 		}
 		finally {
@@ -39,7 +39,7 @@ static partial class SmokeSections {
 	}
 
 	public static void MeshVertexMutation() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(
+		using var mesh = Factory.MeshBuilder.CreateSphere(
 			new Sphere(0.5f),
 			SmokeWorkload.SphereSubdivisionLevel,
 			new MeshGenerationConfig(),
@@ -67,7 +67,7 @@ static partial class SmokeSections {
 
 	public static void DynamicVertexBuffers() {
 		for (var repeat = 0; repeat < SmokeWorkload.DynamicBufferRepeatCount; ++repeat) {
-			using var buffer = Factory.MeshBuilder.CreateDynamicVertexBuffer(SmokeWorkload.DynamicBufferVertexCount, SmokeWorkload.DynamicBufferIndexCount, "Benchmark Dynamic Vertex Buffer");
+			using var buffer = Factory.MeshBuilder.CreateDynamicVertexBuffer(SmokeWorkload.DynamicBufferVertexCount, SmokeWorkload.DynamicBufferTriangleCount, "Benchmark Dynamic Vertex Buffer");
 
 			using (var vertexLease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
 				var span = vertexLease.Span;
@@ -77,14 +77,17 @@ static partial class SmokeSections {
 				}
 			}
 
-			using (var indexLease = buffer.BorrowIndicesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) {
-				var span = indexLease.Span;
-				for (var i = 0; i < span.Length; ++i) span[i] = (ushort) (i % SmokeWorkload.DynamicBufferVertexCount);
+			using (var triangleLease = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) {
+				var span = triangleLease.Span;
+				for (var i = 0; i < span.Length; ++i) {
+					var first = i * 3;
+					span[i] = new VertexTriangle(first % SmokeWorkload.DynamicBufferVertexCount, (first + 1) % SmokeWorkload.DynamicBufferVertexCount, (first + 2) % SmokeWorkload.DynamicBufferVertexCount);
+				}
 			}
 
 			using var view = buffer.CreateMesh();
 			_ = buffer.VertexBufferSize;
-			_ = buffer.IndexBufferSize;
+			_ = buffer.TriangleBufferSize;
 		}
 	}
 
@@ -92,7 +95,7 @@ static partial class SmokeSections {
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 
 		for (var repeat = 0; repeat < SmokeWorkload.GridRepeatCount; ++repeat) {
-			using var gridMesh = Factory.MeshBuilder.CreateMutableGridMesh((SmokeWorkload.GridDimension, SmokeWorkload.GridDimension), name: "Benchmark Grid Mesh");
+			using var gridMesh = Factory.MeshBuilder.CreateMutableGrid((SmokeWorkload.GridDimension, SmokeWorkload.GridDimension), name: "Benchmark Grid Mesh");
 			using var gridInstance = Factory.ObjectBuilder.CreateMutableGridInstance(gridMesh, material, Location.Origin, (2f, 2f), "Benchmark Grid Instance");
 
 			gridInstance.SetPosition(Location.Origin + Direction.Forward * 2f);

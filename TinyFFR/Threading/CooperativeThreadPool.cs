@@ -29,6 +29,7 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 	volatile bool _isDisposed;
 
 	public bool HasWorkerThreads { get; }
+	public int WorkerThreadCount => _workerThreads.Length;
 
 	public CooperativeThreadPool(ThreadingConfig config) {
 		ArgumentNullException.ThrowIfNull(config);

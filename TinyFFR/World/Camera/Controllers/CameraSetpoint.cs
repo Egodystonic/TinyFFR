@@ -52,7 +52,7 @@ sealed class Spring1DBasedCameraSetpoint {
 	float _omega = 8f;
 
 	public float HalfLife {
-		get => HalfLifeOmegaProduct / _omega;
+		get => _springDisabled ? 0f : HalfLifeOmegaProduct / _omega;
 		set {
 			if (!value.IsPositiveAndFinite()) {
 				_springDisabled = true;
@@ -70,7 +70,6 @@ sealed class Spring1DBasedCameraSetpoint {
 		Velocity = 0f;
 		CurrentValue = currentValue;
 		TargetValue = currentValue;
-		_springDisabled = false;
 	}
 
 	public void Progress(float deltaTime) {

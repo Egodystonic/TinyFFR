@@ -207,7 +207,7 @@ partial struct Polygon2D /*:
 		}
 
 		var clippedIndices = _threadStaticIndexList.Value!;
-		clippedIndices.ClearWithoutZeroingMemory();
+		clippedIndices.Clear();
 
 		var desiredEarSign = IsWoundClockwise ? -1 : 1;
 

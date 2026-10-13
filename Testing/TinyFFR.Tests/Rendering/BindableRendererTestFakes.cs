@@ -95,6 +95,16 @@ sealed class FakeRendererImplProvider : IRendererImplProvider {
 		ViewportSurfacePickCalls.Add((pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment));
 		return default;
 	}
+	public XYPair<float>? ProjectOnToRenderSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) => default;
+	public XYPair<float> ProjectOnToRenderSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		wasClamped = false;
+		return default;
+	}
+	public XYPair<float>? ProjectOnToViewportSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction) => default;
+	public XYPair<float> ProjectOnToViewportSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped) {
+		wasClamped = false;
+		return default;
+	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) => Scene;
 	public Camera GetCamera(ResourceHandle<Renderer> handle) => Camera;
@@ -255,11 +265,9 @@ sealed class FakeResourceGroupImplProvider : IResourceGroupImplProvider {
 	public bool IsSealed(ResourceHandle<ResourceGroup> handle) => Sealed;
 	public void Seal(ResourceHandle<ResourceGroup> handle) => Sealed = true;
 	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource => _resources.Add(resource);
-	public void AddResource<TResource, TBase>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
+	public void SetDoNotDisposeFlag<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource => throw new NotSupportedException();
 	public IReadOnlyCollection<object> GetAllResourcesBoxed(ResourceHandle<ResourceGroup> handle) => _resources.Cast<object>().ToArray();
 	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource> => throw new NotSupportedException();
-	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, TResource> GetAllResourcesOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
-	public TResource GetNthResourceOfType<TResource, TBase>(ResourceHandle<ResourceGroup> handle, int index) where TResource : struct, IResourceSpecialization<TResource, TBase> where TBase : IResource<TBase> => throw new NotSupportedException();
 	public TResource GetNthResourceOfType<TResource>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResource<TResource> {
 		var seen = 0;
 		foreach (var resource in _resources) {
@@ -275,6 +283,7 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	nuint _previousHandleId = 0;
 	public readonly List<FakeResourceGroupImplProvider> CreatedGroups = new();
 
+	public IJobExecutionFacade ParallelizingFacade { get; set; }
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, 0);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, initialCapacity);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, name, 0);
@@ -288,14 +297,15 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	public ScopedReadOnlySpanLease<T> BorrowReadOnlySpan<T>(int numElements, bool clearMemoryOnLeaseEnd = true) => throw new NotSupportedException();
 	public Memory<T> CreatePooledMemoryBuffer<T>(int numElements) => throw new NotSupportedException();
 	public void ReturnPooledMemoryBuffer<T>(Memory<T> buffer) => throw new NotSupportedException();
-	public IList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
-	public IDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
-	public ISet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
-	public IArrayPoolBackedList<T> CreateNewArrayPoolBackedList<T>(int? initialCapacity = null) => throw new NotSupportedException();
-	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedDictionary<TKey, TValue>() => throw new NotSupportedException();
-	public IArrayPoolBackedSet<T> CreateNewArrayPoolBackedSet<T>() => throw new NotSupportedException();
-	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache) => throw new NotSupportedException();
-	public unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewArrayPoolBackedLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => throw new NotSupportedException();
+	public void TrimPooledMemory() => throw new NotSupportedException();
+	public INonDisposableArrayPoolBackedList<T> GetSharedScratchList<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public INonDisposableArrayPoolBackedDictionary<TKey, TValue> GetSharedScratchDictionary<TKey, TValue>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public INonDisposableArrayPoolBackedSet<T> GetSharedScratchSet<T>(int bufferIndex = 0, bool clearBuffer = true) => throw new NotSupportedException();
+	public IArrayPoolBackedList<T> CreateNewList<T>(int? initialCapacity = null) => throw new NotSupportedException();
+	public IArrayPoolBackedDictionary<TKey, TValue> CreateNewDictionary<TKey, TValue>() => throw new NotSupportedException();
+	public IArrayPoolBackedSet<T> CreateNewSet<T>() => throw new NotSupportedException();
+	public IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache) => throw new NotSupportedException();
+	public unsafe IArrayPoolBackedLruCache<TKey, TValue> CreateNewLruCache<TKey, TValue>(int maxValuesInCache, delegate* managed<object?, TKey, TValue, void> cacheEvictionCallback, object? cacheEvictionCallbackArg = null) => throw new NotSupportedException();
 	public TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, Func<TContext?, TResult?> work) where TContext : class where TResult : class => throw new NotSupportedException();
 	public unsafe TinyFfrAsyncOperation<TResult?> DispatchWorkerThreadJob<TContext, TResult>(TContext? context, delegate*<TContext?, TResult?> work) where TContext : class where TResult : class => throw new NotSupportedException();
 }
@@ -335,6 +345,7 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public void SetPrimitiveGeometryArrow(ResourceHandle<Scene> handle, UIntPtr primitiveHandle, Location tail, Direction direction, float size, bool constantScreenSize) { }
 
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) { }
+	public float GetBuiltInBackdropMeasuredLux(BuiltInSceneBackdrop backdrop) => 0f;
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) { }
 	public void SetBackdrop(ResourceHandle<Scene> handle, ColorVect color, float indirectLightingIntensity) { }
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation) { }
@@ -353,8 +364,8 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public int FindIntersections(ResourceHandle<Scene> handle, PositionedCuboid shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
 	public int FindIntersections(ResourceHandle<Scene> handle, PositionedSphere shape, Span<ModelInstance> resultsDest, bool disallowCachedBoundingBoxes) => throw new NotSupportedException();
 
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) => throw new NotSupportedException();
-	public CanvasTexture AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) => throw new NotSupportedException();
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Texture texture, ReadOnlySpan<char> name) => throw new NotSupportedException();
+	public CanvasImage AddCanvasObject(ResourceHandle<Scene> handle, Material material, ReadOnlySpan<char> name) => throw new NotSupportedException();
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, FontString str, FontPen pen) => throw new NotSupportedException();
 	public CanvasText AddCanvasObject(ResourceHandle<Scene> handle, ReadOnlySpan<char> str, FontPen pen, TextJustification multiLineJustification) => throw new NotSupportedException();
 	public void SetCanvasBlendTexture(ResourceHandle<Scene> handle, QuadInstance quad, Texture blendTexture) => throw new NotSupportedException();
@@ -366,7 +377,6 @@ sealed class FakeSceneImplProvider : ISceneImplProvider {
 	public bool CanvasObjectContainsPixelCoord(ResourceHandle<Scene> handle, ModelInstance modelInstance, XYPair<int> coord, DiagonalOrientation2D coordOrigin) => throw new NotSupportedException();
 	public Ray? GetCanvasQueryRay(ResourceHandle<Scene> handle, XYPair<int> localCoord, DiagonalOrientation2D coordOrigin) => throw new NotSupportedException();
 	public Span<ModelInstance> GetCanvasQueryScratchBuffer(ResourceHandle<Scene> handle) => throw new NotSupportedException();
-	public bool IsCanvasObjectOfType<TCanvasObject>(ResourceHandle<Scene> handle, ModelInstance modelInstance) where TCanvasObject : struct, ICanvasObject<TCanvasObject, ModelInstance> => throw new NotSupportedException();
 	public XYPair<int> GetCanvasObjectActualSizePixels(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
 	public XYPair<float> GetCanvasObjectActualSizeFraction(ResourceHandle<Scene> handle, ModelInstance modelInstance) => throw new NotSupportedException();
 	public void SetCanvasObjectDockParent(ResourceHandle<Scene> handle, ModelInstance modelInstance, ModelInstance? parent) => throw new NotSupportedException();
@@ -453,9 +463,8 @@ sealed class FakeCameraImplProvider : ICameraImplProvider {
 	public float GetAspectRatio(ResourceHandle<Camera> handle) => AspectRatioCalls.Count > 0 ? AspectRatioCalls[^1] : default;
 	public void SetAspectRatio(ResourceHandle<Camera> handle, float newRatio) => AspectRatioCalls.Add(newRatio);
 
-	public float GetExposure(ResourceHandle<Camera> handle) => default;
-	public void SetExposure(ResourceHandle<Camera> handle, float newExposure) { }
-	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity) { }
+	public CameraExposureParams GetExposure(ResourceHandle<Camera> handle) => default;
+	public void SetExposure(ResourceHandle<Camera> handle, CameraExposureParams newExposure) { }
 
 	public float? GetFocusDistance(ResourceHandle<Camera> handle) => default;
 	public void SetFocusDistance(ResourceHandle<Camera> handle, float? newFocusDistance) { }
@@ -479,6 +488,11 @@ sealed class FakeCameraImplProvider : ICameraImplProvider {
 	public void Rotate(ResourceHandle<Camera> handle, Quaternion rotationQuaternion) { }
 
 	public Ray CreateRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord) => default;
+	public XYPair<float>? ProjectOnToNearPlane(ResourceHandle<Camera> handle, Location location) => default;
+	public XYPair<float> ProjectOnToNearPlaneClamped(ResourceHandle<Camera> handle, Location location, out bool wasClamped) {
+		wasClamped = false;
+		return default;
+	}
 }
 
 static class BindableRendererTestScaffold {

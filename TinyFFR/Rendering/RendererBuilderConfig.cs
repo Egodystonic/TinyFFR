@@ -79,6 +79,27 @@ public sealed record RendererBuilderConfig {
 	/// </remarks>
 	public bool EnableVSync { get; init; } = true;
 
+	/// <summary>
+	/// Whether rendering to a minimized (or zero-sized) <see cref="TinyFFR.Environment.Local.Window">Window</see> should wait as though the frame had been shown at
+	/// the window's <see cref="TinyFFR.Environment.Local.Display">Display</see>'s refresh rate. By default, EnableMinimizedWindowFramePacing is true.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Nothing is rendered to a window that is minimized or has no area, so <see cref="Renderer.Render"/> (and <see cref="RendererCompositor.RenderAll"/>) return
+	/// immediately for such windows. Without anything else pacing it, a loop with no frame rate cap would then run as fast as it possibly can whilst the window
+	/// is minimized, needlessly consuming CPU time.
+	/// </para>
+	/// <para>
+	/// When this is enabled, each skipped render instead blocks the caller for whatever remains of one refresh interval of the window's display
+	/// (see <see cref="TinyFFR.Environment.Local.Display.CurrentRefreshRateHz"/>), much as <see cref="EnableVSync">vsync</see> would. A loop that is already capped
+	/// at or below the display's refresh rate is not slowed down any further. This applies whether or not <see cref="EnableVSync"/> is enabled.
+	/// </para>
+	/// <para>
+	/// Disable this if your application loop must keep running at full speed whilst its window is minimized.
+	/// </para>
+	/// </remarks>
+	public bool EnableMinimizedWindowFramePacing { get; init; } = true;
+
 	internal RenderingBackendApi GetActualRenderingApi() {
 		if (OperatingSystem.IsMacOS()) {
 			if (RenderingApi is not (RenderingBackendApi.SystemRecommended or RenderingBackendApi.Metal)) {

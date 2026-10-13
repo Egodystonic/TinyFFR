@@ -396,7 +396,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pitch"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultPitchSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Pitch"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultPitchSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="rightTriggerPitchesUp">If <see langword="true"/> (the default), the right trigger pitches up and the left trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool rightTriggerPitchesUp = true) {
@@ -548,7 +548,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Yaw"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultYawSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How much to adjust <see cref="Yaw"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultYawSensitivityControllerTrigger"/> (<c>120f</c>) is used.</param>
 	/// <param name="leftTriggerYawsLeft">If <see langword="true"/> (the default), the left trigger yaws left and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsLeft = true) {
@@ -627,7 +627,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// </summary>
 	/// <param name="input">The latest keyboard and mouse state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="cameraRelativeOrientation">Which direction to move the camera in, expressed relative to the direction it is currently facing (so <see cref="Orientation.Forward"/> moves the camera the way it is looking, and <see cref="Orientation.Up"/> moves it towards its own up direction).</param>
-	/// <param name="speed">How far to adjust <see cref="Position"/> by per second. If <see langword="null"/>, <see cref="DefaultPositionSensitivityMouseCursor"/> (<c>0.0004f</c>) is used.</param>
+	/// <param name="speed">How far to adjust <see cref="Position"/> by for each pixel the cursor moves along the chosen axis. If <see langword="null"/>, <see cref="DefaultPositionSensitivityMouseCursor"/> (<c>0.0004f</c>) is used.</param>
 	/// <param name="invertMouseControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <param name="axis">Which axis of movement to read. Defaults to <see cref="Axis2D.X"/> (left/right).</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
@@ -639,7 +639,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// Adjusts <see cref="Position"/> according to how far the mouse cursor moved this frame.
 	/// </summary>
 	/// <param name="input">The latest keyboard and mouse state to read. Must not be <see langword="null"/>.</param>
-	/// <param name="adjustmentPerPixel">How far to adjust <see cref="Position"/> by for each pixel the cursor moves along the chosen axis. If <see langword="null"/>, <see cref="DefaultPositionSensitivityMouseCursor"/> (<c>0.0004f</c>) is used.</param>
+	/// <param name="adjustmentPerPixel">How far to adjust <see cref="Position"/> by for each pixel the cursor moves along the chosen axis.</param>
 	/// <param name="invertMouseControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <param name="axis">Which axis of movement to read. Defaults to <see cref="Axis2D.X"/> (left/right).</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
@@ -669,7 +669,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// </remarks>
 	/// <param name="input">The latest keyboard and mouse state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="cameraRelativeOrientation">Which direction to move the camera in, expressed relative to the direction it is currently facing (so <see cref="Orientation.Forward"/> moves the camera the way it is looking, and <see cref="Orientation.Up"/> moves it towards its own up direction).</param>
-	/// <param name="speed">How far to adjust <see cref="Position"/> by per second. If <see langword="null"/>, <see cref="DefaultPositionSensitivityMouseWheel"/> (<c>0.05f</c>) is used.</param>
+	/// <param name="speed">How far to adjust <see cref="Position"/> by for each notch the wheel is turned. If <see langword="null"/>, <see cref="DefaultPositionSensitivityMouseWheel"/> (<c>0.05f</c>) is used.</param>
 	/// <param name="invertMouseControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPositionViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, Orientation cameraRelativeOrientation, float? speed = null, bool invertMouseControl = false) {
@@ -683,7 +683,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// Wheel movement is reported in whole notches, so this adjusts in discrete steps rather than continuously.
 	/// </remarks>
 	/// <param name="input">The latest keyboard and mouse state to read. Must not be <see langword="null"/>.</param>
-	/// <param name="adjustmentPerWheelIncrement">How far to adjust <see cref="Position"/> by for each notch the wheel is turned. If <see langword="null"/>, <see cref="DefaultPositionSensitivityMouseWheel"/> (<c>0.05f</c>) is used.</param>
+	/// <param name="adjustmentPerWheelIncrement">How far to adjust <see cref="Position"/> by for each notch the wheel is turned.</param>
 	/// <param name="invertMouseControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPositionViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, Vect adjustmentPerWheelIncrement, bool invertMouseControl = false) {
@@ -724,7 +724,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Position"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultPositionSensitivityControllerStick"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Position"/> by per second when the stick is fully displaced.</param>
 	/// <param name="useLeftStick">If <see langword="true"/>, the left stick is read; otherwise the right stick is read. Defaults to the left stick.</param>
 	/// <param name="invertStickControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <param name="axis">Which axis of movement to read. Defaults to <see cref="Axis2D.X"/> (left/right).</param>
@@ -772,7 +772,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Position"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultPositionSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="Position"/> by per second when the trigger is fully depressed.</param>
 	/// <param name="leftTriggerMovesPositive">If <see langword="true"/> (the default), the left trigger moves positive and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPositionViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, Vect maxAdjustmentPerSec, bool leftTriggerMovesPositive = true) {
@@ -808,7 +808,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// <param name="input">The latest keyboard and mouse state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
 	/// <param name="keyToTestFor">The key which, whilst held down, applies the adjustment.</param>
-	/// <param name="adjustmentPerSec">How far to adjust <see cref="Position"/> by for each second the key or button is held down. If <see langword="null"/>, <see cref="DefaultPositionSensitivityKeyOrButtonPress"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="adjustmentPerSec">How far to adjust <see cref="Position"/> by for each second the key or button is held down.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPositionViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, Vect adjustmentPerSec) {
 		ArgumentNullException.ThrowIfNull(input);
@@ -834,7 +834,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
 	/// <param name="buttonToTestFor">The button which, whilst held down, applies the adjustment.</param>
-	/// <param name="adjustmentPerSec">How far to adjust <see cref="Position"/> by for each second the key or button is held down. If <see langword="null"/>, <see cref="DefaultPositionSensitivityKeyOrButtonPress"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="adjustmentPerSec">How far to adjust <see cref="Position"/> by for each second the key or button is held down.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustPositionViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Vect adjustmentPerSec) {
 		ArgumentNullException.ThrowIfNull(input);

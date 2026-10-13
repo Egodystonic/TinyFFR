@@ -135,8 +135,8 @@ sealed unsafe class LocalLatestKeyboardAndMouseInputRetriever : ILatestKeyboardA
 		ThrowIfThisIsDisposed();
 		_kbmEventBufferCount = newKbmEventCount;
 		_clickEventBufferCount = newClickEventCount;
-		_keyDownEventBuffer.ClearWithoutZeroingMemory();
-		_keyUpEventBuffer.ClearWithoutZeroingMemory();
+		_keyDownEventBuffer.Clear();
+		_keyUpEventBuffer.Clear();
 		foreach (var kbmEvent in NewKeyEventsSpan) {
 			if (kbmEvent.KeyDown) {
 				if (!_currentlyPressedKeys.Contains(kbmEvent.Key)) _currentlyPressedKeys.Add(kbmEvent.Key);

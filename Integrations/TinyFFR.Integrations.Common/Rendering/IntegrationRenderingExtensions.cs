@@ -17,7 +17,7 @@ public static class IntegrationRenderingExtensions {
 	/// </summary>
 	/// <remarks>
 	/// A scene view control can only be bound to a renderer created this way; binding an ordinary renderer fails. Each call to the
-	/// returned renderer's <c>Render</c> updates every control it is bound to.
+	/// returned renderer's <c>Render</c> updates the control it is bound to.
 	/// </remarks>
 	/// <param name="this">The renderer builder to create the renderer with.</param>
 	/// <param name="scene">The scene to render.</param>
@@ -32,7 +32,7 @@ public static class IntegrationRenderingExtensions {
 	/// </summary>
 	/// <remarks>
 	/// A scene view control can only be bound to a renderer created this way; binding an ordinary renderer fails. Each call to the
-	/// returned renderer's <c>Render</c> updates every control it is bound to.
+	/// returned renderer's <c>Render</c> updates the control it is bound to.
 	/// </remarks>
 	/// <param name="this">The renderer builder to create the renderer with.</param>
 	/// <param name="scene">The scene to render.</param>
@@ -49,7 +49,7 @@ public static class IntegrationRenderingExtensions {
 	/// </summary>
 	/// <remarks>
 	/// A scene view control can only be bound to a compositor created this way; binding an ordinary compositor fails. Each call to the
-	/// returned compositor's <c>RenderAll</c> updates every control it is bound to.
+	/// returned compositor's <c>RenderAll</c> updates the control it is bound to.
 	/// </remarks>
 	/// <param name="this">The renderer builder to create the compositor with.</param>
 	/// <param name="name">The name to give the compositor. May be left empty.</param>
@@ -61,7 +61,7 @@ public static class IntegrationRenderingExtensions {
 	/// </summary>
 	/// <remarks>
 	/// A scene view control can only be bound to a compositor created this way; binding an ordinary compositor fails. Each call to the
-	/// returned compositor's <c>RenderAll</c> updates every control it is bound to.
+	/// returned compositor's <c>RenderAll</c> updates the control it is bound to.
 	/// </remarks>
 	/// <param name="this">The renderer builder to create the compositor with.</param>
 	/// <param name="config">Controls how the compositor is created.</param>

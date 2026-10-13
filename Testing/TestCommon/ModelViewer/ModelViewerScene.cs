@@ -1,6 +1,7 @@
 // Created on 2026-07-31 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+#if TFFR_TESTCOMMON_INCLUDE_INTEGRATIONS
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -52,6 +53,7 @@ public sealed class ModelViewerScene : IDisposable {
 	PointLight? _overlayLight;
 	Renderer? _overlayRenderer;
 	RendererCompositor? _compositor;
+	ScenePrimitive? _pickMarker;
 
 	bool _spinX;
 	bool _spinY;
@@ -80,6 +82,7 @@ public sealed class ModelViewerScene : IDisposable {
 
 		_scene.Add(_cameraLight);
 		_scene.Add(_sunlight);
+		_scene.AddPrimitiveGrid(Location.Origin, gridSize: 10f);
 
 		ActiveRenderer = _mainRenderer;
 	}
@@ -100,9 +103,9 @@ public sealed class ModelViewerScene : IDisposable {
 	}
 
 	public async Task LoadModelAsync(string fileName) {
-		var resources = await _factory.AssetLoader.LoadAllAsync(
+		var resources = await _factory.AssetLoader.LoadBundledAssetAsync(
 			CommonTestAssets.FindAsset("models/" + fileName),
-			new ModelCreationConfig { MeshConfig = new() { GenerateWireframeData = true }, TextureConfig = new() { DataType = TextureDataType.LinearData, CompressionQuality = Quality.VeryLow }},
+			new ModelCreationConfig { MeshConfig = new() { WireframeGenerationMode = WireframeGenerationMode.Enabled }, TextureConfig = new() { DataType = TextureDataType.LinearData, CompressionQuality = Quality.VeryLow }},
 			new ModelReadConfig { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }
 		);
 
@@ -118,11 +121,11 @@ public sealed class ModelViewerScene : IDisposable {
 		for (var i = 0; i < instances.Count; ++i) originalMaterials[i] = instances[i].Material;
 
 		_loadedModels.Add(fileName, new LoadedModel {
-			Resources = resources,
+			Resources = resources.UnderlyingResourceGroup,
 			Instances = instances,
 			OriginalMaterials = originalMaterials,
 			Summary = $"{fileName}: {resources.Models.Count} models / {resources.Meshes.Count} meshes / {resources.Materials.Count} materials / {resources.Textures.Count} textures",
-			ResourceListing = BuildResourceListing(resources)
+			ResourceListing = BuildResourceListing(resources.UnderlyingResourceGroup)
 		});
 	}
 
@@ -272,7 +275,7 @@ public sealed class ModelViewerScene : IDisposable {
 
 		var overlayCamera = _factory.CameraBuilder.CreateCamera(Location.Origin);
 		var overlayScene = _factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.None);
-		var overlayMesh = _factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		var overlayMesh = _factory.AssetLoader.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
 		var overlayMaterial = _factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(overlayTexture);
 		var overlayInstance = _factory.ObjectBuilder.CreateModelInstance(
 			overlayMesh,
@@ -316,6 +319,18 @@ public sealed class ModelViewerScene : IDisposable {
 			overlayInstance.RotateBy((OverlayYawDegreesPerSec * deltaTime) % Direction.Up);
 			overlayInstance.RotateBy((OverlayPitchDegreesPerSec * deltaTime) % Direction.Right);
 		}
+	}
+
+	public string PickAt(XYPair<int> cursorPosition) {
+		_pickMarker?.Dispose();
+		_pickMarker = null;
+
+		if (_mainRenderer.PickModelInstanceFromRenderSurface(cursorPosition) is not { } pick) {
+			return $"Pick at {cursorPosition}: nothing there.";
+		}
+
+		_pickMarker = _scene.AddPrimitivePoint(pick.Position, new PrimitivePaintbrush(ColorVect.FromRgb24(0xFF00FF)), ScenePrimitiveSize.Large);
+		return $"Pick at {cursorPosition}: {pick.ModelInstance.GetNameAsNewStringObject()} at {pick.Position} (magenta dot should be under the cursor).";
 	}
 
 	public void Render() {
@@ -375,3 +390,4 @@ public sealed class ModelViewerScene : IDisposable {
 		}
 	}
 }
+#endif

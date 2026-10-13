@@ -4,6 +4,7 @@
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 
@@ -171,7 +172,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// </remarks>
 	/// <param name="bitmapFilePath">The file path to write the bitmap to.</param>
 	/// <param name="saveConfig">Configuration options for saving the bitmap. If <c>null</c> a 24-bit, 3-channel bitmap will be saved with no flipping.</param>
-	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c> this renderer's target window/buffer's size will be copied.</param>
+	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c>, the size of this renderer's render sub-area is used (which is the size of the entire target window/buffer if no sub-area has been set).</param>
 	/// <exception cref="System.IO.IOException">Thrown if TinyFFR could not write to the requested <paramref name="bitmapFilePath"/>.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CaptureScreenshot(ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig = null, XYPair<int>? captureResolution = null) => Implementation.CaptureScreenshot(_handle, bitmapFilePath, saveConfig, captureResolution);
@@ -191,7 +192,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// </para>
 	/// </remarks>
 	/// <param name="handler">The function that will be invoked when the rendered screenshot is ready for processing. Must not be null.</param>
-	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c> this renderer's target window/buffer's size will be copied.</param>
+	/// <param name="captureResolution">The resolution to capture a screenshot at. If <c>null</c>, the size of this renderer's render sub-area is used (which is the size of the entire target window/buffer if no sub-area has been set).</param>
 	/// <param name="presentFrameTopToBottom">If <c>true</c>, the first row in the given texel data will be the top of the screenshot, if <c>false</c> it will be the bottom.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CaptureScreenshot(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
@@ -221,6 +222,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// before invoking this method; but in most cases this should be left at its default value of <c>false</c>.</param>
 	/// <seealso cref="CreateRayFromRenderSubAreaSurface"/>
 	/// <seealso cref="PickModelInstanceFromRenderSurface"/>
+	/// <seealso cref="ProjectOnToRenderSurfacePixels"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CreateRayFromRenderSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CreateRayFromRenderSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
 
@@ -246,6 +248,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// before invoking this method; but in most cases this should be left at its default value of <c>false</c>.</param>
 	/// <seealso cref="CreateRayFromRenderSurface"/>
 	/// <seealso cref="PickModelInstanceFromRenderSubAreaSurface"/>
+	/// <seealso cref="ProjectOnToRenderSubAreaSurfacePixels"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CreateRayFromRenderSubAreaSurface(XYPair<int> pixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.CreateRayFromViewportSurface(_handle, pixelCoord, coordOrigin, disableDpiScalingAdjustment);
 	
@@ -304,6 +307,204 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// <seealso cref="CreateRayFromRenderSubAreaSurface"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PixelPickResult? PickModelInstanceFromRenderSubAreaSurface(XYPair<int> pixelCoord, bool includeTransparentObjects = false, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.PickModelInstanceFromViewportSurface(_handle, pixelCoord, includeTransparentObjects, coordOrigin, disableDpiScalingAdjustment);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, in pixels relative to the target window/buffer, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// or <see langword="null"/> if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is the inverse of <see cref="CreateRayFromRenderSurface"/>, and is useful for (e.g.) placing something on a <see cref="CanvasScene"/> over an object in the world.
+	/// The <paramref name="location"/> is considered outside the camera's view if it is behind the camera, or if it would not appear within its render sub-area (which, if no sub-area has been set, is the entire target window/buffer); i.e. the result is expressed relative to the entire target window/buffer, but a location is only considered visible if it appears within the area this renderer actually draws in to.
+	/// The camera's near and far plane distances are not taken in to account.
+	/// </para>
+	/// <para>
+	/// The result is measured in pixels from <paramref name="coordOrigin"/>, and by default is expressed in the same co-ordinate space as the mouse cursor (i.e. it is adjusted for the host/OS's DPI scaling), so it can be used directly alongside co-ordinates passed to <see cref="CreateRayFromRenderSurface"/>.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of the target window/buffer should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or <see langword="null"/> if it is outside the camera's view.</returns>
+	/// <seealso cref="ProjectOnToRenderSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
+	/// <seealso cref="ProjectOnToRenderSubAreaSurfacePixels"/>
+	/// <seealso cref="Camera.ProjectOnToNearPlane"/>
+	public XYPair<int>? ProjectOnToRenderSurfacePixels(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToRenderSurface(_handle, location, coordOrigin, disableDpiScalingAdjustment, false) is { } r ? r.Round<float, int>(MidpointRounding.ToNegativeInfinity) : null;
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, in pixels relative to the target window/buffer, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// clamped to the edge of this renderer's render sub-area if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// See <see cref="ProjectOnToRenderSurfacePixels"/> for details of the returned co-ordinates.
+	/// </para>
+	/// <para>
+	/// When the <paramref name="location"/> is outside the camera's view (behind the camera, or beyond the edges of the rendered image), the result is moved from the centre of the
+	/// rendered image towards the location's direction until it reaches the edge. This means it always lies on the side of the image facing the location (even when the location is
+	/// behind the camera), which makes it suitable for placing off-screen indicators. A location directly behind the camera is placed at the centre of the bottom edge.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of the target window/buffer should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or where it is clamped to on the edge of the rendered image.</returns>
+	/// <seealso cref="ProjectOnToRenderSurfacePixels"/>
+	public XYPair<int> ProjectOnToRenderSurfacePixelsClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out _).Round<float, int>(MidpointRounding.ToNegativeInfinity);
+	/// <inheritdoc cref="ProjectOnToRenderSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside the camera's view and the result was clamped to the edge of the
+	/// rendered image; otherwise <see langword="false"/>.</param>
+	/// <param name="coordOrigin">Which corner of the target window/buffer should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
+	public XYPair<int> ProjectOnToRenderSurfacePixelsClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out wasClamped).Round<float, int>(MidpointRounding.ToNegativeInfinity);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, as a fraction of the size of the target window/buffer, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// or <see langword="null"/> if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is the inverse of <see cref="CreateRayFromRenderSurface"/>, and is useful for (e.g.) placing something on a <see cref="CanvasScene"/> over an object in the world.
+	/// The <paramref name="location"/> is considered outside the camera's view if it is behind the camera, or if it would not appear within its render sub-area (which, if no sub-area has been set, is the entire target window/buffer); i.e. the result is expressed relative to the entire target window/buffer, but a location is only considered visible if it appears within the area this renderer actually draws in to.
+	/// The camera's near and far plane distances are not taken in to account.
+	/// </para>
+	/// <para>
+	/// Each component is a fraction of the target window/buffer's width or height, measured from <paramref name="coordOrigin"/>: <c>0</c> at that corner and <c>1</c> at the opposite edge (or from <c>-0.5</c> to <c>0.5</c> when <paramref name="coordOrigin"/> is <see cref="DiagonalOrientation2D.None"/>). Fractions are unaffected by DPI scaling.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of the target window/buffer should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or <see langword="null"/> if it is outside the camera's view.</returns>
+	/// <seealso cref="ProjectOnToRenderSurfaceFractionClamped(Location, DiagonalOrientation2D)"/>
+	/// <seealso cref="ProjectOnToRenderSubAreaSurfaceFraction"/>
+	/// <seealso cref="Camera.ProjectOnToNearPlane"/>
+	public XYPair<float>? ProjectOnToRenderSurfaceFraction(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.ProjectOnToRenderSurface(_handle, location, coordOrigin, false, true);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, as a fraction of the size of the target window/buffer, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// clamped to the edge of this renderer's render sub-area if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// See <see cref="ProjectOnToRenderSurfaceFraction"/> for details of the returned co-ordinates.
+	/// </para>
+	/// <para>
+	/// When the <paramref name="location"/> is outside the camera's view (behind the camera, or beyond the edges of the rendered image), the result is moved from the centre of the
+	/// rendered image towards the location's direction until it reaches the edge. This means it always lies on the side of the image facing the location (even when the location is
+	/// behind the camera), which makes it suitable for placing off-screen indicators. A location directly behind the camera is placed at the centre of the bottom edge.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of the target window/buffer should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or where it is clamped to on the edge of the rendered image.</returns>
+	/// <seealso cref="ProjectOnToRenderSurfaceFraction"/>
+	public XYPair<float> ProjectOnToRenderSurfaceFractionClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, false, true, out _);
+	/// <inheritdoc cref="ProjectOnToRenderSurfaceFractionClamped(Location, DiagonalOrientation2D)"/>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside the camera's view and the result was clamped to the edge of the
+	/// rendered image; otherwise <see langword="false"/>.</param>
+	/// <param name="coordOrigin">Which corner of the target window/buffer should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	public XYPair<float> ProjectOnToRenderSurfaceFractionClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.ProjectOnToRenderSurfaceClamped(_handle, location, coordOrigin, false, true, out wasClamped);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, in pixels relative to this renderer's render sub-area, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// or <see langword="null"/> if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is the inverse of <see cref="CreateRayFromRenderSubAreaSurface"/>, and is useful for (e.g.) placing something on a <see cref="CanvasScene"/> over an object in the world.
+	/// The <paramref name="location"/> is considered outside the camera's view if it is behind the camera, or if it would not appear within its render sub-area.
+	/// The camera's near and far plane distances are not taken in to account.
+	/// </para>
+	/// <para>
+	/// The result is measured in pixels from <paramref name="coordOrigin"/>, and by default is expressed in the same co-ordinate space as the mouse cursor (i.e. it is adjusted for the host/OS's DPI scaling), so it can be used directly alongside co-ordinates passed to <see cref="CreateRayFromRenderSubAreaSurface"/>.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or <see langword="null"/> if it is outside the camera's view.</returns>
+	/// <seealso cref="ProjectOnToRenderSubAreaSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
+	/// <seealso cref="ProjectOnToRenderSurfacePixels"/>
+	/// <seealso cref="Camera.ProjectOnToNearPlane"/>
+	public XYPair<int>? ProjectOnToRenderSubAreaSurfacePixels(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToViewportSurface(_handle, location, coordOrigin, disableDpiScalingAdjustment, false) is { } r ? r.Round<float, int>(MidpointRounding.ToNegativeInfinity) : null;
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, in pixels relative to this renderer's render sub-area, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// clamped to the edge of its render sub-area if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// See <see cref="ProjectOnToRenderSubAreaSurfacePixels"/> for details of the returned co-ordinates.
+	/// </para>
+	/// <para>
+	/// When the <paramref name="location"/> is outside the camera's view (behind the camera, or beyond the edges of the rendered image), the result is moved from the centre of the
+	/// rendered image towards the location's direction until it reaches the edge. This means it always lies on the side of the image facing the location (even when the location is
+	/// behind the camera), which makes it suitable for placing off-screen indicators. A location directly behind the camera is placed at the centre of the bottom edge.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or where it is clamped to on the edge of the rendered image.</returns>
+	/// <seealso cref="ProjectOnToRenderSubAreaSurfacePixels"/>
+	public XYPair<int> ProjectOnToRenderSubAreaSurfacePixelsClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out _).Round<float, int>(MidpointRounding.ToNegativeInfinity);
+	/// <inheritdoc cref="ProjectOnToRenderSubAreaSurfacePixelsClamped(Location, DiagonalOrientation2D, bool)"/>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside the camera's view and the result was clamped to the edge of the
+	/// rendered image; otherwise <see langword="false"/>.</param>
+	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <param name="disableDpiScalingAdjustment">If <c>true</c>, host/OS DPI adjustment will be disabled for this calculation, and the result is given in the target's physical pixels. In most cases this should be left at its default value of <c>false</c>.</param>
+	public XYPair<int> ProjectOnToRenderSubAreaSurfacePixelsClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft, bool disableDpiScalingAdjustment = false) => Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, disableDpiScalingAdjustment, false, out wasClamped).Round<float, int>(MidpointRounding.ToNegativeInfinity);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, as a fraction of the size of this renderer's render sub-area, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// or <see langword="null"/> if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is the inverse of <see cref="CreateRayFromRenderSubAreaSurface"/>, and is useful for (e.g.) placing something on a <see cref="CanvasScene"/> over an object in the world.
+	/// The <paramref name="location"/> is considered outside the camera's view if it is behind the camera, or if it would not appear within its render sub-area.
+	/// The camera's near and far plane distances are not taken in to account.
+	/// </para>
+	/// <para>
+	/// Each component is a fraction of this renderer's render sub-area's width or height, measured from <paramref name="coordOrigin"/>: <c>0</c> at that corner and <c>1</c> at the opposite edge (or from <c>-0.5</c> to <c>0.5</c> when <paramref name="coordOrigin"/> is <see cref="DiagonalOrientation2D.None"/>). Fractions are unaffected by DPI scaling.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or <see langword="null"/> if it is outside the camera's view.</returns>
+	/// <seealso cref="ProjectOnToRenderSubAreaSurfaceFractionClamped(Location, DiagonalOrientation2D)"/>
+	/// <seealso cref="ProjectOnToRenderSurfaceFraction"/>
+	/// <seealso cref="Camera.ProjectOnToNearPlane"/>
+	public XYPair<float>? ProjectOnToRenderSubAreaSurfaceFraction(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.ProjectOnToViewportSurface(_handle, location, coordOrigin, false, true);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on this renderer's output, as a fraction of the size of this renderer's render sub-area, according to the <i>current</i> state of the <see cref="TargetCamera"/>;
+	/// clamped to the edge of its render sub-area if it is outside the camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// See <see cref="ProjectOnToRenderSubAreaSurfaceFraction"/> for details of the returned co-ordinates.
+	/// </para>
+	/// <para>
+	/// When the <paramref name="location"/> is outside the camera's view (behind the camera, or beyond the edges of the rendered image), the result is moved from the centre of the
+	/// rendered image towards the location's direction until it reaches the edge. This means it always lies on the side of the image facing the location (even when the location is
+	/// behind the camera), which makes it suitable for placing off-screen indicators. A location directly behind the camera is placed at the centre of the bottom edge.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	/// <returns>Where the <paramref name="location"/> appears, or where it is clamped to on the edge of the rendered image.</returns>
+	/// <seealso cref="ProjectOnToRenderSubAreaSurfaceFraction"/>
+	public XYPair<float> ProjectOnToRenderSubAreaSurfaceFractionClamped(Location location, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, false, true, out _);
+	/// <inheritdoc cref="ProjectOnToRenderSubAreaSurfaceFractionClamped(Location, DiagonalOrientation2D)"/>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside the camera's view and the result was clamped to the edge of the
+	/// rendered image; otherwise <see langword="false"/>.</param>
+	/// <param name="coordOrigin">Which corner of this renderer's render sub-area should be considered as <c>(0, 0)</c>. Defaults to <see cref="DiagonalOrientation2D.UpLeft"/>.</param>
+	public XYPair<float> ProjectOnToRenderSubAreaSurfaceFractionClamped(Location location, out bool wasClamped, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.ProjectOnToViewportSurfaceClamped(_handle, location, coordOrigin, false, true, out wasClamped);
 
 	/// <summary>
 	/// Sets the sub-area of the <see cref="TargetWindow"/> or <see cref="TargetBuffer"/> this renderer should actually render in to.
@@ -370,6 +571,8 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	/// If no sub-area has been set, this will simply return the target window/buffer's dimensions.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<int> GetRenderSubAreaPixelOffset(DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) => Implementation.GetTargetViewportOffsetByPixel(_handle, coordOrigin);
+
+	internal bool RendersVerticallyFlipped => Implementation is LocalRendererBuilder localBuilder && localBuilder.GetRendersVerticallyFlipped(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void MarkSubAreaAsHandledDownstream(bool isHandledDownstream) => Implementation.MarkSubAreaAsHandledDownstream(_handle, isHandledDownstream);

@@ -161,7 +161,8 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 	/// <seealso cref="this[int]"/>
 	public TOut ElementAt(int index) {
 		ThrowIfInvalid();
-		if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count ({Count}).");
+		var count = _getCountFunc(_input);
+		if (index < 0 || index >= count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count ({count}).");
 		return _getItemFunc(_input, index);
 	}
 
@@ -174,9 +175,7 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 	/// </exception>
 	public void CopyTo(Span<TOut> dest) {
 		ThrowIfInvalid();
-		for (var i = 0; i < Count; ++i) {
-			dest[i] = this[i];
-		}
+		CopyUnchecked(dest, _getCountFunc(_input));
 	}
 	/// <summary>
 	/// Attempts to copy every <typeparamref name="TOut"/> exposed by this instance into <paramref name="dest"/>, in order.
@@ -188,9 +187,16 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 	/// </exception>
 	public bool TryCopyTo(Span<TOut> dest) {
 		ThrowIfInvalid();
-		if (dest.Length < Count) return false;
-		CopyTo(dest);
+		var count = _getCountFunc(_input);
+		if (dest.Length < count) return false;
+		CopyUnchecked(dest, count);
 		return true;
+	}
+
+	void CopyUnchecked(Span<TOut> dest, int count) {
+		for (var i = 0; i < count; ++i) {
+			dest[i] = _getItemFunc(_input, i);
+		}
 	}
 
 	/// <summary>
@@ -201,7 +207,7 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut
 	/// </exception>
 	public Enumerator GetEnumerator() {
 		ThrowIfInvalid();
-		return new Enumerator(_input, _inputVersion, Count, _getItemFunc, _getVersionFunc);
+		return new Enumerator(_input, _inputVersion, _getCountFunc(_input), _getItemFunc, _getVersionFunc);
 	}
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<TOut> IEnumerable<TOut>.GetEnumerator() => GetEnumerator();

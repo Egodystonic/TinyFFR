@@ -41,7 +41,7 @@ class LocalAnimationTest {
 	public void TearDownTest() { }
 	
 	void TestRepeatNodeNames(LocalTinyFfrFactory factory) {
-		using var rGroup = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/Fox.glb"));
+		using var rGroup = factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/Fox.glb"));
 		var mesh = rGroup.Meshes[0];
 		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 0, mesh.Skeleton.Nodes[1].GetNameAsNewStringObject());
 		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 5, "foxnode");
@@ -68,7 +68,7 @@ class LocalAnimationTest {
 			new(Matrix4x4.CreateTranslation(0f, 0f, 3f), Matrix4x4.Identity, 0, 1),	
 		};
 		
-		var mesh = factory.MeshBuilder.CreateMesh(
+		var mesh = factory.MeshBuilder.CreateFromVertices(
 			vertices,
 			triangles,
 			nodes
@@ -123,7 +123,7 @@ class LocalAnimationTest {
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
-		using var nodeHighlightMesh = factory.MeshBuilder.CreateMesh(new Cuboid(0.1f, 0.4f, 0.1f));
+		using var nodeHighlightMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(0.1f, 0.4f, 0.1f));
 		using var nodeHighlightMat = factory.MaterialBuilder.CreateLightingIgnoringMaterial(factory.TextureBuilder.CreateColorMap(StandardColor.Red, includeAlpha: false));
 		using var nodeHighlighter = factory.ObjectBuilder.CreateModelInstance(nodeHighlightMesh, nodeHighlightMat); 
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
@@ -142,7 +142,8 @@ class LocalAnimationTest {
 		var curNodeIndex = 0;
 		var curAnimCount = 1;
 		var playingAnim = false;
-		ResourceGroup? loadedResources = null;
+		var animPlaybackViaIndividualMeshes = false;
+		ModelBundle? loadedResources = null;
 		ModelInstanceGroup? modelInstanceGroup = null;
 		
 		var boundingBoxColours = new PrimitivePaintbrush[100];
@@ -174,9 +175,11 @@ class LocalAnimationTest {
 				$"A = chg anim | " +
 				$"S = chg start/stop | " +
 				$"N = chg node | " +
+				$"I = mesh vs meshgroup | " +
 				$"Mousewheel scales | " +
 				$"'{_filesToLoad[curFileIndex].Filename}' anim {(curAnimIndex + 1)} / {curAnimCount} | " +
 				$"'{modelInstanceGroup?[0].Skeleton.Nodes[curNodeIndex].GetNameAsNewStringObject()}' node | " +
+				$"{(animPlaybackViaIndividualMeshes ? "via Mesh" : "via MeshGroup")} | " +
 				$"{modelInstanceGroup?.Count ?? 0} models"
 			);
 		}
@@ -204,11 +207,29 @@ class LocalAnimationTest {
 				prevAnimTimeRemaining = 0f;
 
 				Console.WriteLine("Loading " + _filesToLoad[curFileIndex].Filename + "...");
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename), new ModelCreationConfig() { MeshConfig = new() { LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor, OriginTranslation = (0f, 0f, curFileIndex) }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadBundledAsset(
+					CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename),
+					new ModelCreationConfig() {
+						MeshConfig = new() {
+							LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor,
+							OriginTranslation = Vect.Random(new(-0.2f),
+								new(0.2f))
+						}
+					},
+					new ModelReadConfig() {
+						HandleUriEscapedStrings = true
+					}
+				);
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
+				foreach (var mesh in loadedResources.Value.Meshes) {
+					Console.WriteLine($"\t{mesh} : {mesh.Skeleton.Nodes.Count} nodes");
+					foreach (var anim in mesh.Animations.Skeletal) {
+						Console.WriteLine($"\t\t{anim.GetNameAsNewStringObject()}");
+					}
+				}
 				Assert.GreaterOrEqual(curAnimCount, 1);
 
-				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
+				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value);
 				scene.Add(modelInstanceGroup.Value);
 				UpdateTitle();
 			}
@@ -225,6 +246,10 @@ class LocalAnimationTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S) && modelInstanceGroup.HasValue) {
 				playingAnim = !playingAnim;
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.I)) {
+				animPlaybackViaIndividualMeshes = !animPlaybackViaIndividualMeshes;
+				UpdateTitle();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0) && modelInstanceGroup.HasValue) {
 				Console.WriteLine("Setting t=0 on anim #" + curAnimIndex);
@@ -268,7 +293,7 @@ class LocalAnimationTest {
 			modelInstanceGroup?.ScaleBy(1f - (0.05f * loop.Input.KeyboardAndMouse.MouseScrollWheelDelta)); 
 			if (loop.Input.KeyboardAndMouse.MouseScrollWheelDelta != 0) UpdateBoundingBoxes();
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.E)) {
-				factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
+				factory.AssetLoader.LoadBundledAsset(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.N)) {
 				if (modelInstanceGroup is { } mig) {
@@ -281,32 +306,59 @@ class LocalAnimationTest {
 				}
 			}
 
-			if (playingAnim && modelInstanceGroup.HasValue) {
+			if (playingAnim && modelInstanceGroup is { } group) {
 				var isFirst = true;
-				foreach (var mi in modelInstanceGroup) {
-					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
-					
-					if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
+				if (animPlaybackViaIndividualMeshes) {
+					foreach (var mi in group) {
+						if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
+						
+						if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
+							if (isFirst) {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+									.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+								nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+								nodeHighlighter.SetScaling(1f);
+							}
+							else {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+									.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
+							}
+							prevAnimTimeRemaining -= deltaTime;
+						}
+						else {
+							if (isFirst) {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+								nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+								nodeHighlighter.SetScaling(1f);
+							}
+							else {
+								mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
+							}	
+						}
+					}
+				}
+				else {
+					if (prevAnimTimeRemaining > 0f && prevAnimIndex < group.Animations.All.Count) {
 						if (isFirst) {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
-								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
-							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+							group.GetAnimationPlayer(group.Animations[curAnimIndex], group.Animations[prevAnimIndex])
+								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, group.Skeleton.Nodes[curNodeIndex], out var transform);
+							nodeHighlighter.SetTransform(transform * group.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+							group.GetAnimationPlayer(group.Animations[curAnimIndex], group.Animations[prevAnimIndex])
 								.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
 						}
 						prevAnimTimeRemaining -= deltaTime;
 					}
 					else {
 						if (isFirst) {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
-							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+							group.GetAnimationPlayer(group.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, group.Skeleton.Nodes[curNodeIndex], out var transform);
+							nodeHighlighter.SetTransform(transform * group.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
+							group.GetAnimationPlayer(group.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
 						}	
 					}
 				}

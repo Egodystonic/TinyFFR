@@ -1,9 +1,10 @@
 ﻿// Created on 2025-09-02 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System;
 using static Egodystonic.TinyFFR.ConfigStructTestUtils;
 
-namespace Egodystonic.TinyFFR.World.Objects;
+namespace Egodystonic.TinyFFR.World;
 
 [TestFixture]
 class ModelInstanceCreationConfigTest {

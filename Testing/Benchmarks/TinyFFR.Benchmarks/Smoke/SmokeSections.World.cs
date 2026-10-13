@@ -84,7 +84,7 @@ static partial class SmokeSections {
 				scene.RemoveFog();
 			}
 
-			using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Shadow Mesh");
+			using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Shadow Mesh");
 			using var material = Factory.MaterialBuilder.CreateTestMaterial();
 			using var camera = Factory.CameraBuilder.CreateCamera(Location.Origin, name: "Benchmark Shadow Camera");
 			var instance = Factory.ObjectBuilder.CreateModelInstance(mesh, material, Location.Origin + Direction.Forward * 2.2f, name: "Benchmark Shadow Instance");
@@ -127,7 +127,7 @@ static partial class SmokeSections {
 	}
 
 	public static void ModelInstances() {
-		using var mesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Instance Mesh");
+		using var mesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Instance Mesh");
 		using var material = Factory.MaterialBuilder.CreateTestMaterial();
 		using var scene = Factory.SceneBuilder.CreateScene(name: "Benchmark Instance Scene");
 		using var model = Factory.AssetLoader.CreateModel(mesh, material, "Benchmark Model");
@@ -192,8 +192,8 @@ static partial class SmokeSections {
 	}
 
 	public static void SceneQueries() {
-		using var cuboidMesh = Factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Benchmark Query Cuboid Mesh");
-		using var sphereMesh = Factory.MeshBuilder.CreateMesh(new Sphere(0.5f), subdivisionLevel: 2, name: "Benchmark Query Sphere Mesh");
+		using var cuboidMesh = Factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Benchmark Query Cuboid Mesh");
+		using var sphereMesh = Factory.MeshBuilder.CreateSphere(new Sphere(0.5f), subdivisionLevel: 2, name: "Benchmark Query Sphere Mesh");
 		using var scene = Factory.SceneBuilder.CreateScene(name: "Benchmark Query Scene");
 		var instances = Allocator.GetSharedScratchList<ModelInstance>();
 		var results = Allocator.CreatePooledMemoryBuffer<ModelInstance>(SmokeWorkload.QueryResultCapacity);
@@ -239,7 +239,7 @@ static partial class SmokeSections {
 				camera.Position = Location.Origin + Direction.Up * 1f;
 				camera.SetViewAndUpDirection(Direction.Forward, Direction.Up);
 				camera.HorizontalFieldOfView = 75f;
-				camera.SetExposure(16f, 1f / 125f, 100f);
+				camera.SetExposure(CameraExposurePreset.OutsideMidday);
 				camera.NearPlaneDistance = 0.05f;
 				camera.FarPlaneDistance = 500f;
 			}

@@ -1,0 +1,67 @@
+﻿// Created on 2025-03-12 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2025
+
+using Egodystonic.TinyFFR.Assets.Materials;
+
+namespace Egodystonic.TinyFFR.World;
+
+/// <summary>
+/// Represents a scene object whose surface can be set to a <see cref="Material"/>, or painted with the built-in default material.
+/// </summary>
+/// <remarks>
+/// Unlike <see cref="IMaterialUsingSceneObject"/>, this does not require the object to have one single material that can be read back; a
+/// <see cref="ModelInstanceGroup"/>, for example, can apply a material to every instance in it even though each instance may since have been given a different one.
+/// </remarks>
+public interface IMaterialReceivingSceneObject : ISceneObject {
+	/// <summary>
+	/// Sets the material this object's surface is rendered with.
+	/// </summary>
+	/// <param name="material">The material to render this object with.</param>
+	void SetMaterial(Material material);
+	/// <summary>
+	/// Sets the render colour for this object to <paramref name="baseColor"/>.
+	/// </summary>
+	/// <remarks>
+	/// This also changes the <see cref="Material"/> for this object to the <see cref="IMaterialBuilder.DefaultMaterial">DefaultMaterial</see> if is not already.
+	/// </remarks>
+	/// <param name="baseColor">The colour to paint this object.</param>
+	void SetDefaultMaterialBaseColor(ColorVect baseColor);
+	/// <summary>
+	/// Sets the shading style for this object.
+	/// </summary>
+	/// <remarks>
+	/// This also changes the <see cref="Material"/> for this object to the <see cref="IMaterialBuilder.DefaultMaterial">DefaultMaterial</see> if is not already.
+	/// </remarks>
+	/// <param name="style">The shading style to draw this object with.</param>
+	void SetDefaultMaterialShadingStyle(DefaultMaterialShadingStyle style);
+	/// <summary>
+	/// Scales how brightly this object's material glows, for this object only. Defaults to <c>1f</c>.
+	/// </summary>
+	/// <param name="multiplier">The factor to scale this object's emissive brightness by. <c>0f</c> turns the glow off, <c>1f</c> leaves it as authored, and higher values make
+	/// it brighter. Negative values are treated as <c>0f</c>, and non-finite values as <c>1f</c>. This has no effect if the object's material has no emissive map.</param>
+	void SetMaterialEmissiveStrengthMultiplier(float multiplier);
+}
+
+/// <summary>
+/// Represents a scene object that is rendered with a <see cref="Material"/>.
+/// </summary>
+/// <remarks>
+/// A material describes what an object's surface is made of (its colour, how rough or shiny it is, how metallic it looks, and so on) and is therefore what
+/// determines how the object responds to the lights around it.
+/// </remarks>
+public interface IMaterialUsingSceneObject : IMaterialReceivingSceneObject {
+	/// <summary>
+	/// The material this object's surface is rendered with.
+	/// </summary>
+	Material Material { get; set; }
+	/// <summary>
+	/// A handle for adjusting this object's per-instance material effects, or <see langword="null"/> if its current <see cref="Material"/> does not support them.
+	/// </summary>
+	/// <remarks>
+	/// Per-instance effects let one object's appearance be altered without affecting anything else sharing the same material. Because support depends on the
+	/// material currently assigned, this returns <see langword="null"/> whenever <see cref="Material"/> has been set to one that does not offer them, and the value
+	/// should be re-read after changing the material rather than cached. This can be enabled via <see cref="MaterialCreationConfig.EnablePerInstanceEffects"/>.
+	/// </remarks>
+	MaterialEffectController? MaterialEffects { get; }
+	
+}

@@ -224,6 +224,53 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 		get => Implementation.GetFramesPerSecondLatest(_handle);
 	}
 
+	/// <summary>
+	/// The mean time taken by each of the most recent iterations of this loop, or <see cref="TimeSpan.Zero"/> if it has not yet been iterated.
+	/// </summary>
+	/// <remarks>
+	/// This is calculated over the same rolling window as <see cref="FramesPerSecondRecentAverage"/>, and is its reciprocal.
+	/// Consult <see cref="FrameTimeRecentMax"/> for the worst case.
+	/// </remarks>
+	public TimeSpan FrameTimeRecentAverage {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFrameTimeRecentAverage(_handle);
+	}
+
+	/// <summary>
+	/// The time taken by the shortest single iteration among the most recent iterations of this loop, or <see cref="TimeSpan.Zero"/> if it has not yet been iterated.
+	/// </summary>
+	/// <remarks>
+	/// This is the reciprocal of <see cref="FramesPerSecondRecentMax"/>.
+	/// </remarks>
+	public TimeSpan FrameTimeRecentMin {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFrameTimeRecentMin(_handle);
+	}
+
+	/// <summary>
+	/// The time taken by the longest single iteration among the most recent iterations of this loop, or <see cref="TimeSpan.Zero"/> if it has not yet been iterated.
+	/// </summary>
+	/// <remarks>
+	/// This is the reciprocal of <see cref="FramesPerSecondRecentMin"/>, and is usually the most informative of the frame time properties when judging perceived
+	/// smoothness, as it reflects the worst stutter a user would have noticed rather than the typical case.
+	/// </remarks>
+	public TimeSpan FrameTimeRecentMax {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFrameTimeRecentMax(_handle);
+	}
+
+	/// <summary>
+	/// The time taken by the single most recent iteration of this loop (i.e. the last delta time), or <see cref="TimeSpan.Zero"/> if it has not yet been iterated.
+	/// </summary>
+	/// <remarks>
+	/// This is the reciprocal of <see cref="FramesPerSecondLatest"/>. It fluctuates from iteration to iteration; <see cref="FrameTimeRecentAverage"/> is the
+	/// steadier figure.
+	/// </remarks>
+	public TimeSpan FrameTimeLatest {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFrameTimeLatest(_handle);
+	}
+
 	internal ApplicationLoop(ResourceHandle<ApplicationLoop> handle, IApplicationLoopImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;

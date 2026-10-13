@@ -24,7 +24,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable {
+sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType, bool AllowsDynamicWrites, bool ContainsMipMaps, TextureRenderingConfig RenderingConfig, TextureCompressionFormat CompressionFormat);
 	const string DefaultTextureName = "Unnamed Texture";
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
@@ -138,7 +138,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		return result;
 	}
 
-	public Texture CreateTextureFromCompressedBlocks(ReadOnlySpan<byte> blocks, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
+	public Texture CreateTextureFromCompressedData(ReadOnlySpan<byte> compressedData, XYPair<int> dimensions, TextureCompressionFormat compressionFormat, int levelCount, TexelType sourceTexelType, TextureDataType dataType, TextureRenderingConfig renderingConfig, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		if (compressionFormat == TextureCompressionFormat.None) {
@@ -158,16 +158,16 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		}
 
 		var expectedSizeBytes = TextureCompressor.GetCompressedSizeBytes(dimensions, compressionFormat, levelCount);
-		if (blocks.Length < expectedSizeBytes) {
+		if (compressedData.Length < expectedSizeBytes) {
 			throw new ArgumentException(
 				$"Compressed block data for a {dimensions.X}x{dimensions.Y} {compressionFormat} texture requires {expectedSizeBytes} bytes, " +
-				$"but only {blocks.Length} were supplied.",
-				nameof(blocks)
+				$"but only {compressedData.Length} were supplied.",
+				nameof(compressedData)
 			);
 		}
 
 		var buffer = _globals.CreateGpuHoldingBuffer(expectedSizeBytes);
-		blocks[..expectedSizeBytes].CopyTo(buffer.AsSpan<byte>());
+		compressedData[..expectedSizeBytes].CopyTo(buffer.AsSpan<byte>());
 		return UploadCompressedBlocksAndStoreTextureData(buffer, dimensions, compressionFormat, levelCount, sourceTexelType, dataType, renderingConfig, name);
 	}
 
@@ -227,7 +227,8 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 				compressionQuality,
 				dataType,
 				generateMipMaps,
-				compressedBuffer.AsSpan<byte>()
+				compressedBuffer.AsSpan<byte>(),
+				_globals.ThreadPoolWorkScheduler
 			);
 		}
 		finally {
@@ -529,7 +530,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	}
 	#endregion
 
-	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
+	public override string ToString() => _isDisposed ? "TinyFFR Local Texture Builder [Disposed]" : "TinyFFR Local Texture Builder";
 
 	#region Disposal
 	public bool IsDisposed(ResourceHandle<Texture> handle) => _isDisposed || !_loadedTextures.ContainsKey(handle);

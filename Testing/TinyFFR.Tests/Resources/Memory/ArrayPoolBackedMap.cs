@@ -1,6 +1,8 @@
 ﻿// Created on 2024-11-26 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Reflection;
+
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 [TestFixture]
@@ -100,7 +102,7 @@ class ArrayPoolBackedMapTest {
 		_map.Add(1, 2);
 		_map.Add(2, 4);
 		_map.Add(3, 6);
-		_map.ClearWithoutZeroingMemory();
+		_map.Clear();
 		Assert.AreEqual(0, _map.Count);
 		foreach (var kvp in _map) result += 1;
 		Assert.AreEqual(0, result);
@@ -180,5 +182,56 @@ class ArrayPoolBackedMapTest {
 		Assert.AreEqual(true, _map.Contains(new(4, 8)));
 		Assert.AreEqual(false, _map.ContainsKey(-1));
 		Assert.AreEqual(false, _map.Contains(new(4, 7)));
+	}
+
+	[Test]
+	public void ShouldCorrectlyAddRange() {
+		_map.AddRange(new KeyValuePair<int, int>[] { new(NumValues, 1), new(NumValues + 1, 2) }.AsSpan());
+		_map.AddRange(Enumerable.Range(NumValues + 2, 10).Select(i => new KeyValuePair<int, int>(i, -i)));
+		_map.AddRange(new[] { new KeyValuePair<int, int>(-1, 7) });
+		Assert.AreEqual(NumValues + 13, _map.Count);
+		Assert.AreEqual(1, _map[NumValues]);
+		Assert.AreEqual(2, _map[NumValues + 1]);
+		Assert.AreEqual(-(NumValues + 11), _map[NumValues + 11]);
+		Assert.AreEqual(7, _map[-1]);
+	}
+
+	[Test]
+	public void AddRangeShouldThrowOnDuplicateKeys() {
+		Assert.Throws<ArgumentException>(() => _map.AddRange(new KeyValuePair<int, int>[] { new(-5, 0), new(3, 0) }.AsSpan()));
+		Assert.AreEqual(true, _map.ContainsKey(-5));
+		Assert.AreEqual(NumValues + 1, _map.Count);
+
+		Assert.Throws<ArgumentException>(() => _map.AddRange(new List<KeyValuePair<int, int>> { new(-6, 0), new(-6, 1) }));
+		Assert.Throws<ArgumentException>(() => _map.AddRange((IEnumerable<KeyValuePair<int, int>>) _map));
+	}
+
+	[Test]
+	public void ClearShouldZeroReferenceValuesInBuckets() {
+		var map = new ArrayPoolBackedMap<int, string>();
+		for (var i = 0; i < 100; ++i) map.Add(i, i.ToString());
+
+		map.Clear();
+		Assert.AreEqual(0, map.Count);
+
+		var buckets = (Array) typeof(ArrayPoolBackedMap<int, string>).GetField("_buckets", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(map)!;
+		var numBuckets = (int) typeof(ArrayPoolBackedMap<int, string>).GetField("_numBuckets", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(map)!;
+		var backingArrayField = typeof(ArrayPoolBackedVector<KeyValuePair<int, string>>).GetField("_backingArray", BindingFlags.NonPublic | BindingFlags.Instance)!;
+		for (var b = 0; b < numBuckets; ++b) {
+			var backingArray = (KeyValuePair<int, string>[]) backingArrayField.GetValue(buckets.GetValue(b))!;
+			foreach (var kvp in backingArray) Assert.IsNull(kvp.Value, $"Bucket {b} still holds a stale value.");
+		}
+		map.Dispose();
+	}
+
+	[Test]
+	public void ClearingAnEmptyMapShouldLeaveItUsable() {
+		var map = new ArrayPoolBackedMap<int, int>();
+		map.Clear();
+		map.Clear();
+		map.Clear();
+		map.Add(1, 2);
+		Assert.AreEqual(2, map[1]);
+		map.Dispose();
 	}
 }

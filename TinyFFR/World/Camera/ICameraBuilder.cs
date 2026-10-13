@@ -19,6 +19,9 @@ public enum CameraPlaneConfiguration {
 	/// <summary>
 	/// A general-purpose range, suitable for most scenes.
 	/// </summary>
+	/// <remarks>
+	/// Near plane <c>0.03m</c>, far plane <c>1,000m</c>.
+	/// </remarks>
 	Standard,
 	/// <summary>
 	/// Allows objects very close to the camera to be drawn, at the cost of the maximum view distance.
@@ -47,8 +50,10 @@ public interface ICameraBuilder {
 	/// <param name="initialPosition">Where the new camera should be. If <see langword="null"/>, the default is used.</param>
 	/// <param name="initialViewDirection">Which way the new camera should look. If <see langword="null"/>, the default is used.</param>
 	/// <param name="cameraRange">A preset for how close and how far away an object may be and still be drawn. Defaults to <see cref="CameraPlaneConfiguration.Standard"/>.</param>
+	/// <param name="exposure">The exposure preset the new camera should start with; choose the one matching the lighting in the scene it will view.
+	/// If <see langword="null"/>, <see cref="CameraCreationConfig.DefaultInitialExposure"/> (<see cref="CameraExposurePreset.InsideBrightLighting"/>) is used.</param>
 	/// <param name="name">Optional name for the new camera.</param>
-	Camera CreateCamera(Location? initialPosition = null, Direction? initialViewDirection = null, CameraPlaneConfiguration cameraRange = CameraPlaneConfiguration.Standard, ReadOnlySpan<char> name = default) {
+	Camera CreateCamera(Location? initialPosition = null, Direction? initialViewDirection = null, CameraPlaneConfiguration cameraRange = CameraPlaneConfiguration.Standard, CameraExposurePreset? exposure = null, ReadOnlySpan<char> name = default) {
 		return CreateCamera(new CameraCreationConfig {
 			Position = initialPosition ?? CameraCreationConfig.DefaultPosition,
 			ViewDirection = initialViewDirection ?? CameraCreationConfig.DefaultViewDirection,
@@ -62,6 +67,7 @@ public interface ICameraBuilder {
 				CameraPlaneConfiguration.LongRange => 5_000f,
 				_ => CameraCreationConfig.DefaultFarPlaneDistance,
 			},
+			InitialExposure = exposure ?? CameraCreationConfig.DefaultInitialExposure,
 			Name = name
 		});
 	}

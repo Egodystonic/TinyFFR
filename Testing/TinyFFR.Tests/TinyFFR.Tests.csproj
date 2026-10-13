@@ -5,7 +5,10 @@
 
     <Platforms>x64;ARM64</Platforms>
     <NoWarn>
-      NUnit2006; <!-- Consider using the constraint model: I hate fluent APIs and I don't think mixing expected and actual params is the end of the world -->
+      $(NoWarn); <!--These ignore NUnit warnings that shouldn't be warnings, they're just telling you to use the stupid fluent API. -->
+      NUnit2049;
+      NUnit2048;
+      NUnit2006;
     </NoWarn>
 
     <LangVersion>preview</LangVersion>

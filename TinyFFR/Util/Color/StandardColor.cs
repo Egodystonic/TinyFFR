@@ -44,20 +44,20 @@ public enum StandardColor : uint { // RGB 24-bit format
 	RealWorldSpecularCopper = 0xF7BC9E,
 
 	// Lights, Format Lighting<Name>
-	/// <summary>The approximate colour cast by candlelight (<c>#FF8701</c>).</summary>
-	LightingCandle = 0xFF8701,
-	/// <summary>The approximate colour cast by a traditional incandescent light bulb (<c>#FFC180</c>).</summary>
-	LightingIncandescentBulb = 0xFFC180,
-	/// <summary>The approximate colour of sunlight at sunrise/sunset (<c>#FFA64C</c>).</summary>
-	LightingSunRiseSet = 0xFFA64C,
-	/// <summary>The approximate colour of direct sunlight at midday (<c>#FFE9D7</c>).</summary>
-	LightingSunMidday = 0xFFE9D7,
-	/// <summary>The approximate colour of ambient (indirect) daylight (<c>#FFF3F1</c>).</summary>
-	LightingAmbientDaylight = 0xFFF3F1,
-	/// <summary>The approximate colour of ambient light under an overcast sky (<c>#FAF6FF</c>).</summary>
-	LightingAmbientOvercast = 0xFAF6FF,
-	/// <summary>The approximate colour of ambient light in open shade (<c>#EBECFF</c>).</summary>
-	LightingAmbientShaded = 0xEBECFF,
+	/// <summary>The approximate colour cast by candlelight, stored in linear colour space (<c>#FF3E00</c>) so that it appears as <c>#FF8701</c> when used as a light, backdrop, or fog colour.</summary>
+	LightingCandle = 0xFF3E00,
+	/// <summary>The approximate colour cast by a traditional incandescent light bulb, stored in linear colour space (<c>#FF8837</c>) so that it appears as <c>#FFC180</c> when used as a light, backdrop, or fog colour.</summary>
+	LightingIncandescentBulb = 0xFF8837,
+	/// <summary>The approximate colour of sunlight at sunrise/sunset, stored in linear colour space (<c>#FF6112</c>) so that it appears as <c>#FFA64C</c> when used as a light, backdrop, or fog colour.</summary>
+	LightingSunRiseSet = 0xFF6112,
+	/// <summary>The approximate colour of direct sunlight at midday, stored in linear colour space (<c>#FFD0AD</c>) so that it appears as <c>#FFE9D7</c> when used as a light, backdrop, or fog colour.</summary>
+	LightingSunMidday = 0xFFD0AD,
+	/// <summary>The approximate colour of ambient (indirect) daylight, stored in linear colour space (<c>#FFE5E0</c>) so that it appears as <c>#FFF3F1</c> when used as a light, backdrop, or fog colour.</summary>
+	LightingAmbientDaylight = 0xFFE5E0,
+	/// <summary>The approximate colour of ambient light under an overcast sky, stored in linear colour space (<c>#F4EBFF</c>) so that it appears as <c>#FAF6FF</c> when used as a light, backdrop, or fog colour.</summary>
+	LightingAmbientOvercast = 0xF4EBFF,
+	/// <summary>The approximate colour of ambient light in open shade, stored in linear colour space (<c>#D4D6FF</c>) so that it appears as <c>#EBECFF</c> when used as a light, backdrop, or fog colour.</summary>
+	LightingAmbientShaded = 0xD4D6FF,
 
 	// Html 4.01 Colours, Format <Name>
 	/// <summary>The standard HTML/CSS colour keyword "white" (<c>#FFFFFF</c>).</summary>

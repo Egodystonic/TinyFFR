@@ -8,6 +8,108 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
+/// A preset camera exposure, describing the kind of lighting the camera is set up to photograph.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Real-world scenes vary enormously in brightness: direct sunlight is roughly ten thousand times brighter than a typical living room. A real camera (and the human eye)
+/// compensates for this by adjusting its exposure, and so must a <see cref="Camera"/>: use the preset that matches the lighting in your scene, and the image will be
+/// neither too dark nor washed out.
+/// </para>
+/// <para>
+/// Each preset corresponds to a plausible real-world combination of aperture, shutter speed and sensitivity (see <see cref="CameraExposurePresetExtensions.ToExposureParams"/>), and is chosen to
+/// pair with the light presets of the same name: a scene lit by <i>either</i> the <see cref="DirectionalLightBrightnessPreset"/> <i>or</i> the
+/// <see cref="SceneBackdropBrightnessPreset"/> of the same name on its own is correctly exposed (e.g. <see cref="OutsideMidday"/> with <see cref="DirectionalLightBrightnessPreset.Midday"/>
+/// or <see cref="SceneBackdropBrightnessPreset.Midday"/>; <see cref="InsideBrightLighting"/> with <see cref="SceneBackdropBrightnessPreset.InsideBrightLighting"/> or a
+/// <see cref="PointLightBrightnessPreset.BulbTypical"/> close by). Combining several light sources adds their light together, so needs a less sensitive exposure. Multiply <see cref="Camera.Exposure"/> by a brightness factor to fine-tune the result (e.g. <c>camera.Exposure *= 1.5f</c>).
+/// </para>
+/// </remarks>
+public enum CameraExposurePreset {
+	/// <summary>
+	/// Exposure for a brightly-lit interior, such as an office or a room lit by a lamp close to the subject (an illuminance of roughly 600 lux).
+	/// This is the default exposure for new cameras, and pairs with <see cref="SceneBackdropBrightnessPreset.InsideBrightLighting"/>.
+	/// Equivalent to <c>f/2.8</c>, <c>1/60s</c>, <c>ISO 200</c> (an EV100 of roughly <c>7.9</c>).
+	/// </summary>
+	InsideBrightLighting = 0,
+	/// <summary>
+	/// Exposure for exceptionally bright daylight, such as sunlight reflecting off snow or sand. Equivalent to <c>f/16</c>, <c>1/250s</c>, <c>ISO 100</c> (an EV100 of roughly <c>16</c>).
+	/// </summary>
+	OutsideVeryBright,
+	/// <summary>
+	/// Exposure for a sunny day in direct sunlight (an illuminance of roughly 100,000 lux). Pairs with <see cref="DirectionalLightBrightnessPreset.Midday"/> or <see cref="SceneBackdropBrightnessPreset.Midday"/> (either one on its own lights a scene correctly for this exposure).
+	/// Equivalent to <c>f/16</c>, <c>1/125s</c>, <c>ISO 100</c> (an EV100 of roughly <c>15</c>; the "sunny sixteen" rule).
+	/// </summary>
+	OutsideMidday,
+	/// <summary>
+	/// Exposure for an overcast day (an illuminance of roughly 10,000 lux). Pairs with <see cref="DirectionalLightBrightnessPreset.Overcast"/> or <see cref="SceneBackdropBrightnessPreset.Overcast"/> (either one on its own lights a scene correctly for this exposure).
+	/// Equivalent to <c>f/5.6</c>, <c>1/125s</c>, <c>ISO 100</c> (an EV100 of roughly <c>12</c>).
+	/// </summary>
+	OutsideOvercast,
+	/// <summary>
+	/// Exposure for the low sun shortly after sunrise or before sunset (an illuminance of roughly 2,500 lux). Pairs with <see cref="DirectionalLightBrightnessPreset.SunriseSunset"/> or <see cref="SceneBackdropBrightnessPreset.SunriseSunset"/> (either one on its own lights a scene correctly for this exposure).
+	/// Equivalent to <c>f/4</c>, <c>1/60s</c>, <c>ISO 100</c> (an EV100 of roughly <c>10</c>).
+	/// </summary>
+	OutsideSunriseSunset,
+	/// <summary>
+	/// Exposure for a dimly-lit interior, such as a living room lit by a single <see cref="PointLightBrightnessPreset.BulbTypical"/> (an illuminance of roughly 80 lux).
+	/// Equivalent to <c>f/2</c>, <c>1/30s</c>, <c>ISO 400</c> (an EV100 of roughly <c>5</c>).
+	/// </summary>
+	InsideMoodLighting,
+	/// <summary>
+	/// Exposure for the fading light just after sunset (an illuminance of roughly 40 lux). Pairs with <see cref="DirectionalLightBrightnessPreset.Twilight"/> or <see cref="SceneBackdropBrightnessPreset.Twilight"/> (either one on its own lights a scene correctly for this exposure).
+	/// Equivalent to <c>f/2</c>, <c>1/30s</c>, <c>ISO 800</c> (an EV100 of roughly <c>4</c>).
+	/// </summary>
+	OutsideTwilight,
+	/// <summary>
+	/// Exposure for a scene lit by candles or similarly weak light sources (an illuminance of roughly 10 lux).
+	/// Equivalent to <c>f/2</c>, <c>1/15s</c>, <c>ISO 1600</c> (an EV100 of roughly <c>2</c>).
+	/// </summary>
+	InsideCandleLighting,
+	/// <summary>
+	/// Exposure for a street at night lit by streetlights and shop windows (an illuminance of roughly 2.5 lux).
+	/// Equivalent to <c>f/2</c>, <c>1/8s</c>, <c>ISO 3200</c> (an EV100 of roughly <c>0</c>).
+	/// </summary>
+	OutsideNightStreet,
+	/// <summary>
+	/// Exposure for a landscape lit by a full moon (an illuminance of roughly 0.25 lux). Pairs with <see cref="DirectionalLightBrightnessPreset.FullMoon"/> or <see cref="SceneBackdropBrightnessPreset.FullMoon"/> (either one on its own lights a scene correctly for this exposure).
+	/// Equivalent to <c>f/2</c>, <c>1/2s</c>, <c>ISO 6400</c> (an EV100 of roughly <c>-3</c>).
+	/// </summary>
+	OutsideFullMoon,
+	/// <summary>
+	/// Exposure for a moonless night lit only by the stars (an illuminance of a few thousandths of a lux). Pairs with <see cref="DirectionalLightBrightnessPreset.Starlight"/> or <see cref="SceneBackdropBrightnessPreset.Starlight"/> (either one on its own lights a scene correctly for this exposure).
+	/// Equivalent to <c>f/2</c>, <c>4s</c>, <c>ISO 51,200</c> (an EV100 of roughly <c>-9</c>).
+	/// </summary>
+	OutsideStarlight
+}
+
+/// <summary>
+/// Extension methods for <see cref="CameraExposurePreset"/>.
+/// </summary>
+public static class CameraExposurePresetExtensions {
+	extension(CameraExposurePreset @this) {
+		/// <summary>
+		/// Returns the aperture, shutter speed and sensitivity that this preset applies.
+		/// </summary>
+		public CameraExposureParams ToExposureParams() {
+			return @this switch {
+				CameraExposurePreset.OutsideVeryBright => new(16f, 1f / 250f, 100f),
+				CameraExposurePreset.OutsideMidday => new(16f, 1f / 125f, 100f),
+				CameraExposurePreset.OutsideOvercast => new(5.6f, 1f / 125f, 100f),
+				CameraExposurePreset.OutsideSunriseSunset => new(4f, 1f / 60f, 100f),
+				CameraExposurePreset.InsideMoodLighting => new(2f, 1f / 30f, 400f),
+				CameraExposurePreset.OutsideTwilight => new(2f, 1f / 30f, 800f),
+				CameraExposurePreset.InsideCandleLighting => new(2f, 1f / 15f, 1_600f),
+				CameraExposurePreset.OutsideNightStreet => new(2f, 1f / 8f, 3_200f),
+				CameraExposurePreset.OutsideFullMoon => new(2f, 1f / 2f, 6_400f),
+				CameraExposurePreset.OutsideStarlight => new(2f, 4f, 51_200f),
+				_ /* InsideBrightLighting */ => new(CameraExposureParams.ApertureDefault, CameraExposureParams.ShutterSpeedDefault, CameraExposureParams.SensitivityDefault)
+			};
+		}
+	}
+}
+
+
+/// <summary>
 /// Represents a viewpoint on a scene: where it is viewed from, which way it is facing, and how the three-dimensional scene is flattened in to a two-dimensional image. Created via the factory's <see cref="ICameraBuilder"/>.
 /// </summary>
 /// <remarks>
@@ -21,6 +123,8 @@ namespace Egodystonic.TinyFFR.World;
 /// </para>
 /// </remarks>
 public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>, IPositionedSceneObject, IOrientedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.Camera;
+
 	/// <summary>
 	/// The smallest permitted field of view: <c>0°</c>.
 	/// </summary>
@@ -40,54 +144,6 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// The wider that ratio, the less precisely the renderer can tell which of two nearly-coincident surfaces is in front, so it is capped.
 	/// </remarks>
 	public static readonly float NearFarPlaneDistanceRatioMax = 1E6f;
-	/// <summary>
-	/// The default aperture used by <see cref="SetExposure(float, float, float)"/>: <c>f/16</c>.
-	/// </summary>
-	public static readonly float ApertureDefault = 16f;
-	/// <summary>
-	/// The smallest permitted aperture value: <c>f/0.5</c>.
-	/// </summary>
-	public static readonly float ApertureMin = 0.5f;
-	/// <summary>
-	/// The largest permitted aperture value: <c>f/64</c>.
-	/// </summary>
-	public static readonly float ApertureMax = 64f;
-	/// <summary>
-	/// The default shutter speed used by <see cref="SetExposure(float, float, float)"/>: <c>1/125</c> of a second.
-	/// </summary>
-	public static readonly float ShutterSpeedDefault = 1f / 125f;
-	/// <summary>
-	/// The shortest permitted shutter speed: <c>1/25,000</c> of a second.
-	/// </summary>
-	public static readonly float ShutterSpeedMin = 1f / 25_000f;
-	/// <summary>
-	/// The longest permitted shutter speed: <c>60</c> seconds.
-	/// </summary>
-	public static readonly float ShutterSpeedMax = 60f;
-	/// <summary>
-	/// The default sensitivity (ISO) used by <see cref="SetExposure(float, float, float)"/>: <c>100</c>.
-	/// </summary>
-	public static readonly float SensitivityDefault = 100f;
-	/// <summary>
-	/// The lowest permitted sensitivity (ISO): <c>10</c>.
-	/// </summary>
-	public static readonly float SensitivityMin = 10f;
-	/// <summary>
-	/// The highest permitted sensitivity (ISO): <c>204,800</c>.
-	/// </summary>
-	public static readonly float SensitivityMax = 204_800f;
-	/// <summary>
-	/// The default value for <see cref="Exposure"/>: <c>1f</c>.
-	/// </summary>
-	public static readonly float ExposureDefault = 1f;
-	/// <summary>
-	/// The largest permitted <see cref="Exposure"/>: <c>10f</c>.
-	/// </summary>
-	public static readonly float ExposureMax = 10f;
-	/// <summary>
-	/// The smallest permitted <see cref="Exposure"/>: <c>1/10f</c>.
-	/// </summary>
-	public static readonly float ExposureMin = 1f / ExposureMax;
 
 	readonly ResourceHandle<Camera> _handle;
 	readonly ICameraImplProvider _impl;
@@ -232,7 +288,7 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// The width of the captured scene image, divided by its height.
 	/// </summary>
 	/// <remarks>
-	/// In most cases the containing <see cref="Renderer"/> will keep this property in sync with the render target for you
+	/// In most cases the containing <see cref="Renderer"/> will keep this property in sync with its render target (or render sub-area) for you
 	/// (unless that renderer was created with <see cref="RendererCreationConfig.AutoUpdateCameraAspectRatio"/> set to <c>false</c>);
 	/// so you don't need to set it manually. 
 	/// </remarks>
@@ -289,13 +345,16 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	public void SetFarPlaneDistance(float distance) => FarPlaneDistance = distance;
 	
 	/// <summary>
-	/// How bright the resulting image is, where <c>1f</c> is neutral. Raising this brightens the whole image, in the way that leaving a real shutter open for longer would.
-	/// Clamped to between <see cref="ExposureMin"/> and <see cref="ExposureMax"/>.
+	/// This camera's exposure, in real photographic terms (aperture, shutter speed and sensitivity).
 	/// </summary>
 	/// <remarks>
-	/// This is the simple, single normalized way to control exposure; <see cref="SetExposure(float, float, float)"/> offers the same control in real photographic terms instead.
+	/// <para>
+	/// Most of the time it is simplest to set a <see cref="CameraExposurePreset"/> matching the lighting in your scene (see <see cref="SetExposure(CameraExposurePreset)"/>),
+	/// then multiply or divide this property by a brightness factor to fine-tune the result. For example, you can do <c>camera.Exposure *= 2f</c> to make the image exactly twice as bright.
+	/// Doing so scales only the sensitivity, so it does not alter the strength of any depth-of-field effect.
+	/// </para>
 	/// </remarks>
-	public float Exposure {
+	public CameraExposureParams Exposure {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetExposure(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -304,22 +363,21 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// <summary>
 	/// Sets <see cref="Exposure"/>; provided as a method for use in contexts where a property setter can not be invoked.
 	/// </summary>
-	/// <param name="exposure">The new exposure value.</param>
+	/// <param name="exposure">The new exposure settings.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetExposure(float exposure) => Exposure = exposure;
+	public void SetExposure(CameraExposureParams exposure) => Exposure = exposure;
 	/// <summary>
-	/// Sets this camera's exposure in real photographic terms, rather than as a single multiplier.
+	/// Sets this camera's <see cref="Exposure"/> to the given preset, chosen to match the lighting in the scene being viewed.
 	/// </summary>
 	/// <remarks>
-	/// These are the three settings a photographer balances against one another, and they combine here exactly as they would on a real camera: a wider aperture, a
-	/// longer shutter speed or a higher sensitivity each brightens the image. Use this where you want image brightness to track a physically-plausible camera setup;
-	/// use <see cref="Exposure"/> where you simply want the picture brighter or darker.
+	/// <para>
+	/// Equivalent to setting <see cref="Exposure"/> to <c>preset.ToExposureParams()</c> (see <see cref="CameraExposurePresetExtensions.ToExposureParams"/>).
+	/// </para>
 	/// </remarks>
-	/// <param name="aperture">How wide the lens opening is, as an f-number, where smaller numbers mean a wider opening and a brighter image. Clamped to between <see cref="ApertureMin"/> and <see cref="ApertureMax"/>.</param>
-	/// <param name="shutterSpeed">How long the shutter stays open, in seconds; longer means brighter. Clamped to between <see cref="ShutterSpeedMin"/> and <see cref="ShutterSpeedMax"/>.</param>
-	/// <param name="sensitivity">How sensitive the sensor is to light, as an ISO value; higher means brighter. Clamped to between <see cref="SensitivityMin"/> and <see cref="SensitivityMax"/>.</param>
+	/// <param name="preset">The exposure preset to apply.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="preset"/> is not a defined <see cref="CameraExposurePreset"/> value.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetExposure(float aperture, float shutterSpeed, float sensitivity) => Implementation.SetExposure(_handle, aperture, shutterSpeed, sensitivity);
+	public void SetExposure(CameraExposurePreset preset) => Exposure = preset.ToExposureParams();
 	
 	/// <summary>
 	/// How far away the plane of sharp focus is, in metres, or <see langword="null"/> for an image that is sharp at every distance.
@@ -533,11 +591,57 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	/// </summary>
 	/// <remarks>
 	/// This API requires normalized co-ordinates, if you want to convert a pixel click to a <see cref="Ray"/>, see <see cref="Renderer.CreateRayFromRenderSurface"/>.
+	/// The inverse operation (finding where a location in the world appears on the near plane) is <see cref="ProjectOnToNearPlane"/>.
 	/// </remarks>
 	/// <param name="normalizedNearPlaneCoord">Where on the near plane the ray should start, as a fraction of its size: <c>(0, 0)</c> is the centre of the image,
 	/// and each component runs from <c>-1</c> to <c>1</c> at the edges.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CreateRayFromNearPlane(XYPair<float> normalizedNearPlaneCoord) => Implementation.CreateRayFromNearPlane(_handle, normalizedNearPlaneCoord);
+
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on the near plane of this camera; or <see langword="null"/> if it is outside this camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is the inverse of <see cref="CreateRayFromNearPlane(XYPair{float})"/>. The <paramref name="location"/> is considered outside this camera's view if it is behind
+	/// the camera, or beyond the edges of its image. The <see cref="NearPlaneDistance"/> and <see cref="FarPlaneDistance"/> are not taken in to account.
+	/// </para>
+	/// <para>
+	/// This API returns normalized co-ordinates; if you want to know where a location appears on a render target in pixels (or as a fraction of its size),
+	/// see <see cref="Renderer.ProjectOnToRenderSurfacePixels"/> and <see cref="Renderer.ProjectOnToRenderSurfaceFraction"/>.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <returns>The point on the near plane, as a fraction of its size: <c>(0, 0)</c> is the centre of the image, and each component runs from <c>-1</c> to <c>1</c>
+	/// at the edges (with positive Y upwards); or <see langword="null"/> if the location is outside this camera's view.</returns>
+	/// <seealso cref="ProjectOnToNearPlaneClamped(Location)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float>? ProjectOnToNearPlane(Location location) => Implementation.ProjectOnToNearPlane(_handle, location);
+	/// <summary>
+	/// Returns where the given <paramref name="location"/> in the world appears on the near plane of this camera, clamped to the edge of the near plane if it is outside this camera's view.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// When the <paramref name="location"/> is outside this camera's view (behind the camera, or beyond the edges of its image), the returned co-ordinate is moved from the centre
+	/// of the near plane towards the location's direction until it reaches the edge. This means it always lies on the side of the image facing the location (even when the location
+	/// is behind the camera), which makes it suitable for placing off-screen indicators. A location directly behind the camera is placed at <c>(0, -1)</c> (the centre of the bottom edge).
+	/// </para>
+	/// <para>
+	/// Use the <see cref="ProjectOnToNearPlaneClamped(Location, out bool)"/> overload to also find out whether clamping occurred.
+	/// </para>
+	/// </remarks>
+	/// <param name="location">The location in the world to project.</param>
+	/// <returns>The point on the near plane, as a fraction of its size: <c>(0, 0)</c> is the centre of the image, and each component runs from <c>-1</c> to <c>1</c>
+	/// at the edges (with positive Y upwards).</returns>
+	/// <seealso cref="ProjectOnToNearPlane"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float> ProjectOnToNearPlaneClamped(Location location) => Implementation.ProjectOnToNearPlaneClamped(_handle, location, out _);
+	/// <inheritdoc cref="ProjectOnToNearPlaneClamped(Location)"/>
+	/// <param name="location">The location in the world to project.</param>
+	/// <param name="wasClamped">When this method returns, <see langword="true"/> if the location was outside this camera's view and the result was clamped to the edge
+	/// of the near plane; otherwise <see langword="false"/>.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<float> ProjectOnToNearPlaneClamped(Location location, out bool wasClamped) => Implementation.ProjectOnToNearPlaneClamped(_handle, location, out wasClamped);
 
 	/// <summary>
 	/// Creates a camera controller of the given type, connected to this camera.

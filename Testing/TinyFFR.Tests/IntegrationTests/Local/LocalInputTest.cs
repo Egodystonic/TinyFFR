@@ -37,9 +37,9 @@ class LocalInputTest {
 		window.SetTitle("Close me to end test early");
 
 		var loopBuilder = factory.ApplicationLoopBuilder;
-		using var beforeLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
+		using var beforeLoop = loopBuilder.CreateLoop(new() { IterationShouldPumpSystemEventQueue = false });
 		using var loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 60 });
-		using var afterLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
+		using var afterLoop = loopBuilder.CreateLoop(new() { IterationShouldPumpSystemEventQueue = false });
 		using var camera = factory.CameraBuilder.CreateCamera();
 		using var scene = factory.SceneBuilder.CreateScene();
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);

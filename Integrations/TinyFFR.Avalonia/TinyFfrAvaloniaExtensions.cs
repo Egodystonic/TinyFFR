@@ -114,7 +114,7 @@ public static class TinyFfrAvaloniaExtensions {
 
 		var loop = builder.CreateLoop(new LocalApplicationLoopCreationConfig {
 			FrameRateCapHz = null,
-			IterationShouldRefreshGlobalInputStates = false,
+			IterationShouldPumpSystemEventQueue = false,
 			Name = name,
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.Zero
 		});

@@ -1,7 +1,6 @@
 // Created on 2026-07-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
-using System.Buffers.Binary;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
@@ -18,8 +17,15 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 /// This is what floating labels, nameplates and damage numbers are made of: text that marks a point in the world but must stay
 /// legible from wherever the camera happens to be.
 /// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with the model instance underlying its <see cref="UnderlyingTextInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CameraLockedTextInstances"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
-public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecialization<CameraLockedTextInstance, ModelInstance>, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject {
+public readonly struct CameraLockedTextInstance : ITextInstance, IEquatable<CameraLockedTextInstance>, IScaledSceneObject, IPositionedSceneObject, IDisposableResource<CameraLockedTextInstance> {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.CameraLockedTextInstance;
+
 	/// <summary>
 	/// The text object this camera-locked text is a specialized view of.
 	/// </summary>
@@ -31,55 +37,52 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecia
 	/// Without this the text would be free to spin about its own facing direction; fixing it is what keeps the text the right
 	/// way up as the camera moves around.
 	/// </remarks>
-	public Direction LockedUprightDirection { get; } // Can be None
+	public Direction LockedUprightDirection => GetLockConfig().LockedUprightDirection;
 	/// <summary>
-	/// Which point of the text is placed at its position (or the centre if <see cref="Orientation2D.None"/>).
+	/// Which point of the text is placed at its <see cref="Position"/> (or the centre if <see cref="Orientation2D.None"/>).
 	/// </summary>
-	public Orientation2D PositionAnchor { get; }
+	/// <remarks>
+	/// The anchor holds in every <see cref="ScalingMode"/>, and stays put when the text is rescaled or its <see cref="String"/> is changed.
+	/// </remarks>
+	public Orientation2D PositionAnchor => GetLockConfig().PositionAnchor;
 	/// <summary>
 	/// How this text's size responds to its distance from the camera.
 	/// </summary>
-	public CameraLockedScalingMode ScalingMode { get; }
+	public CameraLockedScalingMode ScalingMode => GetLockConfig().ScalingMode;
 	/// <summary>
 	/// Which axes this text is free to turn about as it follows the camera.
 	/// </summary>
-	public CameraLockStyle LockStyle { get; }
+	public CameraLockStyle LockStyle => GetLockConfig().LockStyle;
 
-	internal CameraLockedTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
+	internal CameraLockedTextInstance(TextInstance underlyingTextInstance) {
 		UnderlyingTextInstance = underlyingTextInstance;
-		LockedUprightDirection = lockedUprightDirection;
-		PositionAnchor = positionAnchor;
-		ScalingMode = scalingMode;
-		LockStyle = lockStyle;
 	}
+
+	CameraLockConfig GetLockConfig() {
+		var instance = UnderlyingTextInstance.UnderlyingModelInstance;
+		return instance.Implementation.GetCameraLockConfig(instance.Handle) ?? CameraLockConfig.Default;
+	}
+
+
+	static CameraLockedTextInstance WrapBase(ModelInstance b) => new(new TextInstance(b));
+	ResourceHandle<CameraLockedTextInstance> IResource<CameraLockedTextInstance>.Handle => UnderlyingTextInstance.UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingTextInstance.UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingTextInstance.UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingTextInstance.UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingTextInstance.UnderlyingModelInstance.Handle.Ident, UnderlyingTextInstance.UnderlyingModelInstance.Implementation);
+	ResourceHandle<CameraLockedTextInstance> IResource<CameraLockedTextInstance>.GetHandleWithoutDisposeCheck() => UnderlyingTextInstance.UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CameraLockedTextInstance IResource<CameraLockedTextInstance>.CreateFromHandleAndImpl(ResourceHandle<CameraLockedTextInstance> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CameraLockedTextInstance IResource<CameraLockedTextInstance>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CameraLockedTextInstance IResource<CameraLockedTextInstance>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.SpecializationTypeIdentifier => typeof(CameraLockedTextInstance).TypeHandle.Value;
-	int IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.SpecializationDataLength => Direction.SerializationByteSpanLength + sizeof(int) + sizeof(int) + sizeof(int);
-	static void IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.Smuggle(CameraLockedTextInstance resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		Direction.SerializeToBytes(specializationDataBuffer, resource.LockedUprightDirection);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..], (int) resource.PositionAnchor);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..], (int) resource.ScalingMode);
-		BinaryPrimitives.WriteInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..], (int) resource.LockStyle);
-		outBaseResource = resource.UnderlyingTextInstance.UnderlyingModelInstance;
-	}
-	static CameraLockedTextInstance IResourceSpecialization<CameraLockedTextInstance, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(
-			new TextInstance(baseResource),
-			Direction.DeserializeFromBytes(specializationDataBuffer),
-			(Orientation2D) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[Direction.SerializationByteSpanLength..]),
-			(CameraLockedScalingMode) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 1)..]),
-			(CameraLockStyle) BinaryPrimitives.ReadInt32LittleEndian(specializationDataBuffer[(Direction.SerializationByteSpanLength + sizeof(int) * 2)..])
-		);	
-	}
-	#endregion
 	
 	/// <summary>
-	/// Wraps an existing text object as a <see cref="CameraLockedTextInstance"/>, without creating anything new.
+	/// Wraps an existing text object as a <see cref="CameraLockedTextInstance"/>, recording the given lock settings against it.
 	/// </summary>
 	/// <remarks>
 	/// Only use this for an instance that really was created as camera-locked text; nothing here verifies that it was.
+	/// The given settings replace any the instance already had, and are what this object's properties report from then on. Scenes copy the
+	/// settings when the object is added, so re-add it to any scene it is already in for a change to take effect there.
 	/// </remarks>
 	/// <param name="underlyingTextInstance">The text object to wrap.</param>
 	/// <param name="lockedUprightDirection">The value for <see cref="LockedUprightDirection"/>.</param>
@@ -88,7 +91,9 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecia
 	/// <param name="lockStyle">The value for <see cref="LockStyle"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CameraLockedTextInstance FromPreviouslyAllocatedUnderlyingTextInstance(TextInstance underlyingTextInstance, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle) {
-		return new(underlyingTextInstance, lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+		var instance = underlyingTextInstance.UnderlyingModelInstance;
+		instance.Implementation.SetCameraLockConfig(instance.Handle, new CameraLockConfig(lockedUprightDirection, positionAnchor, scalingMode, lockStyle));
+		return new(underlyingTextInstance);
 	}
 
 	/// <summary>
@@ -127,12 +132,21 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecia
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetString(FontString @string) => String = @string;
 
-	/// <inheritdoc />
+	/// <summary>
+	/// Where this text's <see cref="PositionAnchor"/> point is in the world (its centre if the anchor is <see cref="Orientation2D.None"/>).
+	/// </summary>
+	/// <remarks>
+	/// This is the same point that was given as the position when this text was created.
+	/// </remarks>
 	public Location Position {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => UnderlyingTextInstance.Position;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingTextInstance.SetPosition(value);
+		get {
+			var transform = UnderlyingTextInstance.Transform;
+			return (transform.Translation - CalculateRotatedAnchorOffset(in transform)).AsLocation();
+		}
+		set {
+			var transform = UnderlyingTextInstance.Transform;
+			UnderlyingTextInstance.UnderlyingModelInstance.SetPosition(value + CalculateRotatedAnchorOffset(in transform));
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Position"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -144,20 +158,24 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecia
 	Vect IScaledSceneObject.Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingTextInstance.UnderlyingModelInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingTextInstance.UnderlyingModelInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingTextInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = value });
+		}
 	}
 	/// <summary>
 	/// How large this text is on each of its two axes, where <c>(1, 1)</c> is the size its layout gives it.
 	/// </summary>
 	/// <remarks>
-	/// How this translates in to the text's size on screen depends on <see cref="ScalingMode"/>.
+	/// How this translates in to the text's size on screen depends on <see cref="ScalingMode"/>. Rescaling keeps the <see cref="PositionAnchor"/> point where it is.
 	/// </remarks>
 	public XYPair<float> Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingTextInstance.Scaling;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => UnderlyingTextInstance.SetScaling(value);
+		set {
+			var transform = UnderlyingTextInstance.Transform;
+			SetTransformPreservingAnchor(in transform, transform with { Scaling = new Vect(value.X, value.Y, 1f) });
+		}
 	}
 	/// <summary>
 	/// Sets <see cref="Scaling"/>; provided as a method for use in contexts where a property setter can not be invoked.
@@ -180,17 +198,37 @@ public readonly struct CameraLockedTextInstance : ITextInstance, IResourceSpecia
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void MoveBy(Vect translation) => UnderlyingTextInstance.MoveBy(translation);
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(float scalar) => UnderlyingTextInstance.ScaleBy(scalar);
+	public void ScaleBy(float scalar) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBy(Vect vect) => UnderlyingTextInstance.ScaleBy(vect);
+	public void ScaleBy(Vect vect) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingMultipliedBy(vect));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(float scalar) => UnderlyingTextInstance.AdjustScaleBy(scalar);
+	public void AdjustScaleBy(float scalar) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(scalar));
+	}
 	/// <inheritdoc />
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustScaleBy(Vect vect) => UnderlyingTextInstance.AdjustScaleBy(vect);
+	public void AdjustScaleBy(Vect vect) {
+		var transform = UnderlyingTextInstance.Transform;
+		SetTransformPreservingAnchor(in transform, transform.WithScalingAdjustedBy(vect));
+	}
+
+	Vect CalculateRotatedAnchorOffset(in Transform transform) {
+		var anchor = PositionAnchor;
+		if (anchor == Orientation2D.None) return Vect.Zero;
+		var @string = UnderlyingTextInstance.String;
+		return @string.Font.GetTextInstanceAnchorOffset(@string.Size, new XYPair<float>(transform.Scaling.X, transform.Scaling.Y), anchor) * transform.Rotation;
+	}
+
+	void SetTransformPreservingAnchor(in Transform currentTransform, Transform newTransform) {
+		var anchorPoint = currentTransform.Translation - CalculateRotatedAnchorOffset(in currentTransform);
+		UnderlyingTextInstance.UnderlyingModelInstance.SetTransform(newTransform with { Translation = anchorPoint + CalculateRotatedAnchorOffset(in newTransform) });
+	}
 
 	/// <summary>
 	/// Disposes the underlying text object, removing this text from any scene it is in.

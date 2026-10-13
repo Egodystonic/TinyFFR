@@ -487,7 +487,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowDistance"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultFollowDistanceSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowDistance"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultFollowDistanceSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="leftTriggerIncreasesDistance">If <see langword="true"/> (the default), the left trigger increases distance and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustFollowDistanceViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerIncreasesDistance = true) {
@@ -639,7 +639,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowHeight"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultFollowHeightSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowHeight"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultFollowHeightSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="rightTriggerRaisesHeight">If <see langword="true"/> (the default), the right trigger raises height and the left trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustFollowHeightViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool rightTriggerRaisesHeight = true) {
@@ -697,7 +697,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	public void AdjustFollowLateralOffset(float deltaTime, float adjustmentPerSec) => FollowLateralOffset += adjustmentPerSec * deltaTime;
 
 	/// <summary>
-	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by for each pixel the mouse cursor moves: <c>DefaultFollowHeightSensitivityMouseCursor</c>.
+	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by for each pixel the mouse cursor moves: <c>0.0004f</c>.
 	/// </summary>
 	/// <remarks>
 	/// Used by the <c>AdjustFollowLateralOffsetViaMouseCursor</c> methods whenever no explicit sensitivity is supplied.
@@ -707,7 +707,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// Adjusts <see cref="FollowLateralOffset"/> according to how far the mouse cursor moved this frame.
 	/// </summary>
 	/// <param name="input">The latest keyboard and mouse state to read. Must not be <see langword="null"/>.</param>
-	/// <param name="adjustmentPerPixel">How far to adjust <see cref="FollowLateralOffset"/> by for each pixel the cursor moves along the chosen axis. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityMouseCursor"/> (<c>DefaultFollowHeightSensitivityMouseCursor</c>) is used.</param>
+	/// <param name="adjustmentPerPixel">How far to adjust <see cref="FollowLateralOffset"/> by for each pixel the cursor moves along the chosen axis. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityMouseCursor"/> (<c>0.0004f</c>) is used.</param>
 	/// <param name="invertMouseControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <param name="axis">Which axis of movement to read. Defaults to <see cref="Axis2D.X"/> (left/right).</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
@@ -723,7 +723,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	/// <summary>
-	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by for each notch the mouse wheel is turned: <c>DefaultFollowHeightSensitivityMouseWheel</c>.
+	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by for each notch the mouse wheel is turned: <c>0.05f</c>.
 	/// </summary>
 	/// <remarks>
 	/// Used by the <c>AdjustFollowLateralOffsetViaMouseWheel</c> methods whenever no explicit sensitivity is supplied.
@@ -736,7 +736,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// Wheel movement is reported in whole notches, so this adjusts in discrete steps rather than continuously.
 	/// </remarks>
 	/// <param name="input">The latest keyboard and mouse state to read. Must not be <see langword="null"/>.</param>
-	/// <param name="adjustmentPerWheelIncrement">How far to adjust <see cref="FollowLateralOffset"/> by for each notch the wheel is turned. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityMouseWheel"/> (<c>DefaultFollowHeightSensitivityMouseWheel</c>) is used.</param>
+	/// <param name="adjustmentPerWheelIncrement">How far to adjust <see cref="FollowLateralOffset"/> by for each notch the wheel is turned. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityMouseWheel"/> (<c>0.05f</c>) is used.</param>
 	/// <param name="invertMouseControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustFollowLateralOffsetViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
@@ -745,7 +745,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	/// <summary>
-	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by per second whilst a game controller stick is fully displaced: <c>DefaultFollowHeightSensitivityControllerStick</c>.
+	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by per second whilst a game controller stick is fully displaced: <c>0.5f</c>.
 	/// </summary>
 	/// <remarks>
 	/// Used by the <c>AdjustFollowLateralOffsetViaControllerStick</c> methods whenever no explicit sensitivity is supplied.
@@ -759,7 +759,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityControllerStick"/> (<c>DefaultFollowHeightSensitivityControllerStick</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityControllerStick"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="useLeftStick">If <see langword="true"/>, the left stick is read; otherwise the right stick is read. Defaults to the right stick.</param>
 	/// <param name="invertStickControl">If <see langword="true"/>, the adjustment is applied in the opposite direction.</param>
 	/// <param name="axis">Which axis of movement to read. Defaults to <see cref="Axis2D.X"/> (left/right).</param>
@@ -777,7 +777,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	/// <summary>
-	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by per second whilst a game controller trigger is fully depressed: <c>DefaultFollowHeightSensitivityControllerTrigger</c>.
+	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by per second whilst a game controller trigger is fully depressed: <c>0.5f</c>.
 	/// </summary>
 	/// <remarks>
 	/// Used by the <c>AdjustFollowLateralOffsetViaControllerTriggers</c> methods whenever no explicit sensitivity is supplied.
@@ -791,7 +791,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// </remarks>
 	/// <param name="input">The latest game controller state to read. Must not be <see langword="null"/>.</param>
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
-	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by per second when the stick is fully displaced. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityControllerTrigger"/> (<c>DefaultFollowHeightSensitivityControllerTrigger</c>) is used.</param>
+	/// <param name="maxAdjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by per second when the trigger is fully depressed. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityControllerTrigger"/> (<c>0.5f</c>) is used.</param>
 	/// <param name="leftTriggerOffsetsLeft">If <see langword="true"/> (the default), the left trigger offsets left and the right trigger does the opposite; if <see langword="false"/>, the two triggers are swapped.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustFollowLateralOffsetViaControllerTriggers(ILatestGameControllerInputRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerOffsetsLeft = true) {
@@ -803,7 +803,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	/// <summary>
-	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by per second whilst the chosen key or button is held down: <c>DefaultFollowHeightSensitivityKeyOrButtonPress</c>.
+	/// The default amount <see cref="FollowLateralOffset"/> is adjusted by per second whilst the chosen key or button is held down: <c>1f</c>.
 	/// </summary>
 	/// <remarks>
 	/// Used by the <c>AdjustFollowLateralOffsetViaKeyPress and ViaButtonPress</c> methods whenever no explicit sensitivity is supplied.
@@ -816,7 +816,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
 	/// <param name="keyToTestFor">The key which, whilst held down, applies the adjustment.</param>
 	/// <param name="reverse">If <see langword="true"/>, the adjustment is applied in the opposite direction. This lets a pair of opposing keys or buttons be set up by calling this method twice, once with <see langword="false"/> and once with <see langword="true"/>.</param>
-	/// <param name="adjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by for each second the key or button is held down. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityKeyOrButtonPress"/> (<c>DefaultFollowHeightSensitivityKeyOrButtonPress</c>) is used.</param>
+	/// <param name="adjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by for each second the key or button is held down. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityKeyOrButtonPress"/> (<c>1f</c>) is used.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustFollowLateralOffsetViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, bool reverse, float? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
@@ -830,7 +830,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	/// <param name="deltaTime">The time elapsed since the previous frame, in seconds.</param>
 	/// <param name="buttonToTestFor">The button which, whilst held down, applies the adjustment.</param>
 	/// <param name="reverse">If <see langword="true"/>, the adjustment is applied in the opposite direction. This lets a pair of opposing keys or buttons be set up by calling this method twice, once with <see langword="false"/> and once with <see langword="true"/>.</param>
-	/// <param name="adjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by for each second the key or button is held down. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityKeyOrButtonPress"/> (<c>DefaultFollowHeightSensitivityKeyOrButtonPress</c>) is used.</param>
+	/// <param name="adjustmentPerSec">How far to adjust <see cref="FollowLateralOffset"/> by for each second the key or button is held down. If <see langword="null"/>, <see cref="DefaultFollowLateralOffsetSensitivityKeyOrButtonPress"/> (<c>1f</c>) is used.</param>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
 	public void AdjustFollowLateralOffsetViaButtonPress(ILatestGameControllerInputRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, float? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);

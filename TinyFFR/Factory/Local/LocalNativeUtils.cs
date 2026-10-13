@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
@@ -16,12 +17,12 @@ readonly unsafe record struct TemporaryLoadSpaceBuffer(nuint BufferIdentity, UIn
 static unsafe class LocalNativeUtils {
 	readonly struct ActiveBufferData {
 		public readonly ILocalGpuHoldingBufferAllocator Allocator;
-		public readonly FixedByteBufferPool.FixedByteBuffer Buffer;
+		public readonly FixedByteSlabPool.SlabRental Rental;
 		public readonly delegate* managed<nuint, Span<byte>, void> OptionalReadbackFunc;
 
-		public ActiveBufferData(ILocalGpuHoldingBufferAllocator allocator, FixedByteBufferPool.FixedByteBuffer buffer, delegate*<nuint, Span<byte>, void> optionalReadbackFunc) {
+		public ActiveBufferData(ILocalGpuHoldingBufferAllocator allocator, FixedByteSlabPool.SlabRental rental, delegate*<nuint, Span<byte>, void> optionalReadbackFunc) {
 			Allocator = allocator;
-			Buffer = buffer;
+			Rental = rental;
 			OptionalReadbackFunc = optionalReadbackFunc;
 		}
 	}
@@ -31,6 +32,7 @@ static unsafe class LocalNativeUtils {
 	static bool _nativeLibInitialized = false;
 	static bool _sdlInitialized = false;
 	static nuint _nextTemporaryBufferId = 0;
+	static int _bufferDeallocationDepth = 0;
 
 	[DllImport(NativeLibName, EntryPoint = "get_err_buffer")]
 	static extern byte* GetErrorBuffer();
@@ -81,6 +83,9 @@ static unsafe class LocalNativeUtils {
 		delegate* unmanaged<byte*, void> logNotifyDelegate
 	);
 
+	[DllImport(NativeLibName, EntryPoint = "flush_pending_uploads")]
+	static extern InteropResult FlushPendingUploads(InteropBool waitForCompletion);
+
 	[UnmanagedCallersOnly]
 	static void DeallocateRentedBufferFromNativeCaller(nuint bufferId) => DeallocateRentedBuffer(bufferId);
 
@@ -88,10 +93,25 @@ static unsafe class LocalNativeUtils {
 		if (!_activeTemporaryBuffers.Remove(bufferId, out var tuple)) {
 			throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
 		}
-		if (tuple.OptionalReadbackFunc != null) tuple.OptionalReadbackFunc(bufferId, tuple.Buffer.AsByteSpan);
+		++_bufferDeallocationDepth;
+		try {
+			if (tuple.OptionalReadbackFunc != null) tuple.OptionalReadbackFunc(bufferId, tuple.Rental.AsByteSpan);
+		}
+		finally {
+			--_bufferDeallocationDepth;
+		}
 		var allocator = tuple.Allocator;
-		allocator.GpuHoldingBufferPool.Return(tuple.Buffer);
+		allocator.GpuHoldingBufferPool.Return(tuple.Rental);
 		if (allocator.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(allocator);
+	}
+
+	static void ReleaseCompletedUploadsIfOverBudget(ILocalGpuHoldingBufferAllocator allocator, int sizeBytes) {
+		var pool = allocator.GpuHoldingBufferPool;
+		if (pool.CurrentlyLeasedTotalBytes + sizeBytes <= allocator.GpuHoldingBufferFlushThresholdBytes) return;
+		FlushPendingUploads(false).ThrowIfFailure();
+		var stallThreshold = Int64.Max(allocator.GpuHoldingBufferStallThresholdBytes, 2L * sizeBytes);
+		if (LocalFrameSynchronizationManager.IsInOpenFrameScope || pool.CurrentlyLeasedTotalBytes + sizeBytes <= stallThreshold) return;
+		FlushPendingUploads(true).ThrowIfFailure();
 	}
 
 	[UnmanagedCallersOnly]
@@ -124,15 +144,10 @@ static unsafe class LocalNativeUtils {
 
 	internal static TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(ILocalGpuHoldingBufferAllocator allocator, int sizeBytes, delegate* managed<nuint, Span<byte>, void> optionalReadbackFunc) {
 		ObjectDisposedException.ThrowIf(allocator.IsDisposed, allocator);
-		if (sizeBytes > allocator.GpuHoldingBufferPool.MaxBufferSizeBytes) {
-			throw new InvalidOperationException($"Can not load asset because its in-memory size is {sizeBytes} bytes (" +
-												$"the maximum asset size configured is {allocator.GpuHoldingBufferPool.MaxBufferSizeBytes} bytes; " +
-												$"the limit can be raised by setting the {nameof(LocalTinyFfrFactoryConfig.MaxCpuToGpuAssetTransferSizeBytes)} value in " +
-												$"the {nameof(LocalTinyFfrFactoryConfig)} passed to the {nameof(LocalTinyFfrFactory)} constructor).");
-		}
+		if (optionalReadbackFunc == null && _bufferDeallocationDepth == 0) ReleaseCompletedUploadsIfOverBudget(allocator, sizeBytes);
 		var bufferId = _nextTemporaryBufferId++;
-		var buffer = allocator.GpuHoldingBufferPool.Rent(sizeBytes);
-		_activeTemporaryBuffers.Add(bufferId, new(allocator, buffer, optionalReadbackFunc));
-		return new(bufferId, buffer.StartPtr, sizeBytes);
+		var rental = allocator.GpuHoldingBufferPool.Rent(sizeBytes);
+		_activeTemporaryBuffers.Add(bufferId, new(allocator, rental, optionalReadbackFunc));
+		return new(bufferId, rental.SlotPtr, sizeBytes);
 	}
 }

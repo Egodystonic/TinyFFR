@@ -23,7 +23,7 @@ class LocalCameraControllerTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "press space | Space to change scenario, num keys to change params");
 		window.LockCursor = true;
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere);
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateSphere(Sphere.OneMeterCubedVolumeSphere);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
@@ -484,29 +484,52 @@ class LocalCameraControllerTest {
 	sealed class ProgrammedScenario : CameraControllerScenario {
 		ProgrammedCameraController _controller = null!;
 		ModelInstanceGroup _instances;
+		float? _originalFocusDistance;
+		CameraExposureParams _originalExposure;
 
 		public ProgrammedScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
 			_instances = AddTestModelsToScene(100);
 			_controller = Camera.CreateController<ProgrammedCameraController>();
+			_originalFocusDistance = Camera.FocusDistance;
+			_originalExposure = Camera.Exposure;
 
 			foreach (var i in _instances) i.SetPosition(Location.Random(new Sphere(10f)));
 
 			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(3f, 0f, -3f)));
 			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(0f, 3f, 3f)));
 			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(-3f, 0f, 0f)));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(0f, 0f, -3f), Location.Origin));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(3f, 0f, 0f), Location.Origin));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(0f, 0f, 3f), Location.Origin));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Linear(), new Location(-3f, 0f, 0f), Location.Origin));
+			_controller.AddPositionKeyframe(new(3f, InterpolationAlgorithm<Location>.Natural(true), new Location(0f, 4f, -8f), Location.Origin));
 
 			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Forward, Direction.Up));
 			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Right, Direction.Up));
 			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Backward, Direction.Up));
+			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Location.Origin, Direction.Up));
+			_controller.AddOrientationKeyframe(new(11f, InterpolationAlgorithm<Direction>.Linear(), Location.Origin, Direction.Up));
 
 			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(60f)));
 			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(90f)));
 			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(45f)));
+
+			_controller.AddFocusDistanceKeyframe(new(0f, InterpolationAlgorithm<Real>.Linear(), 1f));
+			_controller.AddFocusDistanceKeyframe(new(3f, InterpolationAlgorithm<Real>.Natural(), 10f));
+			_controller.AddFocusDistanceKeyframe(new(3f, InterpolationAlgorithm<Real>.Natural(), 2f));
+			_controller.AddFocusDistanceKeyframe(new(2f, InterpolationAlgorithm<Real>.Linear(), null));
+
+			_controller.AddExposureKeyframe(new(4f, InterpolationAlgorithm<CameraExposureParams>.Natural(), CameraExposurePreset.InsideBrightLighting));
+			_controller.AddExposureKeyframe(new(4f, InterpolationAlgorithm<CameraExposureParams>.Natural(), CameraExposurePreset.InsideMoodLighting));
+			_controller.AddExposureKeyframe(new(4f, InterpolationAlgorithm<CameraExposureParams>.Natural(), CameraExposurePreset.OutsideOvercast));
+			_controller.AddExposureKeyframe(new(4f, InterpolationAlgorithm<CameraExposureParams>.Natural(), CameraExposurePreset.InsideBrightLighting));
 		}
 		public override void Stop() {
 			_controller.Dispose();
+			Camera.FocusDistance = _originalFocusDistance;
+			Camera.Exposure = _originalExposure;
 			RemoveAndDispose(_instances);
 		}
 		public override string GetWindowTitleString() {
@@ -514,7 +537,10 @@ class LocalCameraControllerTest {
 				$"[1] PosWrap {_controller.PositionTrackWrapping?.ToString() ?? "<none>"} " +
 				$"[2] OrientWrap {_controller.OrientationTrackWrapping?.ToString() ?? "<none>"} " +
 				$"[3] FovWrap {_controller.FieldOfViewTrackWrapping?.ToString() ?? "<none>"} " +
-				$"[4] Time {_controller.CurrentTimestampSeconds:N2}";
+				$"[4] FocusWrap {_controller.FocusDistanceTrackWrapping?.ToString() ?? "<none>"} " +
+				$"[5] ExposureWrap {_controller.ExposureTrackWrapping?.ToString() ?? "<none>"} " +
+				$"[6] Time {_controller.CurrentTimestampSeconds:N2} " +
+				$"Focus {Camera.FocusDistance?.ToString("N2") ?? "<off>"} EV {Camera.Exposure.Ev100:N1}";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
@@ -528,6 +554,12 @@ class LocalCameraControllerTest {
 				_controller.FieldOfViewTrackWrapping = CycleWrapStyle(_controller.FieldOfViewTrackWrapping);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow4)) {
+				_controller.FocusDistanceTrackWrapping = CycleWrapStyle(_controller.FocusDistanceTrackWrapping);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow5)) {
+				_controller.ExposureTrackWrapping = CycleWrapStyle(_controller.ExposureTrackWrapping);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow6)) {
 				_controller.CurrentTimestampSeconds = 0f;
 			}
 

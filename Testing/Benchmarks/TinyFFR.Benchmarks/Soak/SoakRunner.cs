@@ -43,8 +43,8 @@ static class SoakRunner {
 		var target = BenchmarkEnvironment.RenderTarget;
 		var loop = BenchmarkEnvironment.Loop;
 
-		using var cuboidMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, name: "Soak Cuboid Mesh");
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(new Sphere(0.5f), subdivisionLevel: SoakWorkload.SphereSubdivisionLevel, name: "Soak Sphere Mesh");
+		using var cuboidMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, name: "Soak Cuboid Mesh");
+		using var sphereMesh = factory.MeshBuilder.CreateSphere(new Sphere(0.5f), subdivisionLevel: SoakWorkload.SphereSubdivisionLevel, name: "Soak Sphere Mesh");
 		using var colorMap = factory.TextureBuilder.CreateColorMap(BenchmarkAssets.ColorPattern, includeAlpha: false, "Soak Color Map");
 		using var normalMap = factory.TextureBuilder.CreateNormalMap(BenchmarkAssets.NormalPattern, "Soak Normal Map");
 		using var ormMap = factory.TextureBuilder.CreateOcclusionRoughnessMetallicMap(

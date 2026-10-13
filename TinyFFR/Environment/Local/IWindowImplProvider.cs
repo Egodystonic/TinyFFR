@@ -54,6 +54,10 @@ public interface IWindowImplProvider : IDisposableResourceImplProvider<Window> {
 	/// </summary>
 	void SetSize(ResourceHandle<Window> handle, XYPair<int> newSize);
 	/// <summary>
+	/// Invoked via <see cref="Window.LogicalSize"/>.
+	/// </summary>
+	XYPair<int> GetLogicalSize(ResourceHandle<Window> handle);
+	/// <summary>
 	/// Invoked via <see cref="Rendering.IRenderTarget.ViewportDimensions"/> on a <see cref="Window"/>. Unlike <see cref="GetSize"/> this returns the window's true size in
 	/// pixels, which differs from its size in the operating system's window coordinates on displays that have scaling enabled.
 	/// </summary>

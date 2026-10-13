@@ -69,6 +69,14 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetCurrentResolution(_handle);
 	}
+	/// <summary>
+	/// The refresh rate this display is currently running at, in hertz (i.e. the number of times per second it redraws).
+	/// </summary>
+	public int CurrentRefreshRateHz {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCurrentRefreshRateHz(_handle);
+	}
+
 	internal XYPair<int> GlobalPositionOffset {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetGlobalPositionOffset(_handle);

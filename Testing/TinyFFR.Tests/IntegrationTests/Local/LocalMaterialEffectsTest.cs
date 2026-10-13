@@ -29,7 +29,7 @@ class LocalMaterialEffectsTest {
 		// This prods against non-effect materials and also against effect materials with blend maps for non-loaded map types
 		using var colorMap = factory.TextureBuilder.CreateColorMap();
 		using var atMap = factory.TextureBuilder.CreateAbsorptionTransmissionMap();
-		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+		using var cubeMesh = factory.MeshBuilder.CreateCuboid(new Cuboid(1f));
 		using var lightingIgnoringMaterial = factory.MaterialBuilder.CreateLightingIgnoringMaterial(colorMap);
 		using var standardMat = factory.MaterialBuilder.CreateStandardMaterial(colorMap);
 		using var transmissiveMat = factory.MaterialBuilder.CreateTransmissiveMaterial(colorMap, atMap);
@@ -77,7 +77,7 @@ class LocalMaterialEffectsTest {
 			title: "Effects test: Arrow keys, RShift, RCtrl, PgUpPgDown | 0-9, ` | C, O, E, A"
 		);
 		
-		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: true);
+		using var cubeMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube, centreTextureOrigin: true);
 
 		using var camera = factory.CameraBuilder.CreateCamera(initialPosition: (0f, 1.4f, 0f));
 		camera.LookAt((0f, 0f, 3f), Direction.Up);
@@ -200,6 +200,7 @@ class LocalMaterialEffectsTest {
 		var cycleEmissiveTex = false;
 		var cycleOrmTex = false;
 		var cycleAtTex = false;
+		var emissiveStrengthMultiplier = 1f;
 
 		void SetTransforms(Transform2D t) {
 			leftInstance.MaterialEffects?.SetTransform(t);
@@ -254,6 +255,13 @@ class LocalMaterialEffectsTest {
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.E)) cycleEmissiveTex = !cycleEmissiveTex;
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.O)) cycleOrmTex = !cycleOrmTex;
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) cycleAtTex = !cycleAtTex;
+			if (kbm.MouseScrollWheelDelta != 0) {
+				emissiveStrengthMultiplier = MathF.Max(0f, emissiveStrengthMultiplier - kbm.MouseScrollWheelDelta * 0.1f);
+				leftInstance.SetMaterialEmissiveStrengthMultiplier(emissiveStrengthMultiplier);
+				midInstance.SetMaterialEmissiveStrengthMultiplier(emissiveStrengthMultiplier);
+				rightInstance.SetMaterialEmissiveStrengthMultiplier(emissiveStrengthMultiplier);
+				Console.WriteLine($"Emissive strength multiplier: {emissiveStrengthMultiplier:0.00}");
+			}
 
 			foreach (var key in kbm.NewKeyDownEvents) {
 				if (key.GetNumericValue() is { } number) {

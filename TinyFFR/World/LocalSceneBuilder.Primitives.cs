@@ -136,7 +136,7 @@ sealed partial class LocalSceneBuilder {
 	
 	QuadMesh GetSharedQuadMesh() {
 		if (_primitiveSharedQuadMesh is { } qm) return qm;
-		return (_primitiveSharedQuadMesh = _assetLoader.MeshBuilder.CreateQuadMesh(twoSided: true)).Value;
+		return (_primitiveSharedQuadMesh = _assetLoader.MeshBuilder.CreateQuad(twoSided: true)).Value;
 	}
 
 	Mesh GetSharedMutableLineStripMesh() {
@@ -164,7 +164,7 @@ sealed partial class LocalSceneBuilder {
 			triangles[t++] = new VertexTriangle(fbr, ftr, ftl);
 		}
 
-		return (_primitiveSharedMutableLineStripMesh = _assetLoader.MeshBuilder.CreateMesh(
+		return (_primitiveSharedMutableLineStripMesh = _assetLoader.MeshBuilder.CreateFromVertices(
 			vertices,
 			triangles,
 			new MeshCreationConfig { AllowsPerInstanceVertexMutation = true, Name = "Primitive Line Band" }
@@ -296,11 +296,11 @@ sealed partial class LocalSceneBuilder {
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitiveCuboidResources is not { } resources) {
-			var mesh = _assetLoader.MeshBuilder.CreateMesh(
+			var mesh = _assetLoader.MeshBuilder.CreateCuboid(
 				Cuboid.UnitCube, 
 				true, 
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
-				new MeshCreationConfig { GenerateWireframeData = true, Name = "Primitive Cuboid Mesh" }
+				new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplicationAndFaceClearing, Name = "Primitive Cuboid Mesh" }
 			);
 			resources = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: 1);
 			resources.Add(mesh);
@@ -325,17 +325,17 @@ sealed partial class LocalSceneBuilder {
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitiveSphereResources is not { } resources) {
-			var solidMesh = _assetLoader.MeshBuilder.CreateMesh(
+			var solidMesh = _assetLoader.MeshBuilder.CreateSphere(
 				Sphere.UnitSphere, 
 				6,
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
-				new MeshCreationConfig { GenerateWireframeData = true, Name = "Primitive Sphere (Solid) Mesh" }
+				new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.Disabled, Name = "Primitive Sphere (Solid) Mesh" }
 			);
-			var wireframeMesh = _assetLoader.MeshBuilder.CreateMesh(
+			var wireframeMesh = _assetLoader.MeshBuilder.CreateSphere(
 				Sphere.UnitSphere, 
 				2,
 				new MeshGenerationConfig { TextureTransform = Transform2D.None }, 
-				new MeshCreationConfig { GenerateWireframeData = true, Name = "Primitive Sphere (Wireframe) Mesh" }
+				new MeshCreationConfig { WireframeGenerationMode = WireframeGenerationMode.EnabledWithEdgeDeduplication, Name = "Primitive Sphere (Wireframe) Mesh" }
 			);
 			resources = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: 2);
 			resources.Add(solidMesh);
@@ -361,7 +361,7 @@ sealed partial class LocalSceneBuilder {
 		var paintbrush = DisposeExistingPrimitiveAndGetPaintbrush(handle, primitiveHandle, ScenePrimitive.DefaultPaintbrush3d);
 		
 		if (_primitivePlaneResources is not { } resources) {
-			var mesh = _assetLoader.MeshBuilder.CreateQuadMesh(
+			var mesh = _assetLoader.MeshBuilder.CreateQuad(
 				twoSided: true, 
 				backSideInvertsTextures: false,
 				new MeshGenerationConfig { TextureTransform = Transform2D.FromScalingOnly(PlaneSize) }, 
@@ -409,16 +409,16 @@ sealed partial class LocalSceneBuilder {
 		const int GridResolution = 2048;
 		var tex = _assetLoader.TextureBuilder.CreateColorMap(
 			TexturePattern.Grid(
-				centreValue: ColorVect.RedOpaque,
-				majorValue: ColorVect.GreenOpaque,
-				minorValue: ColorVect.BlueOpaque,
+				centreLineValue: ColorVect.RedOpaque,
+				majorLineValue: ColorVect.GreenOpaque,
+				minorLineValue: ColorVect.BlueOpaque,
 				backgroundValue: ColorVect.BlackTransparent,
-				resolution: GridResolution,
-				majorFraction: majorGridLineSpacing / gridSize,
-				minorFraction: minorGridLineSpacing / gridSize,
+				majorLineSpacing: majorGridLineSpacing / gridSize,
+				minorLineSpacing: minorGridLineSpacing / gridSize,
 				centreLineThickness: 6,
 				majorLineThickness: 4,
-				minorLineThickness: 1
+				minorLineThickness: 1,
+				resolution: GridResolution
 			),
 			includeAlpha: false,
 			new TextureCreationConfig { DataType = TextureDataType.LinearData, GenerateMipMaps = false, Name = "Primitive Grid Texture" }
@@ -599,7 +599,7 @@ sealed partial class LocalSceneBuilder {
 
 	ResourceGroup GetSharedArrowResources() {
 		if (_primitiveArrowResources != null) return _primitiveArrowResources.Value;
-		var arrowMesh = _assetLoader.MeshBuilder.CreateMesh(
+		var arrowMesh = _assetLoader.MeshBuilder.CreateArrow(
 			ScenePrimitive.ArrowStemLengthFraction,
 			ScenePrimitive.ArrowStemRadiusFraction,
 			ScenePrimitive.ArrowHeadLengthFraction,
@@ -726,15 +726,11 @@ sealed partial class LocalSceneBuilder {
 			var clipped = new BoundedRay(clipStart, clipEnd);
 
 			var facingAnchor = clipped.BoundedLocationAtDistance(clipped.BoundedDistanceAtPointClosestTo(screenScaling.CameraPosition));
-			var billboard = new Transform(facingAnchor.AsVect(), Rotation.None, new Vect(1f, clipped.Length, 1f));
-			if (screenScaling.ProjectionType == CameraProjectionType.Orthographic) {
-				GetPlanarCylindricalCameraLockedTransform(ref billboard, Vect.Zero, -screenScaling.CameraViewDirection, segment.Direction);
-			}
-			else {
-				GetCylindricalCameraLockedTransform(ref billboard, Vect.Zero, screenScaling.CameraPosition, segment.Direction);
-			}
-			billboard = billboard with { Translation = clipped.MiddlePoint.AsVect() };
-			bodyInstance.SetTransform(billboard);
+			var lockStyle = screenScaling.ProjectionType == CameraProjectionType.Orthographic ? CameraLockStyle.FaceCameraPlane : CameraLockStyle.FaceCameraPosition;
+			var rotation = TryCalculateCameraLockedFacing(facingAnchor, lockStyle, segment.Direction, screenScaling.CameraPosition, Direction.None, -screenScaling.CameraViewDirection, out var facingDirection, out var upDirection)
+				? CalculateCameraLockedRotation(facingDirection, upDirection)
+				: Quaternion.Identity;
+			bodyInstance.SetTransform(new Transform(clipped.MiddlePoint.AsVect(), rotation, new Vect(1f, clipped.Length, 1f)));
 
 			var halfStart = HalfLineWidthAt(clipStart, width, constantScreenSize, in screenScaling);
 			var halfEnd = HalfLineWidthAt(clipEnd, width, constantScreenSize, in screenScaling);

@@ -50,7 +50,6 @@ public enum InterpolationStrength {
 /// <typeparam name="T">The type of value being interpolated between.</typeparam>
 public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatable<T> {
 #pragma warning restore CA1815
-#pragma warning disable CA1034 // "Do not nest publicly-visible types" -- I prefer it like this
 	/// <summary>
 	/// A small, fixed-size group of up to four <see cref="float"/> parameters, passed alongside the algorithm function supplied to <see cref="Custom"/>.
 	/// </summary>
@@ -81,7 +80,6 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		/// <param name="c">The value for <see cref="C"/>.</param>
 		public StaticParameterGroup(float a, float b, float c) : this(a, b, c, 0f) {}
 	}
-#pragma warning restore CA1034
 	readonly delegate* managed<T, T, StaticParameterGroup, float, T> _algorithmPtr;
 	readonly StaticParameterGroup _parameters;
 

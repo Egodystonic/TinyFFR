@@ -14,7 +14,6 @@ using Egodystonic.TinyFFR.Threading;
 namespace Egodystonic.TinyFFR.Factory.Local;
 
 sealed class LocalFactoryGlobalObjectGroup {
-	readonly SynchronousWorkExecutionFacade _synchronousWorkScheduler = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap;
 	readonly DeferredRef<LocalResourceGroupImplProvider> _resourceGroupProvider;
 	readonly DeferredRef<LocalAssetBakery> _bakery;
@@ -29,7 +28,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public bool InEnhancedSecurityEnvironment { get; }
 	public bool InHeadlessEnvironment { get; }
 	
-	public IJobExecutionFacade SynchronousWorkScheduler => _synchronousWorkScheduler;
+	public IJobExecutionFacade SynchronousWorkScheduler => IJobExecutionFacade.Synchronous;
 	public IJobExecutionFacade ThreadPoolWorkScheduler => _threadPool;
 	public IPrimaryThreadDispatcher PrimaryThreadDispatcher => _threadPool;
 

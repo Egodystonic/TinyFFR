@@ -17,7 +17,7 @@ using Egodystonic.TinyFFR.Threading;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IResourceDirectory<ApplicationLoop>, IDisposable {
+sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IResourceDirectory<ApplicationLoop>, IDisposable, ILocalResourceImplProvider {
 	readonly record struct HandleTrackingData(
 		TimeSpan MaxCpuBusyWaitTime, 
 		TimeSpan FrameInterval, 
@@ -66,7 +66,15 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) (++_prevHandleId);
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates && !_globals.InHeadlessEnvironment, false, _defaultCooperativeTaskTimeFractionPerIteration));
+		var existingLoopIteratesInput = false;
+		foreach (var existingLoop in _handleDataMap.Values) {
+			if (existingLoop.ShouldIterateInput) {
+				existingLoopIteratesInput = true;
+				break;
+			}
+		}
+		var shouldIterateInput = (config.IterationShouldPumpSystemEventQueue ?? !existingLoopIteratesInput) && !_globals.InHeadlessEnvironment;
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, shouldIterateInput, false, _defaultCooperativeTaskTimeFractionPerIteration));
 		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		return new(handle, this);
@@ -131,6 +139,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var maxCpuBusyWaitTime = _handleDataMap[handle].MaxCpuBusyWaitTime;
 
 		if (executePendingPrimaryThreadCooperativeTasks) {
+			FixedByteSlabPool.NudgeLiveInstanceTimers();
 			ExecuteCooperativeTasksAndRecordElapsedTime(handle);
 			waitTime = GetWaitTimeUntilNextFrameStart(handle);
 		}
@@ -159,6 +168,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
 		if (executePendingPrimaryThreadCooperativeTasks) {
+			FixedByteSlabPool.NudgeLiveInstanceTimers();
 			ExecuteCooperativeTasksAndRecordElapsedTime(handle);
 		}
 
@@ -233,24 +243,39 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		return result.IsPositiveAndFinite() ? result : 0f;
 	}
 
-	public float GetFramesPerSecondLatest(ResourceHandle<ApplicationLoop> handle) {
+	public float GetFramesPerSecondLatest(ResourceHandle<ApplicationLoop> handle) => ConvertTimeSpanToFpsValue(GetFrameTimeLatest(handle));
+	public float GetFramesPerSecondRecentAverage(ResourceHandle<ApplicationLoop> handle) => ConvertTimeSpanToFpsValue(GetFrameTimeRecentAverage(handle));
+	public float GetFramesPerSecondRecentMin(ResourceHandle<ApplicationLoop> handle) => ConvertTimeSpanToFpsValue(GetFrameTimeRecentMax(handle));
+	public float GetFramesPerSecondRecentMax(ResourceHandle<ApplicationLoop> handle) => ConvertTimeSpanToFpsValue(GetFrameTimeRecentMin(handle));
+
+	public TimeSpan GetFrameTimeLatest(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var timingBufferData = _iterationTimingsMap[handle];
-		if (timingBufferData.PreviousIterationSlot < 0) return 0f;
-		return ConvertTimeSpanToFpsValue(timingBufferData.TimingBuffer.Span[timingBufferData.PreviousIterationSlot]);
+		if (timingBufferData.PreviousIterationSlot < 0) return TimeSpan.Zero;
+		return timingBufferData.TimingBuffer.Span[timingBufferData.PreviousIterationSlot];
 	}
-	
-	public float GetFramesPerSecondRecentAverage(ResourceHandle<ApplicationLoop> handle) {
+	public TimeSpan GetFrameTimeRecentAverage(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var timingBufferData = _iterationTimingsMap[handle];
-		if (timingBufferData.NumSlotsWritten == 0) return 0f;
+		if (timingBufferData.NumSlotsWritten == 0) return TimeSpan.Zero;
 		var sum = TimeSpan.Zero;
 		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
 			sum += timingBufferData.TimingBuffer.Span[i];
 		}
-		return ConvertTimeSpanToFpsValue(TimeSpan.FromTicks(sum.Ticks / timingBufferData.NumSlotsWritten));
+		return TimeSpan.FromTicks(sum.Ticks / timingBufferData.NumSlotsWritten);
 	}
-	public float GetFramesPerSecondRecentMin(ResourceHandle<ApplicationLoop> handle) {
+	public TimeSpan GetFrameTimeRecentMin(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var timingBufferData = _iterationTimingsMap[handle];
+		if (timingBufferData.NumSlotsWritten == 0) return TimeSpan.Zero;
+		var lowestValue = TimeSpan.MaxValue;
+		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
+			var val = timingBufferData.TimingBuffer.Span[i];
+			if (val < lowestValue) lowestValue = val;
+		}
+		return lowestValue;
+	}
+	public TimeSpan GetFrameTimeRecentMax(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var timingBufferData = _iterationTimingsMap[handle];
 		var highestValue = TimeSpan.Zero;
@@ -258,17 +283,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 			var val = timingBufferData.TimingBuffer.Span[i];
 			if (val > highestValue) highestValue = val;
 		}
-		return ConvertTimeSpanToFpsValue(highestValue);
-	}
-	public float GetFramesPerSecondRecentMax(ResourceHandle<ApplicationLoop> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var timingBufferData = _iterationTimingsMap[handle];
-		var lowestValue = TimeSpan.MaxValue;
-		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
-			var val = timingBufferData.TimingBuffer.Span[i];
-			if (val < lowestValue) lowestValue = val;
-		}
-		return ConvertTimeSpanToFpsValue(lowestValue);
+		return highestValue;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<ApplicationLoop> handle) {

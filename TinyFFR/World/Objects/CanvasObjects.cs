@@ -190,21 +190,29 @@ public interface ICanvasObject : IDisposable, IStringSpanNameEnabled, ITransform
 }
 
 /// <summary>
-/// An <see cref="ICanvasObject"/> that knows both its own concrete type and the resource type underlying it.
+/// An <see cref="ICanvasObject"/> that knows its own concrete type.
 /// </summary>
 /// <typeparam name="TSelf">The implementing type itself.</typeparam>
-/// <typeparam name="TBase">The resource type this canvas object is a specialization of.</typeparam>
-public interface ICanvasObject<TSelf, TBase> : ICanvasObject, IResourceSpecialization<TSelf, TBase> where TSelf : struct, ICanvasObject<TSelf, TBase> where TBase : IResource<TBase>;
+public interface ICanvasObject<TSelf> : ICanvasObject where TSelf : struct, ICanvasObject<TSelf> {
+	internal static abstract bool TryWrap(ModelInstance modelInstance, out TSelf result);
+}
 
 /// <summary>
 /// An image drawn flat on a <see cref="CanvasScene"/>. Created by adding a texture or material to a <see cref="CanvasScene"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// As well as the placement members every canvas object has, this offers control over which part of its source image is shown (the texture offset and extent
 /// properties) and how much of its own area is filled (<see cref="FillFraction"/>). Between them these are enough to build icons from a packed sheet, progress
 /// bars and similar interface elements without separate images for each.
+/// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingModelInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasImages"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
-public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, ModelInstance> {
+public readonly record struct CanvasImage : ICanvasObject<CanvasImage>, IDisposableResource<CanvasImage> {
 	/// <inheritdoc />
 	public CanvasScene Canvas { get; }
 	/// <summary>
@@ -244,6 +252,14 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 		get => Implementation.GetCanvasObjectActualSizeFraction(SceneHandle, Instance);
 	}
 
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasImage? parent) => SetDockParent<CanvasImage>(parent);
+	
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasText? parent) => SetDockParent<CanvasText>(parent);
+
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
@@ -255,7 +271,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	public bool Contains(XYPair<int> canvasLocalPixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Implementation.CanvasObjectContainsPixelCoord(SceneHandle, Instance, canvasLocalPixelCoord, coordOrigin);
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="ICanvasObject.Contains(XYPair{float}, DiagonalOrientation2D)"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(XYPair<float> canvasLocalFractionCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Contains(Implementation.ConvertCanvasFractionToPixels(SceneHandle, canvasLocalFractionCoord), coordOrigin);
@@ -406,22 +422,32 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetHeightFraction(float? heightFraction) => HeightFraction = heightFraction;
 
-	internal CanvasTexture(CanvasScene canvas, QuadInstance underlyingQuadInstance) {
+	internal CanvasImage(CanvasScene canvas, QuadInstance underlyingQuadInstance) {
 		Canvas = canvas;
 		UnderlyingQuadInstance = underlyingQuadInstance;
 	}
+
+	static bool ICanvasObject<CanvasImage>.TryWrap(ModelInstance modelInstance, out CanvasImage result) => TryWrap(modelInstance, out result);
+	internal static bool TryWrap(ModelInstance modelInstance, out CanvasImage result) {
+		if (modelInstance.Implementation.GetCanvas(modelInstance.Handle) is not { } canvas || modelInstance.Implementation.IsTextInstance(modelInstance.Handle)) {
+			result = default;
+			return false;
+		}
+		result = new(canvas, new QuadInstance(modelInstance));
+		return true;
+	}
+
+	static CanvasImage WrapBase(ModelInstance b) => TryWrap(b, out var result) ? result : new(default, new QuadInstance(b));
+	ResourceHandle<CanvasImage> IResource<CanvasImage>.Handle => UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingModelInstance.Handle.Ident, UnderlyingModelInstance.Implementation);
+	ResourceHandle<CanvasImage> IResource<CanvasImage>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CanvasImage IResource<CanvasImage>.CreateFromHandleAndImpl(ResourceHandle<CanvasImage> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CanvasImage IResource<CanvasImage>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CanvasImage IResource<CanvasImage>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CanvasTexture, ModelInstance>.SpecializationTypeIdentifier => typeof(CanvasTexture).TypeHandle.Value;
-	int IResourceSpecialization<CanvasTexture, ModelInstance>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<CanvasTexture, ModelInstance>.Smuggle(CanvasTexture resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = ((IResource<Scene>) resource.Canvas.UnderlyingScene).AsStub;
-		outBaseResource = resource.UnderlyingQuadInstance.UnderlyingModelInstance;
-	}
-	static CanvasTexture IResourceSpecialization<CanvasTexture, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(new CanvasScene(TypeUtils.StubToResource<Scene>(additionalResourceRef!.Value)), new QuadInstance(baseResource));	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Sets this object’s anchor, position and size together, in pixels.
@@ -454,7 +480,8 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	/// How much of this object’s area is actually filled with its image, from <c>0f</c> to <c>1f</c> on each axis.
 	/// </summary>
 	/// <remarks>
-	/// Reducing this reveals only part of the object, anchored at its edge. This is the usual way to build a progress bar without resizing the element itself.
+	/// Reducing this reveals only part of the object, anchored at the edge or corner given by its <see cref="ObjectAnchor"/> (or <see cref="CanvasAnchor"/> if that is <see langword="null"/>).
+	/// The image is cropped (not squashed) to match. This is the usual way to build a progress bar without resizing the element itself.
 	/// </remarks>
 	public XYPair<float> FillFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -476,10 +503,11 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 		get => Implementation.GetCanvasObjectTextureDimensions(SceneHandle, UnderlyingQuadInstance);
 	}
 	/// <summary>
-	/// Which point in the source image is drawn at this object’s origin, in pixels.
+	/// The bottom-left corner of the region of the source image this object draws, in pixels measured from the source image's bottom-left corner (with positive Y upwards).
 	/// </summary>
 	/// <remarks>
 	/// Together with the texture extent this selects a sub-rectangle of the source image, which is how several icons packed in to one image are drawn separately.
+	/// The selected region is the same regardless of this object's anchors.
 	/// </remarks>
 	public XYPair<int> TextureOffsetPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -494,8 +522,11 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTextureOffsetPixels(XYPair<int> offset) => TextureOffsetPixels = offset;
 	/// <summary>
-	/// Which point in the source image is drawn at this object’s origin, as a fraction of the image size.
+	/// The bottom-left corner of the region of the source image this object draws, as a fraction of the image size measured from the source image's bottom-left corner (with positive Y upwards).
 	/// </summary>
+	/// <remarks>
+	/// Together with the texture extent this selects a sub-rectangle of the source image. The selected region is the same regardless of this object's anchors.
+	/// </remarks>
 	public XYPair<float> TextureOffsetFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetCanvasObjectTextureOffset(SceneHandle, UnderlyingQuadInstance);
@@ -509,7 +540,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTextureOffsetFraction(XYPair<float> offset) => TextureOffsetFraction = offset;
 	/// <summary>
-	/// How much of the source image is drawn, in pixels, starting from the texture offset.
+	/// The size of the region of the source image this object draws, in pixels, extending rightwards and upwards from the texture offset.
 	/// </summary>
 	public XYPair<int> TextureExtentPixels {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -524,7 +555,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTextureExtentPixels(XYPair<int> extent) => TextureExtentPixels = extent;
 	/// <summary>
-	/// How much of the source image is drawn, as a fraction of the image size, starting from the texture offset.
+	/// The size of the region of the source image this object draws, as a fraction of the image size, extending rightwards and upwards from the texture offset.
 	/// </summary>
 	public XYPair<float> TextureExtentFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -587,7 +618,7 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation);
-	/// <inheritdoc />
+	/// <inheritdoc cref="ITransformed2DSceneObject.RotateBy(Angle, XYPair{float})"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation, XYPair<float> pivotPoint) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation, pivotPoint);
 	/// <inheritdoc />
@@ -615,17 +646,24 @@ public readonly record struct CanvasTexture : ICanvasObject<CanvasTexture, Model
 	public void Dispose() => Implementation.DisposeCanvasObject(SceneHandle, Instance);
 
 	/// <inheritdoc />
-	public override string ToString() => $"Canvas Texture {UnderlyingQuadInstance.UnderlyingModelInstance}";
+	public override string ToString() => $"Canvas Image {UnderlyingQuadInstance.UnderlyingModelInstance}";
 }
 
 /// <summary>
 /// A piece of text drawn flat on a <see cref="CanvasScene"/>. Created by adding text to a <see cref="CanvasScene"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// By default the height of the element grows with the number of lines the text occupies; set
 /// <see cref="DisableAutomaticLineCountBasedHeightScaling"/> to keep the height fixed instead.
+/// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingModelInstance"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="ModelInstance"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasTexts"/> rather than <see cref="ResourceGroup.ModelInstances"/>).
+/// </para>
 /// </remarks>
-public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstance> {
+public readonly record struct CanvasText : ICanvasObject<CanvasText>, IDisposableResource<CanvasText> {
 	/// <inheritdoc />
 	public CanvasScene Canvas { get; }
 	/// <summary>
@@ -665,6 +703,14 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 		get => Implementation.GetCanvasObjectActualSizeFraction(SceneHandle, Instance);
 	}
 
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasImage? parent) => SetDockParent<CanvasImage>(parent);
+	
+	/// <inheritdoc cref="ICanvasObject.SetDockParent"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetDockParent(CanvasText? parent) => SetDockParent<CanvasText>(parent);
+	
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetDockParent<TCanvasObject>(TCanvasObject? parent) where TCanvasObject : struct, ICanvasObject {
@@ -676,7 +722,7 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 	public bool Contains(XYPair<int> canvasLocalPixelCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Implementation.CanvasObjectContainsPixelCoord(SceneHandle, Instance, canvasLocalPixelCoord, coordOrigin);
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="ICanvasObject.Contains(XYPair{float}, DiagonalOrientation2D)"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(XYPair<float> canvasLocalFractionCoord, DiagonalOrientation2D coordOrigin = DiagonalOrientation2D.UpLeft) {
 		return Contains(Implementation.ConvertCanvasFractionToPixels(SceneHandle, canvasLocalFractionCoord), coordOrigin);
@@ -897,18 +943,28 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 		Canvas = canvas;
 		UnderlyingTextInstance = underlyingTextInstance;
 	}
+
+	static bool ICanvasObject<CanvasText>.TryWrap(ModelInstance modelInstance, out CanvasText result) => TryWrap(modelInstance, out result);
+	internal static bool TryWrap(ModelInstance modelInstance, out CanvasText result) {
+		if (modelInstance.Implementation.GetCanvas(modelInstance.Handle) is not { } canvas || !modelInstance.Implementation.IsTextInstance(modelInstance.Handle)) {
+			result = default;
+			return false;
+		}
+		result = new(canvas, new TextInstance(modelInstance));
+		return true;
+	}
+
+	static CanvasText WrapBase(ModelInstance b) => TryWrap(b, out var result) ? result : new(default, new TextInstance(b));
+	ResourceHandle<CanvasText> IResource<CanvasText>.Handle => UnderlyingModelInstance.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingModelInstance.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingModelInstance.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingModelInstance.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingModelInstance.Handle.Ident, UnderlyingModelInstance.Implementation);
+	ResourceHandle<CanvasText> IResource<CanvasText>.GetHandleWithoutDisposeCheck() => UnderlyingModelInstance.GetHandleWithoutDisposeCheck().AsInteger;
+	static CanvasText IResource<CanvasText>.CreateFromHandleAndImpl(ResourceHandle<CanvasText> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(new ResourceStub(new ResourceIdent(ResourceHandle<ModelInstance>.TypeHandle, handle.AsInteger), impl)));
+	static CanvasText IResource<CanvasText>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<ModelInstance>(stub));
+	static CanvasText IResource<CanvasText>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<ModelInstance>(stub));
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CanvasText, ModelInstance>.SpecializationTypeIdentifier => typeof(CanvasText).TypeHandle.Value;
-	int IResourceSpecialization<CanvasText, ModelInstance>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<CanvasText, ModelInstance>.Smuggle(CanvasText resource, Span<byte> specializationDataBuffer, out ModelInstance outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = ((IResource<Scene>) resource.Canvas.UnderlyingScene).AsStub;
-		outBaseResource = resource.UnderlyingTextInstance.UnderlyingModelInstance;
-	}
-	static CanvasText IResourceSpecialization<CanvasText, ModelInstance>.DeSmuggle(ModelInstance baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(new CanvasScene(TypeUtils.StubToResource<Scene>(additionalResourceRef!.Value)), new TextInstance(baseResource));	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Sets this object’s anchor, position and size together, in pixels.
@@ -952,7 +1008,7 @@ public readonly record struct CanvasText : ICanvasObject<CanvasText, ModelInstan
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation);
-	/// <inheritdoc />
+	/// <inheritdoc cref="ITransformed2DSceneObject.RotateBy(Angle, XYPair{float})"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Angle rotation, XYPair<float> pivotPoint) => Implementation.RotateCanvasObjectBy(SceneHandle, Instance, rotation, pivotPoint);
 	/// <inheritdoc />

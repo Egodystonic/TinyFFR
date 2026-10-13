@@ -1,5 +1,6 @@
 ---
 title: Follow Camera Controller
+description: Information on the FollowCameraController, a third-person "chase camera" that follows a moving target from behind at a set distance, height, and sideways offset.
 ---
 
 ## Summary
@@ -14,7 +15,9 @@ Additionally:
 * `FollowHeight` controls how far above (or below) the target the camera sits;
 * `FollowLateralOffset` controls how far to the side of the target the camera sits.
 
-You can change the `Follow[...]` properties each frame (either directly for via `Adjust[...]()` methods) for a more dynamic camera; alternatively you can set these values once and just update the `Target[...]` properties to keep the camera at a fixed distance/offset from the target.
+You can change the `Follow[...]` properties each frame (either directly or via `Adjust[...]()` methods) for a more dynamic camera; alternatively you can set these values once and just update the `Target[...]` properties to keep the camera at a fixed distance/offset from the target.
+
+For an overview of how camera controllers work in general, see [Camera Controllers](camera_controllers.md).
 
 ### Example Usage
 
@@ -25,8 +28,8 @@ controller.LookaheadDistance = 2.4f; // (2)!
 
 // Per-frame:
 controller.Target = followedObject.Position; // (3)!
-controller.TargetUp = Direction.Up; // (4)!
-controller.TargetForward = followedObject.Forward; // (5)!
+controller.TargetForward = followedObject.Forward; // (4)!
+controller.TargetUp = Direction.Up; // (5)!
 
 controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime); // (6)!
 controller.AdjustAllViaDefaultControls(input.GameControllersCombined, deltaTime); // (7)!
@@ -35,17 +38,17 @@ controller.Progress(deltaTime); // (8)!
 
 1.	This creates the controller, attached to the given `camera`.
 
-2.	This sets how far ahead of the `Target` the camera should look. Any value is permitted (including zero or negative values), but a small positive value is usually recommended.
+2.	This sets how far ahead of the `Target` the camera should look. Any value of zero or greater is permitted (negative values are ignored).
 
 	This value could also be changed per-frame too if desired.
 	
 3.	This sets where the `Target` object is in the world.
 
-4.	This sets which way is "up" for the target; the camera will be oriented so its "up" direction matches.
+4.	This sets which way is "forward" for the target. The camera will always be positioned behind the target (i.e. the opposite direction to this).
 
-	You may not need to set this value every frame if your target's "up" orientation is always the same direction.
+5.	This sets which way is "up" for the target; the camera will be oriented so its "up" direction matches.
 
-5.	This sets which way is "forward" for the target. The camera will always be positioned behind the target (i.e. the opposite direction to this).
+	You may not need to set this value every frame if your target's "up" orientation is always the same direction. Because setting `TargetForward` re-orthogonalizes `TargetUp` against it, set `TargetForward` first when setting both.
 
 6.	This manipulates the camera's offsets according to the default keyboard and mouse scheme.
 
@@ -65,7 +68,7 @@ controller.Progress(deltaTime); // (8)!
 
 :   The location in the world of the target the camera is following. 
 
-	Typically updated every frame to match the moving object's position.
+	Typically updated every frame to match the moving object's position. Invalid values are ignored.
 
 	Defaults to `Location.Origin`.
 	
@@ -73,13 +76,15 @@ controller.Progress(deltaTime); // (8)!
 
 :   The direction the followed object is facing. The camera positions itself behind this direction.
 	
+	Setting this also re-orthogonalizes `TargetUp` against the new direction. Invalid values (including `Direction.None`) are ignored.
+	
 	Defaults to `Direction.Forward`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `TargetUp`
 
 :   The "up" direction relative to the followed object. The camera positions itself above the target along this direction.
 	
-	This value is automatically orthogonalized against `TargetForward`.
+	This value is automatically orthogonalized against `TargetForward`, so reading it back may not return exactly what you set. If the value is parallel to `TargetForward`, an arbitrary perpendicular direction is chosen instead. Invalid values (including `Direction.None`) are ignored.
 	
 	Defaults to `Direction.Up`.
 	
@@ -87,7 +92,7 @@ controller.Progress(deltaTime); // (8)!
 
 :   How far behind the target (along `-TargetForward`) the camera sits.
 
-	Can be negative, meaning the camera will sit in front of the target, but this is usually not desirable.
+	Must be zero or greater (negative and non-finite values are ignored).
 	
 	You do not need to change this value every frame if you want to maintain a fixed follow distance from the `Target`.
 
@@ -119,7 +124,9 @@ controller.Progress(deltaTime); // (8)!
 
 	Higher values give a "racing game" feel by aiming the camera ahead of the followed object.
 	
-	Lower values will make the camera look directly at the target which reduces the distance ahead of the target that can be seen.
+	Lower values will make the camera look directly at the target which reduces the distance ahead of the target that can be seen. A value of `0f` aims the camera directly at the target.
+	
+	Must be zero or greater (negative and non-finite values are ignored).
 	
 	Defaults to `2.4f`.
 	
@@ -129,9 +136,11 @@ controller.Progress(deltaTime); // (8)!
 
 	Increase this value if you want changes in `FollowHeight` to more greatly affect how much above/below the camera looks, decrease it to reduce the effect.
 	
-	A value of `1f` means the camera will look exactly as far above/below the target's world height as specified by `FollowHeight`.
+	A value of `1f` means the camera will look exactly as far above/below the target (along `TargetUp`) as specified by `FollowHeight`.
 	
-	A value of `0f` keeps the look-at point level with the target's world height, disabling this functionality entirely.
+	A value of `0f` keeps the look-at point level with the target (along `TargetUp`), disabling this functionality entirely.
+	
+	Must be zero or greater (negative and non-finite values are ignored).
 	
 	Defaults to `0.44f`.
 	
@@ -145,7 +154,27 @@ controller.Progress(deltaTime); // (8)!
 
 	A value of `0f` keeps the look-at point centered on the target's forward axis always, disabling this functionality entirely.
 	
+	Must be zero or greater (negative and non-finite values are ignored).
+	
 	Defaults to `0.28f`.
+
+#### Convenience Methods
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Progress(deltaTime, target, targetForward, targetUp)`
+
+:   Sets `Target`, `TargetForward`, and `TargetUp` (in that order), then calls `Progress(deltaTime)`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Progress(deltaTime, target, targetForward, targetUp, followDistance, followHeight, followLateralOffset)`
+
+:   As above, but also sets `FollowDistance`, `FollowHeight`, and `FollowLateralOffset`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(lookaheadDistance, heightViewShiftMultiplier, lateralOffsetViewShiftMultiplier)`
+
+:   Sets all of the configuration properties above in one call.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `ResetParametersToDefault()`
+
+:   Resets every property (including smoothing) to its default value.
 
 ## Reacting to Input
 
@@ -181,7 +210,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `FollowDistance` for each second this key is depressed. If null, `DefaultFollowDistanceSensitivityKeyOrButtonPress` will be used.
 	
@@ -219,7 +248,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `FollowDistance` for each second this button is depressed. If null, `DefaultFollowDistanceSensitivityKeyOrButtonPress` will be used.
 	
@@ -261,7 +290,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `FollowHeight` for each second this key is depressed. If null, `DefaultFollowHeightSensitivityKeyOrButtonPress` will be used.
 	
@@ -299,7 +328,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `FollowHeight` for each second this button is depressed. If null, `DefaultFollowHeightSensitivityKeyOrButtonPress` will be used.
 	
@@ -341,7 +370,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `FollowLateralOffset` for each second this key is depressed. If null, `DefaultFollowLateralOffsetSensitivityKeyOrButtonPress` will be used.
 	
@@ -379,7 +408,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `FollowLateralOffset` for each second this button is depressed. If null, `DefaultFollowLateralOffsetSensitivityKeyOrButtonPress` will be used.
 	
@@ -393,7 +422,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 ### Default Controls
 
-The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively:
+The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively. Every parameter after `deltaTime` is optional: `invertDistanceControl`, `invertHeightControl`, and `invertLateralControl` reverse each control, and the sensitivity parameters (`distanceAdjustmentPerWheelIncrement`, `heightAdjustmentPerPixel`, and `lateralAdjustmentPerPixel` for keyboard/mouse; `maxDistanceAdjustmentPerSec`, `maxHeightAdjustmentPerSec`, and `maxLateralAdjustmentPerSec` for gamepad) fall back to the default sensitivity constants when `null`:
 
 ```csharp
 // AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime):
@@ -422,11 +451,11 @@ The `FollowCameraController` exposes two smoothing strengths:
 
 ```csharp
 // Set properties' smoothing individually:
-controller.PositionSmoothingStrength = Strength.VeryMild;
-controller.TrackingSmoothingStrength = Strength.VeryMild;
+controller.PositionSmoothingStrength = SmoothingStrength.VeryMild;
+controller.TrackingSmoothingStrength = SmoothingStrength.VeryMild;
 
-// Set all properties' smoothing simutaneously:
-controller.SetGlobalSmoothing(Strength.VeryMild);
+// Set all properties' smoothing simultaneously:
+controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 ```
 
 The default smoothing for all properties is `VeryMild`. You can choose from `VeryMild`, `Mild`, `Moderate`, `Strong`, `VeryStrong`, or `None`. 
@@ -436,10 +465,10 @@ The default smoothing for all properties is `VeryMild`. You can choose from `Ver
 * Setting the smoothing to `None` disables smoothing entirely. This means the camera will always be updated to meet exactly the target value of each property on each frame; reducing latency to 0 but making the camera feel less physical.
 
 ??? abstract "Custom Smoothing Values"
-	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via a method named like "`SetCustom[...]SmoothingStrength`".
+	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via `SetCustomPositionSmoothingStrength()` or `SetCustomTrackingSmoothingStrength()`.
 	
-	This method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. 
+	Each method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. A half-life of `0f` disables smoothing. 
 	
-	For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second, and then 87.5 after the next second, and so-on.
+	The half-life is the time (in seconds) the camera takes to cover half the distance to a new target value, starting from rest. For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second. Because the smoothing carries momentum (see below), X would then be at roughly 92 after the next second, rather than 87.5.
 	
-	Advanced: Smoothing is implemented via critically-damped spring. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.
+	Advanced: Smoothing is implemented via a critically-damped spring, which is why it carries momentum. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.

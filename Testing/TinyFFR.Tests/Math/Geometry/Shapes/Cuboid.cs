@@ -2304,4 +2304,18 @@ class CuboidTest {
 		Assert.LessOrEqual(sphere.Radius, TestCuboid.HalfDepth + TestTolerance);
 		Assert.AreEqual(TestCuboid.SmallestHalfExtent, sphere.Radius, TestTolerance);
 	}
+
+	[Test]
+	public void ExtentsShouldCorrectlyReflectAndSetDimensions() {
+		Assert.AreEqual(new Vect(7.2f, 13.6f, 1.4f), TestCuboid.Extents);
+		Assert.AreEqual(new Vect(3.6f, 6.8f, 0.7f), TestCuboid.HalfExtents);
+
+		var withExtents = TestCuboid with { Extents = new Vect(1f, 2f, 3f) };
+		Assert.AreEqual(new Cuboid(1f, 2f, 3f), withExtents);
+		Assert.AreEqual(new Vect(0.5f, 1f, 1.5f), withExtents.HalfExtents);
+
+		var withHalfExtents = TestCuboid with { HalfExtents = new Vect(1f, 2f, 3f) };
+		Assert.AreEqual(new Cuboid(2f, 4f, 6f), withHalfExtents);
+		Assert.AreEqual(new Vect(2f, 4f, 6f), withHalfExtents.Extents);
+	}
 }

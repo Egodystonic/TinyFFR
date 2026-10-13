@@ -235,7 +235,7 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 	/// <summary>
 	/// Converts this 2D transform to an equivalent 3D <see cref="Transform"/>, using <see cref="Direction.Forward"/> as the plane's normal.
 	/// </summary>
-	public Transform To3D() => To3D(new(Direction.Forward));
+	public Transform To3D() => To3D(new(Direction.Left, Direction.Up, Direction.Forward, Location.Origin));
 	/// <summary>
 	/// Converts this 2D transform to an equivalent 3D <see cref="Transform"/>, using <paramref name="dimensionConverter"/> to map the 2D translation/scaling into 3D space.
 	/// </summary>

@@ -1,5 +1,6 @@
 ---
 title: Pan-Tilt-Zoom Camera Controller
+description: Information on the PanTiltZoomCameraController, which holds a camera at a fixed position and aims it by panning, tilting, and zooming, like a mounted security or television camera.
 ---
 
 ## Summary
@@ -9,6 +10,8 @@ The `PanTiltZoomCameraController` allows you to place a camera in a specific `Po
 * Adjusting `Pan` turns the camera left or right;
 * Adjusting `Tilt` tilts the camera up or down;
 * Adjusting `Zoom` zooms the camera in or out.
+
+For an overview of how camera controllers work in general, see [Camera Controllers](camera_controllers.md).
 
 ### Example Usage
 
@@ -28,7 +31,7 @@ controller.Progress(deltaTime); // (7)!
 1.	This creates the controller, attached to the given `camera`.
 2.	This sets the camera's position in the world.
 3.	This sets the direction the camera should point when `Pan` and `Tilt` are zero (i.e. this is the default look direction of the camera).
-4.	This sets which way is "up" for the camera. When tilting upwards, this is the direction the camera will tilt towards.
+4.	This sets which way is "up" for the camera. The camera pans around this axis, and when tilting upwards this is the direction the camera will tilt towards.
 
 5.	This manipulates the camera according to the default keyboard and mouse scheme. The pan/tilt/zoom properties will change according to any registered user inputs for this frame.
 
@@ -50,7 +53,7 @@ controller.Progress(deltaTime); // (7)!
 
 	Increasing this value turns the camera to the left; decreasing to the right.
 	
-	The leftward direction is derived from the configured `ZeroPanTiltDirection` and `UpDirection` properties.
+	The leftward direction is derived from the configured `ZeroPanTiltDirection` and `UpDirection` properties. The value is constrained by `PanRange`, and the value read back is always normalized to between `0°` and `360°` (e.g. setting `-30°` reads back as `330°`).
 
 	Defaults to `0°`.
 	
@@ -60,7 +63,7 @@ controller.Progress(deltaTime); // (7)!
 
 	Increasing this value tilts the camera upward; decreasing downward.
 	
-	The upward direction is set via the `UpDirection` property.
+	The upward direction is set via the `UpDirection` property. The value is clamped to between `-MaxTiltDown` and `MaxTiltUp` as it's set, and is read back in the range `-180°` to `180°` (so a downward tilt reads back as a negative angle).
 
 	Defaults to `0°`.
 	
@@ -70,7 +73,7 @@ controller.Progress(deltaTime); // (7)!
 
 	A value of `0f` is 0% zoomed in (e.g. fully zoomed out); a value of `1f` is 100% zoomed in.
 	
-	Zoom is simulated by altering the camera's field of view; see `MaxZoomInFov`/`MaxZoomOutFov` below.
+	Zoom is simulated by altering the camera's field of view; see `MaxZoomInFov`/`MaxZoomOutFov` below. Values outside `0f` to `1f` are clamped.
 
 	Defaults to `0.5f` (i.e. 50%).
 	
@@ -84,13 +87,13 @@ controller.Progress(deltaTime); // (7)!
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `UpDirection`
 
-:   The local "up" direction of this camera. This is the direction the camera will tilt towards when increasing `Tilt`.
+:   The local "up" direction of this camera. The camera pans around this axis, and this is the direction the camera will tilt towards when increasing `Tilt`. Invalid values (including `Direction.None`) are ignored.
 
 	Defaults to `Direction.Up`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `ZeroPanTiltDirection`
 
-:   This is the direction the camera should point when `Pan` and `Tilt` are at zero.
+:   This is the direction the camera should point when `Pan` and `Tilt` are at zero. Invalid values (including `Direction.None`) are ignored.
 
 	Defaults to `Direction.Forward`.
 	
@@ -102,7 +105,7 @@ controller.Progress(deltaTime); // (7)!
 
 	This value is applied 50% in either direction equally (i.e. a value of `160°` results in the camera being able to pan 80° left and 80° right).
 
-	Can be set to `null` to remove any limit.
+	Can be set to `null` to remove any limit. Values larger than `360°` are also treated as `null`, negative values are treated as their positive equivalent, and a value of `0°` locks the camera facing its `ZeroPanTiltDirection`.
 	
 	Defaults to `160°`.
 	
@@ -120,15 +123,29 @@ controller.Progress(deltaTime); // (7)!
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `MaxZoomInFov`
 
-:   Determines the vertical camera FOV at max zoom in. This should be smaller than or equal to `MaxZoomOutFov`.
+:   Determines the vertical camera FOV at max zoom in (i.e. when `Zoom` is `1f`). This should be smaller than or equal to `MaxZoomOutFov`; if set larger, `MaxZoomOutFov` is raised to match. Must be positive (invalid values are ignored).
 
 	Defaults to `15°`.
 	
 <span class="def-icon">:material-card-bulleted-outline:</span> `MaxZoomOutFov`
 
-:   Determines the vertical camera FOV at max zoom in. This should be smaller than or equal to `MaxZoomOutFov`.
+:   Determines the vertical camera FOV at max zoom out (i.e. when `Zoom` is `0f`). This should be larger than or equal to `MaxZoomInFov`; if set smaller, `MaxZoomInFov` is lowered to match. Must be positive (invalid values are ignored).
 
 	Defaults to `90°`.
+
+#### Convenience Methods
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Progress(deltaTime, pan, tilt, zoom)`
+
+:   Sets `Pan`, `Tilt`, and `Zoom`, then calls `Progress(deltaTime)`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `SetConstraints(position, upDirection, zeroPanTiltDirection, panRange, maxTiltUp, maxTiltDown, maxZoomInFov, maxZoomOutFov)`
+
+:   Sets all of the configuration properties above in one call.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `ResetParametersToDefault()`
+
+:   Resets every property (including smoothing) to its default value.
 
 ## Reacting to Input
 
@@ -164,7 +181,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Pan` for each second this key is depressed. If null, `DefaultPanSensitivityKeyOrButtonPress` will be used.
 	
@@ -202,7 +219,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Pan` for each second this button is depressed. If null, `DefaultPanSensitivityKeyOrButtonPress` will be used.
 	
@@ -244,7 +261,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Tilt` for each second this key is depressed. If null, `DefaultTiltSensitivityKeyOrButtonPress` will be used.
 	
@@ -282,7 +299,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the angle to add to `Tilt` for each second this button is depressed. If null, `DefaultTiltSensitivityKeyOrButtonPress` will be used.
 	
@@ -326,7 +343,7 @@ Note that `Zoom` is a normalized `0f`–`1f` value, so all of the sensitivity pa
 	
 	The `keyToTestFor` is the key that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Zoom` for each second this key is depressed. If null, `DefaultZoomSensitivityKeyOrButtonPress` will be used.
 	
@@ -364,7 +381,7 @@ Note that `Zoom` is a normalized `0f`–`1f` value, so all of the sensitivity pa
 	
 	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
 	
-	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	If `reverse` is `true`, the calculated adjustment will be reversed. This parameter is required, and lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
 	
 	The `adjustmentPerSec` value is the amount to add to `Zoom` for each second this button is depressed. If null, `DefaultZoomSensitivityKeyOrButtonPress` will be used.
 	
@@ -378,7 +395,7 @@ Note that `Zoom` is a normalized `0f`–`1f` value, so all of the sensitivity pa
 	
 ### Default Controls
 
-The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively:
+The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively. Every parameter after `deltaTime` is optional: `invertPanControl`, `invertTiltControl`, and `invertZoomControl` reverse each control, and the sensitivity parameters (`panAdjustmentPerPixel`, `tiltAdjustmentPerPixel`, and `zoomAdjustmentPerWheelIncrement` for keyboard/mouse; `maxPanAdjustmentPerSec`, `maxTiltAdjustmentPerSec`, and `maxZoomAdjustmentPerSec` for gamepad) fall back to the default sensitivity constants when `null`:
 
 ```csharp
 // AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime):
@@ -404,12 +421,12 @@ The `Pan`, `Tilt`, and `Zoom` target properties can have smoothing applied.
 
 ```csharp
 // Set properties' smoothing individually:
-controller.PanSmoothingStrength = Strength.VeryMild;
-controller.TiltSmoothingStrength = Strength.VeryMild;
-controller.ZoomSmoothingStrength = Strength.VeryMild;
+controller.PanSmoothingStrength = SmoothingStrength.VeryMild;
+controller.TiltSmoothingStrength = SmoothingStrength.VeryMild;
+controller.ZoomSmoothingStrength = SmoothingStrength.VeryMild;
 
-// Set all properties' smoothing simutaneously:
-controller.SetGlobalSmoothing(Strength.VeryMild);
+// Set all properties' smoothing simultaneously:
+controller.SetGlobalSmoothing(SmoothingStrength.VeryMild);
 ```
 
 The default smoothing for all properties is `VeryMild`. You can choose from `VeryMild`, `Mild`, `Moderate`, `Strong`, `VeryStrong`, or `None`. 
@@ -419,10 +436,10 @@ The default smoothing for all properties is `VeryMild`. You can choose from `Ver
 * Setting the smoothing to `None` disables smoothing entirely. This means the camera will always be updated to meet exactly the target value of each property on each frame; reducing latency to 0 but making the camera feel less physical.
 
 ??? abstract "Custom Smoothing Values"
-	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via a method named like "`SetCustom[...]SmoothingStrength`".
+	If the enum-based approach is not specific enough for your needs, every property can instead have a custom smoothing strength applied via `SetCustomPanSmoothingStrength()`, `SetCustomTiltSmoothingStrength()`, or `SetCustomZoomSmoothingStrength()`.
 	
-	This method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. 
+	Each method takes a single `float` parameter that indicates the *half-life* of decay between the current value of a property and its target value. A half-life of `0f` disables smoothing. (Note that zoom smoothing is applied to the camera's field of view, rather than to the `Zoom` value itself.) 
 	
-	For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second, and then 87.5 after the next second, and so-on.
+	The half-life is the time (in seconds) the camera takes to cover half the distance to a new target value, starting from rest. For example, if the current value of X is 50 and the target value of X is 100, a half-life of `1f` would move X to 75 after one second. Because the smoothing carries momentum (see below), X would then be at roughly 92 after the next second, rather than 87.5.
 	
-	Advanced: Smoothing is implemented via critically-damped spring. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.
+	Advanced: Smoothing is implemented via a critically-damped spring, which is why it carries momentum. The `smoothingHalfLife` parameter is translated to become the Ω of the spring equation via the formula `Ω = 1.6783469f / smoothingHalfLife`.

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using Egodystonic.TinyFFR.Assets.Baking;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -13,12 +14,13 @@ using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
+using Egodystonic.TinyFFR.World;
 using static Egodystonic.TinyFFR.Assets.Baking.BakedResourceSchemata;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
-	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
+	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle, float MeasuredLux);
 	const string DefaultBackdropTextureName = "Unnamed Backdrop Texture";
 	const string HdrPreprocessorNameWin = "cmgen.exe";
 	const string HdrPreprocessorNameLinux = "cmgen";
@@ -44,6 +46,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		public PooledHeapMemory<char>? HdrOrExrFilePath { get; set; } = null;
 		public PooledHeapMemory<char>? DestinationDirectoryPath { get; set; } = null;
 		public Quality Resolution { get; set; } = Quality.Standard;
+		public BackdropAspectRatioCorrection AspectRatioCorrection { get; set; } = BackdropAspectRatioCorrection.Stretch;
 
 		// Worker thread owned
 		public PooledHeapMemory<byte>? SkyboxFileData { get; set; } = null;
@@ -77,6 +80,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			DestinationDirectoryPath?.Dispose();
 			DestinationDirectoryPath = null;
 			Resolution = Quality.Standard;
+			AspectRatioCorrection = BackdropAspectRatioCorrection.Stretch;
 			HeapPool = null!;
 			Self = null!;
 		}
@@ -116,34 +120,36 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		context.DirectoryPath = _globals.HeapPool.BorrowAndCopy(directoryPath);
 		context.SetName(name);
 	}
-	void SetUpHdrOrExrContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> name, Quality resolution) {
+	void SetUpHdrOrExrContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> name, Quality resolution, BackdropAspectRatioCorrection aspectRatioCorrection) {
 		ExtractHdrPreprocessorIfNecessary();
 		context.HdrOrExrFilePath = _globals.HeapPool.BorrowAndCopy(hdrOrExrFilePath);
 		context.Resolution = resolution;
+		context.AspectRatioCorrection = aspectRatioCorrection;
 		context.SetName(name);
 	}
-	void SetUpPreprocessOnlyContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality resolution) {
+	void SetUpPreprocessOnlyContext(BackdropLoadContext context, ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality resolution, BackdropAspectRatioCorrection aspectRatioCorrection) {
 		ExtractHdrPreprocessorIfNecessary();
 		context.HdrOrExrFilePath = _globals.HeapPool.BorrowAndCopy(hdrOrExrFilePath);
 		context.DestinationDirectoryPath = _globals.HeapPool.BorrowAndCopy(destinationDirectoryPath);
 		context.Resolution = resolution;
+		context.AspectRatioCorrection = aspectRatioCorrection;
 	}
 
-	public void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard) {
+	public void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 
 		var contextWrapper = _backdropLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpPreprocessOnlyContext(contextWrapper.Context, hdrOrExrFilePath, destinationDirectoryPath, backdropTextureResolution);
+		SetUpPreprocessOnlyContext(contextWrapper.Context, hdrOrExrFilePath, destinationDirectoryPath, backdropTextureResolution, aspectRatioCorrection);
 
 		_ = contextWrapper.DispatchArbitrarySynchronousOperation(&PreprocessHdrOrExrCore);
 	}
-	public TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard) {
+	public TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 
 		var contextWrapper = _backdropLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpPreprocessOnlyContext(contextWrapper.Context, hdrOrExrFilePath, destinationDirectoryPath, backdropTextureResolution);
+		SetUpPreprocessOnlyContext(contextWrapper.Context, hdrOrExrFilePath, destinationDirectoryPath, backdropTextureResolution, aspectRatioCorrection);
 
 		return contextWrapper.DispatchArbitraryAsynchronousOperation(&PreprocessHdrOrExrCore);
 	}
@@ -190,23 +196,23 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadPreprocessedBackdropTextureCore, in config);
 	}
 
-	public BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard) {
+	public BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
 		var contextWrapper = _backdropLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpHdrOrExrContext(contextWrapper.Context, hdrOrExrFilePath, config.Name, backdropTextureResolution);
+		SetUpHdrOrExrContext(contextWrapper.Context, hdrOrExrFilePath, config.Name, backdropTextureResolution, aspectRatioCorrection);
 
 		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadBackdropTextureCore, in config);
 	}
-	public TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard) {
+	public TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
 		var contextWrapper = _backdropLoadWorkerSyncHelper.CreateContextWrapper();
-		SetUpHdrOrExrContext(contextWrapper.Context, hdrOrExrFilePath, config.Name, backdropTextureResolution);
+		SetUpHdrOrExrContext(contextWrapper.Context, hdrOrExrFilePath, config.Name, backdropTextureResolution, aspectRatioCorrection);
 
 		return contextWrapper.DispatchResourceReturningAsynchronousOperation(&LoadBackdropTextureCore, in config);
 	}
@@ -216,6 +222,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		config.ThrowIfInvalid();
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
 		
+		var measuredLux = BackdropIntensityUtils.MeasureLuxAtUnitIntensity(new ReadOnlySpan<byte>((byte*) iblData.DataPtr, iblData.DataLenBytes));
 		LoadSkyboxFileInToMemory(
 			(byte*) skyData.DataPtr, 
 			skyData.DataLenBytes, 
@@ -229,7 +236,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 				out var iblTextureHandle
 			).ThrowIfFailure();
 
-			return StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, config.Name);
+			return StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, measuredLux, config.Name);
 		}
 		catch {
 			UnloadSkyboxFileFromMemory(skyboxTextureHandle);
@@ -278,7 +285,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			throw new InvalidOperationException("No skybox and/or IBL file path set in context (this is a bug in TinyFFR).");
 		}
 
-		return ReadKtxFilesAndCreateBackdropTexture(context, new String(skyboxFilePath.Span), new String(iblFilePath.Span));
+		return ReadKtxFilesAndCreateBackdropTexture(context, skyboxFilePath.Span, iblFilePath.Span);
 	}
 
 	static BackdropTexture LoadBackdropTextureFromDirectory(BackdropLoadContext context, string directoryPath) {
@@ -299,14 +306,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		return ReadKtxFilesAndCreateBackdropTexture(context, skyboxFile, iblFile);
 	}
 
-	static BackdropTexture ReadKtxFilesAndCreateBackdropTexture(BackdropLoadContext context, string skyboxKtxFilePath, string iblKtxFilePath) {
+	static BackdropTexture ReadKtxFilesAndCreateBackdropTexture(BackdropLoadContext context, ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath) {
 		try {
 			context.SkyboxFileData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, skyboxKtxFilePath, "KTX file");
 			context.IblFileData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, iblKtxFilePath, "KTX file");
 		}
 		catch (Exception e) {
-			if (!File.Exists(skyboxKtxFilePath)) throw new InvalidOperationException($"File '{skyboxKtxFilePath}' does not exist.", e);
-			if (!File.Exists(iblKtxFilePath)) throw new InvalidOperationException($"File '{iblKtxFilePath}' does not exist.", e);
+			if (!File.Exists(skyboxKtxFilePath.ToString())) throw new InvalidOperationException($"File '{skyboxKtxFilePath}' does not exist.", e);
+			if (!File.Exists(iblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{iblKtxFilePath}' does not exist.", e);
 			throw new InvalidOperationException("Error occured when reading and/or loading skybox or IBL file.", e);
 		}
 
@@ -325,6 +332,71 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			throw new ArgumentException($"File '{fileString}' does not exist.", nameof(hdrOrExrFilePath));
 		}
 
+		string? conformedSourceDirectory = null;
+		try {
+			var preprocessorInputFilePath = fileString;
+			if (RequiresAspectRatioCorrection(context, fileString)) {
+				conformedSourceDirectory = Path.Combine(destinationDirectoryPath, Guid.NewGuid().ToString("N"));
+				preprocessorInputFilePath = Path.Combine(conformedSourceDirectory, Path.GetFileName(fileString));
+				WriteAspectRatioCorrectedHdr(context, fileString, conformedSourceDirectory, preprocessorInputFilePath);
+			}
+
+			RunHdrPreprocessorExecutable(context, preprocessorInputFilePath, destinationDirectoryPath);
+		}
+		finally {
+			if (conformedSourceDirectory != null && Directory.Exists(conformedSourceDirectory)) {
+				try {
+					Directory.Delete(conformedSourceDirectory, recursive: true);
+				}
+#pragma warning disable CA1031 // "Don't catch & swallow exceptions" -- A leftover intermediate file must not fail a preprocessing operation that already succeeded
+				catch (Exception e) {
+					Console.WriteLine($"Could not delete intermediate aspect-ratio-corrected HDR directory at {conformedSourceDirectory}: {e.GetAllMessages()}");
+				}
+#pragma warning restore CA1031
+			}
+		}
+	}
+
+	static bool RequiresAspectRatioCorrection(BackdropLoadContext context, string hdrOrExrFilePath) {
+		if (!Path.GetExtension(hdrOrExrFilePath.AsSpan()).Equals(".hdr", StringComparison.OrdinalIgnoreCase)) return false;
+
+		Span<byte> header = stackalloc byte[RadianceHdrConformer.MaxHeaderSizeBytes];
+		int headerLength;
+		try {
+			using var fileHandle = File.OpenHandle(hdrOrExrFilePath);
+			headerLength = RandomAccess.Read(fileHandle, header, 0L);
+		}
+		catch (Exception e) {
+			throw new InvalidOperationException($"Could not read header of HDR file '{hdrOrExrFilePath}'.", e);
+		}
+
+		if (!RadianceHdrConformer.TryReadHeader(header[..headerLength], out var width, out var height, out _, out _)) return false;
+		if (RadianceHdrConformer.IsCmgenCompatible(width, height)) return false;
+
+		if (context.AspectRatioCorrection == BackdropAspectRatioCorrection.Throw) {
+			throw new InvalidOperationException($"HDR file '{hdrOrExrFilePath}' has an unsupported aspect ratio ({width}x{height}). Backdrop textures must be " +
+												$"2:1 equirectangular images, or 4:3/3:4 cross cubemaps whose longer side is a power of two. Pass a " +
+												$"{nameof(BackdropAspectRatioCorrection)} value other than {nameof(BackdropAspectRatioCorrection.Throw)} to have " +
+												$"the image converted automatically.");
+		}
+		return true;
+	}
+
+	static void WriteAspectRatioCorrectedHdr(BackdropLoadContext context, string sourceFilePath, string intermediateDirectoryPath, string intermediateFilePath) {
+		try {
+			Directory.CreateDirectory(intermediateDirectoryPath);
+			using var sourceData = LocalFileSystemUtils.ReadFileIntoPooledMemory(context.HeapPool, sourceFilePath, "HDR file");
+			using var destination = new FileStream(intermediateFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 1 << 20);
+			RadianceHdrConformer.WriteConformed(context.HeapPool, sourceData.Span, context.AspectRatioCorrection, destination);
+		}
+		catch (Exception e) {
+			throw new InvalidOperationException($"Could not convert HDR file '{sourceFilePath}' to a 2:1 aspect ratio " +
+												$"({nameof(BackdropAspectRatioCorrection)}.{context.AspectRatioCorrection}).", e);
+		}
+	}
+
+	static void RunHdrPreprocessorExecutable(BackdropLoadContext context, string hdrOrExrFilePath, string destinationDirectoryPath) {
+		var self = context.Self;
 		try {
 			var quality = context.Resolution switch {
 				Quality.VeryLow => "64",
@@ -333,7 +405,19 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 				Quality.VeryHigh => "4096",
 				_ => "512"
 			};
-			var process = Process.Start(self._hdrPreprocessorFilePath, "-q -s " + quality + " -f ktx -x \"" + destinationDirectoryPath + "\" \"" + fileString + "\"");
+			var startInfo = new ProcessStartInfo(self._hdrPreprocessorFilePath, "-q -s " + quality + " -f ktx -x \"" + destinationDirectoryPath + "\" \"" + hdrOrExrFilePath + "\"") {
+				UseShellExecute = false,
+				RedirectStandardError = true
+			};
+			var errorOutput = new StringBuilder();
+			using var process = new Process { StartInfo = startInfo };
+			process.ErrorDataReceived += (_, e) => {
+				if (e.Data == null) return;
+				lock (errorOutput) errorOutput.AppendLine(e.Data);
+			};
+			process.Start();
+			process.BeginErrorReadLine();
+
 			if (!process.WaitForExit(self._maxHdrProcessingTime)) {
 				try {
 					process.Kill(entireProcessTree: true);
@@ -346,9 +430,14 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 													$"This value can be altered by setting the {nameof(LocalAssetLoaderConfig.MaxHdrProcessingTime)} configuration " +
 													$"value on the {nameof(LocalAssetLoaderConfig)} instance passed in to the factory constructor.");
 			}
+			process.WaitForExit();
 
 			if (!Directory.Exists(destinationDirectoryPath) || Directory.GetFiles(destinationDirectoryPath, HdrPreprocessedSkyboxFileSearch).Length == 0 || Directory.GetFiles(destinationDirectoryPath, HdrPreprocessedIblFileSearch).Length == 0) {
-				throw new InvalidOperationException($"Error when processing texture. Check arguments and file formats.");
+				string preprocessorOutput;
+				lock (errorOutput) preprocessorOutput = errorOutput.ToString().Trim();
+				throw new InvalidOperationException(preprocessorOutput.Length > 0
+					? $"Error when processing texture. Preprocessor output: {preprocessorOutput}"
+					: "Error when processing texture. Check arguments and file formats.");
 			}
 		}
 		catch (Exception e) {
@@ -362,6 +451,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 			throw new InvalidOperationException("Skybox and/or IBL file data was null (this is a bug in TinyFFR).");
 		}
 
+		var measuredLux = BackdropIntensityUtils.MeasureLuxAtUnitIntensity(iblFileData.Span);
 		var skyboxPin = skyboxFileData.FixData();
 		try {
 			LoadSkyboxFileInToMemory(
@@ -379,7 +469,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 						out var iblTextureHandle
 					).ThrowIfFailure();
 
-					var result = context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, context.Name);
+					var result = context.Self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, measuredLux, context.Name);
 					context.Self.RegisterInBakery(result, skyboxFileData.Span, iblFileData.Span, context.Name);
 					return result;
 				}
@@ -397,11 +487,11 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 		}
 	}
 
-	BackdropTexture StoreLoadedBackdropTexture(UIntPtr skyboxTextureHandle, UIntPtr iblTextureHandle, ReadOnlySpan<char> name) {
+	BackdropTexture StoreLoadedBackdropTexture(UIntPtr skyboxTextureHandle, UIntPtr iblTextureHandle, float measuredLux, ReadOnlySpan<char> name) {
 		++_prevBackdropTextureHandle;
 		var handle = (ResourceHandle<BackdropTexture>) _prevBackdropTextureHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultBackdropTextureName);
-		_loadedBackdropTextures.Add(_prevBackdropTextureHandle, new(skyboxTextureHandle, iblTextureHandle));
+		_loadedBackdropTextures.Add(_prevBackdropTextureHandle, new(skyboxTextureHandle, iblTextureHandle, measuredLux));
 		return HandleToInstance(handle);
 	}
 	#endregion
@@ -413,6 +503,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	public UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<BackdropTexture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedBackdropTextures[handle].IblTextureHandle;
+	}
+	public float GetMeasuredLux(ResourceHandle<BackdropTexture> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedBackdropTextures[handle].MeasuredLux;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<BackdropTexture> handle) {
@@ -479,35 +573,39 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	
 	static BackdropTexture LoadBakedBackdropTextureCore(LocalAssetBakery.AssetLoadContext ctx) {
 		static BackdropTexture Finalize(LocalAssetBakery.AssetLoadContext ctx) {
-			var assetData = ctx.AssetData;
-			var skyboxData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.SkyboxData);
-			var iblData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.IblData);
-			fixed (byte* skyboxPin = skyboxData) {
-				fixed (byte* iblPin = iblData) {
-					LoadSkyboxFileInToMemory(
-						skyboxPin,
-						skyboxData.Length,
-						out var skyboxTextureHandle
-					).ThrowIfFailure();
-
-					try {
-						LoadIblFileInToMemory(
-							iblPin,
-							iblData.Length,
-							out var iblTextureHandle
-						).ThrowIfFailure();
-
-						return ctx.Invoker<LocalAssetLoader>().StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, ctx.StoredOrOverridingName);
-					}
-					catch {
-						UnloadSkyboxFileFromMemory(skyboxTextureHandle);
-						throw;
-					}
-				}	
-			}
+			return CreateBackdropTextureFromBakedAsset(ctx.Invoker<LocalAssetLoader>(), ctx.AssetData, ctx.StoredOrOverridingName);
 		}
 		
 		return ctx.GenerateResourceOnPrimaryAndWait(&Finalize);
+	}
+
+	static BackdropTexture CreateBackdropTextureFromBakedAsset(LocalAssetLoader self, LoadedBakedAsset assetData, ReadOnlySpan<char> name) {
+		var skyboxData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.SkyboxData);
+		var iblData = assetData.ExtractSpan<byte>(BackdropTextureBakingSchema.IblData);
+		var measuredLux = BackdropIntensityUtils.MeasureLuxAtUnitIntensity(iblData);
+		fixed (byte* skyboxPin = skyboxData) {
+			fixed (byte* iblPin = iblData) {
+				LoadSkyboxFileInToMemory(
+					skyboxPin,
+					skyboxData.Length,
+					out var skyboxTextureHandle
+				).ThrowIfFailure();
+
+				try {
+					LoadIblFileInToMemory(
+						iblPin,
+						iblData.Length,
+						out var iblTextureHandle
+					).ThrowIfFailure();
+
+					return self.StoreLoadedBackdropTexture(skyboxTextureHandle, iblTextureHandle, measuredLux, name);
+				}
+				catch {
+					UnloadSkyboxFileFromMemory(skyboxTextureHandle);
+					throw;
+				}
+			}
+		}
 	}
 	#endregion
 

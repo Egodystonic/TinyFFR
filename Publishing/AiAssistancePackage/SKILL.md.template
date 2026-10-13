@@ -1,0 +1,29 @@
+---
+name: tinyffr
+description: Documentation, API reference and example applications for TinyFFR {{VERSION}} (NuGet package Egodystonic.TinyFFR), a C#/.NET library for real-time 3D rendering with physically-based materials. Use when writing, reviewing or debugging C# code that uses TinyFFR or its Avalonia, WPF, WinForms or Dear ImGui integrations.
+---
+
+# TinyFFR {{VERSION}}
+
+TinyFFR (Tiny Fixed Function Renderer) is a C#/.NET 9 library for real-time 3D rendering, built on Google's Filament engine. It targets developers who want to render 3D scenes without adopting a full game engine. It supports Windows (x64), Linux (x64) and macOS (ARM64).
+
+Everything in this package describes version **{{VERSION}}**. If the project you are working in references a different version, the API may differ.
+
+## How to find things
+
+This package is too large to read in full. Look up only what the task needs:
+
+* **`llms.txt`** is the index. It lists every documentation page with a one-line summary, grouped as on the documentation website, plus the API reference files and example applications.
+* **`docs/`** holds the documentation website (https://tinyffr.dev) as markdown. Start with `docs/tutorials/hello_cube.md` for the shape of a minimal application, then use the `docs/reference/` page for the feature at hand. Most pages begin with an "In a nutshell" summary. `docs/glossary.md` defines the acronyms used throughout.
+* **`api/`** holds the XML documentation as one markdown file per namespace, named after the namespace (e.g. `api/Egodystonic.TinyFFR.Rendering.md`). Search these for exact member names and signatures. The original `.xml` files are in `api/xml/`.
+* **`examples/`** holds the source code of complete, working example applications. Prefer the patterns used there when writing new code.
+
+## Rules worth knowing up front
+
+* Everything starts from a `LocalTinyFfrFactory` (`Egodystonic.TinyFFR.Factory.Local`). Only one factory can exist at a time; create it once and dispose it last. Every resource (windows, scenes, meshes, materials, textures, lights, cameras, renderers, ...) is created through one of its builders, e.g. `factory.MeshBuilder`, `factory.SceneBuilder`.
+* Resources are structs wrapping handles and must be disposed. A resource cannot be disposed while another resource still depends on it; trying throws a `ResourceDependencyException`. See `docs/reference/resource_dependencies.md` and `docs/reference/resource_groups.md`.
+* Coordinate system: right-handed, with **+X pointing left**, +Y up and +Z forward. Distances are in metres, durations in seconds. See `docs/reference/conventions.md` before writing any positioning or camera code.
+* The math types (`Location`, `Direction`, `Vect`, `Angle`, `Rotation`, `Transform`, ...) are immutable. "Modifying" methods return a new value and use past-participle names, e.g. `RotatedBy()`. `ToXyz()` methods transform and `AsXyz()` methods reinterpret. Some operators have specific meanings: `location1 >> location2` is the `Vect` from one to the other, `direction1 >> direction2` is the `Rotation` between them, and `Direction.Up % 90f` is a 90° rotation around Up; see `docs/reference/vector_types.md` and `docs/reference/angle_rotation_orientation.md`.
+* The library is designed to generate no garbage per frame. Prefer `Span<T>` overloads, struct configs passed by `in`, and the factory's pooled buffers over allocating arrays or LINQ in render loops. See `docs/reference/avoiding_gc_stutter.md`.
+* On Linux, a .NET 9/10 runtime bug can crash a program on startup with exit code 139 and no message, when its `Main` uses some TinyFFR types first. The fix is to add `TypeLoadWorkaround.cs` (found in `examples/CanvasScenes/` and several other `examples/` folders) to the project unchanged. See the "TypeLoadWorkaround.cs" note in `docs/tutorials/adding_a_2d_overlay.md`.
+* The signatures in the `api/` files are read from the compiled assemblies and include `in`, `ref` and `out` modifiers. `in` arguments can be passed without a modifier; `out` and `ref` arguments need theirs at the call site.

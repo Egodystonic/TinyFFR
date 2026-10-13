@@ -305,7 +305,11 @@ partial struct Sphere {
 		return (reflectionPoint, new Plane(reflectionPoint.AsVect().Direction, Radius).FastReflectionOf(line.Direction));
 	}
 
-	/// <inheritdoc/>
+	/// <summary>
+	/// Calculates the incident angle between <paramref name="line"/> and this sphere's surface, at the point where the line first meets it.
+	/// </summary>
+	/// <param name="line">The line to measure the incident angle of.</param>
+	/// <returns><see langword="null"/> if <paramref name="line"/> does not intersect this sphere; the incident angle otherwise.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(Line line) => IncidentAngleToLineLike(line);
 	/// <inheritdoc/>
@@ -314,7 +318,10 @@ partial struct Sphere {
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(BoundedRay ray) => IncidentAngleToLineLike(ray);
-	/// <inheritdoc/>
+	/// <summary>
+	/// Executes the same function as <see cref="IncidentAngleWith(Line)"/> but skips some correctness checks, trading safety for speed.
+	/// </summary>
+	/// <param name="line">The line to measure the incident angle of. Must intersect this sphere.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle FastIncidentAngleWith(Line line) => FastIncidentAngleToLineLike(line);
 	/// <inheritdoc/>

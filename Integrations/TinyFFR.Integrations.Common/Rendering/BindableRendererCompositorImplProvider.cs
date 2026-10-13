@@ -92,6 +92,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	void CreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
 		_sharedBufferSizePixels = size;
 		_sharedBuffer = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
+			OptimizeForTopToBottomReadback = true,
 			Name = $"{_name} output buffer",
 			TextureDimensions = size
 		});

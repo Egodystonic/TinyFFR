@@ -36,7 +36,7 @@ public static class ImageUtils {
 	/// Equivalent to calling <see cref="SaveBitmap{TTexel}(ReadOnlySpan{char},XYPair{int},ReadOnlySpan{TTexel},BitmapSaveConfig)"/> with a <see cref="BitmapSaveConfig"/> that includes the alpha channel only if <typeparamref name="TTexel"/> has more than 3 channels, and does not flip the image in either direction.
 	/// </remarks>
 	/// <typeparam name="TTexel">The texel (pixel) type stored in <paramref name="texels"/>.</typeparam>
-	/// <param name="filePath">The path to save the file to. Must not already exist.</param>
+	/// <param name="filePath">The path to save the file to. If a file already exists at this path, it is overwritten.</param>
 	/// <param name="dimensions">The width and height of the bitmap, in texels. Both components must be positive.</param>
 	/// <param name="texels">The texel data to save, in row-major order starting from the bottom-left corner. Must contain at least <c>dimensions.Area</c> elements.</param>
 	public static void SaveBitmap<TTexel>(ReadOnlySpan<char> filePath, XYPair<int> dimensions, ReadOnlySpan<TTexel> texels) where TTexel : unmanaged, ITexel<TTexel, byte> {
@@ -46,10 +46,10 @@ public static class ImageUtils {
 	/// Saves <paramref name="texels"/> to disk as a bitmap (<c>.bmp</c>) file at <paramref name="filePath"/>.
 	/// </summary>
 	/// <remarks>
-	/// A file is never overwritten by this method: if a file already exists at <paramref name="filePath"/>, this method throws before any data is written.
+	/// If a file already exists at <paramref name="filePath"/>, it is overwritten. An <see cref="IOException"/> is thrown before any data is written if the location can not be written to.
 	/// </remarks>
 	/// <typeparam name="TTexel">The texel (pixel) type stored in <paramref name="texels"/>.</typeparam>
-	/// <param name="filePath">The path to save the file to. Must not already exist, and (including the file name) be no more than 1024 characters long.</param>
+	/// <param name="filePath">The path to save the file to. If a file already exists at this path, it is overwritten. Must be no more than 1024 characters long (including the file name).</param>
 	/// <param name="dimensions">The width and height of the bitmap, in texels. Both components must be positive.</param>
 	/// <param name="texels">The texel data to save, in row-major order starting from the bottom-left corner. Must contain at least <c>dimensions.Area</c> elements.</param>
 	/// <param name="config">Options controlling how the bitmap is saved.</param>

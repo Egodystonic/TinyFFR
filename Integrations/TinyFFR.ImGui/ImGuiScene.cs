@@ -8,10 +8,11 @@ using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.DearImGui.Input;
-using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.World;
 using Hexa.NET.ImGui;
 
@@ -27,7 +28,10 @@ namespace Egodystonic.TinyFFR.DearImGui;
 /// your scene shows through translucent panels.
 /// </para>
 /// <para>
-/// Each frame, call one of the <c>BeginFrame</c> overloads, make your ImGui calls, then call <see cref="EndFrame"/>.
+/// Each frame, call one of the <c>BeginFrame</c> overloads, make your ImGui calls, then call <see cref="EndFrame"/>. Every
+/// overload takes the <see cref="ApplicationLoop"/> driving your frames, both to read input from and so that the loop's
+/// <see cref="ApplicationLoop.EnableInputTextTranscription"/> can be kept in step with ImGui's text input needs; see
+/// <see cref="ImGuiSceneCreationConfig.AutoManageTextInputTranscription"/>.
 /// </para>
 /// </remarks>
 public sealed unsafe class ImGuiScene : IDisposable {
@@ -52,12 +56,16 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	readonly Mesh _parkingView;
 	readonly Texture _parkingTexture;
 	readonly ImGuiStyle _pristineStyle;
+	readonly bool _autoManageTextInputTranscription;
 
 	XYPair<float> _dpiScale = new(1f, 1f);
+	bool? _appliedTextInputTranscription;
 	float _appliedStyleScale = 1f;
 	int _activeDrawCallCount;
 	int _nextUserTextureId = -1;
 	XYPair<int> _fullTargetSize;
+	bool _lastFrameRendersVerticallyFlipped;
+	MeshVertexImGui[] _flippedVertexScratch = Array.Empty<MeshVertexImGui>();
 	bool _isDisposed;
 
 	/// <summary>
@@ -100,6 +108,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		_factory = factory;
 		_materialBuilder = (LocalMaterialBuilder) factory.MaterialBuilder;
 		_inputPump = new ImGuiInputPump(config.EnableGamepadNavigation, config.GamepadStickDeadzone, config.GamepadTriggerDeadzone);
+		_autoManageTextInputTranscription = config.AutoManageTextInputTranscription;
 
 		UnderlyingScene = factory.SceneBuilder.CreateScene(new SceneCreationConfig { InitialBackdropColor = null, Name = "ImGui Scene" });
 		Camera = factory.CameraBuilder.CreateCamera(new CameraCreationConfig {
@@ -115,7 +124,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		_meshBuilder = (LocalMeshBuilder) factory.MeshBuilder;
 		_parkingVertexBuffer = _meshBuilder.CreateImGuiDynamicVertexBuffer(3, 3, "ImGui Parking Mesh");
 		_parkingVertexBuffer.SetImGuiIndices(stackalloc ushort[] { 0, 1, 2 });
-		_parkingView = _parkingVertexBuffer.CreateMesh(0..3, MeshViewBoundingBox);
+		_parkingView = _parkingVertexBuffer.CreateImGuiMesh(0..3, MeshViewBoundingBox);
 		_parkingTexture = factory.TextureBuilder.CreateTexture(
 			stackalloc TexelRgba32[] { new TexelRgba32(255, 255, 255, 255) },
 			new TextureGenerationConfig { Dimensions = new(1, 1) },
@@ -141,16 +150,14 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// Starts an ImGui frame sized to the given window.
 	/// </summary>
 	/// <remarks>
-	/// Every ImGui call must be made between this and <see cref="EndFrame"/>. Note that ImGui text fields need real typed
-	/// characters rather than raw key codes, so set the application loop's <c>EnableInputTextTranscription</c> to
-	/// <see langword="true"/> or text boxes will not accept input; it is off by default.
+	/// Every ImGui call must be made between this and <see cref="EndFrame"/>.
 	/// </remarks>
 	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
-	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="loop">The application loop whose input state is forwarded to ImGui as its keyboard, mouse and gamepad state, and whose text transcription setting is managed for you unless <see cref="ImGuiSceneCreationConfig.AutoManageTextInputTranscription"/> was disabled.</param>
 	/// <param name="window">The window being drawn to, whose size and framebuffer dimensions are used for the display size.</param>
-	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, Window window) {
+	public void BeginFrame(float deltaTime, ApplicationLoop loop, Window window) {
 		var framebufferSize = ((IRenderTarget) window).ViewportDimensions;
-		BeginFrame(deltaTime, input, window.Size, framebufferSize, XYPair<int>.Zero, framebufferSize, window);
+		BeginFrame(deltaTime, loop, window.LogicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, window, null);
 	}
 
 	/// <summary>
@@ -160,25 +167,25 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// Use this where the interface should occupy only part of the window, as set by the renderer's render sub-area.
 	/// </remarks>
 	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
-	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="loop">The application loop whose input state is forwarded to ImGui as its keyboard, mouse and gamepad state, and whose text transcription setting is managed for you unless <see cref="ImGuiSceneCreationConfig.AutoManageTextInputTranscription"/> was disabled.</param>
 	/// <param name="window">The window being drawn to, whose size and framebuffer dimensions are used for the display size.</param>
 	/// <param name="renderer">The renderer this interface will be drawn with. Its sub-area is adopted as the region the interface occupies, and the renderer is told that the sub-area is being applied here rather than by it.</param>
-	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, Window window, Renderer renderer) {
+	public void BeginFrame(float deltaTime, ApplicationLoop loop, Window window, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
-		BeginFrame(deltaTime, input, window.Size, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window);
+		BeginFrame(deltaTime, loop, window.LogicalSize, ((IRenderTarget) window).ViewportDimensions, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), window, renderer);
 	}
 
 	/// <summary>
 	/// Starts an ImGui frame for a drawing area of the given size, confined to the region the given renderer draws in to.
 	/// </summary>
 	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
-	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="loop">The application loop whose input state is forwarded to ImGui as its keyboard, mouse and gamepad state, and whose text transcription setting is managed for you unless <see cref="ImGuiSceneCreationConfig.AutoManageTextInputTranscription"/> was disabled.</param>
 	/// <param name="logicalSize">The size of the drawing area in the operating system's own units. Together with <paramref name="framebufferSize"/> this is what tells ImGui the display's scaling factor.</param>
 	/// <param name="framebufferSize">The size of the drawing area in real pixels.</param>
 	/// <param name="renderer">The renderer this interface will be drawn with. Its sub-area is adopted as the region the interface occupies, and the renderer is told that the sub-area is being applied here rather than by it.</param>
-	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, Renderer renderer) {
+	public void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize, Renderer renderer) {
 		AdoptSubAreaFrom(renderer);
-		BeginFrame(deltaTime, input, logicalSize, framebufferSize, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), null);
+		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, renderer.GetRenderSubAreaPixelOffset(), renderer.GetRenderSubAreaPixelDimensions(), null, renderer);
 	}
 
 	// Filament decides what a MaterialInstance scissor rectangle is relative to via
@@ -198,33 +205,35 @@ public sealed unsafe class ImGuiScene : IDisposable {
 	/// Starts an ImGui frame for a drawing area of the given size.
 	/// </summary>
 	/// <remarks>
-	/// This is the windowless form, for drawing to a render output buffer or when hosted inside another user interface
-	/// framework, where the sizes must be supplied rather than read from a window.
+	/// This is the windowless form, for drawing to a render output buffer, where the sizes must be supplied rather than read from
+	/// a window.
 	/// </remarks>
 	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
-	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="loop">The application loop whose input state is forwarded to ImGui as its keyboard, mouse and gamepad state, and whose text transcription setting is managed for you unless <see cref="ImGuiSceneCreationConfig.AutoManageTextInputTranscription"/> was disabled.</param>
 	/// <param name="logicalSize">The size of the drawing area in the operating system's own units. Together with <paramref name="framebufferSize"/> this is what tells ImGui the display's scaling factor.</param>
 	/// <param name="framebufferSize">The size of the drawing area in real pixels.</param>
-	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize) {
-		BeginFrame(deltaTime, input, logicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, null);
+	public void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize) {
+		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, XYPair<int>.Zero, framebufferSize, null, null);
 	}
 
 	/// <summary>
 	/// Starts an ImGui frame for a drawing area of the given size, confined to an explicit sub-area of it.
 	/// </summary>
 	/// <param name="deltaTime">How long has elapsed since the previous frame.</param>
-	/// <param name="input">The input state accumulated since the previous frame, which is forwarded to ImGui as its keyboard, mouse and gamepad state.</param>
+	/// <param name="loop">The application loop whose input state is forwarded to ImGui as its keyboard, mouse and gamepad state, and whose text transcription setting is managed for you unless <see cref="ImGuiSceneCreationConfig.AutoManageTextInputTranscription"/> was disabled.</param>
 	/// <param name="logicalSize">The size of the drawing area in the operating system's own units. Together with <paramref name="framebufferSize"/> this is what tells ImGui the display's scaling factor.</param>
 	/// <param name="framebufferSize">The size of the drawing area in real pixels.</param>
 	/// <param name="subAreaOffsetFromTopLeft">Where the interface's region begins, in pixels from the top-left of the drawing area.</param>
 	/// <param name="subAreaDimensions">How large the interface's region is, in pixels.</param>
-	public void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffsetFromTopLeft, XYPair<int> subAreaDimensions) {
-		BeginFrame(deltaTime, input, logicalSize, framebufferSize, subAreaOffsetFromTopLeft, subAreaDimensions, null);
+	public void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffsetFromTopLeft, XYPair<int> subAreaDimensions) {
+		BeginFrame(deltaTime, loop, logicalSize, framebufferSize, subAreaOffsetFromTopLeft, subAreaDimensions, null, null);
 	}
 
-	void BeginFrame(TimeSpan deltaTime, ILatestInputRetriever input, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffset, XYPair<int> subAreaSize, Window? window) {
+	void BeginFrame(float deltaTime, ApplicationLoop loop, XYPair<int> logicalSize, XYPair<int> framebufferSize, XYPair<int> subAreaOffset, XYPair<int> subAreaSize, Window? window, Renderer? renderer) {
 		ThrowIfDisposed();
 		ImGui.SetCurrentContext(_context);
+
+		_lastFrameRendersVerticallyFlipped = window == null && (renderer?.RendersVerticallyFlipped ?? (_factory.RendererBuilder is LocalRendererBuilder localRendererBuilder && localRendererBuilder.RenderTargetsAreVerticallyFlipped));
 
 		_dpiScale = logicalSize is {X: > 0, Y: > 0}
 			? new XYPair<float>(framebufferSize.X / (float) logicalSize.X, framebufferSize.Y / (float) logicalSize.Y)
@@ -233,7 +242,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		var io = ImGui.GetIO();
 		io.DisplaySize = new Vector2(subAreaSize.X, subAreaSize.Y);
 		io.DisplayFramebufferScale = Vector2.One;
-		io.DeltaTime = MathF.Max((float) deltaTime.TotalSeconds, 1f / 1000f);
+		io.DeltaTime = MathF.Max(deltaTime, 1f / 1000f);
 
 		LastFrameSubAreaOffset = subAreaOffset;
 		LastFrameSubAreaSize = subAreaSize;
@@ -246,8 +255,17 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		Camera.SetOrthographicHeight(framebufferSize.Y);
 		Camera.SetAspectRatio(framebufferSize.Ratio ?? 1f);
 
-		_inputPump.Pump(io, input, window, _dpiScale, subAreaOffset);
+		_inputPump.Pump(io, loop.Input, window, _dpiScale, subAreaOffset);
 		ImGui.NewFrame();
+		ApplyTextInputTranscription(io, loop);
+	}
+
+	void ApplyTextInputTranscription(ImGuiIOPtr io, ApplicationLoop loop) {
+		if (!_autoManageTextInputTranscription) return;
+		var wantsTextInput = io.WantTextInput;
+		if (_appliedTextInputTranscription == wantsTextInput) return;
+		loop.EnableInputTextTranscription = wantsTextInput;
+		_appliedTextInputTranscription = wantsTextInput;
 	}
 
 	void ApplyStyleScale(float newScale) {
@@ -308,7 +326,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 			if (vertexCount == 0 || indexCount == 0) continue;
 
 			var mesh = GetOrGrowMesh(listIndex, vertexCount, indexCount);
-			mesh.SetImGuiVertices(new ReadOnlySpan<MeshVertexImGui>(cmdList.VtxBuffer.Data, vertexCount));
+			mesh.SetImGuiVertices(GetVerticesWithRenderOutputTexturesFlipped(cmdList, new ReadOnlySpan<MeshVertexImGui>(cmdList.VtxBuffer.Data, vertexCount)));
 			mesh.SetImGuiIndices(new ReadOnlySpan<ushort>(cmdList.IdxBuffer.Data, indexCount));
 
 			for (var cmdIndex = 0; cmdIndex < cmdList.CmdBuffer.Size; ++cmdIndex) {
@@ -324,12 +342,14 @@ public sealed unsafe class ImGuiScene : IDisposable {
 				// Scissor rectangles are in whole-target space (offset into the sub-area, Y flipped to Filament's
 				// bottom-left origin) because the Filament viewport spans the whole target -- see AdoptSubAreaFrom.
 				var scissorLeft = LastFrameSubAreaOffset.X + (int) clipMinX;
-				var scissorBottom = _fullTargetSize.Y - (LastFrameSubAreaOffset.Y + (int) clipMaxY);
+				var scissorBottom = _lastFrameRendersVerticallyFlipped
+					? LastFrameSubAreaOffset.Y + (int) clipMinY
+					: _fullTargetSize.Y - (LastFrameSubAreaOffset.Y + (int) clipMaxY);
 				var scissorWidth = (int) (clipMaxX - clipMinX);
 				var scissorHeight = (int) (clipMaxY - clipMinY);
 
 				var indexStart = (int) cmd.IdxOffset;
-				var view = mesh.CreateMesh(indexStart..(indexStart + (int) cmd.ElemCount), MeshViewBoundingBox);
+				var view = mesh.CreateImGuiMesh(indexStart..(indexStart + (int) cmd.ElemCount), MeshViewBoundingBox);
 
 				var drawCall = GetOrCreateDrawCall(_activeDrawCallCount);
 				var instance = drawCall.Instance;
@@ -427,6 +447,42 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		drawCall.CurrentTexture = _parkingTexture;
 	}
 
+	ReadOnlySpan<MeshVertexImGui> GetVerticesWithRenderOutputTexturesFlipped(ImDrawListPtr cmdList, ReadOnlySpan<MeshVertexImGui> vertices) {
+		var hasRenderOutputTexture = false;
+		for (var cmdIndex = 0; cmdIndex < cmdList.CmdBuffer.Size; ++cmdIndex) {
+			if (NeedsVerticalUvFlip(ResolveTexture(cmdList.CmdBuffer.Data[cmdIndex].TexRef))) {
+				hasRenderOutputTexture = true;
+				break;
+			}
+		}
+		if (!hasRenderOutputTexture) return vertices;
+
+		if (_flippedVertexScratch.Length < vertices.Length) _flippedVertexScratch = new MeshVertexImGui[Int32.Max(vertices.Length, _flippedVertexScratch.Length * 2)];
+		var result = _flippedVertexScratch.AsSpan(0, vertices.Length);
+		vertices.CopyTo(result);
+
+		for (var cmdIndex = 0; cmdIndex < cmdList.CmdBuffer.Size; ++cmdIndex) {
+			var cmd = cmdList.CmdBuffer.Data[cmdIndex];
+			if (cmd.ElemCount == 0 || cmd.UserCallback != null || !NeedsVerticalUvFlip(ResolveTexture(cmd.TexRef))) continue;
+
+			var minIndex = Int32.MaxValue;
+			var maxIndex = Int32.MinValue;
+			for (var i = 0; i < cmd.ElemCount; ++i) {
+				var index = (int) cmd.VtxOffset + cmdList.IdxBuffer.Data[(int) cmd.IdxOffset + i];
+				minIndex = Int32.Min(minIndex, index);
+				maxIndex = Int32.Max(maxIndex, index);
+			}
+			for (var v = minIndex; v <= maxIndex; ++v) {
+				var coords = result[v].TextureCoords;
+				result[v] = result[v] with { TextureCoords = new XYPair<float>(coords.X, 1f - coords.Y) };
+			}
+		}
+
+		return result;
+	}
+
+	static bool NeedsVerticalUvFlip(Texture texture) => texture.Implementation is LocalRenderOutputBufferTextureImplProvider bufferTextureImpl && !bufferTextureImpl.GetStoresRowsTopToBottom(texture.Handle);
+
 	Texture ResolveTexture(ImTextureRef texRef) {
 		var id = (int) texRef.GetTexID().Handle;
 		if (_textures.TryGetValue(id, out var atlasTexture)) return atlasTexture;
@@ -481,7 +537,7 @@ public sealed unsafe class ImGuiScene : IDisposable {
 		}
 		if (_meshIndexCapacities[index] < indexCount) {
 			var newCapacity = (int) (indexCount * 1.5f);
-			mesh.ResizeIndexBuffer(newCapacity);
+			mesh.ResizeImGuiIndexBuffer(newCapacity);
 			_meshIndexCapacities[index] = newCapacity;
 		}
 		return mesh;

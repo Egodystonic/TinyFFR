@@ -1,4 +1,4 @@
-// Created on 2026-08-10 by Ben Bowen
+﻿// Created on 2026-08-10 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
 sealed partial class LocalRendererBuilder {
-	readonly record struct RateLimitShimResourceData(RenderOutputBuffer PrivateBuffer, Renderer ProxyRenderer, CanvasScene ProxyScene, CanvasTexture ProxyQuad, XYPair<int> PrivateBufferSize);
+	readonly record struct RateLimitShimResourceData(RenderOutputBuffer PrivateBuffer, Renderer ProxyRenderer, CanvasScene ProxyScene, CanvasImage ProxyQuad, XYPair<int> PrivateBufferSize);
 	readonly record struct CompositedRenderer(Renderer Renderer, RenderCompositionType CompositionType, bool IsEnabled) {
 		public CompositorSubRendererRateLimitHelper RateLimitHelper { get; init; } = CompositorSubRendererRateLimitHelper.Unlimited;
 		public RateLimitShimResourceData? RateLimitShimResources { get; init; } = null;
@@ -29,7 +29,7 @@ sealed partial class LocalRendererBuilder {
 	const string RateLimitBufferName = "Frame Rate Limit Buffer";
 	const string RateLimitSceneName = "Frame Rate Limit Canvas";
 	const string RateLimitProxyRendererName = "Frame Rate Limit Proxy Renderer";
-	readonly VectorPool<CompositedRenderer> _compositedRendererVectorPool = new(true);
+	readonly VectorPool<CompositedRenderer> _compositedRendererVectorPool = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<RendererCompositor>, RendererCompositorData> _loadedCompositors = new();
 	readonly LocalSceneBuilder _sceneBuilder;
 	readonly LocalRendererCompositorImplProvider _rendererCompositorImplProvider;
@@ -101,7 +101,7 @@ sealed partial class LocalRendererBuilder {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var compositorData = _loadedCompositors[handle];
-		var rendererTarget = _loadedRenderers[renderer.Handle].RenderTarget;
+		var rendererTarget = _loadedRenderers[renderer.GetLocalHandle()].RenderTarget;
 		
 		foreach (var rd in compositorData.AddedRenderers) {
 			if (rd.Renderer == renderer) {
@@ -174,16 +174,22 @@ sealed partial class LocalRendererBuilder {
 
 		var first = compositorData.AddedRenderers[compositorData.FirstEnabledRendererIndex];
 		var last = compositorData.AddedRenderers[compositorData.LastEnabledRendererIndex];
-		RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, fenceEmittingHandle);
+		LocalFrameSynchronizationManager.EnterOpenFrameScope();
 		try {
-			for (var i = compositorData.FirstEnabledRendererIndex + 1; i < compositorData.LastEnabledRendererIndex; ++i) {
-				var middle = compositorData.AddedRenderers[i];
-				if (!middle.IsEnabled) continue;
-				RenderInternal(GetCompositedRenderHandle(in middle), RenderOrdering.Middle, middle.CompositionType, fenceEmittingHandle);
+			RenderInternal(GetCompositedRenderHandle(in first), RenderOrdering.First, first.CompositionType, fenceEmittingHandle);
+			try {
+				for (var i = compositorData.FirstEnabledRendererIndex + 1; i < compositorData.LastEnabledRendererIndex; ++i) {
+					var middle = compositorData.AddedRenderers[i];
+					if (!middle.IsEnabled) continue;
+					RenderInternal(GetCompositedRenderHandle(in middle), RenderOrdering.Middle, middle.CompositionType, fenceEmittingHandle);
+				}
+			}
+			finally {
+				RenderInternal(GetCompositedRenderHandle(in last), RenderOrdering.Last, last.CompositionType, fenceEmittingHandle);
 			}
 		}
 		finally {
-			RenderInternal(GetCompositedRenderHandle(in last), RenderOrdering.Last, last.CompositionType, fenceEmittingHandle);
+			LocalFrameSynchronizationManager.ExitOpenFrameScope();
 		}
 	}
 
@@ -304,8 +310,6 @@ sealed partial class LocalRendererBuilder {
 		proxyQuad.CanvasAnchor = Orientation2D.None;
 		proxyQuad.WidthFraction = 1f;
 		proxyQuad.HeightFraction = 1f;
-		proxyQuad.TextureExtentFraction = (1f, -1f);
-		proxyQuad.TextureOffsetFraction = (0f, 0f);
 
 		var proxyConfig = new RendererCreationConfig {
 			Quality = new RenderQualityConfig(BuiltInQualityConfiguration.Canvas),
@@ -332,7 +336,11 @@ sealed partial class LocalRendererBuilder {
 	void DisposeRateLimitResources(Renderer renderer, RateLimitShimResourceData shimResourceData) {
 		var rendererHandle = renderer.GetHandleWithoutDisposeCheck();
 		if (!IsDisposed(rendererHandle)) {
-			SetViewRenderTarget(_loadedRenderers[rendererHandle].Viewport.Handle, UIntPtr.Zero).ThrowIfFailure();
+			var originalTarget = _loadedRenderers[rendererHandle].RenderTarget;
+			SetViewRenderTarget(
+				_loadedRenderers[rendererHandle].Viewport.Handle,
+				originalTarget.IsBuffer ? _loadedBuffers[originalTarget.AsBuffer.Handle].RenderTargetHandle : UIntPtr.Zero
+			).ThrowIfFailure();
 			_loadedRenderers[rendererHandle] = _loadedRenderers[rendererHandle] with { LastPushedCompositingMode = null };
 		}
 
@@ -408,7 +416,8 @@ sealed partial class LocalRendererBuilder {
 			0U,
 			0U,
 			0U,
-			false
+			false,
+			IsRenderVerticallyFlipped(_loadedBuffers[shimResourceData.PrivateBuffer.GetHandleWithoutDisposeCheck()])
 		).ThrowIfFailure();
 	}
 	#endregion

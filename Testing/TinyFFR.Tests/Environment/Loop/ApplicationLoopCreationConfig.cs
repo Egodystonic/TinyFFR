@@ -57,23 +57,29 @@ class ApplicationLoopCreationConfigTest {
 			FrameRateCapHz = 60,
 			Name = "Aa Aa",
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.FromSeconds(3d),
-			IterationShouldRefreshGlobalInputStates = true
+			IterationShouldPumpSystemEventQueue = true
 		};
 		var testConfigB = new LocalApplicationLoopCreationConfig {
 			FrameRateCapHz = null,
 			Name = "BBBbbb",
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.FromSeconds(13d),
-			IterationShouldRefreshGlobalInputStates = false
+			IterationShouldPumpSystemEventQueue = false
+		};
+		var testConfigC = new LocalApplicationLoopCreationConfig {
+			FrameRateCapHz = 30,
+			Name = "Cc",
+			FrameTimingPrecisionBusyWaitTime = TimeSpan.Zero
 		};
 
 		static void ComparisonFunc(LocalApplicationLoopCreationConfig expected, LocalApplicationLoopCreationConfig actual) {
 			Assert.AreEqual(expected.FrameTimingPrecisionBusyWaitTime, actual.FrameTimingPrecisionBusyWaitTime);
-			Assert.AreEqual(expected.IterationShouldRefreshGlobalInputStates, actual.IterationShouldRefreshGlobalInputStates);
+			Assert.AreEqual(expected.IterationShouldPumpSystemEventQueue, actual.IterationShouldPumpSystemEventQueue);
 			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
+		AssertRoundTripHeapStorage(testConfigC, ComparisonFunc);
 
 		AssertHeapSerializationWithObjects<LocalApplicationLoopCreationConfig>()
 			.SubConfig(new ApplicationLoopCreationConfig {
@@ -81,6 +87,7 @@ class ApplicationLoopCreationConfigTest {
 				Name = "Aa Aa"
 			})
 			.Long(TimeSpan.FromSeconds(3d).Ticks)
+			.Bool(true)
 			.Bool(true)
 			.For(testConfigA);
 
@@ -90,15 +97,26 @@ class ApplicationLoopCreationConfigTest {
 				Name = "BBBbbb"
 			})
 			.Long(TimeSpan.FromSeconds(13d).Ticks)
+			.Bool(true)
 			.Bool(false)
 			.For(testConfigB);
+
+		AssertHeapSerializationWithObjects<LocalApplicationLoopCreationConfig>()
+			.SubConfig(new ApplicationLoopCreationConfig {
+				FrameRateCapHz = 30,
+				Name = "Cc"
+			})
+			.Long(TimeSpan.Zero.Ticks)
+			.Bool(false)
+			.Bool(false)
+			.For(testConfigC);
 
 		AssertPropertiesAccountedFor<LocalApplicationLoopCreationConfig>()
 			.Including(nameof(LocalApplicationLoopCreationConfig.BaseConfig))
 			.Including(nameof(LocalApplicationLoopCreationConfig.FrameRateCapHz))
 			.Including(nameof(LocalApplicationLoopCreationConfig.Name))
 			.Including(nameof(LocalApplicationLoopCreationConfig.FrameTimingPrecisionBusyWaitTime))
-			.Including(nameof(LocalApplicationLoopCreationConfig.IterationShouldRefreshGlobalInputStates))
+			.Including(nameof(LocalApplicationLoopCreationConfig.IterationShouldPumpSystemEventQueue))
 			.End();
 	}
 }

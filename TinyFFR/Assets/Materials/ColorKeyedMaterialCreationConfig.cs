@@ -76,13 +76,13 @@ public readonly ref struct ColorKeyedMaterialCreationConfig : IConfigStruct<Colo
 		if (KeyMap == default) throw InvalidObjectException.InvalidDefault<Texture>(nameof(KeyMap));
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in ColorKeyedMaterialCreationConfig src) {
 		return	SerializationSizeOfResource() // KeyMap
 			+	SerializationSizeOfBool() // OutputIncludesAlphaChannel
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ColorKeyedMaterialCreationConfig src) {
 		SerializationWriteAndAllocateResource(ref dest, src.KeyMap);
 		SerializationWriteBool(ref dest, src.BlendOutputAlphaWithScene);

@@ -37,8 +37,8 @@ class LocalFrustumCullingTest {
 		
 		var meshes = new Mesh[NumMeshes];
 		for (var i = 0; i < NumMeshes; ++i) {
-			if ((i & 0b1) == 1) meshes[i] = factory.MeshBuilder.CreateMesh(Cuboid.Random());
-			else meshes[i] = factory.MeshBuilder.CreateMesh(Sphere.Random(new(0.5f), new(1f)));
+			if ((i & 0b1) == 1) meshes[i] = factory.MeshBuilder.CreateCuboid(Cuboid.Random());
+			else meshes[i] = factory.MeshBuilder.CreateSphere(Sphere.Random(new(0.5f), new(1f)));
 		}
 
 		var instances = new ModelInstance[NumModelInstances];

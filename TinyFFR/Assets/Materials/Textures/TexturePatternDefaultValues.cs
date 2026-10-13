@@ -38,6 +38,31 @@ public sealed class TexturePatternDefaultValues {
 	public static readonly XYPair<int> GradientDefaultResolution = (512, 512);
 
 	/// <summary>
+	/// The default width and height of a grid pattern, in texels: <c>1024</c>.
+	/// </summary>
+	public const int GridDefaultResolution = 1024;
+	/// <summary>
+	/// The default distance between a grid pattern's major lines, as a fraction of the pattern's width: <c>0.25f</c>.
+	/// </summary>
+	public const float GridDefaultMajorLineSpacing = 0.25f;
+	/// <summary>
+	/// The default distance between a grid pattern's minor lines, as a fraction of the pattern's width: <c>0.0625f</c>.
+	/// </summary>
+	public const float GridDefaultMinorLineSpacing = 0.0625f;
+	/// <summary>
+	/// The default thickness of a grid pattern's two centre lines, in texels: <c>6</c>.
+	/// </summary>
+	public const int GridDefaultCentreLineThickness = 6;
+	/// <summary>
+	/// The default thickness of a grid pattern's major lines, in texels: <c>4</c>.
+	/// </summary>
+	public const int GridDefaultMajorLineThickness = 4;
+	/// <summary>
+	/// The default thickness of a grid pattern's minor lines, in texels: <c>1</c>.
+	/// </summary>
+	public const int GridDefaultMinorLineThickness = 1;
+
+	/// <summary>
 	/// The default number of times a line pattern repeats: <c>4</c>.
 	/// </summary>
 	public const int LineDefaultRepeatCount = 4;

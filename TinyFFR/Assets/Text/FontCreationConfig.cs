@@ -68,14 +68,14 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 		}
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.GetHeapStorageFormattedLength"/>
 	public static int GetHeapStorageFormattedLength(in FontCreationConfig src) {
 		return SerializationSizeOfSpan(src.SupportedRunes) // SupportedRunes
 			+ SerializationSizeOfInt() // LineBreakRune
 			+ SerializationSizeOfFloat() // LineSpacingMultiplier
 			+ SerializationSizeOfString(src.Name); // Name
 	}
-	/// <inheritdoc />
+	/// <inheritdoc cref="IConfigStruct{TSelf}.AllocateAndConvertToHeapStorage"/>
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in FontCreationConfig src) {
 		SerializationWriteSpan(ref dest, src.SupportedRunes);
 		SerializationWriteInt(ref dest, src.LineBreakRune.Value);

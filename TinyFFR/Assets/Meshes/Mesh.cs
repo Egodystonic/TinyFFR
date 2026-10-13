@@ -153,6 +153,26 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsPerInstanceVertexMutation"/> is <c>false</c>.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowDefaultVerticesSpan(Range range) => Implementation.BorrowDefaultVerticesSpan(_handle, range);
+	/// <summary>
+	/// Borrows this mesh's triangles for reading. <see cref="AllowsPerInstanceVertexMutation"/> must be <c>true</c> to use this method.
+	/// </summary>
+	/// <remarks>
+	/// Each triangle indexes in to the vertices given by <see cref="BorrowDefaultVerticesSpan()"/>. Together they describe the mesh exactly
+	/// as it was created, so they can be used to create a modified copy of it.
+	/// </remarks>
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsPerInstanceVertexMutation"/> is <c>false</c>.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpan() => BorrowTrianglesSpan(Range.All);
+	/// <summary>
+	/// Borrows part of this mesh's triangles for reading. <see cref="AllowsPerInstanceVertexMutation"/> must be <c>true</c> to use this method.
+	/// </summary>
+	/// <remarks>
+	/// Each triangle indexes in to the vertices given by <see cref="BorrowDefaultVerticesSpan()"/>.
+	/// </remarks>
+	/// <param name="range">Which stretch of the triangle list to borrow.</param>
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsPerInstanceVertexMutation"/> is <c>false</c>.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpan(Range range) => Implementation.BorrowTrianglesSpan(_handle, range);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(MeshAnimationType? type) => Implementation.GetAnimations(_handle, type);
@@ -163,7 +183,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal MeshNode? TryGetNodeByName(ReadOnlySpan<char> name) => Implementation.TryGetNodeByName(_handle, name);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void ApplySkeletalBindPose(ModelInstance targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
+	internal void ApplySkeletalBindPose(SceneObject targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void GetSkeletalBindPoseNodeModelTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalBindPoseNodeModelTransforms(_handle, nodes, modelSpaceTransforms);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -178,6 +198,23 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+	
+	/// <summary>
+	/// Calculates the <c>Scaling</c> you should use to set instances of this Mesh to the given <paramref name="size"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This mesh's model-space bounding box is used to calculate the scaling factor to correctly set the requested size.
+	/// This means the accuracy of the resulting size depends on how well the bounding box fits this mesh.
+	/// </para>
+	/// <para>
+	/// An axis along which the bounding box has no thickness (for example, the depth of a flat quad) can not be resized; the returned scaling is <c>1f</c> on any such axis.
+	/// </para>
+	/// </remarks>
+	/// <param name="size">The target size for instances of this mesh.</param>
+	/// <param name="boundingBoxMargin">The additional margin the bounding box was created with (see <see cref="MeshCreationConfig.BoundingBoxAdditionalMargin"/>), which is
+	/// removed before calculating the scaling. Defaults to <see cref="MeshCreationConfig.DefaultBoundingBoxAdditionalMargin"/>.</param>
+	public Vect CalculateScalingForSize(Vect size, float boundingBoxMargin = MeshCreationConfig.DefaultBoundingBoxAdditionalMargin) => BoundingBox.WithAllExtentsAdjustedBy(-boundingBoxMargin).CalculateScalingForSize(size);
 
 	static Mesh IResource<Mesh>.CreateFromHandleAndImpl(ResourceHandle<Mesh> handle, IResourceImplProvider impl) {
 		return new Mesh(handle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));

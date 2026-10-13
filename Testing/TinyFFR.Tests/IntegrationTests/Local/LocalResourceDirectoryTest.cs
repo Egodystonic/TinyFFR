@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
@@ -34,7 +35,9 @@ class LocalResourceDirectoryTest {
 	[Test]
 	public void Execute() {
 		_resourceTypes = GetAllTypesInMainLibImplementingInterface(typeof(IResource), includeOtherInterfaces: false)
-			.Where(t => t != typeof(Display) && t != typeof(ResourceStub) && t != typeof(VertexBuffer) && t != typeof(IndexBuffer))
+			.Where(t => t != typeof(Display) && t != typeof(ResourceStub) && t != typeof(VertexBuffer) && t != typeof(IndexBuffer) 
+				&& t != typeof(CanvasScene) && t != typeof(CanvasImage) && t != typeof(CanvasText) && t != typeof(CameraLockedTextInstance) && t != typeof(FontPen) 
+				&& t != typeof(FontString) && t != typeof(TextInstance) && t != typeof(QuadMesh) && t != typeof(QuadInstance) && t != typeof(CameraLockedQuadInstance))
 			.ToHashSet();
 		
 		// ReSharper disable AccessToDisposedClosure Factory will be disposed only after closure is no longer in use
@@ -46,7 +49,7 @@ class LocalResourceDirectoryTest {
 		TestDirectoryRetrieval(n => factory.AssetLoader.LoadFont(name: n));
 		using (var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: "bbbbb")) {
 			TestDirectoryRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
-			using (var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f))) {
+			using (var mesh = factory.AssetLoader.MeshBuilder.CreateCuboid(new Cuboid(1f))) {
 				using (var mat = factory.MaterialBuilder.CreateStandardMaterial(tex, name: "bbbbb")) {
 					TestDirectoryRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: n));
 					TestDirectoryRetrieval(n => factory.AssetLoader.CreateModel(mesh, mat, name: n));
@@ -54,7 +57,7 @@ class LocalResourceDirectoryTest {
 			}
 		}
 		TestDirectoryRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
-		TestDirectoryRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
+		TestDirectoryRetrieval(n => factory.AssetLoader.MeshBuilder.CreateCuboid(new Cuboid(1f), name: n));
 		TestDirectoryRetrieval(n => factory.MeshBuilder.CreateDynamicVertexBuffer(3, 3, name: n));
 		TestDirectoryRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
@@ -87,7 +90,7 @@ class LocalResourceDirectoryTest {
 			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
 			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
 		};
-		using var skeletalMesh = factory.MeshBuilder.CreateMesh(skeletalVertices, new VertexTriangle[] { new(0, 1, 2) }, skeletalNodes);
+		using var skeletalMesh = factory.MeshBuilder.CreateFromVertices(skeletalVertices, new VertexTriangle[] { new(0, 1, 2) }, skeletalNodes);
 		TestDirectoryRetrieval(n => factory.MeshBuilder.AttachAnimation(
 			skeletalMesh,
 			ReadOnlySpan<SkeletalAnimationScalingKeyframe>.Empty,
@@ -95,6 +98,17 @@ class LocalResourceDirectoryTest {
 			ReadOnlySpan<SkeletalAnimationTranslationKeyframe>.Empty,
 			ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor>.Empty,
 			1f,
+			n
+		));
+		var bundleTableProvider = ((LocalMeshBuilder) factory.MeshBuilder).MeshGroupAnimationTableImplProvider;
+		var bundleTableNodes = new SkeletalAnimationNode[] { new(Matrix4x4.Identity, Matrix4x4.Identity, null, null) };
+		TestDirectoryRetrieval(n => bundleTableProvider.Create(
+			bundleTableNodes,
+			Matrix4x4.Identity,
+			new[] { skeletalMesh },
+			new[] { 1 },
+			new[] { Matrix4x4.Identity },
+			new[] { 0 },
 			n
 		));
 		var meshNodeIndex = 0;
@@ -150,6 +164,7 @@ class LocalResourceDirectoryTest {
 		Assert.IsTrue(dest.Contains(apple));
 		Assert.IsTrue(dest.Contains(banana));
 		Assert.IsTrue(dest.Contains(carrot));
+		Assert.AreEqual(dest[0], _resourceDirectory.FindByName<T>("a", allowPartialMatch: true, StringComparison.OrdinalIgnoreCase));
 		Array.Clear(dest);
 		Assert.AreEqual(0, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: false, StringComparison.Ordinal));
 		Assert.AreEqual((hasDefaultBuiltIn ? 1 : 0) + 2, _resourceDirectory.FindByName(dest, "a", allowPartialMatch: true, StringComparison.Ordinal));

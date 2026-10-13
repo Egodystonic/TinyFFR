@@ -11,7 +11,8 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
-/// A scene used for flat, two-dimensional content drawn over the screen/render: text, images and other user-interface elements. Created via the factory's <see cref="ISceneBuilder"/>.
+/// A scene used for flat, two-dimensional content drawn over the screen/render (e.g. text, images and other user-interface elements).
+/// Created via the factory's <see cref="ISceneBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -20,8 +21,13 @@ namespace Egodystonic.TinyFFR.World;
 /// of UI textures) and in some cases you should use fractions (to auto-scale the canvas to the size of the viewport). When to use
 /// either is down to preference and should be tested.
 /// </para>
+/// <para>
+/// This is a resource in its own right, but it shares its identity with its <see cref="UnderlyingScene"/>: it has the same name and the same
+/// dependencies, and while it is held in a <see cref="ResourceGroup"/> its underlying <see cref="Scene"/> can not be disposed. A group only lists
+/// it under the type it was added as (i.e. <see cref="ResourceGroup.CanvasScenes"/> rather than <see cref="ResourceGroup.Scenes"/>).
+/// </para>
 /// </remarks>
-public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>, IStringSpanNameEnabled, IEquatable<CanvasScene> {
+public readonly struct CanvasScene : IStringSpanNameEnabled, IEquatable<CanvasScene>, IDisposableResource<CanvasScene> {
 	/// <summary>
 	/// The highest permitted layer for a canvas object: <c>100</c>. Objects on higher layers are drawn in front of those on lower ones.
 	/// </summary>
@@ -73,17 +79,6 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 		UnderlyingScene = underlyingScene;
 	}
 	
-	#region Specialization
-	static IntPtr IResourceSpecialization<CanvasScene, Scene>.SpecializationTypeIdentifier => typeof(CanvasScene).TypeHandle.Value;
-	int IResourceSpecialization<CanvasScene, Scene>.SpecializationDataLength => 0;
-	static void IResourceSpecialization<CanvasScene, Scene>.Smuggle(CanvasScene resource, Span<byte> specializationDataBuffer, out Scene outBaseResource, out ResourceStub? additionalResourceRef) {
-		additionalResourceRef = null;
-		outBaseResource = resource.UnderlyingScene;
-	}
-	static CanvasScene IResourceSpecialization<CanvasScene, Scene>.DeSmuggle(Scene baseResource, ReadOnlySpan<byte> specializationDataBuffer, ResourceStub? additionalResourceRef) {
-		return new(baseResource);	
-	}
-	#endregion
 	
 	/// <summary>
 	/// Reinterprets an existing scene as a canvas scene.
@@ -96,13 +91,25 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static CanvasScene FromPreviouslyAllocatedUnderlyingScene(Scene underlyingScene) => new(underlyingScene);
 
+
+	static CanvasScene WrapBase(Scene b) => new(b);
+	ResourceHandle<CanvasScene> IResource<CanvasScene>.Handle => UnderlyingScene.Handle.AsInteger;
+	ResourceHandle IResource.Handle => UnderlyingScene.Handle;
+	IResourceImplProvider IResource.Implementation => UnderlyingScene.Implementation;
+	ResourceIdent IResource.Ident => UnderlyingScene.Handle.Ident;
+	ResourceStub IResource.AsStub => new(UnderlyingScene.Handle.Ident, UnderlyingScene.Implementation);
+	ResourceHandle<CanvasScene> IResource<CanvasScene>.GetHandleWithoutDisposeCheck() => UnderlyingScene.GetHandleWithoutDisposeCheck().AsInteger;
+	static CanvasScene IResource<CanvasScene>.CreateFromHandleAndImpl(ResourceHandle<CanvasScene> handle, IResourceImplProvider impl) => WrapBase(ResourceUtils.FastFromStub<Scene>(new ResourceStub(new ResourceIdent(ResourceHandle<Scene>.TypeHandle, handle.AsInteger), impl)));
+	static CanvasScene IResource<CanvasScene>.CreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FromStub<Scene>(stub));
+	static CanvasScene IResource<CanvasScene>.FastCreateFromStub(ResourceStub stub) => WrapBase(ResourceUtils.FastFromStub<Scene>(stub));
+
 	/// <summary>
 	/// Adds an image to this canvas.
 	/// </summary>
 	/// <param name="t">The texture to draw.</param>
 	/// <param name="name">Optional name for the new object. If omitted, the object takes the name of <paramref name="t"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public CanvasTexture Add(Texture t, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, t, name);
+	public CanvasImage Add(Texture t, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, t, name);
 	/// <summary>
 	/// Adds an image to this canvas, drawn with the given material.
 	/// </summary>
@@ -112,7 +119,7 @@ public readonly struct CanvasScene : IResourceSpecialization<CanvasScene, Scene>
 	/// <param name="m">The material to draw with.</param>
 	/// <param name="name">Optional name for the new object. If omitted, the object takes the name of <paramref name="m"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public CanvasTexture Add(Material m, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, m, name);
+	public CanvasImage Add(Material m, ReadOnlySpan<char> name = default) => Implementation.AddCanvasObject(SceneHandle, m, name);
 	/// <summary>
 	/// Adds a pre-built piece of text to this canvas.
 	/// </summary>

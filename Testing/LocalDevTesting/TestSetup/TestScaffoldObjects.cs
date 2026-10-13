@@ -225,7 +225,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		return Factory.SceneBuilder.CreateScene(name: "Default Test Scene");
 	}
 	Material? CreateDefaultMaterial() => Factory?.MaterialBuilder.CreateTestMaterial();
-	Mesh? CreateDefaultMesh() => Factory?.MeshBuilder.CreateMesh(new Cuboid(1f));
+	Mesh? CreateDefaultMesh() => Factory?.MeshBuilder.CreateCuboid(new Cuboid(1f));
 	ModelInstance? CreateDefaultModelInstance() {
 		if (Factory == null || Material is not { } material || Mesh is not { } mesh) return null;
 		return Factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: Location.Origin + Direction.Forward * 1.35f, initialRotation: 45f % Direction.Down, name: "Default Test Model Instance");

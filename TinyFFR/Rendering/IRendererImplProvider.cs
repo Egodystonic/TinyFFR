@@ -74,6 +74,30 @@ public interface IRendererImplProvider : IDisposableResourceImplProvider<Rendere
 	/// </summary>
 	PixelPickResult? PickModelInstanceFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool includeTransparentObjects, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment);
 	/// <summary>
+	/// Invoked via <see cref="Renderer.ProjectOnToRenderSurfacePixels"/> (<paramref name="asFraction"/> = <see langword="false"/>)
+	/// and <see cref="Renderer.ProjectOnToRenderSurfaceFraction"/> (<paramref name="asFraction"/> = <see langword="true"/>).
+	/// Pixel results are returned unfloored.
+	/// </summary>
+	XYPair<float>? ProjectOnToRenderSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction);
+	/// <summary>
+	/// Invoked via the <c>Clamped</c> overloads of <see cref="Renderer.ProjectOnToRenderSurfacePixels"/> (<paramref name="asFraction"/> = <see langword="false"/>)
+	/// and <see cref="Renderer.ProjectOnToRenderSurfaceFraction"/> (<paramref name="asFraction"/> = <see langword="true"/>).
+	/// Pixel results are returned unfloored.
+	/// </summary>
+	XYPair<float> ProjectOnToRenderSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped);
+	/// <summary>
+	/// Invoked via <see cref="Renderer.ProjectOnToRenderSubAreaSurfacePixels"/> (<paramref name="asFraction"/> = <see langword="false"/>)
+	/// and <see cref="Renderer.ProjectOnToRenderSubAreaSurfaceFraction"/> (<paramref name="asFraction"/> = <see langword="true"/>).
+	/// Pixel results are returned unfloored.
+	/// </summary>
+	XYPair<float>? ProjectOnToViewportSurface(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction);
+	/// <summary>
+	/// Invoked via the <c>Clamped</c> overloads of <see cref="Renderer.ProjectOnToRenderSubAreaSurfacePixels"/> (<paramref name="asFraction"/> = <see langword="false"/>)
+	/// and <see cref="Renderer.ProjectOnToRenderSubAreaSurfaceFraction"/> (<paramref name="asFraction"/> = <see langword="true"/>).
+	/// Pixel results are returned unfloored.
+	/// </summary>
+	XYPair<float> ProjectOnToViewportSurfaceClamped(ResourceHandle<Renderer> handle, Location location, DiagonalOrientation2D coordOrigin, bool disableDpiScalingAdjustment, bool asFraction, out bool wasClamped);
+	/// <summary>
 	/// Invoked via <see cref="Renderer.SetRenderSubAreaFraction"/>.
 	/// </summary>
 	void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions);

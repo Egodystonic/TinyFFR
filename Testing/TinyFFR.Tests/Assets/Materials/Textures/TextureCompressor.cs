@@ -1,12 +1,21 @@
 // Created on 2026-08-28 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using Egodystonic.TinyFFR.Threading;
+
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
-class TextureCompressorTest {
+unsafe class TextureCompressorTest {
 	const int TestDimension = 64;
-	
+	static readonly TextureCompressionFormat[] AllFormats = Enum.GetValues<TextureCompressionFormat>().Where(f => f != TextureCompressionFormat.None).ToArray();
+
+	[SetUp]
+	public void SetUpTest() => ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
+
+	[TearDown]
+	public void TearDownTest() => ThreadSafetyTracker.ClearPrimaryThread();
+
 	readonly ref struct CompressedTextureData {
 		public ReadOnlySpan<byte> Blocks { get; }
 		public TextureCompressionFormat Format { get; }
@@ -70,6 +79,106 @@ class TextureCompressorTest {
 		TextureCompressor.Decompress<TexelRgba32>(compressed, dimensions, format, decoded);
 
 		return CalculateTexturePeakSnr(original, decoded, includeBlue, includeAlpha);
+	}
+	
+	static TexelRgba32[] CreateRandomTestImage(XYPair<int> dimensions, int seed) {
+		var random = new Random(seed);
+		var result = new TexelRgba32[dimensions.Area];
+		for (var y = 0; y < dimensions.Y; ++y) {
+			for (var x = 0; x < dimensions.X; ++x) {
+				var noise = random.Next(48);
+				result[y * dimensions.X + x] = new TexelRgba32(
+					(byte) ((x * 255 / dimensions.X + noise) & 0xFF),
+					(byte) ((y * 255 / dimensions.Y + noise * 2) & 0xFF),
+					(byte) (((x / 13 + y / 7) % 2 == 0 ? 200 : 30) + noise),
+					(byte) (64 + ((x + y + noise) % 192))
+				);
+			}
+		}
+		return result;
+	}
+
+	static byte[] Compress(TexelRgba32[] texels, XYPair<int> dimensions, TextureCompressionFormat format, Quality quality, bool includeMips, IJobExecutionFacade? facade) {
+		var result = new byte[TextureCompressor.GetCompressedSizeBytes(dimensions, format, includeMips)];
+		TextureCompressor.Compress<TexelRgba32>(texels, dimensions, format, quality, TextureDataType.LinearData, includeMips, result, facade);
+		return result;
+	}
+
+	[Test]
+	public void ShouldProduceIdenticalOutputToSerialCompressionForEveryFormatAndQuality() {
+		var cases = new (XYPair<int> Dimensions, bool IncludeMips, Quality Quality)[] {
+			((1023, 517), true, Quality.VeryLow),
+			((1023, 517), true, Quality.Standard),
+			((512, 512), false, Quality.Standard),
+			((256, 192), true, Quality.VeryHigh)
+		};
+
+		foreach (var workerCount in new[] { 1, 7 }) {
+			using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = workerCount });
+			foreach (var (dimensions, includeMips, quality) in cases) {
+				var texels = CreateRandomTestImage(dimensions, dimensions.X ^ dimensions.Y);
+				foreach (var format in AllFormats) {
+					var serial = Compress(texels, dimensions, format, quality, includeMips, null);
+					var parallel = Compress(texels, dimensions, format, quality, includeMips, pool);
+					Assert.IsTrue(serial.AsSpan().SequenceEqual(parallel), $"Mismatch: {workerCount} workers, {dimensions}, mips={includeMips}, {quality}, {format}");
+				}
+			}
+		}
+	}
+
+	[Test]
+	public void ShouldProduceIdenticalOutputWithSynchronousOrWorkerlessFacades() {
+		var dimensions = new XYPair<int>(640, 360);
+		var texels = CreateRandomTestImage(dimensions, 1234);
+		using var workerlessPool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 0 });
+
+		foreach (var format in AllFormats) {
+			var reference = Compress(texels, dimensions, format, Quality.Low, true, null);
+			Assert.IsTrue(reference.AsSpan().SequenceEqual(Compress(texels, dimensions, format, Quality.Low, true, IJobExecutionFacade.Synchronous)), $"Synchronous mismatch: {format}");
+			Assert.IsTrue(reference.AsSpan().SequenceEqual(Compress(texels, dimensions, format, Quality.Low, true, workerlessPool)), $"Workerless mismatch: {format}");
+		}
+	}
+
+	sealed class NestedCompressionJob {
+		public required TexelRgba32[] Texels { get; init; }
+		public required XYPair<int> Dimensions { get; init; }
+		public required CooperativeThreadPool Pool { get; init; }
+		public required CountdownEvent Countdown { get; init; }
+		public byte[]? Result { get; set; }
+		public Exception? Error { get; set; }
+	}
+
+	static byte RunNestedCompression(NestedCompressionJob? job) {
+		job!.Result = Compress(job.Texels, job.Dimensions, TextureCompressionFormat.Bc7Linear, Quality.VeryLow, true, job.Pool);
+		return 0;
+	}
+
+	static void CompleteNestedCompression(NestedCompressionJob? job, Exception? error, byte _) {
+		job!.Error = error;
+		job.Countdown.Signal();
+	}
+
+	[Test, Timeout(180_000)]
+	public void ShouldNotDeadlockWhenCompressingFromTheWorkerThreadsItDispatchesTo() {
+		const int WorkerCount = 4;
+		const int JobCount = WorkerCount * 4;
+		var dimensions = new XYPair<int>(512, 512);
+		var texels = CreateRandomTestImage(dimensions, 99);
+		var expected = Compress(texels, dimensions, TextureCompressionFormat.Bc7Linear, Quality.VeryLow, true, null);
+
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = WorkerCount });
+		using var countdown = new CountdownEvent(JobCount);
+		var jobs = new NestedCompressionJob[JobCount];
+		for (var i = 0; i < JobCount; ++i) {
+			jobs[i] = new NestedCompressionJob { Texels = texels, Dimensions = dimensions, Pool = pool, Countdown = countdown };
+			((IJobExecutionFacade) pool).AddWorkerThreadJob(ThreadJob.CreateWithManagedContextUnmanagedResult<NestedCompressionJob, byte>(jobs[i], &RunNestedCompression, &CompleteNestedCompression));
+		}
+
+		Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(120)), "Nested compression jobs did not complete (possible deadlock).");
+		foreach (var job in jobs) {
+			Assert.IsNull(job.Error, job.Error?.ToString());
+			Assert.IsTrue(expected.AsSpan().SequenceEqual(job.Result), "Nested parallel compression produced different output.");
+		}
 	}
 
 	[Test]

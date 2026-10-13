@@ -40,16 +40,85 @@ public enum BuiltInSceneBackdrop {
 }
 
 /// <summary>
+/// A preset brightness for a scene's backdrop, named after the lighting condition it matches.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Use with the <c>Scene.SetBackdrop()</c> overloads that accept one. Each preset is the total real-world illuminance of its lighting condition (see
+/// <see cref="SceneBackdropBrightnessExtensions.ToLux"/>), and is converted to an intensity for the specific backdrop it is applied to, using how brightly that backdrop's own
+/// image lights a scene (see <see cref="BackdropTexture.MeasuredLux"/>). A preset therefore lights a scene to the same illuminance whichever backdrop image it is used with.
+/// </para>
+/// <para>
+/// Each preset lights a scene completely on its own: a backdrop at a given preset, viewed through a camera using the <see cref="CameraExposurePreset"/> of the same name, is
+/// correctly exposed with no other lights needed. The same is true of the <see cref="DirectionalLightBrightnessPreset"/> of the same name, which lights a scene to the same
+/// illuminance. Using both together adds their light, so lower the camera's exposure (or the brightness of one of them) to compensate.
+/// </para>
+/// </remarks>
+public enum SceneBackdropBrightnessPreset {
+	/// <summary>
+	/// The light of a well-lit interior, such as an office (600 lux).
+	/// Pairs with <see cref="CameraExposurePreset.InsideBrightLighting"/> (the default camera exposure).
+	/// </summary>
+	InsideBrightLighting = 0,
+	/// <summary>
+	/// The light of a clear day around midday, including that of the sun (100,000 lux).
+	/// Pairs with <see cref="CameraExposurePreset.OutsideMidday"/>.
+	/// </summary>
+	Midday,
+	/// <summary>
+	/// The light of an overcast day (10,000 lux).
+	/// Pairs with <see cref="CameraExposurePreset.OutsideOvercast"/>.
+	/// </summary>
+	Overcast,
+	/// <summary>
+	/// The light shortly after sunrise or before sunset (2,500 lux).
+	/// Pairs with <see cref="CameraExposurePreset.OutsideSunriseSunset"/>.
+	/// </summary>
+	SunriseSunset,
+	/// <summary>
+	/// The fading light just after sunset (40 lux). Pairs with <see cref="CameraExposurePreset.OutsideTwilight"/>.
+	/// </summary>
+	Twilight,
+	/// <summary>
+	/// The light of a full moon (0.25 lux). Pairs with <see cref="CameraExposurePreset.OutsideFullMoon"/>.
+	/// </summary>
+	FullMoon,
+	/// <summary>
+	/// The light of a moonless night, lit only by starlight and airglow (0.005 lux). Pairs with <see cref="CameraExposurePreset.OutsideStarlight"/>.
+	/// </summary>
+	Starlight
+}
+
+/// <summary>
+/// Extension methods for <see cref="SceneBackdropBrightnessPreset"/>.
+/// </summary>
+public static class SceneBackdropBrightnessExtensions {
+	extension(SceneBackdropBrightnessPreset @this) {
+		/// <summary>
+		/// Returns the total illuminance, in lux, of the lighting condition this preset represents.
+		/// </summary>
+		public float ToLux() {
+			return @this switch {
+				SceneBackdropBrightnessPreset.Midday => 100_000f,
+				SceneBackdropBrightnessPreset.Overcast => 10_000f,
+				SceneBackdropBrightnessPreset.SunriseSunset => 2_500f,
+				SceneBackdropBrightnessPreset.Twilight => 40f,
+				SceneBackdropBrightnessPreset.FullMoon => 0.25f,
+				SceneBackdropBrightnessPreset.Starlight => 0.005f,
+				_ /* InsideBrightLighting */ => 600f
+			};
+		}
+	}
+}
+
+
+/// <summary>
 /// A collection of everything that can be rendered together: the objects in a world, the lights that illuminate them, the backdrop behind them and any fog between. Created via the factory's <see cref="ISceneBuilder"/>.
 /// </summary>
 /// <remarks>
 /// Objects and lights must be explicitly added to a scene before they appear in it, and a single object or light may belong to several scenes at once.
 /// </remarks>
 public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
-	/// <summary>
-	/// The illuminance, in lux, that a backdrop contributes to a scene at an intensity of <c>1f</c>: <c>10,000</c>.
-	/// </summary>
-	public const float DefaultLux = 10_000f;
 	/// <summary>
 	/// The largest permitted backdrop intensity: <c>1E15f</c>.
 	/// </summary>
@@ -279,6 +348,203 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// <param name="text">The camera-facing text to remove.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(CameraLockedTextInstance text) => Implementation.Remove(_handle, text);
+
+	/// <summary>
+	/// Adds the object wrapped by the given <see cref="SceneObject"/> to this scene, exactly as though the matching typed <c>Add</c> overload had been called.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Adding something already in this scene has no effect (i.e. this method is idempotent).
+	/// </para>
+	/// <para>
+	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/> or is <c>default</c> (i.e. its type is <see cref="SceneObjectType.None"/>),
+	/// this method simply returns without any effect.
+	/// </para>
+	/// </remarks>
+	/// <param name="sceneObject">The object to add.</param>
+	public void Add(SceneObject sceneObject) {
+		switch (sceneObject.Type) {
+			case SceneObjectType.ModelInstance:
+			case SceneObjectType.MutableGridInstance:
+			case SceneObjectType.QuadInstance:
+			case SceneObjectType.TextInstance:
+				Add((ModelInstance) sceneObject);
+				break;
+			case SceneObjectType.ModelInstanceGroup:
+				Add((ModelInstanceGroup) sceneObject);
+				break;
+			case SceneObjectType.CameraLockedQuadInstance:
+				Add((CameraLockedQuadInstance) sceneObject);
+				break;
+			case SceneObjectType.CameraLockedTextInstance:
+				Add((CameraLockedTextInstance) sceneObject);
+				break;
+			case SceneObjectType.PointLight:
+				Add((PointLight) sceneObject);
+				break;
+			case SceneObjectType.SpotLight:
+				Add((SpotLight) sceneObject);
+				break;
+			case SceneObjectType.DirectionalLight:
+				Add((DirectionalLight) sceneObject);
+				break;
+			case SceneObjectType.Camera:
+			case SceneObjectType.None:
+				return;
+			default:
+				throw new ArgumentException($"Unsupported {nameof(SceneObjectType)} '{sceneObject.Type}'.", nameof(sceneObject));
+		}
+	}
+	/// <summary>
+	/// Removes the object wrapped by the given <see cref="SceneObject"/> from this scene, exactly as though the matching typed <c>Remove</c> overload had been called.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Removing something not in this scene has no effect (i.e. this method is idempotent).
+	/// </para>
+	/// <para>
+	/// If <paramref name="sceneObject"/> represents a <see cref="Camera"/> or is <c>default</c> (i.e. its type is <see cref="SceneObjectType.None"/>),
+	/// this method simply returns without any effect.
+	/// </para>
+	/// </remarks>
+	/// <param name="sceneObject">The object to remove.</param>
+	public void Remove(SceneObject sceneObject) {
+		switch (sceneObject.Type) {
+			case SceneObjectType.ModelInstance:
+			case SceneObjectType.MutableGridInstance:
+			case SceneObjectType.QuadInstance:
+			case SceneObjectType.TextInstance:
+			case SceneObjectType.CameraLockedQuadInstance:
+			case SceneObjectType.CameraLockedTextInstance:
+				Remove((ModelInstance) sceneObject);
+				break;
+			case SceneObjectType.ModelInstanceGroup:
+				Remove((ModelInstanceGroup) sceneObject);
+				break;
+			case SceneObjectType.PointLight:
+				Remove((PointLight) sceneObject);
+				break;
+			case SceneObjectType.SpotLight:
+				Remove((SpotLight) sceneObject);
+				break;
+			case SceneObjectType.DirectionalLight:
+				Remove((DirectionalLight) sceneObject);
+				break;
+			case SceneObjectType.Camera:
+			case SceneObjectType.None:
+				return;
+			default:
+				throw new ArgumentException($"Unsupported {nameof(SceneObjectType)} '{sceneObject.Type}'.", nameof(sceneObject));
+		}
+	}
+
+	/// <summary>
+	/// Adds every given object to this scene, exactly as though <see cref="Add(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being added. Use <see cref="SceneObject"/> to add objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to add.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void AddRange<T>(ReadOnlySpan<T> sceneObjects) where T : ISceneObject {
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Length; ++i) Add(ConvertToSceneObject(sceneObjects[i]));
+	}
+	/// <summary>
+	/// Adds every given object to this scene, exactly as though <see cref="Add(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="TIn">The source type of the enumerable.</typeparam>
+	/// <typeparam name="T">The kind of object being added. Use <see cref="SceneObject"/> to add objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to add.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void AddRange<TIn, T>(IndirectEnumerable<TIn, T> sceneObjects) where T : ISceneObject {
+		ThrowIfUnsupportedRangeType<T>();
+		foreach (var sceneObject in sceneObjects) Add(ConvertToSceneObject(sceneObject));
+	}
+	/// <summary>
+	/// Adds every given object to this scene, exactly as though <see cref="Add(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being added. Use <see cref="SceneObject"/> to add objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to add.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void AddRange<T>(IReadOnlyList<T> sceneObjects) where T : ISceneObject {
+		ArgumentNullException.ThrowIfNull(sceneObjects);
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Count; ++i) Add(ConvertToSceneObject(sceneObjects[i]));
+	}
+	/// <summary>
+	/// Removes every given object from this scene, exactly as though <see cref="Remove(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being removed. Use <see cref="SceneObject"/> to remove objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to remove.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void RemoveRange<T>(ReadOnlySpan<T> sceneObjects) where T : ISceneObject {
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Length; ++i) Remove(ConvertToSceneObject(sceneObjects[i]));
+	}
+	/// <summary>
+	/// Removes every given object from this scene, exactly as though <see cref="Remove(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="TIn">The source type of the enumerable.</typeparam>
+	/// <typeparam name="T">The kind of object being removed. Use <see cref="SceneObject"/> to remove objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to remove.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void RemoveRange<TIn, T>(IndirectEnumerable<TIn, T> sceneObjects) where T : ISceneObject {
+		ThrowIfUnsupportedRangeType<T>();
+		foreach (var sceneObject in sceneObjects) Remove(ConvertToSceneObject(sceneObject));
+	}
+	/// <summary>
+	/// Removes every given object from this scene, exactly as though <see cref="Remove(SceneObject)"/> had been called for each one.
+	/// </summary>
+	/// <typeparam name="T">The kind of object being removed. Use <see cref="SceneObject"/> to remove objects of mixed kinds.</typeparam>
+	/// <param name="sceneObjects">The objects to remove.</param>
+	/// <exception cref="ArgumentException">Thrown if <typeparamref name="T"/> is not a TinyFFR scene object type.</exception>
+	public void RemoveRange<T>(IReadOnlyList<T> sceneObjects) where T : ISceneObject {
+		ArgumentNullException.ThrowIfNull(sceneObjects);
+		ThrowIfUnsupportedRangeType<T>();
+		for (var i = 0; i < sceneObjects.Count; ++i) Remove(ConvertToSceneObject(sceneObjects[i]));
+	}
+
+	static void ThrowIfUnsupportedRangeType<T>() where T : ISceneObject {
+		if (typeof(T) == typeof(SceneObject)
+			|| typeof(T) == typeof(ModelInstance)
+			|| typeof(T) == typeof(ModelInstanceGroup)
+			|| typeof(T) == typeof(MutableGridInstance)
+			|| typeof(T) == typeof(QuadInstance)
+			|| typeof(T) == typeof(TextInstance)
+			|| typeof(T) == typeof(CameraLockedQuadInstance)
+			|| typeof(T) == typeof(CameraLockedTextInstance)
+			|| typeof(T) == typeof(PointLight)
+			|| typeof(T) == typeof(SpotLight)
+			|| typeof(T) == typeof(DirectionalLight)
+			|| typeof(T) == typeof(Light)
+			|| typeof(T) == typeof(Camera)) {
+			return;
+		}
+		throw new ArgumentException($"Unsupported scene object type '{typeof(T).Name}'.", nameof(T));
+	}
+
+	static SceneObject ConvertToSceneObject<T>(T obj) where T : ISceneObject {
+		if (typeof(T) == typeof(SceneObject)) return Unsafe.As<T, SceneObject>(ref obj);
+		if (typeof(T) == typeof(ModelInstance)) return Unsafe.As<T, ModelInstance>(ref obj);
+		if (typeof(T) == typeof(ModelInstanceGroup)) return Unsafe.As<T, ModelInstanceGroup>(ref obj);
+		if (typeof(T) == typeof(MutableGridInstance)) return Unsafe.As<T, MutableGridInstance>(ref obj);
+		if (typeof(T) == typeof(QuadInstance)) return Unsafe.As<T, QuadInstance>(ref obj);
+		if (typeof(T) == typeof(TextInstance)) return Unsafe.As<T, TextInstance>(ref obj);
+		if (typeof(T) == typeof(CameraLockedQuadInstance)) return Unsafe.As<T, CameraLockedQuadInstance>(ref obj);
+		if (typeof(T) == typeof(CameraLockedTextInstance)) return Unsafe.As<T, CameraLockedTextInstance>(ref obj);
+		if (typeof(T) == typeof(PointLight)) return Unsafe.As<T, PointLight>(ref obj);
+		if (typeof(T) == typeof(SpotLight)) return Unsafe.As<T, SpotLight>(ref obj);
+		if (typeof(T) == typeof(DirectionalLight)) return Unsafe.As<T, DirectionalLight>(ref obj);
+		if (typeof(T) == typeof(Light)) {
+			var light = Unsafe.As<T, Light>(ref obj);
+			return light.Type switch {
+				LightType.Point => light.As<PointLight>(),
+				LightType.Spot => light.As<SpotLight>(),
+				LightType.Directional => light.As<DirectionalLight>(),
+				_ => throw new ArgumentException($"Unsupported {nameof(LightType)} '{light.Type}'.", nameof(obj))
+			};
+		}
+		return default;
+	}
 	
 	/// <summary>
 	/// Empties this scene of its contents, optionally keeping some categories of them.
@@ -297,10 +563,16 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// surroundings. That second part is what makes a scene with a backdrop look markedly more natural than one lit only by its own lights.
 	/// </remarks>
 	/// <param name="backdrop">Which built-in backdrop to use.</param>
-	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is <see cref="DefaultLux"/>. Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is the backdrop as authored; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	/// <param name="rotation">How far the backdrop is turned about the scene, which is how you choose where the sun or a landmark sits. Defaults to no rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BuiltInSceneBackdrop backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
+	/// <inheritdoc cref="SetBackdrop(BuiltInSceneBackdrop, float, Rotation?)"/>
+	/// <param name="backdrop">Which built-in backdrop to use.</param>
+	/// <param name="brightness">The real-world illuminance to light the scene to, as the time of day or weather it matches. Converted to an intensity using how brightly this particular backdrop lights a scene (see <see cref="BackdropTexture.MeasuredLux"/>).</param>
+	/// <param name="rotation">How far the backdrop is turned about the scene, which is how you choose where the sun or a landmark sits. Defaults to no rotation.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdrop(BuiltInSceneBackdrop backdrop, SceneBackdropBrightnessPreset brightness, Rotation? rotation = null) => SetBackdrop(backdrop, BackdropIntensityUtils.LuxToIntensity(brightness.ToLux(), Implementation.GetBuiltInBackdropMeasuredLux(backdrop)), rotation);
 	/// <summary>
 	/// Sets this scene's backdrop to a loaded image.
 	/// </summary>
@@ -309,10 +581,16 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// surroundings. That second part is what makes a scene with a backdrop look markedly more natural than one lit only by its own lights.
 	/// </remarks>
 	/// <param name="backdrop">The image to use as the backdrop.</param>
-	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is <see cref="DefaultLux"/>. Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="backdropIntensity">How brightly the backdrop is drawn and how strongly it lights the scene, where <c>1f</c> is the backdrop as authored; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	/// <param name="rotation">How far the backdrop is turned about the scene, which is how you choose where the sun or a landmark sits. Defaults to no rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
+	/// <inheritdoc cref="SetBackdrop(BackdropTexture, float, Rotation?)"/>
+	/// <param name="backdrop">The image to use as the backdrop.</param>
+	/// <param name="brightness">The real-world illuminance to light the scene to, as the time of day or weather it matches. Converted to an intensity using how brightly this particular backdrop lights a scene (see <see cref="BackdropTexture.MeasuredLux"/>).</param>
+	/// <param name="rotation">How far the backdrop is turned about the scene, which is how you choose where the sun or a landmark sits. Defaults to no rotation.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdrop(BackdropTexture backdrop, SceneBackdropBrightnessPreset brightness, Rotation? rotation = null) => SetBackdrop(backdrop, backdrop.LuxToIntensity(brightness.ToLux()), rotation);
 	/// <summary>
 	/// Sets this scene's backdrop to a flat colour, which also lights the scene in that colour.
 	/// </summary>
@@ -321,9 +599,14 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// does. Use <see cref="SetBackdropWithoutIndirectLighting(ColorVect)"/> for a colour that fills the background but contributes no light.
 	/// </remarks>
 	/// <param name="color">The colour to fill the background with, and to light the scene in.</param>
-	/// <param name="indirectLightingIntensity">How strongly the colour lights the scene, where <c>1f</c> is <see cref="DefaultLux"/>. Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="indirectLightingIntensity">How strongly the colour lights the scene, where <c>1f</c> lights it with exactly that colour; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(ColorVect color, float indirectLightingIntensity = 1f) => Implementation.SetBackdrop(_handle, color, indirectLightingIntensity);
+	/// <inheritdoc cref="SetBackdrop(ColorVect, float)"/>
+	/// <param name="color">The colour to fill the background with, and to light the scene in.</param>
+	/// <param name="brightness">The real-world illuminance to light the scene to, as the time of day or weather it matches. Converted to an intensity using how brightly <paramref name="color"/> lights a scene; a black colour, which can not light a scene at all, is set at an intensity of <c>1f</c>.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdrop(ColorVect color, SceneBackdropBrightnessPreset brightness) => SetBackdrop(color, BackdropIntensityUtils.LuxToIntensity(brightness.ToLux(), BackdropIntensityUtils.MeasureLuxAtUnitIntensity(color)));
 	/// <summary>
 	/// Sets this scene's backdrop to a loaded image which is drawn behind the scene but contributes no light to it.
 	/// </summary>
@@ -332,10 +615,16 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	/// rather than a plausible environment.
 	/// </remarks>
 	/// <param name="backdrop">The image to use as the backdrop.</param>
-	/// <param name="backdropIntensity">How brightly the backdrop is drawn, where <c>1f</c> is its natural brightness. Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
+	/// <param name="backdropIntensity">How brightly the backdrop is drawn, where <c>1f</c> is the backdrop as authored; doubling the intensity doubles the perceived brightness (which takes four times the illuminance). Capped at <see cref="MaxBrightness"/>. Defaults to <c>1f</c>.</param>
 	/// <param name="rotation">How far the backdrop is turned about the scene. Defaults to no rotation.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdropWithoutIndirectLighting(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdropWithoutIndirectLighting(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
+	/// <inheritdoc cref="SetBackdropWithoutIndirectLighting(BackdropTexture, float, Rotation?)"/>
+	/// <param name="backdrop">The image to use as the backdrop.</param>
+	/// <param name="brightness">How brightly the backdrop is drawn, as the time of day or weather it matches. Converted to an intensity using how brightly this particular backdrop would light a scene (see <see cref="BackdropTexture.MeasuredLux"/>).</param>
+	/// <param name="rotation">How far the backdrop is turned about the scene. Defaults to no rotation.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdropWithoutIndirectLighting(BackdropTexture backdrop, SceneBackdropBrightnessPreset brightness, Rotation? rotation = null) => SetBackdropWithoutIndirectLighting(backdrop, backdrop.LuxToIntensity(brightness.ToLux()), rotation);
 	/// <summary>
 	/// Sets this scene's backdrop to a flat colour which is drawn behind the scene but contributes no light to it.
 	/// </summary>
@@ -386,25 +675,6 @@ public readonly partial struct Scene : IDisposableResource<Scene, ISceneImplProv
 	internal void SetPrimitivePaintbrush(nuint primitiveHandle, in PrimitivePaintbrush paintbrush) => Implementation.SetPrimitivePaintbrush(_handle, primitiveHandle, in paintbrush);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void DisposePrimitive(nuint primitiveHandle) => Implementation.DisposePrimitive(_handle, primitiveHandle);
-
-	/// <summary>
-	/// Converts an illuminance in lux to the equivalent backdrop intensity value.
-	/// </summary>
-	/// <param name="lux">The illuminance to convert. Negative and non-finite values return <c>0f</c>.</param>
-	public static float LuxToBrightness(float lux) {
-		if (!lux.IsNonNegativeAndFinite()) return 0f;
-		return Single.Min(MathF.Sqrt(lux / DefaultLux), MaxBrightness);
-	}
-
-	/// <summary>
-	/// Converts a backdrop intensity value to the illuminance it represents, in lux.
-	/// </summary>
-	/// <param name="brightness">The intensity to convert. Negative and non-finite values are treated as <c>0f</c>.</param>
-	public static float BrightnessToLux(float brightness) {
-		if (!brightness.IsNonNegativeAndFinite()) return 0f;
-		brightness = Single.Min(brightness, MaxBrightness);
-		return DefaultLux * brightness * brightness;
-	}
 
 	/// <inheritdoc />
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";

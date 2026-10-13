@@ -112,8 +112,8 @@ class LocalMaterialsTest {
 			title: WindowTitleStart + curUserOptions.GetWindowTitleString()
 		);
 		
-		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 7);
+		using var cubeMesh = factory.MeshBuilder.CreateCuboid(Cuboid.UnitCube);
+		using var sphereMesh = factory.MeshBuilder.CreateSphere(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 7);
 
 		using var camera = factory.CameraBuilder.CreateCamera();
 		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f), castsShadows: true, brightness: 0.5f);

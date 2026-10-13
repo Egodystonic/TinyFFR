@@ -11,10 +11,13 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image_write in as a definition file
 #define STB_TRUETYPE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_truetype in as a definition file
 #include <filesystem>
+#include <algorithm>
 
 #include <unordered_map>
 #include <string>
 #include "assimp/GltfMaterial.h"
+#include "assimp/commonMetaData.h"
+#include "assimp/config.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 #include "stb/stb_truetype.h" // Re-included here (after the initial inclusion via our own header) so that STB_TRUETYPE_IMPLEMENTATION takes effect
@@ -46,7 +49,11 @@ void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath
 			   | aiProcess_OptimizeMeshes
 			   | aiProcess_FindInstances;
 	}
-	*outAssetHandle = aiImportFile(filePath, flags);
+	auto importProperties = aiCreatePropertyStore();
+	// We remove lines and points because they get "triangulated" to 0-triangle meshes which later on causes problems on the managed side
+	aiSetImportPropertyInteger(importProperties, AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+	*outAssetHandle = aiImportFileExWithProperties(filePath, flags, nullptr, importProperties);
+	aiReleasePropertyStore(importProperties);
 	ThrowIfNull(*outAssetHandle, "Could not load asset '", filePath, "': ", aiGetErrorString());
 }
 StartExportedFunc(load_asset_file_in_to_memory, const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
@@ -503,6 +510,13 @@ bool apply_material_numerical_if_present(MemoryLoadedAssetHandle assetHandle, ai
 	return false;
 }
 
+bool asset_was_generated_by_blender(MemoryLoadedAssetHandle assetHandle) {
+	if (assetHandle->mMetaData == nullptr) return false;
+	aiString generator;
+	if (!assetHandle->mMetaData->Get(AI_METADATA_SOURCE_GENERATOR, generator)) return false;
+	return strncmp(generator.C_Str(), "Blender", 7) == 0;
+}
+
 void moderate_texture_data_with_factor_var(aiMaterial* matPtr, native_impl_asset_loader::AssetMaterialParam* paramPtr, const char* pKey, unsigned int type, unsigned int idx) {
 	if (paramPtr->Format != native_impl_asset_loader::TextureMap) return;
 	
@@ -517,6 +531,16 @@ void moderate_texture_data_with_factor_var(aiMaterial* matPtr, native_impl_asset
 	paramPtr->NumericalValueA = real;
 }
 
+std::u8string create_external_texture_path(const char* assetRootDirPath, const char* relativePath) {
+	std::string normalizedRelativePath { relativePath };
+	std::replace(normalizedRelativePath.begin(), normalizedRelativePath.end(), '\\', '/');
+
+	std::filesystem::path root { reinterpret_cast<const char8_t*>(assetRootDirPath) };
+	std::filesystem::path rel { reinterpret_cast<const char8_t*>(normalizedRelativePath.c_str()) };
+	std::filesystem::path full = root / rel;
+	return full.u8string();
+}
+
 void native_impl_asset_loader::get_loaded_asset_texture_path_len(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(static_cast<uint32_t>(materialIndex) >= assetHandle->mNumMaterials, "Material index was out of bounds.");
@@ -528,12 +552,7 @@ void native_impl_asset_loader::get_loaded_asset_texture_path_len(MemoryLoadedAss
 		*outPathLength = 0;
 		return;
 	}
-	auto cStr = path.C_Str();
-
-	std::filesystem::path root { reinterpret_cast<const char8_t*>(assetRootDirPath) };
-	std::filesystem::path rel { reinterpret_cast<const char8_t*>(cStr) };
-	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPathStr = full.u8string();
+	auto fullPathStr = create_external_texture_path(assetRootDirPath, path.C_Str());
 	*outPathLength = static_cast<int32_t>(fullPathStr.length());
 }
 StartExportedFunc(get_loaded_asset_texture_path_len, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength) {
@@ -549,12 +568,7 @@ void native_impl_asset_loader::get_loaded_asset_texture_path(MemoryLoadedAssetHa
 	aiString path;
 	auto result = assetHandle->mMaterials[materialIndex]->GetTexture(static_cast<aiTextureType>(-1 * textureIndex), 0, &path);
 	ThrowIf(result != aiReturn_SUCCESS, "Could not load texture path!");
-	auto cStr = path.C_Str();
-
-	std::filesystem::path root { reinterpret_cast<const char8_t*>(assetRootDirPath) };
-	std::filesystem::path rel { reinterpret_cast<const char8_t*>(cStr) };
-	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPathStr = full.u8string();
+	auto fullPathStr = create_external_texture_path(assetRootDirPath, path.C_Str());
 	auto len = fullPathStr.length();
 	ThrowIf(bufferLengthBytes <= len, "Given string buffer too small for texture path string.");
 	interop_utils::safe_copy_string(strBuffer, bufferLengthBytes, reinterpret_cast<const char*>(fullPathStr.c_str()));
@@ -564,7 +578,7 @@ StartExportedFunc(get_loaded_asset_texture_path, MemoryLoadedAssetHandle assetHa
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness) {
+void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, ShininessMapInterpretation shininessMapInterpretation, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(static_cast<uint32_t>(materialIndex) >= assetHandle->mNumMaterials, "Material index was out of bounds.");
 	ThrowIfNull(paramGroupPtr, "Param group pointer was null.");
@@ -596,17 +610,23 @@ void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetH
 	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
 	
 	// ORM - R
+	auto shininessMapIsRoughness = shininessMapInterpretation == ShininessMapInterpretation::Roughness
+		|| (shininessMapInterpretation == ShininessMapInterpretation::Auto && asset_was_generated_by_blender(assetHandle));
+	auto shininessMapPresent = mat->GetTextureCount(aiTextureType_SHININESS) > 0;
 	paramPtr = paramGroupPtr->RoughnessParamsPtr;
-	valueFound = 
-		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_DIFFUSE_ROUGHNESS)
-		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_ROUGHNESS_FACTOR, true, false);
+	valueFound = apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_DIFFUSE_ROUGHNESS);
+	if (valueFound) moderate_texture_data_with_factor_var(mat, paramPtr, AI_MATKEY_ROUGHNESS_FACTOR);
+	else if (shininessMapPresent) {
+		if (shininessMapIsRoughness) valueFound = apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_SHININESS);
+	}
+	else valueFound = apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_ROUGHNESS_FACTOR, true, false);
 	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
-	else moderate_texture_data_with_factor_var(mat, paramPtr, AI_MATKEY_ROUGHNESS_FACTOR);
 	
 	// ORM - ^R (i.e. Glossiness, Shininess)
 	paramPtr = paramGroupPtr->GlossinessParamsPtr;
 	valueFound = 
-		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_SHININESS);
+		!shininessMapIsRoughness 
+		&& apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_SHININESS);
 		// Assimp always provides this value as part of its legacy model so we just check for a texture now 
 		// || apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_SHININESS_STRENGTH, true)
 		// || apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_SHININESS, true);
@@ -700,6 +720,11 @@ void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetH
 		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, true, false);
 	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
 	
+	paramPtr = paramGroupPtr->OpacityParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_OPACITY);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
 	*outAlphaFormat = AssetMaterialAlphaFormat::None;
 	aiString alphaMode;
 	if (mat->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == aiReturn_SUCCESS) {
@@ -713,8 +738,8 @@ void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetH
 		*outRefractionThickness = aiRefThick;
 	}
 }
-StartExportedFunc(get_loaded_asset_material_data, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, native_impl_asset_loader::AssetMaterialParamGroup* paramGroupPtr, native_impl_asset_loader::AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness) {
-	native_impl_asset_loader::get_loaded_asset_material_data(assetHandle, materialIndex, paramGroupPtr, outAlphaFormat, outRefractionThickness);
+StartExportedFunc(get_loaded_asset_material_data, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, native_impl_asset_loader::ShininessMapInterpretation shininessMapInterpretation, native_impl_asset_loader::AssetMaterialParamGroup* paramGroupPtr, native_impl_asset_loader::AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness) {
+	native_impl_asset_loader::get_loaded_asset_material_data(assetHandle, materialIndex, shininessMapInterpretation, paramGroupPtr, outAlphaFormat, outRefractionThickness);
 	EndExportedFunc
 }
 #pragma endregion
@@ -871,6 +896,12 @@ unsigned int count_nodes(aiNode* node) {
 	return result;
 }
 
+unsigned int count_ancestors(aiNode* node) {
+	auto result = 0U;
+	for (auto ancestor = node->mParent; ancestor != nullptr; ancestor = ancestor->mParent) ++result;
+	return result;
+}
+
 void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outNodeCount, "Out node count pointer was null.");
@@ -878,7 +909,7 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(MemoryL
 	auto unused = aiMatrix4x4{};
 	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
 	if (!mesh->HasBones()) *outNodeCount = 0;
-	else *outNodeCount = static_cast<int32_t>(count_nodes(mesh->mBones[0]->mArmature));
+	else *outNodeCount = static_cast<int32_t>(count_ancestors(mesh->mBones[0]->mArmature) + count_nodes(mesh->mBones[0]->mArmature));
 }
 StartExportedFunc(get_loaded_asset_mesh_skeletal_node_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount) {
 	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(assetHandle, meshIndex, outNodeCount);
@@ -901,6 +932,20 @@ unsigned int write_nodes(aiMesh* mesh, aiNode* node, native_impl_asset_loader::N
 	return result;
 }
 
+unsigned int write_ancestors(aiMesh* mesh, aiNode* ancestor, native_impl_asset_loader::NodeHandle* buffer, unsigned int remainingBufferCount, std::unordered_map<std::string, unsigned int>& boneMap) {
+	if (ancestor == nullptr) return 0U;
+	auto result = write_ancestors(mesh, ancestor->mParent, buffer, remainingBufferCount, boneMap);
+	ThrowIf(remainingBufferCount <= result, "Buffer not large enough.");
+	auto kvp = boneMap.find(ancestor->mName.C_Str());
+	auto boneExists = kvp != boneMap.end();
+	buffer[result] = {
+		.Node = ancestor,
+		.BoneIfExists = boneExists ? mesh->mBones[kvp->second] : nullptr,
+		.BoneIndex = boneExists ? static_cast<int32_t>(kvp->second) : -1
+	};
+	return result + 1U;
+}
+
 void native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buffer(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, NodeHandle* nodeHandleBuffer, int32_t handleBufferCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(nodeHandleBuffer, "Node handle buffer pointer was null.");
@@ -915,7 +960,9 @@ void native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buf
 		boneMap[mesh->mBones[i]->mName.C_Str()] = i;
 	}
 	
-	auto numNodesWritten = write_nodes(mesh, mesh->mBones[0]->mArmature, nodeHandleBuffer, static_cast<unsigned int>(handleBufferCount), boneMap);	
+	auto armature = mesh->mBones[0]->mArmature;
+	auto numNodesWritten = write_ancestors(mesh, armature->mParent, nodeHandleBuffer, static_cast<unsigned int>(handleBufferCount), boneMap);
+	numNodesWritten += write_nodes(mesh, armature, nodeHandleBuffer + numNodesWritten, static_cast<unsigned int>(handleBufferCount) - numNodesWritten, boneMap);
 	ThrowIf(numNodesWritten != static_cast<unsigned int>(handleBufferCount), "Buffer count did not match node count.");
 }
 StartExportedFunc(generate_loaded_asset_mesh_skeletal_node_flat_buffer, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount) {

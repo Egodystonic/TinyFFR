@@ -81,6 +81,21 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _impl = _impl with { BaseShape = _impl.BaseShape with { Depth = value } };
 	}
+	
+	/// <inheritdoc />
+	public Vect Extents {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.Extents; 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _impl = _impl with { BaseShape = _impl.BaseShape with { Extents = value } };
+	}
+	/// <inheritdoc />
+	public Vect HalfExtents {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.HalfExtents; 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _impl = _impl with { BaseShape = _impl.BaseShape with { HalfExtents = value } };
+	}
 
 	/// <inheritdoc />
 	public float Volume {

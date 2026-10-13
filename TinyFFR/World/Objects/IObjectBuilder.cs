@@ -59,13 +59,63 @@ public interface IObjectBuilder {
 	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
 	/// </summary>
 	/// <param name="models">The models to create instances of.</param>
-	/// <param name="initialPosition">Where the new instance should be. If <see langword="null"/>, the origin is used.</param>
-	/// <param name="initialRotation">How the new instance should be oriented. If <see langword="null"/>, it is left unrotated.</param>
-	/// <param name="initialScaling">How large the new instance should be. If <see langword="null"/>, it is left unscaled.</param>
+	/// <param name="initialPosition">Where the new instances should be. If <see langword="null"/>, the origin is used.</param>
+	/// <param name="initialRotation">How the new instances should be oriented. If <see langword="null"/>, they are left unrotated.</param>
+	/// <param name="initialScaling">How large the new instances should be. If <see langword="null"/>, they are left unscaled.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) {
 		return CreateModelInstances(
 			models,
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			animationTable,
+			name
+		);
+	}
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
+	/// </summary>
+	/// <typeparam name="TModelList">The type of list supplied.</typeparam>
+	/// <param name="models">The models to create instances of.</param>
+	/// <param name="initialPosition">Where the new instances should be. If <see langword="null"/>, the origin is used.</param>
+	/// <param name="initialRotation">How the new instances should be oriented. If <see langword="null"/>, they are left unrotated.</param>
+	/// <param name="initialScaling">How large the new instances should be. If <see langword="null"/>, they are left unscaled.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) where TModelList : IReadOnlyList<Model> {
+		return CreateModelInstances(
+			models,
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			animationTable,
+			name
+		);
+	}
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each model in the given <paramref name="bundle"/>.
+	/// </summary>
+	/// <remarks>
+	/// If the bundle has a shared animation table (see <see cref="ModelBundle.Animations"/>), it is attached to the returned group, so that the bundle's animations
+	/// can be played on the whole group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table remains owned by the bundle: disposing the returned group
+	/// never disposes it.
+	/// </remarks>
+	/// <param name="bundle">The bundle whose models to create instances of.</param>
+	/// <param name="initialPosition">Where the new instances should be. If <see langword="null"/>, the origin is used.</param>
+	/// <param name="initialRotation">How the new instances should be oriented. If <see langword="null"/>, they are left unrotated.</param>
+	/// <param name="initialScaling">How large the new instances should be. If <see langword="null"/>, they are left unscaled.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup CreateModelInstances(ModelBundle bundle, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			bundle,
 			new Transform(
 				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
 				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
@@ -75,21 +125,61 @@ public interface IObjectBuilder {
 		);
 	}
 	/// <summary>
-	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="meshes"/>, all using the same <paramref name="material"/>.
 	/// </summary>
-	/// <param name="models">The models to create instances of.</param>
-	/// <param name="initialPosition">Where the new instance should be. If <see langword="null"/>, the origin is used.</param>
-	/// <param name="initialRotation">How the new instance should be oriented. If <see langword="null"/>, it is left unrotated.</param>
-	/// <param name="initialScaling">How large the new instance should be. If <see langword="null"/>, it is left unscaled.</param>
+	/// <remarks>
+	/// This is intended for use with the meshes loaded by <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>: pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> as <paramref name="meshes"/> and (if it has one) the first of its <see cref="ResourceGroup.AnimationTables"/> as
+	/// <paramref name="animationTable"/>, so that the meshes' shared animations can be played on the returned group.
+	/// </remarks>
+	/// <param name="meshes">The meshes to create instances of.</param>
+	/// <param name="material">The material giving every new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
+	/// <param name="initialPosition">Where the new instances should be. If <see langword="null"/>, the origin is used.</param>
+	/// <param name="initialRotation">How the new instances should be oriented. If <see langword="null"/>, they are left unrotated.</param>
+	/// <param name="initialScaling">How large the new instances should be. If <see langword="null"/>, they are left unscaled.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	ModelInstanceGroup CreateModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, Model> models, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Mesh> meshes, Material? material, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) {
 		return CreateModelInstances(
-			models,
+			meshes,
+			material,
 			new Transform(
 				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
 				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
 				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
 			),
+			animationTable,
+			name
+		);
+	}
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="meshes"/>, all using the same <paramref name="material"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is intended for use with the meshes loaded by <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>: pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> as <paramref name="meshes"/> and (if it has one) the first of its <see cref="ResourceGroup.AnimationTables"/> as
+	/// <paramref name="animationTable"/>, so that the meshes' shared animations can be played on the returned group.
+	/// </remarks>
+	/// <typeparam name="TMeshList">The type of list supplied.</typeparam>
+	/// <param name="meshes">The meshes to create instances of.</param>
+	/// <param name="material">The material giving every new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
+	/// <param name="initialPosition">Where the new instances should be. If <see langword="null"/>, the origin is used.</param>
+	/// <param name="initialRotation">How the new instances should be oriented. If <see langword="null"/>, they are left unrotated.</param>
+	/// <param name="initialScaling">How large the new instances should be. If <see langword="null"/>, they are left unscaled.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup CreateModelInstances<TMeshList>(TMeshList meshes, Material? material, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) where TMeshList : IReadOnlyList<Mesh> {
+		return CreateModelInstances(
+			meshes,
+			material,
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			animationTable,
 			name
 		);
 	}
@@ -131,11 +221,49 @@ public interface IObjectBuilder {
 	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
 	/// </summary>
 	/// <param name="models">The models to create instances of.</param>
-	/// <param name="initialTransform">Where the new instance should be, how it should be oriented, and how large it should be.</param>
+	/// <param name="initialTransform">Where the new instances should be, how they should be oriented, and how large they should be.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, Transform initialTransform, ReadOnlySpan<char> name = default) {
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, Transform initialTransform, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) {
 		return CreateModelInstances(
 			models,
+			animationTable, new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			});
+	}
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
+	/// </summary>
+	/// <typeparam name="TModelList">The type of list supplied.</typeparam>
+	/// <param name="models">The models to create instances of.</param>
+	/// <param name="initialTransform">Where the new instances should be, how they should be oriented, and how large they should be.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, Transform initialTransform, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) where TModelList : IReadOnlyList<Model> {
+		return CreateModelInstances(
+			models,
+			animationTable, new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			});
+	}
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each model in the given <paramref name="bundle"/>.
+	/// </summary>
+	/// <remarks>
+	/// If the bundle has a shared animation table (see <see cref="ModelBundle.Animations"/>), it is attached to the returned group, so that the bundle's animations
+	/// can be played on the whole group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table remains owned by the bundle: disposing the returned group
+	/// never disposes it.
+	/// </remarks>
+	/// <param name="bundle">The bundle whose models to create instances of.</param>
+	/// <param name="initialTransform">Where the new instances should be, how they should be oriented, and how large they should be.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup CreateModelInstances(ModelBundle bundle, Transform initialTransform, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			bundle,
 			new ModelInstanceCreationConfig {
 				InitialTransform = initialTransform,
 				Name = name
@@ -143,19 +271,52 @@ public interface IObjectBuilder {
 		);
 	}
 	/// <summary>
-	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="meshes"/>, all using the same <paramref name="material"/>.
 	/// </summary>
-	/// <param name="models">The models to create instances of.</param>
-	/// <param name="initialTransform">Where the new instance should be, how it should be oriented, and how large it should be.</param>
+	/// <remarks>
+	/// This is intended for use with the meshes loaded by <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>: pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> as <paramref name="meshes"/> and (if it has one) the first of its <see cref="ResourceGroup.AnimationTables"/> as
+	/// <paramref name="animationTable"/>, so that the meshes' shared animations can be played on the returned group.
+	/// </remarks>
+	/// <param name="meshes">The meshes to create instances of.</param>
+	/// <param name="material">The material giving every new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
+	/// <param name="initialTransform">Where the new instances should be, how they should be oriented, and how large they should be.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	ModelInstanceGroup CreateModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, Model> models, Transform initialTransform, ReadOnlySpan<char> name = default) {
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Mesh> meshes, Material? material, Transform initialTransform, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) {
 		return CreateModelInstances(
-			models,
-			new ModelInstanceCreationConfig {
+			meshes,
+			material,
+			animationTable, new ModelInstanceCreationConfig {
 				InitialTransform = initialTransform,
 				Name = name
 			}
 		);
+	}
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="meshes"/>, all using the same <paramref name="material"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is intended for use with the meshes loaded by <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>: pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> as <paramref name="meshes"/> and (if it has one) the first of its <see cref="ResourceGroup.AnimationTables"/> as
+	/// <paramref name="animationTable"/>, so that the meshes' shared animations can be played on the returned group.
+	/// </remarks>
+	/// <typeparam name="TMeshList">The type of list supplied.</typeparam>
+	/// <param name="meshes">The meshes to create instances of.</param>
+	/// <param name="material">The material giving every new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
+	/// <param name="initialTransform">Where the new instances should be, how they should be oriented, and how large they should be.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	/// group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup CreateModelInstances<TMeshList>(TMeshList meshes, Material? material, Transform initialTransform, MeshGroupAnimationTable? animationTable = null, ReadOnlySpan<char> name = default) where TMeshList : IReadOnlyList<Mesh> {
+		return CreateModelInstances(
+			meshes,
+			material,
+			animationTable, new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			});
 	}
 	
 	
@@ -173,20 +334,64 @@ public interface IObjectBuilder {
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	ModelInstance CreateModelInstance(Mesh mesh, Material? material, in ModelInstanceCreationConfig config);
 
-	
+
 	/// <summary>
 	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
 	/// </summary>
 	/// <param name="models">The models to create instances of.</param>
-	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
-	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, in ModelInstanceCreationConfig config);
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	///     group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="config">Configuration for the new object, including its name and the initial transform of every instance.</param>
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config);
 	/// <summary>
 	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="models"/>.
 	/// </summary>
 	/// <typeparam name="TModelList">The type of list supplied.</typeparam>
 	/// <param name="models">The models to create instances of.</param>
-	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
-	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model>;
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	///     group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="config">Configuration for the new object, including its name and the initial transform of every instance.</param>
+	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model>;
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each model in the given <paramref name="bundle"/>.
+	/// </summary>
+	/// <remarks>
+	/// If the bundle has a shared animation table (see <see cref="ModelBundle.Animations"/>), it is attached to the returned group, so that the bundle's animations
+	/// can be played on the whole group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table remains owned by the bundle: disposing the returned group
+	/// never disposes it.
+	/// </remarks>
+	/// <param name="bundle">The bundle whose models to create instances of.</param>
+	/// <param name="config">Configuration for the new object, including its name and the initial transform of every instance.</param>
+	ModelInstanceGroup CreateModelInstances(ModelBundle bundle, in ModelInstanceCreationConfig config);
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="meshes"/>, all using the same <paramref name="material"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is intended for use with the meshes loaded by <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>: pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> as <paramref name="meshes"/> and (if it has one) the first of its <see cref="ResourceGroup.AnimationTables"/> as
+	/// <paramref name="animationTable"/>, so that the meshes' shared animations can be played on the returned group.
+	/// </remarks>
+	/// <param name="meshes">The meshes to create instances of.</param>
+	/// <param name="material">The material giving every new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	///     group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="config">Configuration for the new object, including its name and the initial transform of every instance.</param>
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Mesh> meshes, Material? material, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config);
+	/// <summary>
+	/// Creates a <see cref="ModelInstanceGroup"/> containing one new instance of each of the given <paramref name="meshes"/>, all using the same <paramref name="material"/>.
+	/// </summary>
+	/// <remarks>
+	/// This is intended for use with the meshes loaded by <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>: pass the group's
+	/// <see cref="ResourceGroup.Meshes"/> as <paramref name="meshes"/> and (if it has one) the first of its <see cref="ResourceGroup.AnimationTables"/> as
+	/// <paramref name="animationTable"/>, so that the meshes' shared animations can be played on the returned group.
+	/// </remarks>
+	/// <typeparam name="TMeshList">The type of list supplied.</typeparam>
+	/// <param name="meshes">The meshes to create instances of.</param>
+	/// <param name="material">The material giving every new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
+	/// <param name="animationTable">An optional shared animation table to attach to the returned group, so that the table's animations can be played on the whole
+	///     group at once (see <see cref="ModelInstanceGroup.Animations"/>). The table is not owned by the returned group: disposing the group never disposes it.</param>
+	/// <param name="config">Configuration for the new object, including its name and the initial transform of every instance.</param>
+	ModelInstanceGroup CreateModelInstances<TMeshList>(TMeshList meshes, Material? material, MeshGroupAnimationTable? animationTable, in ModelInstanceCreationConfig config) where TMeshList : IReadOnlyList<Mesh>;
 	/// <summary>
 	/// Groups existing model instances together so they can be transformed as one.
 	/// </summary>
@@ -221,6 +426,47 @@ public interface IObjectBuilder {
 	/// <param name="disposingGroupDisposesInstances">Whether disposing the group should also dispose the instances in it. Defaults to <see langword="true"/>.</param>
 	/// <param name="name">Optional name for the new object.</param>
 	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, bool disposingGroupDisposesInstances = true, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
+	/// <summary>
+	/// Groups existing model instances together so they can be transformed and animated as one, attaching the given shared animation table to the group.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The instances keep working individually; the group is an additional handle that transforms them together. The table's animations can then be played on
+	/// the whole group at once (see <see cref="ModelInstanceGroup.Animations"/>), which poses every instance whose mesh is part of <paramref name="animationTable"/>
+	/// and leaves any others unchanged.
+	/// </para>
+	/// <para>
+	/// The table is not owned by the returned group: disposing the group never disposes it, even when <paramref name="disposingGroupDisposesInstances"/> is
+	/// <see langword="true"/>.
+	/// </para>
+	/// </remarks>
+	/// <param name="instances">The instances to group together.</param>
+	/// <param name="animationTable">The shared animation table to attach to the group, usually taken from <see cref="ResourceGroup.AnimationTables"/> on a group loaded
+	/// with <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.</param>
+	/// <param name="disposingGroupDisposesInstances">Whether disposing the group should also dispose the instances in it. Defaults to <see langword="true"/>.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name);
+	/// <summary>
+	/// Groups existing model instances together so they can be transformed and animated as one, attaching the given shared animation table to the group.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The instances keep working individually; the group is an additional handle that transforms them together. The table's animations can then be played on
+	/// the whole group at once (see <see cref="ModelInstanceGroup.Animations"/>), which poses every instance whose mesh is part of <paramref name="animationTable"/>
+	/// and leaves any others unchanged.
+	/// </para>
+	/// <para>
+	/// The table is not owned by the returned group: disposing the group never disposes it, even when <paramref name="disposingGroupDisposesInstances"/> is
+	/// <see langword="true"/>.
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TInstanceList">The type of list supplied.</typeparam>
+	/// <param name="instances">The instances to group together.</param>
+	/// <param name="animationTable">The shared animation table to attach to the group, usually taken from <see cref="ResourceGroup.AnimationTables"/> on a group loaded
+	/// with <see cref="IAssetLoader.LoadMeshGroup(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.</param>
+	/// <param name="disposingGroupDisposesInstances">Whether disposing the group should also dispose the instances in it. Defaults to <see langword="true"/>.</param>
+	/// <param name="name">Optional name for the new object.</param>
+	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, MeshGroupAnimationTable animationTable, bool disposingGroupDisposesInstances = true, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
 	
 	#region QuadMesh
 	/// <summary>
@@ -247,17 +493,24 @@ public interface IObjectBuilder {
 					positionAnchor
 				),
 				Name = name
-			}
+			},
+			positionAnchor
 		);
 	}
 	/// <summary>
 	/// Creates a new instance of a flat quad; i.e. a rectangle in the world; using a pre-allocated <see cref="QuadMesh"/> that describes the quad geometry.
 	/// </summary>
+	/// <remarks>
+	/// The translation of the config's initial transform is the centre of the quad; <paramref name="positionAnchor"/> only records which point of the quad
+	/// its <see cref="QuadInstance.Position"/> refers to. <see cref="QuadMesh.CalculateTransformForStandardQuadMesh"/> calculates an initial transform that
+	/// places a given anchor point at a given position.
+	/// </remarks>
 	/// <param name="mesh">The mesh giving the new instance its shape.</param>
 	/// <param name="material">The material giving the new instance its surface, or <see langword="null"/> to use the built-in default material.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
-	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
-		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
+	/// <param name="positionAnchor">The value for the new instance's <see cref="QuadInstance.PositionAnchor"/>.</param>
+	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config, Orientation2D positionAnchor = Orientation2D.None) {
+		return QuadInstance.FromPreviouslyAllocatedUnderlyingModelInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config), positionAnchor);
 	}
 	
 	/// <summary>
@@ -275,7 +528,7 @@ public interface IObjectBuilder {
 	/// <param name="scalingMode">How the object is sized on screen; see <see cref="CameraLockedScalingMode"/>.</param>
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; see <see cref="CameraLockStyle"/>.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Location? position = null, XYPair<float>? size = null, Direction? lockedUprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPlane, ReadOnlySpan<char> name = default) {
 		return CreateCameraLockedQuadInstance(
 			mesh,
 			material,
@@ -309,7 +562,7 @@ public interface IObjectBuilder {
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; see <see cref="CameraLockStyle"/>.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	CameraLockedQuadInstance CreateCameraLockedQuadInstance(QuadMesh mesh, Material material, Direction lockedUprightDirection, Orientation2D positionAnchor, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
-		return new CameraLockedQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
+		return CameraLockedQuadInstance.FromPreviouslyAllocatedUnderlyingQuadInstance(CreateQuadInstance(mesh, material, in config), lockedUprightDirection, positionAnchor, scalingMode, lockStyle);
 	}
 	#endregion
 	
@@ -402,7 +655,7 @@ public interface IObjectBuilder {
 	/// <param name="scalingMode">How the object is sized on screen; see <see cref="CameraLockedScalingMode"/>.</param>
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; <see cref="CameraLockStyle"/>.</param>
 	/// <param name="name">Optional name for the new object.</param>
-	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPosition, ReadOnlySpan<char> name = default) {
+	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Location? position = null, Direction? lockedUprightDirection = null, TextLayout? layout = null, CameraLockedScalingMode scalingMode = CameraLockedScalingMode.Standard, CameraLockStyle lockStyle = CameraLockStyle.FaceCameraPlane, ReadOnlySpan<char> name = default) {
 		layout ??= new TextLayout();
 		return CreateCameraLockedTextInstance(
 			pen,
@@ -432,7 +685,7 @@ public interface IObjectBuilder {
 	/// <param name="lockStyle">How the object decides which way to turn to face the camera; <see cref="CameraLockStyle"/>.</param>
 	/// <param name="config">Configuration for the new object, including its name and initial transform.</param>
 	CameraLockedTextInstance CreateCameraLockedTextInstance(FontPen pen, FontString @string, Direction lockedUprightDirection, TextLayout layout, CameraLockedScalingMode scalingMode, CameraLockStyle lockStyle, in ModelInstanceCreationConfig config) {
-		return new CameraLockedTextInstance(CreateTextInstance(pen, @string, layout, in config), lockedUprightDirection, layout.PositionAnchor, scalingMode, lockStyle);
+		return CameraLockedTextInstance.FromPreviouslyAllocatedUnderlyingTextInstance(CreateTextInstance(pen, @string, layout, in config), lockedUprightDirection, layout.PositionAnchor, scalingMode, lockStyle);
 	}
 	#endregion
 }

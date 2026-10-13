@@ -27,23 +27,23 @@ public interface IBuiltInTexturePathLibrary {
 	/// </summary>
 	ReadOnlySpan<char> DefaultNormalMap { get; }
 	/// <summary>
-	/// An ORM map combining <see cref="DefaultOcclusionMap"/>, <see cref="DefaultRoughnessMap"/> and
-	/// <see cref="DefaultMetallicMap"/> in to its three channels.
+	/// An ORM map combining <see cref="DefaultOcclusionValue"/>, <see cref="DefaultRoughnessValue"/> and
+	/// <see cref="DefaultMetallicValue"/> in to its three channels.
 	/// </summary>
 	ReadOnlySpan<char> DefaultOcclusionRoughnessMetallicMap { get; }
 	/// <summary>
-	/// An ORMR map combining <see cref="DefaultOcclusionMap"/>, <see cref="DefaultRoughnessMap"/>,
-	/// <see cref="DefaultMetallicMap"/> and <see cref="DefaultReflectanceMap"/> in to its four channels.
+	/// An ORMR map combining <see cref="DefaultOcclusionValue"/>, <see cref="DefaultRoughnessValue"/>,
+	/// <see cref="DefaultMetallicValue"/> and <see cref="DefaultReflectanceValue"/> in to its four channels.
 	/// </summary>
 	ReadOnlySpan<char> DefaultOcclusionRoughnessMetallicReflectanceMap { get; }
 	/// <summary>
 	/// An occlusion map of <c>1f</c> everywhere, meaning no part of the surface is shadowed by its own shape.
 	/// </summary>
-	ReadOnlySpan<char> DefaultOcclusionMap { get; }
+	ReadOnlySpan<char> DefaultOcclusionValue { get; }
 	/// <summary>
 	/// A roughness map of <c>0.4f</c> everywhere, giving a surface that is neither mirror-smooth nor completely matte.
 	/// </summary>
-	ReadOnlySpan<char> DefaultRoughnessMap { get; }
+	ReadOnlySpan<char> DefaultRoughnessValue { get; }
 	/// <summary>
 	/// A metallic map of <c>0f</c> everywhere, meaning the surface is not metallic at all.
 	/// </summary>
@@ -51,46 +51,46 @@ public interface IBuiltInTexturePathLibrary {
 	/// This is the map to supply when a downloaded material has no metallic data, which usually means it was never intended to
 	/// look metallic.
 	/// </remarks>
-	ReadOnlySpan<char> DefaultMetallicMap { get; }
+	ReadOnlySpan<char> DefaultMetallicValue { get; }
 	/// <summary>
 	/// A reflectance map of <c>0.5f</c> everywhere, which is the ordinary reflectance of most non-metallic surfaces.
 	/// </summary>
-	ReadOnlySpan<char> DefaultReflectanceMap { get; }
+	ReadOnlySpan<char> DefaultReflectanceValue { get; }
 	/// <summary>
-	/// An absorption-transmission map combining <see cref="DefaultAbsorptionMap"/> in its colour channels and
-	/// <see cref="DefaultTransmissionMap"/> in its alpha channel.
+	/// An absorption-transmission map combining <see cref="DefaultAbsorptionValue"/> in its colour channels and
+	/// <see cref="DefaultTransmissionValue"/> in its alpha channel.
 	/// </summary>
 	ReadOnlySpan<char> DefaultAbsorptionTransmissionMap { get; }
 	/// <summary>
 	/// An absorption map that is entirely black, meaning no colour of light is absorbed and everything passes through the
 	/// surface untinted.
 	/// </summary>
-	ReadOnlySpan<char> DefaultAbsorptionMap { get; }
+	ReadOnlySpan<char> DefaultAbsorptionValue { get; }
 	/// <summary>
 	/// A transmission map of <c>0.5f</c> everywhere, letting half the light through the surface.
 	/// </summary>
-	ReadOnlySpan<char> DefaultTransmissionMap { get; }
+	ReadOnlySpan<char> DefaultTransmissionValue { get; }
 	/// <summary>
-	/// An emissive map combining <see cref="DefaultEmissiveColorMap"/> and <see cref="DefaultEmissiveIntensityMap"/>.
+	/// An emissive map combining <see cref="DefaultEmissiveColorValue"/> and <see cref="DefaultEmissiveIntensityValue"/>.
 	/// </summary>
 	ReadOnlySpan<char> DefaultEmissiveMap { get; }
 	/// <summary>
 	/// An emissive colour map in the warm yellow-white of an incandescent light bulb.
 	/// </summary>
-	ReadOnlySpan<char> DefaultEmissiveColorMap { get; }
+	ReadOnlySpan<char> DefaultEmissiveColorValue { get; }
 	/// <summary>
 	/// An emissive intensity map of <c>1f</c> everywhere, i.e. glowing at full strength.
 	/// </summary>
-	ReadOnlySpan<char> DefaultEmissiveIntensityMap { get; }
+	ReadOnlySpan<char> DefaultEmissiveIntensityValue { get; }
 	/// <summary>
-	/// An anisotropy map combining <see cref="DefaultAnisotropyRadialAngleMap"/> and
-	/// <see cref="DefaultAnisotropyStrengthMap"/>.
+	/// An anisotropy map combining <see cref="DefaultAnisotropyRadialAngleValue"/> and
+	/// <see cref="DefaultAnisotropyStrengthValue"/>.
 	/// </summary>
 	ReadOnlySpan<char> DefaultAnisotropyMap { get; }
 	/// <summary>
 	/// An angle-formatted anisotropy map of <c>0°</c> everywhere.
 	/// </summary>
-	ReadOnlySpan<char> DefaultAnisotropyRadialAngleMap { get; }
+	ReadOnlySpan<char> DefaultAnisotropyRadialAngleValue { get; }
 	/// <summary>
 	/// A vector-formatted anisotropy map at <c>0°</c> with zero strength, i.e. one that produces no anisotropic effect at all.
 	/// </summary>
@@ -98,19 +98,19 @@ public interface IBuiltInTexturePathLibrary {
 	/// <summary>
 	/// An anisotropy strength map of <c>1f</c> everywhere, i.e. full strength.
 	/// </summary>
-	ReadOnlySpan<char> DefaultAnisotropyStrengthMap { get; }
+	ReadOnlySpan<char> DefaultAnisotropyStrengthValue { get; }
 	/// <summary>
-	/// A clearcoat map combining <see cref="DefaultClearCoatThicknessMap"/> and <see cref="DefaultClearCoatRoughnessMap"/>.
+	/// A clearcoat map combining <see cref="DefaultClearCoatThicknessValue"/> and <see cref="DefaultClearCoatRoughnessValue"/>.
 	/// </summary>
 	ReadOnlySpan<char> DefaultClearCoatMap { get; }
 	/// <summary>
 	/// A clearcoat thickness map of <c>1f</c> everywhere, i.e. a maximally thick coat.
 	/// </summary>
-	ReadOnlySpan<char> DefaultClearCoatThicknessMap { get; }
+	ReadOnlySpan<char> DefaultClearCoatThicknessValue { get; }
 	/// <summary>
 	/// A clearcoat roughness map of <c>0f</c> everywhere, i.e. a completely glossy coat.
 	/// </summary>
-	ReadOnlySpan<char> DefaultClearCoatRoughnessMap { get; }
+	ReadOnlySpan<char> DefaultClearCoatRoughnessValue { get; }
 
 	/// <summary>
 	/// A four-channel texture with every channel at <c>255</c>.

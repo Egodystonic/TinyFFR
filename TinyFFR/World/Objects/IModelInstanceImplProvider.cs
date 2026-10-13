@@ -152,6 +152,10 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// </summary>
 	void SetDefaultMaterialShadingStyle(ResourceHandle<ModelInstance> handle, DefaultMaterialShadingStyle newStyle);
 	/// <summary>
+	/// Invoked via <see cref="ModelInstance.SetMaterialEmissiveStrengthMultiplier"/>.
+	/// </summary>
+	void SetMaterialEmissiveStrengthMultiplier(ResourceHandle<ModelInstance> handle, float multiplier);
+	/// <summary>
 	/// Invoked via <see cref="ModelInstance.SetKeyedMaterialColor"/>.
 	/// </summary>
 	void SetKeyedMaterialColor(ResourceHandle<ModelInstance> handle, ColorChannel key, ColorVect color);
@@ -169,7 +173,7 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// </summary>
 	void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance);
 	/// <summary>
-	/// Invoked internally to fade a canvas object in and out; see <see cref="CanvasTexture.Opacity"/>.
+	/// Invoked internally to fade a canvas object in and out; see <see cref="CanvasImage.Opacity"/>.
 	/// </summary>
 	void SetMaterialEffectOpacity(ResourceHandle<ModelInstance> handle, float opacity);
 
@@ -219,4 +223,33 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// Invoked via <see cref="TextInstance.String"/>.
 	/// </summary>
 	FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked via <see cref="TextInstance.Layout"/>.
+	/// </summary>
+	TextLayout GetTextInstanceLayout(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked via <see cref="QuadInstance.PositionAnchor"/>.
+	/// </summary>
+	Orientation2D GetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked internally when a quad instance is created or placed with a position anchor.
+	/// </summary>
+	void SetQuadInstancePositionAnchor(ResourceHandle<ModelInstance> handle, Orientation2D positionAnchor);
+	
+	/// <summary>
+	/// Invoked internally when a camera-locked quad or text instance is created (or wrapped via one of their <c>FromPreviouslyAllocated...</c> methods).
+	/// </summary>
+	void SetCameraLockConfig(ResourceHandle<ModelInstance> handle, CameraLockConfig config);
+	/// <summary>
+	/// Invoked via the properties of <see cref="CameraLockedQuadInstance"/> and <see cref="CameraLockedTextInstance"/>.
+	/// </summary>
+	CameraLockConfig? GetCameraLockConfig(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked internally to determine whether the given instance was created to display text.
+	/// </summary>
+	bool IsTextInstance(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Invoked internally to find the canvas the given instance belongs to, if it was created as a canvas object.
+	/// </summary>
+	CanvasScene? GetCanvas(ResourceHandle<ModelInstance> handle);
 }

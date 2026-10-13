@@ -17,4 +17,8 @@ public interface IBackdropTextureImplProvider : IDisposableResourceImplProvider<
 	/// Invoked internally to obtain the native texture that a backdrop's ambient lighting is derived from.
 	/// </summary>
 	UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<BackdropTexture> handle);
+	/// <summary>
+	/// Invoked via <see cref="BackdropTexture.MeasuredLux"/>.
+	/// </summary>
+	float GetMeasuredLux(ResourceHandle<BackdropTexture> handle);
 }

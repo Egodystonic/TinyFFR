@@ -9,6 +9,83 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 /// <summary>
+/// A preset brightness for a <see cref="SpotLight"/>, named after the real-world light source it matches.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Use with <see cref="SpotLight.SetBrightness(SpotLightBrightnessPreset)"/>, or <see cref="SpotLightBrightnessExtensions.ToBrightnessValue"/> to get the equivalent
+/// <see cref="SpotLight.Brightness"/> value (for example, to pass when creating a light).
+/// </para>
+/// <para>
+/// Each preset is defined by how intensely the real light source shines along its beam (its luminous intensity, in candela; see <see cref="SpotLightBrightnessExtensions.ToCandela"/>),
+/// which is how real spot lights such as flashlights and headlights are rated. The centre of the light's cone therefore appears as bright as the real thing.
+/// </para>
+/// <para>
+/// The presets are calibrated for standard spot lights. A spot light created with <see cref="SpotLightCreationConfig.IsHighQuality"/> concentrates its whole output
+/// in to its cone, so appears brighter the narrower its cone is.
+/// </para>
+/// </remarks>
+public enum SpotLightBrightnessPreset {
+	/// <summary>
+	/// A typical handheld flashlight (a beam intensity of 3,000 candela). This is the default brightness of a <see cref="SpotLight"/>.
+	/// </summary>
+	FlashlightTypical = 0,
+	/// <summary>
+	/// A small or weak flashlight, such as one on a keyring (a beam intensity of 500 candela).
+	/// </summary>
+	FlashlightDim,
+	/// <summary>
+	/// A powerful flashlight (a beam intensity of 20,000 candela).
+	/// </summary>
+	FlashlightBright,
+	/// <summary>
+	/// A car headlight on full beam (a beam intensity of 30,000 candela).
+	/// </summary>
+	CarHeadlight,
+	/// <summary>
+	/// A theatre or stage spotlight (a beam intensity of 100,000 candela).
+	/// </summary>
+	StageSpotlight,
+	/// <summary>
+	/// A searchlight (a beam intensity of 1,000,000 candela).
+	/// </summary>
+	Searchlight,
+	/// <summary>
+	/// A desk or reading lamp (a beam intensity of 150 candela).
+	/// </summary>
+	DeskLamp
+}
+
+/// <summary>
+/// Extension methods for <see cref="SpotLightBrightnessPreset"/>.
+/// </summary>
+public static class SpotLightBrightnessExtensions {
+	extension(SpotLightBrightnessPreset @this) {
+		/// <summary>
+		/// Returns the beam intensity, in candela, of the real light source this preset represents (see <see cref="SpotLight.BrightnessCandela"/>).
+		/// </summary>
+		public float ToCandela() {
+			return @this switch {
+				SpotLightBrightnessPreset.FlashlightDim => 500f,
+				SpotLightBrightnessPreset.FlashlightBright => 20_000f,
+				SpotLightBrightnessPreset.CarHeadlight => 30_000f,
+				SpotLightBrightnessPreset.StageSpotlight => 100_000f,
+				SpotLightBrightnessPreset.Searchlight => 1_000_000f,
+				SpotLightBrightnessPreset.DeskLamp => 150f,
+				_ /* FlashlightTypical */ => SpotLight.DefaultCandela
+			};
+		}
+
+		/// <summary>
+		/// Returns the <see cref="SpotLight.Brightness"/> value that this preset represents.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public float ToBrightnessValue() => SpotLight.CandelaToBrightness(@this.ToCandela());
+	}
+}
+
+
+/// <summary>
 /// A light that radiates from a single point but is confined to a cone, like a torch or a stage spotlight. Created via the factory's <see cref="ILightBuilder"/>.
 /// </summary>
 /// <remarks>
@@ -16,14 +93,17 @@ namespace Egodystonic.TinyFFR.World;
 /// light is, and <see cref="IntenseBeamAngle"/> sets how sharply the light fades towards the cone's edge.
 /// </remarks>
 public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IOrientedSceneObject {
+	static SceneObjectType ISceneObject.SceneObjectType { get; } = SceneObjectType.SpotLight;
+
 	/// <summary>
 	/// The largest permitted <see cref="Brightness"/>: <c>1E+15f</c>.
 	/// </summary>
 	public const float MaxBrightness = 1E+15f;
 	/// <summary>
-	/// How many lumens a spot light emits at a <see cref="Brightness"/> of <c>1f</c>: <c>1,250,000</c>.
+	/// The beam intensity, in candela, of a spot light at a <see cref="Brightness"/> of <c>1f</c>: <c>3,000</c>, that of a typical handheld flashlight
+	/// (see <see cref="SpotLightBrightnessPreset.FlashlightTypical"/>).
 	/// </summary>
-	public const float DefaultLumens = 1_250_000f;
+	public const float DefaultCandela = 3_000f;
 	/// <summary>
 	/// The narrowest permitted <see cref="ConeAngle"/>: <c>1°</c>.
 	/// </summary>
@@ -140,13 +220,13 @@ public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IO
 	public void SetColorLightness(float lightness) => ColorLightness = lightness;
 
 	/// <summary>
-	/// How much light this emits, where <c>1f</c> corresponds to <see cref="DefaultLumens"/>. Clamped to between <c>0f</c> and <see cref="MaxBrightness"/>.
+	/// How much light this emits as a unitless scalar. Doubling this value corresponds to a perceived doubling
+	/// in output brightness, halving corresponds to a perceived halving of brightness, etc.
 	/// </summary>
 	/// <remarks>
-	/// Note that the relationship is <i>quadratic</i>, not linear: the light emitted is <see cref="DefaultLumens"/> multiplied by the square of this value, so
-	/// doubling the brightness quadruples the light. Use <see cref="LumensToBrightness"/> and <see cref="BrightnessToLumens"/> to work in lumens directly. Negative
-	/// and non-finite values are treated as <c>0f</c>.
+	/// You can also use <see cref="SetBrightness(SpotLightBrightnessPreset)"/> to set a value using a preset.
 	/// </remarks>
+	/// <seealso cref="BrightnessCandela"/>
 	public float Brightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetUniversalBrightness(_handle);
@@ -154,11 +234,32 @@ public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IO
 		set => Implementation.SetUniversalBrightness(_handle, value);
 	}
 	/// <summary>
+	/// How intensely this shines along the centre of its cone, in candela (the unit real spot lights such as flashlights and headlights are rated in). This property is
+	/// offered as an alternative to the unitless <see cref="Brightness"/> for workflows that prefer real-world light setups.
+	/// </summary>
+	/// <remarks>
+	/// This describes a standard spot light. A spot light created with <see cref="SpotLightCreationConfig.IsHighQuality"/> concentrates its whole output in to its cone,
+	/// so shines more intensely than this value, increasingly so the narrower its cone is.
+	/// </remarks>
+	public float BrightnessCandela {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => BrightnessToCandela(Brightness);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Brightness = CandelaToBrightness(value);
+	}
+	/// <summary>
 	/// Sets <see cref="Brightness"/>; provided as a method for use in contexts where a property setter can not be invoked.
 	/// </summary>
 	/// <param name="brightness">The new value for <see cref="Brightness"/>.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetBrightness(float brightness) => Brightness = brightness;
+	/// <summary>
+	/// Sets <see cref="Brightness"/> to match the given real-world light source.
+	/// </summary>
+	/// <param name="preset">The preset to apply.</param>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="preset"/> is not a defined <see cref="SpotLightBrightnessPreset"/> value.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBrightness(SpotLightBrightnessPreset preset) => Brightness = preset.ToBrightnessValue();
 
 	/// <inheritdoc />
 	public bool CastsShadows {
@@ -312,24 +413,25 @@ public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IO
 	public void RotateBy(Quaternion rotationQuaternion) => ConeDirection = ConeDirection.RotatedBy(rotationQuaternion);
 
 	/// <summary>
-	/// Converts a light output in lumens to the equivalent <see cref="Brightness"/> value.
+	/// Converts a beam intensity in candela to the equivalent <see cref="Brightness"/> value.
 	/// </summary>
-	/// <param name="lumens">The light output to convert. Negative and non-finite values return <c>0f</c>.</param>
-	public static float LumensToBrightness(float lumens) {
-		if (!lumens.IsNonNegativeAndFinite()) return 0f;
-		return Single.Min(MathF.Sqrt(lumens / DefaultLumens), MaxBrightness);
+	/// <param name="candela">The beam intensity to convert. Negative and non-finite values return <c>0f</c>.</param>
+	public static float CandelaToBrightness(float candela) {
+		if (!candela.IsNonNegativeAndFinite()) return 0f;
+		return Single.Min(MathF.Sqrt(candela / DefaultCandela), MaxBrightness);
 	}
 
 	/// <summary>
-	/// Converts a <see cref="Brightness"/> value to the light output it represents, in lumens.
+	/// Converts a <see cref="Brightness"/> value to the beam intensity it represents, in candela.
 	/// </summary>
 	/// <param name="brightness">The brightness to convert. Negative and non-finite values are treated as <c>0f</c>.</param>
-	public static float BrightnessToLumens(float brightness) {
-		return BrightnessToLumensNoClamp(ClampBrightnessToValidRange(brightness));
+	public static float BrightnessToCandela(float brightness) {
+		var clamped = ClampBrightnessToValidRange(brightness);
+		return DefaultCandela * clamped * clamped;
 	}
 
-	internal static float BrightnessToLumensNoClamp(float brightness) {
-		return DefaultLumens * brightness * brightness;
+	internal static float BrightnessToNativeLumensNoClamp(float brightness) {
+		return DefaultCandela * brightness * brightness * 4f * MathF.PI;
 	}
 
 	internal static float ClampBrightnessToValidRange(float input) {

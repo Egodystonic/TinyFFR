@@ -97,6 +97,19 @@ class ApplicationLoopTest {
 	}
 
 	[Test]
+	public void ShouldForwardFrameTimesUnchanged() {
+		_impl.GetFrameTimeLatest(TestHandle).Returns(TimeSpan.FromMilliseconds(16d));
+		_impl.GetFrameTimeRecentAverage(TestHandle).Returns(TimeSpan.FromMilliseconds(17d));
+		_impl.GetFrameTimeRecentMin(TestHandle).Returns(TimeSpan.FromMilliseconds(15d));
+		_impl.GetFrameTimeRecentMax(TestHandle).Returns(TimeSpan.FromMilliseconds(40d));
+
+		Assert.AreEqual(TimeSpan.FromMilliseconds(16d), _loop.FrameTimeLatest);
+		Assert.AreEqual(TimeSpan.FromMilliseconds(17d), _loop.FrameTimeRecentAverage);
+		Assert.AreEqual(TimeSpan.FromMilliseconds(15d), _loop.FrameTimeRecentMin);
+		Assert.AreEqual(TimeSpan.FromMilliseconds(40d), _loop.FrameTimeRecentMax);
+	}
+
+	[Test]
 	public void ShouldProvideSetterMethodEquivalentsForAllMutableProperties() {
 		_loop.SetTargetIterationInterval(TimeSpan.FromMilliseconds(20d));
 		Assert.AreEqual(TimeSpan.FromMilliseconds(20d), _loop.TargetIterationInterval);

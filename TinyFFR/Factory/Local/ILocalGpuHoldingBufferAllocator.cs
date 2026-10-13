@@ -9,6 +9,8 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Factory.Local;
 
 interface ILocalGpuHoldingBufferAllocator {
-	FixedByteBufferPool GpuHoldingBufferPool { get; }
+	FixedByteSlabPool GpuHoldingBufferPool { get; }
+	long GpuHoldingBufferFlushThresholdBytes { get; }
+	long GpuHoldingBufferStallThresholdBytes { get; }
 	bool IsDisposed { get; }
 }

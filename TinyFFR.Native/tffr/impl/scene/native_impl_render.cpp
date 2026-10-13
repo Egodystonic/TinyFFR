@@ -37,6 +37,7 @@ struct pending_pick_data {
 	math::mat4 inverseViewProjection;
 	float_t viewportWidth;
 	float_t viewportHeight;
+	bool renderedVerticallyFlipped;
 };
 static std::unordered_map<uint64_t, completed_pick_data> completed_picks;
 static std::unordered_map<uint64_t, pending_pick_data> pending_picks;
@@ -50,7 +51,7 @@ static void handle_filament_pick_query_callback(View::PickingQueryResult const& 
 		auto const& pending = pendingIter->second;
 		auto const clipSpacePosition = math::double4 {
 			static_cast<double>(result.fragCoords.x) / static_cast<double>(pending.viewportWidth) * 2.0 - 1.0,
-			static_cast<double>(result.fragCoords.y) / static_cast<double>(pending.viewportHeight) * 2.0 - 1.0,
+			(static_cast<double>(result.fragCoords.y) / static_cast<double>(pending.viewportHeight) * 2.0 - 1.0) * (pending.renderedVerticallyFlipped ? -1.0 : 1.0),
 			static_cast<double>(result.fragCoords.z) * 2.0 - 1.0,
 			1.0
 		};
@@ -289,13 +290,19 @@ void native_impl_render::set_view_quality_configuration(
 	int32_t depthOfFieldQuality,
 	float_t depthOfFieldStrength,
 	interop_bool dithering,
-	interop_bool guardBand
+	interop_bool guardBand,
+	uint8_t vsmMsaaSamples
 ) {
 	ThrowIfNull(viewDescriptor, "View was null.");
 
 	// TODO PCSS doesn't seem very stable, it may be that we need to better configure the frustum/FOV before exposing shadow type selection.
 	viewDescriptor->setShadowingEnabled(shadowsEnabled);
 	viewDescriptor->setShadowType(ShadowType::VSM);
+	{
+		VsmShadowOptions vsm;
+		vsm.msaaSamples = vsmMsaaSamples;
+		viewDescriptor->setVsmShadowOptions(vsm);
+	}
 
 	switch (screenSpaceEffectsLevel) {
 		case 2: {
@@ -424,7 +431,8 @@ StartExportedFunc(
 	int32_t depthOfFieldQuality,
 	float_t depthOfFieldStrength,
 	interop_bool dithering,
-	interop_bool guardBand
+	interop_bool guardBand,
+	uint8_t vsmMsaaSamples
 ) {
 	native_impl_render::set_view_quality_configuration(
 		viewDescriptor,
@@ -442,7 +450,8 @@ StartExportedFunc(
 		depthOfFieldQuality,
 		depthOfFieldStrength,
 		dithering,
-		guardBand
+		guardBand,
+		vsmMsaaSamples
 	);
 	EndExportedFunc
 }
@@ -600,14 +609,41 @@ StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle vi
 	EndExportedFunc
 }
 
-void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
+void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion, interop_bool flipVertically) {
 	ThrowIfNull(renderer, "Renderer was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(renderTarget, "Render target pointer was null.");
 
 	// renderStandaloneView opens its own implicit beginFrame/endFrame, so ClearOptions must be set per call to preserve the buffer across composited sub-renders.
 	renderer->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, static_cast<bool>(clearAndDiscard), static_cast<bool>(clearAndDiscard) });
-	renderer->renderStandaloneView(viewDescriptor);
+
+	// Renders upside-down (flipped projection, mirrored viewport, inverted winding) when the caller needs the opposite row order to the backend's native one.
+	if (flipVertically) {
+		auto& camera = viewDescriptor->getCamera();
+		auto const originalViewport = viewDescriptor->getViewport();
+		auto const originalWindingInverted = viewDescriptor->isFrontFaceWindingInverted();
+		auto const renderTargetTexture = renderTarget->getTexture(RenderTarget::AttachmentPoint::COLOR);
+		ThrowIfNull(renderTargetTexture, "Render target had no colour attachment.");
+		auto const renderTargetHeight = static_cast<int32_t>(renderTargetTexture->getHeight());
+
+		camera.setScaling({ 1.0, -1.0 });
+		viewDescriptor->setFrontFaceWindingInverted(!originalWindingInverted);
+		viewDescriptor->setViewport({
+			originalViewport.left,
+			renderTargetHeight - (originalViewport.bottom + static_cast<int32_t>(originalViewport.height)),
+			originalViewport.width,
+			originalViewport.height
+		});
+
+		renderer->renderStandaloneView(viewDescriptor);
+
+		viewDescriptor->setViewport(originalViewport);
+		viewDescriptor->setFrontFaceWindingInverted(originalWindingInverted);
+		camera.setScaling({ 1.0, 1.0 });
+	}
+	else {
+		renderer->renderStandaloneView(viewDescriptor);
+	}
 	if (optionalReadbackBuffer == nullptr) return;
 
 	renderer->readPixels(
@@ -628,12 +664,21 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 
 	if (waitForReadbackCompletion) filament_engine->flushAndWait();
 }
-StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion) {
-	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity, waitForReadbackCompletion);
+StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity, interop_bool waitForReadbackCompletion, interop_bool flipVertically) {
+	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity, waitForReadbackCompletion, flipVertically);
 	EndExportedFunc
 }
 
-void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects) {
+bool native_impl_render::render_targets_are_vertically_flipped() {
+	return filament_engine->getBackend() != Engine::Backend::OPENGL;
+}
+StartExportedFunc(get_render_targets_are_vertically_flipped, interop_bool* outResult) {
+	ThrowIfNull(outResult, "Out result pointer was null.");
+	*outResult = native_impl_render::render_targets_are_vertically_flipped() ? interop_bool_true : interop_bool_false;
+	EndExportedFunc
+}
+
+void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects, interop_bool renderedVerticallyFlipped) {
 	ThrowIfNull(viewDescriptor, "View was null.");
 
 	viewDescriptor->setTransparentPickingEnabled(static_cast<bool>(includeTransparentObjects));
@@ -643,14 +688,15 @@ void native_impl_render::submit_view_pick(ViewDescriptorHandle viewDescriptor, u
 	pending_picks[pickId] = pending_pick_data {
 		inverse(camera.getProjectionMatrix() * camera.getViewMatrix()),
 		static_cast<float_t>(viewport.width),
-		static_cast<float_t>(viewport.height)
+		static_cast<float_t>(viewport.height),
+		static_cast<bool>(renderedVerticallyFlipped)
 	};
 
 	auto& query = viewDescriptor->pick(x, y, nullptr, &handle_filament_pick_query_callback);
 	query.storage[0] = reinterpret_cast<void*>(static_cast<uintptr_t>(pickId));
 }
-StartExportedFunc(submit_view_pick, ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects) {
-	native_impl_render::submit_view_pick(viewDescriptor, x, y, pickId, includeTransparentObjects);
+StartExportedFunc(submit_view_pick, ViewDescriptorHandle viewDescriptor, uint32_t x, uint32_t y, uint64_t pickId, interop_bool includeTransparentObjects, interop_bool renderedVerticallyFlipped) {
+	native_impl_render::submit_view_pick(viewDescriptor, x, y, pickId, includeTransparentObjects, renderedVerticallyFlipped);
 	EndExportedFunc
 }
 

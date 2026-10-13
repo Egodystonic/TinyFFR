@@ -30,6 +30,10 @@ public interface IDisplayImplProvider : IResourceImplProvider<Display> {
 	/// </summary>
 	XYPair<int> GetCurrentResolution(ResourceHandle<Display> handle);
 	/// <summary>
+	/// Invoked via <see cref="Display.CurrentRefreshRateHz"/>.
+	/// </summary>
+	int GetCurrentRefreshRateHz(ResourceHandle<Display> handle);
+	/// <summary>
 	/// Invoked internally to translate window positions between the desktop-wide coordinate space and the coordinate space of a single display; i.e. this returns
 	/// where the given display's top-left corner sits relative to the desktop's origin.
 	/// </summary>

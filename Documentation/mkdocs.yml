@@ -1,5 +1,5 @@
 docs_dir: source
-site_name: TinyFFR Manual
+site_name: TinyFFR || Realtime .NET 3D &bull; Development Guide
 site_url: https://tinyffr.dev
 site_dir: output
 repo_url: https://github.com/Egodystonic/TinyFFR
@@ -38,7 +38,11 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
   - pymdownx.inlinehilite
-  - pymdownx.superfences 
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.snippets:
       auto_append:
         - includes/acronym_definitions.md
@@ -113,51 +117,120 @@ strict: true
 nav:
   - index.md
   - changelog.md
-  - Tutorials:
-    - Walkthroughs:
-      - tutorials/hello_cube.md
-      - tutorials/loading_assets.md
-      - tutorials/handling_input.md
-      - UI Integration:
-        - tutorials/integrating_wpf.md
-        - tutorials/integrating_avalonia.md
-        - tutorials/integrating_winforms.md
-        - tutorials/integrating_imgui.md
-    - Topics:
-      - tutorials/materials.md
-      - tutorials/lighting.md
-      - tutorials/input.md
-      - tutorials/meshes.md
-      - tutorials/scenes_and_rendering.md
-      - tutorials/displays_and_windows.md
-      - tutorials/animations.md
-      - tutorials/math_and_geometry.md
-      - tutorials/conventions.md
-      - tutorials/resources.md
-      - tutorials/factory.md
-  - Reference Docs:
-    - Assets:
-      - reference/texture_patterns.md
-      - reference/creating_mock_resources.md
-      - reference/vertex_mutation.md
-    - Camera:
-      - Controllers:
-        - reference/camera_controller_first_person.md
-        - reference/camera_controller_follow.md
-        - reference/camera_controller_free_flying.md
-        - reference/camera_controller_inspector.md
-        - reference/camera_controller_orbital.md
-        - reference/camera_controller_pan_tilt_zoom.md
-        - reference/camera_controller_programmed.md
-      - reference/camera_ray_casting.md
-    - Performance:
-      - reference/vsync.md
-      - reference/controlling_memory.md
-      - reference/measuring_framerate.md
+  - support.md
+  - ai_assistance.md
+  - Learn:
+    - Tutorials:
+        - tutorials/hello_cube.md
+        - tutorials/reacting_to_user_input.md
+        - tutorials/loading_assets.md
+        - tutorials/adding_a_2d_overlay.md
+        - tutorials/application_flow.md
+    - Example Applications:
+        - tutorials/voxel_world.md
+        - tutorials/equation_plotter.md
+        - tutorials/scene_programmer.md
+  - Reference:
+    - Windows & Input:
+        - reference/display_discovery.md
+        - reference/creating_and_managing_windows.md
+        - reference/application_loops.md
+        - reference/keyboard_and_mouse_input.md
+        - reference/gamepad_input.md
+        - reference/clipboard_access.md
+    - UI Framework Integration:
+        - reference/imgui_integration.md
+        - reference/avalonia_integration.md
+        - reference/wpf_integration.md
+        - reference/winforms_integration.md
+    - Asset Loading & Creation:
+        - reference/bundled_assets.md
+        - Meshes:
+            - reference/loading_meshes.md
+            - reference/creating_meshes.md
+            - reference/skeletal_meshes.md
+        - Textures:
+            - reference/loading_textures.md
+            - reference/texture_map_types.md
+            - reference/built-in_textures.md
+            - reference/creating_textures.md
+            - reference/texture_patterns.md
+            - reference/texture_compression.md
+            - reference/backdrop_textures.md
+        - Materials:
+            - reference/creating_materials.md
+            - reference/standard_materials.md
+            - reference/transmissive_materials.md
+            - reference/lighting_ignoring_materials.md
+            - reference/color_keyed_materials.md
+            - reference/the_default_material.md
+        - Fonts:
+            - reference/loading_fonts.md
+        - reference/asynchronous_loading.md
+        - reference/asset_bakery.md
+        - Resources:
+            - reference/resource_dependencies.md
+            - reference/resource_directory.md
+            - reference/resource_groups.md
+            - reference/mocking_resources.md
+    - Scenes & Objects:
+        - reference/scenes.md
+        - reference/scene_objects.md
+        - Lighting & Fog:
+            - reference/point_lights.md
+            - reference/spot_lights.md
+            - reference/directional_lights.md
+            - reference/fog.md
+            - reference/exposure_and_brightness.md
+        - Cameras:
+            - reference/camera_settings.md
+            - reference/camera_controllers.md
+            - Controller Types:
+                - reference/camera_controller_first_person.md
+                - reference/camera_controller_follow.md
+                - reference/camera_controller_free_flying.md
+                - reference/camera_controller_inspector.md
+                - reference/camera_controller_orbital.md
+                - reference/camera_controller_pan_tilt_zoom.md
+                - reference/camera_controller_programmed.md
+        - reference/quads.md
+        - reference/text_instances.md
+        - reference/camera-locked_objects.md
+        - reference/scene_primitives.md
+        - reference/material_effects.md
+        - reference/writable_textures.md
+        - reference/dynamic_meshes_and_mutable_grids.md
+        - reference/playing_skeletal_animations.md
+        - reference/bounding_boxes.md
+        - reference/canvas_scenes.md
+        - reference/ray_casting_pixel_picking_projecting.md
     - Rendering:
-      - reference/scene_compositing.md
-    - Utils:
-      - reference/indirect_enumerable.md
+        - reference/render_throughput_and_latency.md
+        - reference/compositing.md
+        - reference/capturing_render_output.md
+    - Math API:
+        - reference/vector_types.md
+        - reference/angle_rotation_orientation.md
+        - reference/lines.md
+        - reference/shapes.md
+        - reference/transform.md
+        - reference/2d_types.md
+        - reference/interpolation_algorithms.md
+        - reference/colour.md
+        - reference/conventions.md
+        - reference/equality.md
+        - reference/serialization.md
+        - reference/trait_interfaces.md
+        - reference/math_utility_methods.md
+    - Managing Performance:
+        - reference/measuring_framerate.md
+        - reference/render_quality.md
+        - reference/avoiding_gc_stutter.md
+        - reference/composited_render_framerate_limiting.md
+        - reference/pre-baking_assets.md
+        - reference/controlling_ram_and_vram_usage.md
+        - reference/async_loading_time_sharing.md
+        - reference/math_api_optimisations.md
 
 not_in_nav: |
 

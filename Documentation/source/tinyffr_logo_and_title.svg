@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 322 96" width="966" height="288" font-size="16">
+  <defs>
+    <style type="text/css"><![CDATA[
+      @font-face {
+        font-family: 'Outfit';
+        font-style: normal;
+        font-weight: 600;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/outfit@latest/latin-600-normal.woff2') format('woff2'),
+             url('https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.12/files/outfit-latin-600-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'JetBrains Mono';
+        font-style: normal;
+        font-weight: 400;
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@latest/latin-400-normal.woff2') format('woff2'),
+             url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.18/files/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+      }
+      .wm { font-family: 'Outfit','Poppins','Segoe UI',system-ui,-apple-system,sans-serif; font-weight: 600; fill: #fafafa; }
+      .tl { font-family: 'JetBrains Mono','DejaVu Sans Mono',ui-monospace,monospace; font-weight: 400; fill: #6a6a76; }
+    ]]></style>
+  </defs>
+  <g transform="translate(12,12) scale(0.28125)">
+    <polygon points="128 .769 183.098 32.577 128 64.385" fill="#c0c052"/><polygon points="183.098 32.577 238.182 64.385 183.098 96.193" fill="#acac3e"/><polygon points="128 64.385 183.098 96.193 128 128.001" fill="#a4a436"/><polygon points="183.098 32.577 183.098 96.193 128 64.385" fill="#b8b84a"/><polygon points="128 .769 128 64.385 72.902 32.577" fill="#52c052"/><polygon points="128 64.385 128 128.001 72.902 96.193" fill="#3eac3e"/><polygon points="72.902 32.577 72.902 96.193 17.818 64.385" fill="#36a436"/><polygon points="128 64.385 72.902 96.193 72.902 32.577" fill="#4ab84a"/><polygon points="17.818 64.385 72.902 96.193 72.902 159.807" fill="#c05252"/><polygon points="72.902 96.193 128 128.001 128 191.615" fill="#ac3e3e"/><polygon points="72.902 159.807 128 191.615 128 255.231" fill="#a43636"/><polygon points="72.902 96.193 128 191.615 72.902 159.807" fill="#b84a4a"/><polygon points="17.818 64.385 72.902 159.807 17.818 128.001" fill="#c052c0"/><polygon points="72.902 159.807 128 255.231 72.902 223.423" fill="#ac3eac"/><polygon points="17.818 128.001 72.902 223.423 17.818 191.615" fill="#a436a4"/><polygon points="72.902 159.807 72.902 223.423 17.818 128.001" fill="#b84ab8"/><polygon points="238.182 64.385 183.098 96.193 183.098 159.807" fill="#52c0c0"/><polygon points="183.098 96.193 128 128.001 128 191.615" fill="#3eacac"/><polygon points="183.098 159.807 128 191.615 128 255.231" fill="#36a4a4"/><polygon points="183.098 96.193 128 191.615 183.098 159.807" fill="#4ab8b8"/><polygon points="238.182 64.385 183.098 159.807 238.182 128.001" fill="#5252c0"/><polygon points="183.098 159.807 128 255.231 183.098 223.423" fill="#3e3eac"/><polygon points="238.182 128.001 183.098 223.423 238.182 191.615" fill="#3636a4"/><polygon points="183.098 159.807 183.098 223.423 238.182 128.001" fill="#4a4ab8"/>
+<g fill="none" stroke-linecap="round" transform="matrix(1.496833,0,0,1.496833,-63.594631,-63.59462)">
+<line x1="164.81" y1="64.25" x2="164.81" y2="106.75" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="164.81" y1="106.75" x2="128" y2="85.5" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="128" y1="85.5" x2="164.81" y2="64.25" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="128" y1="85.5" x2="91.19" y2="106.75" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="91.19" y1="106.75" x2="91.19" y2="64.25" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="91.19" y1="64.25" x2="128" y2="85.5" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="91.19" y1="106.75" x2="128" y2="170.5" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="128" y1="170.5" x2="91.19" y2="149.25" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="91.19" y1="149.25" x2="91.19" y2="106.75" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="91.19" y1="149.25" x2="91.19" y2="191.75" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="91.19" y1="191.75" x2="54.39" y2="128" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="54.39" y1="128" x2="91.19" y2="149.25" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="164.81" y1="106.75" x2="128" y2="170.5" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="128" y1="170.5" x2="164.81" y2="149.25" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="164.81" y1="149.25" x2="164.81" y2="106.75" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="164.81" y1="149.25" x2="164.81" y2="191.75" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="164.81" y1="191.75" x2="201.61" y2="128" stroke="rgba(255,255,255,.2)" stroke-width=".5"/><line x1="201.61" y1="128" x2="164.81" y2="149.25" stroke="rgba(255,255,255,.2)" stroke-width=".5"/>
+<line x1="128" y1="43" x2="128" y2="128" stroke="rgba(255,255,255,.4)" stroke-width="1"/><line x1="54.39" y1="85.5" x2="128" y2="213" stroke="rgba(255,255,255,.4)" stroke-width="1"/><line x1="201.61" y1="85.5" x2="128" y2="213" stroke="rgba(255,255,255,.4)" stroke-width="1"/><line x1="201.61" y1="85.5" x2="128" y2="128" stroke="rgba(255,255,255,.4)" stroke-width="1"/><line x1="128" y1="128" x2="54.39" y2="85.5" stroke="rgba(255,255,255,.4)" stroke-width="1"/><line x1="128" y1="128" x2="128" y2="213" stroke="rgba(255,255,255,.4)" stroke-width="1"/><line x1="54.39" y1="85.5" x2="54.39" y2="170.5" stroke="rgba(255,255,255,.4)" stroke-width="1"/><line x1="54.39" y1="170.5" x2="128" y2="213" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
+<line x1="128" y1="43" x2="201.61" y2="85.5" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="201.61" y1="85.5" x2="201.61" y2="170.5" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="201.61" y1="170.5" x2="128" y2="213" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="128" y1="213" x2="54.39" y2="170.5" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="54.39" y1="170.5" x2="54.39" y2="85.5" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="54.39" y1="85.5" x2="128" y2="43" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/>
+</g>
+  </g>
+  <text class="wm" x="104" y="51" font-size="40" letter-spacing="-1.4">TinyFFR</text>
+  <text class="tl" x="106" y="71" font-size="12.5" letter-spacing="0.3">.NET 3D Rendering Library</text>
+</svg>

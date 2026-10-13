@@ -47,7 +47,7 @@ class LocalCameraLockedObjectsTest {
 			layout: new TextLayout(0.1f, curLockedTextAnchor)
 		);
 		
-		using var quad = factory.MeshBuilder.CreateQuadMesh(twoSided: false);
+		using var quad = factory.MeshBuilder.CreateQuad(twoSided: false);
 		using var quadTex = factory.TextureBuilder.CreateColorMap(
 			TexturePattern.GradientVertical(ColorVect.WhiteOpaque, ColorVect.BlackTransparent),
 			includeAlpha: true,
