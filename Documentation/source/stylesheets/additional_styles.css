@@ -155,3 +155,29 @@
 .md-header__title--active div > span::before {
 	content: 'TinyFFR || ';
 }
+
+.tffr-splash {
+	position: relative;
+	overflow: hidden;
+}
+.tffr-splash__video {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 1282 / 720;
+	object-fit: cover;
+}
+.tffr-splash__title {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+}
+.tffr-splash__title img {
+	width: clamp(14rem, 50%, 48rem);
+	height: auto;
+	filter: drop-shadow(0 0 0.6rem rgba(0, 0, 0, 0.6));
+}

@@ -1,0 +1,19 @@
+{% extends "main.html" %}
+
+{% block hero %}
+<div class="tffr-splash">
+  <video class="tffr-splash__video" autoplay muted loop playsinline disablepictureinpicture preload="auto" aria-hidden="true">
+    <source src="{{ 'splash.mp4' | url }}" type='video/mp4; codecs="av01.0.05M.10"'>
+  </video>
+  <h1 class="tffr-splash__title"><img src="{{ 'tinyffr_logo_and_title.svg' | url }}" alt="Image showing a standard cube displayed on a window."></h1>
+</div>
+{% endblock %}
+
+{% block content %}
+  {% include "partials/tags.html" %}
+  {% include "partials/actions.html" %}
+  {{ page.content }}
+  {% include "partials/source-file.html" %}
+  {% include "partials/feedback.html" %}
+  {% include "partials/comments.html" %}
+{% endblock %}
