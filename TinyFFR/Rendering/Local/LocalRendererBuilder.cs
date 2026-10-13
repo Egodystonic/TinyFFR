@@ -632,7 +632,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			(int) effectiveConfig.DepthOfFieldQuality,
 			effectiveConfig.DepthOfFieldStrength,
 			effectiveConfig.DitheringEnabled,
-			effectiveConfig.ScreenSpaceEffectsQuality == Quality.VeryHigh
+			effectiveConfig.ScreenSpaceEffectsQuality == Quality.VeryHigh,
+			(byte) (effectiveConfig.ShadowQuality == Quality.VeryHigh ? 4 : 1)
 		).ThrowIfFailure();
 	}
 
@@ -1166,7 +1167,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		);
 		SetViewDepthOfFieldEnabled(viewport.Handle, camera.FocusDistance != null).ThrowIfFailure(); 
 
-		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
+		var cameraNear = camera.NearPlaneDistance;
+		var cameraFar = camera.FarPlaneDistance;
 		switch (quality) {
 			case Quality.VeryLow:
 				localSceneImpl.SetLightShadowFidelity(
@@ -1174,7 +1176,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					quality,
 					pointLightFidelity:			new(64, 1),
 					spotLightFidelity:			new(64, 1),
-					directionalLightFidelity:	new(256, 1)
+					directionalLightMapSize:	512,
+					directionalCascadeCount:	1,
+					cameraNear,
+					cameraFar
 				);
 				break;
 			case Quality.Low:
@@ -1183,7 +1188,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					quality,
 					pointLightFidelity:			new(256, 1),
 					spotLightFidelity:			new(256, 1),
-					directionalLightFidelity:	new(1024, 2)
+					directionalLightMapSize:	1024,
+					directionalCascadeCount:	2,
+					cameraNear,
+					cameraFar
 				);
 				break;
 			default:
@@ -1192,7 +1200,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					quality,
 					pointLightFidelity:			new(512, 1),
 					spotLightFidelity:			new(512, 1),
-					directionalLightFidelity:	new(2048, 3)
+					directionalLightMapSize:	2048,
+					directionalCascadeCount:	3,
+					cameraNear,
+					cameraFar
 				);
 				break;
 			case Quality.High:
@@ -1201,7 +1212,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					quality,
 					pointLightFidelity:			new(1024, 2),
 					spotLightFidelity:			new(1024, 2),
-					directionalLightFidelity:	new(2048, 4)
+					directionalLightMapSize:	2048,
+					directionalCascadeCount:	4,
+					cameraNear,
+					cameraFar
 				);
 				break;
 			case Quality.VeryHigh:
@@ -1210,7 +1224,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					quality,
 					pointLightFidelity:			new(2048, 4),
 					spotLightFidelity:			new(2048, 4),
-					directionalLightFidelity:	new(4096, 4)
+					directionalLightMapSize:	4096,
+					directionalCascadeCount:	4,
+					cameraNear,
+					cameraFar
 				);
 				break;
 		}
@@ -1286,7 +1303,8 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		int depthOfFieldQuality,
 		float depthOfFieldStrength,
 		InteropBool dithering,
-		InteropBool guardBand
+		InteropBool guardBand,
+		byte vsmMsaaSamples
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_frustum_culling_enabled")]
 	static extern InteropResult SetViewFrustumCullingEnabled(

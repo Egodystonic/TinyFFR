@@ -7,9 +7,8 @@
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 	</PropertyGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\..\TinyFFR\TinyFFR.csproj" />
-		<ProjectReference Include="..\..\Integrations\TinyFFR.Avalonia\TinyFFR.Avalonia.csproj" />
-		<ProjectReference Include="..\..\Integrations\TinyFFR.Integrations.Common\TinyFFR.Integrations.Common.csproj" />
+		<PackageReference Include="Egodystonic.TinyFFR" Version="*-*" />
+		<PackageReference Include="Egodystonic.TinyFFR.Avalonia" Version="*-*" />
 		<PackageReference Include="Avalonia" Version="12.1.4" />
 		<PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
 		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />

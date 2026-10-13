@@ -106,6 +106,7 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 	/// How many lux a directional light casts at a <see cref="Brightness"/> of <c>1f</c>: <c>600</c>, roughly that of indoor bright lighting.
 	/// </summary>
 	public const float DefaultLux = 600f;
+	public const float DefaultMaxShadowDistance = 100f;
 
 	readonly ResourceHandle<DirectionalLight> _handle;
 	readonly ILightImplProvider _impl;
@@ -337,6 +338,24 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 	/// </remarks>
 	/// <param name="config">How the disc should look.</param>
 	public void SetSunDiscParameters(SunDiscConfig config) => Implementation.SetDirectionalLightSunDiscParameters(Handle, config);
+
+	public float MaxShadowDistance {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetDirectionalLightMaxShadowDistance(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetDirectionalLightMaxShadowDistance(Handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetMaxShadowDistance(float distance) => MaxShadowDistance = distance;
+
+	public bool EnableShadowStabilization {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetDirectionalLightShadowStabilization(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetDirectionalLightShadowStabilization(Handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetEnableShadowStabilization(bool enable) => EnableShadowStabilization = enable;
 
 	/// <summary>
 	/// Converts an illuminance in lux to the equivalent <see cref="Brightness"/> value.

@@ -138,6 +138,16 @@
 						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding BackdropBrightnessPercent, StringFormat='{}{0:0}%'}" />
 						<Slider Minimum="0" Maximum="300" Value="{Binding BackdropBrightnessPercent}" />
 					</DockPanel>
+					<TextBlock Classes="Heading" Text="Backdrop rotation (horizontal)" />
+					<DockPanel IsEnabled="{Binding CanRotateBackdrop}" ToolTip.Tip="Turns the sky (and the lighting it provides) around the vertical axis">
+						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding BackdropHorizontalRotationDegrees, StringFormat='{}{0:0}°'}" />
+						<Slider Minimum="0" Maximum="360" Value="{Binding BackdropHorizontalRotationDegrees}" />
+					</DockPanel>
+					<TextBlock Classes="Heading" Text="Backdrop rotation (vertical)" />
+					<DockPanel IsEnabled="{Binding CanRotateBackdrop}" ToolTip.Tip="Tilts the sky (and the lighting it provides) up or down">
+						<TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Width="48" TextAlignment="Right" Text="{Binding BackdropVerticalRotationDegrees, StringFormat='{}{0:0}°'}" />
+						<Slider Minimum="-180" Maximum="180" Value="{Binding BackdropVerticalRotationDegrees}" />
+					</DockPanel>
 					<TextBlock Classes="Heading" Text="Sun compass direction" />
 					<Slider Minimum="0" Maximum="360" Value="{Binding SunAzimuthDegrees}" />
 					<TextBlock Classes="Heading" Text="Sun height" />

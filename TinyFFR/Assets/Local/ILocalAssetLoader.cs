@@ -29,7 +29,9 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// <param name="hdrOrExrFilePath">The path of the high-dynamic-range image to use. Must name an existing file in a supported format.</param>
 	/// <param name="destinationDirectoryPath">The directory to write the preprocessed files in to. It is created if it does not exist.</param>
 	/// <param name="backdropTextureResolution">How detailed the resulting backdrop should be. Higher resolutions take proportionally longer to prepare.</param>
-	void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard);
+	/// <param name="aspectRatioCorrection">How to adjust an <c>.hdr</c> image that is not already a supported shape (a 2:1 equirectangular panorama, or a cross-shaped cubemap) before converting it.
+	/// Defaults to <see cref="BackdropAspectRatioCorrection.Stretch"/>. Has no effect on <c>.exr</c> images, which must already be a supported shape.</param>
+	void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch);
 	/// <summary>
 	/// Asynchronously converts a high-dynamic-range image in to a pair of readily-supported <c>.ktx</c> files (a <c>*_skybox.ktx</c> file and a <c>*_ibl.ktx</c> file), and writes them to a directory.
 	/// </summary>
@@ -46,7 +48,9 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// <param name="hdrOrExrFilePath">The path of the high-dynamic-range image to use. Must name an existing file in a supported format.</param>
 	/// <param name="destinationDirectoryPath">The directory to write the preprocessed files in to. It is created if it does not exist.</param>
 	/// <param name="backdropTextureResolution">How detailed the resulting backdrop should be. Higher resolutions take proportionally longer to prepare.</param>
-	TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard);
+	/// <param name="aspectRatioCorrection">How to adjust an <c>.hdr</c> image that is not already a supported shape (a 2:1 equirectangular panorama, or a cross-shaped cubemap) before converting it.
+	/// Defaults to <see cref="BackdropAspectRatioCorrection.Stretch"/>. Has no effect on <c>.exr</c> images, which must already be a supported shape.</param>
+	TinyFfrAsyncOperation PreprocessHdrOrExrTextureToBackdropTextureDirectoryAsync(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch);
 
 	/// <summary>
 	/// Loads a backdrop from a directory previously written by <see cref="PreprocessHdrOrExrTextureToBackdropTextureDirectory"/> (or otherwise
@@ -109,9 +113,11 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// </remarks>
 	/// <param name="hdrOrExrFilePath">The path of the high-dynamic-range image to use. Must name an existing file in a supported format.</param>
 	/// <param name="backdropTextureResolution">How detailed the resulting backdrop should be. Higher resolutions take proportionally longer to prepare.</param>
+	/// <param name="aspectRatioCorrection">How to adjust an <c>.hdr</c> image that is not already a supported shape (a 2:1 equirectangular panorama, or a cross-shaped cubemap) before converting it.
+	/// Defaults to <see cref="BackdropAspectRatioCorrection.Stretch"/>. Has no effect on <c>.exr</c> images, which must already be a supported shape.</param>
 	/// <param name="name">The name to give the backdrop texture. May be left empty.</param>
-	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, Quality backdropTextureResolution = Quality.Standard, ReadOnlySpan<char> name = default) {
-		return LoadBackdropTexture(hdrOrExrFilePath, new BackdropTextureCreationConfig { Name = name }, backdropTextureResolution);
+	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, Quality backdropTextureResolution = Quality.Standard, ReadOnlySpan<char> name = default, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch) {
+		return LoadBackdropTexture(hdrOrExrFilePath, new BackdropTextureCreationConfig { Name = name }, backdropTextureResolution, aspectRatioCorrection);
 	}
 	/// <summary>
 	/// Loads a backdrop directly from a high-dynamic-range image, preprocessing it as it goes, using the given config.
@@ -134,7 +140,9 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// <param name="hdrOrExrFilePath">The path of the high-dynamic-range image to use. Must name an existing file in a supported format.</param>
 	/// <param name="config">Controls how the backdrop texture is created.</param>
 	/// <param name="backdropTextureResolution">How detailed the resulting backdrop should be. Higher resolutions take proportionally longer to prepare.</param>
-	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard);
+	/// <param name="aspectRatioCorrection">How to adjust an <c>.hdr</c> image that is not already a supported shape (a 2:1 equirectangular panorama, or a cross-shaped cubemap) before converting it.
+	/// Defaults to <see cref="BackdropAspectRatioCorrection.Stretch"/>. Has no effect on <c>.exr</c> images, which must already be a supported shape.</param>
+	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch);
 	/// <summary>
 	/// Asynchronously loads a backdrop directly from a high-dynamic-range image, preprocessing it as it goes.
 	/// </summary>
@@ -159,9 +167,11 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// </remarks>
 	/// <param name="hdrOrExrFilePath">The path of the high-dynamic-range image to use. Must name an existing file in a supported format.</param>
 	/// <param name="backdropTextureResolution">How detailed the resulting backdrop should be. Higher resolutions take proportionally longer to prepare.</param>
+	/// <param name="aspectRatioCorrection">How to adjust an <c>.hdr</c> image that is not already a supported shape (a 2:1 equirectangular panorama, or a cross-shaped cubemap) before converting it.
+	/// Defaults to <see cref="BackdropAspectRatioCorrection.Stretch"/>. Has no effect on <c>.exr</c> images, which must already be a supported shape.</param>
 	/// <param name="name">The name to give the backdrop texture. May be left empty.</param>
-	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, Quality backdropTextureResolution = Quality.Standard, ReadOnlySpan<char> name = default) {
-		return LoadBackdropTextureAsync(hdrOrExrFilePath, new BackdropTextureCreationConfig { Name = name }, backdropTextureResolution);
+	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, Quality backdropTextureResolution = Quality.Standard, ReadOnlySpan<char> name = default, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch) {
+		return LoadBackdropTextureAsync(hdrOrExrFilePath, new BackdropTextureCreationConfig { Name = name }, backdropTextureResolution, aspectRatioCorrection);
 	}
 	/// <summary>
 	/// Asynchronously loads a backdrop directly from a high-dynamic-range image, using the given config.
@@ -188,5 +198,7 @@ public interface ILocalAssetLoader : IAssetLoader {
 	/// <param name="hdrOrExrFilePath">The path of the high-dynamic-range image to use. Must name an existing file in a supported format.</param>
 	/// <param name="config">Controls how the backdrop texture is created.</param>
 	/// <param name="backdropTextureResolution">How detailed the resulting backdrop should be. Higher resolutions take proportionally longer to prepare.</param>
-	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard);
+	/// <param name="aspectRatioCorrection">How to adjust an <c>.hdr</c> image that is not already a supported shape (a 2:1 equirectangular panorama, or a cross-shaped cubemap) before converting it.
+	/// Defaults to <see cref="BackdropAspectRatioCorrection.Stretch"/>. Has no effect on <c>.exr</c> images, which must already be a supported shape.</param>
+	TinyFfrAsyncOperation<BackdropTexture> LoadBackdropTextureAsync(ReadOnlySpan<char> hdrOrExrFilePath, in BackdropTextureCreationConfig config, Quality backdropTextureResolution = Quality.Standard, BackdropAspectRatioCorrection aspectRatioCorrection = BackdropAspectRatioCorrection.Stretch);
 }

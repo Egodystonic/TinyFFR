@@ -51,6 +51,8 @@ static partial class TestMain {
 		//		You can remove BeginDefaultLoop and Tick if you prefer to write your own loop.
 		//		The Tick function passed to BeginDefaultLoop should return `true` to exit the loop.
 		//		If you pass a CameraController to BeginDefaultLoop, it will be possible to control the camera with keyboard/mouse or gamepad using the default controller input mapping.
+		
+		var bg = context.Factory.AssetLoader.LoadBackdropTexture(@"/home/ben/Documents/Temp/kb3d_split/Nebula 11.hdr");
 
 		BeginDefaultLoop(Tick, context.Loop, context.CameraController);
 		bool Tick(float deltaTime) {

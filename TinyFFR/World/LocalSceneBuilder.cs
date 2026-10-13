@@ -31,7 +31,8 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 	readonly ArrayPoolBackedVector<RayIntersectionData> _rayIntersectionBuffer = new();
 	readonly SetPool<ModelInstance> _modelInstanceSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedSet<Light>> _lightMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, (Quality Preset, LightShadowFidelityData Directional)> _shadowQualityActivePresetMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, DirectionalLight> _directionalLightMap = new();
 	readonly SetPool<Light> _lightSetPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, FogData> _fogMap = new();
@@ -194,6 +195,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		).ThrowIfFailure();
 
 		instanceVector.Add(light.AsBaseLight());
+		if (light.Type == LightType.Directional) _directionalLightMap[handle] = light.AsBaseLight().As<DirectionalLight>();
 		_shadowQualityActivePresetMap.Remove(handle);
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), light);
 	}
@@ -202,6 +204,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _lightMap[handle];
 		if (!instanceVector.Remove(light.AsBaseLight())) return;
+		if (light.Type == LightType.Directional) _directionalLightMap.Remove(handle);
 
 		RemoveLightFromScene(
 			handle,
@@ -211,9 +214,12 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), light);
 	}
 
-	public void SetLightShadowFidelity(ResourceHandle<Scene> handle, Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, LightShadowFidelityData directionalLightFidelity) {
+	public void SetLightShadowFidelity(ResourceHandle<Scene> handle, Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, uint directionalLightMapSize, byte directionalCascadeCount, float cameraNear, float cameraFar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (_shadowQualityActivePresetMap.TryGetValue(handle, out var activePreset) && activePreset == qualityPreset) return;
+		var directionalLightFidelity = _directionalLightMap.TryGetValue(handle, out var directionalLight)
+			? CreateDirectionalShadowFidelity(directionalLightMapSize, directionalCascadeCount, directionalLight.EnableShadowStabilization, directionalLight.MaxShadowDistance, cameraNear, cameraFar)
+			: new LightShadowFidelityData(directionalLightMapSize, directionalCascadeCount);
+		if (_shadowQualityActivePresetMap.TryGetValue(handle, out var active) && active.Preset == qualityPreset && active.Directional == directionalLightFidelity) return;
 
 		foreach (var light in _lightMap[handle]) {
 			switch (light.Type) {
@@ -231,7 +237,57 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			}
 		}
 
-		_shadowQualityActivePresetMap[handle] = qualityPreset;
+		_shadowQualityActivePresetMap[handle] = (qualityPreset, directionalLightFidelity);
+	}
+
+	static LightShadowFidelityData CreateDirectionalShadowFidelity(uint mapSize, byte cascadeCount, bool stable, float shadowDistance, float cameraNear, float cameraFar) {
+		const float SplitLambda = 0.75f;
+		var near = MathF.Max(cameraNear, 0.001f);
+		var far = MathF.Max(cameraFar, near * 2f);
+		var distance = Math.Clamp(shadowDistance, near * 2f, far);
+
+		static float PracticalSplit(int index, int count, float near, float far) {
+			var t = (float) index / count;
+			var uniform = near + (far - near) * t;
+			var logarithmic = near * MathF.Pow(far / near, t);
+			return SplitLambda * logarithmic + (1f - SplitLambda) * uniform;
+		}
+
+		float shadowFar;
+		float rangeStart;
+		float rangeEnd;
+		float fractionDenominator;
+		int splitCascadeCount;
+		bool lastSplitAtDistance;
+		if (!stable || cascadeCount == 1) {
+			shadowFar = distance;
+			(rangeStart, rangeEnd, fractionDenominator, splitCascadeCount, lastSplitAtDistance) = (near, distance, distance - near, cascadeCount, false);
+		}
+		else if (distance >= far) {
+			shadowFar = 0f;
+			(rangeStart, rangeEnd, fractionDenominator, splitCascadeCount, lastSplitAtDistance) = (near, far, far - near, cascadeCount, false);
+		}
+		else {
+			shadowFar = 0f;
+			(rangeStart, rangeEnd, fractionDenominator, splitCascadeCount, lastSplitAtDistance) = (near, distance, far - near, cascadeCount - 1, true);
+		}
+
+		float GetSplit(int index) {
+			if (index < splitCascadeCount) return (PracticalSplit(index, splitCascadeCount, rangeStart, rangeEnd) - near) / fractionDenominator;
+			if (lastSplitAtDistance && index == splitCascadeCount) return (distance - near) / fractionDenominator;
+			return 1f;
+		}
+
+		return new LightShadowFidelityData(
+			MapSize: mapSize,
+			CascadeCount: cascadeCount,
+			ShadowFarDistance: shadowFar,
+			CascadeSplitA: GetSplit(1),
+			CascadeSplitB: GetSplit(2),
+			CascadeSplitC: GetSplit(3),
+			Stable: stable,
+			LiSpsm: false
+		);
 	}
 
 	public IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle) {
@@ -597,6 +653,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			}
 			
 			lightInstanceVector.Clear();
+			_directionalLightMap.Remove(handle);
 		}
 	}
 
@@ -743,6 +800,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 			_lightMap.Dispose();
 			_lightSetPool.Dispose();
 			_shadowQualityActivePresetMap.Dispose();
+			_directionalLightMap.Dispose();
 
 			_activeSceneHandles.Dispose();
 			_removeAllScratchVector.Dispose();
@@ -783,6 +841,7 @@ sealed unsafe partial class LocalSceneBuilder : ISceneBuilder, ISceneImplProvide
 
 		_lightSetPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
+		_directionalLightMap.Remove(handle);
 		
 		_activeSceneHandles.Remove(handle);
 	}

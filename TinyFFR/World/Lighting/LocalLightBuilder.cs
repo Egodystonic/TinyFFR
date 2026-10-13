@@ -13,7 +13,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDirectory<PointLight>, IResourceDirectory<SpotLight>, IResourceDirectory<DirectionalLight>, IDisposable, ILocalResourceImplProvider {
-	readonly record struct LightData(LightType Type, nint TypeHandle, float Brightness, Angle SpotLightInner, Angle SpotLightOuter);
+	readonly record struct LightData(LightType Type, nint TypeHandle, float Brightness, Angle SpotLightInner, Angle SpotLightOuter, float MaxShadowDistance, bool ShadowStabilization);
 	const string DefaultLightName = "Unnamed Light";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ResourceHandle, LightData> _activeLightMap = new();
@@ -68,7 +68,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDir
 	}
 
 	void SetUpBaseLight(in LightCreationConfig config, ResourceIdent ident, LightType lightType, Angle? spotLightInner = null, Angle? spotLightOuter = null) {
-		_activeLightMap.Add(ident.RawResourceHandle, new(lightType, ident.TypeHandle, config.InitialBrightness, spotLightInner ?? Angle.Zero, spotLightOuter ?? Angle.Zero));
+		_activeLightMap.Add(ident.RawResourceHandle, new(lightType, ident.TypeHandle, config.InitialBrightness, spotLightInner ?? Angle.Zero, spotLightOuter ?? Angle.Zero, DirectionalLight.DefaultMaxShadowDistance, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(ident, config.Name, DefaultLightName);
 		SetLightColor(ident.RawResourceHandle, config.InitialColor.ToVector3());
 		SetLightShadowCaster(ident.RawResourceHandle, config.CastsShadows);
@@ -137,7 +137,17 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDir
 
 	public void SetShadowFidelity(ResourceHandle handle, LightShadowFidelityData fidelityArgs) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		SetLightShadowFidelity(handle, fidelityArgs.MapSize, fidelityArgs.CascadeCount).ThrowIfFailure();
+		SetLightShadowFidelity(
+			handle,
+			fidelityArgs.MapSize,
+			fidelityArgs.CascadeCount,
+			fidelityArgs.ShadowFarDistance,
+			fidelityArgs.CascadeSplitA,
+			fidelityArgs.CascadeSplitB,
+			fidelityArgs.CascadeSplitC,
+			fidelityArgs.Stable,
+			fidelityArgs.LiSpsm
+		).ThrowIfFailure();
 	}
 
 	public Location GetPointLightPosition(ResourceHandle<PointLight> handle) {
@@ -243,6 +253,27 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDir
 	public void SetDirectionalLightDirection(ResourceHandle<DirectionalLight> handle, Direction newDirection) {
 		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
 		SetSunLightDirection(handle, newDirection.ToVector3()).ThrowIfFailure();
+	}
+
+	public float GetDirectionalLightMaxShadowDistance(ResourceHandle<DirectionalLight> handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
+		return _activeLightMap[handle].MaxShadowDistance;
+	}
+	public void SetDirectionalLightMaxShadowDistance(ResourceHandle<DirectionalLight> handle, float newDistance) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
+		if (!Single.IsFinite(newDistance) || newDistance <= 0f) {
+			throw new ArgumentOutOfRangeException(nameof(newDistance), newDistance, "Must be a finite value greater than zero.");
+		}
+		_activeLightMap[handle] = _activeLightMap[handle] with { MaxShadowDistance = newDistance };
+	}
+
+	public bool GetDirectionalLightShadowStabilization(ResourceHandle<DirectionalLight> handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
+		return _activeLightMap[handle].ShadowStabilization;
+	}
+	public void SetDirectionalLightShadowStabilization(ResourceHandle<DirectionalLight> handle, bool enabled) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
+		_activeLightMap[handle] = _activeLightMap[handle] with { ShadowStabilization = enabled };
 	}
 
 	public void SetDirectionalLightSunDiscParameters(ResourceHandle<DirectionalLight> handle, SunDiscConfig config) {
@@ -361,7 +392,13 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDir
 	static extern InteropResult SetLightShadowFidelity(
 		UIntPtr lightHandle,
 		uint mapSize,
-		byte cascadeCount
+		byte cascadeCount,
+		float shadowFar,
+		float splitA,
+		float splitB,
+		float splitC,
+		InteropBool stable,
+		InteropBool lispsm
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_point_light_lumens")]

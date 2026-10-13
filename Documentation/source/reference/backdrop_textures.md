@@ -88,6 +88,37 @@ using var factory = new LocalTinyFfrFactory(
 );
 ```
 
+### Image Shapes
+
+```csharp
+using var nebula = factory.AssetLoader.LoadBackdropTexture(
+	@"Assets/nebula.hdr", 
+	aspectRatioCorrection: BackdropAspectRatioCorrection.MirrorTile // (1)!
+);
+```
+
+1.	Specifies how to adjust the image if it isn't already a supported shape. If this argument is omitted, `BackdropAspectRatioCorrection.Stretch` is used.
+
+Backdrops are best when created from images of certain shapes:
+
+* *Equirectangular panoramas*, which are exactly twice as wide as they are tall (2:1). This is the shape of almost all downloadable HDR skies.
+* *Cross-shaped cubemaps*, which are 4:3 (horizontal cross) or 3:4 (vertical cross), where the longer side is a power of two (e.g. 4096x3072).
+
+Some `.hdr` images are not either of these shapes. In this case, TinyFFR adjusts these images to a 2:1 panorama before converting them, according to the `aspectRatioCorrection` argument:
+
+| Value                                        | Result                                                                                                                       |
+| :------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| `BackdropAspectRatioCorrection.Stretch`      | The image is stretched to wrap all the way around the scene (default). Nothing is lost, but the image is distorted, and its left and right edges meet on the far side of the backdrop (which can show a seam if they differ). |
+| `BackdropAspectRatioCorrection.MirrorTile`   | The image is placed next to a mirrored copy of itself, and the pair is stretched to wrap around the scene. The image appears twice, but there is no seam. |
+| `BackdropAspectRatioCorrection.PadWithAverageColor` | The image is placed, undistorted, in the middle of the panorama, and the rest is filled with the average color of the whole image. The fill lights the scene in keeping with the image's overall brightness, but there's usually a visible step where the image meets it. |
+| `BackdropAspectRatioCorrection.PadWithEdgeColor`    | The image is placed, undistorted, in the middle of the panorama, and the rest is filled with the colors found along the image's edges. Beside the image, the fill fades from the color of its right edge to the color of its left edge, so it blends in to the image on both sides; above and below the image it matches the top and bottom edges. |
+| `BackdropAspectRatioCorrection.Throw`        | An exception is thrown instead.                                                                                              |
+
+Images that are already a supported shape are never altered, whichever value you choose. `PreprocessHdrOrExrTextureToBackdropTextureDirectory()` and the asynchronous methods take the same argument.
+
+!!! warning "EXR Images Are Never Adjusted"
+	Only `.hdr` images can be adjusted. An `.exr` image that isn't a supported shape always fails to convert, with an exception that states its dimensions. Convert it to a 2:1 panorama yourself (or save it as an `.hdr` image) first.
+
 ### Preprocessing
 
 ```csharp

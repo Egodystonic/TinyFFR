@@ -50,7 +50,8 @@ public:
 		int32_t depthOfFieldQuality,
 		float_t depthOfFieldStrength,
 		interop_bool dithering,
-		interop_bool guardBand
+		interop_bool guardBand,
+		uint8_t vsmMsaaSamples
 	);
 	static void set_view_frustum_culling_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);
 	static void set_view_depth_of_field_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);

@@ -35,6 +35,8 @@ sealed class EnvironmentSettings {
 	public SceneBackdropBrightnessPreset BackdropBrightness { get; set; } = SceneBackdropBrightnessPreset.Midday;
 	public bool UseBackdropBrightnessSlider { get; set; }
 	public float BackdropBrightnessPercent { get; set; } = 100f;
+	public float BackdropHorizontalRotationDegrees { get; set; }
+	public float BackdropVerticalRotationDegrees { get; set; }
 	public FogDescriptor? Fog { get; set; }
 
 	public CameraExposurePreset Exposure => Lighting switch {
@@ -69,13 +71,15 @@ sealed class EnvironmentSettings {
 		}
 	}
 
+	Rotation BackdropRotation => (Angle.FromDegrees(BackdropHorizontalRotationDegrees) % Direction.Up) + (Angle.FromDegrees(BackdropVerticalRotationDegrees) % Direction.Left);
+
 	public void ApplyTo(Scene scene, DirectionalLight sun) {
 		switch (Backdrop) {
 			case BackdropStyle.Clouds:
-				scene.SetBackdrop(BuiltInSceneBackdrop.Clouds, BackdropBrightness);
+				scene.SetBackdrop(BuiltInSceneBackdrop.Clouds, BackdropBrightness, BackdropRotation);
 				break;
 			case BackdropStyle.Starfield:
-				scene.SetBackdrop(BuiltInSceneBackdrop.Starfield, BackdropBrightness);
+				scene.SetBackdrop(BuiltInSceneBackdrop.Starfield, BackdropBrightness, BackdropRotation);
 				break;
 			case BackdropStyle.SkyColor:
 				scene.SetBackdrop(SkyColor, BackdropBrightness);
@@ -83,10 +87,10 @@ sealed class EnvironmentSettings {
 			case BackdropStyle.CustomHdr when CustomBackdrop is { } custom:
 				if (UseBackdropBrightnessSlider) {
 					var lux = GetMatchingBackdropBrightness(Lighting).ToLux() * BackdropBrightnessPercent / 100f;
-					scene.SetBackdrop(custom, custom.LuxToIntensity(lux));
+					scene.SetBackdrop(custom, custom.LuxToIntensity(lux), BackdropRotation);
 				}
 				else {
-					scene.SetBackdrop(custom, BackdropBrightness);
+					scene.SetBackdrop(custom, BackdropBrightness, BackdropRotation);
 				}
 				break;
 			default:

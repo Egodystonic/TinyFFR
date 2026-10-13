@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Text;
@@ -333,7 +334,14 @@ sealed unsafe class LocalAssetBakery : IAssetBakery, IDisposable {
 	
 	PooledHeapMemory<byte> EnsureSpace(ResourceStub stub, BakedData tuple, int requiredLength) {
 		if (tuple.Buffer.Span.Length - tuple.CursorPos >= requiredLength) return tuple.Buffer;
-		var newBuffer = _globals.HeapPool.Borrow(Int32.Max(tuple.Buffer.Span.Length * 2, tuple.CursorPos + requiredLength));
+		var requiredTotalLength = (long) tuple.CursorPos + requiredLength;
+		if (requiredTotalLength > LocalAssetLoader.MaxAssetBufferSizeBytes) {
+			throw new AssetBakeException(
+				$"Can not bake resource '{_globals.GetResourceName(stub.Ident, default)}' as its baked data would exceed the maximum size TinyFFR can load " +
+				$"for a single baked asset ({LocalAssetLoader.MaxAssetBufferSizeBytes} bytes). Consider baking its sub-resources separately or reducing texture sizes."
+			);
+		}
+		var newBuffer = _globals.HeapPool.Borrow((int) Int64.Min(Int64.Max((long) tuple.Buffer.Span.Length * 2L, requiredTotalLength), LocalAssetLoader.MaxAssetBufferSizeBytes));
 		_inProgressResources[stub] = new(newBuffer, tuple.CursorPos);
 		tuple.Buffer.Span.CopyTo(newBuffer.Span);
 		tuple.Buffer.Dispose();

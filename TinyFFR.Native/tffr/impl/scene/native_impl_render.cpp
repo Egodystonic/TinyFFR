@@ -290,13 +290,19 @@ void native_impl_render::set_view_quality_configuration(
 	int32_t depthOfFieldQuality,
 	float_t depthOfFieldStrength,
 	interop_bool dithering,
-	interop_bool guardBand
+	interop_bool guardBand,
+	uint8_t vsmMsaaSamples
 ) {
 	ThrowIfNull(viewDescriptor, "View was null.");
 
 	// TODO PCSS doesn't seem very stable, it may be that we need to better configure the frustum/FOV before exposing shadow type selection.
 	viewDescriptor->setShadowingEnabled(shadowsEnabled);
 	viewDescriptor->setShadowType(ShadowType::VSM);
+	{
+		VsmShadowOptions vsm;
+		vsm.msaaSamples = vsmMsaaSamples;
+		viewDescriptor->setVsmShadowOptions(vsm);
+	}
 
 	switch (screenSpaceEffectsLevel) {
 		case 2: {
@@ -425,7 +431,8 @@ StartExportedFunc(
 	int32_t depthOfFieldQuality,
 	float_t depthOfFieldStrength,
 	interop_bool dithering,
-	interop_bool guardBand
+	interop_bool guardBand,
+	uint8_t vsmMsaaSamples
 ) {
 	native_impl_render::set_view_quality_configuration(
 		viewDescriptor,
@@ -443,7 +450,8 @@ StartExportedFunc(
 		depthOfFieldQuality,
 		depthOfFieldStrength,
 		dithering,
-		guardBand
+		guardBand,
+		vsmMsaaSamples
 	);
 	EndExportedFunc
 }

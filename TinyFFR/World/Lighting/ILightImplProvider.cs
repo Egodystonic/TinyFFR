@@ -133,4 +133,9 @@ public interface ILightImplProvider : IDisposableResourceImplProvider {
 	/// Invoked via <see cref="DirectionalLight.SetSunDiscParameters"/>.
 	/// </summary>
 	void SetDirectionalLightSunDiscParameters(ResourceHandle<DirectionalLight> handle, SunDiscConfig config);
+
+	float GetDirectionalLightMaxShadowDistance(ResourceHandle<DirectionalLight> handle);
+	void SetDirectionalLightMaxShadowDistance(ResourceHandle<DirectionalLight> handle, float newDistance);
+	bool GetDirectionalLightShadowStabilization(ResourceHandle<DirectionalLight> handle);
+	void SetDirectionalLightShadowStabilization(ResourceHandle<DirectionalLight> handle, bool enabled);
 }

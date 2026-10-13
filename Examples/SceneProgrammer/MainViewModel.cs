@@ -59,6 +59,8 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	[ObservableProperty] public partial SceneBackdropBrightnessPreset BackdropBrightness { get; set; } = SceneBackdropBrightnessPreset.Midday;
 	[ObservableProperty] public partial bool UseBackdropBrightnessSlider { get; set; }
 	[ObservableProperty] public partial double BackdropBrightnessPercent { get; set; } = 100d;
+	[ObservableProperty] public partial double BackdropHorizontalRotationDegrees { get; set; }
+	[ObservableProperty] public partial double BackdropVerticalRotationDegrees { get; set; }
 	[ObservableProperty] public partial Quality HdrQuality { get; set; } = Quality.Standard;
 	[ObservableProperty] public partial string? CustomBackdropName { get; set; }
 	[ObservableProperty] public partial BuiltInQualityConfiguration RenderQuality { get; set; } = BuiltInQualityConfiguration.High;
@@ -82,6 +84,7 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	public bool CanPlay => Keyframes.Count >= 2 && !IsBusy;
 	public bool CanUseBackdropBrightnessSlider => Backdrop == BackdropStyle.CustomHdr;
 	public bool IsBackdropBrightnessSliderActive => UseBackdropBrightnessSlider && CanUseBackdropBrightnessSlider;
+	public bool CanRotateBackdrop => Backdrop is BackdropStyle.Clouds or BackdropStyle.Starfield or BackdropStyle.CustomHdr;
 
 	public MainViewModel() {
 		LoadFogPreset(FogPreset);
@@ -387,6 +390,7 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 	partial void OnBackdropChanged(BackdropStyle value) {
 		OnPropertyChanged(nameof(CanUseBackdropBrightnessSlider));
 		OnPropertyChanged(nameof(IsBackdropBrightnessSliderActive));
+		OnPropertyChanged(nameof(CanRotateBackdrop));
 		ApplyEnvironment();
 	}
 
@@ -420,6 +424,8 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 		_session.ApplyRenderSettings();
 	}
 	partial void OnBackdropBrightnessPercentChanged(double value) => ApplyEnvironment();
+	partial void OnBackdropHorizontalRotationDegreesChanged(double value) => ApplyEnvironment();
+	partial void OnBackdropVerticalRotationDegreesChanged(double value) => ApplyEnvironment();
 
 	partial void OnUseBackdropBrightnessSliderChanged(bool value) {
 		OnPropertyChanged(nameof(IsBackdropBrightnessSliderActive));
@@ -448,6 +454,8 @@ sealed partial class MainViewModel : ObservableObject, IDisposable {
 		environment.BackdropBrightness = BackdropBrightness;
 		environment.UseBackdropBrightnessSlider = IsBackdropBrightnessSliderActive;
 		environment.BackdropBrightnessPercent = (float) BackdropBrightnessPercent;
+		environment.BackdropHorizontalRotationDegrees = (float) BackdropHorizontalRotationDegrees;
+		environment.BackdropVerticalRotationDegrees = (float) BackdropVerticalRotationDegrees;
 		_session.ApplyEnvironment();
 	}
 
