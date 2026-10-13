@@ -9,7 +9,13 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 unsafe class TextureCompressorTest {
 	const int TestDimension = 64;
 	static readonly TextureCompressionFormat[] AllFormats = Enum.GetValues<TextureCompressionFormat>().Where(f => f != TextureCompressionFormat.None).ToArray();
-	
+
+	[SetUp]
+	public void SetUpTest() => ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
+
+	[TearDown]
+	public void TearDownTest() => ThreadSafetyTracker.ClearPrimaryThread();
+
 	readonly ref struct CompressedTextureData {
 		public ReadOnlySpan<byte> Blocks { get; }
 		public TextureCompressionFormat Format { get; }

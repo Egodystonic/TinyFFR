@@ -107,6 +107,7 @@ Embed TinyFFR rendering into UI frameworks (WPF, Avalonia, WinForms). Each provi
 - NUnit 3 with NSubstitute for mocking.
 - Unit tests: fast, parallelizable, automatable.
 - Integration tests: `[Explicit]` attribute, manual/human-verified.
+- Add new tests to the existing test file for the unit under test (class, struct, etc.) rather than creating a new file for each small or targeted case. Test files mirror the source path and are named after the unit (e.g. `TinyFFR/Assets/Materials/Textures/TextureCompressor.cs` → `Testing/TinyFFR.Tests/Assets/Materials/Textures/TextureCompressor.cs`, class `TextureCompressorTest`). Only create a new file when no test file exists for that unit. When adding to an existing fixture, check its `[SetUp]`/`[TearDown]` still covers what the new tests need (e.g. `ThreadSafetyTracker.SetPrimaryThread` for tests that dispose a `CooperativeThreadPool`).
 - When adding new resource types, update integration tests that verify disposal and dependency protections.
 
 ## Build Configurations
