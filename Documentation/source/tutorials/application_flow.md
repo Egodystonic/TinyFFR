@@ -382,6 +382,81 @@ flowchart TD
 
 When TinyFFR is embedded in a UI framework (such as [Avalonia](../reference/avalonia_integration.md), [WPF](../reference/wpf_integration.md), or [Windows Forms](../reference/winforms_integration.md)), the framework owns the application's windows and its main loop. Rather than creating a window and iterating an application loop yourself, you place a TinyFFR scene view control in your interface, bind a renderer to it, and start a UI-framework loop that calls your *tick* callback once per frame. Inside the callback, the flow is the same as any other application loop iteration. The three phases are otherwise unchanged: resources are still created at start-up and disposed (in reverse order) when the application closes.
 
+## Some Notes on Resources
+
+Most things you'll work with in TinyFFR are resources (they also implement the `IResource` interface).(1)
+{ .annotate }
+
+1. 	There are not really any useful public methods on this interface; it is used internally to define some things all resources need to do.
+
+	However, types tagged with `IResource` can be used in other APIs.
+
+Every resource type in TinyFFR is an [opaque handle](https://en.wikipedia.org/wiki/Opaque_pointer); i.e. an immutable struct that *represents* but does not actually *contain* the resource data. For example, a `Camera` instance does not actually contain any mutable state or camera data, it only ultimately wraps a __pointer__ to the camera data and a reference to the interface that provides the __implementation__ for that pointer.
+
+In other words, resource types contain just two fields internally:
+
+1. A pointer/handle;
+2. A reference to the implementation for operations using that pointer/handle.
+
+??? tip "Why are resources designed as opaque handles?"
+	Although there are many valid possibilities for the design of resource management in a library like TinyFFR, this design was chosen for the following reasons:
+	
+	* Resource types remain small, and are quick to pass around between methods or hold in data structures. They can be packed tightly in collections, and iterated over quickly.
+
+	* Cache locality for the *actual* data is improved. We can store the pointed-to data in whatever structure we want behind the scenes, exposing only pointers or handles in to those data structures.
+
+	* Because resource types are C# structs they do not generate pressure on the GC. Simultaneously, because they are immutable you can not accidentally create copies of them and mutate those copies. You can not accidentally mutate an rvalue(1).
+	{ .annotate }
+
+		1. "Rvalues" are values that may not have an actual memory location; i.e. they're transient copies of data. 
+		
+			For example, when doing something like `#!csharp structInstance.ValueProperty.SomeProperty = someValue;` in C# the write to `SomeProperty` is often lost because the struct returned via `ValueProperty` is an rvalue and only exists for the lifetime of the expression.
+
+??? tip "But resources behave like mutable objects?"
+	Resource types give the *illusion* of being mutable reference-type instances by providing you with properties that actually defer to the enclosed implementation reference. For example, when writing `myCamera.Position = newPosition`, you're actually invoking the following property:
+
+	```csharp
+	public Location Position {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetPosition(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetPosition(_handle, value);
+	}
+	```
+
+	`Implementation` is the wrapped implementation reference; and it is passed the camera `_handle` along with the new `value` you wish to set. That implementation then does whatever is necessary to affect the change on the camera data.
+
+	Neither `Implementation` nor `_handle` are mutable; therefore the resource instance itself is readonly. But it ostensibly *behaves* like a mutable reference type.
+
+???+ bug "C# Compiler Inconsistency"
+	Unfortunately, when working with resource types in TinyFFR you may encounter a "CS1612" error when attempting to set properties via secondary structs.
+
+	For example, the following code will not compile:
+
+	```csharp
+	readonly struct MyStruct {
+		public Camera MainCamera { get; }
+	}
+
+	var s = new MyStruct();
+	s.MainCamera.Position = Location.Origin; // CS1612 error here
+	```
+
+	You can fix this by using the `Set...()` methods supplied on each resource type; paired with each settable property:
+
+	```csharp
+	readonly struct MyStruct {
+		public Camera MainCamera { get; }
+	}
+
+	var s = new MyStruct();
+	s.MainCamera.SetPosition(Location.Origin); // No more error, works as intended
+	```
+
+	There is an open proposal to fix this inconsistency: [https://github.com/dotnet/csharplang/issues/9174](https://github.com/dotnet/csharplang/issues/9174)
+
+	There are also various discussions on github: [https://github.com/dotnet/roslyn/issues/45284](https://github.com/dotnet/roslyn/issues/45284), [https://github.com/dotnet/csharplang/discussions/2068](https://github.com/dotnet/csharplang/discussions/2068), [https://github.com/dotnet/csharplang/discussions/8364](https://github.com/dotnet/csharplang/discussions/8364).
+
 ## Where Next
 
 The following pages show some real-world showcase applications that demonstrate the principles explained above.
