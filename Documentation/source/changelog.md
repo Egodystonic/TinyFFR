@@ -8,9 +8,9 @@ hide:
   - footer
 ---
 
-## 1.0
+## <span style="font-size: 1.2em; font-weight: bold;">1.0</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Oct 2026</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v1.0.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v1.0.0)__
 
 ### Major Features
 
@@ -93,9 +93,9 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) 
 * Fixed segfaults caused by passing resources from a different factory to some APIs
 * Fixed the `Optimized` build configuration not actually enabling optimizations
 
-## 0.8
+## <span style="font-size: 1.2em; font-weight: bold;">0.8</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: May 2026</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.8.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.8.0)__
 
 ### Major Features
 
@@ -113,9 +113,9 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) 
 * Made it possible to create mock resources for testing
 * (0.8.1) Increased internal handle allocator size to improve speed of loading complex models
 
-## 0.7
+## <span style="font-size: 1.2em; font-weight: bold;">0.7</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Mar 2026</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.7.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.7.0)__
 
 ### Major Features
 
@@ -135,9 +135,9 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) 
 
 * Fixed mipmap generation not actually being applied in previous versions
 
-## 0.6
+## <span style="font-size: 1.2em; font-weight: bold;">0.6</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Dec 2025</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.6.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.6.0)__
 
 ### Major Features
 
@@ -188,9 +188,9 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) 
 * Added function to convert `Transform2D` to `Matrix3x2`
 * Added option to set memory usage rubric in factory setup
 
-## 0.5
+## <span style="font-size: 1.2em; font-weight: bold;">0.5</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Nov 2025</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.5.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.5.0)__
 
 ### Improvements
 
@@ -213,9 +213,9 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) 
 * Fixed a small resource leak that occurred when disposing a scene without first removing its backdrop.
 * `UserQuitRequested` flag is now set when user requests a quit in a multi-window application.
 
-## 0.4
+## <span style="font-size: 1.2em; font-weight: bold;">0.4</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Oct 2025</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/4?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.4.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/4?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.4.0)__
 
 ### Major Features
 
@@ -237,9 +237,9 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/4?closed=1) 
 * Fixed an issue where attempting to add model instances or light objects that were previously added to a now-disposed scene to a new scene would not actually add them.
 * Fixed an issue where mipmaps were not being generated even when requested
 
-## 0.3
+## <span style="font-size: 1.2em; font-weight: bold;">0.3</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Jul 2025</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/2?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.3.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/2?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.3.0)__
 
 ### Major Features
 
@@ -255,9 +255,9 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/2?closed=1) 
 
 ----
 
-## 0.2
+## <span style="font-size: 1.2em; font-weight: bold;">0.2</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: May 2025</span>
 
-__Github: [Issues](https://github.com/Egodystonic/TinyFFR/issues?q=is%3Aissue%20milestone%3A%22Release%20v0.2%22%20) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.2.0)__
+__:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/issues?q=is%3Aissue%20milestone%3A%22Release%20v0.2%22%20) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.2.0)__
 
 ### Major Features
 
@@ -277,3 +277,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/issues?q=is%3Aissue%20
 * Fixed some image types not being loadable as textures (incorrect usage of `stb_image` header)
 * Fixed incorrect import of mesh data in multi-mesh files
 * Fixed memory leak with resource naming
+
+## <span style="font-size: 1.2em; font-weight: bold;">0.1</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Mar 2025</span>
+
+Initial release
