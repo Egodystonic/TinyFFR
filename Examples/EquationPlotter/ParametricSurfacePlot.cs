@@ -3,6 +3,7 @@ using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 
 namespace EquationPlotter;
@@ -18,6 +19,11 @@ sealed class ParametricSurfacePlot : IPlot {
 	readonly Mesh _mesh;
 	readonly GridTexture _gradient;
 	readonly ModelInstance _instance;
+	readonly IResourceAllocator _allocator;
+	readonly Vector3[] _rowMinimums;
+	readonly Vector3[] _rowMaximums;
+	CompiledExpression[]? _currentExpressions;
+	float _currentTime;
 	ColorMapKind _gradientColorMap;
 
 	public string Description { get; }
@@ -31,6 +37,9 @@ sealed class ParametricSurfacePlot : IPlot {
 		var vertexCount = _resolution * _resolution;
 		var quadCount = (_resolution - 1) * (_resolution - 1);
 		_positions = new Vector3[vertexCount];
+		_allocator = factory.ResourceAllocator;
+		_rowMinimums = new Vector3[_resolution];
+		_rowMaximums = new Vector3[_resolution];
 		_buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(vertexCount * 2, quadCount * 4);
 		WriteTriangles();
 		_mesh = _buffer.CreateMesh();
@@ -41,69 +50,100 @@ sealed class ParametricSurfacePlot : IPlot {
 		Description = $"Parametric surface: {_resolution} x {_resolution} vertices";
 	}
 
-	void WriteTriangles() {
-		using var lease = _buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
-		var triangles = lease.Span;
-		var backOffset = _resolution * _resolution;
-		var t = 0;
-		for (var u = 0; u < _resolution - 1; ++u) {
-			for (var v = 0; v < _resolution - 1; ++v) {
-				var a = u * _resolution + v;
-				var b = (u + 1) * _resolution + v;
-				var c = u * _resolution + v + 1;
-				var d = (u + 1) * _resolution + v + 1;
-				triangles[t++] = new VertexTriangle(a, b, c);
-				triangles[t++] = new VertexTriangle(b, d, c);
-				triangles[t++] = new VertexTriangle(backOffset + a, backOffset + c, backOffset + b);
-				triangles[t++] = new VertexTriangle(backOffset + b, backOffset + c, backOffset + d);
-			}
+	unsafe void WriteTriangles() {
+		_buffer.WriteTrianglesParallelized(&WriteTriangleBlock, _resolution, recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
+	}
+
+	static void WriteTriangleBlock(Span<VertexTriangle> block, int startIndex, int resolution) {
+		var backOffset = resolution * resolution;
+		var quadsPerRow = resolution - 1;
+		for (var i = 0; i < block.Length; ++i) {
+			var triangleIndex = startIndex + i;
+			var quad = triangleIndex >> 2;
+			var u = quad / quadsPerRow;
+			var v = quad % quadsPerRow;
+			var a = u * resolution + v;
+			var b = (u + 1) * resolution + v;
+			var c = u * resolution + v + 1;
+			var d = (u + 1) * resolution + v + 1;
+			block[i] = (triangleIndex & 3) switch {
+				0 => new VertexTriangle(a, b, c),
+				1 => new VertexTriangle(b, d, c),
+				2 => new VertexTriangle(backOffset + a, backOffset + c, backOffset + b),
+				_ => new VertexTriangle(backOffset + b, backOffset + c, backOffset + d)
+			};
 		}
 	}
 
-	public void Update(float time, CompiledExpression[] expressions) {
+	public unsafe void Update(float time, CompiledExpression[] expressions) {
 		UpdateGradient();
-		Span<float> variables = stackalloc float[3];
-		variables[2] = time;
+		_currentExpressions = expressions;
+		_currentTime = time;
+		_allocator.ExecuteParallelized(_resolution, &EvaluatePositionRows, this);
+
 		var max = Vector3.Max(Vector3.Zero, Vector3.Zero);
 		var min = max;
 		for (var u = 0; u < _resolution; ++u) {
-			variables[0] = _domain.FromNormalizedU(u / (_resolution - 1f) - 0.5f);
-			for (var v = 0; v < _resolution; ++v) {
-				variables[1] = _domain.FromNormalizedV(v / (_resolution - 1f) - 0.5f);
+			min = Vector3.Min(min, _rowMinimums[u]);
+			max = Vector3.Max(max, _rowMaximums[u]);
+		}
+
+		_buffer.WriteVerticesParallelized(&WriteVertexBlock, this, recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: true);
+		_buffer.SetBoundingBox(PositionedCuboid.FromHalfDimensions((max.X - min.X) * 0.5f, (max.Y - min.Y) * 0.5f, (max.Z - min.Z) * 0.5f, Location.FromVector3((min + max) * 0.5f)), overwriteChildMeshBoundingBoxes: true);
+	}
+
+	static void EvaluatePositionRows(int firstU, int count, ParametricSurfacePlot plot) {
+		var expressions = plot._currentExpressions!;
+		var domain = plot._domain;
+		var resolution = plot._resolution;
+		Span<float> variables = stackalloc float[3];
+		variables[2] = plot._currentTime;
+		for (var u = firstU; u < firstU + count; ++u) {
+			variables[0] = domain.FromNormalizedU(u / (resolution - 1f) - 0.5f);
+			var min = new Vector3(Single.PositiveInfinity);
+			var max = new Vector3(Single.NegativeInfinity);
+			for (var v = 0; v < resolution; ++v) {
+				variables[1] = domain.FromNormalizedV(v / (resolution - 1f) - 0.5f);
 				var position = new Vector3(
-					_domain.ToWorldX(SafeEvaluate(expressions[0], variables)),
-					_domain.ToWorldY(SafeEvaluate(expressions[1], variables)),
-					_domain.ToWorldZ(SafeEvaluate(expressions[2], variables))
+					domain.ToWorldX(SafeEvaluate(expressions[0], variables)),
+					domain.ToWorldY(SafeEvaluate(expressions[1], variables)),
+					domain.ToWorldZ(SafeEvaluate(expressions[2], variables))
 				);
-				_positions[u * _resolution + v] = position;
+				plot._positions[u * resolution + v] = position;
 				min = Vector3.Min(min, position);
 				max = Vector3.Max(max, position);
 			}
+			plot._rowMinimums[u] = min;
+			plot._rowMaximums[u] = max;
 		}
+	}
 
-		using (var lease = _buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: true)) {
-			var vertices = lease.Span;
-			var backOffset = _resolution * _resolution;
-			for (var u = 0; u < _resolution; ++u) {
-				for (var v = 0; v < _resolution; ++v) {
-					var index = u * _resolution + v;
-					var position = _positions[index];
-					var alongU = Vector3.Normalize(_positions[Math.Min(u + 1, _resolution - 1) * _resolution + v] - _positions[Math.Max(u - 1, 0) * _resolution + v]);
-					var alongV = Vector3.Normalize(_positions[u * _resolution + Math.Min(v + 1, _resolution - 1)] - _positions[u * _resolution + Math.Max(v - 1, 0)]);
-					var normal = Vector3.Normalize(Vector3.Cross(alongU, alongV));
-					if (!Single.IsFinite(normal.X) || !Single.IsFinite(alongU.X)) {
-						normal = Vector3.UnitY;
-						alongU = Vector3.UnitX;
-					}
-					var bitangent = Vector3.Cross(normal, alongU);
-					var colorCoord = new XYPair<float>(0.5f, Math.Clamp(position.Y / (PlotDomain.WorldHalfSize * 2f) + 0.5f, 0f, 1f));
-					var location = Location.FromVector3(position);
-					vertices[index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(bitangent), Direction.FromVector3(normal)));
-					vertices[backOffset + index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(-bitangent), Direction.FromVector3(-normal)));
-				}
+	static void WriteVertexBlock(Span<MeshVertex> block, int startIndex, ParametricSurfacePlot plot) {
+		var positions = plot._positions;
+		var resolution = plot._resolution;
+		var backOffset = resolution * resolution;
+		for (var i = 0; i < block.Length; ++i) {
+			var bufferIndex = startIndex + i;
+			var isBack = bufferIndex >= backOffset;
+			var index = isBack ? bufferIndex - backOffset : bufferIndex;
+			var u = index / resolution;
+			var v = index % resolution;
+			var position = positions[index];
+			var alongU = Vector3.Normalize(positions[Math.Min(u + 1, resolution - 1) * resolution + v] - positions[Math.Max(u - 1, 0) * resolution + v]);
+			var alongV = Vector3.Normalize(positions[u * resolution + Math.Min(v + 1, resolution - 1)] - positions[u * resolution + Math.Max(v - 1, 0)]);
+			var normal = Vector3.Normalize(Vector3.Cross(alongU, alongV));
+			if (!Single.IsFinite(normal.X) || !Single.IsFinite(alongU.X)) {
+				normal = Vector3.UnitY;
+				alongU = Vector3.UnitX;
 			}
+			var bitangent = Vector3.Cross(normal, alongU);
+			if (isBack) {
+				bitangent = -bitangent;
+				normal = -normal;
+			}
+			var colorCoord = new XYPair<float>(0.5f, Math.Clamp(position.Y / (PlotDomain.WorldHalfSize * 2f) + 0.5f, 0f, 1f));
+			block[i] = new MeshVertex(Location.FromVector3(position), colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(bitangent), Direction.FromVector3(normal)));
 		}
-		_buffer.SetBoundingBox(PositionedCuboid.FromHalfDimensions((max.X - min.X) * 0.5f, (max.Y - min.Y) * 0.5f, (max.Z - min.Z) * 0.5f, Location.FromVector3((min + max) * 0.5f)), overwriteChildMeshBoundingBoxes: true);
 	}
 
 	void UpdateGradient() {

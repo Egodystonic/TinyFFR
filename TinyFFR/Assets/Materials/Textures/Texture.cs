@@ -113,6 +113,14 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 	public void OverwriteTexels<TTexel>(ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		Implementation.OverwriteTexels(_handle, newTexels, dimensions, offset);
 	}
+	public unsafe void OverwriteTexelsParallelized<TTexel, TContext>(delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
+		Implementation.OverwriteTexelsParallelized<TTexel, TContext>(_handle, (nint) blockCallback, context, Dimensions, XYPair<int>.Zero);
+	}
+	public unsafe void OverwriteTexelsParallelized<TTexel, TContext>(delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
+		Implementation.OverwriteTexelsParallelized<TTexel, TContext>(_handle, (nint) blockCallback, context, dimensions, offset);
+	}
 
 	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

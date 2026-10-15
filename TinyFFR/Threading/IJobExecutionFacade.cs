@@ -23,6 +23,7 @@ public interface IJobExecutionFacade {
 	internal bool HasWorkerThreads { get; }
 	internal int WorkerThreadCount { get; }
 	internal void AddWorkerThreadJob(ThreadJob job);
+	internal void AddWorkerThreadJobs(ReadOnlySpan<ThreadJob> jobs);
 	internal void AddPrimaryThreadJob(ThreadJob job);
 	internal void AddPrimaryThreadJobAndWait(ThreadJob job);
 }
@@ -31,6 +32,9 @@ sealed class SynchronousWorkExecutionFacade : IJobExecutionFacade {
 	public bool HasWorkerThreads { get; } = false;
 	public int WorkerThreadCount { get; } = 0;
 	public void AddWorkerThreadJob(ThreadJob job) => job.Execute(null);
+	public void AddWorkerThreadJobs(ReadOnlySpan<ThreadJob> jobs) {
+		foreach (var job in jobs) job.Execute(null);
+	}
 	public void AddPrimaryThreadJob(ThreadJob job) => job.Execute(null);
 	public void AddPrimaryThreadJobAndWait(ThreadJob job) => job.Execute(null);
 }

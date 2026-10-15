@@ -3,6 +3,7 @@
 
 using System.Numerics;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
@@ -112,4 +113,71 @@ class MutableGridInstanceTest {
 			}
 		}
 	}
+
+	static void WriteWaveHeights(Span<MutableGridVertex> block, XYPair<int> offset, XYPair<int> dimensions, int seed) {
+		for (var i = 0; i < block.Length; ++i) {
+			var x = offset.X + i % dimensions.X;
+			var y = offset.Y + i / dimensions.X;
+			block[i] = new MutableGridVertex(MathF.Sin(x * 0.07f + seed) * MathF.Cos(y * 0.05f), new XYPair<float>(MathF.Sin(y * 0.3f) * 0.4f, MathF.Cos(x * 0.2f) * 0.4f));
+		}
+	}
+
+	sealed class GridReadContext {
+		public required MutableGridVertex[] Destination { get; init; }
+	}
+
+	static void CopyGridBlock(ReadOnlySpan<MutableGridVertex> block, XYPair<int> offset, XYPair<int> dimensions, GridReadContext context) {
+		block.CopyTo(context.Destination.AsSpan(offset.Y * dimensions.X, block.Length));
+	}
+
+	static unsafe (MeshVertex[] Vertices, MutableGridVertex[] Grid) RunParallelGridWrite(int? workerThreadCount, XYPair<int> gridDimensions) {
+		using var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { ThreadingConfig = new ThreadingConfig { WorkerThreadCount = workerThreadCount } });
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var gridMesh = factory.MeshBuilder.CreateMutableGrid(gridDimensions);
+		using var grid = factory.ObjectBuilder.CreateMutableGridInstance(gridMesh, material);
+
+		grid.WriteVerticesParallelized(&WriteWaveHeights, 3, permitLateralDisplacement: true, recalculateNormals: true);
+
+		var gridCopy = new MutableGridVertex[gridDimensions.Area];
+		grid.ReadVerticesParallelized(&CopyGridBlock, new GridReadContext { Destination = gridCopy });
+		using var vertices = grid.UnderlyingModelInstance.BorrowVerticesSpanReadOnly();
+		return (vertices.Span.ToArray(), gridCopy);
+	}
+
+	[Test]
+	public void ParallelizedWritesShouldMatchSerialExecution() {
+		var gridDimensions = new XYPair<int>(203, 157);
+		var (serialVertices, serialGrid) = RunParallelGridWrite(0, gridDimensions);
+		var (parallelVertices, parallelGrid) = RunParallelGridWrite(6, gridDimensions);
+
+		var expectedGrid = new MutableGridVertex[gridDimensions.Area];
+		WriteWaveHeights(expectedGrid, XYPair<int>.Zero, gridDimensions, 3);
+		Assert.IsTrue(expectedGrid.AsSpan().SequenceEqual(serialGrid));
+		Assert.IsTrue(expectedGrid.AsSpan().SequenceEqual(parallelGrid));
+		Assert.AreEqual(serialVertices.Length, parallelVertices.Length);
+		for (var i = 0; i < serialVertices.Length; ++i) Assert.AreEqual(serialVertices[i], parallelVertices[i], $"Vertex {i}");
+	}
+
+	static void OffsetVertices(Span<MeshVertex> block, int startIndex, float offset) {
+		for (var i = 0; i < block.Length; ++i) block[i] = block[i] with { Location = block[i].Location + new Vect(offset, -offset, startIndex + i) };
+	}
+
+	[Test]
+	public unsafe void ParallelizedModelInstanceVertexWritesShouldMatchSerialLeases() {
+		using var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { ThreadingConfig = new ThreadingConfig { WorkerThreadCount = 4 } });
+		using var material = factory.MaterialBuilder.CreateTestMaterial();
+		using var gridMesh = factory.MeshBuilder.CreateMutableGrid(new XYPair<int>(120, 90));
+		using var serialGrid = factory.ObjectBuilder.CreateMutableGridInstance(gridMesh, material);
+		using var parallelGrid = factory.ObjectBuilder.CreateMutableGridInstance(gridMesh, material);
+
+		using (var lease = serialGrid.UnderlyingModelInstance.BorrowVerticesSpan(false)) OffsetVertices(lease.Span, 0, 0.25f);
+		parallelGrid.UnderlyingModelInstance.WriteVerticesParallelized(&OffsetVertices, 0.25f, recalculateBoundingBoxOnLeaseDispose: false);
+
+		using var expected = serialGrid.UnderlyingModelInstance.BorrowVerticesSpanReadOnly();
+		var actual = new MeshVertex[expected.Span.Length];
+		parallelGrid.UnderlyingModelInstance.ReadVerticesParallelized(&CopyVertexBlock, actual);
+		Assert.IsTrue(expected.Span.SequenceEqual(actual));
+	}
+
+	static void CopyVertexBlock(ReadOnlySpan<MeshVertex> block, int startIndex, MeshVertex[] destination) => block.CopyTo(destination.AsSpan(startIndex));
 }

@@ -53,6 +53,19 @@ sealed class ArrayPoolBackedConcurrentBlockingQueue<T> : IDisposable {
 		}
 	}
 
+	public void EnqueueRange(ReadOnlySpan<T> items) {
+		lock (_monitorObject) {
+			ObjectDisposedException.ThrowIf(_isDisposed, this);
+			if (_queueIsSealed) throw new ObjectDisposedException(ToString(), $"Can not enqueue to this {nameof(ArrayPoolBackedConcurrentBlockingQueue<T>)} after {nameof(Seal)} has been invoked.");
+			foreach (var item in items) {
+				if (Count == Capacity) GrowBuffer();
+				_buffer[WriteHead] = item;
+				++_writeCounter;
+			}
+			for (var i = 0; i < items.Length; ++i) Monitor.Pulse(_monitorObject);
+		}
+	}
+
 	public bool TryDequeue(out T outItem) {
 		lock (_monitorObject) {
 			ObjectDisposedException.ThrowIf(_isDisposed, this);

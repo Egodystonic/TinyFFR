@@ -3,6 +3,8 @@
 
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
+using System.Numerics;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
@@ -141,5 +143,64 @@ class DynamicVertexBufferTest {
 		using var mesh = buffer.CreateMesh(1..2);
 		Assert.AreEqual(2, buffer.TriangleBufferSize);
 		Assert.Throws<ArgumentOutOfRangeException>(() => buffer.CreateMesh(1..3));
+	}
+
+	static void WriteTestVertices(Span<MeshVertex> block, int startIndex, int seed) {
+		for (var i = 0; i < block.Length; ++i) {
+			var index = startIndex + i;
+			block[i] = new MeshVertex(new Location(index, index * 0.5f + seed, -index), new XYPair<float>(index % 7, index % 3), Quaternion.Identity);
+		}
+	}
+
+	static void WriteTestTriangles(Span<VertexTriangle> block, int startIndex, int vertexCount) {
+		for (var i = 0; i < block.Length; ++i) {
+			var index = startIndex + i;
+			block[i] = new VertexTriangle(index % vertexCount, (index * 7 + 1) % vertexCount, (index * 13 + 2) % vertexCount);
+		}
+	}
+
+	static void CopyVertexBlock(ReadOnlySpan<MeshVertex> block, int startIndex, MeshVertex[] destination) => block.CopyTo(destination.AsSpan(startIndex));
+	static void CopyTriangleBlock(ReadOnlySpan<VertexTriangle> block, int startIndex, VertexTriangle[] destination) => block.CopyTo(destination.AsSpan(startIndex));
+
+	[Test]
+	public unsafe void ParallelizedReadsAndWritesShouldMatchSerialLeases() {
+		const int VertexCount = 70_001;
+		const int TriangleCount = 50_003;
+		using var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { ThreadingConfig = new ThreadingConfig { WorkerThreadCount = 5 } });
+		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(VertexCount, TriangleCount);
+
+		buffer.WriteVerticesParallelized(&WriteTestVertices, 11, recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: false);
+		buffer.WriteTrianglesParallelized(&WriteTestTriangles, VertexCount, recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
+
+		var expectedVertices = new MeshVertex[VertexCount];
+		WriteTestVertices(expectedVertices, 0, 11);
+		var expectedTriangles = new VertexTriangle[TriangleCount];
+		WriteTestTriangles(expectedTriangles, 0, VertexCount);
+
+		using (var lease = buffer.BorrowVerticesSpanReadOnly()) Assert.IsTrue(expectedVertices.AsSpan().SequenceEqual(lease.Span));
+		using (var lease = buffer.BorrowTrianglesSpanReadOnly()) Assert.IsTrue(expectedTriangles.AsSpan().SequenceEqual(lease.Span));
+
+		var readVertices = new MeshVertex[VertexCount];
+		buffer.ReadVerticesParallelized(&CopyVertexBlock, readVertices);
+		Assert.IsTrue(expectedVertices.AsSpan().SequenceEqual(readVertices));
+		var readTriangles = new VertexTriangle[TriangleCount];
+		buffer.ReadTrianglesParallelized(&CopyTriangleBlock, readTriangles);
+		Assert.IsTrue(expectedTriangles.AsSpan().SequenceEqual(readTriangles));
+
+		buffer.WriteVerticesParallelized(&WriteTestVertices, 99, recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false, 100..2100);
+		WriteTestVertices(expectedVertices.AsSpan(100, 2000), 0, 99);
+		using (var lease = buffer.BorrowVerticesSpanReadOnly()) Assert.IsTrue(expectedVertices.AsSpan().SequenceEqual(lease.Span));
+	}
+
+	static void ThrowOnBlock(Span<MeshVertex> block, int startIndex, int throwIndex) {
+		if (throwIndex >= startIndex && throwIndex < startIndex + block.Length) throw new InvalidOperationException("Expected test failure.");
+	}
+
+	[Test]
+	public unsafe void ParallelizedWriteExceptionsShouldPropagateAndReleaseLeases() {
+		using var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { ThreadingConfig = new ThreadingConfig { WorkerThreadCount = 4 } });
+		var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(40_000, 16);
+		Assert.Throws<InvalidOperationException>(() => buffer.WriteVerticesParallelized(&ThrowOnBlock, 31_337, false, false));
+		buffer.Dispose();
 	}
 }

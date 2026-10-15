@@ -6,7 +6,9 @@ using System;
 using System.Numerics;
 using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
@@ -400,81 +402,178 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		}
 	}
 
-	void ApplyDisplacements(bool permitLateralDisplacement, bool recalculateNormals) {
-		var gridVerts = _vertexBuffer.Span;
-		using var innerLease = UnderlyingModelInstance.BorrowVerticesSpan(false);
-		using var defaultVertsLease = ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
-		var vertices = innerLease.Span;
-		var defaultVertices = defaultVertsLease.Span;
+	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MutableGridVertex>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, bool permitLateralDisplacement, bool recalculateNormals = false) {
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		var gridDimensions = ParentGridMesh.GridDimensions;
-		var gridArea = gridDimensions.Area;
-		var isTwoSided = defaultVertices.Length == gridArea * 2;
-		var upDir = ParentGridMesh.UpDir;
+		using var lease = BorrowVerticesSpan(permitLateralDisplacement, recalculateNormals);
+		ParallelBlockExecutor.ExecuteRowsOverSpan(
+			LocalTinyFfrFactory.LiveParallelizingFacade,
+			lease.Span,
+			gridDimensions,
+			ParallelBlockExecutor.GetMinimumRowsPerBand(gridDimensions.X, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock),
+			blockCallback,
+			context
+		);
+	}
 
-		if (permitLateralDisplacement) {
-			var scalarOffsetPerGridStep = ((gridDimensions - XYPair<int>.One).Cast<float>().Reciprocal ?? XYPair<float>.One) * 0.5f;
-			var xOffsetPerGridStep = ParentGridMesh.XDir * scalarOffsetPerGridStep.X;
-			var yOffsetPerGridStep = ParentGridMesh.YDir * scalarOffsetPerGridStep.Y;
-			for (var i = 0; i < gridArea; ++i) {
-				vertices[i] = vertices[i] with {
-					Location = defaultVertices[i].Location
-						+ (xOffsetPerGridStep * gridVerts[i].NormalizedLateralOffset.X)
-						+ (yOffsetPerGridStep * gridVerts[i].NormalizedLateralOffset.Y)
-						+ (upDir * gridVerts[i].Height)
-				};
-			}
-		}
-		else {
-			for (var i = 0; i < gridArea; ++i) {
-				vertices[i] = vertices[i] with { Location = defaultVertices[i].Location + (upDir * gridVerts[i].Height) };
-			}
-		}
+	public unsafe void ReadVerticesParallelized<TContext>(delegate* managed<ReadOnlySpan<MutableGridVertex>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context) {
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
+		ObjectDisposedException.ThrowIf(UnderlyingModelInstance.IsDisposed, typeof(MutableGridMesh));
+		var gridDimensions = ParentGridMesh.GridDimensions;
+		ParallelBlockExecutor.ExecuteRowsOverReadOnlySpan(
+			LocalTinyFfrFactory.LiveParallelizingFacade,
+			(ReadOnlySpan<MutableGridVertex>) _vertexBuffer.Span,
+			gridDimensions,
+			ParallelBlockExecutor.GetMinimumRowsPerBand(gridDimensions.X, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock),
+			blockCallback,
+			context
+		);
+	}
 
-		if (isTwoSided) {
-			for (var i = 0; i < gridArea; ++i) {
+	readonly unsafe struct DisplacementContext {
+		public required MeshVertex* Vertices { get; init; }
+		public required MeshVertex* DefaultVertices { get; init; }
+		public required MutableGridVertex* GridVertices { get; init; }
+		public required int GridArea { get; init; }
+		public required bool IsTwoSided { get; init; }
+		public required bool PermitLateralDisplacement { get; init; }
+		public required Vect UpDir { get; init; }
+		public required Vect XOffsetPerGridStep { get; init; }
+		public required Vect YOffsetPerGridStep { get; init; }
+	}
+
+	readonly unsafe struct NormalRecalculationContext {
+		public required MeshVertex* Vertices { get; init; }
+		public required XYPair<int> GridDimensions { get; init; }
+		public required bool IsTwoSided { get; init; }
+		public required Vector3 XDir { get; init; }
+		public required Vector3 YDir { get; init; }
+		public required Vector3 UpDir { get; init; }
+		public required float NormalSign { get; init; }
+	}
+
+	unsafe void ApplyDisplacements(bool permitLateralDisplacement, bool recalculateNormals) {
+		static void ApplyDisplacementsToBlock(int start, int count, DisplacementContext context) {
+			var vertices = context.Vertices;
+			var defaultVertices = context.DefaultVertices;
+			var gridVerts = context.GridVertices;
+			var upDir = context.UpDir;
+			var end = start + count;
+
+			if (context.PermitLateralDisplacement) {
+				var xOffsetPerGridStep = context.XOffsetPerGridStep;
+				var yOffsetPerGridStep = context.YOffsetPerGridStep;
+				for (var i = start; i < end; ++i) {
+					vertices[i] = vertices[i] with {
+						Location = defaultVertices[i].Location
+							+ (xOffsetPerGridStep * gridVerts[i].NormalizedLateralOffset.X)
+							+ (yOffsetPerGridStep * gridVerts[i].NormalizedLateralOffset.Y)
+							+ (upDir * gridVerts[i].Height)
+					};
+				}
+			}
+			else {
+				for (var i = start; i < end; ++i) {
+					vertices[i] = vertices[i] with { Location = defaultVertices[i].Location + (upDir * gridVerts[i].Height) };
+				}
+			}
+
+			if (!context.IsTwoSided) return;
+			var gridArea = context.GridArea;
+			for (var i = start; i < end; ++i) {
 				vertices[i + gridArea] = vertices[i + gridArea] with { Location = vertices[i].Location };
 			}
 		}
+		
+		static void RecalculateNormalsForRowBand(XYPair<int> offset, XYPair<int> bandDimensions, NormalRecalculationContext context) {
+			var vertices = context.Vertices;
+			var gridDimensions = context.GridDimensions;
+			var xDir = context.XDir;
+			var yDir = context.YDir;
+			var upDir = context.UpDir;
+			var normalSign = context.NormalSign;
+			var isTwoSided = context.IsTwoSided;
 
-		if (recalculateNormals) RecalculateNormals(vertices, isTwoSided);
-	}
+			for (var y = offset.Y; y < offset.Y + bandDimensions.Y; ++y) {
+				var prevY = Int32.Max(y - 1, 0);
+				var nextY = Int32.Min(y + 1, gridDimensions.Y - 1);
+				for (var x = 0; x < gridDimensions.X; ++x) {
+					var prevX = Int32.Max(x - 1, 0);
+					var nextX = Int32.Min(x + 1, gridDimensions.X - 1);
 
-	void RecalculateNormals(Span<MeshVertex> vertices, bool isTwoSided) {
-		var gridDimensions = ParentGridMesh.GridDimensions;
-		var xDir = ParentGridMesh.XDir.ToVector3();
-		var yDir = ParentGridMesh.YDir.ToVector3();
-		var upDir = ParentGridMesh.UpDir.ToVector3();
-		var normalSign = Vector3.Dot(Vector3.Cross(xDir, yDir), upDir) < 0f ? -1f : 1f;
+					var alongX = vertices[gridDimensions.Index(nextX, y)].Location.ToVector3() - vertices[gridDimensions.Index(prevX, y)].Location.ToVector3();
+					var alongY = vertices[gridDimensions.Index(x, nextY)].Location.ToVector3() - vertices[gridDimensions.Index(x, prevY)].Location.ToVector3();
 
-		for (var y = 0; y < gridDimensions.Y; ++y) {
-			var prevY = Int32.Max(y - 1, 0);
-			var nextY = Int32.Min(y + 1, gridDimensions.Y - 1);
-			for (var x = 0; x < gridDimensions.X; ++x) {
-				var prevX = Int32.Max(x - 1, 0);
-				var nextX = Int32.Min(x + 1, gridDimensions.X - 1);
+					var normal = Vector3.Cross(alongX, alongY) * normalSign;
+					var normalLengthSquared = normal.LengthSquared();
+					normal = normalLengthSquared > 1E-12f ? normal / MathF.Sqrt(normalLengthSquared) : upDir;
 
-				var alongX = vertices[gridDimensions.Index(nextX, y)].Location.ToVector3() - vertices[gridDimensions.Index(prevX, y)].Location.ToVector3();
-				var alongY = vertices[gridDimensions.Index(x, nextY)].Location.ToVector3() - vertices[gridDimensions.Index(x, prevY)].Location.ToVector3();
+					var tangent = alongX - normal * Vector3.Dot(alongX, normal);
+					var tangentLengthSquared = tangent.LengthSquared();
+					tangent = tangentLengthSquared > 1E-12f ? tangent / MathF.Sqrt(tangentLengthSquared) : xDir;
 
-				var normal = Vector3.Cross(alongX, alongY) * normalSign;
-				var normalLengthSquared = normal.LengthSquared();
-				normal = normalLengthSquared > 1E-12f ? normal / MathF.Sqrt(normalLengthSquared) : upDir;
+					var bitangent = alongY - normal * Vector3.Dot(alongY, normal) - tangent * Vector3.Dot(alongY, tangent);
+					var bitangentLengthSquared = bitangent.LengthSquared();
+					bitangent = bitangentLengthSquared > 1E-12f ? bitangent / MathF.Sqrt(bitangentLengthSquared) : yDir;
 
-				var tangent = alongX - normal * Vector3.Dot(alongX, normal);
-				var tangentLengthSquared = tangent.LengthSquared();
-				tangent = tangentLengthSquared > 1E-12f ? tangent / MathF.Sqrt(tangentLengthSquared) : xDir;
-
-				var bitangent = alongY - normal * Vector3.Dot(alongY, normal) - tangent * Vector3.Dot(alongY, tangent);
-				var bitangentLengthSquared = bitangent.LengthSquared();
-				bitangent = bitangentLengthSquared > 1E-12f ? bitangent / MathF.Sqrt(bitangentLengthSquared) : yDir;
-
-				var index = gridDimensions.Index(x, y);
-				vertices[index] = vertices[index] with { TangentRotation = IMeshVertex.CalculateTangentRotationManaged(tangent, bitangent, normal) };
-				if (isTwoSided) {
-					var backIndex = index + gridDimensions.Area;
-					vertices[backIndex] = vertices[backIndex] with { TangentRotation = IMeshVertex.CalculateTangentRotationManaged(tangent, -bitangent, -normal) };
+					var index = gridDimensions.Index(x, y);
+					vertices[index] = vertices[index] with { TangentRotation = IMeshVertex.CalculateTangentRotationManaged(tangent, bitangent, normal) };
+					if (isTwoSided) {
+						var backIndex = index + gridDimensions.Area;
+						vertices[backIndex] = vertices[backIndex] with { TangentRotation = IMeshVertex.CalculateTangentRotationManaged(tangent, -bitangent, -normal) };
+					}
 				}
 			}
+		}
+		
+		using var innerLease = UnderlyingModelInstance.BorrowVerticesSpan(false);
+		using var defaultVertsLease = ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
+		var gridDimensions = ParentGridMesh.GridDimensions;
+		var gridArea = gridDimensions.Area;
+		var isTwoSided = defaultVertsLease.Span.Length == gridArea * 2;
+		var scalarOffsetPerGridStep = ((gridDimensions - XYPair<int>.One).Cast<float>().Reciprocal ?? XYPair<float>.One) * 0.5f;
+		var facade = LocalTinyFfrFactory.LiveParallelizingFacade;
+
+		fixed (MeshVertex* verticesPtr = innerLease.Span)
+		fixed (MeshVertex* defaultVerticesPtr = defaultVertsLease.Span)
+		fixed (MutableGridVertex* gridVerticesPtr = _vertexBuffer.Span) {
+			ParallelBlockExecutor.Execute(
+				facade,
+				gridArea,
+				ParallelBlockExecutor.DefaultMinimumElementsPerBlock,
+				&ApplyDisplacementsToBlock,
+				new DisplacementContext {
+					Vertices = verticesPtr,
+					DefaultVertices = defaultVerticesPtr,
+					GridVertices = gridVerticesPtr,
+					GridArea = gridArea,
+					IsTwoSided = isTwoSided,
+					PermitLateralDisplacement = permitLateralDisplacement,
+					UpDir = ParentGridMesh.UpDir.AsVect(),
+					XOffsetPerGridStep = ParentGridMesh.XDir * scalarOffsetPerGridStep.X,
+					YOffsetPerGridStep = ParentGridMesh.YDir * scalarOffsetPerGridStep.Y
+				}
+			);
+
+			if (!recalculateNormals) return;
+			var xDir = ParentGridMesh.XDir.ToVector3();
+			var yDir = ParentGridMesh.YDir.ToVector3();
+			var upDir = ParentGridMesh.UpDir.ToVector3();
+			ParallelBlockExecutor.ExecuteRows(
+				facade,
+				gridDimensions,
+				ParallelBlockExecutor.GetMinimumRowsPerBand(gridDimensions.X),
+				&RecalculateNormalsForRowBand,
+				new NormalRecalculationContext {
+					Vertices = verticesPtr,
+					GridDimensions = gridDimensions,
+					IsTwoSided = isTwoSided,
+					XDir = xDir,
+					YDir = yDir,
+					UpDir = upDir,
+					NormalSign = Vector3.Dot(Vector3.Cross(xDir, yDir), upDir) < 0f ? -1f : 1f
+				}
+			);
 		}
 	}
 	

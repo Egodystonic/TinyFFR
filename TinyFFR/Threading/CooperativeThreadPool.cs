@@ -83,6 +83,25 @@ sealed unsafe class CooperativeThreadPool : IJobExecutionFacade, IPrimaryThreadD
 		EnqueueOrCancel(_workerJobQueue, job);
 	}
 
+	public void AddWorkerThreadJobs(ReadOnlySpan<ThreadJob> jobs) {
+		if (_isDisposing) {
+			foreach (var job in jobs) job.Cancel(_completionRegistrar);
+			throw new ObjectDisposedException(ToString());
+		}
+		if (!HasWorkerThreads) {
+			foreach (var job in jobs) job.Execute(_completionRegistrar);
+			return;
+		}
+
+		try {
+			_workerJobQueue.EnqueueRange(jobs);
+		}
+		catch {
+			foreach (var job in jobs) job.Cancel(_completionRegistrar);
+			throw;
+		}
+	}
+
 	public void AddPrimaryThreadJob(ThreadJob job) {
 		if (_isDisposed) CancelJobAndThrowObjectDisposed(job);
 		if (ThreadSafetyTracker.CurrentThreadIsPrimary()) {

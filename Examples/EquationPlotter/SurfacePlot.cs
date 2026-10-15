@@ -11,6 +11,9 @@ sealed class SurfacePlot : IPlot {
 	readonly MutableGridMesh _mesh;
 	readonly GridTexture _colors;
 	readonly MutableGridInstance _grid;
+	readonly XYPair<float>[] _normalizedCoords;
+	CompiledExpression? _currentExpression;
+	float _currentTime;
 
 	public string Description { get; }
 	public float ColorRangeMin => _domain.YMin;
@@ -24,27 +27,34 @@ sealed class SurfacePlot : IPlot {
 		_colors = new GridTexture(factory, dimensions);
 		_grid = factory.ObjectBuilder.CreateMutableGridInstance(_mesh, _colors.Material, Location.Origin, new XYPair<float>(PlotDomain.WorldHalfSize * 2f, PlotDomain.WorldHalfSize * 2f));
 		scene.Add(_grid);
+		_normalizedCoords = new XYPair<float>[dimensions.Area];
+		for (var i = 0; i < _normalizedCoords.Length; ++i) _normalizedCoords[i] = _grid.GetVertexCoordinateNormalized(i);
 		Description = $"Surface: {dimensions.X} x {dimensions.Y} vertices";
 	}
 
-	public void Update(float time, CompiledExpression[] expressions) {
-		var expression = expressions[0];
-		Span<float> variables = stackalloc float[3];
-		variables[2] = time;
-
-		using (var lease = _grid.BorrowVerticesSpan(permitLateralDisplacement: false, recalculateNormals: true)) {
-			var vertices = lease.Span;
-			for (var i = 0; i < vertices.Length; ++i) {
-				var normalized = _grid.GetVertexCoordinateNormalized(i);
-				variables[0] = _domain.FromNormalizedX(normalized.X);
-				variables[1] = _domain.FromNormalizedZ(normalized.Y);
-				var value = expression.Evaluate(variables);
-				var height = Single.IsFinite(value) ? Math.Clamp(_domain.ToWorldY(value), -PlotDomain.WorldHalfSize, PlotDomain.WorldHalfSize) : 0f;
-				vertices[i] = new MutableGridVertex(height);
-				_colors.Set(_grid.GetVertexCoordinate(i), ColorMap.SampleTexel(_domain.ColorMap, height / (PlotDomain.WorldHalfSize * 2f) + 0.5f));
-			}
-		}
+	public unsafe void Update(float time, CompiledExpression[] expressions) {
+		_currentExpression = expressions[0];
+		_currentTime = time;
+		_grid.WriteVerticesParallelized(&WriteVertexBlock, this, permitLateralDisplacement: false, recalculateNormals: true);
 		_colors.Upload();
+	}
+
+	static void WriteVertexBlock(Span<MutableGridVertex> block, XYPair<int> offset, XYPair<int> dimensions, SurfacePlot plot) {
+		var expression = plot._currentExpression!;
+		var domain = plot._domain;
+		Span<float> variables = stackalloc float[3];
+		variables[2] = plot._currentTime;
+		var firstIndex = offset.Y * dimensions.X;
+		for (var i = 0; i < block.Length; ++i) {
+			var index = firstIndex + i;
+			var normalized = plot._normalizedCoords[index];
+			variables[0] = domain.FromNormalizedX(normalized.X);
+			variables[1] = domain.FromNormalizedZ(normalized.Y);
+			var value = expression.Evaluate(variables);
+			var height = Single.IsFinite(value) ? Math.Clamp(domain.ToWorldY(value), -PlotDomain.WorldHalfSize, PlotDomain.WorldHalfSize) : 0f;
+			block[i] = new MutableGridVertex(height);
+			plot._colors.Set(new XYPair<int>(index % dimensions.X, index / dimensions.X), ColorMap.SampleTexel(domain.ColorMap, height / (PlotDomain.WorldHalfSize * 2f) + 0.5f));
+		}
 	}
 
 	public void Dispose() {

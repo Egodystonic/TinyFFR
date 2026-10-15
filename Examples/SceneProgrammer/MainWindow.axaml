@@ -269,7 +269,7 @@
 		</TabControl>
 
 		<Grid>
-			<tffr:TinyFfrSceneView x:Name="SceneView" Renderer="{Binding ActiveRenderer}" InternalRenderResolutionMax="1920, 1080" FallbackBrush="#202020" />
+			<tffr:TinyFfrSceneView x:Name="SceneView" Renderer="{Binding ActiveRenderer}" FallbackBrush="#202020" />
 			<Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8" Padding="8,4" CornerRadius="4" Background="#A0000000" IsHitTestVisible="False">
 				<TextBlock Foreground="White" FontSize="12" Text="Click: select  ·  Drag: move  ·  Shift+drag: raise/lower  ·  Hold right mouse + WASD/QE: fly  ·  Wheel: fly speed  ·  K: add keyframe  ·  Del: delete" />
 			</Border>

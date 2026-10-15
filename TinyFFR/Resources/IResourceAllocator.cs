@@ -186,4 +186,7 @@ public interface IResourceAllocator {
 	/// Represents a job-execution-facade that enables using TinyFFR's worker thread pool to parallelize certain jobs.
 	/// </summary>
 	IJobExecutionFacade ParallelizingFacade { get; }
+
+	unsafe void ExecuteParallelized<TContext>(int itemCount, delegate* managed<int, int, TContext, void> blockCallback, TContext context, int minimumItemsPerBlock = 1);
+	unsafe void ExecuteParallelized<TContext>(XYPair<int> dimensions, delegate* managed<XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, int minimumRowsPerBlock = 1);
 }

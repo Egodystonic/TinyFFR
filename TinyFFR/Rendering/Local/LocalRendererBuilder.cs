@@ -158,8 +158,27 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		public bool InvertRows { get; }
 		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> OutputChangeHandler { get; }
 		public Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? OutputChangeHandlerManaged { get; }
+		public delegate*<nuint, XYPair<int>, ReadOnlySpan<TexelRgba32>, void> ParallelInvoker { get; }
+		public delegate*<nuint, int, void> ParallelReferenceAdjuster { get; }
+		public nuint ParallelRegistrationId { get; }
 
-		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
+		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null || ParallelInvoker != null;
+
+		public OutputBufferCallbackData(
+			bool invertRows,
+			delegate*<nuint, XYPair<int>, ReadOnlySpan<TexelRgba32>, void> parallelInvoker,
+			delegate*<nuint, int, void> parallelReferenceAdjuster,
+			nuint parallelRegistrationId
+		) {
+			InvertRows = invertRows;
+			ParallelInvoker = parallelInvoker;
+			ParallelReferenceAdjuster = parallelReferenceAdjuster;
+			ParallelRegistrationId = parallelRegistrationId;
+		}
+
+		public void AdjustParallelReferences(int delta) {
+			if (ParallelReferenceAdjuster != null) ParallelReferenceAdjuster(ParallelRegistrationId, delta);
+		}
 
 		public OutputBufferCallbackData(
 			bool invertRows,
@@ -169,6 +188,30 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			InvertRows = invertRows;
 			OutputChangeHandler = outputChangeHandler;
 			OutputChangeHandlerManaged = outputChangeHandlerManaged;
+		}
+	}
+	readonly record struct ParallelReadbackRegistration<TContext>(TContext Context, nint Callback, int ReferenceCount);
+	static class ParallelReadbackRegistry<TContext> {
+		public static readonly ArrayPoolBackedMap<nuint, ParallelReadbackRegistration<TContext>> Entries = new();
+	}
+	readonly unsafe struct ParallelReadbackBlockContext<TContext> {
+		public readonly void* Callback;
+		public readonly XYPair<int> FrameDimensions;
+		public readonly TContext Context;
+
+		public ParallelReadbackBlockContext(void* callback, XYPair<int> frameDimensions, TContext context) {
+			Callback = callback;
+			FrameDimensions = frameDimensions;
+			Context = context;
+		}
+	}
+	readonly unsafe struct RowFlipContext {
+		public readonly TexelRgba32* Texels;
+		public readonly XYPair<int> Dimensions;
+
+		public RowFlipContext(TexelRgba32* texels, XYPair<int> dimensions) {
+			Texels = texels;
+			Dimensions = dimensions;
 		}
 	}
 	readonly record struct OutputBufferData(ResourceHandle<RenderOutputBuffer> Handle, XYPair<int> TextureDimensions, UIntPtr TextureHandle, UIntPtr RenderTargetHandle, OutputBufferCallbackData RenderCompletionHandlers, bool HandleOnlyNextChange, bool StoresRowsTopToBottom);
@@ -181,6 +224,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	const int ScreenshotTemporalAntiAliasingWarmUpFrameCount = 32;
 
 	static readonly Lock _loadedTargetDataMutationLock = new();
+	static nuint _prevParallelReadbackRegistrationId = 0U;
 	static readonly ArrayPoolBackedVector<LocalRendererBuilder> _buildersWithPotentialLoadedTargets = new();
 	static readonly ArrayPoolBackedMap<nuint, (LocalRendererBuilder Builder, ResourceHandle<RenderOutputBuffer> BufferHandle, OutputBufferCallbackData Callbacks)> _pendingRenderTargetReadbacks = new();
 	readonly ArrayPoolBackedMap<RenderTargetUnion, TargetSpecificData> _loadedTargets = new();
@@ -482,7 +526,9 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 					buffer.BufferIdentity,
 					(this, bufferData.Handle, bufferData.RenderCompletionHandlers)
 				);
+				bufferData.RenderCompletionHandlers.AdjustParallelReferences(1);
 				if (bufferData.HandleOnlyNextChange) {
+					bufferData.RenderCompletionHandlers.AdjustParallelReferences(-1);
 					_loadedBuffers[bufferData.Handle] = _loadedBuffers[bufferData.Handle] with {
 						RenderCompletionHandlers = OutputBufferCallbackData.None,
 						HandleOnlyNextChange = false
@@ -564,40 +610,74 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 
 	static unsafe void HandleRenderTargetReadback(nuint bufferIdentity, Span<byte> data) {
 		if (!_pendingRenderTargetReadbacks.Remove(bufferIdentity, out var tuple)) return; // Can happen if user has cancelled pending readbacks
-		if (tuple.Builder.IsDisposed(tuple.BufferHandle)) return; // Can happen if user has disposed target output buffer
+		try {
+			if (tuple.Builder.IsDisposed(tuple.BufferHandle)) return; // Can happen if user has disposed target output buffer
 
-		var dimensions = tuple.Builder._loadedBuffers[tuple.BufferHandle].TextureDimensions;
-		var requiredLength = dimensions.Area * TexelRgba32.TexelSizeBytes;
-		if (data.Length < requiredLength) {
-			throw new InvalidOperationException($"Received render target readback for output buffer with dimensions {dimensions} " +
-												$"(requiring buffer size {requiredLength}), " +
-												$"but buffer size was {data.Length}.");
-		}
-
-		var texelData = MemoryMarshal.Cast<byte, TexelRgba32>(data[..requiredLength]);
-
-		if (tuple.Callbacks.InvertRows != tuple.Builder.IsRenderVerticallyFlipped(tuple.Builder._loadedBuffers[tuple.BufferHandle])) { // Data arrives top-row-first unless the backend renders buffers upside-down (see render_scene_standalone), in which case it's already bottom-row-first
-			Span<TexelRgba32> stackSwapSpace = stackalloc TexelRgba32[dimensions.X];
-			for (var rowIndex = 0; rowIndex < dimensions.Y / 2; ++rowIndex) {
-				var lowerRow = texelData[
-					(rowIndex * dimensions.X)
-					..
-					((rowIndex + 1) * dimensions.X)
-				];
-				var upperRow = texelData[
-					((dimensions.Y - (rowIndex + 1)) * dimensions.X)
-					..
-					((dimensions.Y - rowIndex) * dimensions.X)
-				];
-
-				lowerRow.CopyTo(stackSwapSpace);
-				upperRow.CopyTo(lowerRow);
-				stackSwapSpace.CopyTo(upperRow);
+			var dimensions = tuple.Builder._loadedBuffers[tuple.BufferHandle].TextureDimensions;
+			var requiredLength = dimensions.Area * TexelRgba32.TexelSizeBytes;
+			if (data.Length < requiredLength) {
+				throw new InvalidOperationException($"Received render target readback for output buffer with dimensions {dimensions} " +
+													$"(requiring buffer size {requiredLength}), " +
+													$"but buffer size was {data.Length}.");
 			}
-		}
 
-		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, texelData);
-		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, texelData);
+			var texelData = MemoryMarshal.Cast<byte, TexelRgba32>(data[..requiredLength]);
+
+			if (tuple.Callbacks.InvertRows != tuple.Builder.IsRenderVerticallyFlipped(tuple.Builder._loadedBuffers[tuple.BufferHandle])) { // Data arrives top-row-first unless the backend renders buffers upside-down (see render_scene_standalone), in which case it's already bottom-row-first
+				fixed (TexelRgba32* texelsPtr = texelData) {
+					ParallelBlockExecutor.Execute(
+						tuple.Builder._globals.ThreadPoolWorkScheduler,
+						dimensions.Y / 2,
+						ParallelBlockExecutor.GetMinimumRowsPerBand(dimensions.X),
+						&FlipRowPairs,
+						new RowFlipContext(texelsPtr, dimensions)
+					);
+				}
+			}
+
+			if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, texelData);
+			else if (tuple.Callbacks.ParallelInvoker != null) tuple.Callbacks.ParallelInvoker(tuple.Callbacks.ParallelRegistrationId, dimensions, texelData);
+			else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, texelData);
+		}
+		finally {
+			tuple.Callbacks.AdjustParallelReferences(-1);
+		}
+	}
+
+	static unsafe void FlipRowPairs(int firstRowIndex, int rowCount, RowFlipContext context) {
+		var width = context.Dimensions.X;
+		Span<TexelRgba32> stackSwapSpace = stackalloc TexelRgba32[width];
+		for (var rowIndex = firstRowIndex; rowIndex < firstRowIndex + rowCount; ++rowIndex) {
+			var lowerRow = new Span<TexelRgba32>(context.Texels + (nint) rowIndex * width, width);
+			var upperRow = new Span<TexelRgba32>(context.Texels + (nint) (context.Dimensions.Y - (rowIndex + 1)) * width, width);
+			lowerRow.CopyTo(stackSwapSpace);
+			upperRow.CopyTo(lowerRow);
+			stackSwapSpace.CopyTo(upperRow);
+		}
+	}
+
+	static void AdjustParallelReadbackReferences<TContext>(nuint registrationId, int delta) {
+		var entries = ParallelReadbackRegistry<TContext>.Entries;
+		if (!entries.TryGetValue(registrationId, out var registration)) return;
+		var newReferenceCount = registration.ReferenceCount + delta;
+		if (newReferenceCount <= 0) entries.Remove(registrationId);
+		else entries[registrationId] = registration with { ReferenceCount = newReferenceCount };
+	}
+
+	static unsafe void InvokeParallelReadbackBlock<TContext>(ReadOnlySpan<TexelRgba32> block, XYPair<int> blockOffset, XYPair<int> blockDimensions, ParallelReadbackBlockContext<TContext> context) {
+		((delegate* managed<ReadOnlySpan<TexelRgba32>, XYPair<int>, XYPair<int>, XYPair<int>, TContext, void>) context.Callback)(block, blockOffset, blockDimensions, context.FrameDimensions, context.Context);
+	}
+
+	static unsafe void InvokeParallelReadbackHandler<TContext>(nuint registrationId, XYPair<int> frameDimensions, ReadOnlySpan<TexelRgba32> texels) {
+		if (!ParallelReadbackRegistry<TContext>.Entries.TryGetValue(registrationId, out var registration)) return;
+		ParallelBlockExecutor.ExecuteRowsOverReadOnlySpan(
+			LocalTinyFfrFactory.LiveParallelizingFacade,
+			texels,
+			frameDimensions,
+			ParallelBlockExecutor.GetMinimumRowsPerBand(frameDimensions.X, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock),
+			&InvokeParallelReadbackBlock<TContext>,
+			new ParallelReadbackBlockContext<TContext>((void*) registration.Callback, frameDimensions, registration.Context)
+		);
 	}
 
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
@@ -740,6 +820,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedBuffers[handle].RenderCompletionHandlers.AdjustParallelReferences(-1);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
 			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, handler),
 			HandleOnlyNextChange = handleOnlyNextChange
@@ -747,13 +828,26 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	}
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedBuffers[handle].RenderCompletionHandlers.AdjustParallelReferences(-1);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
 			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, handler, null),
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
+	public unsafe void SetOutputChangeHandlerParallelized<TContext>(ResourceHandle<RenderOutputBuffer> handle, nint blockHandler, TContext context, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
+		if (blockHandler == 0) throw new ArgumentNullException(nameof(blockHandler));
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var registrationId = ++_prevParallelReadbackRegistrationId;
+		ParallelReadbackRegistry<TContext>.Entries.Add(registrationId, new ParallelReadbackRegistration<TContext>(context, blockHandler, 1));
+		_loadedBuffers[handle].RenderCompletionHandlers.AdjustParallelReferences(-1);
+		_loadedBuffers[handle] = _loadedBuffers[handle] with {
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, &InvokeParallelReadbackHandler<TContext>, &AdjustParallelReadbackReferences<TContext>, registrationId),
+			HandleOnlyNextChange = handleOnlyNextChange
+		};
+	}
 	public unsafe void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedBuffers[handle].RenderCompletionHandlers.AdjustParallelReferences(-1);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with { RenderCompletionHandlers = OutputBufferCallbackData.None };
 		if (!cancelQueuedFrames) return;
 
@@ -766,7 +860,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		for (; i >= 0; --i) {
 			var bufferId = currentlyQueuedFrameIdentities.Span[i];
 			var tuple = _pendingRenderTargetReadbacks[bufferId];
-			if (tuple.Builder == this && tuple.BufferHandle == handle) _pendingRenderTargetReadbacks.Remove(bufferId);
+			if (tuple.Builder == this && tuple.BufferHandle == handle && _pendingRenderTargetReadbacks.Remove(bufferId)) tuple.Callbacks.AdjustParallelReferences(-1);
 		}
 	}
 
@@ -1519,6 +1613,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.RenderTargetHandle, &DisposeRenderTarget);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 
+		data.RenderCompletionHandlers.AdjustParallelReferences(-1);
 		_loadedBuffers.Remove(handle);
 	}
 

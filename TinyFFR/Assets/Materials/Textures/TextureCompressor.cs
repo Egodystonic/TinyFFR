@@ -434,7 +434,7 @@ public static unsafe class TextureCompressor {
 		}
 		finally {
 			var spinWait = new SpinWait();
-			while (Volatile.Read(ref state->CompletedBands) < bandCount) spinWait.SpinOnce();
+			while (Volatile.Read(ref state->CompletedBands) < bandCount) spinWait.SpinOnce(sleep1Threshold: -1);
 		}
 		
 		var succeeded = Volatile.Read(ref state->Failed) == 0;

@@ -144,6 +144,7 @@ sealed class FakeRenderOutputBufferImplProvider : IRenderOutputBufferImplProvide
 		LastHandlerLowestAddressesRepresentFrameTop = lowestAddressesRepresentFrameTop;
 	}
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => throw new NotSupportedException();
+	public void SetOutputChangeHandlerParallelized<TContext>(ResourceHandle<RenderOutputBuffer> handle, nint blockHandler, TContext context, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => throw new NotSupportedException();
 	public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) {
 		CurrentHandler = null;
 		ClearHandlersCallCount++;
@@ -284,6 +285,12 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	public readonly List<FakeResourceGroupImplProvider> CreatedGroups = new();
 
 	public IJobExecutionFacade ParallelizingFacade { get; set; }
+	public unsafe void ExecuteParallelized<TContext>(int itemCount, delegate* managed<int, int, TContext, void> blockCallback, TContext context, int minimumItemsPerBlock = 1) {
+		if (itemCount > 0) blockCallback(0, itemCount, context);
+	}
+	public unsafe void ExecuteParallelized<TContext>(XYPair<int> dimensions, delegate* managed<XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, int minimumRowsPerBlock = 1) {
+		if (dimensions.X > 0 && dimensions.Y > 0) blockCallback(XYPair<int>.Zero, dimensions, context);
+	}
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, 0);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, initialCapacity);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, name, 0);

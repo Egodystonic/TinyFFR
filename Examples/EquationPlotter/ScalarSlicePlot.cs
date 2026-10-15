@@ -1,6 +1,7 @@
 using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 
 namespace EquationPlotter;
@@ -12,6 +13,12 @@ sealed class ScalarSlicePlot : IPlot {
 	readonly MutableGridMesh _mesh;
 	readonly GridTexture _colors;
 	readonly MutableGridInstance _grid;
+	readonly IResourceAllocator _allocator;
+	readonly XYPair<float>[] _normalizedCoords;
+	readonly float[] _rowMinimums;
+	readonly float[] _rowMaximums;
+	CompiledExpression? _currentExpression;
+	float _currentTime;
 	float _rangeMin = -1f;
 	float _rangeMax = 1f;
 
@@ -33,6 +40,11 @@ sealed class ScalarSlicePlot : IPlot {
 		_colors = new GridTexture(factory, dimensions, ignoresLighting: true);
 		_grid = factory.ObjectBuilder.CreateMutableGridInstance(_mesh, _colors.Material, GetSliceCentre(), new XYPair<float>(PlotDomain.WorldHalfSize * 2f, PlotDomain.WorldHalfSize * 2f));
 		scene.Add(_grid);
+		_allocator = factory.ResourceAllocator;
+		_normalizedCoords = new XYPair<float>[dimensions.Area];
+		for (var i = 0; i < _normalizedCoords.Length; ++i) _normalizedCoords[i] = _grid.GetVertexCoordinateNormalized(i);
+		_rowMinimums = new float[dimensions.Y];
+		_rowMaximums = new float[dimensions.Y];
 		Description = $"Scalar field slice: {dimensions.X} x {dimensions.Y} samples";
 	}
 
@@ -44,47 +56,62 @@ sealed class ScalarSlicePlot : IPlot {
 		};
 	}
 
-	public void Update(float time, CompiledExpression[] expressions) {
+	public unsafe void Update(float time, CompiledExpression[] expressions) {
 		_grid.SetPosition(GetSliceCentre());
-		var expression = expressions[0];
-		Span<float> variables = stackalloc float[4];
-		variables[3] = time;
-		var dimensions = _colors.Dimensions;
-		var sampleCount = dimensions.Area;
-		var minimum = Single.PositiveInfinity;
-		var maximum = Single.NegativeInfinity;
-		var range = MathF.Max(_rangeMax - _rangeMin, 0.0001f);
-
-		for (var i = 0; i < sampleCount; ++i) {
-			var normalized = _grid.GetVertexCoordinateNormalized(i);
-			switch (_axis) {
-				case SliceAxis.FacingZ:
-					variables[0] = _domain.FromNormalizedX(normalized.X);
-					variables[1] = _domain.FromNormalizedY(normalized.Y);
-					variables[2] = _domain.SlicePosition;
-					break;
-				case SliceAxis.FacingX:
-					variables[0] = _domain.SlicePosition;
-					variables[1] = _domain.FromNormalizedY(normalized.Y);
-					variables[2] = _domain.FromNormalizedZ(normalized.X);
-					break;
-				default:
-					variables[0] = _domain.FromNormalizedX(normalized.X);
-					variables[1] = _domain.SlicePosition;
-					variables[2] = _domain.FromNormalizedZ(normalized.Y);
-					break;
-			}
-
-			var value = expression.Evaluate(variables);
-			if (!Single.IsFinite(value)) value = 0f;
-			minimum = MathF.Min(minimum, value);
-			maximum = MathF.Max(maximum, value);
-			_colors.Set(_grid.GetVertexCoordinate(i), ColorMap.SampleTexel(_domain.ColorMap, (value - _rangeMin) / range));
-		}
+		_currentExpression = expressions[0];
+		_currentTime = time;
+		_allocator.ExecuteParallelized(_colors.Dimensions, &SampleRowBand, this);
 		_colors.Upload();
 
+		var minimum = Single.PositiveInfinity;
+		var maximum = Single.NegativeInfinity;
+		for (var row = 0; row < _rowMinimums.Length; ++row) {
+			minimum = MathF.Min(minimum, _rowMinimums[row]);
+			maximum = MathF.Max(maximum, _rowMaximums[row]);
+		}
 		_rangeMin = minimum;
 		_rangeMax = MathF.Max(maximum, minimum + 0.0001f);
+	}
+
+	static void SampleRowBand(XYPair<int> offset, XYPair<int> dimensions, ScalarSlicePlot plot) {
+		var expression = plot._currentExpression!;
+		var domain = plot._domain;
+		var range = MathF.Max(plot._rangeMax - plot._rangeMin, 0.0001f);
+		Span<float> variables = stackalloc float[4];
+		variables[3] = plot._currentTime;
+
+		for (var y = offset.Y; y < offset.Y + dimensions.Y; ++y) {
+			var minimum = Single.PositiveInfinity;
+			var maximum = Single.NegativeInfinity;
+			for (var x = 0; x < dimensions.X; ++x) {
+				var normalized = plot._normalizedCoords[y * dimensions.X + x];
+				switch (plot._axis) {
+					case SliceAxis.FacingZ:
+						variables[0] = domain.FromNormalizedX(normalized.X);
+						variables[1] = domain.FromNormalizedY(normalized.Y);
+						variables[2] = domain.SlicePosition;
+						break;
+					case SliceAxis.FacingX:
+						variables[0] = domain.SlicePosition;
+						variables[1] = domain.FromNormalizedY(normalized.Y);
+						variables[2] = domain.FromNormalizedZ(normalized.X);
+						break;
+					default:
+						variables[0] = domain.FromNormalizedX(normalized.X);
+						variables[1] = domain.SlicePosition;
+						variables[2] = domain.FromNormalizedZ(normalized.Y);
+						break;
+				}
+
+				var value = expression.Evaluate(variables);
+				if (!Single.IsFinite(value)) value = 0f;
+				minimum = MathF.Min(minimum, value);
+				maximum = MathF.Max(maximum, value);
+				plot._colors.Set(new XYPair<int>(x, y), ColorMap.SampleTexel(domain.ColorMap, (value - plot._rangeMin) / range));
+			}
+			plot._rowMinimums[y] = minimum;
+			plot._rowMaximums[y] = maximum;
+		}
 	}
 
 	public void Dispose() {

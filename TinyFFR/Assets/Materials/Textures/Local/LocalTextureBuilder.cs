@@ -336,7 +336,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 	#endregion
 
 	#region Dynamic Overwrite
-	public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+	TextureData ValidateDynamicOverwriteAndGetData(ResourceHandle<Texture> handle, XYPair<int> dimensions, XYPair<int> offset) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var data = _loadedTextures[handle];
 
@@ -357,6 +357,11 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		if (farEdge.X > data.Dimensions.X || farEdge.Y > data.Dimensions.Y) {
 			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, $"Dimensions ({dimensions}) + offset ({offset}) exceeds texture dimensions (sum {farEdge} vs texture dimensions {data.Dimensions}).");
 		}
+		return data;
+	}
+
+	public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		var data = ValidateDynamicOverwriteAndGetData(handle, dimensions, offset);
 		
 		var writeArea = dimensions.Area;
 		if (newTexels.Length < writeArea) {
@@ -403,6 +408,71 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 			default:
 				throw new InvalidOperationException($"Unexpected texture texel type ({data.TexelType}).");
 		}
+	}
+
+	readonly struct ParallelOverwriteContext<TTexel, TContext> where TTexel : unmanaged {
+		public readonly void* Callback;
+		public readonly TTexel* Scratch;
+		public readonly void* HoldingBuffer;
+		public readonly TexelType GpuTexelType;
+		public readonly TContext Context;
+
+		public ParallelOverwriteContext(void* callback, TTexel* scratch, void* holdingBuffer, TexelType gpuTexelType, TContext context) {
+			Callback = callback;
+			Scratch = scratch;
+			HoldingBuffer = holdingBuffer;
+			GpuTexelType = gpuTexelType;
+			Context = context;
+		}
+	}
+
+	public void OverwriteTexelsParallelized<TTexel, TContext>(ResourceHandle<Texture> handle, nint blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+		static void InvokeBlock(XYPair<int> blockOffset, XYPair<int> blockDimensions, ParallelOverwriteContext<TTexel, TContext> blockContext) {
+			var start = (nint) blockOffset.Y * blockDimensions.X;
+			var area = blockDimensions.Area;
+			var callback = (delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void>) blockContext.Callback;
+			if (blockContext.Scratch == null) {
+				callback(new Span<TTexel>((TTexel*) blockContext.HoldingBuffer + start, area), blockOffset, blockDimensions, blockContext.Context);
+				return;
+			}
+
+			var scratchSpan = new Span<TTexel>(blockContext.Scratch + start, area);
+			callback(scratchSpan, blockOffset, blockDimensions, blockContext.Context);
+			if (blockContext.GpuTexelType == TexelType.Rgb24) TextureUtils.Convert(scratchSpan, new Span<TexelRgb24>((TexelRgb24*) blockContext.HoldingBuffer + start, area));
+			else TextureUtils.Convert(scratchSpan, new Span<TexelRgba32>((TexelRgba32*) blockContext.HoldingBuffer + start, area));
+		}
+
+		if (blockCallback == 0) throw new ArgumentNullException(nameof(blockCallback));
+		var data = ValidateDynamicOverwriteAndGetData(handle, dimensions, offset);
+		if (data.TexelType != TexelType.Rgb24 && data.TexelType != TexelType.Rgba32) throw new InvalidOperationException($"Unexpected texture texel type ({data.TexelType}).");
+
+		var writeArea = dimensions.Area;
+		var holdingBuffer = data.TexelType == TexelType.Rgb24 ? _globals.CreateGpuHoldingBuffer<TexelRgb24>(writeArea) : _globals.CreateGpuHoldingBuffer<TexelRgba32>(writeArea);
+		var sourceBufferMatchesBlitType = TTexel.BlitType == data.TexelType;
+		var scratch = sourceBufferMatchesBlitType ? default : _globals.HeapPool.Borrow<TTexel>(writeArea);
+		try {
+			fixed (TTexel* scratchPtr = sourceBufferMatchesBlitType ? Span<TTexel>.Empty : scratch.Span) {
+				ParallelBlockExecutor.ExecuteRows(
+					_globals.ThreadPoolWorkScheduler,
+					dimensions,
+					ParallelBlockExecutor.GetMinimumRowsPerBand(dimensions.X, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock),
+					&InvokeBlock,
+					new ParallelOverwriteContext<TTexel, TContext>((void*) blockCallback, sourceBufferMatchesBlitType ? null : scratchPtr, (void*) holdingBuffer.DataPtr, data.TexelType, context)
+				);
+			}
+		}
+		catch {
+			LocalNativeUtils.DeallocateRentedBuffer(holdingBuffer.BufferIdentity);
+			throw;
+		}
+		finally {
+			if (!sourceBufferMatchesBlitType) scratch.Dispose();
+		}
+
+		var result = data.TexelType == TexelType.Rgb24
+			? UpdateTextureRgb24(handle, holdingBuffer.BufferIdentity, (TexelRgb24*) holdingBuffer.DataPtr, holdingBuffer.DataLengthBytes, (uint) offset.X, (uint) offset.Y, (uint) dimensions.X, (uint) dimensions.Y)
+			: UpdateTextureRgba32(handle, holdingBuffer.BufferIdentity, (TexelRgba32*) holdingBuffer.DataPtr, holdingBuffer.DataLengthBytes, (uint) offset.X, (uint) offset.Y, (uint) dimensions.X, (uint) dimensions.Y);
+		result.ThrowIfFailure();
 	}
 	#endregion
 

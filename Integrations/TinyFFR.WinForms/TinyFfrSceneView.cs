@@ -234,16 +234,7 @@ public partial class TinyFfrSceneView : UserControl {
 				|| data.Stride < dimensions.X * sizeof(TexelRgba32)) {
 				throw new InvalidOperationException("Write to locked buffer failed safety check.");
 			}
-			if (data.Stride == dimensions.X * TexelRgba32.TexelSizeBytes) {
-				var destSpan = new Span<byte>((void*) data.Scan0, texels.Length * TexelRgba32.TexelSizeBytes);
-				IntegrationUtils.BlitRgbaToBgra(texels, destSpan);
-			}
-			else {
-				for (var r = 0; r < dimensions.Y; ++r) {
-					var destSpan = new Span<byte>(((byte*) data.Scan0) + (r * data.Stride), dimensions.X * TexelRgba32.TexelSizeBytes);
-					IntegrationUtils.BlitRgbaToBgra(texels[(r * dimensions.X)..((r + 1) * dimensions.X)], destSpan);
-				}
-			}
+			IntegrationUtils.BlitFrame(texels, dimensions, (byte*) data.Scan0, data.Stride, swapRedAndBlue: true);
 		}
 		finally {
 			_bitmap.UnlockBits(data);

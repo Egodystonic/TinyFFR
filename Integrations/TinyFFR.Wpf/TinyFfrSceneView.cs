@@ -232,16 +232,7 @@ public class TinyFfrSceneView : Control {
 				|| _bitmap.BackBufferStride < dimensions.X * sizeof(TexelRgba32)) {
 				throw new InvalidOperationException("Write to locked buffer failed safety check.");
 			}
-			if (_bitmap.BackBufferStride == dimensions.X * TexelRgba32.TexelSizeBytes) {
-				var destSpan = new Span<byte>((void*) _bitmap.BackBuffer, texels.Length * TexelRgba32.TexelSizeBytes);
-				IntegrationUtils.BlitRgbaToBgra(texels, destSpan);
-			}
-			else {
-				for (var r = 0; r < dimensions.Y; ++r) {
-					var destSpan = new Span<byte>(((byte*) _bitmap.BackBuffer) + (r * _bitmap.BackBufferStride), dimensions.X * TexelRgba32.TexelSizeBytes);
-					IntegrationUtils.BlitRgbaToBgra(texels[(r * dimensions.X)..((r + 1) * dimensions.X)], destSpan);
-				}
-			}
+			IntegrationUtils.BlitFrame(texels, dimensions, (byte*) _bitmap.BackBuffer, _bitmap.BackBufferStride, swapRedAndBlue: true);
 			_bitmap.AddDirtyRect(new Int32Rect(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight));
 		}
 		finally {

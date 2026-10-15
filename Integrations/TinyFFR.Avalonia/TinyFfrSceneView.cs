@@ -210,16 +210,7 @@ public class TinyFfrSceneView : Control {
 				|| lockedBuffer.RowBytes < dimensions.X * sizeof(TexelRgba32)) {
 				throw new InvalidOperationException("Write to locked buffer failed safety check.");
 			}
-			if (lockedBuffer.RowBytes == dimensions.X * TexelRgba32.TexelSizeBytes) {
-				var destSpan = new Span<TexelRgba32>((void*) lockedBuffer.Address, texels.Length);
-				texels.CopyTo(destSpan);
-			}
-			else {
-				for (var r = 0; r < dimensions.Y; ++r) {
-					var destSpan = new Span<TexelRgba32>(((byte*) lockedBuffer.Address) + (r * lockedBuffer.RowBytes), dimensions.X);
-					texels[(r * dimensions.X)..((r + 1) * dimensions.X)].CopyTo(destSpan);
-				}
-			}
+			IntegrationUtils.BlitFrame(texels, dimensions, (byte*) lockedBuffer.Address, lockedBuffer.RowBytes, swapRedAndBlue: false);
 		}
 
 		InvalidateVisual();
