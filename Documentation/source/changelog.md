@@ -77,6 +77,10 @@ __:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?cl
 	* `IResourceAllocator` exposes span leases and shared scratch collections for user code
 	* Larger internal handle arena so the most complex models fit
 	* Converted internal native memory allocator to a slab allocator for better memory usage performance
+	* `...Parallelized()` read/write methods on writable textures, dynamic vertex buffers, model instances, and mutable grids, which split work across the worker thread pool without allocating
+	* Public `ParallelizationProvider` for parallelizing user code on TinyFFR's worker threads
+	* Mutable grid displacement and normal recalculation, and render output row flipping, now run in parallel
+	* SIMD-accelerated frame copies in the WPF and WinForms scene views
 * Fully XML-documented public API, plus a completely rewritten documentation site with tutorials and showcase example applications
 
 ### Bug Fixes

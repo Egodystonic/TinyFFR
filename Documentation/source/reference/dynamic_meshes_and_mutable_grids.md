@@ -133,6 +133,8 @@ The vertices are laid out row by row, starting at the grid's first corner (the b
 * `GetVertexCoordinate(index)` returns the vertex's integer grid coordinate (e.g. `(0, 0)` to `(127, 127)` on a 128x128 grid); and `GetVertexIndex(coordinate)` does the opposite.
 * `GetVertexCoordinateNormalized(index)` returns the vertex's position across the grid as a fraction, relative to the grid's origin (so from `-0.5` to `0.5` for a centred grid, or `0` to `1` for a grid whose origin is a corner). This is usually the most convenient input for a wave, slope, or other function of position. These values are precalculated when the instance is created, so they're cheap to read every frame.
 
+For large grids, `grid.WriteVerticesParallelized()` writes the displacements across TinyFFR's worker threads instead; see [Writing in Parallel](#writing-in-parallel).
+
 ### Lighting Displaced Grids
 
 ```csharp
@@ -218,6 +220,7 @@ Things to note about per-instance vertex mutation:
 * Changing an instance's `Mesh` discards its altered vertices.
 * Wireframe data is never generated for meshes allowing per-instance vertex mutation (see [The Default Material](the_default_material.md)).
 * Only vertices can be altered, not the triangles joining them. To change which vertices are joined together, use a [dynamic vertex buffer](#dynamic-vertex-buffers) instead.
+* `instance.WriteVerticesParallelized()` and `instance.ReadVerticesParallelized()` process the vertices across TinyFFR's worker threads; see [Writing in Parallel](#writing-in-parallel).
 
 ## Dynamic Vertex Buffers
 
@@ -259,6 +262,8 @@ You can create multiple meshes as "views" from a single dynamic buffer.
 
 Each triangle's three indices refer to vertices in the buffer, so must each be less than the buffer's vertex capacity; and, as for every `VertexTriangle`, must be in anticlockwise order as seen from the triangle's front face. Triangles left at their default value (all three indices zero) have no area, and so draw nothing.
 
+The buffer's vertices and triangles can also be written (or read) across TinyFFR's worker threads; see [Writing in Parallel](#writing-in-parallel).
+
 ### Creating Meshes
 
 A buffer is drawn by creating meshes from it:
@@ -293,6 +298,64 @@ The buffer's bounding box encloses *all* of its vertices. When one buffer holds 
 `buffer.ResizeVertexBuffer(newSize)` and `buffer.ResizeTriangleBuffer(newSize)` change the buffer's capacity, keeping as much of its existing contents as fits. A buffer is never resized automatically; and resizing is relatively slow, so choose initial capacities close to what you'll actually need.
 
 A buffer can not be resized or disposed while any mesh created from it still exists (both throw a `ResourceDependencyException`), or while any of its spans are borrowed. Dispose every mesh created from a buffer (and every object using those meshes) first. `buffer.VertexBufferSize` and `buffer.TriangleBufferSize` give the buffer's current capacities.
+
+## Writing in Parallel
+
+Writing tens of thousands of vertices every frame can take a significant amount of time on a single thread. Each form of dynamic mesh therefore also has `...Parallelized()` methods, which split the vertices in to blocks and process them at the same time on TinyFFR's worker threads:
+
+```csharp
+sealed class WaveState {
+	public required Memory<XYPair<float>> NormalizedCoords { get; init; }
+	public float Time;
+}
+
+static void WriteWaves(Span<MutableGridVertex> band, XYPair<int> bandOffset, XYPair<int> bandDimensions, WaveState state) { // (1)!
+	var coords = state.NormalizedCoords.Span;
+	var firstIndex = bandOffset.Y * bandDimensions.X; // (2)!
+	for (var i = 0; i < band.Length; ++i) {
+		var coord = coords[firstIndex + i];
+		band[i] = new MutableGridVertex(MathF.Sin(coord.X * 20f + state.Time) * 0.05f);
+	}
+}
+
+// Once, after creating the grid:
+var gridArea = grid.ParentGridMesh.GridDimensions.Area;
+var state = new WaveState { NormalizedCoords = factory.ResourceAllocator.CreatePooledMemoryBuffer<XYPair<float>>(gridArea) }; // (3)!
+for (var i = 0; i < gridArea; ++i) state.NormalizedCoords.Span[i] = grid.GetVertexCoordinateNormalized(i); // (4)!
+
+// Every frame:
+state.Time = totalTime;
+grid.WriteVerticesParallelized(&WriteWaves, state, permitLateralDisplacement: false, recalculateNormals: true); // (5)!
+```
+
+1.	The callback must be a `static` method (passed as a function pointer, so calling code must be in an `unsafe` context). Anything it needs is passed in as the *context* argument (here `state`), rather than captured in a lambda, so that the call doesn't allocate.
+
+2.	Grids are split in to bands of whole rows. `bandOffset.Y` is the grid row the band starts on, so the vertex at position `i` in the band has the vertex index `bandOffset.Y * bandDimensions.X + i`.
+
+3.	This borrows a long-lived buffer without allocating on the managed heap, thus preventing GC stutter. Explained further in [Avoiding GC Stutter](avoiding_gc_stutter.md).
+
+4.	`GetVertexCoordinateNormalized()` is a TinyFFR call, and callbacks must never call TinyFFR, so the coordinates are copied out once in advance.
+
+5.	Works out every band on the worker threads (and the calling thread), then applies the displacements (and, here, recalculates the normals) exactly as when a borrowed span is disposed.
+
+The parallelized methods are:
+
+<span class="def-icon">:material-code-block-parentheses:</span> `grid.WriteVerticesParallelized(blockCallback, context, permitLateralDisplacement, recalculateNormals)`
+
+:   Writes the grid's displacements in bands of whole rows, then applies them. `blockCallback` is invoked with `(band, bandOffset, bandDimensions, context)`. `grid.ReadVerticesParallelized(blockCallback, context)` reads the current displacements in the same way.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `instance.WriteVerticesParallelized(blockCallback, context, recalculateBoundingBoxOnLeaseDispose)`
+
+:   Writes the instance's vertices in contiguous blocks, then uploads them. `blockCallback` is invoked with `(block, startIndex, context)`, where `startIndex` is the index of the block's first vertex. An overload takes a `Range` to write only some of the vertices (`startIndex` is then relative to the start of the range); and `instance.ReadVerticesParallelized(blockCallback, context)` reads the vertices.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `buffer.WriteVerticesParallelized(blockCallback, context, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes)`
+
+:   As above, for a dynamic vertex buffer's vertices; and `buffer.WriteTrianglesParallelized()` does the same for its triangles. Both have `Range` overloads, and `buffer.ReadVerticesParallelized()` / `buffer.ReadTrianglesParallelized()` read the buffer.
+
+* Each method borrows the span, processes it in parallel, and disposes the lease for you; so everything below about leases and bounding boxes applies exactly as if you'd borrowed the span yourself.
+* The calling thread works on blocks too, and the method only returns once every block is done.
+* Callbacks run on worker threads, so they must not call any TinyFFR API, and must only write to the block they're given. See [Parallelization](parallelization.md) for the full rules (and for parallelizing your own work in general).
+* Small numbers of vertices are simply processed on the calling thread, and parallelization only pays off when each vertex takes real work to compute (e.g. evaluating a function, or calculating normals). Measure before and after.
 
 ## Leases & Bounding Boxes
 

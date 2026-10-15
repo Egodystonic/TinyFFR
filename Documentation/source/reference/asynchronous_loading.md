@@ -50,6 +50,8 @@ Loading an asset can take a long time (files must be read, image data decoded, t
 	
 	__This includes the `Load[...]Async()` API described on this page.__ Although this API does work internally on worker threads, you must still only ever *invoke* these methods and *collect their results* from the primary thread.
 
+	The same applies to TinyFFR's `...Parallelized()` methods and the `ParallelizationProvider` (see [Parallelization](parallelization.md)): Their callbacks run on worker threads, so must never call TinyFFR themselves.
+
 !!! danger "Thread Cooperation"
 	The final parts of loading an asset (such as creating its GPU resources) can only be done on the primary thread (this is a restriction of the graphics driver). An async load therefore does as much as possible on worker threads, then queues up these final steps as *cooperative tasks* for the primary thread to complete.
 

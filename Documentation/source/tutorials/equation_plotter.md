@@ -101,32 +101,39 @@ Typed equations are turned in to something that can be evaluated quickly by the 
 
 ## Surfaces on a Mutable Grid
 
-A surface is a [mutable grid](../reference/dynamic_meshes_and_mutable_grids.md#mutable-grids): a flat sheet of vertices whose heights can be changed at any time. Every frame, the surface plot evaluates its equation at every vertex, and writes the result as that vertex's height:
+A surface is a [mutable grid](../reference/dynamic_meshes_and_mutable_grids.md#mutable-grids): a flat sheet of vertices whose heights can be changed at any time. Every frame, the surface plot evaluates its equation at every vertex, and writes the result as that vertex's height. A 256x256 surface has 65,536 vertices, so the work is [split across TinyFFR's worker threads](../reference/dynamic_meshes_and_mutable_grids.md#writing-in-parallel):
 
 ```csharp
-public void Update(float time, CompiledExpression[] expressions) {
-	var expression = expressions[0];
-	Span<float> variables = stackalloc float[3];
-	variables[2] = time;
-
-	using (var lease = _grid.BorrowVerticesSpan(permitLateralDisplacement: false, recalculateNormals: true)) {
-		var vertices = lease.Span;
-		for (var i = 0; i < vertices.Length; ++i) {
-			var normalized = _grid.GetVertexCoordinateNormalized(i);
-			variables[0] = _domain.FromNormalizedX(normalized.X);
-			variables[1] = _domain.FromNormalizedZ(normalized.Y);
-			var value = expression.Evaluate(variables);
-			var height = Single.IsFinite(value) ? Math.Clamp(_domain.ToWorldY(value), -PlotDomain.WorldHalfSize, PlotDomain.WorldHalfSize) : 0f;
-			vertices[i] = new MutableGridVertex(height);
-			_colors.Set(_grid.GetVertexCoordinate(i), ColorMap.SampleTexel(_domain.ColorMap, height / (PlotDomain.WorldHalfSize * 2f) + 0.5f));
-		}
-	}
+public unsafe void Update(float time, CompiledExpression[] expressions) {
+	_currentExpression = expressions[0];
+	_currentTime = time;
+	_grid.WriteVerticesParallelized(&WriteVertexBlock, this, permitLateralDisplacement: false, recalculateNormals: true);
 	_colors.Upload();
+}
+
+static void WriteVertexBlock(Span<MutableGridVertex> block, XYPair<int> offset, XYPair<int> dimensions, SurfacePlot plot) {
+	var expression = plot._currentExpression!;
+	var domain = plot._domain;
+	Span<float> variables = stackalloc float[3];
+	variables[2] = plot._currentTime;
+	var firstIndex = offset.Y * dimensions.X;
+	for (var i = 0; i < block.Length; ++i) {
+		var index = firstIndex + i;
+		var normalized = plot._normalizedCoords[index];
+		variables[0] = domain.FromNormalizedX(normalized.X);
+		variables[1] = domain.FromNormalizedZ(normalized.Y);
+		var value = expression.Evaluate(variables);
+		var height = Single.IsFinite(value) ? Math.Clamp(domain.ToWorldY(value), -PlotDomain.WorldHalfSize, PlotDomain.WorldHalfSize) : 0f;
+		block[i] = new MutableGridVertex(height);
+		plot._colors.Set(new XYPair<int>(index % dimensions.X, index / dimensions.X), ColorMap.SampleTexel(domain.ColorMap, height / (PlotDomain.WorldHalfSize * 2f) + 0.5f));
+	}
 }
 ```
 
-* `GetVertexCoordinateNormalized()` gives each vertex's position on the grid (from -0.5 to 0.5 in each direction), which the domain turns in to the `x` and `z` values for the equation.
-* `recalculateNormals: true` makes the grid recalculate which way each part of the surface faces, so that it's lit according to its shape.
+* `WriteVerticesParallelized()` splits the grid in to bands of rows, and calls `WriteVertexBlock()` for each band on TinyFFR's worker threads (and the calling thread) at the same time. The plot itself is passed as the *context*, so the callback can read the current equation and time without allocating a closure.
+* Callbacks must never call TinyFFR (see [Parallelization](../reference/parallelization.md)), so each vertex's position on the grid (from -0.5 to 0.5 in each direction, as returned by `GetVertexCoordinateNormalized()`) is copied in to `_normalizedCoords` once, when the plot is created. The domain turns these in to the `x` and `z` values for the equation.
+* Each band evaluates the equation with its own `variables` (allocated on its own thread's stack), so the bands never interfere with each other. `CompiledExpression.Evaluate()` only reads the parsed equation, so it's safe to call from several threads at once.
+* `recalculateNormals: true` makes the grid recalculate which way each part of the surface faces, so that it's lit according to its shape. TinyFFR does this in parallel too.
 * The grid's bounding box is set from `maxHeightDisplacement` when it's created, so heights are clamped to the plot box; anything outside it would otherwise be culled.
 
 Mutable grid vertices don't have a colour of their own, so each surface is coloured by a [writable texture](../reference/writable_textures.md) with one texel for every vertex. The texture is stretched over the whole grid, so each texel lands on its vertex:
@@ -137,7 +144,7 @@ public void Set(XYPair<int> gridCoordinate, TexelRgb24 texel) {
 }
 ```
 
-Texture data is written from the top row down, whereas the grid's coordinates count up from the bottom, so the row is flipped.
+Texture data is written from the top row down, whereas the grid's coordinates count up from the bottom, so the row is flipped. Every vertex has its own texel, so the bands can all write their colours at the same time.
 
 ## Vector Fields with Arrow Instances
 
@@ -167,25 +174,31 @@ arrow.SetMaterial(_paletteMaterials[paletteIndex]);
 
 ## Parametric Surfaces with a Dynamic Vertex Buffer
 
-A parametric surface can fold over itself, so it can't be a mutable grid. Instead, it's generated in a [dynamic vertex buffer](../reference/dynamic_meshes_and_mutable_grids.md#dynamic-vertex-buffers). The triangles never change, so they're written once, when the plot is created; twice over, the second time facing the other way, so that both sides of the surface are drawn:
+A parametric surface can fold over itself, so it can't be a mutable grid. Instead, it's generated in a [dynamic vertex buffer](../reference/dynamic_meshes_and_mutable_grids.md#dynamic-vertex-buffers). The triangles never change, so they're written once, when the plot is created; twice over, the second time facing the other way, so that both sides of the surface are drawn. Each block of triangles works out which quad (and which of its four triangles) each of its indices is from that index alone, so that the blocks can be written in parallel:
 
 ```csharp
-void WriteTriangles() {
-	using var lease = _buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
-	var triangles = lease.Span;
-	var backOffset = _resolution * _resolution;
-	var t = 0;
-	for (var u = 0; u < _resolution - 1; ++u) {
-		for (var v = 0; v < _resolution - 1; ++v) {
-			var a = u * _resolution + v;
-			var b = (u + 1) * _resolution + v;
-			var c = u * _resolution + v + 1;
-			var d = (u + 1) * _resolution + v + 1;
-			triangles[t++] = new VertexTriangle(a, b, c);
-			triangles[t++] = new VertexTriangle(b, d, c);
-			triangles[t++] = new VertexTriangle(backOffset + a, backOffset + c, backOffset + b);
-			triangles[t++] = new VertexTriangle(backOffset + b, backOffset + c, backOffset + d);
-		}
+unsafe void WriteTriangles() {
+	_buffer.WriteTrianglesParallelized(&WriteTriangleBlock, _resolution, recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
+}
+
+static void WriteTriangleBlock(Span<VertexTriangle> block, int startIndex, int resolution) {
+	var backOffset = resolution * resolution;
+	var quadsPerRow = resolution - 1;
+	for (var i = 0; i < block.Length; ++i) {
+		var triangleIndex = startIndex + i;
+		var quad = triangleIndex >> 2;
+		var u = quad / quadsPerRow;
+		var v = quad % quadsPerRow;
+		var a = u * resolution + v;
+		var b = (u + 1) * resolution + v;
+		var c = u * resolution + v + 1;
+		var d = (u + 1) * resolution + v + 1;
+		block[i] = (triangleIndex & 3) switch {
+			0 => new VertexTriangle(a, b, c),
+			1 => new VertexTriangle(b, d, c),
+			2 => new VertexTriangle(backOffset + a, backOffset + c, backOffset + b),
+			_ => new VertexTriangle(backOffset + b, backOffset + c, backOffset + d)
+		};
 	}
 }
 ```
@@ -193,34 +206,90 @@ void WriteTriangles() {
 Every frame, the equations are evaluated at each `(u, v)` (giving each vertex's position), and then every vertex is rewritten, with a normal worked out from its neighbours:
 
 ```csharp
-using (var lease = _buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: true)) {
-	var vertices = lease.Span;
-	var backOffset = _resolution * _resolution;
+public unsafe void Update(float time, CompiledExpression[] expressions) {
+	UpdateGradient();
+	_currentExpressions = expressions;
+	_currentTime = time;
+	ParallelizationProvider.Execute(_allocator.ParallelizingFacade, _resolution, &EvaluatePositionRows, this);
+
+	var max = Vector3.Max(Vector3.Zero, Vector3.Zero);
+	var min = max;
 	for (var u = 0; u < _resolution; ++u) {
-		for (var v = 0; v < _resolution; ++v) {
-			var index = u * _resolution + v;
-			var position = _positions[index];
-			var alongU = Vector3.Normalize(_positions[Math.Min(u + 1, _resolution - 1) * _resolution + v] - _positions[Math.Max(u - 1, 0) * _resolution + v]);
-			var alongV = Vector3.Normalize(_positions[u * _resolution + Math.Min(v + 1, _resolution - 1)] - _positions[u * _resolution + Math.Max(v - 1, 0)]);
-			var normal = Vector3.Normalize(Vector3.Cross(alongU, alongV));
-			if (!Single.IsFinite(normal.X) || !Single.IsFinite(alongU.X)) {
-				normal = Vector3.UnitY;
-				alongU = Vector3.UnitX;
-			}
-			var bitangent = Vector3.Cross(normal, alongU);
-			var colorCoord = new XYPair<float>(0.5f, Math.Clamp(position.Y / (PlotDomain.WorldHalfSize * 2f) + 0.5f, 0f, 1f));
-			var location = Location.FromVector3(position);
-			vertices[index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(bitangent), Direction.FromVector3(normal)));
-			vertices[backOffset + index] = new MeshVertex(location, colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(-bitangent), Direction.FromVector3(-normal)));
+		min = Vector3.Min(min, _rowMinimums[u]);
+		max = Vector3.Max(max, _rowMaximums[u]);
+	}
+
+	_buffer.WriteVerticesParallelized(&WriteVertexBlock, this, recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: true);
+	_buffer.SetBoundingBox(PositionedCuboid.FromHalfDimensions((max.X - min.X) * 0.5f, (max.Y - min.Y) * 0.5f, (max.Z - min.Z) * 0.5f, Location.FromVector3((min + max) * 0.5f)), overwriteChildMeshBoundingBoxes: true);
+}
+```
+
+The positions are evaluated a row of `u` at a time, with [`ParallelizationProvider.Execute()`](../reference/parallelization.md):
+
+```csharp
+static void EvaluatePositionRows(int firstU, int count, ParametricSurfacePlot plot) {
+	var expressions = plot._currentExpressions!;
+	var domain = plot._domain;
+	var resolution = plot._resolution;
+	Span<float> variables = stackalloc float[3];
+	variables[2] = plot._currentTime;
+	for (var u = firstU; u < firstU + count; ++u) {
+		variables[0] = domain.FromNormalizedU(u / (resolution - 1f) - 0.5f);
+		var min = new Vector3(Single.PositiveInfinity);
+		var max = new Vector3(Single.NegativeInfinity);
+		for (var v = 0; v < resolution; ++v) {
+			variables[1] = domain.FromNormalizedV(v / (resolution - 1f) - 0.5f);
+			var position = new Vector3(
+				domain.ToWorldX(SafeEvaluate(expressions[0], variables)),
+				domain.ToWorldY(SafeEvaluate(expressions[1], variables)),
+				domain.ToWorldZ(SafeEvaluate(expressions[2], variables))
+			);
+			plot._positions[u * resolution + v] = position;
+			min = Vector3.Min(min, position);
+			max = Vector3.Max(max, position);
 		}
+		plot._rowMinimums[u] = min;
+		plot._rowMaximums[u] = max;
 	}
 }
-_buffer.SetBoundingBox(PositionedCuboid.FromHalfDimensions((max.X - min.X) * 0.5f, (max.Y - min.Y) * 0.5f, (max.Z - min.Z) * 0.5f, Location.FromVector3((min + max) * 0.5f)), overwriteChildMeshBoundingBoxes: true);
+```
+
+Once every position is known, the vertices are written in parallel (both the front and the back of the surface):
+
+```csharp
+static void WriteVertexBlock(Span<MeshVertex> block, int startIndex, ParametricSurfacePlot plot) {
+	var positions = plot._positions;
+	var resolution = plot._resolution;
+	var backOffset = resolution * resolution;
+	for (var i = 0; i < block.Length; ++i) {
+		var bufferIndex = startIndex + i;
+		var isBack = bufferIndex >= backOffset;
+		var index = isBack ? bufferIndex - backOffset : bufferIndex;
+		var u = index / resolution;
+		var v = index % resolution;
+		var position = positions[index];
+		var alongU = Vector3.Normalize(positions[Math.Min(u + 1, resolution - 1) * resolution + v] - positions[Math.Max(u - 1, 0) * resolution + v]);
+		var alongV = Vector3.Normalize(positions[u * resolution + Math.Min(v + 1, resolution - 1)] - positions[u * resolution + Math.Max(v - 1, 0)]);
+		var normal = Vector3.Normalize(Vector3.Cross(alongU, alongV));
+		if (!Single.IsFinite(normal.X) || !Single.IsFinite(alongU.X)) {
+			normal = Vector3.UnitY;
+			alongU = Vector3.UnitX;
+		}
+		var bitangent = Vector3.Cross(normal, alongU);
+		if (isBack) {
+			bitangent = -bitangent;
+			normal = -normal;
+		}
+		var colorCoord = new XYPair<float>(0.5f, Math.Clamp(position.Y / (PlotDomain.WorldHalfSize * 2f) + 0.5f, 0f, 1f));
+		block[i] = new MeshVertex(Location.FromVector3(position), colorCoord, MeshVertex.CalculateTangentRotation(Direction.FromVector3(alongU), Direction.FromVector3(bitangent), Direction.FromVector3(normal)));
+	}
+}
 ```
 
 * The directions towards the vertex's neighbours along `u` and along `v` give two directions along the surface; their cross product is the surface's normal. `MeshVertex.CalculateTangentRotation()` turns the three directions in to the vertex's tangent rotation.
+* The second half of the buffer is the back of the surface. Each vertex works out for itself whether it's a front or back vertex, so that every block can be written independently; back vertices use the same position with the bitangent and normal reversed.
 * Each vertex's texture coordinate is set from its height, so it samples a different part of a gradient texture (a thin strip, made from the colour map); this is how the surface is coloured by height.
-* The bounding box is set from the smallest box that contains every vertex, so the surface is never culled incorrectly as it moves.
+* The bounding box is set from the smallest box that contains every vertex, so the surface is never culled incorrectly as it moves. Each row records its own smallest and largest position, and the rows are combined on the calling thread afterwards; this way no two threads ever write to the same value.
 
 ## Scalar Field Slices
 

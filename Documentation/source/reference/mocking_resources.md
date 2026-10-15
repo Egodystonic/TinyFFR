@@ -16,24 +16,24 @@ description: Information on how to create fake resources for unit testing code t
 ## Mocking Resources
 
 ```csharp
-static float GetAspectRatio(Texture texture) { // (1)!
-	return (float) texture.Dimensions.X / texture.Dimensions.Y;
+static float GetDistanceFromOrigin(Camera camera) { // (1)!
+	return camera.Position.DistanceFrom(Location.Origin);
 }
 
-var impl = Substitute.For<ITextureImplProvider>(); // (2)!
-impl.GetDimensions(Arg.Any<ResourceHandle<Texture>>()).Returns(new XYPair<int>(1920, 1080));
-var texture = ResourceUtils.CreateCustom<Texture, ITextureImplProvider>(1, impl); // (3)!
+var impl = Substitute.For<ICameraImplProvider>(); // (2)!
+impl.GetPosition(Arg.Any<ResourceHandle<Camera>>()).Returns(new Location(3f, 0f, 4f));
+var camera = ResourceUtils.CreateCustom<Camera, ICameraImplProvider>(1, impl); // (3)!
 
-Assert.That(GetAspectRatio(texture), Is.EqualTo(16f / 9f).Within(0.0001f)); // (4)!
+Assert.That(GetDistanceFromOrigin(camera), Is.EqualTo(5f).Within(0.0001f)); // (4)!
 ```
 
-1.	Some code to be tested, which uses a `Texture`.
+1.	Some code to be tested, which uses a `Camera`.
 
-2.	Creates a fake `ITextureImplProvider` with the [NSubstitute](https://nsubstitute.github.io/) mocking library, and configures it to report the texture's dimensions as 1920x1080.
+2.	Creates a fake `ICameraImplProvider` with the [NSubstitute](https://nsubstitute.github.io/) mocking library, and configures it to report the camera's position as `(3, 0, 4)`.
 
-3.	Creates a `Texture` that uses the fake implementation.
+3.	Creates a `Camera` that uses the fake implementation.
 
-4.	The code under test can now be run against the fake texture, with no factory, window, or GPU required.
+4.	The code under test can now be run against the fake camera, with no factory, window, or GPU required.
 
 Every resource in TinyFFR (`Texture`, `Mesh`, `Camera`, `Scene`, etc) is a small struct holding two things:
 
@@ -56,9 +56,12 @@ Normally the implementation provider is part of the factory, and does the real w
 
 Any mocking library that can mock interfaces will work, as shown at the top of this page using NSubstitute. Alternatively, you can write a fake implementation by hand:
 
+???+ warning "Function Pointer Parameters"
+	Some implementation providers have methods with function pointer (`delegate*`) parameters. Mocking libraries built on Castle DynamicProxy (including NSubstitute and Moq) can't create fakes of interfaces with such methods, and throw an exception when you try. Write a fake by hand for these interfaces instead, as below.
+
 ```csharp
 // NOTE: This example may not be up-to-date with the latest API and serves as just an example
-sealed class FakeTextureImplProvider : ITextureImplProvider {
+sealed unsafe class FakeTextureImplProvider : ITextureImplProvider {
 	public XYPair<int> Dimensions { get; set; } = new(64, 64);
 	public bool WasDisposed { get; private set; }
 
@@ -69,6 +72,8 @@ sealed class FakeTextureImplProvider : ITextureImplProvider {
 	public TextureRenderingConfig GetRenderingConfig(ResourceHandle<Texture> handle) => default;
 	public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset)
 		where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> { }
+	public void OverwriteTexelsParallelized<TTexel, TContext>(ResourceHandle<Texture> handle, delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset)
+		where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> => throw new NotSupportedException();
 
 	public bool IsDisposed(ResourceHandle<Texture> handle) => WasDisposed; // (2)!
 	public void Dispose(ResourceHandle<Texture> handle) => WasDisposed = true;

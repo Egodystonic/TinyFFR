@@ -159,7 +159,7 @@ SaveToMyAssetFormat(compressedData, dimensions, format); // (5)!
 
 6.	This borrows a span without allocating on the managed heap, thus preventing GC stutter. Explained further in [Avoiding GC Stutter](avoiding_gc_stutter.md).
 
-7.	Spreads the work across TinyFFR's worker threads, which makes compression many times faster on multi-core machines. This argument is optional; omit it (or pass `IJobExecutionFacade.Synchronous`) to compress entirely on the calling thread. The compressed data is identical either way.
+7.	Spreads the work across TinyFFR's worker threads, which makes compression many times faster on multi-core machines. This argument is optional; omit it (or pass `IJobExecutionFacade.Synchronous`) to compress entirely on the calling thread. The compressed data is identical either way. The same facade can be used to parallelize your own work; see [Parallelization](parallelization.md).
 
 `TextureCompressor` can be used from any thread and doesn't require a factory to exist at all (without one, simply leave out the final parallelizing argument and compression runs on the calling thread). That means you can use it in a standalone tool (e.g. as part of your build pipeline) to compress textures for your application ahead of time.(1)
 { .annotate }

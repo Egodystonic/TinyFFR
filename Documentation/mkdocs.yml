@@ -231,6 +231,7 @@ nav:
         - reference/controlling_ram_and_vram_usage.md
         - reference/async_loading_time_sharing.md
         - reference/math_api_optimisations.md
+        - reference/parallelization.md
 
 not_in_nav: |
 

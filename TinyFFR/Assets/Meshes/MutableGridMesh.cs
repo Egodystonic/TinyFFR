@@ -401,6 +401,36 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		}
 	}
 
+	/// <summary>
+	/// Rewrites the grid's displacement values in parallel bands of rows, and applies them to the mesh once every band has been written.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is equivalent to borrowing the values with <see cref="BorrowVerticesSpan"/>, writing them in parallel, and then disposing the lease; so the same
+	/// displacement (and, if requested, normal recalculation) is applied afterwards.
+	/// </para>
+	/// <para>
+	/// The grid is split in to bands of whole rows of vertices, processed in parallel on TinyFFR's worker threads (the calling thread works on them too).
+	/// <paramref name="blockCallback"/> is passed each band's vertices, the band's offset (its X is always <c>0</c>, and its Y is the grid row the band starts on),
+	/// the band's dimensions (its X is always the full grid width), and <paramref name="context"/>. The vertex at position <c>k</c> in the band has the vertex index
+	/// <c>offset.Y * dimensions.X + k</c> (see <see cref="GetVertexIndex"/> and <see cref="GetVertexCoordinate"/>).
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given). Note that <see cref="GetVertexCoordinateNormalized(int)"/> is a TinyFFR call; work out any per-vertex values you need from it before calling this method.
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each band of vertices.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="permitLateralDisplacement">Whether to apply each vertex's sideways offset as well as its height.
+	/// Leaving this <see langword="false"/> ignores <see cref="MutableGridVertex.NormalizedLateralOffset"/> entirely,
+	/// is cheaper and is all that is needed for a grid that only ever moves up and down.</param>
+	/// <param name="recalculateNormals">Whether to recalculate the direction the surface faces at each vertex (its normal and tangents)
+	/// from the displaced shape once every band has been written. Leaving this <see langword="false"/> is cheaper, but the grid is then lit as though
+	/// its vertices have not moved since the previous update.</param>
+	/// <exception cref="ObjectDisposedException">Thrown when this instance has already been disposed.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MutableGridVertex>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, bool permitLateralDisplacement, bool recalculateNormals = false) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		var gridDimensions = ParentGridMesh.GridDimensions;
@@ -415,6 +445,26 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		);
 	}
 
+	/// <summary>
+	/// Reads the grid's current displacement values in parallel bands of rows.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The grid is split in to bands of whole rows of vertices, processed in parallel on TinyFFR's worker threads (the calling thread works on them too).
+	/// <paramref name="blockCallback"/> is passed each band's vertices, the band's offset (its X is always <c>0</c>, and its Y is the grid row the band starts on),
+	/// the band's dimensions (its X is always the full grid width), and <paramref name="context"/>. The vertex at position <c>k</c> in the band has the vertex index
+	/// <c>offset.Y * dimensions.X + k</c> (see <see cref="GetVertexIndex"/> and <see cref="GetVertexCoordinate"/>).
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given). Note that <see cref="GetVertexCoordinateNormalized(int)"/> is a TinyFFR call; work out any per-vertex values you need from it before calling this method.
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each band of vertices.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <exception cref="ObjectDisposedException">Thrown when this instance has already been disposed.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void ReadVerticesParallelized<TContext>(delegate* managed<ReadOnlySpan<MutableGridVertex>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		ObjectDisposedException.ThrowIf(UnderlyingModelInstance.IsDisposed, typeof(MutableGridMesh));

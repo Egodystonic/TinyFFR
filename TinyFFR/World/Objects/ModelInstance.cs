@@ -456,14 +456,80 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly() => Implementation.BorrowVerticesSpanReadOnly(_handle);
 
+	/// <summary>
+	/// Rewrites this instance's vertices in parallel blocks, applying the changes once every block has been written.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Only usable when <see cref="AllowsVertexMutation"/> is <see langword="true"/>. This is equivalent to borrowing the vertices with
+	/// <see cref="BorrowVerticesSpan(bool, Range)"/>, splitting the borrowed span in to contiguous blocks that are written in parallel on TinyFFR's worker threads
+	/// (the calling thread works on them too), and then disposing the lease. <paramref name="blockCallback"/> is passed each block, the index of the block's first
+	/// vertex within the borrowed vertices, and <paramref name="context"/>.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to recalculate this instance's bounding box once every block has been written.
+	/// Pass <see langword="false"/> only if you intend to set the bounds yourself (with <see cref="TriggerManualBoundingBoxRecalculation"/> or <see cref="SetModelSpaceBoundingBox"/>)
+	/// or pre-calculated a bounding box at mesh-authoring time that you know encompasses all possible permutations of the mutated vertices.</param>
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsVertexMutation"/> is <c>false</c>.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MeshVertex>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose) {
 		WriteVerticesParallelized(blockCallback, context, recalculateBoundingBoxOnLeaseDispose, Range.All);
 	}
+	/// <summary>
+	/// Rewrites the given range of this instance's vertices in parallel blocks, applying the changes once every block has been written.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Only usable when <see cref="AllowsVertexMutation"/> is <see langword="true"/>. This is equivalent to borrowing the vertices with
+	/// <see cref="BorrowVerticesSpan(bool, Range)"/>, splitting the borrowed span in to contiguous blocks that are written in parallel on TinyFFR's worker threads
+	/// (the calling thread works on them too), and then disposing the lease. <paramref name="blockCallback"/> is passed each block, the index of the block's first
+	/// vertex within the borrowed range, and <paramref name="context"/>.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to recalculate this instance's bounding box once every block has been written.
+	/// Pass <see langword="false"/> only if you intend to set the bounds yourself (with <see cref="TriggerManualBoundingBoxRecalculation"/> or <see cref="SetModelSpaceBoundingBox"/>)
+	/// or pre-calculated a bounding box at mesh-authoring time that you know encompasses all possible permutations of the mutated vertices.</param>
+	/// <param name="range">Which vertices to write. Indices passed to <paramref name="blockCallback"/> are relative to the start of this range.</param>
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsVertexMutation"/> is <c>false</c>.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MeshVertex>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, Range range) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose, range);
 		ParallelizationProvider.ExecuteOverSpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
+	/// <summary>
+	/// Reads this instance's vertices in parallel blocks.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Only usable when <see cref="AllowsVertexMutation"/> is <see langword="true"/>. The vertices are split in to contiguous blocks that are read in parallel on
+	/// TinyFFR's worker threads (the calling thread works on them too). <paramref name="blockCallback"/> is passed each block, the index of the block's first vertex,
+	/// and <paramref name="context"/>.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <exception cref="InvalidOperationException">Thrown if <see cref="AllowsVertexMutation"/> is <c>false</c>.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void ReadVerticesParallelized<TContext>(delegate* managed<ReadOnlySpan<MeshVertex>, int, TContext, void> blockCallback, TContext context) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpanReadOnly();

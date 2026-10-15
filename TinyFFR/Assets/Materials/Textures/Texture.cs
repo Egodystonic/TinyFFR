@@ -113,9 +113,66 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 	public void OverwriteTexels<TTexel>(ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		Implementation.OverwriteTexels(_handle, newTexels, dimensions, offset);
 	}
+	/// <summary>
+	/// Replaces this texture's entire contents with texels written by <paramref name="blockCallback"/>, in parallel.
+	/// <see cref="AllowsDynamicWrites"/> must be <c>true</c> or this method will throw an exception.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The texels are written by <paramref name="blockCallback"/> directly in to the memory that is uploaded to the GPU, so no intermediate buffer or copy is needed.
+	/// The region is split in to bands of whole rows that are filled in parallel on TinyFFR's worker threads (the calling thread works on them too), and the
+	/// texture is updated once every band has been written. This method returns once the update has been submitted.
+	/// </para>
+	/// <para>
+	/// <paramref name="blockCallback"/> is passed the band's texels (laid out row by row, bottom to top, exactly as for <c>OverwriteTexels</c>), the band's offset
+	/// within the region being overwritten (its X is always <c>0</c>), the band's dimensions (its X is always the full width of the region), and <paramref name="context"/>.
+	/// Every texel in the band must be written; anything not written is undefined. If <typeparamref name="TTexel"/> is not this texture's own texel type, each band
+	/// is converted after it has been written.
+	/// </para>
+	/// <para>
+	/// See <see cref="Threading.ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TTexel">The type of the texels being supplied.</typeparam>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each band of texels.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <exception cref="InvalidOperationException">Thrown when this texture was not created with <see cref="AllowsDynamicWrites"/> set.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void OverwriteTexelsParallelized<TTexel, TContext>(delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		Implementation.OverwriteTexelsParallelized(_handle, blockCallback, context, Dimensions, XYPair<int>.Zero);
 	}
+	/// <summary>
+	/// Replaces a rectangular region of this texture's contents with texels written by <paramref name="blockCallback"/>, in parallel, leaving the rest as it was.
+	/// <see cref="AllowsDynamicWrites"/> must be <c>true</c> or this method will throw an exception.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The texels are written by <paramref name="blockCallback"/> directly in to the memory that is uploaded to the GPU, so no intermediate buffer or copy is needed.
+	/// The region is split in to bands of whole rows that are filled in parallel on TinyFFR's worker threads (the calling thread works on them too), and the
+	/// texture is updated once every band has been written. This method returns once the update has been submitted.
+	/// </para>
+	/// <para>
+	/// <paramref name="blockCallback"/> is passed the band's texels (laid out row by row, bottom to top, exactly as for <c>OverwriteTexels</c>), the band's offset
+	/// within the region being overwritten (its X is always <c>0</c>), the band's dimensions (its X is always the full width of the region), and <paramref name="context"/>.
+	/// Every texel in the band must be written; anything not written is undefined. If <typeparamref name="TTexel"/> is not this texture's own texel type, each band
+	/// is converted after it has been written.
+	/// </para>
+	/// <para>
+	/// See <see cref="Threading.ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TTexel">The type of the texels being supplied.</typeparam>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each band of texels.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="dimensions">The width and height of the region being replaced, in texels.</param>
+	/// <param name="offset">Where the region begins, measured in texels from the texture's origin. The region must fall entirely within the texture.</param>
+	/// <exception cref="InvalidOperationException">Thrown when this texture was not created with <see cref="AllowsDynamicWrites"/> set.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">Thrown when the region does not fall entirely within the texture.</exception>
 	public unsafe void OverwriteTexelsParallelized<TTexel, TContext>(delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		Implementation.OverwriteTexelsParallelized(_handle, blockCallback, context, dimensions, offset);
 	}

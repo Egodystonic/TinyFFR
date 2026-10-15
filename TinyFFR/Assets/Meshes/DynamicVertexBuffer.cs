@@ -157,27 +157,145 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpanReadOnly() => Implementation.BorrowTrianglesSpanReadOnly(_handle);
 
+	/// <summary>
+	/// Rewrites this buffer's vertices in parallel blocks, applying the changes once every block has been written.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is equivalent to borrowing the vertices with <c>BorrowVerticesSpan</c>, splitting the borrowed span in to contiguous blocks that are written in
+	/// parallel on TinyFFR's worker threads (the calling thread works on them too), and then disposing the lease. <paramref name="blockCallback"/> is passed each
+	/// block, the index of the block's first vertex within the borrowed buffer, and <paramref name="context"/>.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to work out the new bounding box from the altered data once every block has been written. Leaving this <see langword="false"/> is faster but leaves the box stale, which can make geometry disappear when it should still be on screen.</param>
+	/// <param name="overwriteChildMeshBoundingBoxes">Whether to give every mesh carved out of this buffer the same bounding box as the buffer itself, rather than leaving each with its own.</param>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MeshVertex>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) {
 		WriteVerticesParallelized(blockCallback, context, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes, Range.All);
 	}
+	/// <summary>
+	/// Rewrites the given stretch of this buffer's vertices in parallel blocks, applying the changes once every block has been written.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is equivalent to borrowing the vertices with <c>BorrowVerticesSpan</c>, splitting the borrowed span in to contiguous blocks that are written in
+	/// parallel on TinyFFR's worker threads (the calling thread works on them too), and then disposing the lease. <paramref name="blockCallback"/> is passed each
+	/// block, the index of the block's first vertex within the borrowed range, and <paramref name="context"/>.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to work out the new bounding box from the altered data once every block has been written. Leaving this <see langword="false"/> is faster but leaves the box stale, which can make geometry disappear when it should still be on screen.</param>
+	/// <param name="overwriteChildMeshBoundingBoxes">Whether to give every mesh carved out of this buffer the same bounding box as the buffer itself, rather than leaving each with its own.</param>
+	/// <param name="range">Which stretch of the buffer to write. Indices passed to <paramref name="blockCallback"/> are relative to the start of this range.</param>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MeshVertex>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes, Range range) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes, range);
 		ParallelizationProvider.ExecuteOverSpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
+	/// <summary>
+	/// Reads this buffer's vertices in parallel blocks.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The vertices are split in to contiguous blocks that are read in parallel on TinyFFR's worker threads (the calling thread works on them too).
+	/// <paramref name="blockCallback"/> is passed each block, the index of the block's first vertex within the buffer, and <paramref name="context"/>.
+	/// Nothing is uploaded afterwards.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void ReadVerticesParallelized<TContext>(delegate* managed<ReadOnlySpan<MeshVertex>, int, TContext, void> blockCallback, TContext context) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpanReadOnly();
 		ParallelizationProvider.ExecuteOverReadOnlySpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
+	/// <summary>
+	/// Rewrites this buffer's triangles in parallel blocks, applying the changes once every block has been written.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is equivalent to borrowing the triangles with <c>BorrowTrianglesSpan</c>, splitting the borrowed span in to contiguous blocks that are written in
+	/// parallel on TinyFFR's worker threads (the calling thread works on them too), and then disposing the lease. <paramref name="blockCallback"/> is passed each
+	/// block, the index of the block's first triangle within the borrowed buffer, and <paramref name="context"/>.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to work out the new bounding box from the altered data once every block has been written. Leaving this <see langword="false"/> is faster but leaves the box stale, which can make geometry disappear when it should still be on screen.</param>
+	/// <param name="overwriteChildMeshBoundingBoxes">Whether to give every mesh carved out of this buffer the same bounding box as the buffer itself, rather than leaving each with its own.</param>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void WriteTrianglesParallelized<TContext>(delegate* managed<Span<VertexTriangle>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) {
 		WriteTrianglesParallelized(blockCallback, context, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes, Range.All);
 	}
+	/// <summary>
+	/// Rewrites the given stretch of this buffer's triangles in parallel blocks, applying the changes once every block has been written.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is equivalent to borrowing the triangles with <c>BorrowTrianglesSpan</c>, splitting the borrowed span in to contiguous blocks that are written in
+	/// parallel on TinyFFR's worker threads (the calling thread works on them too), and then disposing the lease. <paramref name="blockCallback"/> is passed each
+	/// block, the index of the block's first triangle within the borrowed range, and <paramref name="context"/>.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <param name="recalculateBoundingBoxOnLeaseDispose">Whether to work out the new bounding box from the altered data once every block has been written. Leaving this <see langword="false"/> is faster but leaves the box stale, which can make geometry disappear when it should still be on screen.</param>
+	/// <param name="overwriteChildMeshBoundingBoxes">Whether to give every mesh carved out of this buffer the same bounding box as the buffer itself, rather than leaving each with its own.</param>
+	/// <param name="range">Which stretch of the buffer to write. Indices passed to <paramref name="blockCallback"/> are relative to the start of this range.</param>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void WriteTrianglesParallelized<TContext>(delegate* managed<Span<VertexTriangle>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes, Range range) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes, range);
 		ParallelizationProvider.ExecuteOverSpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
+	/// <summary>
+	/// Reads this buffer's triangles in parallel blocks.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The triangles are split in to contiguous blocks that are read in parallel on TinyFFR's worker threads (the calling thread works on them too).
+	/// <paramref name="blockCallback"/> is passed each block, the index of the block's first triangle within the buffer, and <paramref name="context"/>.
+	/// Nothing is uploaded afterwards.
+	/// </para>
+	/// <para>
+	/// See <see cref="ParallelizationProvider"/> for the rules block callbacks must follow (in short: never call any TinyFFR API from inside one, and only write to the block you are given).
+	/// </para>
+	/// </remarks>
+	/// <typeparam name="TContext">The type of <paramref name="context"/>.</typeparam>
+	/// <param name="blockCallback">The function to invoke for each block.</param>
+	/// <param name="context">An arbitrary value passed unchanged to every invocation of <paramref name="blockCallback"/>; use it to pass in whatever state the
+	/// work needs without capturing variables in a closure. It is shared between all blocks (and therefore between threads).</param>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="blockCallback"/> is <see langword="null"/>.</exception>
 	public unsafe void ReadTrianglesParallelized<TContext>(delegate* managed<ReadOnlySpan<VertexTriangle>, int, TContext, void> blockCallback, TContext context) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowTrianglesSpanReadOnly();

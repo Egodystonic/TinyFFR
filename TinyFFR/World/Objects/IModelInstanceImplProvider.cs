@@ -94,6 +94,9 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// Invoked via <see cref="ModelInstance.BorrowVerticesSpanReadOnly"/>.
 	/// </summary>
 	ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<ModelInstance> handle);
+	/// <summary>
+	/// Returns the job execution facade used to run the work of <see cref="ModelInstance"/>'s and <see cref="Assets.Meshes.MutableGridInstance"/>'s <c>…Parallelized</c> methods.
+	/// </summary>
 	IJobExecutionFacade GetParallelizingFacade();
 	/// <summary>
 	/// Invoked via <see cref="ModelInstance.TriggerManualBoundingBoxRecalculation"/>.

@@ -185,5 +185,10 @@ public interface IResourceAllocator {
 	/// <summary>
 	/// Represents a job-execution-facade that enables using TinyFFR's worker thread pool to parallelize certain jobs.
 	/// </summary>
+	/// <remarks>
+	/// Pass this to <see cref="ParallelizationProvider"/>'s methods to split your own CPU work across TinyFFR's worker threads, or to
+	/// <see cref="Assets.Materials.TextureCompressor.Compress{TTexel}"/> to compress textures in parallel. When the factory was created with no worker threads
+	/// (see <see cref="ThreadingConfig.WorkerThreadCount"/>), work given this facade simply runs on the calling thread.
+	/// </remarks>
 	IJobExecutionFacade ParallelizingFacade { get; }
 }

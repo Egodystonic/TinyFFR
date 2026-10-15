@@ -45,6 +45,9 @@ public interface IDynamicVertexBufferImplProvider : IDisposableResourceImplProvi
 	/// Invoked via <see cref="DynamicVertexBuffer.BorrowTrianglesSpanReadOnly"/>.
 	/// </summary>
 	ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle);
+	/// <summary>
+	/// Returns the job execution facade used to run the work of <see cref="DynamicVertexBuffer"/>'s <c>Write…Parallelized</c> and <c>Read…Parallelized</c> methods.
+	/// </summary>
 	IJobExecutionFacade GetParallelizingFacade();
 
 	internal void SetVerticesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<MeshVertexImGui> vertices, int offset);

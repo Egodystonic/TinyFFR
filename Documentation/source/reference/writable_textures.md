@@ -9,6 +9,7 @@ description: Information on how to create textures whose contents can be overwri
 
     * A texture created with `AllowsDynamicWrites = true` can have its texels overwritten at any time after creation. :material-arrow-right: [Writable Textures](#writable-textures)
     * `texture.OverwriteTexels()` replaces either the whole texture or a rectangular region of it. :material-arrow-right: [Overwriting Texels](#overwriting-texels)
+    * `texture.OverwriteTexelsParallelized()` lets you generate the new texels across TinyFFR's worker threads, writing them straight in to the upload buffer. :material-arrow-right: [Overwriting Texels in Parallel](#overwriting-texels-in-parallel)
 
 </div>
 
@@ -80,9 +81,46 @@ A writable texture has two `OverwriteTexels()` overloads:
 `OverwriteTexels()` throws an `InvalidOperationException` if the texture wasn't created with `AllowsDynamicWrites` set to `true`; and an `ArgumentOutOfRangeException` if the region doesn't lie entirely within the texture (or if `newTexels` doesn't contain enough texels for the given target region).
 
 ???+ tip "Performance"
-	`OverwriteTexels()` is fast enough for per-frame updates on reasonable numbers of texels, but can quickly expend your frame budget if you're attempting to update multiple mega-pixel-sized textures. Write only to regions you need to update, or split large updates across multiple frames.
+	`OverwriteTexels()` is fast enough for per-frame updates on reasonable numbers of texels, but can quickly expend your frame budget if you're attempting to update multiple mega-pixel-sized textures. Write only to regions you need to update, split large updates across multiple frames, or generate the texels in parallel with [`OverwriteTexelsParallelized()`](#overwriting-texels-in-parallel).
 
 ???+ info "Overwritten Texels Are Not Processed"
-	Any `ProcessingToApply` in the texture's `TextureCreationConfig` (flipping, negating, swizzling, alpha premultiplication, etc.) is applied only once, when the texture is created. Texels supplied to `OverwriteTexels()` are uploaded exactly as given.
+	Any `ProcessingToApply` in the texture's `TextureCreationConfig` (flipping, negating, swizzling, alpha premultiplication, etc.) is applied only once, when the texture is created. Texels supplied to `OverwriteTexels()` (or written by `OverwriteTexelsParallelized()`) are uploaded exactly as given.
 
 	In particular, `CreateColorMap()` (with `includeAlpha: true`) premultiplies the alpha of the texels it creates, but `PrintColorMap()` does *not*. If your writable texture is an RGBA color map that's used by a blending material (see [Alpha Premultiplication](texture_map_types.md#alpha-premultiplication)), premultiply the texels yourself before overwriting (e.g. with `TextureUtils.PremultiplyAlphaForTexture()` or `TexelRgba32.WithPremultipliedAlpha()`). Use `TextureUtils.ProcessTexture()` to apply any other processing (see [Processing](creating_textures.md#processing)).
+
+### Overwriting Texels in Parallel
+
+If you generate a texture's texels yourself every frame (e.g. a procedural pattern or a data visualisation), `OverwriteTexelsParallelized()` lets you generate them across TinyFFR's worker threads instead of on the calling thread alone:
+
+```csharp
+static void FillWaves(Span<TexelRgb24> band, XYPair<int> bandOffset, XYPair<int> bandDimensions, float time) { // (1)!
+	for (var i = 0; i < band.Length; ++i) {
+		var x = i % bandDimensions.X;
+		var y = bandOffset.Y + i / bandDimensions.X; // (2)!
+		var brightness = MathF.Sin(x * 0.05f + time) * MathF.Cos(y * 0.05f - time) * 0.5f + 0.5f;
+		band[i] = TexelRgb24.FromNormalizedFloats(brightness, 0f, 1f - brightness);
+	}
+}
+
+// Every frame...
+texture.OverwriteTexelsParallelized<TexelRgb24, float>(&FillWaves, totalTime); // (3)!
+```
+
+1.	The callback must be a `static` method (passed as a function pointer, so calling code must be in an `unsafe` context). Anything it needs (here just the time) is passed in as the *context* argument, rather than captured in a lambda, so that the call doesn't allocate.
+
+2.	Each invocation is given one *band* of whole rows. `bandOffset.Y` is the row the band starts on (relative to the region being overwritten), and `bandOffset.X` is always `0`.
+
+3.	The texture is split in to bands that are filled at the same time on TinyFFR's worker threads (the calling thread fills bands too). The method returns once every band has been written and the texture has been updated.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `OverwriteTexelsParallelized<TTexel, TContext>(blockCallback, context)`
+
+:   Replaces the texture's entire contents with texels written by `blockCallback`. `blockCallback` is invoked once per band with `(band, bandOffset, bandDimensions, context)`, and must write every texel in the band.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `OverwriteTexelsParallelized<TTexel, TContext>(blockCallback, context, dimensions, offset)`
+
+:   Replaces a rectangular region of the texture (exactly as with `OverwriteTexels(newTexels, dimensions, offset)`). Each band's offset is relative to the region.
+
+* The bands are written directly in to the memory that's uploaded to the GPU, so (unlike `OverwriteTexels()`) no buffer of your own and no copy is needed. If `TTexel` isn't the texture's own texel type, each band is converted once it's been written.
+* Texels are laid out exactly as for `OverwriteTexels()`: row-by-row, starting from the **bottom** row.
+* The callback runs on worker threads, so it must not call any TinyFFR API, and must only write to the band it's given. See [Parallelization](parallelization.md) for the full rules, and for parallelizing your own work in general.
+* `OverwriteTexelsParallelized()` throws the same exceptions as `OverwriteTexels()`. Any exception thrown by the callback is rethrown on the calling thread once all bands have finished.
