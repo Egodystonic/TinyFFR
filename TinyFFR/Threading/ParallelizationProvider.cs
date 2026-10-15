@@ -17,7 +17,6 @@ public static unsafe class ParallelizationProvider {
 		public int CompletedBlocks;
 		public int RemainingParticipants;
 		public int HelpersRemainingToSpawn;
-		public int Failed;
 		public int InUse;
 	}
 	
@@ -214,14 +213,13 @@ public static unsafe class ParallelizationProvider {
 			if (block >= state->BlockCount) return;
 
 			try {
-				if (Volatile.Read(ref state->Failed) != 0) continue;
+				if (_slotExceptions[slot] is not null) continue;
 				var start = block * state->ItemsPerBlock;
 				blockFunc(start, Int32.Min(state->ItemsPerBlock, state->ItemCount - start), context);
 			}
 #pragma warning disable CA1031
 			catch (Exception e) {
 #pragma warning restore CA1031
-				Volatile.Write(ref state->Failed, 1);
 				Interlocked.CompareExchange(ref _slotExceptions[slot], e, null);
 			}
 			finally {
@@ -240,8 +238,8 @@ public static unsafe class ParallelizationProvider {
 		var state = _blockStateBuffer.BufferPointer + slot;
 		Span<ThreadJob> helperJobs = stackalloc ThreadJob[HelpersSpawnedPerHelper];
 		var spawnCount = 0;
-		while (spawnCount < HelpersSpawnedPerHelper && Volatile.Read(ref state->NextBlock) < state->BlockCount - 1) {
-			var remaining = Volatile.Read(ref state->HelpersRemainingToSpawn);
+		while (spawnCount < HelpersSpawnedPerHelper && state->NextBlock < state->BlockCount - 1) {
+			var remaining = state->HelpersRemainingToSpawn;
 			if (remaining <= 0) break;
 			if (Interlocked.CompareExchange(ref state->HelpersRemainingToSpawn, remaining - 1, remaining) != remaining) continue;
 			Interlocked.Increment(ref state->RemainingParticipants);
