@@ -4,6 +4,7 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace EquationPlotter;
@@ -79,7 +80,7 @@ sealed class ParametricSurfacePlot : IPlot {
 		UpdateGradient();
 		_currentExpressions = expressions;
 		_currentTime = time;
-		_allocator.ExecuteParallelized(_resolution, &EvaluatePositionRows, this);
+		ParallelizationProvider.Execute(_allocator.ParallelizingFacade, _resolution, &EvaluatePositionRows, this);
 
 		var max = Vector3.Max(Vector3.Zero, Vector3.Zero);
 		var min = max;

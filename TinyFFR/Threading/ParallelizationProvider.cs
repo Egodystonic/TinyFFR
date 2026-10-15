@@ -7,18 +7,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Threading;
 
-static unsafe class ParallelBlockExecutor {
-	public const int SlotCount = 256;
-	public const int BlocksPerParticipant = 4;
-	public const int DefaultMinimumElementsPerBlock = 4096;
-	public const int UserCallbackMinimumElementsPerBlock = 1024;
-	const int MaxHelpersPerExecution = 128;
-	const int InitialHelpersPerExecution = 4;
-	const int HelpersSpawnedPerHelper = 2;
-	static readonly UnmanagedBuffer<ParallelBlockState> _states = CreateStates();
-	static readonly Exception?[] _slotExceptions = new Exception?[SlotCount];
-	static readonly IJobExecutionFacade?[] _slotFacades = new IJobExecutionFacade?[SlotCount];
-
+public static unsafe class ParallelizationProvider {
 	struct ParallelBlockState {
 		public void* BlockFunc;
 		public int ItemCount;
@@ -31,9 +20,26 @@ static unsafe class ParallelBlockExecutor {
 		public int Failed;
 		public int InUse;
 	}
+	
+	internal const int SlotCount = 256;
+	internal const int BlocksPerParticipant = 4;
+	internal const int DefaultMinimumElementsPerBlock = 4096;
+	internal const int UserCallbackMinimumElementsPerBlock = 1024;
+	const int MaxHelpersPerExecution = 128;
+	const int InitialHelpersPerExecution = 4;
+	const int HelpersSpawnedPerHelper = 2;
+	static readonly UnmanagedBuffer<ParallelBlockState> _blockStateBuffer = CreateStateBuffer();
+	static readonly Exception?[] _slotExceptions = new Exception?[SlotCount];
+	static readonly IJobExecutionFacade?[] _slotFacades = new IJobExecutionFacade?[SlotCount];
+	
+	static UnmanagedBuffer<ParallelBlockState> CreateStateBuffer() {
+		var result = new UnmanagedBuffer<ParallelBlockState>(SlotCount);
+		result.AsSpan.Clear();
+		return result;
+	}
 
-	static class ContextSlots<TContext> {
-		public static readonly TContext[] Values = new TContext[SlotCount];
+	static class ContextSlotContainer<TContext> {
+		public static readonly TContext[] Slots = new TContext[SlotCount];
 	}
 
 	readonly struct RowBandContext<TContext> {
@@ -59,109 +65,112 @@ static unsafe class ParallelBlockExecutor {
 			Context = context;
 		}
 	}
-
-	public static void ExecuteOverSpan<T, TContext>(IJobExecutionFacade facade, Span<T> span, int minimumElementsPerBlock, delegate* managed<Span<T>, int, TContext, void> blockFunc, TContext context) where T : unmanaged {
-		static void InvokeBlock(int start, int count, SpanBlockContext<T, TContext> blockContext) {
-			((delegate* managed<Span<T>, int, TContext, void>) blockContext.Callback)(new Span<T>(blockContext.Buffer + start, count), start, blockContext.Context);
-		}
-
-		if (blockFunc == null) throw new ArgumentNullException(nameof(blockFunc));
-		fixed (T* bufferPtr = span) {
-			Execute(facade, span.Length, minimumElementsPerBlock, &InvokeBlock, new SpanBlockContext<T, TContext>(blockFunc, bufferPtr, context));
-		}
-	}
-
-	public static void ExecuteOverReadOnlySpan<T, TContext>(IJobExecutionFacade facade, ReadOnlySpan<T> span, int minimumElementsPerBlock, delegate* managed<ReadOnlySpan<T>, int, TContext, void> blockFunc, TContext context) where T : unmanaged {
-		static void InvokeBlock(int start, int count, SpanBlockContext<T, TContext> blockContext) {
-			((delegate* managed<ReadOnlySpan<T>, int, TContext, void>) blockContext.Callback)(new ReadOnlySpan<T>(blockContext.Buffer + start, count), start, blockContext.Context);
-		}
-
-		if (blockFunc == null) throw new ArgumentNullException(nameof(blockFunc));
-		fixed (T* bufferPtr = span) {
-			Execute(facade, span.Length, minimumElementsPerBlock, &InvokeBlock, new SpanBlockContext<T, TContext>(blockFunc, bufferPtr, context));
-		}
-	}
-
-	public static void ExecuteRowsOverSpan<T, TContext>(IJobExecutionFacade facade, Span<T> span, XYPair<int> dimensions, int minimumRowsPerBand, delegate* managed<Span<T>, XYPair<int>, XYPair<int>, TContext, void> blockFunc, TContext context) where T : unmanaged {
-		static void InvokeBlock(XYPair<int> offset, XYPair<int> bandDimensions, SpanBlockContext<T, TContext> blockContext) {
-			((delegate* managed<Span<T>, XYPair<int>, XYPair<int>, TContext, void>) blockContext.Callback)(new Span<T>(blockContext.Buffer + (nint) offset.Y * bandDimensions.X, bandDimensions.Area), offset, bandDimensions, blockContext.Context);
-		}
-
-		if (blockFunc == null) throw new ArgumentNullException(nameof(blockFunc));
-		if ((long) dimensions.X * dimensions.Y > span.Length) throw new ArgumentException("Span is smaller than the given dimensions.", nameof(span));
-		fixed (T* bufferPtr = span) {
-			ExecuteRows(facade, dimensions, minimumRowsPerBand, &InvokeBlock, new SpanBlockContext<T, TContext>(blockFunc, bufferPtr, context));
-		}
-	}
-
-	public static void ExecuteRowsOverReadOnlySpan<T, TContext>(IJobExecutionFacade facade, ReadOnlySpan<T> span, XYPair<int> dimensions, int minimumRowsPerBand, delegate* managed<ReadOnlySpan<T>, XYPair<int>, XYPair<int>, TContext, void> blockFunc, TContext context) where T : unmanaged {
-		static void InvokeBlock(XYPair<int> offset, XYPair<int> bandDimensions, SpanBlockContext<T, TContext> blockContext) {
-			((delegate* managed<ReadOnlySpan<T>, XYPair<int>, XYPair<int>, TContext, void>) blockContext.Callback)(new ReadOnlySpan<T>(blockContext.Buffer + (nint) offset.Y * bandDimensions.X, bandDimensions.Area), offset, bandDimensions, blockContext.Context);
-		}
-
-		if (blockFunc == null) throw new ArgumentNullException(nameof(blockFunc));
-		if ((long) dimensions.X * dimensions.Y > span.Length) throw new ArgumentException("Span is smaller than the given dimensions.", nameof(span));
-		fixed (T* bufferPtr = span) {
-			ExecuteRows(facade, dimensions, minimumRowsPerBand, &InvokeBlock, new SpanBlockContext<T, TContext>(blockFunc, bufferPtr, context));
-		}
-	}
-
-	static UnmanagedBuffer<ParallelBlockState> CreateStates() {
-		var result = new UnmanagedBuffer<ParallelBlockState>(SlotCount);
-		result.AsSpan.Clear();
-		return result;
-	}
-
+	
 	public static int GetMinimumRowsPerBand(int rowWidth, int minimumElementsPerBlock = DefaultMinimumElementsPerBlock) {
 		return Int32.Max(1, minimumElementsPerBlock / Int32.Max(1, rowWidth));
 	}
 
-	public static void ExecuteRows<TContext>(IJobExecutionFacade facade, XYPair<int> dimensions, int minimumRowsPerBand, delegate* managed<XYPair<int>, XYPair<int>, TContext, void> blockFunc, TContext context) {
+	public static void ExecuteOverSpan<T, TContext>(IJobExecutionFacade facade, Span<T> span, delegate* managed<Span<T>, int, TContext, void> blockCallback, TContext context, int minimumElementsPerBlock = 1, int maxWorkerThreads = Int32.MaxValue) where T : unmanaged {
+		static void InvokeBlock(int start, int count, SpanBlockContext<T, TContext> blockContext) {
+			((delegate* managed<Span<T>, int, TContext, void>) blockContext.Callback)(new Span<T>(blockContext.Buffer + start, count), start, blockContext.Context);
+		}
+
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
+		fixed (T* bufferPtr = span) {
+			Execute(facade, span.Length, &InvokeBlock, new SpanBlockContext<T, TContext>(blockCallback, bufferPtr, context), minimumElementsPerBlock, maxWorkerThreads);
+		}
+	}
+
+	public static void ExecuteOverReadOnlySpan<T, TContext>(IJobExecutionFacade facade, ReadOnlySpan<T> span, delegate* managed<ReadOnlySpan<T>, int, TContext, void> blockCallback, TContext context, int minimumElementsPerBlock = 1, int maxWorkerThreads = Int32.MaxValue) where T : unmanaged {
+		static void InvokeBlock(int start, int count, SpanBlockContext<T, TContext> blockContext) {
+			((delegate* managed<ReadOnlySpan<T>, int, TContext, void>) blockContext.Callback)(new ReadOnlySpan<T>(blockContext.Buffer + start, count), start, blockContext.Context);
+		}
+
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
+		fixed (T* bufferPtr = span) {
+			Execute(facade, span.Length, &InvokeBlock, new SpanBlockContext<T, TContext>(blockCallback, bufferPtr, context), minimumElementsPerBlock, maxWorkerThreads);
+		}
+	}
+
+	public static void ExecuteRowsOverSpan<T, TContext>(IJobExecutionFacade facade, Span<T> span, XYPair<int> dimensions, delegate* managed<Span<T>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, int minimumRowsPerBlock = 1, int maxWorkerThreads = Int32.MaxValue) where T : unmanaged {
+		static void InvokeBlock(XYPair<int> offset, XYPair<int> bandDimensions, SpanBlockContext<T, TContext> blockContext) {
+			((delegate* managed<Span<T>, XYPair<int>, XYPair<int>, TContext, void>) blockContext.Callback)(new Span<T>(blockContext.Buffer + (nint) offset.Y * bandDimensions.X, bandDimensions.Area), offset, bandDimensions, blockContext.Context);
+		}
+
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
+		if ((long) dimensions.X * dimensions.Y > span.Length) throw new ArgumentException("Span is smaller than the given dimensions.", nameof(span));
+		fixed (T* bufferPtr = span) {
+			ExecuteRows(facade, dimensions, &InvokeBlock, new SpanBlockContext<T, TContext>(blockCallback, bufferPtr, context), minimumRowsPerBlock, maxWorkerThreads);
+		}
+	}
+
+	public static void ExecuteRowsOverReadOnlySpan<T, TContext>(IJobExecutionFacade facade, ReadOnlySpan<T> span, XYPair<int> dimensions, delegate* managed<ReadOnlySpan<T>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, int minimumRowsPerBlock = 1, int maxWorkerThreads = Int32.MaxValue) where T : unmanaged {
+		static void InvokeBlock(XYPair<int> offset, XYPair<int> bandDimensions, SpanBlockContext<T, TContext> blockContext) {
+			((delegate* managed<ReadOnlySpan<T>, XYPair<int>, XYPair<int>, TContext, void>) blockContext.Callback)(new ReadOnlySpan<T>(blockContext.Buffer + (nint) offset.Y * bandDimensions.X, bandDimensions.Area), offset, bandDimensions, blockContext.Context);
+		}
+
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
+		if ((long) dimensions.X * dimensions.Y > span.Length) throw new ArgumentException("Span is smaller than the given dimensions.", nameof(span));
+		fixed (T* bufferPtr = span) {
+			ExecuteRows(facade, dimensions, &InvokeBlock, new SpanBlockContext<T, TContext>(blockCallback, bufferPtr, context), minimumRowsPerBlock, maxWorkerThreads);
+		}
+	}
+
+	public static void ExecuteRows<TContext>(IJobExecutionFacade facade, XYPair<int> dimensions, delegate* managed<XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, int minimumRowsPerBlock = 1, int maxWorkerThreads = Int32.MaxValue) {
 		static void InvokeRowBand(int firstRow, int rowCount, RowBandContext<TContext> rowContext) {
 			rowContext.BlockFunc(new XYPair<int>(0, firstRow), new XYPair<int>(rowContext.Width, rowCount), rowContext.Context);
 		}
 
-		if (blockFunc == null) throw new ArgumentNullException(nameof(blockFunc));
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		ArgumentOutOfRangeException.ThrowIfNegative(dimensions.X, nameof(dimensions));
 		ArgumentOutOfRangeException.ThrowIfNegative(dimensions.Y, nameof(dimensions));
 		if (dimensions.X == 0 || dimensions.Y == 0) return;
-		Execute(facade, dimensions.Y, minimumRowsPerBand, &InvokeRowBand, new RowBandContext<TContext>(blockFunc, dimensions.X, context));
+		Execute(facade, dimensions.Y, &InvokeRowBand, new RowBandContext<TContext>(blockCallback, dimensions.X, context), minimumRowsPerBlock, maxWorkerThreads);
 	}
 
-	public static void Execute<TContext>(IJobExecutionFacade facade, int itemCount, int minimumItemsPerBlock, delegate* managed<int, int, TContext, void> blockFunc, TContext context) {
+	public static void Execute<TContext>(IJobExecutionFacade facade, int itemCount, delegate* managed<int, int, TContext, void> blockCallback, TContext context, int minimumItemsPerBlock = 1, int maxWorkerThreads = Int32.MaxValue) {
 		ArgumentNullException.ThrowIfNull(facade);
-		if (blockFunc == null) throw new ArgumentNullException(nameof(blockFunc));
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		ArgumentOutOfRangeException.ThrowIfNegative(itemCount);
 		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(minimumItemsPerBlock);
+		ArgumentOutOfRangeException.ThrowIfNegative(maxWorkerThreads);
 		if (itemCount == 0) return;
 
-		if (!facade.HasWorkerThreads || facade.WorkerThreadCount <= 0 || itemCount < minimumItemsPerBlock * 2L) {
-			blockFunc(0, itemCount, context);
+		var workerThreadCount = facade.HasWorkerThreads ? Int32.Min(facade.WorkerThreadCount, maxWorkerThreads) : 0;
+		if (workerThreadCount <= 0 || itemCount < minimumItemsPerBlock * 2L) {
+			blockCallback(0, itemCount, context);
 			return;
 		}
 
-		var maxParticipantCount = facade.WorkerThreadCount + 1;
+		var maxParticipantCount = workerThreadCount + 1;
 		var blockCount = Int32.Min(itemCount / minimumItemsPerBlock, maxParticipantCount * BlocksPerParticipant);
 		var itemsPerBlock = (itemCount + blockCount - 1) / blockCount;
 		blockCount = (itemCount + itemsPerBlock - 1) / itemsPerBlock;
 		if (blockCount < 2) {
-			blockFunc(0, itemCount, context);
+			blockCallback(0, itemCount, context);
 			return;
 		}
 
-		var slot = ClaimSlot();
-		if (slot < 0) {
-			blockFunc(0, itemCount, context);
+		static int? ClaimBlockStateSlot() {
+			var states = _blockStateBuffer.BufferPointer;
+			for (var i = 0; i < SlotCount; ++i) {
+				if (Interlocked.CompareExchange(ref states[i].InUse, 1, 0) == 0) return i;
+			}
+			return null;
+		}
+		var slotClaim = ClaimBlockStateSlot();
+		if (slotClaim is not { } slot) {
+			blockCallback(0, itemCount, context);
 			return;
 		}
 
-		var state = _states.BufferPointer + slot;
-		var helperCount = Int32.Min(Int32.Min(blockCount - 1, facade.WorkerThreadCount), MaxHelpersPerExecution);
+		var state = _blockStateBuffer.BufferPointer + slot;
+		var helperCount = Int32.Min(Int32.Min(blockCount - 1, workerThreadCount), MaxHelpersPerExecution);
 		var initialHelperCount = Int32.Min(helperCount, InitialHelpersPerExecution);
-		ContextSlots<TContext>.Values[slot] = context;
+		ContextSlotContainer<TContext>.Slots[slot] = context;
 		_slotFacades[slot] = facade;
 		*state = new ParallelBlockState {
-			BlockFunc = blockFunc,
+			BlockFunc = blockCallback,
 			ItemCount = itemCount,
 			ItemsPerBlock = itemsPerBlock,
 			BlockCount = blockCount,
@@ -178,7 +187,9 @@ static unsafe class ParallelBlockExecutor {
 			facade.AddWorkerThreadJobs(helperJobs);
 		}
 #pragma warning disable CA1031
-		catch (Exception) { }
+		catch (Exception) {
+			// No-op because we report exceptions via the helper participation
+		}
 #pragma warning restore CA1031
 
 		try {
@@ -194,18 +205,10 @@ static unsafe class ParallelBlockExecutor {
 		if (exception != null) ExceptionDispatchInfo.Capture(exception).Throw();
 	}
 
-	static int ClaimSlot() {
-		var states = _states.BufferPointer;
-		for (var i = 0; i < SlotCount; ++i) {
-			if (Interlocked.CompareExchange(ref states[i].InUse, 1, 0) == 0) return i;
-		}
-		return -1;
-	}
-
 	static void RunClaimedBlocks<TContext>(int slot) {
-		var state = _states.BufferPointer + slot;
+		var state = _blockStateBuffer.BufferPointer + slot;
 		var blockFunc = (delegate* managed<int, int, TContext, void>) state->BlockFunc;
-		var context = ContextSlots<TContext>.Values[slot];
+		var context = ContextSlotContainer<TContext>.Slots[slot];
 		while (true) {
 			var block = Interlocked.Increment(ref state->NextBlock) - 1;
 			if (block >= state->BlockCount) return;
@@ -234,7 +237,7 @@ static unsafe class ParallelBlockExecutor {
 	}
 
 	static void SpawnFurtherHelpers<TContext>(int slot) {
-		var state = _states.BufferPointer + slot;
+		var state = _blockStateBuffer.BufferPointer + slot;
 		Span<ThreadJob> helperJobs = stackalloc ThreadJob[HelpersSpawnedPerHelper];
 		var spawnCount = 0;
 		while (spawnCount < HelpersSpawnedPerHelper && Volatile.Read(ref state->NextBlock) < state->BlockCount - 1) {
@@ -250,16 +253,18 @@ static unsafe class ParallelBlockExecutor {
 			_slotFacades[slot]!.AddWorkerThreadJobs(helperJobs[..spawnCount]);
 		}
 #pragma warning disable CA1031
-		catch (Exception) { }
+		catch (Exception) {
+			// No-op because we report exceptions via the helper participation
+		}
 #pragma warning restore CA1031
 	}
 
 	static void ReleaseHelperParticipation<TContext>(nint slot, Exception? _, byte __) => ReleaseParticipation<TContext>((int) slot);
 
 	static void ReleaseParticipation<TContext>(int slot) {
-		var state = _states.BufferPointer + slot;
+		var state = _blockStateBuffer.BufferPointer + slot;
 		if (Interlocked.Decrement(ref state->RemainingParticipants) != 0) return;
-		if (RuntimeHelpers.IsReferenceOrContainsReferences<TContext>()) ContextSlots<TContext>.Values[slot] = default!;
+		if (RuntimeHelpers.IsReferenceOrContainsReferences<TContext>()) ContextSlotContainer<TContext>.Slots[slot] = default!;
 		_slotFacades[slot] = null;
 		Volatile.Write(ref state->InUse, 0);
 	}

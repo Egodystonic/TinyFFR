@@ -36,7 +36,7 @@ sealed class LocalRenderOutputBufferTextureImplProvider : ITextureImplProvider, 
 	public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		throw new InvalidOperationException($"Dynamic textures associated with {nameof(RenderOutputBuffer)}s can not be dynamically written to.");
 	}
-	public void OverwriteTexelsParallelized<TTexel, TContext>(ResourceHandle<Texture> handle, nint blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+	public unsafe void OverwriteTexelsParallelized<TTexel, TContext>(ResourceHandle<Texture> handle, delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		throw new InvalidOperationException($"Dynamic textures associated with {nameof(RenderOutputBuffer)}s can not be dynamically written to.");
 	}
 }

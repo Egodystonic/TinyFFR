@@ -7,7 +7,6 @@ using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Resources;
-using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.World;
@@ -463,12 +462,12 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MeshVertex>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, Range range) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose, range);
-		ParallelBlockExecutor.ExecuteOverSpan(LocalTinyFfrFactory.LiveParallelizingFacade, lease.Span, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock, blockCallback, context);
+		ParallelizationProvider.ExecuteOverSpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
 	public unsafe void ReadVerticesParallelized<TContext>(delegate* managed<ReadOnlySpan<MeshVertex>, int, TContext, void> blockCallback, TContext context) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpanReadOnly();
-		ParallelBlockExecutor.ExecuteOverReadOnlySpan(LocalTinyFfrFactory.LiveParallelizingFacade, lease.Span, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock, blockCallback, context);
+		ParallelizationProvider.ExecuteOverReadOnlySpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
 
 	/// <summary>

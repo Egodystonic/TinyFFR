@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace Egodystonic.TinyFFR.Threading;
 
 [TestFixture]
-unsafe class ParallelBlockExecutorTest {
+unsafe class ParallelizationProviderTest {
 	[SetUp]
 	public void SetUpTest() => ThreadSafetyTracker.SetPrimaryThread(Thread.CurrentThread);
 
@@ -46,7 +46,7 @@ unsafe class ParallelBlockExecutorTest {
 			foreach (var itemCount in new[] { 0, 1, 2, 7, 64, 1000, 4097, 65_536, 1_000_003 }) {
 				foreach (var minimumPerBlock in new[] { 1, 3, 4096 }) {
 					var context = new CoverageContext { VisitCounts = new int[itemCount] };
-					ParallelBlockExecutor.Execute(pool, itemCount, minimumPerBlock, &RecordCoverage, context);
+					ParallelizationProvider.Execute(pool, itemCount, &RecordCoverage, context, minimumPerBlock);
 					Assert.IsTrue(context.VisitCounts.All(c => c == 1), $"Workers {workerCount}, count {itemCount}, min {minimumPerBlock}");
 					if (itemCount > 0 && itemCount < minimumPerBlock * 2) Assert.AreEqual(1, context.BlockCount);
 				}
@@ -60,7 +60,7 @@ unsafe class ParallelBlockExecutorTest {
 		foreach (var dimensions in new XYPair<int>[] { (0, 10), (10, 0), (1, 1), (1, 999), (999, 1), (1920, 1080), (17, 513) }) {
 			foreach (var minimumRows in new[] { 1, 16 }) {
 				var context = new CoverageContext { VisitCounts = new int[dimensions.Area] };
-				ParallelBlockExecutor.ExecuteRows(pool, dimensions, minimumRows, &RecordRowCoverage, context);
+				ParallelizationProvider.ExecuteRows(pool, dimensions, &RecordRowCoverage, context, minimumRows);
 				Assert.IsTrue(context.VisitCounts.All(c => c == 1), $"{dimensions}, min rows {minimumRows}");
 			}
 		}
@@ -69,7 +69,7 @@ unsafe class ParallelBlockExecutorTest {
 	[Test]
 	public void ShouldRunInlineWithSynchronousFacade() {
 		var context = new CoverageContext { VisitCounts = new int[100_000] };
-		ParallelBlockExecutor.Execute(IJobExecutionFacade.Synchronous, context.VisitCounts.Length, 1, &RecordCoverage, context);
+		ParallelizationProvider.Execute(IJobExecutionFacade.Synchronous, context.VisitCounts.Length, &RecordCoverage, context, 1);
 		Assert.AreEqual(1, context.BlockCount);
 		Assert.AreEqual(System.Environment.CurrentManagedThreadId, context.ThreadIds.Keys.Single());
 		Assert.IsTrue(context.VisitCounts.All(c => c == 1));
@@ -79,22 +79,46 @@ unsafe class ParallelBlockExecutorTest {
 	public void ShouldUseWorkerThreads() {
 		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 4 });
 		var context = new CoverageContext { VisitCounts = new int[20], SleepMillisPerBlock = 20 };
-		ParallelBlockExecutor.Execute(pool, context.VisitCounts.Length, 1, &RecordCoverage, context);
+		ParallelizationProvider.Execute(pool, context.VisitCounts.Length, &RecordCoverage, context, 1);
 		Assert.Greater(context.ThreadIds.Count, 1);
 		Assert.IsTrue(context.VisitCounts.All(c => c == 1));
 	}
 
 	[Test]
+	public void ShouldRespectWorkerThreadCap() {
+		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 12 });
+		foreach (var cap in new[] { 0, 1, 3 }) {
+			var context = new CoverageContext { VisitCounts = new int[64], SleepMillisPerBlock = 5 };
+			ParallelizationProvider.Execute(pool, context.VisitCounts.Length, &RecordCoverage, context, 1, maxWorkerThreads: cap);
+			Assert.IsTrue(context.VisitCounts.All(c => c == 1), $"Cap {cap}");
+			Assert.LessOrEqual(context.ThreadIds.Count, cap + 1, $"Cap {cap}");
+			if (cap == 0) Assert.AreEqual(1, context.BlockCount);
+		}
+
+		var rowContext = new CoverageContext { VisitCounts = new int[64 * 64], SleepMillisPerBlock = 5 };
+		ParallelizationProvider.ExecuteRows(pool, (64, 64), &RecordRowCoverageWithThreads, rowContext, 1, maxWorkerThreads: 2);
+		Assert.IsTrue(rowContext.VisitCounts.All(c => c == 1));
+		Assert.LessOrEqual(rowContext.ThreadIds.Count, 3);
+		Assert.Throws<ArgumentOutOfRangeException>(() => ParallelizationProvider.Execute(pool, 10, &RecordCoverage, new CoverageContext { VisitCounts = new int[10] }, 1, maxWorkerThreads: -1));
+	}
+
+	static void RecordRowCoverageWithThreads(XYPair<int> offset, XYPair<int> dimensions, CoverageContext context) {
+		context.ThreadIds.TryAdd(System.Environment.CurrentManagedThreadId, 0);
+		Thread.Sleep(context.SleepMillisPerBlock);
+		RecordRowCoverage(offset, dimensions, context);
+	}
+
+	[Test]
 	public void ShouldPropagateExceptionsToTheCallerAndReleaseSlots() {
 		using var pool = new CooperativeThreadPool(new ThreadingConfig { WorkerThreadCount = 4 });
-		for (var i = 0; i < ParallelBlockExecutor.SlotCount * 2; ++i) {
+		for (var i = 0; i < ParallelizationProvider.SlotCount * 2; ++i) {
 			var context = new CoverageContext { VisitCounts = new int[10_000], ThrowAtIndex = (i * 37) % 10_000 };
-			var thrown = Assert.Throws<InvalidOperationException>(() => ParallelBlockExecutor.Execute(pool, context.VisitCounts.Length, 1, &RecordCoverage, context));
+			var thrown = Assert.Throws<InvalidOperationException>(() => ParallelizationProvider.Execute(pool, context.VisitCounts.Length, &RecordCoverage, context, 1));
 			StringAssert.StartsWith("Test failure", thrown!.Message);
 		}
 
 		var finalContext = new CoverageContext { VisitCounts = new int[20], SleepMillisPerBlock = 20 };
-		ParallelBlockExecutor.Execute(pool, finalContext.VisitCounts.Length, 1, &RecordCoverage, finalContext);
+		ParallelizationProvider.Execute(pool, finalContext.VisitCounts.Length, &RecordCoverage, finalContext, 1);
 		Assert.Greater(finalContext.ThreadIds.Count, 1, "Slots appear to have leaked: the executor fell back to serial execution.");
 	}
 
@@ -110,7 +134,7 @@ unsafe class ParallelBlockExecutorTest {
 	}
 
 	static byte RunNested(NestedJob? job) {
-		ParallelBlockExecutor.Execute(job!.Pool, job.VisitCounts.Length, 16, &IncrementRange, job);
+		ParallelizationProvider.Execute(job!.Pool, job.VisitCounts.Length, &IncrementRange, job, 16);
 		return 0;
 	}
 
@@ -162,7 +186,7 @@ unsafe class ParallelBlockExecutorTest {
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	static WeakReference ExecuteWithTrackedPayload(CooperativeThreadPool pool) {
 		var holder = new ReferenceHolder { Payload = new object() };
-		ParallelBlockExecutor.Execute(pool, 100_000, 1, &NoOp, holder);
+		ParallelizationProvider.Execute(pool, 100_000, &NoOp, holder, 1);
 		return new WeakReference(holder);
 	}
 
@@ -182,11 +206,11 @@ unsafe class ParallelBlockExecutorTest {
 		long sum = 0;
 		var context = new UnmanagedSumContext { Destination = &sum };
 		const int ItemCount = 1_000_000;
-		for (var i = 0; i < 5; ++i) ParallelBlockExecutor.Execute(pool, ItemCount, 1024, &SumRange, context);
+		for (var i = 0; i < 5; ++i) ParallelizationProvider.Execute(pool, ItemCount, &SumRange, context, 1024);
 
 		sum = 0;
 		var before = GC.GetAllocatedBytesForCurrentThread();
-		ParallelBlockExecutor.Execute(pool, ItemCount, 1024, &SumRange, context);
+		ParallelizationProvider.Execute(pool, ItemCount, &SumRange, context, 1024);
 		var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
 		Assert.AreEqual((long) ItemCount * (ItemCount - 1) / 2, sum);

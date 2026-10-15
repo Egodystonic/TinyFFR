@@ -90,9 +90,6 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void StopReadingFrames(bool cancelQueuedFrames) => Implementation.ClearOutputChangeHandlers(_handle, cancelQueuedFrames);
 
-	public void ReadNextFrameParallelized<TContext>(delegate* managed<ReadOnlySpan<TexelRgba32>, XYPair<int>, XYPair<int>, XYPair<int>, TContext, void> blockHandler, TContext context, bool presentFrameTopToBottom = false) => Implementation.SetOutputChangeHandlerParallelized(_handle, blockHandler == null ? throw new ArgumentNullException(nameof(blockHandler)) : (nint) blockHandler, context, presentFrameTopToBottom, handleOnlyNextChange: true);
-	public void StartReadingFramesParallelized<TContext>(delegate* managed<ReadOnlySpan<TexelRgba32>, XYPair<int>, XYPair<int>, XYPair<int>, TContext, void> blockHandler, TContext context, bool presentFramesTopToBottom = false) => Implementation.SetOutputChangeHandlerParallelized(_handle, blockHandler == null ? throw new ArgumentNullException(nameof(blockHandler)) : (nint) blockHandler, context, presentFramesTopToBottom, handleOnlyNextChange: false);
-
 	/// <inheritdoc/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

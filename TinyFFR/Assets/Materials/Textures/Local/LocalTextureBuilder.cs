@@ -426,7 +426,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		}
 	}
 
-	public void OverwriteTexelsParallelized<TTexel, TContext>(ResourceHandle<Texture> handle, nint blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+	public void OverwriteTexelsParallelized<TTexel, TContext>(ResourceHandle<Texture> handle, delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		static void InvokeBlock(XYPair<int> blockOffset, XYPair<int> blockDimensions, ParallelOverwriteContext<TTexel, TContext> blockContext) {
 			var start = (nint) blockOffset.Y * blockDimensions.X;
 			var area = blockDimensions.Area;
@@ -442,7 +442,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 			else TextureUtils.Convert(scratchSpan, new Span<TexelRgba32>((TexelRgba32*) blockContext.HoldingBuffer + start, area));
 		}
 
-		if (blockCallback == 0) throw new ArgumentNullException(nameof(blockCallback));
+		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		var data = ValidateDynamicOverwriteAndGetData(handle, dimensions, offset);
 		if (data.TexelType != TexelType.Rgb24 && data.TexelType != TexelType.Rgba32) throw new InvalidOperationException($"Unexpected texture texel type ({data.TexelType}).");
 
@@ -452,12 +452,12 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var scratch = sourceBufferMatchesBlitType ? default : _globals.HeapPool.Borrow<TTexel>(writeArea);
 		try {
 			fixed (TTexel* scratchPtr = sourceBufferMatchesBlitType ? Span<TTexel>.Empty : scratch.Span) {
-				ParallelBlockExecutor.ExecuteRows(
+				ParallelizationProvider.ExecuteRows(
 					_globals.ThreadPoolWorkScheduler,
 					dimensions,
-					ParallelBlockExecutor.GetMinimumRowsPerBand(dimensions.X, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock),
 					&InvokeBlock,
-					new ParallelOverwriteContext<TTexel, TContext>((void*) blockCallback, sourceBufferMatchesBlitType ? null : scratchPtr, (void*) holdingBuffer.DataPtr, data.TexelType, context)
+					new ParallelOverwriteContext<TTexel, TContext>(blockCallback, sourceBufferMatchesBlitType ? null : scratchPtr, (void*) holdingBuffer.DataPtr, data.TexelType, context),
+					ParallelizationProvider.GetMinimumRowsPerBand(dimensions.X, ParallelizationProvider.UserCallbackMinimumElementsPerBlock)
 				);
 			}
 		}

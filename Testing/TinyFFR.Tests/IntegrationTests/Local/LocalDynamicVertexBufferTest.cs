@@ -18,9 +18,9 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalDynamicVertexBufferTest {
-	const int SingleGridDim = 20;
-	const int BlockGridDim = 10;
+unsafe class LocalDynamicVertexBufferTest {
+	const int SingleGridDim = 128;
+	const int BlockGridDim = 48;
 	const int NumBlocks = 4;
 	const float GridExtent = 1f;
 	const float InstructionFontHeight = 0.022f;
@@ -41,36 +41,55 @@ class LocalDynamicVertexBufferTest {
 	static int VertexCountFor(int dim) => dim * dim;
 	static int TriangleCountFor(int dim) => (dim - 1) * (dim - 1) * 2;
 
-	static void WriteGridVertices(Span<MeshVertex> dest, int dim, float extent, float time, float frequency, float amplitude) {
-		for (var z = 0; z < dim; ++z) {
-			for (var x = 0; x < dim; ++x) {
-				var u = x / (float) (dim - 1);
-				var v = z / (float) (dim - 1);
-				var worldX = (u - 0.5f) * 2f * extent;
-				var worldZ = (v - 0.5f) * 2f * extent;
-				var worldY = MathF.Sin((worldX + time) * frequency) * MathF.Cos((worldZ + time * 0.7f) * frequency) * amplitude;
-				dest[z * dim + x] = new MeshVertex(
-					new Location(worldX, worldY, worldZ),
-					new XYPair<float>(u, v),
-					Direction.Right,
-					Direction.Forward,
-					Direction.Up
-				);
-			}
+	readonly record struct GridWave(int Dim, float Extent, float Time, float Frequency, float Amplitude);
+	readonly record struct GridIndices(int Dim, int VertexOffset);
+
+	sealed class PreservationCheck {
+		public required MeshVertex[] Before { get; init; }
+		public int Mismatches;
+	}
+
+	static void WriteGridVertexBlock(Span<MeshVertex> block, int startIndex, GridWave wave) {
+		for (var k = 0; k < block.Length; ++k) {
+			var index = startIndex + k;
+			var x = index % wave.Dim;
+			var z = index / wave.Dim;
+			var u = x / (float) (wave.Dim - 1);
+			var v = z / (float) (wave.Dim - 1);
+			var worldX = (u - 0.5f) * 2f * wave.Extent;
+			var worldZ = (v - 0.5f) * 2f * wave.Extent;
+			var worldY = MathF.Sin((worldX + wave.Time) * wave.Frequency) * MathF.Cos((worldZ + wave.Time * 0.7f) * wave.Frequency) * wave.Amplitude;
+			block[k] = new MeshVertex(
+				new Location(worldX, worldY, worldZ),
+				new XYPair<float>(u, v),
+				Direction.Right,
+				Direction.Forward,
+				Direction.Up
+			);
 		}
 	}
 
-	static void WriteGridTriangles(Span<VertexTriangle> dest, int dim, int vertexOffset) {
-		var i = 0;
-		for (var z = 0; z < dim - 1; ++z) {
-			for (var x = 0; x < dim - 1; ++x) {
-				var topLeft = vertexOffset + z * dim + x;
-				var topRight = topLeft + 1;
-				var bottomLeft = vertexOffset + (z + 1) * dim + x;
-				var bottomRight = bottomLeft + 1;
-				dest[i++] = new VertexTriangle(topLeft, bottomLeft, topRight);
-				dest[i++] = new VertexTriangle(topRight, bottomLeft, bottomRight);
-			}
+	static void WriteGridTriangleBlock(Span<VertexTriangle> block, int startIndex, GridIndices indices) {
+		var quadsPerRow = indices.Dim - 1;
+		for (var k = 0; k < block.Length; ++k) {
+			var triangleIndex = startIndex + k;
+			var quad = triangleIndex >> 1;
+			var x = quad % quadsPerRow;
+			var z = quad / quadsPerRow;
+			var topLeft = indices.VertexOffset + z * indices.Dim + x;
+			var topRight = topLeft + 1;
+			var bottomLeft = indices.VertexOffset + (z + 1) * indices.Dim + x;
+			var bottomRight = bottomLeft + 1;
+			block[k] = (triangleIndex & 1) == 0
+				? new VertexTriangle(topLeft, bottomLeft, topRight)
+				: new VertexTriangle(topRight, bottomLeft, bottomRight);
+		}
+	}
+
+	static void CompareBlock(ReadOnlySpan<MeshVertex> block, int startIndex, PreservationCheck check) {
+		var comparableCount = Int32.Min(block.Length, check.Before.Length - startIndex);
+		for (var k = 0; k < comparableCount; ++k) {
+			if (block[k] != check.Before[startIndex + k]) Interlocked.Increment(ref check.Mismatches);
 		}
 	}
 
@@ -87,12 +106,8 @@ class LocalDynamicVertexBufferTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		using var buffer = factory.MeshBuilder.CreateDynamicVertexBuffer(vertexCount, triangleCount, "Animated Grid Buffer");
-		using (var lease = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false)) {
-			WriteGridTriangles(lease.Span, SingleGridDim, 0);
-		}
-		using (var lease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) {
-			WriteGridVertices(lease.Span, SingleGridDim, GridExtent, 0f, 2f, 0.25f);
-		}
+		buffer.WriteTrianglesParallelized(&WriteGridTriangleBlock, new GridIndices(SingleGridDim, 0), recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
+		buffer.WriteVerticesParallelized(&WriteGridVertexBlock, new GridWave(SingleGridDim, GridExtent, 0f, 2f, 0.25f), recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true);
 
 		using var meshView = buffer.CreateMesh();
 		using var instance = factory.ObjectBuilder.CreateModelInstance(meshView, mat);
@@ -107,7 +122,7 @@ class LocalDynamicVertexBufferTest {
 			"PART 1/2   ANIMATED GRID\n" +
 			"\n" +
 			"One DynamicVertexBuffer, one mesh view, one instance.\n" +
-			"Vertices are rewritten every frame with both bounding box flags set.\n" +
+			"Vertices are rewritten every frame in parallel blocks with both bounding box flags set.\n" +
 			"The wave amplitude grows and shrinks, so the box changes size.\n" +
 			"\n" +
 			"VERIFY   the surface animates smoothly\n" +
@@ -133,9 +148,7 @@ class LocalDynamicVertexBufferTest {
 			totalTime += dt;
 
 			var amplitude = 0.15f + 0.35f * (0.5f + 0.5f * MathF.Sin(totalTime * 0.6f));
-			using (var lease = buffer.BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true)) {
-				WriteGridVertices(lease.Span, SingleGridDim, GridExtent, totalTime, 2f, amplitude);
-			}
+			buffer.WriteVerticesParallelized(&WriteGridVertexBlock, new GridWave(SingleGridDim, GridExtent, totalTime, 2f, amplitude), recalculateBoundingBoxOnLeaseDispose: true, overwriteChildMeshBoundingBoxes: true);
 
 			if (loop.Input.KeyboardAndMouse.NewMouseClicks.Any(mc => mc.Key == MouseKey.MouseLeft)) window.LockCursor = !window.LockCursor;
 
@@ -167,10 +180,15 @@ class LocalDynamicVertexBufferTest {
 
 		var indexShift = 0;
 		void WriteAllIndices() {
-			using var lease = buffer.BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose: false, overwriteChildMeshBoundingBoxes: false);
 			for (var b = 0; b < NumBlocks; ++b) {
 				var sourceBlock = (b + indexShift) % NumBlocks;
-				WriteGridTriangles(lease.Span.Slice(b * blockTriangleCount, blockTriangleCount), BlockGridDim, sourceBlock * blockVertexCount);
+				buffer.WriteTrianglesParallelized(
+					&WriteGridTriangleBlock,
+					new GridIndices(BlockGridDim, sourceBlock * blockVertexCount),
+					recalculateBoundingBoxOnLeaseDispose: false,
+					overwriteChildMeshBoundingBoxes: false,
+					(b * blockTriangleCount)..((b + 1) * blockTriangleCount)
+				);
 			}
 		}
 		WriteAllIndices();
@@ -203,8 +221,13 @@ class LocalDynamicVertexBufferTest {
 
 		void AnimateBlocks() {
 			for (var b = 0; b < NumBlocks; ++b) {
-				using var lease = buffer.BorrowVerticesSpan(recalculateBoundingBox, overwriteChildBoxes, (b * blockVertexCount)..((b + 1) * blockVertexCount));
-				WriteGridVertices(lease.Span, BlockGridDim, GridExtent * 0.7f, totalTime, 1.5f + b * 1.5f, 0.2f + b * 0.05f);
+				buffer.WriteVerticesParallelized(
+					&WriteGridVertexBlock,
+					new GridWave(BlockGridDim, GridExtent * 0.7f, totalTime, 1.5f + b * 1.5f, 0.2f + b * 0.05f),
+					recalculateBoundingBox,
+					overwriteChildBoxes,
+					(b * blockVertexCount)..((b + 1) * blockVertexCount)
+				);
 			}
 		}
 		AnimateBlocks();
@@ -218,7 +241,7 @@ class LocalDynamicVertexBufferTest {
 		using var instructionsText = canvas.Add(
 			"PART 2/2   SHARED BUFFER VIEWS\n" +
 			"\n" +
-			$"One buffer holds {NumBlocks} blocks, each with its own mesh view and instance.\n" +
+			$"One buffer holds {NumBlocks} blocks, each with its own mesh view and instance, written in parallel blocks.\n" +
 			"\n" +
 			"[R] toggle recalculateBoundingBoxOnLeaseDispose\n" +
 			"[O] toggle overwriteChildMeshBoundingBoxes\n" +
@@ -323,15 +346,9 @@ class LocalDynamicVertexBufferTest {
 					buffer.ResizeTriangleBuffer((int) (buffer.TriangleBufferSize * 1.5f));
 					CreateViewsAndInstances();
 
-					var preserved = true;
-					using (var lease = buffer.BorrowVerticesSpanReadOnly()) {
-						for (var i = 0; i < before.Length; ++i) {
-							if (lease.Span[i] == before[i]) continue;
-							preserved = false;
-							break;
-						}
-					}
-					lastAction = $"Resized buffers. Contents preserved: {preserved}";
+					var preservationCheck = new PreservationCheck { Before = before };
+					buffer.ReadVerticesParallelized(&CompareBlock, preservationCheck);
+					lastAction = $"Resized buffers. Contents preserved: {preservationCheck.Mismatches == 0}";
 					statusRequiresRefresh = true;
 				}
 

@@ -155,15 +155,6 @@ sealed unsafe class LocalResourceAllocator : IResourceAllocator, IDisposable {
 		return result;
 	}
 
-	public void ExecuteParallelized<TContext>(int itemCount, delegate* managed<int, int, TContext, void> blockCallback, TContext context, int minimumItemsPerBlock = 1) {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IResourceAllocator));
-		ParallelBlockExecutor.Execute(_globals.ThreadPoolWorkScheduler, itemCount, minimumItemsPerBlock, blockCallback, context);
-	}
-	public void ExecuteParallelized<TContext>(XYPair<int> dimensions, delegate* managed<XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, int minimumRowsPerBlock = 1) {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IResourceAllocator));
-		ParallelBlockExecutor.ExecuteRows(_globals.ThreadPoolWorkScheduler, dimensions, minimumRowsPerBlock, blockCallback, context);
-	}
-
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {

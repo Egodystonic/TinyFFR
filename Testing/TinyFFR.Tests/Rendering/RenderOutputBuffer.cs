@@ -9,6 +9,8 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 [TestFixture]
 unsafe class RenderOutputBufferTest {
+	const int FrameNoiseTolerance = 6;
+
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -17,26 +19,15 @@ unsafe class RenderOutputBufferTest {
 
 	sealed class FrameCapture {
 		public TexelRgba32[]? Texels;
-		public int[]? VisitCounts;
 		public int FramesSeen;
 	}
 
-	static FrameCapture? _serialCapture;
+	static FrameCapture? _capture;
 
-	static void CaptureSerial(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
-		_serialCapture!.Texels = texels.ToArray();
-		_serialCapture.FramesSeen++;
+	static void Capture(XYPair<int> dimensions, ReadOnlySpan<TexelRgba32> texels) {
+		_capture!.Texels = texels.ToArray();
+		_capture.FramesSeen++;
 	}
-
-	static void CaptureBlock(ReadOnlySpan<TexelRgba32> block, XYPair<int> offset, XYPair<int> dimensions, XYPair<int> frameDimensions, FrameCapture capture) {
-		Assert.AreEqual(frameDimensions.X, dimensions.X);
-		if (capture.Texels == null || capture.Texels.Length != frameDimensions.Area) throw new InvalidOperationException("Capture was not pre-sized.");
-		block.CopyTo(capture.Texels.AsSpan(offset.Y * frameDimensions.X));
-		for (var i = 0; i < block.Length; ++i) Interlocked.Increment(ref capture.VisitCounts![offset.Y * frameDimensions.X + i]);
-		if (offset.Y == 0) Interlocked.Increment(ref capture.FramesSeen);
-	}
-
-	const int FrameNoiseTolerance = 6;
 
 	static int MaxChannelDifference(ReadOnlySpan<TexelRgba32> a, ReadOnlySpan<TexelRgba32> b) {
 		Assert.AreEqual(a.Length, b.Length);
@@ -51,9 +42,9 @@ unsafe class RenderOutputBufferTest {
 	}
 
 	[Test]
-	public void ParallelizedReadsShouldMatchSerialReads() {
-		var dimensions = new XYPair<int>(320, 181);
-		using var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { ThreadingConfig = new ThreadingConfig { WorkerThreadCount = 4 } });
+	public void ReadFramesShouldBeMirroredBetweenOrientations() {
+		var dimensions = new XYPair<int>(1024, 601);
+		using var factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { ThreadingConfig = new ThreadingConfig { WorkerThreadCount = 12 } });
 		using var buffer = factory.RendererBuilder.CreateRenderOutputBuffer(dimensions);
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var material = factory.MaterialBuilder.CreateTestMaterial();
@@ -67,41 +58,21 @@ unsafe class RenderOutputBufferTest {
 		renderer.SetQuality(new RenderQualityConfig(BuiltInQualityConfiguration.Medium) { AntiAliasingMode = AntiAliasingMode.None });
 
 		for (var i = 0; i < 4; ++i) renderer.RenderAndWaitForGpu();
-		var serialCapturesByOrientation = new TexelRgba32[2][];
+		var capturesByOrientation = new TexelRgba32[2][];
 		foreach (var topToBottom in new[] { false, true }) {
-			_serialCapture = new FrameCapture();
-			buffer.ReadNextFrame(&CaptureSerial, topToBottom);
+			_capture = new FrameCapture();
+			buffer.ReadNextFrame(&Capture, topToBottom);
 			renderer.RenderAndWaitForGpu();
-			Assert.AreEqual(1, _serialCapture.FramesSeen);
-
-			var parallelCapture = new FrameCapture { Texels = new TexelRgba32[dimensions.Area], VisitCounts = new int[dimensions.Area] };
-			buffer.ReadNextFrameParallelized(&CaptureBlock, parallelCapture, topToBottom);
 			renderer.RenderAndWaitForGpu();
-			Assert.AreEqual(1, parallelCapture.FramesSeen);
-			Assert.IsTrue(parallelCapture.VisitCounts.All(c => c == 1));
-			Assert.LessOrEqual(MaxChannelDifference(_serialCapture.Texels, parallelCapture.Texels), FrameNoiseTolerance, $"Mismatch with topToBottom={topToBottom}");
-			serialCapturesByOrientation[topToBottom ? 1 : 0] = _serialCapture.Texels!;
-
-			renderer.RenderAndWaitForGpu();
-			Assert.AreEqual(1, parallelCapture.FramesSeen, "ReadNextFrameParallelized handled more than one frame.");
+			Assert.AreEqual(1, _capture.FramesSeen);
+			capturesByOrientation[topToBottom ? 1 : 0] = _capture.Texels!;
 		}
 
 		var mirrored = new TexelRgba32[dimensions.Area];
 		for (var y = 0; y < dimensions.Y; ++y) {
-			serialCapturesByOrientation[1].AsSpan((dimensions.Y - 1 - y) * dimensions.X, dimensions.X).CopyTo(mirrored.AsSpan(y * dimensions.X));
+			capturesByOrientation[1].AsSpan((dimensions.Y - 1 - y) * dimensions.X, dimensions.X).CopyTo(mirrored.AsSpan(y * dimensions.X));
 		}
-		Assert.Greater(MaxChannelDifference(serialCapturesByOrientation[0], serialCapturesByOrientation[1]), FrameNoiseTolerance * 4, "Test scene is vertically symmetric so can not validate row order.");
-		Assert.LessOrEqual(MaxChannelDifference(serialCapturesByOrientation[0], mirrored), FrameNoiseTolerance, "Rows were not mirrored between orientations.");
-
-		var continuousCapture = new FrameCapture { Texels = new TexelRgba32[dimensions.Area], VisitCounts = new int[dimensions.Area] };
-		buffer.StartReadingFramesParallelized(&CaptureBlock, continuousCapture);
-		for (var i = 0; i < 5; ++i) renderer.RenderAndWaitForGpu();
-		buffer.StopReadingFrames(cancelQueuedFrames: false);
-		renderer.RenderAndWaitForGpu();
-		var framesSeen = continuousCapture.FramesSeen;
-		Assert.GreaterOrEqual(framesSeen, 5);
-		renderer.RenderAndWaitForGpu();
-		Assert.AreEqual(framesSeen, continuousCapture.FramesSeen);
-		Assert.IsTrue(continuousCapture.VisitCounts.All(c => c == framesSeen));
+		Assert.Greater(MaxChannelDifference(capturesByOrientation[0], capturesByOrientation[1]), FrameNoiseTolerance * 4, "Test scene is vertically symmetric so can not validate row order.");
+		Assert.LessOrEqual(MaxChannelDifference(capturesByOrientation[0], mirrored), FrameNoiseTolerance, "Rows were not mirrored between orientations.");
 	}
 }

@@ -3,13 +3,27 @@
 
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Resources;
-using NSubstitute;
 using static Egodystonic.TinyFFR.ConfigStructTestUtils;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
 class MaterialConfigsTest {
+	sealed unsafe class FakeTextureImplProvider : ITextureImplProvider {
+		public bool IsDisposed(ResourceHandle<Texture> handle) => false;
+		public void Dispose(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public int GetNameLength(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) => throw new NotSupportedException();
+		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public TexelType GetTexelType(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public bool GetAllowsDynamicWrites(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public bool GetContainsMipMaps(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public TextureRenderingConfig GetRenderingConfig(ResourceHandle<Texture> handle) => throw new NotSupportedException();
+		public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> => throw new NotSupportedException();
+		public void OverwriteTexelsParallelized<TTexel, TContext>(ResourceHandle<Texture> handle, delegate* managed<Span<TTexel>, XYPair<int>, XYPair<int>, TContext, void> blockCallback, TContext context, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> => throw new NotSupportedException();
+	}
+
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -84,8 +98,7 @@ class MaterialConfigsTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertLightingIgnoringMaterialCreationConfigToAndFromHeapStorageFormat() {
-		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
-		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
+		var colorTexImplSub = new FakeTextureImplProvider();
 		var testConfigA = new LightingIgnoringMaterialCreationConfig {
 			Name = "Aa Aa",
 			EnablePerInstanceEffects = true,
@@ -125,8 +138,7 @@ class MaterialConfigsTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertColorKeyedMaterialCreationConfigToAndFromHeapStorageFormat() {
-		var keyTexImplSub = Substitute.For<ITextureImplProvider>();
-		keyTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
+		var keyTexImplSub = new FakeTextureImplProvider();
 		var testConfigA = new ColorKeyedMaterialCreationConfig {
 			Name = "Aa Aa",
 			BlendOutputAlphaWithScene = true,
@@ -169,8 +181,7 @@ class MaterialConfigsTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertStandardMaterialCreationConfigToAndFromHeapStorageFormat() {
-		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
-		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
+		var colorTexImplSub = new FakeTextureImplProvider();
 		var testConfigA = new StandardMaterialCreationConfig {
 			Name = "Aa Aa",
 			ColorMap = new Texture(111, colorTexImplSub),
@@ -256,8 +267,7 @@ class MaterialConfigsTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertTransmissiveMaterialCreationConfigToAndFromHeapStorageFormat() {
-		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
-		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
+		var colorTexImplSub = new FakeTextureImplProvider();
 		var testConfigA = new TransmissiveMaterialCreationConfig {
 			Name = "Aa Aa",
 			ColorMap = new Texture(111, colorTexImplSub),

@@ -29,7 +29,6 @@ namespace Egodystonic.TinyFFR.Factory.Local;
 /// </summary>
 public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHoldingBufferAllocator {
 	static LocalTinyFfrFactory? _instance = null;
-	internal static IJobExecutionFacade LiveParallelizingFacade => (IJobExecutionFacade?) _instance?._threadPool ?? IJobExecutionFacade.Synchronous;
 
 	readonly ResourceDependencyTracker _dependencyTracker = new();
 	readonly ManagedStringPool _stringPool = new();

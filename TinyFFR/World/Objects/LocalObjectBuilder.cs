@@ -14,6 +14,7 @@ using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants.DefaultMaterialShaderConstants;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.World;
 
@@ -373,6 +374,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		
 		return vertexMutationData;
 	}
+	public IJobExecutionFacade GetParallelizingFacade() => _globals.ThreadPoolWorkScheduler;
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<ModelInstance> handle) {
 		var vertexMutationData = GetOrAllocateActiveVertexMutationData(handle);
 		return _vertexLeaseTracker.CreateScopedLeaseOrThrow(handle, vertexMutationData.CurrentVertices.Span);

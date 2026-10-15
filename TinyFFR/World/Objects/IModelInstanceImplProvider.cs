@@ -7,6 +7,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.World;
 
@@ -93,6 +94,7 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	/// Invoked via <see cref="ModelInstance.BorrowVerticesSpanReadOnly"/>.
 	/// </summary>
 	ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<ModelInstance> handle);
+	IJobExecutionFacade GetParallelizingFacade();
 	/// <summary>
 	/// Invoked via <see cref="ModelInstance.TriggerManualBoundingBoxRecalculation"/>.
 	/// </summary>

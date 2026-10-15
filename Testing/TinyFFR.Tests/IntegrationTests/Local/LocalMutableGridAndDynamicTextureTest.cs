@@ -17,10 +17,39 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalMutableGridAndDynamicTextureTest {
+unsafe class LocalMutableGridAndDynamicTextureTest {
 	static readonly XYPair<int> Dimensions = (128, 128);
 	const float MaxHeight = 0.05f;
 	const float LateralPhaseNumVerticesMutatedPerSec = 300f;
+
+	sealed class HeightModeContext {
+		public XYPair<float>[] NormalizedCoords = [];
+		public float AnimationTime;
+	}
+
+	static float CalculateHeightModeSin(XYPair<float> normalizedCoord, float animationTime) {
+		return MathF.Sin((normalizedCoord.DistanceSquaredFrom(XYPair<float>.Zero) * 100f) + animationTime);
+	}
+
+	static void WriteHeightBlock(Span<MutableGridVertex> block, XYPair<int> offset, XYPair<int> dimensions, HeightModeContext context) {
+		var firstIndex = offset.Y * dimensions.X;
+		for (var k = 0; k < block.Length; ++k) {
+			block[k] = new(CalculateHeightModeSin(context.NormalizedCoords[firstIndex + k], context.AnimationTime) * MaxHeight);
+		}
+	}
+
+	static void WriteHeightTexelBlock(Span<TexelRgb24> block, XYPair<int> offset, XYPair<int> dimensions, HeightModeContext context) {
+		var firstIndex = offset.Y * dimensions.X;
+		for (var k = 0; k < block.Length; ++k) {
+			var normalizedCoord = context.NormalizedCoords[firstIndex + k];
+			var sin = CalculateHeightModeSin(normalizedCoord, context.AnimationTime);
+			block[k] = new TexelRgb24(new ColorVect(
+				(normalizedCoord.X + 1f) * 0.5f,
+				(normalizedCoord.Y + 1f) * 0.5f,
+				(sin + 1f) * 0.5f
+			));
+		}
+	}
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -61,6 +90,7 @@ class LocalMutableGridAndDynamicTextureTest {
 		var twoSided = true;
 		var useUvMap = false;
 		var firstMode = true;
+		var heightModeContext = new HeightModeContext { NormalizedCoords = new XYPair<float>[Dimensions.Area] };
 		
 		void ResetInstance() {
 			if (instance != null) {
@@ -79,6 +109,9 @@ class LocalMutableGridAndDynamicTextureTest {
 			);
 			instance = factory.ObjectBuilder.CreateMutableGridInstance(mesh.Value, useUvMap ? testMat : mat);
 			scene.Add(instance.Value);
+			for (var index = 0; index < heightModeContext.NormalizedCoords.Length; ++index) {
+				heightModeContext.NormalizedCoords[index] = instance.Value.GetVertexCoordinateNormalized(index);
+			}
 			
 			texels.AsSpan().Fill(new TexelRgb24(255, 255, 255));
 			texture.OverwriteTexels(texels);
@@ -91,7 +124,7 @@ class LocalMutableGridAndDynamicTextureTest {
 				$"Origin={origin} " +
 				$"{(twoSided ? "Sides=2" : "Sides=1")} " +
 				$"{(useUvMap ? "Tex=UV" : "Tex=Dynamic")} " +
-				$"{(firstMode ? "Mode=height" : "Mode=lateral")}"
+				$"{(firstMode ? "Mode=height (Parallel)" : "Mode=lateral")}"
 			);
 		}
 		
@@ -140,21 +173,9 @@ class LocalMutableGridAndDynamicTextureTest {
 			
 			if (instance is { } i) {
 				if (firstMode) {
-					using var lease = i.BorrowVerticesSpan(false);
-					for (var y = 0; y < Dimensions.Y; ++y) {
-						for (var x = 0; x < Dimensions.X; ++x) {
-							var index = Dimensions.Index(x, y);
-							var normalizedCoord = i.GetVertexCoordinateNormalized(index);
-							var sin = MathF.Sin((normalizedCoord.DistanceSquaredFrom(XYPair<float>.Zero) * 100f) + animationTime);
-							texels[index] = new TexelRgb24(new ColorVect(
-								(normalizedCoord.X + 1f) * 0.5f,
-								(normalizedCoord.Y + 1f) * 0.5f,
-								(sin + 1f) * 0.5f
-							));
-							lease.Span[index] = new(sin * MaxHeight);
-						}
-					}
-					texture.OverwriteTexels(texels);
+					heightModeContext.AnimationTime = animationTime;
+					i.WriteVerticesParallelized(&WriteHeightBlock, heightModeContext, permitLateralDisplacement: false);
+					texture.OverwriteTexelsParallelized<TexelRgb24, HeightModeContext>(&WriteHeightTexelBlock, heightModeContext);
 				}
 				else {
 					using var lease = i.BorrowVerticesSpan(true);

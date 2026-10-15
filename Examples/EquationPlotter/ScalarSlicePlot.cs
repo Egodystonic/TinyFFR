@@ -2,6 +2,7 @@ using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
 
 namespace EquationPlotter;
@@ -60,7 +61,7 @@ sealed class ScalarSlicePlot : IPlot {
 		_grid.SetPosition(GetSliceCentre());
 		_currentExpression = expressions[0];
 		_currentTime = time;
-		_allocator.ExecuteParallelized(_colors.Dimensions, &SampleRowBand, this);
+		ParallelizationProvider.ExecuteRows(_allocator.ParallelizingFacade, _colors.Dimensions, &SampleRowBand, this);
 		_colors.Upload();
 
 		var minimum = Single.PositiveInfinity;

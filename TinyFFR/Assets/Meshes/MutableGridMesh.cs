@@ -6,7 +6,6 @@ using System;
 using System.Numerics;
 using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
-using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Threading;
 using Egodystonic.TinyFFR.World;
@@ -406,13 +405,13 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		var gridDimensions = ParentGridMesh.GridDimensions;
 		using var lease = BorrowVerticesSpan(permitLateralDisplacement, recalculateNormals);
-		ParallelBlockExecutor.ExecuteRowsOverSpan(
-			LocalTinyFfrFactory.LiveParallelizingFacade,
+		ParallelizationProvider.ExecuteRowsOverSpan(
+			UnderlyingModelInstance.Implementation.GetParallelizingFacade(),
 			lease.Span,
 			gridDimensions,
-			ParallelBlockExecutor.GetMinimumRowsPerBand(gridDimensions.X, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock),
 			blockCallback,
-			context
+			context,
+			ParallelizationProvider.GetMinimumRowsPerBand(gridDimensions.X, ParallelizationProvider.UserCallbackMinimumElementsPerBlock)
 		);
 	}
 
@@ -420,13 +419,13 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		ObjectDisposedException.ThrowIf(UnderlyingModelInstance.IsDisposed, typeof(MutableGridMesh));
 		var gridDimensions = ParentGridMesh.GridDimensions;
-		ParallelBlockExecutor.ExecuteRowsOverReadOnlySpan(
-			LocalTinyFfrFactory.LiveParallelizingFacade,
+		ParallelizationProvider.ExecuteRowsOverReadOnlySpan(
+			UnderlyingModelInstance.Implementation.GetParallelizingFacade(),
 			(ReadOnlySpan<MutableGridVertex>) _vertexBuffer.Span,
 			gridDimensions,
-			ParallelBlockExecutor.GetMinimumRowsPerBand(gridDimensions.X, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock),
 			blockCallback,
-			context
+			context,
+			ParallelizationProvider.GetMinimumRowsPerBand(gridDimensions.X, ParallelizationProvider.UserCallbackMinimumElementsPerBlock)
 		);
 	}
 
@@ -532,15 +531,14 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		var gridArea = gridDimensions.Area;
 		var isTwoSided = defaultVertsLease.Span.Length == gridArea * 2;
 		var scalarOffsetPerGridStep = ((gridDimensions - XYPair<int>.One).Cast<float>().Reciprocal ?? XYPair<float>.One) * 0.5f;
-		var facade = LocalTinyFfrFactory.LiveParallelizingFacade;
+		var facade = UnderlyingModelInstance.Implementation.GetParallelizingFacade();
 
 		fixed (MeshVertex* verticesPtr = innerLease.Span)
 		fixed (MeshVertex* defaultVerticesPtr = defaultVertsLease.Span)
 		fixed (MutableGridVertex* gridVerticesPtr = _vertexBuffer.Span) {
-			ParallelBlockExecutor.Execute(
+			ParallelizationProvider.Execute(
 				facade,
 				gridArea,
-				ParallelBlockExecutor.DefaultMinimumElementsPerBlock,
 				&ApplyDisplacementsToBlock,
 				new DisplacementContext {
 					Vertices = verticesPtr,
@@ -552,17 +550,17 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 					UpDir = ParentGridMesh.UpDir.AsVect(),
 					XOffsetPerGridStep = ParentGridMesh.XDir * scalarOffsetPerGridStep.X,
 					YOffsetPerGridStep = ParentGridMesh.YDir * scalarOffsetPerGridStep.Y
-				}
+				},
+				ParallelizationProvider.DefaultMinimumElementsPerBlock
 			);
 
 			if (!recalculateNormals) return;
 			var xDir = ParentGridMesh.XDir.ToVector3();
 			var yDir = ParentGridMesh.YDir.ToVector3();
 			var upDir = ParentGridMesh.UpDir.ToVector3();
-			ParallelBlockExecutor.ExecuteRows(
+			ParallelizationProvider.ExecuteRows(
 				facade,
 				gridDimensions,
-				ParallelBlockExecutor.GetMinimumRowsPerBand(gridDimensions.X),
 				&RecalculateNormalsForRowBand,
 				new NormalRecalculationContext {
 					Vertices = verticesPtr,
@@ -572,7 +570,8 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 					YDir = yDir,
 					UpDir = upDir,
 					NormalSign = Vector3.Dot(Vector3.Cross(xDir, yDir), upDir) < 0f ? -1f : 1f
-				}
+				},
+				ParallelizationProvider.GetMinimumRowsPerBand(gridDimensions.X)
 			);
 		}
 	}

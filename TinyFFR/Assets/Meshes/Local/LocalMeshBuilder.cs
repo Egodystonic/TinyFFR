@@ -982,6 +982,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		_dynamicTriangleLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(DynamicVertexBuffer), name);
 	}
 
+	public IJobExecutionFacade GetParallelizingFacade() => _globals.ThreadPoolWorkScheduler;
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) {
 		var data = GetMirroredBufferDataOrThrow(handle);
 		return _dynamicVertexLeaseTracker.CreateScopedLeaseOrThrow(handle, (ReadOnlySpan<MeshVertex>) data.Vertices!.Value.Span);

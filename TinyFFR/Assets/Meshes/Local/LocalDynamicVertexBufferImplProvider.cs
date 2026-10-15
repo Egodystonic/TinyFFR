@@ -3,6 +3,7 @@
 
 using System;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
@@ -24,6 +25,7 @@ sealed class LocalDynamicVertexBufferImplProvider : IDynamicVertexBufferImplProv
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) => _owner.BorrowVerticesSpanReadOnly(handle);
 	public ScopedSpanLease<VertexTriangle> BorrowTrianglesSpan(ResourceHandle<DynamicVertexBuffer> handle, Range range, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) => _owner.BorrowTrianglesSpan(handle, range, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes);
 	public ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle) => _owner.BorrowTrianglesSpanReadOnly(handle);
+	public IJobExecutionFacade GetParallelizingFacade() => _owner.GetParallelizingFacade();
 
 	public void SetVerticesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<MeshVertexImGui> vertices, int offset) => _owner.SetVerticesImGui(handle, vertices, offset);
 	public void SetIndicesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<ushort> indices, int offset) => _owner.SetIndicesImGui(handle, indices, offset);

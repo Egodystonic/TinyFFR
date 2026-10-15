@@ -4,7 +4,6 @@
 using Egodystonic.TinyFFR.Resources;
 using System;
 using System.Runtime.InteropServices;
-using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
@@ -164,12 +163,12 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 	public unsafe void WriteVerticesParallelized<TContext>(delegate* managed<Span<MeshVertex>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes, Range range) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes, range);
-		ParallelBlockExecutor.ExecuteOverSpan(LocalTinyFfrFactory.LiveParallelizingFacade, lease.Span, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock, blockCallback, context);
+		ParallelizationProvider.ExecuteOverSpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
 	public unsafe void ReadVerticesParallelized<TContext>(delegate* managed<ReadOnlySpan<MeshVertex>, int, TContext, void> blockCallback, TContext context) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowVerticesSpanReadOnly();
-		ParallelBlockExecutor.ExecuteOverReadOnlySpan(LocalTinyFfrFactory.LiveParallelizingFacade, lease.Span, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock, blockCallback, context);
+		ParallelizationProvider.ExecuteOverReadOnlySpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
 	public unsafe void WriteTrianglesParallelized<TContext>(delegate* managed<Span<VertexTriangle>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes) {
 		WriteTrianglesParallelized(blockCallback, context, recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes, Range.All);
@@ -177,12 +176,12 @@ public readonly struct DynamicVertexBuffer : IDisposableResource<DynamicVertexBu
 	public unsafe void WriteTrianglesParallelized<TContext>(delegate* managed<Span<VertexTriangle>, int, TContext, void> blockCallback, TContext context, bool recalculateBoundingBoxOnLeaseDispose, bool overwriteChildMeshBoundingBoxes, Range range) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowTrianglesSpan(recalculateBoundingBoxOnLeaseDispose, overwriteChildMeshBoundingBoxes, range);
-		ParallelBlockExecutor.ExecuteOverSpan(LocalTinyFfrFactory.LiveParallelizingFacade, lease.Span, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock, blockCallback, context);
+		ParallelizationProvider.ExecuteOverSpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
 	public unsafe void ReadTrianglesParallelized<TContext>(delegate* managed<ReadOnlySpan<VertexTriangle>, int, TContext, void> blockCallback, TContext context) {
 		if (blockCallback == null) throw new ArgumentNullException(nameof(blockCallback));
 		using var lease = BorrowTrianglesSpanReadOnly();
-		ParallelBlockExecutor.ExecuteOverReadOnlySpan(LocalTinyFfrFactory.LiveParallelizingFacade, lease.Span, ParallelBlockExecutor.UserCallbackMinimumElementsPerBlock, blockCallback, context);
+		ParallelizationProvider.ExecuteOverReadOnlySpan(Implementation.GetParallelizingFacade(), lease.Span, blockCallback, context, ParallelizationProvider.UserCallbackMinimumElementsPerBlock);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

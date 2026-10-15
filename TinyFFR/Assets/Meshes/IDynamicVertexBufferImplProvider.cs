@@ -3,6 +3,7 @@
 
 using System;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Threading;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
@@ -44,6 +45,7 @@ public interface IDynamicVertexBufferImplProvider : IDisposableResourceImplProvi
 	/// Invoked via <see cref="DynamicVertexBuffer.BorrowTrianglesSpanReadOnly"/>.
 	/// </summary>
 	ScopedReadOnlySpanLease<VertexTriangle> BorrowTrianglesSpanReadOnly(ResourceHandle<DynamicVertexBuffer> handle);
+	IJobExecutionFacade GetParallelizingFacade();
 
 	internal void SetVerticesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<MeshVertexImGui> vertices, int offset);
 	internal void SetIndicesImGui(ResourceHandle<DynamicVertexBuffer> handle, ReadOnlySpan<ushort> indices, int offset);

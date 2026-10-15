@@ -11,7 +11,7 @@ hide:
   - footer
 ---
 
-<div style="font-size: 1.3em; position: relative; top: -1em; left: 0.5em;"><image src="logo.png" style="max-height: 24px; margin: 0px; position: relative; top: 0.2em; right: 0.2em; margin-right: 12px;" />TinyFFR is a <b>free</b> 3D rendering library for modern .NET delivered via NuGet:</div>
+<div style="font-size: 1.3em; position: relative; top: -1em; left: 0.5em;"><image src="logo.png" style="max-height: 24px; margin: 0px; position: relative; top: 0.2em; right: 0.2em; margin-right: 12px;" />TinyFFR is a <b>free</b> realtime 3D rendering library for modern .NET delivered via NuGet:</div>
 
 
 
