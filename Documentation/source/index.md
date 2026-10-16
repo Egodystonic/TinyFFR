@@ -21,7 +21,7 @@ hide:
 
 <div class="tffr-showcase" markdown>
 
-![](index_category_1.jpg){ .tffr-showcase__backdrop }
+![](index_category_4.jpg){ .tffr-showcase__backdrop }
 
 <div class="tffr-showcase__category" markdown>
 
@@ -60,7 +60,7 @@ Full PBR workflow :material-drag-vertical-variant: Post-processing enabled out-o
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
 <img src="index_shaders.jpg" alt="" loading="lazy">
 <div>
-<p class="tffr-showcase__card-title">All Without Shaders</p>
+<p class="tffr-showcase__card-title">No Shader Knowledge Required</p>
 <p>Don't write a single shader. TinyFFR's build comes with pre-compiled shaders for each platform ready to support every texture/material combination you create.</p>
 </div>
 </div></div>
@@ -89,7 +89,7 @@ Full PBR workflow :material-drag-vertical-variant: Post-processing enabled out-o
 
 <div class="tffr-showcase" markdown>
 
-![](index_category_2.jpg){ .tffr-showcase__backdrop }
+![](index_category_1.jpg){ .tffr-showcase__backdrop }
 
 <div class="tffr-showcase__category" markdown>
 
@@ -171,7 +171,7 @@ SIMD-enabled :material-drag-vertical-variant: Parallelized :material-drag-vertic
 
 <div class="tffr-showcase" markdown>
 
-![](index_category_3.jpg){ .tffr-showcase__backdrop }
+![](index_category_2.jpg){ .tffr-showcase__backdrop }
 
 <div class="tffr-showcase__category" markdown>
 
@@ -286,7 +286,7 @@ Camera Control :material-drag-vertical-variant: Text Rendering :material-drag-ve
 
 <div class="tffr-showcase" markdown>
 
-![](index_category_4.jpg){ .tffr-showcase__backdrop }
+![](index_category_3.jpg){ .tffr-showcase__backdrop }
 
 <div class="tffr-showcase__category" markdown>
 
