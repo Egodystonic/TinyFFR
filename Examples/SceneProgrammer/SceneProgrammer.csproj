@@ -5,9 +5,10 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<Optimize>true</Optimize>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Egodystonic.TinyFFR" Version="*-*" />
+		<PackageReference Include="Egodystonic.TinyFFR" Version="1.0.0-rc003" />
 		<PackageReference Include="Egodystonic.TinyFFR.Avalonia" Version="*-*" />
 		<PackageReference Include="Avalonia" Version="12.1.4" />
 		<PackageReference Include="Avalonia.Desktop" Version="12.1.4" />

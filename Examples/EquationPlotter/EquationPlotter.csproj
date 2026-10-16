@@ -4,6 +4,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<Optimize>true</Optimize>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Egodystonic.TinyFFR" Version="*-*" />
