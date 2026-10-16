@@ -24,7 +24,7 @@ class LocalScenePrimitivesTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Scene Primitives Test");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 1.5f, -7f));
-		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		using var scene = factory.SceneBuilder.CreateScene();
 
 		var lime = new ColorVect(0.55f, 1f, 0.2f, 1f);
 		var cyan = new ColorVect(0f, 0.8f, 0.9f, 1f);
@@ -73,10 +73,10 @@ class LocalScenePrimitivesTest {
 		Label(5.25f, "Line", orange);
 
 		// 9. Plane (semi-transparent back wall)
-		Track(scene.AddPrimitiveShape(new Plane(Direction.Backward, new Location(0f, 1.5f, 3f)), new PrimitivePaintbrush(glass)));
+		//Track(scene.AddPrimitiveShape(new Plane(Direction.Backward, new Location(0f, 1.5f, 3f)), new PrimitivePaintbrush(glass)));
 
 		// 10. Grid (floor, default red major / white minor / grey background)
-		Track(scene.AddPrimitiveGrid(Location.Origin, gridSize: 14f));
+		//Track(scene.AddPrimitiveGrid(Location.Origin, gridSize: 14f));
 
 		// 11. String (title billboard)
 		Track(scene.AddPrimitiveString(new Location(0f, 3f, 0f), "Scene Primitives", new PrimitivePaintbrush(ColorVect.WhiteOpaque, ColorVect.BlackOpaque), ScenePrimitiveSize.VeryLarge));

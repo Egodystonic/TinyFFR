@@ -1,4 +1,4 @@
-#:package Egodystonic.TinyFFR@*
+#:package Egodystonic.TinyFFR@*-*
 
 using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Factory.Local;

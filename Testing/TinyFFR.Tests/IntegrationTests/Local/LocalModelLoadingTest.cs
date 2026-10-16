@@ -101,7 +101,6 @@ class LocalModelLoadingTest {
 
 		scene.Add(light);
 		scene.Add(sunlight);
-		scene.SetBackdrop(new ColorVect(0.1f, 0f, 0.07f));
 		sunlight.Brightness = 0.2f;
 		
 		var curFileIndex = -1;

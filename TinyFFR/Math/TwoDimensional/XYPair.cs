@@ -66,7 +66,8 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 	/// <param name="second">The axis to read for the new pair's <see cref="Y"/>.</param>
 	public XYPair<T> this[Axis2D first, Axis2D second] => new(this[first], this[second]);
 
-	internal static bool IsFloatingPoint { get; } = typeof(T).GetInterface("IFloatingPoint`1") != null;
+	// Maintainer's note: This uses a non-reflective approach to not prohibit AoT compilation
+	internal static bool IsFloatingPoint { get; } = T.CreateTruncating(0.5) != T.Zero;
 
 	/// <summary>
 	/// Constructs a new <see cref="XYPair{T}"/> with both <see cref="X"/> and <see cref="Y"/> set to <paramref name="xy"/>.

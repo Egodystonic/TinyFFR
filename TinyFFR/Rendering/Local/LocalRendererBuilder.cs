@@ -788,7 +788,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, XYPair<int>? captureResolution) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
+		var (buffer, renderer) = SetUpScreenshotCapture(handle, captureResolution);
 
 		try {
 			RenderScreenshotWarmUpFrames(renderer, _loadedRenderers[handle].Quality);
@@ -824,7 +824,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
+		var (buffer, renderer) = SetUpScreenshotCapture(handle, captureResolution);
 		
 		try {
 			RenderScreenshotWarmUpFrames(renderer, _loadedRenderers[handle].Quality);
@@ -839,7 +839,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
+		var (buffer, renderer) = SetUpScreenshotCapture(handle, captureResolution);
 
 		try {
 			RenderScreenshotWarmUpFrames(renderer, _loadedRenderers[handle].Quality);
@@ -859,7 +859,9 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		for (var i = 0; i < frameCount; ++i) renderer.Render();
 	}
 
-	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(RendererData data, XYPair<int>? captureResolution) {
+	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(ResourceHandle<Renderer> handle, XYPair<int>? captureResolution) {
+		RefreshViewportBeforeSurfaceQuery(handle);
+		var data = _loadedRenderers[handle];
 		var buffer = CreateRenderOutputBuffer(new() {
 			Name = SnapshotBufferName,
 			TextureDimensions = captureResolution ?? data.Viewport.LastSetViewportSize
@@ -962,7 +964,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		if (viewportCoord.X < 0 || viewportCoord.Y < 0 || viewportCoord.X >= viewportSize.X || viewportCoord.Y >= viewportSize.Y) return default;
 
 		var rendererData = _loadedRenderers[handle];
-		var (buffer, pickRenderer) = SetUpScreenshotCapture(rendererData, viewportSize);
+		var (buffer, pickRenderer) = SetUpScreenshotCapture(handle, viewportSize);
 		try {
 			var pickRendererHandle = pickRenderer.Handle;
 			var pickRendererData = _loadedRenderers[pickRendererHandle];

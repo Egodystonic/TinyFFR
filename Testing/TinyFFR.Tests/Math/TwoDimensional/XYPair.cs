@@ -628,6 +628,8 @@ class XYPairTest {
 		Assert.AreEqual(new XYPair<int>(2, 0), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, int>(MidpointRounding.ToEven));
 		Assert.AreEqual(new XYPair<int>(2, -1), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, int>(MidpointRounding.AwayFromZero));
 		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>());
+		Assert.AreEqual(new XYPair<double>(1.5d, -0.5d), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, double>());
+		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>());
 		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>(MidpointRounding.ToEven));
 		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>(MidpointRounding.AwayFromZero));
 	}
