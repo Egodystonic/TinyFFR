@@ -78,7 +78,7 @@ class LocalBuiltInTexturePathLibraryTest {
 		AssertProperty(ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, ITextureBuilder.DefaultEmissiveIntensity, lib => lib.DefaultEmissiveIntensityValue);
 		AssertProperty(255, 128, 255, lib => lib.DefaultAnisotropyMap);
 		AssertProperty(ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, ITextureBuilder.DefaultAnisotropyRadialAngle.Radians, lib => lib.DefaultAnisotropyRadialAngleValue);
-		AssertProperty(255, 128, 0, lib => lib.DefaultAnisotropyVectorMap);
+		AssertProperty(255, 128, 255, lib => lib.DefaultAnisotropyVectorMap);
 		AssertProperty(ITextureBuilder.DefaultAnisotropyStrength, ITextureBuilder.DefaultAnisotropyStrength, ITextureBuilder.DefaultAnisotropyStrength, lib => lib.DefaultAnisotropyStrengthValue);
 		AssertProperty(ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatRoughness, 0f, lib => lib.DefaultClearCoatMap);
 		AssertProperty(ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, ITextureBuilder.DefaultClearCoatThickness, lib => lib.DefaultClearCoatThicknessValue);

@@ -23,6 +23,7 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalResourceNamingTest {
+	const string TestName = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
 	HashSet<Type> _resourceTypes = default!;
 	
 	[SetUp]
@@ -107,23 +108,38 @@ class LocalResourceNamingTest {
 			meshNodeIndex++;
 			return node;
 		});
+		using var font = factory.AssetLoader.LoadFont(name: TestName);
+		TestNameStorageAndRetrieval(_ => font.CreatePen(ColorVect.WhiteOpaque), TestName + " pen");
+		TestNameStorageAndRetrieval(_ => font.CreateString("abc"), TestName + " string \"abc\"");
+		using var pen = font.CreatePen(ColorVect.WhiteOpaque);
+		using var str = font.CreateString("abc");
+		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateTextInstance(pen, str, name: n));
+		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateCameraLockedTextInstance(pen, str, name: n));
+		TestNameStorageAndRetrieval(n => factory.MeshBuilder.CreateQuad(name: n));
+		using var quadMesh = factory.MeshBuilder.CreateQuad();
+		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateQuadInstance(quadMesh, mat, name: n));
+		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateCameraLockedQuadInstance(quadMesh, mat, name: n));
+		TestNameStorageAndRetrieval(n => factory.SceneBuilder.CreateCanvasScene(name: n));
+		using var canvas = factory.SceneBuilder.CreateCanvasScene();
+		TestNameStorageAndRetrieval(n => canvas.Add(tex, name: n));
+		TestNameStorageAndRetrieval(_ => canvas.Add("abc", pen), "Instance of " + TestName + " string \"abc\"");
 		// ReSharper restore AccessToDisposedClosure
 		
 		Assert.IsFalse(_resourceTypes.Any(), "Following resource types are untested: " + String.Join(", ", _resourceTypes.Select(t => t.Name)));
 	}
 
-	void TestNameStorageAndRetrieval<T>(Func<string, T> creationFunc) where T : IResource<T> {
-		const string TestName = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
-		
+	void TestNameStorageAndRetrieval<T>(Func<string, T> creationFunc, string? expectedName = null) where T : IResource<T> {
+		expectedName ??= TestName;
+
 		Assert.IsTrue(_resourceTypes.Remove(typeof(T)), $"Resource type '{typeof(T).Name}' not found in resource type set (types = {String.Join(", ", _resourceTypes.Select(t => t.Name))})");
-		
+
 		var res = creationFunc(TestName);
-		var charArr = new char[TestName.Length];
+		var charArr = new char[expectedName.Length];
 		res.CopyName(charArr);
-		
-		Assert.AreEqual(TestName, res.GetNameAsNewStringObject());
-		Assert.AreEqual(TestName.Length, res.GetNameLength());
-		Assert.AreEqual(TestName, new String(charArr));
+
+		Assert.AreEqual(expectedName, res.GetNameAsNewStringObject());
+		Assert.AreEqual(expectedName.Length, res.GetNameLength());
+		Assert.AreEqual(expectedName, new String(charArr));
 
 		if (res is not IDisposableResource disposable) return;
 		disposable.Dispose();
