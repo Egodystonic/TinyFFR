@@ -187,21 +187,21 @@ Camera Control :material-drag-vertical-variant: Text Rendering :material-drag-ve
 
 <div class="tffr-showcase__cards">
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_text.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">SDF Text Rendering</p>
 <p>Import your own TTF files or use one of three built-in fonts. Render text that looks sharp at any size &amp; distance with optional outlines or background colours and multi-line text justification control.</p>
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_ibl.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Image-Based Lighting</p>
 <p>Import an HDRi and get image-based lighting across your entire scene.</p>
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_skeletal.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Skeletal Animation Players</p>
 <p>Enumerate packed animation data and play animations with target time frames, speed multipliers, blending, and node transform calculations.</p>
@@ -222,7 +222,7 @@ Camera Control :material-drag-vertical-variant: Text Rendering :material-drag-ve
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_material_effects.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Material Effects</p>
 <p>Transform and blend textures on any object in realtime; or control emissive strength for easy lighting simulation effects.</p>
@@ -236,14 +236,14 @@ Camera Control :material-drag-vertical-variant: Text Rendering :material-drag-ve
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_billboarding.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Billboarding</p>
 <p>Create quads and text instances in-world that stay facing the camera.</p>
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_canvas.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Canvas Scenes</p>
 <p>Easily create 2D overlays, HUDs, or debug readouts for either your entire window or a target texture for in-world screens.</p>
@@ -264,7 +264,7 @@ Camera Control :material-drag-vertical-variant: Text Rendering :material-drag-ve
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_scene_queries.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Scene Queries</p>
 <p>Query which object is under the cursor, or test what gets intersected by rays, cuboids, or spheres.</p>
@@ -344,17 +344,17 @@ Avalonia, WPF, WinForms &amp; ImGui Integration :material-drag-vertical-variant:
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_tested.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Fully Tested</p>
-<p>16,000 assertions, 50+ integration tests, 1.5K unit tests and growing.</p>
+<p>15,000 assertions, 50+ integration tests, 1.4K unit tests and growing.</p>
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_history.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">3 Years of History</p>
-<p>No vibe-coded AI slop here. TinyFFR has been in development since before the AI era and was started as a passion project by a C#/.NET veteran with a background in multiple industries including game &amp; engine development.</p>
+<p>No vibe-coded AI slop here. TinyFFR has been in development since before the AI era and was started as a passion project by a C#/.NET veteran with a diverse background.</p>
 </div>
 </div></div>
 </div>

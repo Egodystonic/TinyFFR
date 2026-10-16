@@ -73,10 +73,10 @@ class LocalScenePrimitivesTest {
 		Label(5.25f, "Line", orange);
 
 		// 9. Plane (semi-transparent back wall)
-		//Track(scene.AddPrimitiveShape(new Plane(Direction.Backward, new Location(0f, 1.5f, 3f)), new PrimitivePaintbrush(glass)));
+		Track(scene.AddPrimitiveShape(new Plane(Direction.Backward, new Location(0f, 1.5f, 3f)), new PrimitivePaintbrush(glass)));
 
 		// 10. Grid (floor, default red major / white minor / grey background)
-		//Track(scene.AddPrimitiveGrid(Location.Origin, gridSize: 14f));
+		Track(scene.AddPrimitiveGrid(Location.Origin, gridSize: 14f));
 
 		// 11. String (title billboard)
 		Track(scene.AddPrimitiveString(new Location(0f, 3f, 0f), "Scene Primitives", new PrimitivePaintbrush(ColorVect.WhiteOpaque, ColorVect.BlackOpaque), ScenePrimitiveSize.VeryLarge));
