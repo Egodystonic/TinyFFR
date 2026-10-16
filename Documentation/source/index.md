@@ -330,14 +330,14 @@ Avalonia, WPF, WinForms &amp; ImGui Integration :material-drag-vertical-variant:
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_source.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Source Linked & Debug Symbols Embedded</p>
 <p>The main library and all satellite libraries are debuggable from inside your IDE, with full external sources enabled.</p>
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
-<img src="index_test.jpg" alt="" loading="lazy">
+<img src="index_documentation.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Class-Leading Documentation</p>
 <p>Every public API member documented; backed up by tutorials, example applications, and reference docs online. All actually written and reviewed by a real human.</p>

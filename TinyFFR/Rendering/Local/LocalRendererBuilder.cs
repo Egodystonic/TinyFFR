@@ -186,6 +186,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 	const string DefaultRenderOutputBufferName = "Unnamed Render Output Buffer";
 	const string SnapshotBufferName = "Snapshot Buffer";
 	const string SnapshotRendererName = "Snapshot Renderer";
+	static readonly RenderQualityConfig PickRenderQualityConfig = new(BuiltInQualityConfiguration.DebugAndDiagnostic);
 	const int ScreenshotWarmUpFrameCount = 1;
 	const int ScreenshotTemporalAntiAliasingWarmUpFrameCount = 32;
 	const int MaxRowFlipWorkerThreads = 8;
@@ -859,7 +860,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		for (var i = 0; i < frameCount; ++i) renderer.Render();
 	}
 
-	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(ResourceHandle<Renderer> handle, XYPair<int>? captureResolution) {
+	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(ResourceHandle<Renderer> handle, XYPair<int>? captureResolution, RenderQualityConfig? qualityOverride = null) {
 		RefreshViewportBeforeSurfaceQuery(handle);
 		var data = _loadedRenderers[handle];
 		var buffer = CreateRenderOutputBuffer(new() {
@@ -870,7 +871,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			AutoUpdateCameraAspectRatio = false,
 			GpuSynchronizationFrameBufferCount = 0,
 			Name = SnapshotRendererName,
-			Quality = data.Quality
+			Quality = qualityOverride ?? data.Quality
 		});
 		return (buffer, renderer);
 	}
@@ -964,7 +965,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		if (viewportCoord.X < 0 || viewportCoord.Y < 0 || viewportCoord.X >= viewportSize.X || viewportCoord.Y >= viewportSize.Y) return default;
 
 		var rendererData = _loadedRenderers[handle];
-		var (buffer, pickRenderer) = SetUpScreenshotCapture(handle, viewportSize);
+		var (buffer, pickRenderer) = SetUpScreenshotCapture(handle, viewportSize, PickRenderQualityConfig);
 		try {
 			var pickRendererHandle = pickRenderer.Handle;
 			var pickRendererData = _loadedRenderers[pickRendererHandle];
