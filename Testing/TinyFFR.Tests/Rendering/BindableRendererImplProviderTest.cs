@@ -267,4 +267,66 @@ class BindableRendererImplProviderTest {
 		Assert.AreEqual(bufferCountAfterFirstStart, _builder.CreatedBuffers.Count);
 		Assert.AreEqual(new XYPair<int>(200, 100), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}
+
+	sealed class RecordingGpuFrameSink : IBindableRendererGpuFrameSink {
+		public int AttachedCount { get; private set; }
+		public int DetachedCount { get; private set; }
+		public int FrameCount { get; private set; }
+		public bool CanAcceptFrame => true;
+		public void OnSurfaceAttached(ExportableRenderSurface surface, IBindableRendererGpuFrameSource source) => AttachedCount++;
+		public void OnSurfaceDetached(ExportableRenderSurface surface) => DetachedCount++;
+		public void OnFrameRendered(ExportableRenderSurface surface) => FrameCount++;
+	}
+
+	[Test]
+	public void ShouldDeclineGpuFramesWhenBuilderDoesNotSupportExportableSurfaces() {
+		var renderer = CreateRenderer();
+		var sink = new RecordingGpuFrameSink();
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), sink));
+		Assert.AreEqual(0, _builder.ExportableRenderSurfaceCreationAttempts);
+		Assert.AreEqual(1, _builder.CreatedRenderers.Count);
+		Assert.AreEqual(0, sink.AttachedCount);
+
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), (100, 50), NoopFrameHandler);
+		Assert.AreEqual(2, _builder.CreatedRenderers.Count);
+	}
+
+	[Test]
+	public void ShouldDeclineGpuFramesWhenCpuRenderBufferIsPreferred() {
+		_builder.ExportableRenderSurfaceCapabilities = new(ExportableRenderSurfaceHandleType.OpaqueFileDescriptor, ExportableRenderSurfaceSyncKind.Semaphores);
+		var renderer = CreateRenderer(new BindableRendererCreationConfig { PreferCpuRenderBuffer = true });
+		var sink = new RecordingGpuFrameSink();
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), sink));
+		Assert.AreEqual(0, _builder.ExportableRenderSurfaceCreationAttempts);
+		Assert.AreEqual(1, _builder.CreatedRenderers.Count);
+		Assert.AreEqual(0, sink.AttachedCount);
+	}
+
+	[Test]
+	public void ShouldAttemptGpuSurfaceCreationWhenSupportedAndNotPreferringCpu() {
+		_builder.ExportableRenderSurfaceCapabilities = new(ExportableRenderSurfaceHandleType.OpaqueFileDescriptor, ExportableRenderSurfaceSyncKind.Semaphores);
+		var renderer = CreateRenderer();
+		var sink = new RecordingGpuFrameSink();
+
+		Assert.Throws<NotSupportedException>(() => BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), sink));
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
+	}
+
+	[Test]
+	public void ShouldDeriveMaxFramesInFlightFromGpuSynchronizationFrameBufferCount() {
+		int MaxFramesInFlightFor(int gpuSynchronizationFrameBufferCount) {
+			var renderer = CreateRenderer(new BindableRendererCreationConfig { GpuSynchronizationFrameBufferCount = gpuSynchronizationFrameBufferCount });
+			return ((IBindableRendererGpuFrameSource) renderer.Implementation).MaxFramesInFlight;
+		}
+
+		Assert.AreEqual(2, MaxFramesInFlightFor(-1));
+		Assert.AreEqual(1, MaxFramesInFlightFor(0));
+		Assert.AreEqual(1, MaxFramesInFlightFor(1));
+		Assert.AreEqual(2, MaxFramesInFlightFor(2));
+		Assert.AreEqual(3, MaxFramesInFlightFor(3));
+		Assert.AreEqual(3, MaxFramesInFlightFor(5));
+		Assert.AreEqual(3, ((IBindableRendererGpuFrameSource) CreateRenderer().Implementation).MaxFramesInFlight);
+	}
 }

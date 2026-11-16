@@ -213,6 +213,15 @@ sealed class FakeRendererBuilder : IRendererBuilder {
 	public readonly List<FakeRendererImplProvider> CreatedRenderers = new();
 	public readonly List<FakeRenderOutputBufferImplProvider> CreatedBuffers = new();
 	public readonly List<FakeCompositorImplProvider> CreatedCompositors = new();
+	public ExportableRenderSurfaceCapabilities ExportableRenderSurfaceCapabilities { get; set; } = ExportableRenderSurfaceCapabilities.None;
+	public int ExportableRenderSurfaceCreationAttempts { get; private set; }
+
+	public ExportableRenderSurfaceCapabilities GetExportableRenderSurfaceCapabilities() => ExportableRenderSurfaceCapabilities;
+
+	public ExportableRenderSurface CreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
+		ExportableRenderSurfaceCreationAttempts++;
+		throw new NotSupportedException();
+	}
 
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
 		var impl = new FakeRendererImplProvider(++_previousHandleId, scene, camera, (RenderOutputBuffer) (object) renderTarget, in config);

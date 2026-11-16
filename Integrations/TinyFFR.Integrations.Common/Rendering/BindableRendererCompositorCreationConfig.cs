@@ -27,6 +27,8 @@ public readonly ref struct BindableRendererCompositorCreationConfig {
 	/// </remarks>
 	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
 
+	public bool PreferCpuRenderBuffer { get; init; } = BindableRendererCreationConfig.DefaultPreferCpuRenderBuffer;
+
 	/// <summary>
 	/// The name to give the compositor. May be left empty.
 	/// </summary>

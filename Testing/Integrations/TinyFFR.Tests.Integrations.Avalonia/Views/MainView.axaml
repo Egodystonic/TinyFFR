@@ -36,6 +36,8 @@
                 <Button Command="{Binding RenderOnceCommand}" Content="Render once" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
                 <TextBlock FontSize="11" Opacity="0.75" Text="Right-click the scene to pick a model instance (a magenta dot marks the picked point)." TextWrapping="Wrap" />
                 <CheckBox Content="Composite mode" IsChecked="{Binding UseCompositor}" />
+                <CheckBox Content="Prefer CPU render buffer" IsChecked="{Binding PreferCpuRenderBuffer}" />
+                <CheckBox Content="Use dispatcher timer loop (instead of animation frames)" IsChecked="{Binding UseDispatcherLoop}" />
                 <CheckBox Content="Overlay enabled" IsChecked="{Binding OverlayEnabled}" IsEnabled="{Binding UseCompositor}" />
                 <TextBlock Text="Internal render resolution" />
                 <ComboBox
@@ -48,6 +50,15 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+                <TextBlock Text="GPU synchronization frame buffer count" />
+                <NumericUpDown
+                    HorizontalAlignment="Stretch"
+                    Minimum="0"
+                    Maximum="5"
+                    Increment="1"
+                    FormatString="0"
+                    AllowSpin="True"
+                    Value="{Binding GpuSynchronizationFrameBufferCount}" />
                 <TextBlock Text="Max internal render resolution" />
                 <ComboBox
                     HorizontalAlignment="Stretch"
@@ -134,6 +145,16 @@
                 InternalRenderResolution="{Binding InternalRenderResolution}"
                 InternalRenderResolutionMax="{Binding InternalRenderResolutionMax}"
                 Renderer="{Binding Renderer}" />
+            <Border
+                Background="#B0000000"
+                CornerRadius="4"
+                HorizontalAlignment="Left"
+                IsHitTestVisible="False"
+                Margin="8"
+                Padding="6,3"
+                VerticalAlignment="Top">
+                <TextBlock FontFamily="monospace" FontSize="12" Foreground="White" Text="{Binding PerformanceText}" />
+            </Border>
             <Border Background="#B0000000" IsHitTestVisible="False" IsVisible="{Binding IsAwaitingFirstModel}">
                 <TextBlock
                     FontSize="20"

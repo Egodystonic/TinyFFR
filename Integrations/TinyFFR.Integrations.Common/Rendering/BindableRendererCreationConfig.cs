@@ -40,6 +40,7 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	/// The default value for <see cref="DefaultBufferSize"/>: <c>(960, 540)</c>.
 	/// </summary>
 	public static readonly XYPair<int> DefaultDefaultBufferSize = (960, 540);
+	public const bool DefaultPreferCpuRenderBuffer = false;
 
 	/// <summary>
 	/// The size the renderer's internal buffer starts at, in pixels. Defaults to <see cref="DefaultDefaultBufferSize"/>: <c>(960, 540)</c>.
@@ -49,6 +50,8 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	/// only governs the very first frame. Both components must be positive.
 	/// </remarks>
 	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
+
+	public bool PreferCpuRenderBuffer { get; init; } = DefaultPreferCpuRenderBuffer;
 
 	/// <summary>
 	/// The settings common to every renderer, such as its name and quality configuration.
@@ -119,19 +122,23 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	/// <inheritdoc />
 	public static int GetHeapStorageFormattedLength(in BindableRendererCreationConfig src) {
 		return	SerializationSizeOf<XYPair<int>>() // DefaultBufferSize
+			+	SerializationSizeOfBool()
 			+	SerializationSizeOfSubConfig(src.BaseConfig); // BaseConfig
 	}
 	/// <inheritdoc />
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in BindableRendererCreationConfig src) {
 		SerializationWrite(ref dest, src.DefaultBufferSize);
+		SerializationWriteBool(ref dest, src.PreferCpuRenderBuffer);
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
 	}
 	/// <inheritdoc />
 	public static BindableRendererCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		var bufferSize = SerializationRead<XYPair<int>>(ref src);
+		var preferCpuRenderBuffer = SerializationReadBool(ref src);
 		var subConfig = SerializationReadSubConfig<RendererCreationConfig>(ref src);
 		return new() {
 			DefaultBufferSize = bufferSize,
+			PreferCpuRenderBuffer = preferCpuRenderBuffer,
 			BaseConfig = subConfig,
 			Quality = subConfig.Quality
 		};

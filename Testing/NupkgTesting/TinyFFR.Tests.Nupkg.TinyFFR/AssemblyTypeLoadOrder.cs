@@ -22,6 +22,7 @@ sealed class AssemblyTypeLoadOrderAnchor {
 	DirectionalLight _directionalLight;
 	DynamicVertexBuffer _dynamicVertexBuffer;
 	Display _display;
+	ExportableRenderSurface _exportableRenderSurface;
 	Font _font;
 	FontPen _fontPen;
 	FontString _fontString;

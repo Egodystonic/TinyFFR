@@ -3,6 +3,7 @@
 
 #include "utils_and_constants.h"
 #include "assets/native_impl_texture_compression.h"
+#include "scene/native_impl_exportable_surface.h"
 #include "sdl/SDL.h"
 #include "filament/utils/Log.h"
 
@@ -73,13 +74,21 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 	auto backend = (renderingApiIndex == RENDERING_API_OPENGL ? filament::Engine::Backend::OPENGL : filament::Engine::Backend::VULKAN);
 #endif
 	
-	filament_engine_ptr = filament::Engine::Builder()
+	auto builder = filament::Engine::Builder();
+	builder
 		.backend(backend)
 		.featureLevel(filament::Engine::FeatureLevel::FEATURE_LEVEL_3)
-		.config(&config)
-		.build();
+		.config(&config);
+#if defined(TFFR_LINUX)
+	tffr_vulkan_platform::instance = new tffr_vulkan_platform();
+	builder.platform(tffr_vulkan_platform::instance);
+#endif
+	filament_engine_ptr = builder.build();
 
 	ThrowIfNull(filament_engine_ptr, "Could not initialize filament.");
+#if defined(TFFR_LINUX)
+	tffr_vulkan_platform::instance->evaluate_export_support();
+#endif
 
 	native_impl_texture_compression::initialize_encoders();
 }
@@ -89,8 +98,10 @@ StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBu
 }
 void native_impl_init::on_factory_teardown() {
 	vsync_enabled = interop_bool_true;
-	if (filament_engine_ptr == nullptr) return;
-	filament::Engine::destroy(&filament_engine_ptr);
+	if (filament_engine_ptr != nullptr) filament::Engine::destroy(&filament_engine_ptr);
+#if defined(TFFR_LINUX)
+	DeleteAndNull(tffr_vulkan_platform::instance);
+#endif
 }
 StartExportedFunc(on_factory_teardown) {
 	native_impl_init::on_factory_teardown();

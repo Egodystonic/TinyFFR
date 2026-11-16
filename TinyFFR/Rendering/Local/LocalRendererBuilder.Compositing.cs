@@ -317,9 +317,10 @@ sealed partial class LocalRendererBuilder {
 			GpuSynchronizationFrameBufferCount = -1,
 			Name = RateLimitProxyRendererName
 		};
-		var proxyRenderer = compositorTarget.IsWindow
-			? CreateRenderer(proxyScene, compositorTarget.AsWindow, in proxyConfig)
-			: CreateRenderer(proxyScene, compositorTarget.AsBuffer, in proxyConfig);
+		Renderer proxyRenderer;
+		if (compositorTarget.IsWindow) proxyRenderer = CreateRenderer(proxyScene, compositorTarget.AsWindow, in proxyConfig);
+		else if (compositorTarget.IsExportableSurface) proxyRenderer = CreateRenderer(proxyScene, compositorTarget.AsExportableSurface, in proxyConfig);
+		else proxyRenderer = CreateRenderer(proxyScene, compositorTarget.AsBuffer, in proxyConfig);
 
 		RedirectViewToRateLimitBuffer(renderer, privateBuffer);
 
@@ -493,6 +494,7 @@ sealed partial class LocalRendererBuilder {
 
 		if (data.RenderTarget.IsWindow) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsWindow);
 		if (data.RenderTarget.IsBuffer) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsBuffer);
+		if (data.RenderTarget.IsExportableSurface) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsExportableSurface);
 
 		_compositedRendererVectorPool.Return(data.AddedRenderers);
 		_globals.DisposeResourceNameIfExists(handle.Ident);

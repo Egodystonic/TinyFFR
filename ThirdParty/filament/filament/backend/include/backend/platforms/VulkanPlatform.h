@@ -259,6 +259,7 @@ public:
      * @return          A set of extensions to enable for the instance.
      */
     virtual ExtensionSet getRequiredInstanceExtensions() { return {}; }
+    virtual ExtensionSet getRequiredDeviceExtensions() { return {}; }
 
     /**
      * Destroy the swapchain.

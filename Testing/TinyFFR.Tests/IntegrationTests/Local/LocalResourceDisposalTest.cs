@@ -311,6 +311,23 @@ class LocalResourceDisposalTest {
 			v => _ = v.TextureDimensions
 		};
 		AssertUseAfterDisposalThrowsException(rendererBuilder.CreateRenderOutputBuffer(), objectIsAlreadyDisposed: false, renderBufferActions);
+		if (rendererBuilder.GetExportableRenderSurfaceCapabilities().IsSupported) {
+			var exportableSurfaceActions = new Action<ExportableRenderSurface>[] {
+				v => _ = v.Handle,
+				v => _ = v.GetNameAsNewStringObject(),
+				v => _ = v.GetNameLength(),
+				v => v.CopyName(_nameDestinationBuffer),
+				v => _ = v.Dimensions,
+				v => v.Dimensions = (100, 100),
+				v => _ = v.Capabilities,
+				v => _ = v.ImageCount,
+				v => _ = v.CurrentImageSet,
+				v => v.CopyDeviceUuid(new byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes]),
+				v => v.TryTakeLatestPresentedImage(out _, out _),
+				v => v.ReturnImage(0, 0, false)
+			};
+			AssertUseAfterDisposalThrowsException(rendererBuilder.CreateExportableRenderSurface(), objectIsAlreadyDisposed: false, exportableSurfaceActions);
+		}
 		var compositor = rendererBuilder.CreateCompositor(window);
 		var compositorActions = new Action<RendererCompositor>[] {
 			v => _ = v.Handle,

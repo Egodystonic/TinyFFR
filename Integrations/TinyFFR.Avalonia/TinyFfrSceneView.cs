@@ -35,8 +35,11 @@ namespace Egodystonic.TinyFFR.Avalonia;
 /// </para>
 /// </remarks>
 public class TinyFfrSceneView : Control {
+	readonly GpuSharedFramePresenter _gpuPresenter;
 	WriteableBitmap? _bitmap;
 	TopLevel? _scalingChangeSubscriptionTarget;
+	long _cpuFramesDrawn;
+	bool _hasUndrawnCpuFrame;
 
 	/// <summary>
 	/// Identifies the <see cref="Renderer"/> property.
@@ -167,7 +170,12 @@ public class TinyFfrSceneView : Control {
 	/// </remarks>
 	public TinyFfrSceneView() {
 		Focusable = true;
+		_gpuPresenter = new GpuSharedFramePresenter(this, IdempotentlyUpdateRendererStateAccordingToControlState);
 	}
+
+	public bool IsUsingGpuSharedFrames => _gpuPresenter.IsPresenting;
+
+	public long DisplayedFrameCount => _cpuFramesDrawn + _gpuPresenter.DisplayedFrameCount;
 
 	/// <summary>
 	/// Takes keyboard focus when the control is clicked, then defers to the base implementation.
@@ -213,6 +221,7 @@ public class TinyFfrSceneView : Control {
 			IntegrationUtils.BlitFrame(texels, dimensions, (byte*) lockedBuffer.Address, lockedBuffer.RowBytes, swapRedAndBlue: false);
 		}
 
+		_hasUndrawnCpuFrame = true;
 		InvalidateVisual();
 	}
 
@@ -229,6 +238,10 @@ public class TinyFfrSceneView : Control {
 		}
 
 		context.DrawImage(_bitmap, new Rect(Bounds.Size));
+		if (_hasUndrawnCpuFrame) {
+			_hasUndrawnCpuFrame = false;
+			_cpuFramesDrawn++;
+		}
 	}
 
 	/// <summary>
@@ -240,6 +253,8 @@ public class TinyFfrSceneView : Control {
 		// A scaling change usually leaves the device-independent Bounds untouched, so watching BoundsProperty alone is not enough
 		_scalingChangeSubscriptionTarget = TopLevel.GetTopLevel(this);
 		if (_scalingChangeSubscriptionTarget != null) _scalingChangeSubscriptionTarget.ScalingChanged += HandleScalingChanged;
+		_gpuPresenter.SetVisualSize(Bounds.Size);
+		_gpuPresenter.OnAttachedToVisualTree();
 		IdempotentlyUpdateRendererStateAccordingToControlState();
 	}
 
@@ -254,6 +269,7 @@ public class TinyFfrSceneView : Control {
 		}
 		base.OnDetachedFromVisualTree(e);
 		IdempotentlyUpdateRendererStateAccordingToControlState();
+		_gpuPresenter.OnDetachedFromVisualTree();
 	}
 
 	void HandleScalingChanged(object? sender, EventArgs e) => IdempotentlyUpdateRendererStateAccordingToControlState();
@@ -267,6 +283,7 @@ public class TinyFfrSceneView : Control {
 	/// <param name="change">The event data.</param>
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
 		base.OnPropertyChanged(change);
+		if (change.Property == BoundsProperty) _gpuPresenter.SetVisualSize(Bounds.Size);
 		if (change.Property == IsVisibleProperty || change.Property == BoundsProperty || change.Property == InternalRenderResolutionProperty || change.Property == InternalRenderResolutionMaxProperty) {
 			IdempotentlyUpdateRendererStateAccordingToControlState();
 		}
@@ -319,7 +336,27 @@ public class TinyFfrSceneView : Control {
 			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
 		}
 
-		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
-		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		if (rendererLocal != null) {
+			if (_gpuPresenter.IsUsable && BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, _gpuPresenter)) {
+				if (_bitmap != null) {
+					_bitmap.Dispose();
+					_bitmap = null;
+					InvalidateVisual();
+				}
+				return;
+			}
+			BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		}
+		else {
+			if (_gpuPresenter.IsUsable && BindableRendererCompositorImplProvider.TryStartOrContinueHandlingGpuFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, _gpuPresenter)) {
+				if (_bitmap != null) {
+					_bitmap.Dispose();
+					_bitmap = null;
+					InvalidateVisual();
+				}
+				return;
+			}
+			BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		}
 	}
 }

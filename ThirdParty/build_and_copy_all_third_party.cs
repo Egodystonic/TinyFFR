@@ -309,6 +309,9 @@ void CopyLib(string lib, string configuration) {
 
 				CopyDirectory(interimInstallDir, destinationHeadersDir, h, installDirTranslations[lib]);
 			}
+			if (lib == LibFilament) {
+				CopyDirectory(Path.Combine(GetThirdPartyRepoRootPath(lib), "libs", "bluevk"), destinationHeadersDir, "include", fileData => fileData.RelativeDestination);
+			}
 		}
 
 		var destinationBinariesDir = GetDestinationBinariesPath(lib, configuration);

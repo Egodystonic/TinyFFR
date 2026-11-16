@@ -4,6 +4,8 @@
 using System;
 using System.Numerics;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Egodystonic.TinyFFR.Avalonia.Input;
@@ -19,13 +21,79 @@ namespace Egodystonic.TinyFFR.Avalonia;
 /// Extension types specifically for integrating TinyFFR and Avalonia.
 /// </summary>
 public static class TinyFfrAvaloniaExtensions {
-	sealed record UiLoopCompositeDisposable(ApplicationLoop Loop, CancellationTokenSource TokenSource, IDisposable DispatcherTimerDisposable, IDisposable? InputSource) : IDisposable {
+	sealed record UiLoopCompositeDisposable(ApplicationLoop Loop, CancellationTokenSource TokenSource, IDisposable TickSourceDisposable, IDisposable? InputSource) : IDisposable {
 		public void Dispose() {
 			TokenSource.Cancel();
 			TokenSource.Dispose();
 			Loop.Dispose();
-			DispatcherTimerDisposable.Dispose();
+			TickSourceDisposable.Dispose();
 			InputSource?.Dispose();
+		}
+	}
+
+	sealed class AnimationFrameTickSource : IDisposable {
+		static readonly TimeSpan TopLevelUnavailableRetryInterval = TimeSpan.FromMilliseconds(16d);
+		readonly Func<TopLevel?> _topLevelResolver;
+		readonly Action _tick;
+		readonly Action<TimeSpan> _onAnimationFrame;
+		readonly Action _retryScheduling;
+		readonly Visual? _attachmentSource;
+		TimeSpan? _lastHandledFrameTime;
+		bool _frameRequestPending;
+		bool _retryPending;
+		bool _isDisposed;
+
+		public AnimationFrameTickSource(Func<TopLevel?> topLevelResolver, Visual? attachmentSource, Action tick) {
+			_topLevelResolver = topLevelResolver;
+			_attachmentSource = attachmentSource;
+			_tick = tick;
+			_onAnimationFrame = OnAnimationFrame;
+			_retryScheduling = RetryScheduling;
+			if (_attachmentSource != null) {
+				_attachmentSource.AttachedToVisualTree += HandleAttachedToVisualTree;
+				_attachmentSource.DetachedFromVisualTree += HandleDetachedFromVisualTree;
+			}
+			ScheduleNextFrame();
+		}
+
+		void HandleAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e) => ScheduleNextFrame();
+		void HandleDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e) => _frameRequestPending = false;
+
+		void RetryScheduling() {
+			_retryPending = false;
+			ScheduleNextFrame();
+		}
+
+		void ScheduleNextFrame() {
+			if (_isDisposed || _frameRequestPending) return;
+
+			var topLevel = _topLevelResolver();
+			if (topLevel == null) {
+				if (_retryPending) return;
+				_retryPending = true;
+				DispatcherTimer.RunOnce(_retryScheduling, TopLevelUnavailableRetryInterval);
+				return;
+			}
+
+			_frameRequestPending = true;
+			topLevel.RequestAnimationFrame(_onAnimationFrame);
+		}
+
+		void OnAnimationFrame(TimeSpan frameTime) {
+			if (_isDisposed || _lastHandledFrameTime == frameTime) return;
+			_lastHandledFrameTime = frameTime;
+			_frameRequestPending = false;
+			_tick();
+			ScheduleNextFrame();
+		}
+
+		public void Dispose() {
+			if (_isDisposed) return;
+			_isDisposed = true;
+			if (_attachmentSource != null) {
+				_attachmentSource.AttachedToVisualTree -= HandleAttachedToVisualTree;
+				_attachmentSource.DetachedFromVisualTree -= HandleDetachedFromVisualTree;
+			}
 		}
 	}
 
@@ -52,8 +120,9 @@ public static class TinyFfrAvaloniaExtensions {
 	/// <param name="tickRateHz">How many times per second to tick. Defaults to <c>60</c>. The framework's own compositor and dispatcher may cap the rate achieved, and the interval between ticks will vary more than in a standalone application. Values of zero or less are treated as the default.</param>
 	/// <param name="priority">The dispatcher priority to schedule the tick at.</param>
 	/// <param name="name">The name to give the underlying application loop resource. May be left empty.</param>
-	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = default, ReadOnlySpan<char> name = default) {
-		return StartAvaloniaUiLoop(@this, tickCallback, null, tickRateHz, priority, name);
+	public static IDisposable StartAvaloniaUiLoopViaDispatcher(this ILocalApplicationLoopBuilder @this, Action<TimeSpan> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = default, ReadOnlySpan<char> name = default) {
+		ArgumentNullException.ThrowIfNull(tickCallback);
+		return StartAvaloniaDispatcherLoop(@this, tickCallback, null, tickRateHz, priority, name);
 	}
 
 	/// <summary>
@@ -83,25 +152,12 @@ public static class TinyFfrAvaloniaExtensions {
 	/// <param name="tickRateHz">How many times per second to tick. Defaults to <c>60</c>. The framework's own compositor and dispatcher may cap the rate achieved, and the interval between ticks will vary more than in a standalone application. Values of zero or less are treated as the default.</param>
 	/// <param name="priority">The dispatcher priority to schedule the tick at.</param>
 	/// <param name="name">The name to give the underlying application loop resource. May be left empty.</param>
-	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, InputElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = default, ReadOnlySpan<char> name = default) {
+	public static IDisposable StartAvaloniaUiLoopViaDispatcher(this ILocalApplicationLoopBuilder @this, InputElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = default, ReadOnlySpan<char> name = default) {
 		ArgumentNullException.ThrowIfNull(tickCallback);
 		ArgumentNullException.ThrowIfNull(inputSource);
-
 		var uiInputSource = new UiInputSource(inputSource);
 		try {
-			return StartAvaloniaUiLoop(
-				@this,
-				deltaTime => {
-					// ReSharper disable AccessToDisposedClosure Closed-over var is only disposed if loop creation fails anyway
-					uiInputSource.Iterate();
-					tickCallback(deltaTime, uiInputSource.Retriever);
-					// ReSharper restore AccessToDisposedClosure
-				},
-				uiInputSource,
-				tickRateHz,
-				priority,
-				name
-			);
+			return StartAvaloniaDispatcherLoop(@this, CreateUiInputTickCallback(uiInputSource, tickCallback), uiInputSource, tickRateHz, priority, name);
 		}
 		catch {
 			uiInputSource.Dispose();
@@ -109,15 +165,73 @@ public static class TinyFfrAvaloniaExtensions {
 		}
 	}
 
-	static IDisposable StartAvaloniaUiLoop(ILocalApplicationLoopBuilder builder, Action<TimeSpan> tickCallback, IDisposable? inputSource, int tickRateHz, DispatcherPriority priority, ReadOnlySpan<char> name) {
-		if (tickRateHz <= 0) tickRateHz = DefaultUiLoopTickRateHz;
+	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan> tickCallback, int? frameRateCapHz = null, ReadOnlySpan<char> name = default) {
+		ArgumentNullException.ThrowIfNull(tickCallback);
+		return StartAvaloniaAnimationFrameLoop(@this, tickCallback, null, null, frameRateCapHz, name);
+	}
 
-		var loop = builder.CreateLoop(new LocalApplicationLoopCreationConfig {
-			FrameRateCapHz = null,
+	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, InputElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int? frameRateCapHz = null, ReadOnlySpan<char> name = default) {
+		ArgumentNullException.ThrowIfNull(tickCallback);
+		ArgumentNullException.ThrowIfNull(inputSource);
+		var uiInputSource = new UiInputSource(inputSource);
+		try {
+			return StartAvaloniaAnimationFrameLoop(@this, CreateUiInputTickCallback(uiInputSource, tickCallback), uiInputSource, inputSource, frameRateCapHz, name);
+		}
+		catch {
+			uiInputSource.Dispose();
+			throw;
+		}
+	}
+
+	static Action<TimeSpan> CreateUiInputTickCallback(UiInputSource uiInputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback) {
+		return deltaTime => {
+			uiInputSource.Iterate();
+			tickCallback(deltaTime, uiInputSource.Retriever);
+		};
+	}
+
+	static ApplicationLoop CreateUiDrivenLoop(ILocalApplicationLoopBuilder builder, int? frameRateCapHz, ReadOnlySpan<char> name) {
+		return builder.CreateLoop(new LocalApplicationLoopCreationConfig {
+			FrameRateCapHz = frameRateCapHz,
 			IterationShouldPumpSystemEventQueue = false,
 			Name = name,
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.Zero
 		});
+	}
+
+	static IDisposable StartAvaloniaAnimationFrameLoop(ILocalApplicationLoopBuilder builder, Action<TimeSpan> tickCallback, IDisposable? inputSource, Visual? topLevelSource, int? frameRateCapHz, ReadOnlySpan<char> name) {
+		var loop = CreateUiDrivenLoop(builder, frameRateCapHz, name);
+		var cancellationTokenSource = new CancellationTokenSource();
+		var stopToken = cancellationTokenSource.Token;
+
+		Func<TopLevel?> topLevelResolver = topLevelSource != null
+			? () => TopLevel.GetTopLevel(topLevelSource)
+			: ResolveApplicationTopLevel;
+
+		var tickSource = new AnimationFrameTickSource(
+			topLevelResolver,
+			topLevelSource,
+			() => {
+				if (stopToken.IsCancellationRequested) return;
+				if (loop.TryIterateOnce(out var deltaTime)) tickCallback(deltaTime);
+			}
+		);
+
+		return new UiLoopCompositeDisposable(loop, cancellationTokenSource, tickSource, inputSource);
+	}
+
+	static TopLevel? ResolveApplicationTopLevel() {
+		return Application.Current?.ApplicationLifetime switch {
+			IClassicDesktopStyleApplicationLifetime desktop => desktop.MainWindow,
+			ISingleViewApplicationLifetime singleView => singleView.MainView != null ? TopLevel.GetTopLevel(singleView.MainView) : null,
+			_ => null
+		};
+	}
+
+	static IDisposable StartAvaloniaDispatcherLoop(ILocalApplicationLoopBuilder builder, Action<TimeSpan> tickCallback, IDisposable? inputSource, int tickRateHz, DispatcherPriority priority, ReadOnlySpan<char> name) {
+		if (tickRateHz <= 0) tickRateHz = DefaultUiLoopTickRateHz;
+
+		var loop = CreateUiDrivenLoop(builder, null, name);
 		var dispatcherTimerCancellationTokenSource = new CancellationTokenSource();
 		var stopToken = dispatcherTimerCancellationTokenSource.Token;
 
