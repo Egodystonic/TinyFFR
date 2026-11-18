@@ -5,6 +5,46 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
+public enum ExportableRenderSurfaceHandleType {
+	None = 0,
+	VulkanOpaqueFileDescriptor = 1
+}
+
+public enum ExportableRenderSurfaceSyncKind {
+	None = 0,
+	VulkanOpaqueFileDescriptorSemaphores = 1
+}
+
+public readonly record struct ExportableRenderSurfaceImageSet {
+	readonly ExportableRenderSurface _surface;
+
+	public int Generation { get; }
+	public XYPair<int> Dimensions { get; }
+	public int ImageCount => _surface.ImageCount;
+
+	internal ExportableRenderSurfaceImageSet(ExportableRenderSurface surface, int generation, XYPair<int> dimensions) {
+		_surface = surface;
+		Generation = generation;
+		Dimensions = dimensions;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ExportedRenderSurfaceImage? ExtractImage(int index) => _surface.ExtractImage(Generation, index);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool TryTakeLatestPresentedImage(out int index) => _surface.TryTakeLatestPresentedImage(Generation, out index);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ReturnImage(int index, bool consumerSignalledRelease) => _surface.ReturnImage(Generation, index, consumerSignalledRelease);
+}
+
+public readonly record struct ExportedRenderSurfaceImage(ResourceHandle ImageHandle, long ImageSizeBytes, ResourceHandle ReadySemaphoreHandle, ResourceHandle ReleasedSemaphoreHandle);
+
+public readonly record struct ExportableRenderSurfaceCapabilities(ExportableRenderSurfaceHandleType HandleType, ExportableRenderSurfaceSyncKind SyncKind) {
+	public const int DeviceUuidLengthBytes = 16;
+	public static ExportableRenderSurfaceCapabilities None { get; } = new(ExportableRenderSurfaceHandleType.None, ExportableRenderSurfaceSyncKind.None);
+
+	public bool IsSupported => HandleType != ExportableRenderSurfaceHandleType.None && SyncKind != ExportableRenderSurfaceSyncKind.None;
+}
+
 public readonly struct ExportableRenderSurface : IDisposableResource<ExportableRenderSurface, IExportableRenderSurfaceImplProvider>, IRenderTarget {
 	readonly ResourceHandle<ExportableRenderSurface> _handle;
 	readonly IExportableRenderSurfaceImplProvider _impl;
@@ -37,7 +77,7 @@ public readonly struct ExportableRenderSurface : IDisposableResource<ExportableR
 
 	public ExportableRenderSurfaceImageSet? CurrentImageSet {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCurrentImageSet(_handle);
+		get => Implementation.TryGetCurrentImageSet(_handle, out var generation, out var dimensions) ? new ExportableRenderSurfaceImageSet(this, generation, dimensions) : null;
 	}
 
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
@@ -53,16 +93,14 @@ public readonly struct ExportableRenderSurface : IDisposableResource<ExportableR
 	public void CopyDeviceUuid(Span<byte> destination) => Implementation.CopyDeviceUuid(_handle, destination);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public nint ExportImage(int generation, int index, out long memorySizeBytes) => Implementation.ExportImage(_handle, generation, index, out memorySizeBytes);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ExportSemaphores(int generation, int index, out nint readySemaphoreHandle, out nint releasedSemaphoreHandle) => Implementation.ExportSemaphores(_handle, generation, index, out readySemaphoreHandle, out releasedSemaphoreHandle);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void CloseExportedHandle(nint exportedHandle) => Implementation.CloseExportedHandle(_handle, exportedHandle);
+	public void CloseExportedHandle(ResourceHandle exportedHandle) => Implementation.CloseExportedHandle(_handle, exportedHandle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryTakeLatestPresentedImage(out int generation, out int index) => Implementation.TryTakeLatestPresentedImage(_handle, out generation, out index);
+	internal ExportedRenderSurfaceImage? ExtractImage(int generation, int index) => Implementation.ExtractImage(_handle, generation, index);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ReturnImage(int generation, int index, bool consumerSignalledRelease) => Implementation.ReturnImage(_handle, generation, index, consumerSignalledRelease);
+	internal bool TryTakeLatestPresentedImage(int generation, out int index) => Implementation.TryTakeLatestPresentedImage(_handle, generation, out index);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void ReturnImage(int generation, int index, bool consumerSignalledRelease) => Implementation.ReturnImage(_handle, generation, index, consumerSignalledRelease);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

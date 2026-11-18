@@ -21,11 +21,10 @@ sealed class LocalExportableRenderSurfaceImplProvider : IExportableRenderSurface
 	public ExportableRenderSurfaceCapabilities GetCapabilities(ResourceHandle<ExportableRenderSurface> handle) => _owner.GetCapabilities(handle);
 	public void CopyDeviceUuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination) => _owner.CopyDeviceUuid(handle, destination);
 	public int GetImageCount(ResourceHandle<ExportableRenderSurface> handle) => _owner.GetImageCount(handle);
-	public ExportableRenderSurfaceImageSet? GetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle) => _owner.GetCurrentImageSet(handle);
-	public nint ExportImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, out long memorySizeBytes) => _owner.ExportImage(handle, generation, index, out memorySizeBytes);
-	public void ExportSemaphores(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, out nint readySemaphoreHandle, out nint releasedSemaphoreHandle) => _owner.ExportSemaphores(handle, generation, index, out readySemaphoreHandle, out releasedSemaphoreHandle);
-	public void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, nint exportedHandle) => _owner.CloseExportedHandle(handle, exportedHandle);
-	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, out int generation, out int index) => _owner.TryTakeLatestPresentedImage(handle, out generation, out index);
+	public bool TryGetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle, out int generation, out XYPair<int> dimensions) => _owner.TryGetCurrentImageSet(handle, out generation, out dimensions);
+	public ExportedRenderSurfaceImage? ExtractImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index) => _owner.ExtractImageDataHandles(handle, generation, index);
+	public void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, ResourceHandle exportedHandle) => _owner.CloseExportedHandle(handle, exportedHandle);
+	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index) => _owner.TryTakeLatestPresentedImage(handle, generation, out index);
 	public void ReturnImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, bool consumerSignalledRelease) => _owner.ReturnImage(handle, generation, index, consumerSignalledRelease);
 	public override string ToString() => _owner.ToString();
 }

@@ -25,7 +25,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	ExportableRenderSurface? _gpuSurface;
 	IBindableRendererGpuFrameSink? _gpuSink;
 	bool _hasDeferredGpuFrame;
-	bool? _gpuFramesAreSupportedByBuilder;
+	bool _gpuFramesUnsupportedByBuilder;
 	RendererCompositor _actualCompositor;
 	XYPair<int> _sharedBufferSizePixels;
 	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
@@ -79,7 +79,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	public static bool TryStartOrContinueHandlingGpuFrames(RendererCompositor c, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, IBindableRendererGpuFrameSink sink) {
 		ArgumentNullException.ThrowIfNull(sink);
 		var impl = GetBindableImplementationOrThrow(c);
-		if (!impl.GpuFramesAreSupported) return false;
+		if (impl._preferCpuRenderBuffer || impl._gpuFramesUnsupportedByBuilder) return false;
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
 		if (impl._gpuSurface is { } surface) {
@@ -96,8 +96,12 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 			return true;
 		}
 
+		if (impl.TryCreateSharedSurface(bufferSizePixels) is not { } newSurface) {
+			impl._gpuFramesUnsupportedByBuilder = true;
+			return false;
+		}
 		impl.DisposeSharedTargetAndCompositor();
-		impl.CreateSharedSurfaceAndCompositor(bufferSizePixels, sink);
+		impl.CreateCompositorOnSharedSurface(newSurface, bufferSizePixels, sink);
 		return true;
 	}
 
@@ -109,14 +113,6 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		}
 		impl._sharedBuffer.StopReadingFrames(cancelQueuedFrames: true);
 		impl._currentFrameHandler = null;
-	}
-
-	bool GpuFramesAreSupported {
-		get {
-			if (_preferCpuRenderBuffer) return false;
-			_gpuFramesAreSupportedByBuilder ??= _rendererBuilder.GetExportableRenderSurfaceCapabilities().IsSupported;
-			return _gpuFramesAreSupportedByBuilder.Value;
-		}
 	}
 
 	void RecreateSharedBufferAndCompositor(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
@@ -162,12 +158,15 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		RecreateAddedRenderersOnSharedTarget(_sharedBuffer);
 	}
 
-	void CreateSharedSurfaceAndCompositor(XYPair<int> size, IBindableRendererGpuFrameSink sink) {
-		_sharedBufferSizePixels = size;
-		var surface = _rendererBuilder.CreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
+	ExportableRenderSurface? TryCreateSharedSurface(XYPair<int> size) {
+		return _rendererBuilder.TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
 			Name = $"{_name} exportable surface",
 			Dimensions = size
 		});
+	}
+
+	void CreateCompositorOnSharedSurface(ExportableRenderSurface surface, XYPair<int> size, IBindableRendererGpuFrameSink sink) {
+		_sharedBufferSizePixels = size;
 		_gpuSurface = surface;
 		_currentFrameHandler = null;
 		_actualCompositor = _rendererBuilder.CreateCompositor(surface, _name);

@@ -132,6 +132,13 @@ var installDirTranslations = new Dictionary<string, Func<TargetFileData, string?
 	}
 };
 
+// Additional header source directories that we need to build TinyFFR.Native (not always exported by default)
+var additionalHeaderSourceDirs = new Dictionary<string, string[]> {
+	[LibAssimp] = [],
+	[LibFilament] = ["libs/bluevk/include"],
+	[LibSdl] = []
+};
+
 // ===================================================================================================================================
 // Script starts here
 // ===================================================================================================================================
@@ -309,8 +316,13 @@ void CopyLib(string lib, string configuration) {
 
 				CopyDirectory(interimInstallDir, destinationHeadersDir, h, installDirTranslations[lib]);
 			}
-			if (lib == LibFilament) {
-				CopyDirectory(Path.Combine(GetThirdPartyRepoRootPath(lib), "libs", "bluevk"), destinationHeadersDir, "include", fileData => fileData.RelativeDestination);
+			foreach (var additionalDir in additionalHeaderSourceDirs[lib]) {
+				var additionalDirFullPath = Path.Combine(GetThirdPartyRepoRootPath(lib), additionalDir);
+				if (!Directory.Exists(additionalDirFullPath)) {
+					throw new InvalidOperationException($"Additional header source directory '{additionalDirFullPath}' for {lib} does not exist.");
+				}
+
+				CopyDirectory(Path.GetDirectoryName(additionalDirFullPath)!, destinationHeadersDir, Path.GetFileName(additionalDirFullPath), fileData => fileData.RelativeDestination);
 			}
 		}
 

@@ -102,7 +102,10 @@ static partial class SmokeProbes {
 				run();
 				BenchmarkEnvironment.PumpGpuResourceReclamation();
 			}
+#pragma warning disable CA2014
+			// ReSharper disable once StackAllocInsideLoop
 			Span<long> series = stackalloc long[10];
+#pragma warning restore CA2014
 			for (var i = 0; i < series.Length; ++i) {
 				var before = GC.GetAllocatedBytesForCurrentThread();
 				run();

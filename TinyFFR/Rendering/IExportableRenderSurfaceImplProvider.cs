@@ -12,10 +12,9 @@ public interface IExportableRenderSurfaceImplProvider : IDisposableResourceImplP
 	ExportableRenderSurfaceCapabilities GetCapabilities(ResourceHandle<ExportableRenderSurface> handle);
 	void CopyDeviceUuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination);
 	int GetImageCount(ResourceHandle<ExportableRenderSurface> handle);
-	ExportableRenderSurfaceImageSet? GetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle);
-	nint ExportImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, out long memorySizeBytes);
-	void ExportSemaphores(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, out nint readySemaphoreHandle, out nint releasedSemaphoreHandle);
-	void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, nint exportedHandle);
-	bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, out int generation, out int index);
+	bool TryGetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle, out int generation, out XYPair<int> dimensions);
+	ExportedRenderSurfaceImage? ExtractImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index);
+	void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, ResourceHandle exportedHandle);
+	bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index);
 	void ReturnImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, bool consumerSignalledRelease);
 }

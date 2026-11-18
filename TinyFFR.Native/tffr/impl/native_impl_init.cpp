@@ -3,7 +3,7 @@
 
 #include "utils_and_constants.h"
 #include "assets/native_impl_texture_compression.h"
-#include "scene/native_impl_exportable_surface.h"
+#include "scene/native_impl_exportable_surface_vulkan.h"
 #include "sdl/SDL.h"
 #include "filament/utils/Log.h"
 

@@ -259,7 +259,9 @@ public:
      * @return          A set of extensions to enable for the instance.
      */
     virtual ExtensionSet getRequiredInstanceExtensions() { return {}; }
+    // === Begin TinyFFR Alteration ===
     virtual ExtensionSet getRequiredDeviceExtensions() { return {}; }
+    // === End TinyFFR Alteration ===
 
     /**
      * Destroy the swapchain.

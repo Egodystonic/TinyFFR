@@ -10,6 +10,7 @@ using Avalonia.Platform;
 using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Avalonia;
 
@@ -26,7 +27,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	CompositionSurfaceVisual? _visual;
 	CompositionDrawingSurface? _drawingSurface;
 	ExportableRenderSurface? _surface;
-	int _importedGeneration = -1;
+	ExportableRenderSurfaceImageSet? _importedImageSet;
 	int _importedImageCount = 0;
 	int _attachmentVersion = 0;
 	int _sessionVersion = 0;
@@ -126,8 +127,8 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 
 	static bool SurfaceIsCompatible(ExportableRenderSurface surface, ICompositionGpuInterop interop) {
 		var capabilities = surface.Capabilities;
-		if (capabilities.HandleType != ExportableRenderSurfaceHandleType.OpaqueFileDescriptor) return false;
-		if (capabilities.SyncKind != ExportableRenderSurfaceSyncKind.Semaphores) return false;
+		if (capabilities.HandleType != ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor) return false;
+		if (capabilities.SyncKind != ExportableRenderSurfaceSyncKind.VulkanOpaqueFileDescriptorSemaphores) return false;
 		if (surface.ImageCount > MaxImageCount) return false;
 
 		var interopUuid = interop.DeviceUuid;
@@ -145,22 +146,17 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		}
 		if (surface.CurrentImageSet is not { } imageSet) return;
 
-		if (imageSet.Generation != _importedGeneration) {
+		if (imageSet.Generation != _importedImageSet?.Generation) {
 			if (!_importInProgress && _updatesInFlight == 0) _ = ReimportAsync(surface, imageSet, _sessionVersion);
 			return;
 		}
-		if (!_importsCompleted) return;
+		if (!_importsCompleted || _importedImageSet is not { } importedImageSet) return;
 
-		if (!surface.TryTakeLatestPresentedImage(out var generation, out var index)) return;
-		if (generation != _importedGeneration || index >= _importedImageCount) {
-			surface.ReturnImage(generation, index, consumerSignalledRelease: false);
-			return;
-		}
-
-		_ = PresentImageAsync(surface, _drawingSurface, generation, index, _sessionVersion);
+		if (!importedImageSet.TryTakeLatestPresentedImage(out var index)) return;
+		_ = PresentImageAsync(importedImageSet, _drawingSurface, index, _sessionVersion);
 	}
 
-	async Task PresentImageAsync(ExportableRenderSurface surface, CompositionDrawingSurface drawingSurface, int generation, int index, int sessionVersion) {
+	async Task PresentImageAsync(ExportableRenderSurfaceImageSet imageSet, CompositionDrawingSurface drawingSurface, int index, int sessionVersion) {
 		_updatesInFlight++;
 		var consumerSignalledRelease = false;
 		try {
@@ -179,13 +175,13 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		catch { }
 
 		try {
-			surface.ReturnImage(generation, index, consumerSignalledRelease);
+			imageSet.ReturnImage(index, consumerSignalledRelease);
 		}
 		catch (ObjectDisposedException) { }
 
 		if (sessionVersion != _sessionVersion) return;
 		_updatesInFlight--;
-		if (!consumerSignalledRelease && generation == _importedGeneration) {
+		if (!consumerSignalledRelease && imageSet.Generation == _importedImageSet?.Generation) {
 			Fail();
 			return;
 		}
@@ -236,7 +232,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 			succeeded = false;
 		}
 
-		if (sessionVersion != _sessionVersion || generation != _importedGeneration) return;
+		if (sessionVersion != _sessionVersion || generation != _importedImageSet?.Generation) return;
 		if (!succeeded) {
 			Fail();
 			return;
@@ -258,36 +254,38 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 
 	bool TryImportImageSet(ExportableRenderSurface surface, ExportableRenderSurfaceImageSet imageSet) {
 		var interop = _interop!;
-		var imageCount = surface.ImageCount;
+		var imageCount = imageSet.ImageCount;
 		try {
-
 			for (var i = 0; i < imageCount; ++i) {
-				var memoryHandle = surface.ExportImage(imageSet.Generation, i, out var memorySizeBytes);
+				if (imageSet.ExtractImage(i) is not { } handles) {
+					_ = ReleaseImports();
+					return false;
+				}
 				try {
 					_images[i] = interop.ImportImage(
-						new PlatformHandle(memoryHandle, KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaquePosixFileDescriptor),
-						CreateImageProperties(imageSet, memorySizeBytes)
+						CreatePlatformHandle(handles.ImageHandle, KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaquePosixFileDescriptor),
+						CreateImageProperties(imageSet, handles.ImageSizeBytes)
 					);
 				}
 				catch {
-					surface.CloseExportedHandle(memoryHandle);
-					throw;
-				}
-
-				surface.ExportSemaphores(imageSet.Generation, i, out var readyHandle, out var releasedHandle);
-				try {
-					_readySemaphores[i] = interop.ImportSemaphore(new PlatformHandle(readyHandle, KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor));
-				}
-				catch {
-					surface.CloseExportedHandle(readyHandle);
-					surface.CloseExportedHandle(releasedHandle);
+					surface.CloseExportedHandle(handles.ImageHandle);
+					surface.CloseExportedHandle(handles.ReadySemaphoreHandle);
+					surface.CloseExportedHandle(handles.ReleasedSemaphoreHandle);
 					throw;
 				}
 				try {
-					_releasedSemaphores[i] = interop.ImportSemaphore(new PlatformHandle(releasedHandle, KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor));
+					_readySemaphores[i] = interop.ImportSemaphore(CreatePlatformHandle(handles.ReadySemaphoreHandle, KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor));
 				}
 				catch {
-					surface.CloseExportedHandle(releasedHandle);
+					surface.CloseExportedHandle(handles.ReadySemaphoreHandle);
+					surface.CloseExportedHandle(handles.ReleasedSemaphoreHandle);
+					throw;
+				}
+				try {
+					_releasedSemaphores[i] = interop.ImportSemaphore(CreatePlatformHandle(handles.ReleasedSemaphoreHandle, KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor));
+				}
+				catch {
+					surface.CloseExportedHandle(handles.ReleasedSemaphoreHandle);
 					throw;
 				}
 			}
@@ -297,10 +295,12 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 			return false;
 		}
 
-		_importedGeneration = imageSet.Generation;
+		_importedImageSet = imageSet;
 		_importedImageCount = imageCount;
 		return true;
 	}
+
+	static PlatformHandle CreatePlatformHandle(ResourceHandle exportedHandle, string handleType) => new((nint) exportedHandle.AsInteger, handleType);
 
 	Task ReleaseImports() {
 		var disposals = new List<Task>();
@@ -309,7 +309,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 			DisposeImportedObject(ref _readySemaphores[i], disposals);
 			DisposeImportedObject(ref _releasedSemaphores[i], disposals);
 		}
-		_importedGeneration = -1;
+		_importedImageSet = null;
 		_importedImageCount = 0;
 		_importsCompleted = false;
 		return Task.WhenAll(disposals);

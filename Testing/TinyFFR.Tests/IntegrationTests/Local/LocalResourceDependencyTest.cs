@@ -106,8 +106,7 @@ class LocalResourceDependencyTest {
 			scene.Dispose();
 			camera.Dispose();
 
-			if (factory.RendererBuilder.GetExportableRenderSurfaceCapabilities().IsSupported) {
-				var exportableSurface = factory.RendererBuilder.CreateExportableRenderSurface();
+			if (factory.RendererBuilder.TryCreateExportableRenderSurface() is { } exportableSurface) {
 				scene = factory.SceneBuilder.CreateScene();
 				camera = factory.CameraBuilder.CreateCamera();
 				renderer = factory.RendererBuilder.CreateRenderer(scene, camera, exportableSurface);
@@ -158,8 +157,8 @@ class LocalResourceDependencyTest {
 			var tempWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCamera, tempScene, tempWindow, factory.RendererBuilder.CreateRenderer(tempScene, tempCamera, tempWindow));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.RendererBuilder.CreateRenderOutputBuffer());
-			if (factory.RendererBuilder.GetExportableRenderSurfaceCapabilities().IsSupported) {
-				AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.RendererBuilder.CreateExportableRenderSurface());
+			if (factory.RendererBuilder.TryCreateExportableRenderSurface() is { } dependencyCheckSurface) {
+				AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, dependencyCheckSurface);
 			}
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.AssetLoader.LoadFont());
 			var tempCompWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);

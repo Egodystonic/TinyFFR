@@ -29,7 +29,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 	ExportableRenderSurface? _gpuSurface;
 	IBindableRendererGpuFrameSink? _gpuSink;
 	bool _hasDeferredGpuFrame;
-	bool? _gpuFramesAreSupportedByBuilder;
+	bool _gpuFramesUnsupportedByBuilder;
 	XYPair<int> _bufferSizePixels;
 	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
 	bool? _frustumCullingEnabled;
@@ -115,7 +115,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 		ArgumentNullException.ThrowIfNull(sink);
 		var impl = GetBindableImplementationOrThrow(r);
 		impl.ThrowIfAttachedToCompositor();
-		if (!impl.GpuFramesAreSupported) return false;
+		if (impl._preferCpuRenderBuffer || impl._gpuFramesUnsupportedByBuilder) return false;
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
 		if (impl._gpuSurface is { } surface) {
@@ -131,8 +131,12 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 			return true;
 		}
 
+		if (impl.TryCreateGpuSurface(bufferSizePixels) is not { } newSurface) {
+			impl._gpuFramesUnsupportedByBuilder = true;
+			return false;
+		}
 		impl.DisposeCurrentOutput();
-		impl.CreateGpuSurface(bufferSizePixels, sink);
+		impl.AttachGpuSurface(newSurface, bufferSizePixels, sink);
 		return true;
 	}
 
@@ -145,14 +149,6 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 		}
 		impl._actualRendererTarget.StopReadingFrames(cancelQueuedFrames: true);
 		impl._currentFrameHandler = null;
-	}
-
-	bool GpuFramesAreSupported {
-		get {
-			if (_preferCpuRenderBuffer) return false;
-			_gpuFramesAreSupportedByBuilder ??= _rendererBuilder.GetExportableRenderSurfaceCapabilities().IsSupported;
-			return _gpuFramesAreSupportedByBuilder.Value;
-		}
 	}
 
 	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
@@ -179,12 +175,15 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 		_actualRendererTarget.Dispose();
 	}
 
-	void CreateGpuSurface(XYPair<int> size, IBindableRendererGpuFrameSink sink) {
-		_bufferSizePixels = size;
-		var surface = _rendererBuilder.CreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
+	ExportableRenderSurface? TryCreateGpuSurface(XYPair<int> size) {
+		return _rendererBuilder.TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
 			Name = $"{_name} exportable surface",
 			Dimensions = size
 		});
+	}
+
+	void AttachGpuSurface(ExportableRenderSurface surface, XYPair<int> size, IBindableRendererGpuFrameSink sink) {
+		_bufferSizePixels = size;
 		_gpuSurface = surface;
 		_currentFrameHandler = null;
 		CreateActualRenderer(surface);

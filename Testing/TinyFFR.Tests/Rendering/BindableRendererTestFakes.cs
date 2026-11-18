@@ -213,13 +213,12 @@ sealed class FakeRendererBuilder : IRendererBuilder {
 	public readonly List<FakeRendererImplProvider> CreatedRenderers = new();
 	public readonly List<FakeRenderOutputBufferImplProvider> CreatedBuffers = new();
 	public readonly List<FakeCompositorImplProvider> CreatedCompositors = new();
-	public ExportableRenderSurfaceCapabilities ExportableRenderSurfaceCapabilities { get; set; } = ExportableRenderSurfaceCapabilities.None;
+	public bool SupportsExportableRenderSurfaces { get; set; }
 	public int ExportableRenderSurfaceCreationAttempts { get; private set; }
 
-	public ExportableRenderSurfaceCapabilities GetExportableRenderSurfaceCapabilities() => ExportableRenderSurfaceCapabilities;
-
-	public ExportableRenderSurface CreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
+	public ExportableRenderSurface? TryCreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
 		ExportableRenderSurfaceCreationAttempts++;
+		if (!SupportsExportableRenderSurfaces) return null;
 		throw new NotSupportedException();
 	}
 

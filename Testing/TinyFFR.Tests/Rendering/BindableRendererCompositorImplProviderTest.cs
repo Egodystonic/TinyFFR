@@ -370,14 +370,18 @@ class BindableRendererCompositorImplProviderTest {
 		var compositorCountBefore = _builder.CreatedCompositors.Count;
 
 		Assert.IsFalse(BindableRendererCompositorImplProvider.TryStartOrContinueHandlingGpuFrames(compositor, (100, 50), (100, 50), sink));
-		Assert.AreEqual(0, _builder.ExportableRenderSurfaceCreationAttempts);
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
 		Assert.AreEqual(compositorCountBefore, _builder.CreatedCompositors.Count);
+		Assert.AreEqual(false, LatestBuffer.Disposed);
 		Assert.AreEqual(0, sink.AttachedCount);
+
+		Assert.IsFalse(BindableRendererCompositorImplProvider.TryStartOrContinueHandlingGpuFrames(compositor, (100, 50), (100, 50), sink));
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
 	}
 
 	[Test]
 	public void ShouldDeclineGpuFramesWhenCpuRenderBufferIsPreferred() {
-		_builder.ExportableRenderSurfaceCapabilities = new(ExportableRenderSurfaceHandleType.OpaqueFileDescriptor, ExportableRenderSurfaceSyncKind.Semaphores);
+		_builder.SupportsExportableRenderSurfaces = true;
 		var compositor = _builder.CreateBindableCompositor(new BindableRendererCompositorCreationConfig { PreferCpuRenderBuffer = true });
 		var sink = new RecordingGpuFrameSink();
 
@@ -388,7 +392,7 @@ class BindableRendererCompositorImplProviderTest {
 
 	[Test]
 	public void ShouldAttemptGpuSurfaceCreationWhenSupportedAndNotPreferringCpu() {
-		_builder.ExportableRenderSurfaceCapabilities = new(ExportableRenderSurfaceHandleType.OpaqueFileDescriptor, ExportableRenderSurfaceSyncKind.Semaphores);
+		_builder.SupportsExportableRenderSurfaces = true;
 		var compositor = _builder.CreateBindableCompositor();
 		var sink = new RecordingGpuFrameSink();
 

@@ -114,14 +114,13 @@ public interface IRendererBuilder {
 	/// <param name="config">Configuration for the new buffer, including its dimensions and name.</param>
 	public RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config);
 
-	public ExportableRenderSurfaceCapabilities GetExportableRenderSurfaceCapabilities() => ExportableRenderSurfaceCapabilities.None;
-	public ExportableRenderSurface CreateExportableRenderSurface(XYPair<int>? dimensions = null, ReadOnlySpan<char> name = default) {
-		return CreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
+	public ExportableRenderSurface? TryCreateExportableRenderSurface(XYPair<int>? dimensions = null, ReadOnlySpan<char> name = default) {
+		return TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
 			Dimensions = dimensions ?? ExportableRenderSurfaceCreationConfig.DefaultDimensions,
 			Name = name
 		});
 	}
-	public ExportableRenderSurface CreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) => throw new NotSupportedException($"This {nameof(IRendererBuilder)} does not support {nameof(ExportableRenderSurface)}s.");
+	public ExportableRenderSurface? TryCreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config);
 
 	/// <summary>
 	/// Creates a new <see cref="RendererCompositor"/> that composites renderers in to the given <paramref name="window"/>.

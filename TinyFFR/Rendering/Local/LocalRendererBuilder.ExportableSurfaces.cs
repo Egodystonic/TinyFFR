@@ -17,19 +17,19 @@ sealed partial class LocalRendererBuilder {
 	readonly ArrayPoolBackedMap<ResourceHandle<ExportableRenderSurface>, ExportableSurfaceData> _loadedExportableSurfaces = new();
 	readonly LocalExportableRenderSurfaceImplProvider _exportableRenderSurfaceImplProvider;
 
-	public ExportableRenderSurfaceCapabilities GetExportableRenderSurfaceCapabilities() {
+	ExportableRenderSurfaceCapabilities QueryExportableRenderSurfaceCapabilities() {
 		ThrowIfThisIsDisposed();
-		Span<byte> uuidDiscard = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes];
-		GetExportableSurfaceCapabilities(out var handleType, out var syncKind, ref uuidDiscard[0]).ThrowIfFailure();
-		return new((ExportableRenderSurfaceHandleType) handleType, (ExportableRenderSurfaceSyncKind) syncKind);
+		Span<byte> uuidSpace = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes];
+		GetExportableSurfaceCapabilities(out var handleType, out var syncKind, ref uuidSpace[0]).ThrowIfFailure();
+		var result = new ExportableRenderSurfaceCapabilities((ExportableRenderSurfaceHandleType) handleType, (ExportableRenderSurfaceSyncKind) syncKind); 
+		if (!Enum.IsDefined(result.HandleType) || !Enum.IsDefined(result.SyncKind)) return ExportableRenderSurfaceCapabilities.None;
+		return result;
 	}
 
-	public ExportableRenderSurface CreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
+	public ExportableRenderSurface? TryCreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		if (!GetExportableRenderSurfaceCapabilities().IsSupported) {
-			throw new NotSupportedException($"{nameof(ExportableRenderSurface)}s are not supported on this platform or device. Check {nameof(GetExportableRenderSurfaceCapabilities)}() first.");
-		}
+		if (!QueryExportableRenderSurfaceCapabilities().IsSupported) return null;
 
 		AllocateExportableSurfaceDescriptor(
 			(uint) config.Dimensions.X,
@@ -60,7 +60,7 @@ sealed partial class LocalRendererBuilder {
 	}
 	public ExportableRenderSurfaceCapabilities GetCapabilities(ResourceHandle<ExportableRenderSurface> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return GetExportableRenderSurfaceCapabilities();
+		return QueryExportableRenderSurfaceCapabilities();
 	}
 	public void CopyDeviceUuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -73,33 +73,27 @@ sealed partial class LocalRendererBuilder {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return ExportableSurfaceImageCount;
 	}
-	public ExportableRenderSurfaceImageSet? GetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle) {
+	public bool TryGetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle, out int generation, out XYPair<int> dimensions) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		GetExportableSurfaceGeneration(_loadedExportableSurfaces[handle].DescriptorHandle, out var generation, out var isLive, out var width, out var height).ThrowIfFailure();
-		return isLive ? new ExportableRenderSurfaceImageSet((int) generation, new XYPair<int>((int) width, (int) height)) : null;
-	}
-	public nint ExportImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, out long memorySizeBytes) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		ThrowIfExportableSurfaceImageIndexIsInvalid(index);
-		ExportExportableSurfaceImage(_loadedExportableSurfaces[handle].DescriptorHandle, (uint) generation, (uint) index, out var exportedHandle, out var memorySize).ThrowIfFailure();
-		memorySizeBytes = (long) memorySize;
-		return (nint) exportedHandle;
-	}
-	public void ExportSemaphores(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, out nint readySemaphoreHandle, out nint releasedSemaphoreHandle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		ThrowIfExportableSurfaceImageIndexIsInvalid(index);
-		ExportExportableSurfaceSemaphores(_loadedExportableSurfaces[handle].DescriptorHandle, (uint) generation, (uint) index, out var ready, out var released).ThrowIfFailure();
-		readySemaphoreHandle = (nint) ready;
-		releasedSemaphoreHandle = (nint) released;
-	}
-	public void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, nint exportedHandle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		CloseExportableSurfaceHandle(exportedHandle).ThrowIfFailure();
-	}
-	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, out int generation, out int index) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		TakeLatestPresentedExportableSurfaceImage(_loadedExportableSurfaces[handle].DescriptorHandle, out var nativeGeneration, out var nativeIndex, out var found).ThrowIfFailure();
+		GetExportableSurfaceGeneration(_loadedExportableSurfaces[handle].DescriptorHandle, out var nativeGeneration, out var isLive, out var width, out var height).ThrowIfFailure();
 		generation = (int) nativeGeneration;
+		dimensions = new XYPair<int>((int) width, (int) height);
+		return isLive;
+	}
+	public ExportedRenderSurfaceImage? ExtractImageDataHandles(ResourceHandle<ExportableRenderSurface> handle, int generation, int index) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		ThrowIfExportableSurfaceImageIndexIsInvalid(index);
+		ExportExportableSurfaceImageHandles(_loadedExportableSurfaces[handle].DescriptorHandle, (uint) generation, (uint) index, out var image, out var imageSize, out var ready, out var released, out var found).ThrowIfFailure();
+		if (!found) return null;
+		return new ExportedRenderSurfaceImage(new ResourceHandle((nuint) image), (long) imageSize, new ResourceHandle((nuint) ready), new ResourceHandle((nuint) released));
+	}
+	public void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, ResourceHandle exportedHandle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		CloseExportableSurfaceHandle((long) exportedHandle.AsInteger).ThrowIfFailure();
+	}
+	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		TakeLatestPresentedExportableSurfaceImage(_loadedExportableSurfaces[handle].DescriptorHandle, (uint) generation, out var nativeIndex, out var found).ThrowIfFailure();
 		index = (int) nativeIndex;
 		return found;
 	}
@@ -203,21 +197,16 @@ sealed partial class LocalRendererBuilder {
 		out uint outWidth,
 		out uint outHeight
 	);
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "export_exportable_surface_image")]
-	static extern InteropResult ExportExportableSurfaceImage(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "export_exportable_surface_image_handles")]
+	static extern InteropResult ExportExportableSurfaceImageHandles(
 		UIntPtr descriptor,
 		uint generation,
 		uint index,
-		out long outHandle,
-		out ulong outMemorySizeBytes
-	);
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "export_exportable_surface_semaphores")]
-	static extern InteropResult ExportExportableSurfaceSemaphores(
-		UIntPtr descriptor,
-		uint generation,
-		uint index,
+		out long outImageHandle,
+		out ulong outImageSizeBytes,
 		out long outReadyHandle,
-		out long outReleasedHandle
+		out long outReleasedHandle,
+		out InteropBool outFound
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "close_exportable_surface_handle")]
 	static extern InteropResult CloseExportableSurfaceHandle(
@@ -226,7 +215,7 @@ sealed partial class LocalRendererBuilder {
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "take_latest_presented_exportable_surface_image")]
 	static extern InteropResult TakeLatestPresentedExportableSurfaceImage(
 		UIntPtr descriptor,
-		out uint outGeneration,
+		uint generation,
 		out uint outIndex,
 		out InteropBool outFound
 	);
