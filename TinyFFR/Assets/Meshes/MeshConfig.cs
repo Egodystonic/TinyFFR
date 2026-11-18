@@ -390,6 +390,10 @@ readonly ref struct MeshLoadConfig : IConfigStruct<MeshLoadConfig> {
 	public MeshCreationConfig CreationConfig { get; init; } = new();
 	public MeshReadConfig ReadConfig { get; init; } = new();
 
+	public ReadOnlySpan<byte> Data { get; init; } = ReadOnlySpan<byte>.Empty;
+
+	public string? FileTypeHint { get; init; } = null;
+
 	public MeshLoadConfig() { }
 
 	internal void ThrowIfInvalid() {

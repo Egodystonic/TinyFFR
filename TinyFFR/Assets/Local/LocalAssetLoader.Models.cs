@@ -693,6 +693,15 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	#endregion
 
 	#region Native Methods
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_asset_bytes_in_to_memory", CharSet = CharSet.Unicode)]
+	static extern InteropResult LoadAssetBytesInToMemory(
+		byte* bytes,
+		int fileLength, 
+		string fileTypeHint,
+		InteropBool fixCommonImporterErrors,
+		InteropBool optimize,
+		out UIntPtr outAssetHandle);
+	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_asset_file_in_to_memory")]
 	static extern InteropResult LoadAssetFileInToMemory(
 		ref readonly byte utf8FileNameBufferPtr,

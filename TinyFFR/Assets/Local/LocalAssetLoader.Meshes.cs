@@ -151,6 +151,20 @@ unsafe partial class LocalAssetLoader {
 			GatherBuffers.Dispose();
 		}
 	}
+	
+	public Mesh LoadMesh(ReadOnlySpan<byte> fileData, string fileTypeHint, in MeshCreationConfig config, in MeshReadConfig readConfig)
+	{
+		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+		config.ThrowIfInvalid();
+
+		var contextWrapper = _meshLoadWorkerSyncHelper.CreateContextWrapper();
+		contextWrapper.Context.FilePath = null;
+		contextWrapper.Context.SetName(config.Name);
+		
+		return contextWrapper.DispatchResourceReturningSynchronousOperation(&LoadMeshCore, new MeshLoadConfig { CreationConfig = config, ReadConfig = readConfig, Data = fileData, FileTypeHint = fileTypeHint });
+	}
 
 	public Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
 		ThreadSafetyTracker.AssertCurrentThreadIsPrimary();
@@ -179,24 +193,54 @@ unsafe partial class LocalAssetLoader {
 	}
 
 	static Mesh LoadMeshCore(MeshLoadContext context, in MeshLoadConfig config) {
-		if (context.FilePath is not { } filePath) {
-			throw new InvalidOperationException("No file path set in context (this is a bug in TinyFFR).");
+
+		if (context is { FilePath: not null } && config.Data.Length > 0)
+		{
+			throw new InvalidOperationException("Can't specify both file name and file data (this is a bug in TinyFFR)");
+		}
+
+		if (context.FilePath is null && config.Data.Length == 0)
+		{
+			throw new InvalidOperationException(
+				"Must specify either file path or file data (this is a bug in TinyFFR)");
 		}
 
 		var readConfig = config.ReadConfig;
 		var creationConfig = config.CreationConfig;
 
-		try {
-			var assetHandle = OpenAssetFileOnWorker(context, filePath.Span, in readConfig);
+		try
+		{
+			UIntPtr assetHandle = UIntPtr.Zero;
+			bool fromBytes = false;
 
+			if (context.FilePath.HasValue)
+			{
+				var path = context.FilePath.Value;
+				assetHandle = OpenAssetFileOnWorker(context, path.Span, in readConfig);
+			} else if (config.Data.Length > 0 && config.FileTypeHint is not null)
+			{
+				assetHandle = OpenAssetBytesOnWorker(context, config.Data, config.FileTypeHint, in readConfig);
+				fromBytes = true;
+			}
+
+			if (assetHandle == UIntPtr.Zero)
+			{
+				throw new InvalidOperationException("Could not load mesh data");
+			}
+			
 			var metadata = GetAmalgamatedMeshMetadataFromOpenedFile(assetHandle);
-			if (metadata.SubMeshCount <= 0) throw new ArgumentException($"Given file '{filePath.Span}' does not contain any mesh data.");
+			if (metadata.SubMeshCount <= 0)
+			{
+				var fileName = !fromBytes && context.FilePath.HasValue ? context.FilePath.Value.Span.ToString() : "";
+				throw new ArgumentException($"Given file '{fileName}' does not contain any mesh data.");
+			}
 
 			var loadSkeletalAnimationData = readConfig.LoadSkeletalAnimationDataIfPresent;
 			var skeletalSubMeshIndex = readConfig.SubMeshIndex ?? 0;
 			if (loadSkeletalAnimationData) {
 				if (metadata.SubMeshCount != 1 && readConfig.SubMeshIndex == null) {
-					Console.WriteLine($"Can not load skeletal animation data for file '{filePath.Span}' as it contains multiple sub-meshes and no {nameof(MeshReadConfig.SubMeshIndex)} was given " +
+					var fileName = !fromBytes && context.FilePath.HasValue ? context.FilePath.Value.Span.ToString() : "";
+					Console.WriteLine($"Can not load skeletal animation data for file '{fileName}' as it contains multiple sub-meshes and no {nameof(MeshReadConfig.SubMeshIndex)} was given " +
 									  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(LoadMeshGroup)}(...) instead).");
 					loadSkeletalAnimationData = false;
 				}
@@ -208,7 +252,8 @@ unsafe partial class LocalAssetLoader {
 						loadSkeletalAnimationData = false;
 						break;
 					case > IMeshBuilder.MaxSkeletalBoneCount:
-						Console.WriteLine($"Can not load skeletal animation data for file '{filePath.Span}' as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
+						var fileName = !fromBytes && context.FilePath.HasValue ? context.FilePath.Value.Span.ToString() : "";
+						Console.WriteLine($"Can not load skeletal animation data for file '{fileName}' as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
 						loadSkeletalAnimationData = false;
 						break;
 				}
@@ -250,11 +295,28 @@ unsafe partial class LocalAssetLoader {
 			return context.GenerateResourceOnPrimaryAndWait(&CompleteMeshLoad);
 		}
 		catch (Exception e) {
-			if (!File.Exists(new String(filePath.Span))) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
-			else throw;
+			// if (!File.Exists(new String(filePath.Span)) && context.Config.Data.Length == 0) throw new InvalidOperationException($"File '{filePath.Span}' does not exist.", e);
+			// else throw;
+			throw;
 		}
 	}
 
+	static UIntPtr OpenAssetBytesOnWorker(MeshLoadContext context, ReadOnlySpan<byte> fileBytes, string fileTypeHint, in MeshReadConfig readConfig)
+	{
+		fixed(byte* ptr = fileBytes)
+		{
+			LoadAssetBytesInToMemory(ptr, 
+				fileBytes.Length, 
+				fileTypeHint, 
+				readConfig.FixCommonExportErrors, 
+				readConfig.OptimizeForGpu, 
+				out var assetHandle
+			).ThrowIfFailure();
+			context.AssetHandle = assetHandle;
+			return assetHandle;
+		}
+	}
+	
 	static UIntPtr OpenAssetFileOnWorker(MeshLoadContext context, ReadOnlySpan<char> filePath, in MeshReadConfig readConfig) {
 		var pathBuffer = context.Self.AssetFilePathBuffer;
 		pathBuffer.ConvertFromUtf16(filePath);

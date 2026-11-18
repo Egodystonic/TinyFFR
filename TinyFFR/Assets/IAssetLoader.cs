@@ -926,6 +926,17 @@ public partial interface IAssetLoader {
 
 	#region Load / Read Mesh
 	/// <summary>
+	/// Loads a mesh from a 3D model file bytes.
+	/// </summary>
+	/// <remarks>
+	/// Only the geometry is loaded; any materials the file describes are ignored. Use <c>LoadBundledAsset</c> to load a composite file's meshes and
+	/// materials together, or <c>LoadMeshGroup</c> to load each of its sub-meshes as a separate mesh (along with any skeletal animations they share).
+	/// </remarks>
+	/// <param name="fileData">The raw bytes of the model file.</param>
+	/// <param name="fileTypeHint"></param>
+	public Mesh LoadMesh(ReadOnlySpan<byte> fileData, string fileTypeHint, in MeshCreationConfig config, in MeshReadConfig readConfig);
+	
+	/// <summary>
 	/// Loads a mesh from a 3D model file.
 	/// </summary>
 	/// <remarks>

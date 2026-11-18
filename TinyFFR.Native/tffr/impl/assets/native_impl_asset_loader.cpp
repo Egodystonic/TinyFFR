@@ -26,6 +26,44 @@ constexpr unsigned int MeshMaxCount = 1000000;
 constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
 
 #pragma region Asset Loading
+void native_impl_asset_loader::load_asset_bytes_in_to_memory(const char* bytes, int fileLength, const char* fileTypeHint, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
+	ThrowIfNull(bytes, "The data pointer was null.");
+	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null");
+	ThrowIf(fileLength <= 0, "File length must be >0");
+
+	unsigned int flags = aiProcess_CalcTangentSpace
+		| aiProcess_GenNormals
+		| aiProcess_GenBoundingBoxes
+		| aiProcess_GenUVCoords
+		| aiProcess_Triangulate
+		| aiProcess_JoinIdenticalVertices // Note: Although this is technically an optimization it's actually required to make skeletal vertices correct after triangulation, so it's not optional. Also it's required for indexed geometry.
+		| aiProcess_SortByPType
+		| aiProcess_LimitBoneWeights
+		| aiProcess_PopulateArmatureData;
+	if (fixCommonExporterErrors) {
+		flags |= aiProcess_FindDegenerates
+			| aiProcess_FindInvalidData
+			| aiProcess_FixInfacingNormals;
+	}
+	if (optimize) {
+		flags |= aiProcess_ImproveCacheLocality
+			| aiProcess_OptimizeGraph
+			| aiProcess_OptimizeMeshes
+			| aiProcess_FindInstances;
+	}
+	auto importProperties = aiCreatePropertyStore();
+	// We remove lines and points because they get "triangulated" to 0-triangle meshes which later on causes problems on the managed side
+	aiSetImportPropertyInteger(importProperties, AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+	*outAssetHandle = aiImportFileFromMemoryWithProperties(bytes, fileLength, flags, fileTypeHint, importProperties);
+	aiReleasePropertyStore(importProperties);
+	ThrowIfNull(*outAssetHandle, "Could not load asset from byte array: ", aiGetErrorString());
+
+}
+StartExportedFunc(load_asset_bytes_in_to_memory, const char* bytes, int fileLength, const char* fileTypeHint, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
+	native_impl_asset_loader::load_asset_bytes_in_to_memory(bytes, fileLength, fileTypeHint, fixCommonExporterErrors, optimize, outAssetHandle);
+	EndExportedFunc
+}
+
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null.");
