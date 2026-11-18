@@ -28,7 +28,7 @@ public class MeshLoaderTest
         
         var mesh = _factory.AssetLoader.LoadMesh(span, "obj", new MeshCreationConfig
         {
-            Name = "utah_teapot"
+            Name = "crate"
         }, new MeshReadConfig());
 
         Assert.Multiple(() =>

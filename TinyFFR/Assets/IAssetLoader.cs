@@ -934,6 +934,8 @@ public partial interface IAssetLoader {
 	/// </remarks>
 	/// <param name="fileData">The raw bytes of the model file.</param>
 	/// <param name="fileTypeHint"></param>
+	/// <param name="config">Controls how the mesh is created, such as whether its bounding box is overridden.</param>
+	/// <param name="readConfig">Controls how the file's geometry is interpreted as it is read.</param>
 	public Mesh LoadMesh(ReadOnlySpan<byte> fileData, string fileTypeHint, in MeshCreationConfig config, in MeshReadConfig readConfig);
 	
 	/// <summary>
