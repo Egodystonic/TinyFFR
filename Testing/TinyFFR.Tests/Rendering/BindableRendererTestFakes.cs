@@ -215,9 +215,11 @@ sealed class FakeRendererBuilder : IRendererBuilder {
 	public readonly List<FakeCompositorImplProvider> CreatedCompositors = new();
 	public bool SupportsExportableRenderSurfaces { get; set; }
 	public int ExportableRenderSurfaceCreationAttempts { get; private set; }
+	public ExportableRenderSurfaceHandleType? LastRequestedExportableRenderSurfaceHandleType { get; private set; }
 
 	public ExportableRenderSurface? TryCreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
 		ExportableRenderSurfaceCreationAttempts++;
+		LastRequestedExportableRenderSurfaceHandleType = config.HandleType;
 		if (!SupportsExportableRenderSurfaces) return null;
 		throw new NotSupportedException();
 	}

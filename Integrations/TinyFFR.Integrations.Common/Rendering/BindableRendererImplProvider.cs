@@ -29,7 +29,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 	ExportableRenderSurface? _gpuSurface;
 	IBindableRendererGpuFrameSink? _gpuSink;
 	bool _hasDeferredGpuFrame;
-	bool _gpuFramesUnsupportedByBuilder;
+	uint _gpuHandleTypesUnsupportedByBuilderMask;
 	XYPair<int> _bufferSizePixels;
 	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
 	bool? _frustumCullingEnabled;
@@ -115,10 +115,12 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 		ArgumentNullException.ThrowIfNull(sink);
 		var impl = GetBindableImplementationOrThrow(r);
 		impl.ThrowIfAttachedToCompositor();
-		if (impl._preferCpuRenderBuffer || impl._gpuFramesUnsupportedByBuilder) return false;
+		var requiredHandleType = sink.RequiredHandleType;
+		var requiredHandleTypeBit = 1U << (int) requiredHandleType;
+		if (impl._preferCpuRenderBuffer || (impl._gpuHandleTypesUnsupportedByBuilderMask & requiredHandleTypeBit) != 0) return false;
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
-		if (impl._gpuSurface is { } surface) {
+		if (impl._gpuSurface is { } surface && surface.Capabilities.HandleType == requiredHandleType) {
 			if (bufferSizePixels != impl._bufferSizePixels) {
 				surface.Dimensions = bufferSizePixels;
 				impl._bufferSizePixels = bufferSizePixels;
@@ -131,8 +133,8 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 			return true;
 		}
 
-		if (impl.TryCreateGpuSurface(bufferSizePixels) is not { } newSurface) {
-			impl._gpuFramesUnsupportedByBuilder = true;
+		if (impl.TryCreateGpuSurface(bufferSizePixels, requiredHandleType) is not { } newSurface) {
+			impl._gpuHandleTypesUnsupportedByBuilderMask |= requiredHandleTypeBit;
 			return false;
 		}
 		impl.DisposeCurrentOutput();
@@ -175,10 +177,11 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 		_actualRendererTarget.Dispose();
 	}
 
-	ExportableRenderSurface? TryCreateGpuSurface(XYPair<int> size) {
+	ExportableRenderSurface? TryCreateGpuSurface(XYPair<int> size, ExportableRenderSurfaceHandleType handleType) {
 		return _rendererBuilder.TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
 			Name = $"{_name} exportable surface",
-			Dimensions = size
+			Dimensions = size,
+			HandleType = handleType
 		});
 	}
 

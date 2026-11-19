@@ -11,7 +11,11 @@ public readonly ref struct ExportableRenderSurfaceCreationConfig : IConfigStruct
 	public const int MaxDimensionXY = RenderOutputBufferCreationConfig.MaxTextureDimensionXY;
 	public const int MinDimensionXY = RenderOutputBufferCreationConfig.MinTextureDimensionXY;
 
+	public static ExportableRenderSurfaceHandleType DefaultHandleType => OperatingSystem.IsWindows() ? ExportableRenderSurfaceHandleType.D3D11TextureNtHandle : ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+
 	public XYPair<int> Dimensions { get; init; } = DefaultDimensions;
+
+	public ExportableRenderSurfaceHandleType HandleType { get; init; } = DefaultHandleType;
 
 	public ReadOnlySpan<char> Name { get; init; }
 
@@ -25,19 +29,25 @@ public readonly ref struct ExportableRenderSurfaceCreationConfig : IConfigStruct
 		if (Dimensions.Clamp(new(MinDimensionXY), new(MaxDimensionXY)) != Dimensions) {
 			ThrowArgException(Dimensions, $"must have both X and Y values between {MinDimensionXY} and {MaxDimensionXY}.");
 		}
+		if (HandleType == ExportableRenderSurfaceHandleType.None || !Enum.IsDefined(HandleType)) {
+			ThrowArgException(HandleType, $"must be a defined value other than {nameof(ExportableRenderSurfaceHandleType.None)}.");
+		}
 	}
 
 	public static int GetHeapStorageFormattedLength(in ExportableRenderSurfaceCreationConfig src) {
 		return	SerializationSizeOf<XYPair<int>>()
+			+	SerializationSizeOfInt()
 			+	SerializationSizeOfString(src.Name);
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ExportableRenderSurfaceCreationConfig src) {
 		SerializationWrite(ref dest, src.Dimensions);
+		SerializationWriteInt(ref dest, (int) src.HandleType);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static ExportableRenderSurfaceCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new() {
 			Dimensions = SerializationRead<XYPair<int>>(ref src),
+			HandleType = (ExportableRenderSurfaceHandleType) SerializationReadInt(ref src),
 			Name = SerializationReadString(ref src)
 		};
 	}

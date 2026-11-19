@@ -20,6 +20,7 @@ sealed class LocalExportableRenderSurfaceImplProvider : IExportableRenderSurface
 	public void SetDimensions(ResourceHandle<ExportableRenderSurface> handle, XYPair<int> newDimensions) => _owner.SetDimensions(handle, newDimensions);
 	public ExportableRenderSurfaceCapabilities GetCapabilities(ResourceHandle<ExportableRenderSurface> handle) => _owner.GetCapabilities(handle);
 	public void CopyDeviceUuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination) => _owner.CopyDeviceUuid(handle, destination);
+	public bool TryCopyDeviceLuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination) => _owner.TryCopyDeviceLuid(handle, destination);
 	public int GetImageCount(ResourceHandle<ExportableRenderSurface> handle) => _owner.GetImageCount(handle);
 	public bool TryGetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle, out int generation, out XYPair<int> dimensions) => _owner.TryGetCurrentImageSet(handle, out generation, out dimensions);
 	public ExportedRenderSurfaceImage? ExtractImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index) => _owner.ExtractImageDataHandles(handle, generation, index);

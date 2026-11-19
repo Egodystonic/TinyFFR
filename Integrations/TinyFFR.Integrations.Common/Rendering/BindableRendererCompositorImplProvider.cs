@@ -25,7 +25,7 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	ExportableRenderSurface? _gpuSurface;
 	IBindableRendererGpuFrameSink? _gpuSink;
 	bool _hasDeferredGpuFrame;
-	bool _gpuFramesUnsupportedByBuilder;
+	uint _gpuHandleTypesUnsupportedByBuilderMask;
 	RendererCompositor _actualCompositor;
 	XYPair<int> _sharedBufferSizePixels;
 	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
@@ -79,10 +79,12 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	public static bool TryStartOrContinueHandlingGpuFrames(RendererCompositor c, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, IBindableRendererGpuFrameSink sink) {
 		ArgumentNullException.ThrowIfNull(sink);
 		var impl = GetBindableImplementationOrThrow(c);
-		if (impl._preferCpuRenderBuffer || impl._gpuFramesUnsupportedByBuilder) return false;
+		var requiredHandleType = sink.RequiredHandleType;
+		var requiredHandleTypeBit = 1U << (int) requiredHandleType;
+		if (impl._preferCpuRenderBuffer || (impl._gpuHandleTypesUnsupportedByBuilderMask & requiredHandleTypeBit) != 0) return false;
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
-		if (impl._gpuSurface is { } surface) {
+		if (impl._gpuSurface is { } surface && surface.Capabilities.HandleType == requiredHandleType) {
 			if (bufferSizePixels != impl._sharedBufferSizePixels) {
 				surface.Dimensions = bufferSizePixels;
 				impl._sharedBufferSizePixels = bufferSizePixels;
@@ -96,8 +98,8 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 			return true;
 		}
 
-		if (impl.TryCreateSharedSurface(bufferSizePixels) is not { } newSurface) {
-			impl._gpuFramesUnsupportedByBuilder = true;
+		if (impl.TryCreateSharedSurface(bufferSizePixels, requiredHandleType) is not { } newSurface) {
+			impl._gpuHandleTypesUnsupportedByBuilderMask |= requiredHandleTypeBit;
 			return false;
 		}
 		impl.DisposeSharedTargetAndCompositor();
@@ -158,10 +160,11 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		RecreateAddedRenderersOnSharedTarget(_sharedBuffer);
 	}
 
-	ExportableRenderSurface? TryCreateSharedSurface(XYPair<int> size) {
+	ExportableRenderSurface? TryCreateSharedSurface(XYPair<int> size, ExportableRenderSurfaceHandleType handleType) {
 		return _rendererBuilder.TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
 			Name = $"{_name} exportable surface",
-			Dimensions = size
+			Dimensions = size,
+			HandleType = handleType
 		});
 	}
 

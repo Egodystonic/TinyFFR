@@ -40,8 +40,10 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	bool _importInProgress = false;
 	bool _hasFailed = false;
 	Size _visualSize;
+	ExportableRenderSurfaceHandleType _requiredHandleType = ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
 
 	public bool IsUsable => _interop is { IsLost: false } && !_hasFailed;
+	public string? UnavailableReason { get; private set; } = "GPU interop not discovered yet";
 	public bool IsPresenting => _surface != null;
 	public long DisplayedFrameCount => _displayedFrameCount;
 
@@ -81,28 +83,53 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 			interop = null;
 		}
 		if (attachmentVersion != _attachmentVersion) return;
-		if (interop == null || !SupportsOpaqueFileDescriptorSharing(interop)) return;
+		if (interop == null) {
+			UnavailableReason = "Avalonia offers no GPU interop for this window";
+			_onUsabilityChanged();
+			return;
+		}
+		if (SelectHandleType(interop) is not { } handleType) {
+			UnavailableReason = $"Avalonia's GPU interop offers no supported handle type (images: {String.Join(", ", interop.SupportedImageHandleTypes)})";
+			_onUsabilityChanged();
+			return;
+		}
 
 		_compositor = compositor;
 		_interop = interop;
+		_requiredHandleType = handleType;
 		_hasFailed = false;
+		UnavailableReason = null;
 		_onUsabilityChanged();
 	}
 
-	static bool SupportsOpaqueFileDescriptorSharing(ICompositionGpuInterop interop) {
-		return interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaquePosixFileDescriptor)
-			&& interop.SupportedSemaphoreTypes.Contains(KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor);
+	static ExportableRenderSurfaceHandleType? SelectHandleType(ICompositionGpuInterop interop) {
+		if (interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaquePosixFileDescriptor)
+			&& interop.SupportedSemaphoreTypes.Contains(KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor)) {
+			return ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+		}
+		if (OperatingSystem.IsWindows() && interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureNtHandle)) {
+			return ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
+		}
+		return null;
 	}
 
+	bool UsesKeyedMutex => _requiredHandleType == ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
+
 	int MaxUpdatesInFlight => _frameSource?.MaxFramesInFlight ?? DefaultMaxUpdatesInFlight;
+
+	public ExportableRenderSurfaceHandleType RequiredHandleType => _requiredHandleType;
 
 	public bool CanAcceptFrame => _surface == null || _hasFailed || _updatesInFlight < MaxUpdatesInFlight;
 
 	public void OnSurfaceAttached(ExportableRenderSurface surface, IBindableRendererGpuFrameSource source) {
 		if (_surface == surface) return;
 		ReleaseSession();
-		if (_compositor == null || _interop == null || !SurfaceIsCompatible(surface, _interop)) {
-			Fail();
+		if (_compositor == null || _interop == null) {
+			Fail("GPU interop was lost before the surface was attached");
+			return;
+		}
+		if (DescribeIncompatibility(surface, _interop, _requiredHandleType) is { } incompatibility) {
+			Fail(incompatibility);
 			return;
 		}
 
@@ -125,23 +152,30 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		PumpPresentedFrames();
 	}
 
-	static bool SurfaceIsCompatible(ExportableRenderSurface surface, ICompositionGpuInterop interop) {
+	static string? DescribeIncompatibility(ExportableRenderSurface surface, ICompositionGpuInterop interop, ExportableRenderSurfaceHandleType requiredHandleType) {
 		var capabilities = surface.Capabilities;
-		if (capabilities.HandleType != ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor) return false;
-		if (capabilities.SyncKind != ExportableRenderSurfaceSyncKind.VulkanOpaqueFileDescriptorSemaphores) return false;
-		if (surface.ImageCount > MaxImageCount) return false;
+		if (capabilities.HandleType != requiredHandleType) return $"surface handle type {capabilities.HandleType} does not match {requiredHandleType}";
+		if (surface.ImageCount > MaxImageCount) return $"surface has {surface.ImageCount} images (max {MaxImageCount})";
 
-		var interopUuid = interop.DeviceUuid;
-		if (interopUuid == null || interopUuid.Length != ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes) return false;
-		Span<byte> surfaceUuid = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes];
-		surface.CopyDeviceUuid(surfaceUuid);
-		return surfaceUuid.SequenceEqual(interopUuid);
+		if (requiredHandleType == ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor) {
+			var interopUuid = interop.DeviceUuid;
+			if (interopUuid == null || interopUuid.Length != ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes) return "Avalonia did not report a device UUID";
+			Span<byte> surfaceUuid = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes];
+			surface.CopyDeviceUuid(surfaceUuid);
+			return surfaceUuid.SequenceEqual(interopUuid) ? null : $"GPU mismatch (TinyFFR {Convert.ToHexString(surfaceUuid)}, Avalonia {Convert.ToHexString(interopUuid)})";
+		}
+
+		var interopLuid = interop.DeviceLuid;
+		if (interopLuid == null || interopLuid.Length != ExportableRenderSurfaceCapabilities.DeviceLuidLengthBytes) return "Avalonia did not report an adapter LUID";
+		Span<byte> surfaceLuid = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceLuidLengthBytes];
+		if (!surface.TryCopyDeviceLuid(surfaceLuid)) return "TinyFFR's GPU has no adapter LUID";
+		return surfaceLuid.SequenceEqual(interopLuid) ? null : $"adapter mismatch (TinyFFR {Convert.ToHexString(surfaceLuid)}, Avalonia {Convert.ToHexString(interopLuid)})";
 	}
 
 	void PumpPresentedFrames() {
 		if (_updatesInFlight >= MaxUpdatesInFlight || _surface is not { } surface || _drawingSurface == null || _interop == null) return;
 		if (_interop.IsLost) {
-			Fail();
+			Fail("Avalonia's GPU interop was lost");
 			return;
 		}
 		if (surface.CurrentImageSet is not { } imageSet) return;
@@ -160,7 +194,12 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		_updatesInFlight++;
 		var consumerSignalledRelease = false;
 		try {
-			await drawingSurface.UpdateWithSemaphoresAsync(_images[index]!, _readySemaphores[index]!, _releasedSemaphores[index]!);
+			if (UsesKeyedMutex) {
+				await drawingSurface.UpdateWithKeyedMutexAsync(_images[index]!, (uint) ExportableRenderSurfaceCapabilities.ConsumerKeyedMutexAcquireKey, (uint) ExportableRenderSurfaceCapabilities.ConsumerKeyedMutexReleaseKey);
+			}
+			else {
+				await drawingSurface.UpdateWithSemaphoresAsync(_images[index]!, _readySemaphores[index]!, _releasedSemaphores[index]!);
+			}
 			consumerSignalledRelease = true;
 			if (_compositor is { } compositor) {
 				var batch = compositor.RequestCompositionBatchCommitAsync();
@@ -182,7 +221,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		if (sessionVersion != _sessionVersion) return;
 		_updatesInFlight--;
 		if (!consumerSignalledRelease && imageSet.Generation == _importedImageSet?.Generation) {
-			Fail();
+			Fail("a frame update failed");
 			return;
 		}
 		_frameSource?.RenderDeferredFrameIfPending();
@@ -208,7 +247,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 				PumpPresentedFrames();
 				return;
 			}
-			Fail();
+			Fail("importing the surface's images failed");
 			return;
 		}
 		await AwaitImportCompletionAsync(imageSet.Generation, sessionVersion);
@@ -218,11 +257,11 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	}
 
 	async Task AwaitImportCompletionAsync(int generation, int sessionVersion) {
-		var pending = new Task[_importedImageCount * 3];
+		var pending = new List<Task>(_importedImageCount * 3);
 		for (var i = 0; i < _importedImageCount; ++i) {
-			pending[i * 3] = _images[i]!.ImportCompleted;
-			pending[i * 3 + 1] = _readySemaphores[i]!.ImportCompleted;
-			pending[i * 3 + 2] = _releasedSemaphores[i]!.ImportCompleted;
+			pending.Add(_images[i]!.ImportCompleted);
+			if (_readySemaphores[i] is { } readySemaphore) pending.Add(readySemaphore.ImportCompleted);
+			if (_releasedSemaphores[i] is { } releasedSemaphore) pending.Add(releasedSemaphore.ImportCompleted);
 		}
 		var succeeded = true;
 		try {
@@ -234,13 +273,23 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 
 		if (sessionVersion != _sessionVersion || generation != _importedImageSet?.Generation) return;
 		if (!succeeded) {
-			Fail();
+			Fail("the GPU import did not complete");
 			return;
 		}
 		_importsCompleted = true;
 	}
 
-	static PlatformGraphicsExternalImageProperties CreateImageProperties(ExportableRenderSurfaceImageSet imageSet, long memorySizeBytes) {
+	PlatformGraphicsExternalImageProperties CreateImageProperties(ExportableRenderSurfaceImageSet imageSet, long memorySizeBytes) {
+		if (UsesKeyedMutex) {
+			return new PlatformGraphicsExternalImageProperties {
+				Width = imageSet.Dimensions.X,
+				Height = imageSet.Dimensions.Y,
+				Format = PlatformGraphicsExternalImageFormat.B8G8R8A8UNorm,
+				MemorySize = (ulong) memorySizeBytes,
+				MemoryOffset = 0UL,
+				TopLeftOrigin = true
+			};
+		}
 		return new PlatformGraphicsExternalImageProperties {
 			Width = imageSet.Dimensions.X,
 			Height = imageSet.Dimensions.Y,
@@ -260,6 +309,19 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 				if (imageSet.ExtractImage(i) is not { } handles) {
 					_ = ReleaseImports();
 					return false;
+				}
+				if (UsesKeyedMutex) {
+					try {
+						_images[i] = interop.ImportImage(
+							CreatePlatformHandle(handles.ImageHandle, KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureNtHandle),
+							CreateImageProperties(imageSet, handles.ImageSizeBytes)
+						);
+					}
+					catch {
+						surface.CloseExportedHandle(handles.ImageHandle);
+						throw;
+					}
+					continue;
 				}
 				try {
 					_images[i] = interop.ImportImage(
@@ -336,9 +398,10 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		_frameSource = null;
 	}
 
-	void Fail() {
+	void Fail(string reason) {
 		if (_hasFailed) return;
 		_hasFailed = true;
+		UnavailableReason = reason;
 		ReleaseSession();
 		Dispatcher.UIThread.Post(_onUsabilityChanged);
 	}

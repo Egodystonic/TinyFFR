@@ -4,6 +4,7 @@ using Egodystonic.TinyFFR.Environment.Local;
 using System;
 using System.Numerics;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Egodystonic.TinyFFR.Wpf.Input;
 
@@ -12,14 +13,41 @@ namespace Egodystonic.TinyFFR.Wpf {
 	/// Extension types specifically for integrating TinyFFR and WPF.
 	/// </summary>
 	public static class TinyFfrWpfExtensions {
-		sealed record UiLoopCompositeDisposable(ApplicationLoop Loop, CancellationTokenSource TokenSource, DispatcherTimer DispatcherTimer, IDisposable? InputSource) : IDisposable {
+		sealed record UiLoopCompositeDisposable(ApplicationLoop Loop, CancellationTokenSource TokenSource, Action StopTicking, IDisposable? InputSource) : IDisposable {
 			public void Dispose() {
 				TokenSource.Cancel();
 				TokenSource.Dispose();
+				StopTicking();
 				Loop.Dispose();
-				DispatcherTimer.Stop();
 				InputSource?.Dispose();
 			}
+		}
+
+		sealed class CompositionRenderingTickSource {
+			readonly ApplicationLoop _loop;
+			readonly Action<TimeSpan> _tickCallback;
+			readonly CancellationToken _stopToken;
+			readonly EventHandler _onRendering;
+			TimeSpan? _lastRenderingTime;
+
+			public CompositionRenderingTickSource(ApplicationLoop loop, Action<TimeSpan> tickCallback, CancellationToken stopToken) {
+				_loop = loop;
+				_tickCallback = tickCallback;
+				_stopToken = stopToken;
+				_onRendering = OnRendering;
+				CompositionTarget.Rendering += _onRendering;
+			}
+
+			void OnRendering(object? sender, EventArgs e) {
+				if (_stopToken.IsCancellationRequested) return;
+				if (e is RenderingEventArgs renderingArgs) {
+					if (_lastRenderingTime == renderingArgs.RenderingTime) return;
+					_lastRenderingTime = renderingArgs.RenderingTime;
+				}
+				if (_loop.TryIterateOnce(out var deltaTime)) _tickCallback(deltaTime);
+			}
+
+			public void Stop() => CompositionTarget.Rendering -= _onRendering;
 		}
 
 		const int DefaultUiLoopTickRateHz = 60;
@@ -45,8 +73,9 @@ namespace Egodystonic.TinyFFR.Wpf {
 		/// <param name="tickRateHz">How many times per second to tick. Defaults to <c>60</c>. The framework's own compositor and dispatcher may cap the rate achieved, and the interval between ticks will vary more than in a standalone application. Values of zero or less are treated as the default.</param>
 		/// <param name="priority">The dispatcher priority to schedule the tick at.</param>
 		/// <param name="name">The name to give the underlying application loop resource. May be left empty.</param>
-		public static IDisposable StartWpfUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = DispatcherPriority.Normal, ReadOnlySpan<char> name = default) {
-			return StartWpfUiLoop(@this, tickCallback, null, tickRateHz, priority, name);
+		public static IDisposable StartWpfUiLoopViaDispatcher(this ILocalApplicationLoopBuilder @this, Action<TimeSpan> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = DispatcherPriority.Normal, ReadOnlySpan<char> name = default) {
+			ArgumentNullException.ThrowIfNull(tickCallback);
+			return StartWpfDispatcherLoop(@this, tickCallback, null, tickRateHz, priority, name);
 		}
 
 		/// <summary>
@@ -76,13 +105,13 @@ namespace Egodystonic.TinyFFR.Wpf {
 		/// <param name="tickRateHz">How many times per second to tick. Defaults to <c>60</c>. The framework's own compositor and dispatcher may cap the rate achieved, and the interval between ticks will vary more than in a standalone application. Values of zero or less are treated as the default.</param>
 		/// <param name="priority">The dispatcher priority to schedule the tick at.</param>
 		/// <param name="name">The name to give the underlying application loop resource. May be left empty.</param>
-		public static IDisposable StartWpfUiLoop(this ILocalApplicationLoopBuilder @this, UIElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = DispatcherPriority.Normal, ReadOnlySpan<char> name = default) {
+		public static IDisposable StartWpfUiLoopViaDispatcher(this ILocalApplicationLoopBuilder @this, UIElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int tickRateHz = DefaultUiLoopTickRateHz, DispatcherPriority priority = DispatcherPriority.Normal, ReadOnlySpan<char> name = default) {
 			ArgumentNullException.ThrowIfNull(tickCallback);
 			ArgumentNullException.ThrowIfNull(inputSource);
 
 			var uiInputSource = new UiInputSource(inputSource);
 			try {
-				return StartWpfUiLoop(
+				return StartWpfDispatcherLoop(
 					@this,
 					deltaTime => {
 						// ReSharper disable AccessToDisposedClosure Closed-over var is only disposed if loop creation fails anyway
@@ -102,15 +131,52 @@ namespace Egodystonic.TinyFFR.Wpf {
 			}
 		}
 
-		static IDisposable StartWpfUiLoop(ILocalApplicationLoopBuilder builder, Action<TimeSpan> tickCallback, IDisposable? inputSource, int tickRateHz, DispatcherPriority priority, ReadOnlySpan<char> name) {
-			if (tickRateHz <= 0) tickRateHz = DefaultUiLoopTickRateHz;
+		public static IDisposable StartWpfUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan> tickCallback, int? frameRateCapHz = null, ReadOnlySpan<char> name = default) {
+			ArgumentNullException.ThrowIfNull(tickCallback);
+			return StartWpfCompositionRenderingLoop(@this, tickCallback, null, frameRateCapHz, name);
+		}
 
-			var loop = builder.CreateLoop(new LocalApplicationLoopCreationConfig {
-				FrameRateCapHz = null,
+		public static IDisposable StartWpfUiLoop(this ILocalApplicationLoopBuilder @this, UIElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int? frameRateCapHz = null, ReadOnlySpan<char> name = default) {
+			ArgumentNullException.ThrowIfNull(tickCallback);
+			ArgumentNullException.ThrowIfNull(inputSource);
+
+			var uiInputSource = new UiInputSource(inputSource);
+			try {
+				return StartWpfCompositionRenderingLoop(@this, CreateUiInputTickCallback(uiInputSource, tickCallback), uiInputSource, frameRateCapHz, name);
+			}
+			catch {
+				uiInputSource.Dispose();
+				throw;
+			}
+		}
+
+		static Action<TimeSpan> CreateUiInputTickCallback(UiInputSource uiInputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback) {
+			return deltaTime => {
+				uiInputSource.Iterate();
+				tickCallback(deltaTime, uiInputSource.Retriever);
+			};
+		}
+
+		static ApplicationLoop CreateUiDrivenLoop(ILocalApplicationLoopBuilder builder, int? frameRateCapHz, ReadOnlySpan<char> name) {
+			return builder.CreateLoop(new LocalApplicationLoopCreationConfig {
+				FrameRateCapHz = frameRateCapHz,
 				IterationShouldPumpSystemEventQueue = false,
 				Name = name,
 				FrameTimingPrecisionBusyWaitTime = TimeSpan.Zero
 			});
+		}
+
+		static IDisposable StartWpfCompositionRenderingLoop(ILocalApplicationLoopBuilder builder, Action<TimeSpan> tickCallback, IDisposable? inputSource, int? frameRateCapHz, ReadOnlySpan<char> name) {
+			var loop = CreateUiDrivenLoop(builder, frameRateCapHz, name);
+			var cancellationTokenSource = new CancellationTokenSource();
+			var tickSource = new CompositionRenderingTickSource(loop, tickCallback, cancellationTokenSource.Token);
+			return new UiLoopCompositeDisposable(loop, cancellationTokenSource, tickSource.Stop, inputSource);
+		}
+
+		static IDisposable StartWpfDispatcherLoop(ILocalApplicationLoopBuilder builder, Action<TimeSpan> tickCallback, IDisposable? inputSource, int tickRateHz, DispatcherPriority priority, ReadOnlySpan<char> name) {
+			if (tickRateHz <= 0) tickRateHz = DefaultUiLoopTickRateHz;
+
+			var loop = CreateUiDrivenLoop(builder, null, name);
 			var dispatcherTimerCancellationTokenSource = new CancellationTokenSource();
 			var stopToken = dispatcherTimerCancellationTokenSource.Token;
 
@@ -124,7 +190,7 @@ namespace Egodystonic.TinyFFR.Wpf {
 				dispatcher: Application.Current.Dispatcher
 			);
 
-			return new UiLoopCompositeDisposable(loop, dispatcherTimerCancellationTokenSource, dispatcherTimerDisposable, inputSource);
+			return new UiLoopCompositeDisposable(loop, dispatcherTimerCancellationTokenSource, dispatcherTimerDisposable.Stop, inputSource);
 		}
 
 

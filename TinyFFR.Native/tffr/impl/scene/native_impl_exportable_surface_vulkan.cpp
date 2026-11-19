@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "scene/native_impl_exportable_surface_vulkan.h"
 
-#if defined(TFFR_EXPORTABLE_SURFACE_VULKAN)
+#if defined(TFFR_LINUX) || defined(TFFR_WIN)
 #include "native_impl_init.h"
 #include "filament/Engine.h"
 #include <cstring>
@@ -9,61 +9,60 @@
 using namespace bluevk;
 
 namespace {
-	uint8_t exportable_device_uuid[EXPORTABLE_SURFACE_DEVICE_UUID_LENGTH] = {};
-
-	constexpr VkFormat ExportableColorFormat = VK_FORMAT_R8G8B8A8_UNORM;
 	constexpr VkImageUsageFlags ExportableColorUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	constexpr uint32_t ScratchSlotIndex = EXPORTABLE_SURFACE_IMAGE_COUNT;
 
-	void check_vk(VkResult result, const char* operation) {
-		if (result == VK_SUCCESS) return;
-		char resultStr[16];
-		interop_utils::int_str(resultStr, sizeof(resultStr), static_cast<int>(result));
-		Throw(operation, " failed with VkResult ", resultStr, ".");
+	int32_t sync_kind_for(int32_t handleType) {
+		switch (handleType) {
+			case EXPORTABLE_SURFACE_HANDLE_TYPE_VULKAN_OPAQUE_FD: return EXPORTABLE_SURFACE_SYNC_KIND_VULKAN_OPAQUE_FD_SEMAPHORES;
+			case EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_NT_HANDLE: return EXPORTABLE_SURFACE_SYNC_KIND_DXGI_KEYED_MUTEX;
+			case EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_LEGACY_SHARED_HANDLE: return EXPORTABLE_SURFACE_SYNC_KIND_COMPLETED_BEFORE_TAKE;
+			default: return EXPORTABLE_SURFACE_SYNC_KIND_NONE;
+		}
 	}
+
+	bool uses_semaphores(exportable_surface_descriptor const* descriptor) {
+		return descriptor->handleType == EXPORTABLE_SURFACE_HANDLE_TYPE_VULKAN_OPAQUE_FD;
+	}
+	bool uses_keyed_mutex(exportable_surface_descriptor const* descriptor) {
+		return descriptor->handleType == EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_NT_HANDLE;
+	}
+	bool uses_completion_fence(exportable_surface_descriptor const* descriptor) {
+		return descriptor->handleType == EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_LEGACY_SHARED_HANDLE;
+	}
+}
+
+void exportable_check_vk(VkResult result, const char* operation) {
+	if (result == VK_SUCCESS) return;
+	char resultStr[16];
+	interop_utils::int_str(resultStr, sizeof(resultStr), static_cast<int>(result));
+	Throw(operation, " failed with VkResult ", resultStr, ".");
 }
 
 tffr_vulkan_platform* tffr_vulkan_platform::instance = nullptr;
 
 void tffr_vulkan_platform::evaluate_export_support() {
-	exportingSupported = false;
+	supportedHandleTypeMask = 0;
+	deviceLuidValid = false;
 	auto physicalDevice = getPhysicalDevice();
 	if (physicalDevice == VK_NULL_HANDLE || getDevice() == VK_NULL_HANDLE) return;
-	if (!device_supports_handle_export(physicalDevice)) return;
 	if (vkGetPhysicalDeviceImageFormatProperties2 == nullptr || vkGetPhysicalDeviceExternalSemaphoreProperties == nullptr || vkGetPhysicalDeviceProperties2 == nullptr || vkGetImageMemoryRequirements2 == nullptr) return;
-
-	VkPhysicalDeviceExternalImageFormatInfo externalImageInfo {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
-		.handleType = ExportableMemoryHandleType
-	};
-	VkPhysicalDeviceImageFormatInfo2 imageFormatInfo {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-		.pNext = &externalImageInfo,
-		.format = ExportableColorFormat,
-		.type = VK_IMAGE_TYPE_2D,
-		.tiling = VK_IMAGE_TILING_OPTIMAL,
-		.usage = ExportableColorUsage,
-		.flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
-	};
-	VkExternalImageFormatProperties externalImageProperties { .sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES };
-	VkImageFormatProperties2 imageFormatProperties { .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2, .pNext = &externalImageProperties };
-	if (vkGetPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties) != VK_SUCCESS) return;
-	if ((externalImageProperties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0) return;
-
-	VkPhysicalDeviceExternalSemaphoreInfo semaphoreInfo {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
-		.handleType = ExportableSemaphoreHandleType
-	};
-	VkExternalSemaphoreProperties semaphoreProperties { .sType = VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES };
-	vkGetPhysicalDeviceExternalSemaphoreProperties(physicalDevice, &semaphoreInfo, &semaphoreProperties);
-	if ((semaphoreProperties.externalSemaphoreFeatures & VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT) == 0) return;
 
 	VkPhysicalDeviceIDProperties idProperties { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES };
 	VkPhysicalDeviceProperties2 deviceProperties { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &idProperties };
 	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
-	std::memcpy(exportable_device_uuid, idProperties.deviceUUID, EXPORTABLE_SURFACE_DEVICE_UUID_LENGTH);
+	std::memcpy(deviceUuid, idProperties.deviceUUID, EXPORTABLE_SURFACE_DEVICE_UUID_LENGTH);
+	if (idProperties.deviceLUIDValid == VK_TRUE) {
+		std::memcpy(deviceLuid, idProperties.deviceLUID, EXPORTABLE_SURFACE_DEVICE_LUID_LENGTH);
+		deviceLuidValid = true;
+	}
 
-	exportingSupported = true;
+	supportedHandleTypeMask = evaluate_os_supported_handle_types(physicalDevice);
+}
+
+bool tffr_vulkan_platform::supports_handle_type(int32_t handleType) const {
+	if (handleType <= 0 || handleType >= 32) return false;
+	return (supportedHandleTypeMask & (1U << handleType)) != 0;
 }
 
 void tffr_vulkan_platform::register_descriptor(exportable_surface_descriptor* descriptor) {
@@ -103,34 +102,13 @@ VkFormat tffr_vulkan_platform::select_depth_format() {
 	Throw("Could not find a suitable depth format for exportable surface.");
 }
 
-VkSemaphore tffr_vulkan_platform::create_semaphore(bool exportable) {
-	VkExportSemaphoreCreateInfo exportInfo {
-		.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
-		.handleTypes = ExportableSemaphoreHandleType
-	};
-	VkSemaphoreCreateInfo createInfo {
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		.pNext = exportable ? &exportInfo : nullptr
-	};
-	VkSemaphore result;
-	check_vk(vkCreateSemaphore(getDevice(), &createInfo, nullptr, &result), "vkCreateSemaphore");
-	return result;
-}
-
-void tffr_vulkan_platform::create_exportable_image(exportable_swap_chain* swapChain, exportable_image_slot& slot, bool exportable) {
+void tffr_vulkan_platform::create_local_image(exportable_surface_descriptor const* descriptor, exportable_image_slot& slot) {
 	auto device = getDevice();
-	auto descriptor = swapChain->descriptor;
-
-	VkExternalMemoryImageCreateInfo externalInfo {
-		.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
-		.handleTypes = ExportableMemoryHandleType
-	};
 	VkImageCreateInfo imageInfo {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		.pNext = exportable ? &externalInfo : nullptr,
 		.flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,
 		.imageType = VK_IMAGE_TYPE_2D,
-		.format = ExportableColorFormat,
+		.format = descriptor->colorFormat,
 		.extent = { descriptor->liveWidth, descriptor->liveHeight, 1 },
 		.mipLevels = 1,
 		.arrayLayers = 1,
@@ -140,41 +118,31 @@ void tffr_vulkan_platform::create_exportable_image(exportable_swap_chain* swapCh
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
 	};
-	check_vk(vkCreateImage(device, &imageInfo, nullptr, &slot.image), "vkCreateImage");
-
-	VkMemoryDedicatedRequirements dedicatedRequirements { .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS };
-	VkMemoryRequirements2 requirements2 { .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, .pNext = &dedicatedRequirements };
-	VkImageMemoryRequirementsInfo2 requirementsInfo { .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, .image = slot.image };
-	vkGetImageMemoryRequirements2(device, &requirementsInfo, &requirements2);
-	auto const& requirements = requirements2.memoryRequirements;
-	auto const useDedicatedAllocation = dedicatedRequirements.requiresDedicatedAllocation == VK_TRUE;
-
-	VkExportMemoryAllocateInfo exportInfo {
-		.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
-		.handleTypes = ExportableMemoryHandleType
-	};
-	VkMemoryDedicatedAllocateInfo dedicatedInfo {
-		.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-		.pNext = exportable ? &exportInfo : nullptr,
-		.image = slot.image
-	};
+	exportable_check_vk(vkCreateImage(device, &imageInfo, nullptr, &slot.image), "vkCreateImage");
+	VkMemoryRequirements requirements;
+	vkGetImageMemoryRequirements(device, slot.image, &requirements);
 	VkMemoryAllocateInfo allocateInfo {
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext = useDedicatedAllocation ? static_cast<void const*>(&dedicatedInfo) : (exportable ? static_cast<void const*>(&exportInfo) : nullptr),
 		.allocationSize = requirements.size,
 		.memoryTypeIndex = find_memory_type(requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 	};
-	check_vk(vkAllocateMemory(device, &allocateInfo, nullptr, &slot.memory), "vkAllocateMemory");
-	check_vk(vkBindImageMemory(device, slot.image, slot.memory, 0), "vkBindImageMemory");
+	exportable_check_vk(vkAllocateMemory(device, &allocateInfo, nullptr, &slot.memory), "vkAllocateMemory");
+	exportable_check_vk(vkBindImageMemory(device, slot.image, slot.memory, 0), "vkBindImageMemory");
 	slot.memorySize = requirements.size;
+}
 
-	slot.acquireSemaphore = create_semaphore(false);
-	if (exportable) {
-		slot.readySemaphore = create_semaphore(true);
-		slot.releasedSemaphore = create_semaphore(true);
-	}
-	slot.state = exportable_image_state::free;
-	slot.hasBeenUsed = false;
+VkSemaphore tffr_vulkan_platform::create_semaphore(VkExternalSemaphoreHandleTypeFlags exportHandleTypes) {
+	VkExportSemaphoreCreateInfo exportInfo {
+		.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
+		.handleTypes = exportHandleTypes
+	};
+	VkSemaphoreCreateInfo createInfo {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		.pNext = exportHandleTypes != 0 ? &exportInfo : nullptr
+	};
+	VkSemaphore result;
+	exportable_check_vk(vkCreateSemaphore(getDevice(), &createInfo, nullptr, &result), "vkCreateSemaphore");
+	return result;
 }
 
 exportable_swap_chain* tffr_vulkan_platform::create_exportable_swap_chain(exportable_surface_descriptor* descriptor) {
@@ -189,7 +157,7 @@ exportable_swap_chain* tffr_vulkan_platform::create_exportable_swap_chain(export
 		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
 		.queueFamilyIndex = getGraphicsQueueFamilyIndex()
 	};
-	check_vk(vkCreateCommandPool(device, &poolInfo, nullptr, &swapChain->commandPool), "vkCreateCommandPool");
+	exportable_check_vk(vkCreateCommandPool(device, &poolInfo, nullptr, &swapChain->commandPool), "vkCreateCommandPool");
 	for (uint32_t i = 0; i < exportable_swap_chain::InitialSubmissionSlotCount; ++i) add_submission_slot(swapChain);
 
 	{
@@ -197,8 +165,17 @@ exportable_swap_chain* tffr_vulkan_platform::create_exportable_swap_chain(export
 		descriptor->liveWidth = descriptor->width;
 		descriptor->liveHeight = descriptor->height;
 		for (uint32_t i = 0; i <= ScratchSlotIndex; ++i) {
-			descriptor->slots[i] = {};
-			create_exportable_image(swapChain, descriptor->slots[i], i != ScratchSlotIndex);
+			auto& slot = descriptor->slots[i];
+			slot = {};
+			if (i == ScratchSlotIndex) create_local_image(descriptor, slot);
+			else create_shared_image(descriptor, slot);
+			slot.acquireSemaphore = create_semaphore(0);
+			if (i != ScratchSlotIndex && uses_completion_fence(descriptor)) {
+				VkFenceCreateInfo fenceInfo { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+				exportable_check_vk(vkCreateFence(device, &fenceInfo, nullptr, &slot.completionFence), "vkCreateFence");
+			}
+			slot.state = exportable_image_state::free;
+			slot.hasBeenUsed = false;
 		}
 		descriptor->presentedQueue.clear();
 		descriptor->nextAcquireStartIndex = 0;
@@ -220,7 +197,7 @@ exportable_swap_chain* tffr_vulkan_platform::create_exportable_swap_chain(export
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
 	};
-	check_vk(vkCreateImage(device, &depthInfo, nullptr, &swapChain->depthImage), "vkCreateImage");
+	exportable_check_vk(vkCreateImage(device, &depthInfo, nullptr, &swapChain->depthImage), "vkCreateImage");
 	VkMemoryRequirements depthRequirements;
 	vkGetImageMemoryRequirements(device, swapChain->depthImage, &depthRequirements);
 	VkMemoryAllocateInfo depthAllocateInfo {
@@ -228,8 +205,8 @@ exportable_swap_chain* tffr_vulkan_platform::create_exportable_swap_chain(export
 		.allocationSize = depthRequirements.size,
 		.memoryTypeIndex = find_memory_type(depthRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 	};
-	check_vk(vkAllocateMemory(device, &depthAllocateInfo, nullptr, &swapChain->depthMemory), "vkAllocateMemory");
-	check_vk(vkBindImageMemory(device, swapChain->depthImage, swapChain->depthMemory, 0), "vkBindImageMemory");
+	exportable_check_vk(vkAllocateMemory(device, &depthAllocateInfo, nullptr, &swapChain->depthMemory), "vkAllocateMemory");
+	exportable_check_vk(vkBindImageMemory(device, swapChain->depthImage, swapChain->depthMemory, 0), "vkBindImageMemory");
 
 	swapChains.insert(swapChain);
 	return swapChain;
@@ -245,11 +222,16 @@ void tffr_vulkan_platform::destroy_exportable_swap_chain(exportable_swap_chain* 
 		auto descriptor = swapChain->descriptor;
 		std::lock_guard lock { descriptor->mutex };
 		for (auto& slot : descriptor->slots) {
+			if (slot.completionFence != VK_NULL_HANDLE) {
+				if (slot.completionFencePending) vkWaitForFences(device, 1, &slot.completionFence, VK_TRUE, UINT64_MAX);
+				vkDestroyFence(device, slot.completionFence, nullptr);
+			}
 			if (slot.image != VK_NULL_HANDLE) vkDestroyImage(device, slot.image, nullptr);
 			if (slot.memory != VK_NULL_HANDLE) vkFreeMemory(device, slot.memory, nullptr);
 			if (slot.readySemaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, slot.readySemaphore, nullptr);
 			if (slot.releasedSemaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, slot.releasedSemaphore, nullptr);
 			if (slot.acquireSemaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, slot.acquireSemaphore, nullptr);
+			release_shared_image_os_resources(slot);
 			slot = {};
 		}
 		descriptor->presentedQueue.clear();
@@ -273,10 +255,10 @@ void tffr_vulkan_platform::add_submission_slot(exportable_swap_chain* swapChain)
 		.commandBufferCount = 1
 	};
 	VkCommandBuffer commandBuffer;
-	check_vk(vkAllocateCommandBuffers(swapChain->device, &bufferInfo, &commandBuffer), "vkAllocateCommandBuffers");
+	exportable_check_vk(vkAllocateCommandBuffers(swapChain->device, &bufferInfo, &commandBuffer), "vkAllocateCommandBuffers");
 	VkFenceCreateInfo fenceInfo { .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 	VkFence fence;
-	check_vk(vkCreateFence(swapChain->device, &fenceInfo, nullptr, &fence), "vkCreateFence");
+	exportable_check_vk(vkCreateFence(swapChain->device, &fenceInfo, nullptr, &fence), "vkCreateFence");
 	swapChain->commandBuffers.push_back(commandBuffer);
 	swapChain->fences.push_back(fence);
 	swapChain->fenceSubmitted.push_back(0);
@@ -289,7 +271,7 @@ uint32_t tffr_vulkan_platform::acquire_submission_slot(exportable_swap_chain* sw
 		auto const slot = (swapChain->nextSubmissionSlot + offset) % slotCount;
 		if (swapChain->fenceSubmitted[slot] && vkGetFenceStatus(device, swapChain->fences[slot]) != VK_SUCCESS) continue;
 		if (swapChain->fenceSubmitted[slot]) {
-			check_vk(vkResetFences(device, 1, &swapChain->fences[slot]), "vkResetFences");
+			exportable_check_vk(vkResetFences(device, 1, &swapChain->fences[slot]), "vkResetFences");
 			swapChain->fenceSubmitted[slot] = 0;
 		}
 		swapChain->nextSubmissionSlot = (slot + 1U) % slotCount;
@@ -302,8 +284,8 @@ uint32_t tffr_vulkan_platform::acquire_submission_slot(exportable_swap_chain* sw
 	}
 
 	auto const slot = swapChain->nextSubmissionSlot % slotCount;
-	check_vk(vkWaitForFences(device, 1, &swapChain->fences[slot], VK_TRUE, UINT64_MAX), "vkWaitForFences");
-	check_vk(vkResetFences(device, 1, &swapChain->fences[slot]), "vkResetFences");
+	exportable_check_vk(vkWaitForFences(device, 1, &swapChain->fences[slot], VK_TRUE, UINT64_MAX), "vkWaitForFences");
+	exportable_check_vk(vkResetFences(device, 1, &swapChain->fences[slot]), "vkResetFences");
 	swapChain->fenceSubmitted[slot] = 0;
 	swapChain->nextSubmissionSlot = (slot + 1U) % slotCount;
 	return slot;
@@ -314,12 +296,12 @@ void tffr_vulkan_platform::submit(exportable_swap_chain* swapChain, exportable_s
 	auto fence = swapChain->fences[slotIndex];
 	auto commandBuffer = swapChain->commandBuffers[slotIndex];
 
-	check_vk(vkResetCommandBuffer(commandBuffer, 0), "vkResetCommandBuffer");
+	exportable_check_vk(vkResetCommandBuffer(commandBuffer, 0), "vkResetCommandBuffer");
 	VkCommandBufferBeginInfo beginInfo {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
 	};
-	check_vk(vkBeginCommandBuffer(commandBuffer, &beginInfo), "vkBeginCommandBuffer");
+	exportable_check_vk(vkBeginCommandBuffer(commandBuffer, &beginInfo), "vkBeginCommandBuffer");
 	VkImageMemoryBarrier barrier {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		.srcAccessMask = submission.srcAccess,
@@ -332,12 +314,14 @@ void tffr_vulkan_platform::submit(exportable_swap_chain* swapChain, exportable_s
 		.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
 	};
 	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-	check_vk(vkEndCommandBuffer(commandBuffer), "vkEndCommandBuffer");
+	exportable_check_vk(vkEndCommandBuffer(commandBuffer), "vkEndCommandBuffer");
 
+	exportable_submit_extension_storage extensionStorage;
 	VkPipelineStageFlags waitStages[EXPORTABLE_SURFACE_IMAGE_COUNT + 2];
 	for (uint32_t i = 0; i < submission.waitSemaphoreCount; ++i) waitStages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 	VkSubmitInfo submitInfo {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext = build_submit_extension_chain(submission, extensionStorage),
 		.waitSemaphoreCount = submission.waitSemaphoreCount,
 		.pWaitSemaphores = submission.waitSemaphores,
 		.pWaitDstStageMask = waitStages,
@@ -346,8 +330,12 @@ void tffr_vulkan_platform::submit(exportable_swap_chain* swapChain, exportable_s
 		.signalSemaphoreCount = submission.signalSemaphore != VK_NULL_HANDLE ? 1U : 0U,
 		.pSignalSemaphores = submission.signalSemaphore != VK_NULL_HANDLE ? &submission.signalSemaphore : nullptr
 	};
-	check_vk(vkQueueSubmit(swapChain->queue, 1, &submitInfo, fence), "vkQueueSubmit");
+	exportable_check_vk(vkQueueSubmit(swapChain->queue, 1, &submitInfo, fence), "vkQueueSubmit");
 	swapChain->fenceSubmitted[slotIndex] = 1;
+
+	if (submission.completionFence != VK_NULL_HANDLE) {
+		exportable_check_vk(vkQueueSubmit(swapChain->queue, 0, nullptr, submission.completionFence), "vkQueueSubmit");
+	}
 }
 
 filament::backend::VulkanPlatform::SwapChainPtr tffr_vulkan_platform::createSwapChain(void* nativeWindow, uint64_t flags, VkExtent2D extent) {
@@ -365,7 +353,7 @@ filament::backend::VulkanPlatform::SwapChainBundle tffr_vulkan_platform::getSwap
 	result.colors = utils::FixedCapacityVector<VkImage>::with_capacity(ScratchSlotIndex + 1U);
 	for (uint32_t i = 0; i <= ScratchSlotIndex; ++i) result.colors.push_back(descriptor->slots[i].image);
 	result.depth = swapChain->depthImage;
-	result.colorFormat = ExportableColorFormat;
+	result.colorFormat = descriptor->colorFormat;
 	result.depthFormat = swapChain->depthFormat;
 	result.extent = { descriptor->liveWidth, descriptor->liveHeight };
 	result.layerCount = 1;
@@ -382,13 +370,14 @@ VkResult tffr_vulkan_platform::acquire(SwapChainPtr handle, ImageSyncData* outIm
 	auto needsSubmit = false;
 	uint32_t chosenIndex;
 	VkSemaphore acquireSemaphore;
+	VkFence completionFenceToRecycle = VK_NULL_HANDLE;
 	{
 		std::lock_guard lock { descriptor->mutex };
 
 		for (uint32_t i = 0; i < ScratchSlotIndex; ++i) {
 			auto& slot = descriptor->slots[i];
 			if (slot.state != exportable_image_state::pending_discard) continue;
-			submission.waitSemaphores[submission.waitSemaphoreCount++] = slot.readySemaphore;
+			if (uses_semaphores(descriptor)) submission.waitSemaphores[submission.waitSemaphoreCount++] = slot.readySemaphore;
 			slot.state = exportable_image_state::free;
 		}
 
@@ -403,13 +392,23 @@ VkResult tffr_vulkan_platform::acquire(SwapChainPtr handle, ImageSyncData* outIm
 		}
 
 		auto& chosen = descriptor->slots[chosenIndex];
-		if (chosen.state == exportable_image_state::released) {
+		auto const isExported = chosenIndex != ScratchSlotIndex;
+		if (chosen.state == exportable_image_state::released && uses_semaphores(descriptor)) {
 			submission.waitSemaphores[submission.waitSemaphoreCount++] = chosen.releasedSemaphore;
 		}
-		if (chosenIndex != ScratchSlotIndex) chosen.state = exportable_image_state::in_flight;
+		if (isExported && uses_keyed_mutex(descriptor)) {
+			submission.keyedMutexMemory = chosen.memory;
+			submission.acquireKeyedMutex = true;
+			submission.keyedMutexAcquireKey = chosen.keyedMutexKey;
+		}
+		if (isExported && chosen.completionFencePending) {
+			completionFenceToRecycle = chosen.completionFence;
+			chosen.completionFencePending = false;
+		}
+		if (isExported) chosen.state = exportable_image_state::in_flight;
 
-		needsSubmit = chosen.hasBeenUsed || submission.waitSemaphoreCount > 0;
-		auto const acquiresFromExternal = chosen.hasBeenUsed && chosenIndex != ScratchSlotIndex;
+		needsSubmit = chosen.hasBeenUsed || submission.waitSemaphoreCount > 0 || submission.acquireKeyedMutex;
+		auto const acquiresFromExternal = chosen.hasBeenUsed && isExported;
 		submission.image = chosen.image;
 		submission.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		submission.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -422,6 +421,10 @@ VkResult tffr_vulkan_platform::acquire(SwapChainPtr handle, ImageSyncData* outIm
 		chosen.hasBeenUsed = true;
 	}
 
+	if (completionFenceToRecycle != VK_NULL_HANDLE) {
+		exportable_check_vk(vkWaitForFences(swapChain->device, 1, &completionFenceToRecycle, VK_TRUE, UINT64_MAX), "vkWaitForFences");
+		exportable_check_vk(vkResetFences(swapChain->device, 1, &completionFenceToRecycle), "vkResetFences");
+	}
 
 	outImageSyncData->imageIndex = chosenIndex;
 	outImageSyncData->imageReadySemaphore = VK_NULL_HANDLE;
@@ -441,12 +444,22 @@ VkResult tffr_vulkan_platform::present(SwapChainPtr handle, uint32_t index, VkSe
 	exportable_submission submission;
 	{
 		std::lock_guard lock { descriptor->mutex };
-		auto const& slot = descriptor->slots[index];
+		auto& slot = descriptor->slots[index];
 		submission.image = slot.image;
-		submission.signalSemaphore = isExported ? slot.readySemaphore : VK_NULL_HANDLE;
+		if (isExported && uses_semaphores(descriptor)) submission.signalSemaphore = slot.readySemaphore;
+		if (isExported && uses_keyed_mutex(descriptor)) {
+			submission.keyedMutexMemory = slot.memory;
+			submission.releaseKeyedMutex = true;
+			submission.keyedMutexReleaseKey = 1;
+			slot.keyedMutexKey = 1;
+		}
+		if (isExported && uses_completion_fence(descriptor)) {
+			submission.completionFence = slot.completionFence;
+			slot.completionFencePending = true;
+		}
 	}
 	submission.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	submission.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	submission.newLayout = isExported ? descriptor->exportedLayout : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	submission.srcAccess = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	submission.dstAccess = 0;
 	submission.srcQueueFamily = isExported ? getGraphicsQueueFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
@@ -485,17 +498,33 @@ void tffr_vulkan_platform::destroy(SwapChainPtr handle) {
 	destroy_exportable_swap_chain(swapChain);
 }
 
-void exportable_surface_backend::get_capabilities(int32_t* outHandleType, int32_t* outSyncKind, uint8_t* outDeviceUuid) {
-	if (tffr_vulkan_platform::instance == nullptr || !tffr_vulkan_platform::instance->exportingSupported) return;
-	*outHandleType = ExportableSurfaceHandleTypeId;
-	*outSyncKind = ExportableSurfaceSyncKindId;
-	std::memcpy(outDeviceUuid, exportable_device_uuid, EXPORTABLE_SURFACE_DEVICE_UUID_LENGTH);
+void exportable_surface_backend::get_support(int32_t handleType, interop_bool* outSupported, int32_t* outSyncKind) {
+	if (tffr_vulkan_platform::instance == nullptr || !tffr_vulkan_platform::instance->supports_handle_type(handleType)) return;
+	*outSupported = interop_bool_true;
+	*outSyncKind = sync_kind_for(handleType);
 }
 
-ExportableSurfaceDescriptorHandle exportable_surface_backend::allocate_descriptor(uint32_t width, uint32_t height) {
-	ThrowIf(tffr_vulkan_platform::instance == nullptr || !tffr_vulkan_platform::instance->exportingSupported, "Exportable surfaces are not supported on this device.");
+void exportable_surface_backend::get_device_ids(uint8_t* outDeviceUuid, uint8_t* outDeviceLuid, interop_bool* outLuidValid) {
+	auto platform = tffr_vulkan_platform::instance;
+	if (platform == nullptr) return;
+	std::memcpy(outDeviceUuid, platform->deviceUuid, EXPORTABLE_SURFACE_DEVICE_UUID_LENGTH);
+	std::memcpy(outDeviceLuid, platform->deviceLuid, EXPORTABLE_SURFACE_DEVICE_LUID_LENGTH);
+	*outLuidValid = platform->deviceLuidValid ? interop_bool_true : interop_bool_false;
+}
+
+ExportableSurfaceDescriptorHandle exportable_surface_backend::allocate_descriptor(uint32_t width, uint32_t height, int32_t handleType) {
+	ThrowIf(tffr_vulkan_platform::instance == nullptr || !tffr_vulkan_platform::instance->supports_handle_type(handleType), "Exportable surfaces with this handle type are not supported on this device.");
 	ThrowIf(width == 0 || height == 0, "Exportable surface dimensions must be positive.");
 	auto descriptor = new exportable_surface_descriptor();
+	descriptor->handleType = handleType;
+	if (handleType == EXPORTABLE_SURFACE_HANDLE_TYPE_VULKAN_OPAQUE_FD) {
+		descriptor->colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+		descriptor->exportedLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	}
+	else {
+		descriptor->colorFormat = VK_FORMAT_B8G8R8A8_UNORM;
+		descriptor->exportedLayout = VK_IMAGE_LAYOUT_GENERAL;
+	}
 	descriptor->width = width;
 	descriptor->height = height;
 	tffr_vulkan_platform::instance->register_descriptor(descriptor);
@@ -526,22 +555,10 @@ bool exportable_surface_backend::export_image_handles(ExportableSurfaceDescripto
 	std::lock_guard lock { descriptor->mutex };
 	if (!descriptor->hasLiveSwapChain || descriptor->generation != generation) return false;
 	auto const& slot = descriptor->slots[index];
-	auto platform = tffr_vulkan_platform::instance;
-	int64_t imageHandle = -1;
-	int64_t readyHandle = -1;
-	int64_t releasedHandle = -1;
-	check_vk(platform->export_memory_handle(slot.memory, &imageHandle), "export_memory_handle");
-	auto readyResult = platform->export_semaphore_handle(slot.readySemaphore, &readyHandle);
-	if (readyResult != VK_SUCCESS) {
-		tffr_vulkan_platform::close_exported_handle(imageHandle);
-		check_vk(readyResult, "export_semaphore_handle");
-	}
-	auto releasedResult = platform->export_semaphore_handle(slot.releasedSemaphore, &releasedHandle);
-	if (releasedResult != VK_SUCCESS) {
-		tffr_vulkan_platform::close_exported_handle(imageHandle);
-		tffr_vulkan_platform::close_exported_handle(readyHandle);
-		check_vk(releasedResult, "export_semaphore_handle");
-	}
+	int64_t imageHandle = 0;
+	int64_t readyHandle = 0;
+	int64_t releasedHandle = 0;
+	exportable_check_vk(tffr_vulkan_platform::instance->export_image_handles(descriptor, slot, &imageHandle, &readyHandle, &releasedHandle), "export_image_handles");
 	*outImageHandle = imageHandle;
 	*outImageSizeBytes = slot.memorySize;
 	*outReadyHandle = readyHandle;
@@ -549,19 +566,33 @@ bool exportable_surface_backend::export_image_handles(ExportableSurfaceDescripto
 	return true;
 }
 
-void exportable_surface_backend::close_handle(int64_t handle) {
-	tffr_vulkan_platform::close_exported_handle(handle);
+void exportable_surface_backend::close_handle(int32_t handleType, int64_t handle) {
+	tffr_vulkan_platform::close_exported_handle(handleType, handle);
 }
 
 bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex) {
 	std::lock_guard lock { descriptor->mutex };
 	if (!descriptor->hasLiveSwapChain || descriptor->generation != generation || descriptor->presentedQueue.empty()) return false;
-	auto latest = descriptor->presentedQueue.back();
-	descriptor->presentedQueue.pop_back();
-	for (auto superseded : descriptor->presentedQueue) {
-		descriptor->slots[superseded].state = exportable_image_state::pending_discard;
+
+	auto latestPosition = descriptor->presentedQueue.size() - 1U;
+	if (uses_completion_fence(descriptor)) {
+		auto device = tffr_vulkan_platform::instance->getDevice();
+		auto found = false;
+		for (auto position = descriptor->presentedQueue.size(); position > 0; --position) {
+			auto const& slot = descriptor->slots[descriptor->presentedQueue[position - 1U]];
+			if (vkGetFenceStatus(device, slot.completionFence) != VK_SUCCESS) continue;
+			latestPosition = position - 1U;
+			found = true;
+			break;
+		}
+		if (!found) return false;
 	}
-	descriptor->presentedQueue.clear();
+
+	auto latest = descriptor->presentedQueue[latestPosition];
+	for (size_t position = 0; position < latestPosition; ++position) {
+		descriptor->slots[descriptor->presentedQueue[position]].state = exportable_image_state::pending_discard;
+	}
+	descriptor->presentedQueue.erase(descriptor->presentedQueue.begin(), descriptor->presentedQueue.begin() + static_cast<std::ptrdiff_t>(latestPosition) + 1);
 	descriptor->slots[latest].state = exportable_image_state::handed;
 	*outIndex = latest;
 	return true;
@@ -572,6 +603,11 @@ void exportable_surface_backend::return_image(ExportableSurfaceDescriptorHandle 
 	if (descriptor->generation != generation || !descriptor->hasLiveSwapChain) return;
 	auto& slot = descriptor->slots[index];
 	if (slot.state != exportable_image_state::handed) return;
+	if (uses_completion_fence(descriptor)) {
+		slot.state = exportable_image_state::released;
+		return;
+	}
+	if (consumerSignalledRelease && uses_keyed_mutex(descriptor)) slot.keyedMutexKey = 0;
 	slot.state = consumerSignalledRelease ? exportable_image_state::released : exportable_image_state::pending_discard;
 }
 

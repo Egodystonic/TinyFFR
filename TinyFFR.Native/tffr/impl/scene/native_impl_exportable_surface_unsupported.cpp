@@ -1,13 +1,15 @@
 #include "pch.h"
 #include "scene/native_impl_exportable_surface_vulkan.h"
 
-#if !defined(TFFR_EXPORTABLE_SURFACE_VULKAN)
+#if !defined(TFFR_LINUX) && !defined(TFFR_WIN)
 
 struct exportable_surface_descriptor { };
 
-void exportable_surface_backend::get_capabilities(int32_t* outHandleType, int32_t* outSyncKind, uint8_t* outDeviceUuid) { }
+void exportable_surface_backend::get_support(int32_t handleType, interop_bool* outSupported, int32_t* outSyncKind) { }
 
-ExportableSurfaceDescriptorHandle exportable_surface_backend::allocate_descriptor(uint32_t width, uint32_t height) {
+void exportable_surface_backend::get_device_ids(uint8_t* outDeviceUuid, uint8_t* outDeviceLuid, interop_bool* outLuidValid) { }
+
+ExportableSurfaceDescriptorHandle exportable_surface_backend::allocate_descriptor(uint32_t width, uint32_t height, int32_t handleType) {
 	Throw("Exportable surfaces are not supported on this platform.");
 }
 
@@ -26,7 +28,7 @@ bool exportable_surface_backend::export_image_handles(ExportableSurfaceDescripto
 	Throw("Exportable surfaces are not supported on this platform.");
 }
 
-void exportable_surface_backend::close_handle(int64_t handle) { }
+void exportable_surface_backend::close_handle(int32_t handleType, int64_t handle) { }
 
 bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex) {
 	return false;

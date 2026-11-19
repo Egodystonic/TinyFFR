@@ -5,25 +5,36 @@
 #include "utils_and_constants.h"
 #include "filament/Engine.h"
 
-void native_impl_exportable_surface::get_exportable_surface_capabilities(int32_t* outHandleType, int32_t* outSyncKind, uint8_t* outDeviceUuid) {
-	ThrowIfNull(outHandleType, "Handle type out pointer was null.");
+void native_impl_exportable_surface::get_exportable_surface_support(int32_t handleType, interop_bool* outSupported, int32_t* outSyncKind) {
+	ThrowIfNull(outSupported, "Supported out pointer was null.");
 	ThrowIfNull(outSyncKind, "Sync kind out pointer was null.");
-	ThrowIfNull(outDeviceUuid, "Device UUID out pointer was null.");
-	*outHandleType = EXPORTABLE_SURFACE_HANDLE_TYPE_NONE;
+	*outSupported = interop_bool_false;
 	*outSyncKind = EXPORTABLE_SURFACE_SYNC_KIND_NONE;
-	exportable_surface_backend::get_capabilities(outHandleType, outSyncKind, outDeviceUuid);
+	exportable_surface_backend::get_support(handleType, outSupported, outSyncKind);
 }
-StartExportedFunc(get_exportable_surface_capabilities, int32_t* outHandleType, int32_t* outSyncKind, uint8_t* outDeviceUuid) {
-	native_impl_exportable_surface::get_exportable_surface_capabilities(outHandleType, outSyncKind, outDeviceUuid);
+StartExportedFunc(get_exportable_surface_support, int32_t handleType, interop_bool* outSupported, int32_t* outSyncKind) {
+	native_impl_exportable_surface::get_exportable_surface_support(handleType, outSupported, outSyncKind);
 	EndExportedFunc
 }
 
-void native_impl_exportable_surface::allocate_exportable_surface_descriptor(uint32_t width, uint32_t height, ExportableSurfaceDescriptorHandle* outDescriptor) {
-	ThrowIfNull(outDescriptor, "Descriptor out pointer was null.");
-	*outDescriptor = exportable_surface_backend::allocate_descriptor(width, height);
+void native_impl_exportable_surface::get_exportable_surface_device_ids(uint8_t* outDeviceUuid, uint8_t* outDeviceLuid, interop_bool* outLuidValid) {
+	ThrowIfNull(outDeviceUuid, "Device UUID out pointer was null.");
+	ThrowIfNull(outDeviceLuid, "Device LUID out pointer was null.");
+	ThrowIfNull(outLuidValid, "LUID valid out pointer was null.");
+	*outLuidValid = interop_bool_false;
+	exportable_surface_backend::get_device_ids(outDeviceUuid, outDeviceLuid, outLuidValid);
 }
-StartExportedFunc(allocate_exportable_surface_descriptor, uint32_t width, uint32_t height, ExportableSurfaceDescriptorHandle* outDescriptor) {
-	native_impl_exportable_surface::allocate_exportable_surface_descriptor(width, height, outDescriptor);
+StartExportedFunc(get_exportable_surface_device_ids, uint8_t* outDeviceUuid, uint8_t* outDeviceLuid, interop_bool* outLuidValid) {
+	native_impl_exportable_surface::get_exportable_surface_device_ids(outDeviceUuid, outDeviceLuid, outLuidValid);
+	EndExportedFunc
+}
+
+void native_impl_exportable_surface::allocate_exportable_surface_descriptor(uint32_t width, uint32_t height, int32_t handleType, ExportableSurfaceDescriptorHandle* outDescriptor) {
+	ThrowIfNull(outDescriptor, "Descriptor out pointer was null.");
+	*outDescriptor = exportable_surface_backend::allocate_descriptor(width, height, handleType);
+}
+StartExportedFunc(allocate_exportable_surface_descriptor, uint32_t width, uint32_t height, int32_t handleType, ExportableSurfaceDescriptorHandle* outDescriptor) {
+	native_impl_exportable_surface::allocate_exportable_surface_descriptor(width, height, handleType, outDescriptor);
 	EndExportedFunc
 }
 
@@ -87,11 +98,11 @@ StartExportedFunc(export_exportable_surface_image_handles, ExportableSurfaceDesc
 	EndExportedFunc
 }
 
-void native_impl_exportable_surface::close_exportable_surface_handle(int64_t handle) {
-	exportable_surface_backend::close_handle(handle);
+void native_impl_exportable_surface::close_exportable_surface_handle(int32_t handleType, int64_t handle) {
+	exportable_surface_backend::close_handle(handleType, handle);
 }
-StartExportedFunc(close_exportable_surface_handle, int64_t handle) {
-	native_impl_exportable_surface::close_exportable_surface_handle(handle);
+StartExportedFunc(close_exportable_surface_handle, int32_t handleType, int64_t handle) {
+	native_impl_exportable_surface::close_exportable_surface_handle(handleType, handle);
 	EndExportedFunc
 }
 

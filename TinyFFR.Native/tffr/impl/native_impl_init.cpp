@@ -79,15 +79,17 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 		.backend(backend)
 		.featureLevel(filament::Engine::FeatureLevel::FEATURE_LEVEL_3)
 		.config(&config);
-#if defined(TFFR_LINUX)
-	tffr_vulkan_platform::instance = new tffr_vulkan_platform();
-	builder.platform(tffr_vulkan_platform::instance);
+#if defined(TFFR_LINUX) || defined(TFFR_WIN)
+	if (backend == filament::Engine::Backend::VULKAN) {
+		tffr_vulkan_platform::instance = new tffr_vulkan_platform();
+		builder.platform(tffr_vulkan_platform::instance);
+	}
 #endif
 	filament_engine_ptr = builder.build();
 
 	ThrowIfNull(filament_engine_ptr, "Could not initialize filament.");
-#if defined(TFFR_LINUX)
-	tffr_vulkan_platform::instance->evaluate_export_support();
+#if defined(TFFR_LINUX) || defined(TFFR_WIN)
+	if (tffr_vulkan_platform::instance != nullptr) tffr_vulkan_platform::instance->evaluate_export_support();
 #endif
 
 	native_impl_texture_compression::initialize_encoders();
@@ -99,7 +101,8 @@ StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBu
 void native_impl_init::on_factory_teardown() {
 	vsync_enabled = interop_bool_true;
 	if (filament_engine_ptr != nullptr) filament::Engine::destroy(&filament_engine_ptr);
-#if defined(TFFR_LINUX)
+#if defined(TFFR_LINUX) || defined(TFFR_WIN)
+	if (tffr_vulkan_platform::instance != nullptr) tffr_vulkan_platform::instance->release_os_resources();
 	DeleteAndNull(tffr_vulkan_platform::instance);
 #endif
 }

@@ -149,6 +149,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_linux.cpp" />
     <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_unsupported.cpp" />
     <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_vulkan.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_windows.cpp" />
     <ClCompile Include="tffr\impl\scene\native_impl_render.cpp" />
     <ClCompile Include="tffr\impl\scene\native_impl_scene.cpp" />
     <ClCompile Include="tffr\impl\scene\objects\native_impl_objects.cpp" />

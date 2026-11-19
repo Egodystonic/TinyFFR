@@ -33,7 +33,9 @@ namespace Egodystonic.TinyFFR.Wpf;
 /// </para>
 /// </remarks>
 public class TinyFfrSceneView : Control {
+	readonly WpfGpuSharedFramePresenter _gpuPresenter;
 	WriteableBitmap? _bitmap;
+	long _cpuFramesDrawn;
 
 	/// <summary>
 	/// Identifies the <see cref="Renderer"/> property.
@@ -176,7 +178,14 @@ public class TinyFfrSceneView : Control {
 	public TinyFfrSceneView() {
 		Focusable = true;
 		RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.HighQuality);
+		_gpuPresenter = new WpfGpuSharedFramePresenter(IdempotentlyUpdateRendererStateAccordingToControlState, InvalidateVisual);
 	}
+
+	public bool IsUsingGpuSharedFrames => _gpuPresenter.IsPresenting;
+
+	public string? GpuSharedFramesUnavailableReason => _gpuPresenter.IsPresenting ? null : _gpuPresenter.UnavailableReason;
+
+	public long DisplayedFrameCount => _cpuFramesDrawn + _gpuPresenter.DisplayedFrameCount;
 
 	/// <summary>
 	/// Re-evaluates the internal render resolution when the display's scaling factor changes, then defers to the base implementation.
@@ -238,6 +247,7 @@ public class TinyFfrSceneView : Control {
 		finally {
 			_bitmap.Unlock();
 		}
+		_cpuFramesDrawn++;
 
 		InvalidateVisual();
 	}
@@ -250,6 +260,11 @@ public class TinyFfrSceneView : Control {
 	/// <param name="context">The drawing context to draw in to.</param>
 	protected override void OnRender(DrawingContext context) {
 		base.OnRender(context);
+
+		if (_gpuPresenter.ImageToDraw is { } gpuImage) {
+			context.DrawImage(gpuImage, new Rect(BoundsSize));
+			return;
+		}
 
 		if (_bitmap == null) {
 			context.DrawRectangle(FallbackBrush, null, new Rect(BoundsSize));
@@ -327,7 +342,25 @@ public class TinyFfrSceneView : Control {
 			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
 		}
 
-		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
-		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		if (rendererLocal != null) {
+			if (_gpuPresenter.IsUsable && BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, _gpuPresenter)) {
+				DropCpuBitmap();
+				return;
+			}
+			BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		}
+		else {
+			if (_gpuPresenter.IsUsable && BindableRendererCompositorImplProvider.TryStartOrContinueHandlingGpuFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, _gpuPresenter)) {
+				DropCpuBitmap();
+				return;
+			}
+			BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		}
+	}
+
+	void DropCpuBitmap() {
+		if (_bitmap == null) return;
+		_bitmap = null;
+		InvalidateVisual();
 	}
 }

@@ -175,6 +175,8 @@ public class TinyFfrSceneView : Control {
 
 	public bool IsUsingGpuSharedFrames => _gpuPresenter.IsPresenting;
 
+	public string? GpuSharedFramesUnavailableReason => _gpuPresenter.IsPresenting ? null : _gpuPresenter.UnavailableReason;
+
 	public long DisplayedFrameCount => _cpuFramesDrawn + _gpuPresenter.DisplayedFrameCount;
 
 	/// <summary>

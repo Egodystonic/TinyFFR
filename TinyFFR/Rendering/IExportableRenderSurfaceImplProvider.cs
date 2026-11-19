@@ -11,6 +11,7 @@ public interface IExportableRenderSurfaceImplProvider : IDisposableResourceImplP
 	void SetDimensions(ResourceHandle<ExportableRenderSurface> handle, XYPair<int> newDimensions);
 	ExportableRenderSurfaceCapabilities GetCapabilities(ResourceHandle<ExportableRenderSurface> handle);
 	void CopyDeviceUuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination);
+	bool TryCopyDeviceLuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination);
 	int GetImageCount(ResourceHandle<ExportableRenderSurface> handle);
 	bool TryGetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle, out int generation, out XYPair<int> dimensions);
 	ExportedRenderSurfaceImage? ExtractImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index);

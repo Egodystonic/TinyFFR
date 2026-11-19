@@ -4,6 +4,7 @@
 namespace Egodystonic.TinyFFR.Rendering;
 
 interface IBindableRendererGpuFrameSink {
+	ExportableRenderSurfaceHandleType RequiredHandleType { get; }
 	bool CanAcceptFrame { get; }
 	void OnSurfaceAttached(ExportableRenderSurface surface, IBindableRendererGpuFrameSource source);
 	void OnSurfaceDetached(ExportableRenderSurface surface);

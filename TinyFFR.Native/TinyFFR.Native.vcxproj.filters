@@ -128,6 +128,9 @@
     <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_vulkan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="tffr\impl\scene\native_impl_render.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

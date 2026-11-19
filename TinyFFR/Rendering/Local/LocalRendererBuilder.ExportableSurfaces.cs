@@ -10,36 +10,38 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
 sealed partial class LocalRendererBuilder {
-	readonly record struct ExportableSurfaceData(ResourceHandle<ExportableRenderSurface> Handle, XYPair<int> Dimensions, UIntPtr DescriptorHandle);
+	readonly record struct ExportableSurfaceData(ResourceHandle<ExportableRenderSurface> Handle, XYPair<int> Dimensions, UIntPtr DescriptorHandle, ExportableRenderSurfaceCapabilities Capabilities);
 
 	const string DefaultExportableRenderSurfaceName = "Unnamed Exportable Render Surface";
 	const int ExportableSurfaceImageCount = 5;
 	readonly ArrayPoolBackedMap<ResourceHandle<ExportableRenderSurface>, ExportableSurfaceData> _loadedExportableSurfaces = new();
 	readonly LocalExportableRenderSurfaceImplProvider _exportableRenderSurfaceImplProvider;
 
-	ExportableRenderSurfaceCapabilities QueryExportableRenderSurfaceCapabilities() {
+	ExportableRenderSurfaceCapabilities QueryExportableRenderSurfaceCapabilities(ExportableRenderSurfaceHandleType handleType) {
 		ThrowIfThisIsDisposed();
-		Span<byte> uuidSpace = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes];
-		GetExportableSurfaceCapabilities(out var handleType, out var syncKind, ref uuidSpace[0]).ThrowIfFailure();
-		var result = new ExportableRenderSurfaceCapabilities((ExportableRenderSurfaceHandleType) handleType, (ExportableRenderSurfaceSyncKind) syncKind); 
-		if (!Enum.IsDefined(result.HandleType) || !Enum.IsDefined(result.SyncKind)) return ExportableRenderSurfaceCapabilities.None;
+		GetExportableSurfaceSupport((int) handleType, out var supported, out var syncKind).ThrowIfFailure();
+		if (!supported) return ExportableRenderSurfaceCapabilities.None;
+		var result = new ExportableRenderSurfaceCapabilities(handleType, (ExportableRenderSurfaceSyncKind) syncKind);
+		if (!Enum.IsDefined(result.SyncKind)) return ExportableRenderSurfaceCapabilities.None;
 		return result;
 	}
 
 	public ExportableRenderSurface? TryCreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		if (!QueryExportableRenderSurfaceCapabilities().IsSupported) return null;
+		var capabilities = QueryExportableRenderSurfaceCapabilities(config.HandleType);
+		if (!capabilities.IsSupported) return null;
 
 		AllocateExportableSurfaceDescriptor(
 			(uint) config.Dimensions.X,
 			(uint) config.Dimensions.Y,
+			(int) config.HandleType,
 			out var descriptorHandle
 		).ThrowIfFailure();
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<ExportableRenderSurface>(_previousHandleId);
-		_loadedExportableSurfaces.Add(handle, new(handle, config.Dimensions, descriptorHandle));
+		_loadedExportableSurfaces.Add(handle, new(handle, config.Dimensions, descriptorHandle, capabilities));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultExportableRenderSurfaceName);
 		return HandleToInstance(handle);
 	}
@@ -60,14 +62,24 @@ sealed partial class LocalRendererBuilder {
 	}
 	public ExportableRenderSurfaceCapabilities GetCapabilities(ResourceHandle<ExportableRenderSurface> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return QueryExportableRenderSurfaceCapabilities();
+		return _loadedExportableSurfaces[handle].Capabilities;
 	}
 	public void CopyDeviceUuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (destination.Length < ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes) {
 			throw new ArgumentException($"Destination must be at least {ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes} bytes long.", nameof(destination));
 		}
-		GetExportableSurfaceCapabilities(out _, out _, ref destination[0]).ThrowIfFailure();
+		Span<byte> luidSpace = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceLuidLengthBytes];
+		GetExportableSurfaceDeviceIds(ref destination[0], ref luidSpace[0], out _).ThrowIfFailure();
+	}
+	public bool TryCopyDeviceLuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (destination.Length < ExportableRenderSurfaceCapabilities.DeviceLuidLengthBytes) {
+			throw new ArgumentException($"Destination must be at least {ExportableRenderSurfaceCapabilities.DeviceLuidLengthBytes} bytes long.", nameof(destination));
+		}
+		Span<byte> uuidSpace = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes];
+		GetExportableSurfaceDeviceIds(ref uuidSpace[0], ref destination[0], out var luidValid).ThrowIfFailure();
+		return luidValid;
 	}
 	public int GetImageCount(ResourceHandle<ExportableRenderSurface> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -89,7 +101,7 @@ sealed partial class LocalRendererBuilder {
 	}
 	public void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, ResourceHandle exportedHandle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		CloseExportableSurfaceHandle((long) exportedHandle.AsInteger).ThrowIfFailure();
+		CloseExportableSurfaceHandle((int) _loadedExportableSurfaces[handle].Capabilities.HandleType, (long) exportedHandle.AsInteger).ThrowIfFailure();
 	}
 	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -162,16 +174,23 @@ sealed partial class LocalRendererBuilder {
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<ExportableRenderSurface> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ExportableRenderSurface));
 
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_exportable_surface_capabilities")]
-	static extern InteropResult GetExportableSurfaceCapabilities(
-		out int outHandleType,
-		out int outSyncKind,
-		ref byte outDeviceUuid
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_exportable_surface_support")]
+	static extern InteropResult GetExportableSurfaceSupport(
+		int handleType,
+		out InteropBool outSupported,
+		out int outSyncKind
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_exportable_surface_device_ids")]
+	static extern InteropResult GetExportableSurfaceDeviceIds(
+		ref byte outDeviceUuid,
+		ref byte outDeviceLuid,
+		out InteropBool outLuidValid
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_exportable_surface_descriptor")]
 	static extern InteropResult AllocateExportableSurfaceDescriptor(
 		uint width,
 		uint height,
+		int handleType,
 		out UIntPtr outDescriptor
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_exportable_surface_descriptor_size")]
@@ -210,6 +229,7 @@ sealed partial class LocalRendererBuilder {
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "close_exportable_surface_handle")]
 	static extern InteropResult CloseExportableSurfaceHandle(
+		int handleType,
 		long handle
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "take_latest_presented_exportable_surface_image")]

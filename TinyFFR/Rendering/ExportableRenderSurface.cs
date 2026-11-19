@@ -7,12 +7,16 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 public enum ExportableRenderSurfaceHandleType {
 	None = 0,
-	VulkanOpaqueFileDescriptor = 1
+	VulkanOpaqueFileDescriptor = 1,
+	D3D11TextureNtHandle = 2,
+	D3D11TextureLegacySharedHandle = 3
 }
 
 public enum ExportableRenderSurfaceSyncKind {
 	None = 0,
-	VulkanOpaqueFileDescriptorSemaphores = 1
+	VulkanOpaqueFileDescriptorSemaphores = 1,
+	DxgiKeyedMutex = 2,
+	CompletedBeforeTake = 3
 }
 
 public readonly record struct ExportableRenderSurfaceImageSet {
@@ -40,6 +44,9 @@ public readonly record struct ExportedRenderSurfaceImage(ResourceHandle ImageHan
 
 public readonly record struct ExportableRenderSurfaceCapabilities(ExportableRenderSurfaceHandleType HandleType, ExportableRenderSurfaceSyncKind SyncKind) {
 	public const int DeviceUuidLengthBytes = 16;
+	public const int DeviceLuidLengthBytes = 8;
+	public const ulong ConsumerKeyedMutexAcquireKey = 1UL;
+	public const ulong ConsumerKeyedMutexReleaseKey = 0UL;
 	public static ExportableRenderSurfaceCapabilities None { get; } = new(ExportableRenderSurfaceHandleType.None, ExportableRenderSurfaceSyncKind.None);
 
 	public bool IsSupported => HandleType != ExportableRenderSurfaceHandleType.None && SyncKind != ExportableRenderSurfaceSyncKind.None;
@@ -91,6 +98,8 @@ public readonly struct ExportableRenderSurface : IDisposableResource<ExportableR
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyDeviceUuid(Span<byte> destination) => Implementation.CopyDeviceUuid(_handle, destination);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool TryCopyDeviceLuid(Span<byte> destination) => Implementation.TryCopyDeviceLuid(_handle, destination);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CloseExportedHandle(ResourceHandle exportedHandle) => Implementation.CloseExportedHandle(_handle, exportedHandle);

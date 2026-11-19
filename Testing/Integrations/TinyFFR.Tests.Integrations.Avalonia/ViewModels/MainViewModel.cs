@@ -356,7 +356,9 @@ public partial class MainViewModel : ViewModelBase {
 	string DescribeFramePath() {
 		var target = Compositor != null ? "compositor" : "renderer";
 		if (_inputSource is TinyFfrSceneView { IsUsingGpuSharedFrames: true }) return $"GPU shared frames ({target})";
-		return PreferCpuRenderBuffer ? $"CPU copy (preferred, {target})" : $"CPU copy (GPU path unavailable, {target})";
+		if (PreferCpuRenderBuffer) return $"CPU copy (preferred, {target})";
+		var reason = (_inputSource as TinyFfrSceneView)?.GpuSharedFramesUnavailableReason;
+		return reason != null ? $"CPU copy ({reason}, {target})" : $"CPU copy (GPU path unavailable, {target})";
 	}
 
 	partial void OnSelectedModelChanged(ModelListEntry? value) {

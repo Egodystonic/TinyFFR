@@ -53,7 +53,13 @@
                 <CheckBox Content="Animate (render every tick)" IsChecked="{Binding Animate}" />
                 <Button Command="{Binding RenderOnceCommand}" Content="Render once" />
                 <CheckBox Content="Composite mode" IsChecked="{Binding UseCompositor}" />
+                <CheckBox Content="Prefer CPU render buffer" IsChecked="{Binding PreferCpuRenderBuffer}" />
+                <CheckBox Content="Use dispatcher timer loop (instead of composition rendering)" IsChecked="{Binding UseDispatcherLoop}" />
                 <CheckBox Content="Overlay enabled" IsChecked="{Binding OverlayEnabled}" IsEnabled="{Binding UseCompositor}" />
+                <TextBlock Text="GPU synchronization frame buffer count" />
+                <ComboBox
+                    ItemsSource="{Binding GpuSynchronizationFrameBufferCountOptions}"
+                    SelectedItem="{Binding GpuSynchronizationFrameBufferCount}" />
                 <TextBlock Text="Internal render resolution" />
                 <ComboBox
                     DisplayMemberPath="DisplayName"
@@ -153,6 +159,16 @@
                 InternalRenderResolution="{Binding InternalRenderResolution}"
                 InternalRenderResolutionMax="{Binding InternalRenderResolutionMax}"
                 Renderer="{Binding Renderer}" />
+            <Border
+                Background="#B0000000"
+                CornerRadius="4"
+                HorizontalAlignment="Left"
+                IsHitTestVisible="False"
+                Margin="8"
+                Padding="6,3"
+                VerticalAlignment="Top">
+                <TextBlock FontFamily="Consolas" FontSize="12" Foreground="White" Text="{Binding PerformanceText}" />
+            </Border>
             <Border
                 Background="#B0000000"
                 IsHitTestVisible="False"
