@@ -2,6 +2,7 @@
 #if defined(TFFR_WIN)
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
+#include <utils/unwindows.h>
 #endif
 #include "scene/native_impl_exportable_surface_vulkan.h"
 
