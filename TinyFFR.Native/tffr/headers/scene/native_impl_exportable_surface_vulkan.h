@@ -99,6 +99,7 @@ struct alignas(16) exportable_submit_extension_storage {
 };
 
 void exportable_check_vk(VkResult result, const char* operation);
+bool exportable_device_supports_extension(VkPhysicalDevice physicalDevice, const char* extensionName);
 
 class tffr_vulkan_platform : public tffr_vulkan_platform_base {
 public:
@@ -114,6 +115,7 @@ public:
 	void release_os_resources();
 
 	ExtensionSet getRequiredDeviceExtensions() override;
+	Customization getCustomization() const noexcept override;
 	SwapChainPtr createSwapChain(void* nativeWindow, uint64_t flags, VkExtent2D extent) override;
 	SwapChainBundle getSwapChainBundle(SwapChainPtr handle) override;
 	VkResult acquire(SwapChainPtr handle, ImageSyncData* outImageSyncData) override;
@@ -136,6 +138,8 @@ private:
 	std::mutex descriptorRegistryMutex;
 	std::unordered_set<exportable_surface_descriptor*> descriptors;
 	std::unordered_set<exportable_swap_chain*> swapChains;
+	mutable bool preferredGpuIndexResolved = false;
+	mutable int8_t preferredGpuIndex = -1;
 
 	bool is_registered_descriptor(void* nativeWindow);
 	exportable_swap_chain* as_exportable(SwapChainPtr handle) const;

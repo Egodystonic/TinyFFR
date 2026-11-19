@@ -31,17 +31,6 @@ namespace {
 	};
 	static_assert(sizeof(keyed_mutex_submit_extension) <= sizeof(exportable_submit_extension_storage));
 
-	bool device_supports_extension(VkPhysicalDevice physicalDevice, const char* extensionName) {
-		uint32_t count = 0;
-		if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, nullptr) != VK_SUCCESS) return false;
-		std::vector<VkExtensionProperties> properties(count);
-		if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, properties.data()) != VK_SUCCESS) return false;
-		for (auto const& p : properties) {
-			if (std::strcmp(p.extensionName, extensionName) == 0) return true;
-		}
-		return false;
-	}
-
 	bool device_can_import(VkPhysicalDevice physicalDevice, VkExternalMemoryHandleTypeFlagBits handleType) {
 		VkPhysicalDeviceExternalImageFormatInfo externalImageInfo {
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
@@ -96,7 +85,7 @@ filament::backend::VulkanPlatform::ExtensionSet tffr_vulkan_platform::getRequire
 
 uint32_t tffr_vulkan_platform::evaluate_os_supported_handle_types(VkPhysicalDevice physicalDevice) {
 	if (!deviceLuidValid) return 0;
-	if (!device_supports_extension(physicalDevice, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)) return 0;
+	if (!exportable_device_supports_extension(physicalDevice, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)) return 0;
 	if (vkGetMemoryWin32HandlePropertiesKHR == nullptr) return 0;
 
 	if (shared_texture_device == nullptr) shared_texture_device = create_device_on_adapter(deviceLuid);
@@ -106,7 +95,7 @@ uint32_t tffr_vulkan_platform::evaluate_os_supported_handle_types(VkPhysicalDevi
 	if (device_can_import(physicalDevice, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT)) {
 		result |= 1U << EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_LEGACY_SHARED_HANDLE;
 	}
-	if (device_supports_extension(physicalDevice, VK_KHR_WIN32_KEYED_MUTEX_EXTENSION_NAME) && device_can_import(physicalDevice, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT)) {
+	if (exportable_device_supports_extension(physicalDevice, VK_KHR_WIN32_KEYED_MUTEX_EXTENSION_NAME) && device_can_import(physicalDevice, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT)) {
 		result |= 1U << EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_NT_HANDLE;
 	}
 	if (result == 0) {

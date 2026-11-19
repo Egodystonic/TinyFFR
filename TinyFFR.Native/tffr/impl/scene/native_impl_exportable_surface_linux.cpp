@@ -9,17 +9,6 @@ using namespace bluevk;
 
 namespace {
 	constexpr VkImageUsageFlags SharedColorUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	bool device_supports_extension(VkPhysicalDevice physicalDevice, const char* extensionName) {
-		uint32_t count = 0;
-		if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, nullptr) != VK_SUCCESS) return false;
-		std::vector<VkExtensionProperties> properties(count);
-		if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, properties.data()) != VK_SUCCESS) return false;
-		for (auto const& p : properties) {
-			if (std::strcmp(p.extensionName, extensionName) == 0) return true;
-		}
-		return false;
-	}
 }
 
 filament::backend::VulkanPlatform::ExtensionSet tffr_vulkan_platform::getRequiredDeviceExtensions() {
@@ -30,8 +19,8 @@ filament::backend::VulkanPlatform::ExtensionSet tffr_vulkan_platform::getRequire
 }
 
 uint32_t tffr_vulkan_platform::evaluate_os_supported_handle_types(VkPhysicalDevice physicalDevice) {
-	if (!device_supports_extension(physicalDevice, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME)) return 0;
-	if (!device_supports_extension(physicalDevice, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME)) return 0;
+	if (!exportable_device_supports_extension(physicalDevice, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME)) return 0;
+	if (!exportable_device_supports_extension(physicalDevice, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME)) return 0;
 	if (vkGetMemoryFdKHR == nullptr || vkGetSemaphoreFdKHR == nullptr) return 0;
 
 	VkPhysicalDeviceExternalImageFormatInfo externalImageInfo {

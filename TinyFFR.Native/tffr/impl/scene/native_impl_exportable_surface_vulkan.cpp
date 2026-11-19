@@ -30,6 +30,73 @@ namespace {
 	bool uses_completion_fence(exportable_surface_descriptor const* descriptor) {
 		return descriptor->handleType == EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_LEGACY_SHARED_HANDLE;
 	}
+
+	int device_type_rank(VkPhysicalDeviceType deviceType) {
+		switch (deviceType) {
+			case VK_PHYSICAL_DEVICE_TYPE_OTHER: return 0;
+			case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: return 1;
+			case VK_PHYSICAL_DEVICE_TYPE_CPU: return 2;
+			case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: return 3;
+			case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: return 4;
+			default: return -1;
+		}
+	}
+
+	bool has_graphics_queue(VkPhysicalDevice physicalDevice) {
+		uint32_t count = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &count, nullptr);
+		std::vector<VkQueueFamilyProperties> families(count);
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &count, families.data());
+		for (auto const& family : families) {
+			if (family.queueCount != 0 && (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) return true;
+		}
+		return false;
+	}
+
+	bool is_translation_layer_driver(VkPhysicalDevice physicalDevice, uint32_t apiVersion) {
+		if (vkGetPhysicalDeviceProperties2 == nullptr) return false;
+		auto const hasDriverProperties = VK_API_VERSION_MAJOR(apiVersion) > 1 || VK_API_VERSION_MINOR(apiVersion) >= 2 || exportable_device_supports_extension(physicalDevice, VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME);
+		if (!hasDriverProperties) return false;
+		VkPhysicalDeviceDriverProperties driverProperties { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES };
+		VkPhysicalDeviceProperties2 properties { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &driverProperties };
+		vkGetPhysicalDeviceProperties2(physicalDevice, &properties);
+		return driverProperties.driverID == VK_DRIVER_ID_MESA_DOZEN;
+	}
+
+	int8_t select_preferred_gpu_index(VkInstance instance) {
+		if (instance == VK_NULL_HANDLE) return -1;
+		uint32_t count = 0;
+		if (vkEnumeratePhysicalDevices(instance, &count, nullptr) != VK_SUCCESS || count == 0) return -1;
+		std::vector<VkPhysicalDevice> physicalDevices(count);
+		if (vkEnumeratePhysicalDevices(instance, &count, physicalDevices.data()) != VK_SUCCESS) return -1;
+
+		int8_t bestIndex = -1;
+		auto bestTypeRank = -1;
+		auto bestIsTranslationLayer = false;
+		auto anyCandidateIsTranslationLayer = false;
+		for (uint32_t i = 0; i < count && i <= static_cast<uint32_t>(INT8_MAX); ++i) {
+			auto const physicalDevice = physicalDevices[i];
+			VkPhysicalDeviceProperties properties;
+			vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+			auto const major = VK_API_VERSION_MAJOR(properties.apiVersion);
+			auto const minor = VK_API_VERSION_MINOR(properties.apiVersion);
+			if (major < 1 || (major == 1 && minor < 1)) continue;
+			if (!has_graphics_queue(physicalDevice)) continue;
+			if (!exportable_device_supports_extension(physicalDevice, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) continue;
+
+			auto const typeRank = device_type_rank(properties.deviceType);
+			auto const isTranslationLayer = is_translation_layer_driver(physicalDevice, properties.apiVersion);
+			anyCandidateIsTranslationLayer |= isTranslationLayer;
+			auto const isBetter = bestIndex < 0
+				|| typeRank > bestTypeRank
+				|| (typeRank == bestTypeRank && bestIsTranslationLayer && !isTranslationLayer);
+			if (!isBetter) continue;
+			bestIndex = static_cast<int8_t>(i);
+			bestTypeRank = typeRank;
+			bestIsTranslationLayer = isTranslationLayer;
+		}
+		return anyCandidateIsTranslationLayer ? bestIndex : static_cast<int8_t>(-1);
+	}
 }
 
 void exportable_check_vk(VkResult result, const char* operation) {
@@ -39,7 +106,29 @@ void exportable_check_vk(VkResult result, const char* operation) {
 	Throw(operation, " failed with VkResult ", resultStr, ".");
 }
 
+bool exportable_device_supports_extension(VkPhysicalDevice physicalDevice, const char* extensionName) {
+	uint32_t count = 0;
+	if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, nullptr) != VK_SUCCESS) return false;
+	std::vector<VkExtensionProperties> properties(count);
+	if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, properties.data()) != VK_SUCCESS) return false;
+	for (auto const& p : properties) {
+		if (std::strcmp(p.extensionName, extensionName) == 0) return true;
+	}
+	return false;
+}
+
 tffr_vulkan_platform* tffr_vulkan_platform::instance = nullptr;
+
+filament::backend::VulkanPlatform::Customization tffr_vulkan_platform::getCustomization() const noexcept {
+	auto result = tffr_vulkan_platform_base::getCustomization();
+	if (result.gpu.index >= 0 || !result.gpu.deviceName.empty()) return result;
+	if (!preferredGpuIndexResolved) {
+		preferredGpuIndex = select_preferred_gpu_index(getInstance());
+		preferredGpuIndexResolved = true;
+	}
+	result.gpu.index = preferredGpuIndex;
+	return result;
+}
 
 void tffr_vulkan_platform::evaluate_export_support() {
 	supportedHandleTypeMask = 0;
