@@ -16,6 +16,7 @@ static class EntryPoint {
     public static AppBuilder BuildAvaloniaApp() {
 		return AppBuilder.Configure<App>()
 			.UsePlatformDetect()
+			.With(new Win32PlatformOptions { CompositionMode = [Win32CompositionMode.LowLatencyDxgiSwapChain, Win32CompositionMode.DirectComposition, Win32CompositionMode.RedirectionSurface] })
 			.WithInterFont()
 			.LogToTrace();
 	}

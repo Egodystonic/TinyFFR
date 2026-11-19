@@ -201,15 +201,6 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 				await drawingSurface.UpdateWithSemaphoresAsync(_images[index]!, _readySemaphores[index]!, _releasedSemaphores[index]!);
 			}
 			consumerSignalledRelease = true;
-			if (_compositor is { } compositor) {
-				var batch = compositor.RequestCompositionBatchCommitAsync();
-				await batch.Rendered;
-				var isNewBatch = !ReferenceEquals(batch, _lastCountedBatch);
-				if (sessionVersion == _sessionVersion && isNewBatch) {
-					_lastCountedBatch = batch;
-					_displayedFrameCount++;
-				}
-			}
 		}
 		catch { }
 
@@ -226,6 +217,18 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		}
 		_frameSource?.RenderDeferredFrameIfPending();
 		PumpPresentedFrames();
+		if (_compositor is { } compositor) await CountDisplayedFrameAsync(compositor, sessionVersion);
+	}
+
+	async Task CountDisplayedFrameAsync(Compositor compositor, int sessionVersion) {
+		try {
+			var batch = compositor.RequestCompositionBatchCommitAsync();
+			await batch.Rendered;
+			if (sessionVersion != _sessionVersion || ReferenceEquals(batch, _lastCountedBatch)) return;
+			_lastCountedBatch = batch;
+			_displayedFrameCount++;
+		}
+		catch { }
 	}
 
 	async Task ReimportAsync(ExportableRenderSurface surface, ExportableRenderSurfaceImageSet imageSet, int sessionVersion) {
