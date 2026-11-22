@@ -101,6 +101,7 @@ elseif(APPLE)
 		PRIVATE
 			"-framework CoreFoundation"
 			"-framework CoreVideo"
+			"-framework IOSurface"
 			"-framework CoreGraphics"
 			"-framework Metal"
 			"-framework QuartzCore"

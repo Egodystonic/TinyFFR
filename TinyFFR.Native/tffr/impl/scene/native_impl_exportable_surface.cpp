@@ -60,9 +60,8 @@ StartExportedFunc(dispose_exportable_surface_descriptor, ExportableSurfaceDescri
 void native_impl_exportable_surface::allocate_exportable_swap_chain(ExportableSurfaceDescriptorHandle descriptor, SwapChainHandle* outSwapChain) {
 	ThrowIfNull(descriptor, "Descriptor was null.");
 	ThrowIfNull(outSwapChain, "Swap chain out pointer was null.");
-	*outSwapChain = filament_engine->createSwapChain(static_cast<void*>(descriptor), 0UL);
+	*outSwapChain = exportable_surface_backend::allocate_swap_chain(descriptor);
 	ThrowIfNull(*outSwapChain, "Could not create exportable swap chain.");
-	filament_engine->flushAndWait();
 }
 StartExportedFunc(allocate_exportable_swap_chain, ExportableSurfaceDescriptorHandle descriptor, SwapChainHandle* outSwapChain) {
 	native_impl_exportable_surface::allocate_exportable_swap_chain(descriptor, outSwapChain);

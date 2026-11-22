@@ -58,7 +58,10 @@ class ExportableRenderSurfaceCreationConfigTest {
 	public void ShouldUseExpectedDefaults() {
 		Assert.AreEqual(ExportableRenderSurfaceCreationConfig.DefaultDimensions, new ExportableRenderSurfaceCreationConfig().Dimensions);
 		Assert.AreEqual(ExportableRenderSurfaceCreationConfig.DefaultHandleType, new ExportableRenderSurfaceCreationConfig().HandleType);
-		Assert.AreEqual(OperatingSystem.IsWindows() ? ExportableRenderSurfaceHandleType.D3D11TextureNtHandle : ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor, ExportableRenderSurfaceCreationConfig.DefaultHandleType);
+		var expectedDefaultHandleType = OperatingSystem.IsWindows() ? ExportableRenderSurfaceHandleType.D3D11TextureNtHandle
+			: OperatingSystem.IsMacOS() ? ExportableRenderSurfaceHandleType.IOSurfaceRef
+			: ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+		Assert.AreEqual(expectedDefaultHandleType, ExportableRenderSurfaceCreationConfig.DefaultHandleType);
 	}
 
 	[Test]

@@ -122,6 +122,9 @@
     <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_linux.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_metal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_unsupported.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

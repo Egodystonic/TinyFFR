@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 #include "scene/native_impl_render.h"
-#include "scene/native_impl_render.h"
+#include "scene/native_impl_exportable_surface.h"
 
 #include "native_impl_init.h"
 #include "environment/native_impl_window.h"
@@ -189,6 +189,7 @@ StartExportedFunc(dispose_renderer, RendererHandle renderer) {
 void native_impl_render::dispose_swap_chain(SwapChainHandle swapChain) {
 	ThrowIfNull(swapChain, "Swap chain was null.");
 
+	if (exportable_surface_backend::dispose_swap_chain_if_owned(swapChain)) return;
 	ThrowIf(!filament_engine->destroy(swapChain), "Could not destroy swap chain.");
 }
 StartExportedFunc(dispose_swap_chain, SwapChainHandle swapChain) {
@@ -600,9 +601,12 @@ void native_impl_render::render_scene(RendererHandle renderer, ViewDescriptorHan
 	ThrowIfNull(swapChain, "Swap chain pointer was null.");
 
 	//if (!renderer->beginFrame(swapChain)) return; // We do our own synchronization external to filament so we ignore this
-	if (invokeBeginFrame) renderer->beginFrame(swapChain);
+	if (invokeBeginFrame) renderer->beginFrame(exportable_surface_backend::begin_frame_swap_chain(swapChain));
 	renderer->render(viewDescriptor);
-	if (invokeEndFrame) renderer->endFrame();
+	if (invokeEndFrame) {
+		renderer->endFrame();
+		exportable_surface_backend::end_frame(swapChain);
+	}
 }
 StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain, interop_bool invokeBeginFrame, interop_bool invokeEndFrame) {
 	native_impl_render::render_scene(renderer, viewDescriptor, swapChain, invokeBeginFrame, invokeEndFrame);

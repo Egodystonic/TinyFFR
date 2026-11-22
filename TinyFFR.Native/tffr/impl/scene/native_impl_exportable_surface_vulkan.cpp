@@ -687,6 +687,22 @@ bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDe
 	return true;
 }
 
+SwapChainHandle exportable_surface_backend::allocate_swap_chain(ExportableSurfaceDescriptorHandle descriptor) {
+	auto result = filament_engine->createSwapChain(static_cast<void*>(descriptor), 0UL);
+	filament_engine->flushAndWait();
+	return result;
+}
+
+bool exportable_surface_backend::dispose_swap_chain_if_owned(SwapChainHandle swapChain) {
+	return false;
+}
+
+SwapChainHandle exportable_surface_backend::begin_frame_swap_chain(SwapChainHandle swapChain) {
+	return swapChain;
+}
+
+void exportable_surface_backend::end_frame(SwapChainHandle swapChain) { }
+
 void exportable_surface_backend::return_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t index, bool consumerSignalledRelease) {
 	std::lock_guard lock { descriptor->mutex };
 	if (descriptor->generation != generation || !descriptor->hasLiveSwapChain) return;

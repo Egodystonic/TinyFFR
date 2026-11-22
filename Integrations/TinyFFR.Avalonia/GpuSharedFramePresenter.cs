@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Platform;
 using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
@@ -39,6 +40,9 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	bool _importsCompleted = false;
 	bool _importInProgress = false;
 	bool _hasFailed = false;
+	bool _completionRetryScheduled = false;
+	int _completionRetriesRemaining = 0;
+	readonly Action<TimeSpan> _onCompletionRetry;
 	Size _visualSize;
 	ExportableRenderSurfaceHandleType _requiredHandleType = ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
 
@@ -52,6 +56,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		ArgumentNullException.ThrowIfNull(onUsabilityChanged);
 		_owner = owner;
 		_onUsabilityChanged = onUsabilityChanged;
+		_onCompletionRetry = OnCompletionRetry;
 	}
 
 	public void OnAttachedToVisualTree() {
@@ -110,10 +115,16 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		if (OperatingSystem.IsWindows() && interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureNtHandle)) {
 			return ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
 		}
+		if (OperatingSystem.IsMacOS() && interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.IOSurfaceRef)) {
+			return ExportableRenderSurfaceHandleType.IOSurfaceRef;
+		}
 		return null;
 	}
 
 	bool UsesKeyedMutex => _requiredHandleType == ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
+	bool UsesIOSurface => _requiredHandleType == ExportableRenderSurfaceHandleType.IOSurfaceRef;
+	bool UsesSemaphores => _requiredHandleType == ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+	const int CompletionRetryFrameCount = 16;
 
 	int MaxUpdatesInFlight => _frameSource?.MaxFramesInFlight ?? DefaultMaxUpdatesInFlight;
 
@@ -149,6 +160,20 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 
 	public void OnFrameRendered(ExportableRenderSurface surface) {
 		if (_surface != surface || _hasFailed) return;
+		_completionRetriesRemaining = CompletionRetryFrameCount;
+		PumpPresentedFrames();
+	}
+
+	void ScheduleCompletionRetry() {
+		if (_completionRetryScheduled || _completionRetriesRemaining <= 0) return;
+		if (TopLevel.GetTopLevel(_owner) is not { } topLevel) return;
+		_completionRetryScheduled = true;
+		--_completionRetriesRemaining;
+		topLevel.RequestAnimationFrame(_onCompletionRetry);
+	}
+
+	void OnCompletionRetry(TimeSpan _) {
+		_completionRetryScheduled = false;
 		PumpPresentedFrames();
 	}
 
@@ -156,6 +181,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		var capabilities = surface.Capabilities;
 		if (capabilities.HandleType != requiredHandleType) return $"surface handle type {capabilities.HandleType} does not match {requiredHandleType}";
 		if (surface.ImageCount > MaxImageCount) return $"surface has {surface.ImageCount} images (max {MaxImageCount})";
+		if (requiredHandleType == ExportableRenderSurfaceHandleType.IOSurfaceRef) return null;
 
 		if (requiredHandleType == ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor) {
 			var interopUuid = interop.DeviceUuid;
@@ -186,7 +212,10 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		}
 		if (!_importsCompleted || _importedImageSet is not { } importedImageSet) return;
 
-		if (!importedImageSet.TryTakeLatestPresentedImage(out var index)) return;
+		if (!importedImageSet.TryTakeLatestPresentedImage(out var index)) {
+			if (surface.Capabilities.SyncKind == ExportableRenderSurfaceSyncKind.CompletedBeforeTake) ScheduleCompletionRetry();
+			return;
+		}
 		_ = PresentImageAsync(importedImageSet, _drawingSurface, index, _sessionVersion);
 	}
 
@@ -196,6 +225,9 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		try {
 			if (UsesKeyedMutex) {
 				await drawingSurface.UpdateWithKeyedMutexAsync(_images[index]!, (uint) ExportableRenderSurfaceCapabilities.ConsumerKeyedMutexAcquireKey, (uint) ExportableRenderSurfaceCapabilities.ConsumerKeyedMutexReleaseKey);
+			}
+			else if (UsesIOSurface) {
+				await drawingSurface.UpdateAsync(_images[index]!);
 			}
 			else {
 				await drawingSurface.UpdateWithSemaphoresAsync(_images[index]!, _readySemaphores[index]!, _releasedSemaphores[index]!);
@@ -283,7 +315,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	}
 
 	PlatformGraphicsExternalImageProperties CreateImageProperties(ExportableRenderSurfaceImageSet imageSet, long memorySizeBytes) {
-		if (UsesKeyedMutex) {
+		if (!UsesSemaphores) {
 			return new PlatformGraphicsExternalImageProperties {
 				Width = imageSet.Dimensions.X,
 				Height = imageSet.Dimensions.Y,
@@ -312,6 +344,18 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 				if (imageSet.ExtractImage(i) is not { } handles) {
 					_ = ReleaseImports();
 					return false;
+				}
+				if (UsesIOSurface) {
+					try {
+						_images[i] = interop.ImportImage(
+							CreatePlatformHandle(handles.ImageHandle, KnownPlatformGraphicsExternalImageHandleTypes.IOSurfaceRef),
+							CreateImageProperties(imageSet, handles.ImageSizeBytes)
+						);
+					}
+					finally {
+						surface.CloseExportedHandle(handles.ImageHandle);
+					}
+					continue;
 				}
 				if (UsesKeyedMutex) {
 					try {

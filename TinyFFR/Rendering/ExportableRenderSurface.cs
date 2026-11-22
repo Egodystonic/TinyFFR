@@ -9,7 +9,8 @@ public enum ExportableRenderSurfaceHandleType {
 	None = 0,
 	VulkanOpaqueFileDescriptor = 1,
 	D3D11TextureNtHandle = 2,
-	D3D11TextureLegacySharedHandle = 3
+	D3D11TextureLegacySharedHandle = 3,
+	IOSurfaceRef = 4
 }
 
 public enum ExportableRenderSurfaceSyncKind {

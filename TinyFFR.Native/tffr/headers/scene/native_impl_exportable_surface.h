@@ -7,6 +7,7 @@
 #define EXPORTABLE_SURFACE_HANDLE_TYPE_VULKAN_OPAQUE_FD 1
 #define EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_NT_HANDLE 2
 #define EXPORTABLE_SURFACE_HANDLE_TYPE_D3D11_TEXTURE_LEGACY_SHARED_HANDLE 3
+#define EXPORTABLE_SURFACE_HANDLE_TYPE_IOSURFACE_REF 4
 
 #define EXPORTABLE_SURFACE_SYNC_KIND_NONE 0
 #define EXPORTABLE_SURFACE_SYNC_KIND_VULKAN_OPAQUE_FD_SEMAPHORES 1
@@ -31,6 +32,10 @@ namespace exportable_surface_backend {
 	void close_handle(int32_t handleType, int64_t handle);
 	bool take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex);
 	void return_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t index, bool consumerSignalledRelease);
+	SwapChainHandle allocate_swap_chain(ExportableSurfaceDescriptorHandle descriptor);
+	bool dispose_swap_chain_if_owned(SwapChainHandle swapChain);
+	SwapChainHandle begin_frame_swap_chain(SwapChainHandle swapChain);
+	void end_frame(SwapChainHandle swapChain);
 }
 
 class native_impl_exportable_surface {

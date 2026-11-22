@@ -11,7 +11,13 @@ public readonly ref struct ExportableRenderSurfaceCreationConfig : IConfigStruct
 	public const int MaxDimensionXY = RenderOutputBufferCreationConfig.MaxTextureDimensionXY;
 	public const int MinDimensionXY = RenderOutputBufferCreationConfig.MinTextureDimensionXY;
 
-	public static ExportableRenderSurfaceHandleType DefaultHandleType => OperatingSystem.IsWindows() ? ExportableRenderSurfaceHandleType.D3D11TextureNtHandle : ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+	public static ExportableRenderSurfaceHandleType DefaultHandleType {
+		get {
+			if (OperatingSystem.IsWindows()) return ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
+			if (OperatingSystem.IsMacOS()) return ExportableRenderSurfaceHandleType.IOSurfaceRef;
+			return ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+		}
+	}
 
 	public XYPair<int> Dimensions { get; init; } = DefaultDimensions;
 

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "scene/native_impl_exportable_surface_vulkan.h"
 
-#if !defined(TFFR_LINUX) && !defined(TFFR_WIN)
+#if !defined(TFFR_LINUX) && !defined(TFFR_WIN) && !defined(TFFR_MACOS)
 
 struct exportable_surface_descriptor { };
 
@@ -35,5 +35,19 @@ bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDe
 }
 
 void exportable_surface_backend::return_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t index, bool consumerSignalledRelease) { }
+
+SwapChainHandle exportable_surface_backend::allocate_swap_chain(ExportableSurfaceDescriptorHandle descriptor) {
+	Throw("Exportable surfaces are not supported on this platform.");
+}
+
+bool exportable_surface_backend::dispose_swap_chain_if_owned(SwapChainHandle swapChain) {
+	return false;
+}
+
+SwapChainHandle exportable_surface_backend::begin_frame_swap_chain(SwapChainHandle swapChain) {
+	return swapChain;
+}
+
+void exportable_surface_backend::end_frame(SwapChainHandle swapChain) { }
 
 #endif
