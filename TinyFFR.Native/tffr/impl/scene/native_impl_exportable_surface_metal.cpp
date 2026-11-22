@@ -13,6 +13,10 @@
 #include <mutex>
 #include <unordered_set>
 
+extern "C" void* macos_create_metal_shared_event();
+extern "C" uint64_t macos_get_metal_shared_event_value(void* sharedEvent);
+extern "C" void macos_set_metal_shared_event_value(void* sharedEvent, uint64_t value);
+
 namespace {
 	constexpr uint32_t ScratchSlotIndex = EXPORTABLE_SURFACE_IMAGE_COUNT;
 	constexpr uint32_t BytesPerPixel = 4U;
@@ -31,6 +35,9 @@ namespace {
 		CVPixelBufferRef pixelBuffer = nullptr;
 		filament::SwapChain* swapChain = nullptr;
 		filament::Fence* completionFence = nullptr;
+		void* sharedEvent = nullptr;
+		uint64_t timelineValue = 0;
+		bool awaitingConsumerSignal = false;
 		metal_image_state state = metal_image_state::free;
 	};
 
@@ -57,6 +64,11 @@ namespace {
 		CFRelease(number);
 	}
 
+	bool consumer_has_finished_with(metal_image_slot const& slot) {
+		if (!slot.awaitingConsumerSignal || slot.sharedEvent == nullptr) return true;
+		return macos_get_metal_shared_event_value(slot.sharedEvent) >= slot.timelineValue;
+	}
+
 	bool fence_has_completed(filament::Fence* fence) {
 		if (fence == nullptr) return true;
 		return fence->wait(filament::Fence::Mode::FLUSH, 0) == filament::backend::FenceStatus::CONDITION_SATISFIED;
@@ -80,7 +92,7 @@ struct exportable_surface_descriptor {
 };
 
 namespace {
-	void create_slot(exportable_surface_descriptor const* descriptor, metal_image_slot& slot) {
+	void create_slot(exportable_surface_descriptor const* descriptor, metal_image_slot& slot, bool exported) {
 		auto surfaceProperties = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 		set_dictionary_int(surfaceProperties, kIOSurfaceWidth, descriptor->liveWidth);
 		set_dictionary_int(surfaceProperties, kIOSurfaceHeight, descriptor->liveHeight);
@@ -99,6 +111,10 @@ namespace {
 
 		slot.swapChain = filament_engine->createSwapChain(slot.pixelBuffer, filament::SwapChain::CONFIG_APPLE_CVPIXELBUFFER);
 		ThrowIfNull(slot.swapChain, "Could not create CVPixelBuffer swap chain for exportable surface image.");
+		if (exported) {
+			slot.sharedEvent = macos_create_metal_shared_event();
+			ThrowIfNull(slot.sharedEvent, "Could not create Metal shared event for exportable surface image.");
+		}
 		slot.state = metal_image_state::free;
 	}
 
@@ -107,6 +123,7 @@ namespace {
 		if (slot.swapChain != nullptr) filament_engine->destroy(slot.swapChain);
 		if (slot.pixelBuffer != nullptr) CVPixelBufferRelease(slot.pixelBuffer);
 		if (slot.surface != nullptr) CFRelease(slot.surface);
+		if (slot.sharedEvent != nullptr) CFRelease(slot.sharedEvent);
 		slot = {};
 	}
 
@@ -123,7 +140,7 @@ namespace {
 void exportable_surface_backend::get_support(int32_t handleType, interop_bool* outSupported, int32_t* outSyncKind) {
 	if (handleType != EXPORTABLE_SURFACE_HANDLE_TYPE_IOSURFACE_REF || !metal_backend_is_active()) return;
 	*outSupported = interop_bool_true;
-	*outSyncKind = EXPORTABLE_SURFACE_SYNC_KIND_COMPLETED_BEFORE_TAKE;
+	*outSyncKind = EXPORTABLE_SURFACE_SYNC_KIND_METAL_SHARED_EVENT_TIMELINE;
 }
 
 void exportable_surface_backend::get_device_ids(uint8_t* outDeviceUuid, uint8_t* outDeviceLuid, interop_bool* outLuidValid) { }
@@ -168,10 +185,12 @@ bool exportable_surface_backend::export_image_handles(ExportableSurfaceDescripto
 	if (!descriptor->hasLiveSwapChain || descriptor->generation != generation) return false;
 	auto const& slot = descriptor->slots[index];
 	CFRetain(slot.surface);
+	CFRetain(slot.sharedEvent);
+	CFRetain(slot.sharedEvent);
 	*outImageHandle = reinterpret_cast<int64_t>(slot.surface);
 	*outImageSizeBytes = IOSurfaceGetAllocSize(slot.surface);
-	*outReadyHandle = 0;
-	*outReleasedHandle = 0;
+	*outReadyHandle = reinterpret_cast<int64_t>(slot.sharedEvent);
+	*outReleasedHandle = reinterpret_cast<int64_t>(slot.sharedEvent);
 	return true;
 }
 
@@ -180,7 +199,7 @@ void exportable_surface_backend::close_handle(int32_t handleType, int64_t handle
 	CFRelease(reinterpret_cast<IOSurfaceRef>(handle));
 }
 
-bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex) {
+bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex, uint64_t* outTimelineWaitValue, uint64_t* outTimelineSignalValue) {
 	std::lock_guard lock { descriptor->mutex };
 	if (!descriptor->hasLiveSwapChain || descriptor->generation != generation || descriptor->presentedQueue.empty()) return false;
 
@@ -199,8 +218,15 @@ bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDe
 		descriptor->slots[descriptor->presentedQueue[position]].state = metal_image_state::pending_discard;
 	}
 	descriptor->presentedQueue.erase(descriptor->presentedQueue.begin(), descriptor->presentedQueue.begin() + static_cast<std::ptrdiff_t>(latestPosition) + 1);
-	descriptor->slots[latest].state = metal_image_state::handed;
+	auto& taken = descriptor->slots[latest];
+	taken.state = metal_image_state::handed;
+	auto const waitValue = taken.timelineValue + 1U;
+	macos_set_metal_shared_event_value(taken.sharedEvent, waitValue);
+	taken.timelineValue = waitValue + 1U;
+	taken.awaitingConsumerSignal = true;
 	*outIndex = latest;
+	*outTimelineWaitValue = waitValue;
+	*outTimelineSignalValue = taken.timelineValue;
 	return true;
 }
 
@@ -209,6 +235,7 @@ void exportable_surface_backend::return_image(ExportableSurfaceDescriptorHandle 
 	if (descriptor->generation != generation || !descriptor->hasLiveSwapChain) return;
 	auto& slot = descriptor->slots[index];
 	if (slot.state != metal_image_state::handed) return;
+	if (!consumerSignalledRelease) slot.awaitingConsumerSignal = false;
 	slot.state = metal_image_state::released;
 }
 
@@ -217,7 +244,7 @@ SwapChainHandle exportable_surface_backend::allocate_swap_chain(ExportableSurfac
 		std::lock_guard lock { descriptor->mutex };
 		descriptor->liveWidth = descriptor->width;
 		descriptor->liveHeight = descriptor->height;
-		for (auto& slot : descriptor->slots) create_slot(descriptor, slot);
+		for (uint32_t i = 0; i <= ScratchSlotIndex; ++i) create_slot(descriptor, descriptor->slots[i], i != ScratchSlotIndex);
 		descriptor->presentedQueue.clear();
 		descriptor->nextAcquireStartIndex = 0;
 		descriptor->currentFrameSlot = ScratchSlotIndex;
@@ -256,14 +283,16 @@ SwapChainHandle exportable_surface_backend::begin_frame_swap_chain(SwapChainHand
 		auto chosenIndex = ScratchSlotIndex;
 		for (uint32_t offset = 0; offset < ScratchSlotIndex; ++offset) {
 			auto candidate = (descriptor->nextAcquireStartIndex + offset) % ScratchSlotIndex;
-			auto state = descriptor->slots[candidate].state;
-			if (state != metal_image_state::free && state != metal_image_state::released) continue;
+			auto const& candidateSlot = descriptor->slots[candidate];
+			if (candidateSlot.state != metal_image_state::free && candidateSlot.state != metal_image_state::released) continue;
+			if (!consumer_has_finished_with(candidateSlot)) continue;
 			chosenIndex = candidate;
 			descriptor->nextAcquireStartIndex = (candidate + 1U) % ScratchSlotIndex;
 			break;
 		}
 
 		auto& chosen = descriptor->slots[chosenIndex];
+		chosen.awaitingConsumerSignal = false;
 		fenceToDestroy = chosen.completionFence;
 		chosen.completionFence = nullptr;
 		if (chosenIndex != ScratchSlotIndex) chosen.state = metal_image_state::in_flight;

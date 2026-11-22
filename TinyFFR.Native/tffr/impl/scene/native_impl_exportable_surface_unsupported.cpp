@@ -30,7 +30,7 @@ bool exportable_surface_backend::export_image_handles(ExportableSurfaceDescripto
 
 void exportable_surface_backend::close_handle(int32_t handleType, int64_t handle) { }
 
-bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex) {
+bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex, uint64_t* outTimelineWaitValue, uint64_t* outTimelineSignalValue) {
 	return false;
 }
 

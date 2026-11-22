@@ -115,7 +115,9 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		if (OperatingSystem.IsWindows() && interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureNtHandle)) {
 			return ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
 		}
-		if (OperatingSystem.IsMacOS() && interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.IOSurfaceRef)) {
+		if (OperatingSystem.IsMacOS()
+			&& interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.IOSurfaceRef)
+			&& interop.SupportedSemaphoreTypes.Contains(KnownPlatformGraphicsExternalSemaphoreHandleTypes.MetalSharedEvent)) {
 			return ExportableRenderSurfaceHandleType.IOSurfaceRef;
 		}
 		return null;
@@ -212,14 +214,14 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		}
 		if (!_importsCompleted || _importedImageSet is not { } importedImageSet) return;
 
-		if (!importedImageSet.TryTakeLatestPresentedImage(out var index)) {
-			if (surface.Capabilities.SyncKind == ExportableRenderSurfaceSyncKind.CompletedBeforeTake) ScheduleCompletionRetry();
+		if (!importedImageSet.TryTakeLatestPresentedImage(out var index, out var timelineWaitValue, out var timelineSignalValue)) {
+			if (surface.Capabilities.SyncKind is ExportableRenderSurfaceSyncKind.CompletedBeforeTake or ExportableRenderSurfaceSyncKind.MetalSharedEventTimeline) ScheduleCompletionRetry();
 			return;
 		}
-		_ = PresentImageAsync(importedImageSet, _drawingSurface, index, _sessionVersion);
+		_ = PresentImageAsync(importedImageSet, _drawingSurface, index, timelineWaitValue, timelineSignalValue, _sessionVersion);
 	}
 
-	async Task PresentImageAsync(ExportableRenderSurfaceImageSet imageSet, CompositionDrawingSurface drawingSurface, int index, int sessionVersion) {
+	async Task PresentImageAsync(ExportableRenderSurfaceImageSet imageSet, CompositionDrawingSurface drawingSurface, int index, ulong timelineWaitValue, ulong timelineSignalValue, int sessionVersion) {
 		_updatesInFlight++;
 		var consumerSignalledRelease = false;
 		try {
@@ -227,7 +229,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 				await drawingSurface.UpdateWithKeyedMutexAsync(_images[index]!, (uint) ExportableRenderSurfaceCapabilities.ConsumerKeyedMutexAcquireKey, (uint) ExportableRenderSurfaceCapabilities.ConsumerKeyedMutexReleaseKey);
 			}
 			else if (UsesIOSurface) {
-				await drawingSurface.UpdateAsync(_images[index]!);
+				await drawingSurface.UpdateWithTimelineSemaphoresAsync(_images[index]!, _readySemaphores[index]!, timelineWaitValue, _releasedSemaphores[index]!, timelineSignalValue);
 			}
 			else {
 				await drawingSurface.UpdateWithSemaphoresAsync(_images[index]!, _readySemaphores[index]!, _releasedSemaphores[index]!);
@@ -351,9 +353,13 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 							CreatePlatformHandle(handles.ImageHandle, KnownPlatformGraphicsExternalImageHandleTypes.IOSurfaceRef),
 							CreateImageProperties(imageSet, handles.ImageSizeBytes)
 						);
+						_readySemaphores[i] = interop.ImportSemaphore(CreatePlatformHandle(handles.ReadySemaphoreHandle, KnownPlatformGraphicsExternalSemaphoreHandleTypes.MetalSharedEvent));
+						_releasedSemaphores[i] = interop.ImportSemaphore(CreatePlatformHandle(handles.ReleasedSemaphoreHandle, KnownPlatformGraphicsExternalSemaphoreHandleTypes.MetalSharedEvent));
 					}
 					finally {
 						surface.CloseExportedHandle(handles.ImageHandle);
+						surface.CloseExportedHandle(handles.ReadySemaphoreHandle);
+						surface.CloseExportedHandle(handles.ReleasedSemaphoreHandle);
 					}
 					continue;
 				}

@@ -659,7 +659,7 @@ void exportable_surface_backend::close_handle(int32_t handleType, int64_t handle
 	tffr_vulkan_platform::close_exported_handle(handleType, handle);
 }
 
-bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex) {
+bool exportable_surface_backend::take_latest_presented_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex, uint64_t* outTimelineWaitValue, uint64_t* outTimelineSignalValue) {
 	std::lock_guard lock { descriptor->mutex };
 	if (!descriptor->hasLiveSwapChain || descriptor->generation != generation || descriptor->presentedQueue.empty()) return false;
 

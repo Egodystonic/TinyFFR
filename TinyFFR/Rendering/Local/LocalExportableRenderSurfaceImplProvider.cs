@@ -25,7 +25,7 @@ sealed class LocalExportableRenderSurfaceImplProvider : IExportableRenderSurface
 	public bool TryGetCurrentImageSet(ResourceHandle<ExportableRenderSurface> handle, out int generation, out XYPair<int> dimensions) => _owner.TryGetCurrentImageSet(handle, out generation, out dimensions);
 	public ExportedRenderSurfaceImage? ExtractImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index) => _owner.ExtractImageDataHandles(handle, generation, index);
 	public void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, ResourceHandle exportedHandle) => _owner.CloseExportedHandle(handle, exportedHandle);
-	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index) => _owner.TryTakeLatestPresentedImage(handle, generation, out index);
+	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index, out ulong timelineWaitValue, out ulong timelineSignalValue) => _owner.TryTakeLatestPresentedImage(handle, generation, out index, out timelineWaitValue, out timelineSignalValue);
 	public void ReturnImage(ResourceHandle<ExportableRenderSurface> handle, int generation, int index, bool consumerSignalledRelease) => _owner.ReturnImage(handle, generation, index, consumerSignalledRelease);
 	public override string ToString() => _owner.ToString();
 }

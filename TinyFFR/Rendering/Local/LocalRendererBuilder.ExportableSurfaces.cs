@@ -103,9 +103,9 @@ sealed partial class LocalRendererBuilder {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		CloseExportableSurfaceHandle((int) _loadedExportableSurfaces[handle].Capabilities.HandleType, (long) exportedHandle.AsInteger).ThrowIfFailure();
 	}
-	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index) {
+	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index, out ulong timelineWaitValue, out ulong timelineSignalValue) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		TakeLatestPresentedExportableSurfaceImage(_loadedExportableSurfaces[handle].DescriptorHandle, (uint) generation, out var nativeIndex, out var found).ThrowIfFailure();
+		TakeLatestPresentedExportableSurfaceImage(_loadedExportableSurfaces[handle].DescriptorHandle, (uint) generation, out var nativeIndex, out timelineWaitValue, out timelineSignalValue, out var found).ThrowIfFailure();
 		index = (int) nativeIndex;
 		return found;
 	}
@@ -237,6 +237,8 @@ sealed partial class LocalRendererBuilder {
 		UIntPtr descriptor,
 		uint generation,
 		out uint outIndex,
+		out ulong outTimelineWaitValue,
+		out ulong outTimelineSignalValue,
 		out InteropBool outFound
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "return_exportable_surface_image")]

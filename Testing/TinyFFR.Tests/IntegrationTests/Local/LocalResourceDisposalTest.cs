@@ -324,7 +324,7 @@ class LocalResourceDisposalTest {
 				v => _ = v.CurrentImageSet,
 				v => v.CopyDeviceUuid(new byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes]),
 				v => v.ExtractImage(0, 0),
-				v => v.TryTakeLatestPresentedImage(0, out _),
+				v => v.TryTakeLatestPresentedImage(0, out _, out _, out _),
 				v => v.ReturnImage(0, 0, false)
 			};
 			AssertUseAfterDisposalThrowsException(exportableSurface, objectIsAlreadyDisposed: false, exportableSurfaceActions);

@@ -105,15 +105,19 @@ StartExportedFunc(close_exportable_surface_handle, int32_t handleType, int64_t h
 	EndExportedFunc
 }
 
-void native_impl_exportable_surface::take_latest_presented_exportable_surface_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex, interop_bool* outFound) {
+void native_impl_exportable_surface::take_latest_presented_exportable_surface_image(ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex, uint64_t* outTimelineWaitValue, uint64_t* outTimelineSignalValue, interop_bool* outFound) {
 	ThrowIfNull(descriptor, "Descriptor was null.");
 	ThrowIfNull(outIndex, "Index out pointer was null.");
+	ThrowIfNull(outTimelineWaitValue, "Timeline wait value out pointer was null.");
+	ThrowIfNull(outTimelineSignalValue, "Timeline signal value out pointer was null.");
 	ThrowIfNull(outFound, "Found out pointer was null.");
 	*outFound = interop_bool_false;
-	if (exportable_surface_backend::take_latest_presented_image(descriptor, generation, outIndex)) *outFound = interop_bool_true;
+	*outTimelineWaitValue = 0;
+	*outTimelineSignalValue = 0;
+	if (exportable_surface_backend::take_latest_presented_image(descriptor, generation, outIndex, outTimelineWaitValue, outTimelineSignalValue)) *outFound = interop_bool_true;
 }
-StartExportedFunc(take_latest_presented_exportable_surface_image, ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex, interop_bool* outFound) {
-	native_impl_exportable_surface::take_latest_presented_exportable_surface_image(descriptor, generation, outIndex, outFound);
+StartExportedFunc(take_latest_presented_exportable_surface_image, ExportableSurfaceDescriptorHandle descriptor, uint32_t generation, uint32_t* outIndex, uint64_t* outTimelineWaitValue, uint64_t* outTimelineSignalValue, interop_bool* outFound) {
+	native_impl_exportable_surface::take_latest_presented_exportable_surface_image(descriptor, generation, outIndex, outTimelineWaitValue, outTimelineSignalValue, outFound);
 	EndExportedFunc
 }
 

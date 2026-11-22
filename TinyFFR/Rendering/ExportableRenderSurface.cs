@@ -17,7 +17,8 @@ public enum ExportableRenderSurfaceSyncKind {
 	None = 0,
 	VulkanOpaqueFileDescriptorSemaphores = 1,
 	DxgiKeyedMutex = 2,
-	CompletedBeforeTake = 3
+	CompletedBeforeTake = 3,
+	MetalSharedEventTimeline = 4
 }
 
 public readonly record struct ExportableRenderSurfaceImageSet {
@@ -36,7 +37,9 @@ public readonly record struct ExportableRenderSurfaceImageSet {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ExportedRenderSurfaceImage? ExtractImage(int index) => _surface.ExtractImage(Generation, index);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryTakeLatestPresentedImage(out int index) => _surface.TryTakeLatestPresentedImage(Generation, out index);
+	public bool TryTakeLatestPresentedImage(out int index) => _surface.TryTakeLatestPresentedImage(Generation, out index, out _, out _);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool TryTakeLatestPresentedImage(out int index, out ulong timelineWaitValue, out ulong timelineSignalValue) => _surface.TryTakeLatestPresentedImage(Generation, out index, out timelineWaitValue, out timelineSignalValue);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ReturnImage(int index, bool consumerSignalledRelease) => _surface.ReturnImage(Generation, index, consumerSignalledRelease);
 }
@@ -108,7 +111,7 @@ public readonly struct ExportableRenderSurface : IDisposableResource<ExportableR
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal ExportedRenderSurfaceImage? ExtractImage(int generation, int index) => Implementation.ExtractImage(_handle, generation, index);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal bool TryTakeLatestPresentedImage(int generation, out int index) => Implementation.TryTakeLatestPresentedImage(_handle, generation, out index);
+	internal bool TryTakeLatestPresentedImage(int generation, out int index, out ulong timelineWaitValue, out ulong timelineSignalValue) => Implementation.TryTakeLatestPresentedImage(_handle, generation, out index, out timelineWaitValue, out timelineSignalValue);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void ReturnImage(int generation, int index, bool consumerSignalledRelease) => Implementation.ReturnImage(_handle, generation, index, consumerSignalledRelease);
 
