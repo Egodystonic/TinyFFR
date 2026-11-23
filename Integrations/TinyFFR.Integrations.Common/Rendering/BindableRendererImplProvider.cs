@@ -115,12 +115,12 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 		ArgumentNullException.ThrowIfNull(sink);
 		var impl = GetBindableImplementationOrThrow(r);
 		impl.ThrowIfAttachedToCompositor();
-		var requiredHandleType = sink.RequiredHandleType;
+		var requiredHandleType = sink.RequiredImageHandleType;
 		var requiredHandleTypeBit = 1U << (int) requiredHandleType;
 		if (impl._preferCpuRenderBuffer || (impl._gpuHandleTypesUnsupportedByBuilderMask & requiredHandleTypeBit) != 0) return false;
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
-		if (impl._gpuSurface is { } surface && surface.Capabilities.HandleType == requiredHandleType) {
+		if (impl._gpuSurface is { } surface && surface.Capabilities.ImageHandleType == requiredHandleType) {
 			if (bufferSizePixels != impl._bufferSizePixels) {
 				surface.Dimensions = bufferSizePixels;
 				impl._bufferSizePixels = bufferSizePixels;
@@ -135,6 +135,9 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 
 		if (impl.TryCreateGpuSurface(bufferSizePixels, requiredHandleType) is not { } newSurface) {
 			impl._gpuHandleTypesUnsupportedByBuilderMask |= requiredHandleTypeBit;
+			Console.WriteLine($"GPU shared frames are unavailable: " +
+				$"This platform/device cannot create exportable render surfaces with handle type {requiredHandleType} for renderer '{impl._name}'. " +
+				$"Falling back to CPU-copied frames.");
 			return false;
 		}
 		impl.DisposeCurrentOutput();
@@ -177,11 +180,11 @@ sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRend
 		_actualRendererTarget.Dispose();
 	}
 
-	ExportableRenderSurface? TryCreateGpuSurface(XYPair<int> size, ExportableRenderSurfaceHandleType handleType) {
+	ExportableRenderSurface? TryCreateGpuSurface(XYPair<int> size, ExportableRenderSurfaceImageHandleType imageHandleType) {
 		return _rendererBuilder.TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
 			Name = $"{_name} exportable surface",
 			Dimensions = size,
-			HandleType = handleType
+			RequiredImageHandleType = imageHandleType
 		});
 	}
 

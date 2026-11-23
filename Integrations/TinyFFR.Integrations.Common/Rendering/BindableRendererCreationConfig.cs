@@ -40,6 +40,9 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	/// The default value for <see cref="DefaultBufferSize"/>: <c>(960, 540)</c>.
 	/// </summary>
 	public static readonly XYPair<int> DefaultDefaultBufferSize = (960, 540);
+	/// <summary>
+	/// The default value for <see cref="PreferCpuRenderBuffer"/>: <see langword="false"/>.
+	/// </summary>
 	public const bool DefaultPreferCpuRenderBuffer = false;
 
 	/// <summary>
@@ -51,6 +54,22 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	/// </remarks>
 	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
 
+	/// <summary>
+	/// If <see langword="true"/>, the renderer always hands frames to its bound control by copying them through the CPU, even where they could be shared
+	/// directly on the GPU. Defaults to <see cref="DefaultPreferCpuRenderBuffer"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// By default, where the platform and the UI framework support it, the bound control receives frames as GPU images shared directly with the
+	/// framework's compositor ("GPU shared frames"), which avoids copying every frame back to the CPU and uploading it again. Where that is not possible
+	/// (e.g. an unsupported platform, rendering backend or framework rendering mode, or the renderer and the framework running on different GPUs),
+	/// the control falls back to CPU-copied frames automatically and a message explaining the cause is written to the console.
+	/// </para>
+	/// <para>
+	/// Set this to <see langword="true"/> to always use CPU-copied frames, e.g. to rule out a driver or interop problem, or where the frames
+	/// must be readable on the CPU anyway.
+	/// </para>
+	/// </remarks>
 	public bool PreferCpuRenderBuffer { get; init; } = DefaultPreferCpuRenderBuffer;
 
 	/// <summary>
@@ -74,8 +93,15 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	/// How many frames the CPU may run ahead of the GPU before rendering blocks to let it catch up. Defaults to <see cref="DefaultGpuSynchronizationFrameBufferCount"/>.
 	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// This is <see cref="RendererCreationConfig.GpuSynchronizationFrameBufferCount"/> on <see cref="BaseConfig"/>, surfaced here
 	/// for convenience; see that property for what the values mean and for the constraints that apply when setting <c>-1</c>.
+	/// </para>
+	/// <para>
+	/// When the bound control receives GPU shared frames (see <see cref="PreferCpuRenderBuffer"/>), this value also limits how many frames may be
+	/// in flight to the UI framework at once: <c>-1</c> allows 2, <c>0</c> allows 1, and any other value allows that many, up to a maximum of 3.
+	/// Higher values increase throughput at the cost of a little more latency.
+	/// </para>
 	/// </remarks>
 	public int GpuSynchronizationFrameBufferCount {
 		get => BaseConfig.GpuSynchronizationFrameBufferCount;

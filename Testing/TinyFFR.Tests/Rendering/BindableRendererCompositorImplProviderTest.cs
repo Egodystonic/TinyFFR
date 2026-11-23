@@ -357,7 +357,7 @@ class BindableRendererCompositorImplProviderTest {
 
 	sealed class RecordingGpuFrameSink : IBindableRendererGpuFrameSink {
 		public int AttachedCount { get; private set; }
-		public ExportableRenderSurfaceHandleType RequiredHandleType => ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+		public ExportableRenderSurfaceImageHandleType RequiredImageHandleType => ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor;
 		public bool CanAcceptFrame => true;
 		public void OnSurfaceAttached(ExportableRenderSurface surface, IBindableRendererGpuFrameSource source) => AttachedCount++;
 		public void OnSurfaceDetached(ExportableRenderSurface surface) { }

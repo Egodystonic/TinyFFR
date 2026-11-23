@@ -17,11 +17,11 @@ sealed partial class LocalRendererBuilder {
 	readonly ArrayPoolBackedMap<ResourceHandle<ExportableRenderSurface>, ExportableSurfaceData> _loadedExportableSurfaces = new();
 	readonly LocalExportableRenderSurfaceImplProvider _exportableRenderSurfaceImplProvider;
 
-	ExportableRenderSurfaceCapabilities QueryExportableRenderSurfaceCapabilities(ExportableRenderSurfaceHandleType handleType) {
+	ExportableRenderSurfaceCapabilities QueryExportableRenderSurfaceCapabilities(ExportableRenderSurfaceImageHandleType imageHandleType) {
 		ThrowIfThisIsDisposed();
-		GetExportableSurfaceSupport((int) handleType, out var supported, out var syncKind).ThrowIfFailure();
+		GetExportableSurfaceSupport((int) imageHandleType, out var supported, out var syncKind).ThrowIfFailure();
 		if (!supported) return ExportableRenderSurfaceCapabilities.None;
-		var result = new ExportableRenderSurfaceCapabilities(handleType, (ExportableRenderSurfaceSyncKind) syncKind);
+		var result = new ExportableRenderSurfaceCapabilities(imageHandleType, (ExportableRenderSurfaceSyncKind) syncKind);
 		if (!Enum.IsDefined(result.SyncKind)) return ExportableRenderSurfaceCapabilities.None;
 		return result;
 	}
@@ -29,13 +29,13 @@ sealed partial class LocalRendererBuilder {
 	public ExportableRenderSurface? TryCreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		var capabilities = QueryExportableRenderSurfaceCapabilities(config.HandleType);
+		var capabilities = QueryExportableRenderSurfaceCapabilities(config.RequiredImageHandleType);
 		if (!capabilities.IsSupported) return null;
 
 		AllocateExportableSurfaceDescriptor(
 			(uint) config.Dimensions.X,
 			(uint) config.Dimensions.Y,
-			(int) config.HandleType,
+			(int) config.RequiredImageHandleType,
 			out var descriptorHandle
 		).ThrowIfFailure();
 
@@ -52,8 +52,8 @@ sealed partial class LocalRendererBuilder {
 	}
 	public void SetDimensions(ResourceHandle<ExportableRenderSurface> handle, XYPair<int> newDimensions) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newDimensions.Clamp(new(ExportableRenderSurfaceCreationConfig.MinDimensionXY), new(ExportableRenderSurfaceCreationConfig.MaxDimensionXY)) != newDimensions) {
-			throw new ArgumentOutOfRangeException(nameof(newDimensions), newDimensions, $"Both X and Y must be between {ExportableRenderSurfaceCreationConfig.MinDimensionXY} and {ExportableRenderSurfaceCreationConfig.MaxDimensionXY}.");
+		if (newDimensions.Clamp(new(ExportableRenderSurfaceCreationConfig.DimensionsMinComponent), new(ExportableRenderSurfaceCreationConfig.DimensionsMaxComponent)) != newDimensions) {
+			throw new ArgumentOutOfRangeException(nameof(newDimensions), newDimensions, $"Both X and Y must be between {ExportableRenderSurfaceCreationConfig.DimensionsMinComponent} and {ExportableRenderSurfaceCreationConfig.DimensionsMaxComponent}.");
 		}
 		var data = _loadedExportableSurfaces[handle];
 		if (data.Dimensions == newDimensions) return;
@@ -70,6 +70,7 @@ sealed partial class LocalRendererBuilder {
 			throw new ArgumentException($"Destination must be at least {ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes} bytes long.", nameof(destination));
 		}
 		Span<byte> luidSpace = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceLuidLengthBytes];
+		destination[..ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes].Clear();
 		GetExportableSurfaceDeviceIds(ref destination[0], ref luidSpace[0], out _).ThrowIfFailure();
 	}
 	public bool TryCopyDeviceLuid(ResourceHandle<ExportableRenderSurface> handle, Span<byte> destination) {
@@ -101,7 +102,7 @@ sealed partial class LocalRendererBuilder {
 	}
 	public void CloseExportedHandle(ResourceHandle<ExportableRenderSurface> handle, ResourceHandle exportedHandle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		CloseExportableSurfaceHandle((int) _loadedExportableSurfaces[handle].Capabilities.HandleType, (long) exportedHandle.AsInteger).ThrowIfFailure();
+		CloseExportableSurfaceHandle((int) _loadedExportableSurfaces[handle].Capabilities.ImageHandleType, (long) exportedHandle.AsInteger).ThrowIfFailure();
 	}
 	public bool TryTakeLatestPresentedImage(ResourceHandle<ExportableRenderSurface> handle, int generation, out int index, out ulong timelineWaitValue, out ulong timelineSignalValue) {
 		ThrowIfThisOrHandleIsDisposed(handle);

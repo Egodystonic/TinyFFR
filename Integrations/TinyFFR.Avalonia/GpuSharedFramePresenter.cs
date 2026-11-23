@@ -44,7 +44,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	int _completionRetriesRemaining = 0;
 	readonly Action<TimeSpan> _onCompletionRetry;
 	Size _visualSize;
-	ExportableRenderSurfaceHandleType _requiredHandleType = ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+	ExportableRenderSurfaceImageHandleType _requiredImageHandleType = ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor;
 
 	public bool IsUsable => _interop is { IsLost: false } && !_hasFailed;
 	public string? UnavailableReason { get; private set; } = "GPU interop not discovered yet";
@@ -90,47 +90,49 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		if (attachmentVersion != _attachmentVersion) return;
 		if (interop == null) {
 			UnavailableReason = "Avalonia offers no GPU interop for this window";
+			Console.WriteLine($"GPU shared frames are unavailable: {UnavailableReason}. Falling back to CPU-copied frames.");
 			_onUsabilityChanged();
 			return;
 		}
 		if (SelectHandleType(interop) is not { } handleType) {
 			UnavailableReason = $"Avalonia's GPU interop offers no supported handle type (images: {String.Join(", ", interop.SupportedImageHandleTypes)})";
+			Console.WriteLine($"GPU shared frames are unavailable: {UnavailableReason}. Falling back to CPU-copied frames.");
 			_onUsabilityChanged();
 			return;
 		}
 
 		_compositor = compositor;
 		_interop = interop;
-		_requiredHandleType = handleType;
+		_requiredImageHandleType = handleType;
 		_hasFailed = false;
 		UnavailableReason = null;
 		_onUsabilityChanged();
 	}
 
-	static ExportableRenderSurfaceHandleType? SelectHandleType(ICompositionGpuInterop interop) {
+	static ExportableRenderSurfaceImageHandleType? SelectHandleType(ICompositionGpuInterop interop) {
 		if (interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaquePosixFileDescriptor)
 			&& interop.SupportedSemaphoreTypes.Contains(KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor)) {
-			return ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+			return ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor;
 		}
 		if (OperatingSystem.IsWindows() && interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.D3D11TextureNtHandle)) {
-			return ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
+			return ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle;
 		}
 		if (OperatingSystem.IsMacOS()
 			&& interop.SupportedImageHandleTypes.Contains(KnownPlatformGraphicsExternalImageHandleTypes.IOSurfaceRef)
 			&& interop.SupportedSemaphoreTypes.Contains(KnownPlatformGraphicsExternalSemaphoreHandleTypes.MetalSharedEvent)) {
-			return ExportableRenderSurfaceHandleType.IOSurfaceRef;
+			return ExportableRenderSurfaceImageHandleType.IOSurfaceRef;
 		}
 		return null;
 	}
 
-	bool UsesKeyedMutex => _requiredHandleType == ExportableRenderSurfaceHandleType.D3D11TextureNtHandle;
-	bool UsesIOSurface => _requiredHandleType == ExportableRenderSurfaceHandleType.IOSurfaceRef;
-	bool UsesSemaphores => _requiredHandleType == ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+	bool UsesKeyedMutex => _requiredImageHandleType == ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle;
+	bool UsesIOSurface => _requiredImageHandleType == ExportableRenderSurfaceImageHandleType.IOSurfaceRef;
+	bool UsesSemaphores => _requiredImageHandleType == ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor;
 	const int CompletionRetryFrameCount = 16;
 
 	int MaxUpdatesInFlight => _frameSource?.MaxFramesInFlight ?? DefaultMaxUpdatesInFlight;
 
-	public ExportableRenderSurfaceHandleType RequiredHandleType => _requiredHandleType;
+	public ExportableRenderSurfaceImageHandleType RequiredImageHandleType => _requiredImageHandleType;
 
 	public bool CanAcceptFrame => _surface == null || _hasFailed || _updatesInFlight < MaxUpdatesInFlight;
 
@@ -141,7 +143,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 			Fail("GPU interop was lost before the surface was attached");
 			return;
 		}
-		if (DescribeIncompatibility(surface, _interop, _requiredHandleType) is { } incompatibility) {
+		if (DescribeIncompatibility(surface, _interop, _requiredImageHandleType) is { } incompatibility) {
 			Fail(incompatibility);
 			return;
 		}
@@ -179,13 +181,13 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		PumpPresentedFrames();
 	}
 
-	static string? DescribeIncompatibility(ExportableRenderSurface surface, ICompositionGpuInterop interop, ExportableRenderSurfaceHandleType requiredHandleType) {
+	static string? DescribeIncompatibility(ExportableRenderSurface surface, ICompositionGpuInterop interop, ExportableRenderSurfaceImageHandleType requiredImageHandleType) {
 		var capabilities = surface.Capabilities;
-		if (capabilities.HandleType != requiredHandleType) return $"surface handle type {capabilities.HandleType} does not match {requiredHandleType}";
+		if (capabilities.ImageHandleType != requiredImageHandleType) return $"surface handle type {capabilities.ImageHandleType} does not match {requiredImageHandleType}";
 		if (surface.ImageCount > MaxImageCount) return $"surface has {surface.ImageCount} images (max {MaxImageCount})";
-		if (requiredHandleType == ExportableRenderSurfaceHandleType.IOSurfaceRef) return null;
+		if (requiredImageHandleType == ExportableRenderSurfaceImageHandleType.IOSurfaceRef) return null;
 
-		if (requiredHandleType == ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor) {
+		if (requiredImageHandleType == ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor) {
 			var interopUuid = interop.DeviceUuid;
 			if (interopUuid == null || interopUuid.Length != ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes) return "Avalonia did not report a device UUID";
 			Span<byte> surfaceUuid = stackalloc byte[ExportableRenderSurfaceCapabilities.DeviceUuidLengthBytes];
@@ -455,6 +457,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		if (_hasFailed) return;
 		_hasFailed = true;
 		UnavailableReason = reason;
+		Console.WriteLine($"GPU shared frames are unavailable: {UnavailableReason}. Falling back to CPU-copied frames.");
 		ReleaseSession();
 		Dispatcher.UIThread.Post(_onUsabilityChanged);
 	}

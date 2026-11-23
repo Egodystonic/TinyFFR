@@ -272,7 +272,7 @@ class BindableRendererImplProviderTest {
 		public int AttachedCount { get; private set; }
 		public int DetachedCount { get; private set; }
 		public int FrameCount { get; private set; }
-		public ExportableRenderSurfaceHandleType RequiredHandleType { get; init; } = ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
+		public ExportableRenderSurfaceImageHandleType RequiredImageHandleType { get; init; } = ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor;
 		public bool CanAcceptFrame => true;
 		public void OnSurfaceAttached(ExportableRenderSurface surface, IBindableRendererGpuFrameSource source) => AttachedCount++;
 		public void OnSurfaceDetached(ExportableRenderSurface surface) => DetachedCount++;
@@ -339,18 +339,18 @@ class BindableRendererImplProviderTest {
 	[Test]
 	public void ShouldRequestTheSinksHandleTypeAndOnlyRememberDeclinesPerHandleType() {
 		var renderer = CreateRenderer();
-		var ntSink = new RecordingGpuFrameSink { RequiredHandleType = ExportableRenderSurfaceHandleType.D3D11TextureNtHandle };
-		var legacySink = new RecordingGpuFrameSink { RequiredHandleType = ExportableRenderSurfaceHandleType.D3D11TextureLegacySharedHandle };
+		var ntSink = new RecordingGpuFrameSink { RequiredImageHandleType = ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle };
+		var legacySink = new RecordingGpuFrameSink { RequiredImageHandleType = ExportableRenderSurfaceImageHandleType.D3D11TextureLegacySharedHandle };
 
 		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), ntSink));
 		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
-		Assert.AreEqual(ExportableRenderSurfaceHandleType.D3D11TextureNtHandle, _builder.LastRequestedExportableRenderSurfaceHandleType);
+		Assert.AreEqual(ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle, _builder.LastRequestedExportableRenderSurfaceHandleType);
 
 		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), ntSink));
 		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
 
 		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), legacySink));
 		Assert.AreEqual(2, _builder.ExportableRenderSurfaceCreationAttempts);
-		Assert.AreEqual(ExportableRenderSurfaceHandleType.D3D11TextureLegacySharedHandle, _builder.LastRequestedExportableRenderSurfaceHandleType);
+		Assert.AreEqual(ExportableRenderSurfaceImageHandleType.D3D11TextureLegacySharedHandle, _builder.LastRequestedExportableRenderSurfaceHandleType);
 	}
 }

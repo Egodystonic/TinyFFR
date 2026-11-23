@@ -35,7 +35,7 @@ sealed class WpfGpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	public string? UnavailableReason { get; private set; }
 	public D3DImage? ImageToDraw => _surface != null && _hasShownFrame ? _image : null;
 
-	public ExportableRenderSurfaceHandleType RequiredHandleType => ExportableRenderSurfaceHandleType.D3D11TextureLegacySharedHandle;
+	public ExportableRenderSurfaceImageHandleType RequiredImageHandleType => ExportableRenderSurfaceImageHandleType.D3D11TextureLegacySharedHandle;
 	public bool CanAcceptFrame => true;
 
 	public WpfGpuSharedFramePresenter(Action onUsabilityChanged, Action onFirstFrameShown) {
@@ -52,8 +52,8 @@ sealed class WpfGpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		ReleaseSession();
 
 		var capabilities = surface.Capabilities;
-		if (capabilities.HandleType != RequiredHandleType) {
-			Fail($"surface handle type {capabilities.HandleType} does not match {RequiredHandleType}");
+		if (capabilities.ImageHandleType != RequiredImageHandleType) {
+			Fail($"surface handle type {capabilities.ImageHandleType} does not match {RequiredImageHandleType}");
 			return;
 		}
 		if (surface.ImageCount > MaxImageCount) {
@@ -182,6 +182,7 @@ sealed class WpfGpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 		if (_hasFailed) return;
 		_hasFailed = true;
 		UnavailableReason = reason;
+		Console.WriteLine($"GPU shared frames are unavailable: {UnavailableReason}. Falling back to CPU-copied frames.");
 		ReleaseSession();
 		Application.Current?.Dispatcher.BeginInvoke(_onUsabilityChanged);
 	}

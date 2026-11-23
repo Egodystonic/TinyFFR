@@ -33,6 +33,12 @@ namespace Egodystonic.TinyFFR.Avalonia;
 /// <see cref="FallbackBrush"/>. Do not leave a disposed renderer bound; set the property to <see langword="null"/>
 /// first.
 /// </para>
+/// <para>
+/// Where possible, frames are shared with Avalonia's compositor directly on the GPU ("GPU shared frames"), so they are never copied back to the CPU. This is supported with Avalonia's default rendering mode on Windows (ANGLE/Direct3D 11), its OpenGL mode on Linux, and its Metal mode on macOS, provided TinyFFR and Avalonia run on the same GPU.
+/// Where that is not possible, or where <c>PreferCpuRenderBuffer</c> is set on the renderer's/compositor's creation config, frames are instead copied via the CPU.
+/// When the control falls back to CPU-copied frames without having been asked to, it writes a message explaining the cause to the console; the cause is also
+/// available from <see cref="GpuSharedFramesUnavailableReason"/>.
+/// </para>
 /// </remarks>
 public class TinyFfrSceneView : Control {
 	readonly GpuSharedFramePresenter _gpuPresenter;
@@ -173,10 +179,28 @@ public class TinyFfrSceneView : Control {
 		_gpuPresenter = new GpuSharedFramePresenter(this, IdempotentlyUpdateRendererStateAccordingToControlState);
 	}
 
+	/// <summary>
+	/// <see langword="true"/> if this control is currently receiving frames as GPU shared frames; <see langword="false"/> if it is receiving CPU-copied frames
+	/// (or nothing is bound).
+	/// </summary>
+	/// <remarks>
+	/// See the remarks on <see cref="TinyFfrSceneView"/> for when GPU shared frames are used.
+	/// </remarks>
 	public bool IsUsingGpuSharedFrames => _gpuPresenter.IsPresenting;
 
+	/// <summary>
+	/// A human-readable explanation of why this control is not currently using GPU shared frames, or <see langword="null"/> if it is, or if no reason is known
+	/// (for example because CPU-copied frames were explicitly requested via <c>PreferCpuRenderBuffer</c>).
+	/// </summary>
 	public string? GpuSharedFramesUnavailableReason => _gpuPresenter.IsPresenting ? null : _gpuPresenter.UnavailableReason;
 
+	/// <summary>
+	/// The total number of frames this control has displayed so far, across both GPU shared frames and CPU-copied frames.
+	/// </summary>
+	/// <remarks>
+	/// Each Avalonia composition frame that shows a new image counts once. Sample it periodically to measure the displayed frame rate,
+	/// which can be lower than the rate at which the bound renderer is rendering.
+	/// </remarks>
 	public long DisplayedFrameCount => _cpuFramesDrawn + _gpuPresenter.DisplayedFrameCount;
 
 	/// <summary>

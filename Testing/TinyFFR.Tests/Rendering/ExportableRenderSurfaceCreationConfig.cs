@@ -17,18 +17,18 @@ class ExportableRenderSurfaceCreationConfigTest {
 	public void ShouldCorrectlyConvertToAndFromHeapStorageFormat() {
 		var testConfigA = new ExportableRenderSurfaceCreationConfig {
 			Dimensions = (123, 456),
-			HandleType = ExportableRenderSurfaceHandleType.D3D11TextureNtHandle,
+			RequiredImageHandleType = ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new ExportableRenderSurfaceCreationConfig {
 			Dimensions = (100, 200),
-			HandleType = ExportableRenderSurfaceHandleType.D3D11TextureLegacySharedHandle,
+			RequiredImageHandleType = ExportableRenderSurfaceImageHandleType.D3D11TextureLegacySharedHandle,
 			Name = "BBBbbb"
 		};
 
 		static void ComparisonFunc(ExportableRenderSurfaceCreationConfig expected, ExportableRenderSurfaceCreationConfig actual) {
 			Assert.AreEqual(expected.Dimensions, actual.Dimensions);
-			Assert.AreEqual(expected.HandleType, actual.HandleType);
+			Assert.AreEqual(expected.RequiredImageHandleType, actual.RequiredImageHandleType);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -37,19 +37,19 @@ class ExportableRenderSurfaceCreationConfigTest {
 
 		AssertHeapSerializationWithObjects<ExportableRenderSurfaceCreationConfig>()
 			.Obj(new XYPair<int>(123, 456))
-			.Int((int) ExportableRenderSurfaceHandleType.D3D11TextureNtHandle)
+			.Int((int) ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle)
 			.String("Aa Aa")
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ExportableRenderSurfaceCreationConfig>()
 			.Obj(new XYPair<int>(100, 200))
-			.Int((int) ExportableRenderSurfaceHandleType.D3D11TextureLegacySharedHandle)
+			.Int((int) ExportableRenderSurfaceImageHandleType.D3D11TextureLegacySharedHandle)
 			.String("BBBbbb")
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ExportableRenderSurfaceCreationConfig>()
 			.Including(nameof(ExportableRenderSurfaceCreationConfig.Dimensions))
-			.Including(nameof(ExportableRenderSurfaceCreationConfig.HandleType))
+			.Including(nameof(ExportableRenderSurfaceCreationConfig.RequiredImageHandleType))
 			.Including(nameof(ExportableRenderSurfaceCreationConfig.Name))
 			.End();
 	}
@@ -57,23 +57,23 @@ class ExportableRenderSurfaceCreationConfigTest {
 	[Test]
 	public void ShouldUseExpectedDefaults() {
 		Assert.AreEqual(ExportableRenderSurfaceCreationConfig.DefaultDimensions, new ExportableRenderSurfaceCreationConfig().Dimensions);
-		Assert.AreEqual(ExportableRenderSurfaceCreationConfig.DefaultHandleType, new ExportableRenderSurfaceCreationConfig().HandleType);
-		var expectedDefaultHandleType = OperatingSystem.IsWindows() ? ExportableRenderSurfaceHandleType.D3D11TextureNtHandle
-			: OperatingSystem.IsMacOS() ? ExportableRenderSurfaceHandleType.IOSurfaceRef
-			: ExportableRenderSurfaceHandleType.VulkanOpaqueFileDescriptor;
-		Assert.AreEqual(expectedDefaultHandleType, ExportableRenderSurfaceCreationConfig.DefaultHandleType);
+		Assert.AreEqual(ExportableRenderSurfaceCreationConfig.DefaultImageHandleTypeForCurrentOperatingSystem, new ExportableRenderSurfaceCreationConfig().RequiredImageHandleType);
+		var expectedDefaultHandleType = OperatingSystem.IsWindows() ? ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle
+			: OperatingSystem.IsMacOS() ? ExportableRenderSurfaceImageHandleType.IOSurfaceRef
+			: ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor;
+		Assert.AreEqual(expectedDefaultHandleType, ExportableRenderSurfaceCreationConfig.DefaultImageHandleTypeForCurrentOperatingSystem);
 	}
 
 	[Test]
 	public void ShouldThrowForOutOfRangeDimensions() {
 		Assert.Throws<ArgumentException>(() => new ExportableRenderSurfaceCreationConfig { Dimensions = (0, 100) }.ThrowIfInvalid());
-		Assert.Throws<ArgumentException>(() => new ExportableRenderSurfaceCreationConfig { Dimensions = (100, ExportableRenderSurfaceCreationConfig.MaxDimensionXY + 1) }.ThrowIfInvalid());
+		Assert.Throws<ArgumentException>(() => new ExportableRenderSurfaceCreationConfig { Dimensions = (100, ExportableRenderSurfaceCreationConfig.DimensionsMaxComponent + 1) }.ThrowIfInvalid());
 		Assert.DoesNotThrow(() => new ExportableRenderSurfaceCreationConfig { Dimensions = (1, 1) }.ThrowIfInvalid());
 	}
 
 	[Test]
 	public void ShouldThrowForUndefinedOrNoneHandleType() {
-		Assert.Throws<ArgumentException>(() => new ExportableRenderSurfaceCreationConfig { HandleType = ExportableRenderSurfaceHandleType.None }.ThrowIfInvalid());
-		Assert.Throws<ArgumentException>(() => new ExportableRenderSurfaceCreationConfig { HandleType = (ExportableRenderSurfaceHandleType) 999 }.ThrowIfInvalid());
+		Assert.Throws<ArgumentException>(() => new ExportableRenderSurfaceCreationConfig { RequiredImageHandleType = ExportableRenderSurfaceImageHandleType.None }.ThrowIfInvalid());
+		Assert.Throws<ArgumentException>(() => new ExportableRenderSurfaceCreationConfig { RequiredImageHandleType = (ExportableRenderSurfaceImageHandleType) 999 }.ThrowIfInvalid());
 	}
 }

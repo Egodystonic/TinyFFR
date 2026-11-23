@@ -79,12 +79,12 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 	public static bool TryStartOrContinueHandlingGpuFrames(RendererCompositor c, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, IBindableRendererGpuFrameSink sink) {
 		ArgumentNullException.ThrowIfNull(sink);
 		var impl = GetBindableImplementationOrThrow(c);
-		var requiredHandleType = sink.RequiredHandleType;
+		var requiredHandleType = sink.RequiredImageHandleType;
 		var requiredHandleTypeBit = 1U << (int) requiredHandleType;
 		if (impl._preferCpuRenderBuffer || (impl._gpuHandleTypesUnsupportedByBuilderMask & requiredHandleTypeBit) != 0) return false;
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
-		if (impl._gpuSurface is { } surface && surface.Capabilities.HandleType == requiredHandleType) {
+		if (impl._gpuSurface is { } surface && surface.Capabilities.ImageHandleType == requiredHandleType) {
 			if (bufferSizePixels != impl._sharedBufferSizePixels) {
 				surface.Dimensions = bufferSizePixels;
 				impl._sharedBufferSizePixels = bufferSizePixels;
@@ -100,6 +100,9 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 
 		if (impl.TryCreateSharedSurface(bufferSizePixels, requiredHandleType) is not { } newSurface) {
 			impl._gpuHandleTypesUnsupportedByBuilderMask |= requiredHandleTypeBit;
+			Console.WriteLine($"GPU shared frames are unavailable: " +
+				$"This platform/device cannot create exportable render surfaces with handle type {requiredHandleType} for compositor '{impl._name}'. " +
+				$"Falling back to CPU-copied frames.");
 			return false;
 		}
 		impl.DisposeSharedTargetAndCompositor();
@@ -160,11 +163,11 @@ sealed class BindableRendererCompositorImplProvider : IRendererCompositorImplPro
 		RecreateAddedRenderersOnSharedTarget(_sharedBuffer);
 	}
 
-	ExportableRenderSurface? TryCreateSharedSurface(XYPair<int> size, ExportableRenderSurfaceHandleType handleType) {
+	ExportableRenderSurface? TryCreateSharedSurface(XYPair<int> size, ExportableRenderSurfaceImageHandleType imageHandleType) {
 		return _rendererBuilder.TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
 			Name = $"{_name} exportable surface",
 			Dimensions = size,
-			HandleType = handleType
+			RequiredImageHandleType = imageHandleType
 		});
 	}
 

@@ -100,9 +100,13 @@ public static class TinyFfrAvaloniaExtensions {
 	const int DefaultUiLoopTickRateHz = 60;
 
 	/// <summary>
-	/// Starts a render/animation loop that ticks on the Avalonia dispatcher.
+	/// Starts a render/animation loop that ticks from a timer on the Avalonia dispatcher.
 	/// </summary>
 	/// <remarks>
+	/// <para>
+	/// This is the timer-driven alternative to <c>StartAvaloniaUiLoop()</c>, which ticks once per Avalonia animation frame instead and is usually the better choice.
+	/// Use this method where you specifically want a fixed tick rate that is independent of the display's refresh rate.
+	/// </para>
 	/// <para>
 	/// This schedules your tick on Avalonia's own dispatcher loop rather than creating a TinyFFR application loop that drives itself, which is
 	/// what keeps everything on the UI thread and stops TinyFFR's usual input polling from stealing events the framework needs.
@@ -126,9 +130,13 @@ public static class TinyFfrAvaloniaExtensions {
 	}
 
 	/// <summary>
-	/// Starts a render/animation loop that ticks on the Avalonia dispatcher, supplying TinyFFR input gathered from the given element.
+	/// Starts a render/animation loop that ticks from a timer on the Avalonia dispatcher, supplying TinyFFR input gathered from the given element.
 	/// </summary>
 	/// <remarks>
+	/// <para>
+	/// This is the timer-driven alternative to <c>StartAvaloniaUiLoop()</c>, which ticks once per Avalonia animation frame instead and is usually the better choice.
+	/// Use this method where you specifically want a fixed tick rate that is independent of the display's refresh rate.
+	/// </para>
 	/// <para>
 	/// This is the overload to use where you want TinyFFR's own input abstraction. The retriever handed to your callback is fed
 	/// from Avalonia's input events rather than from TinyFFR's usual polling, so the same input-handling code you would write for a
@@ -165,11 +173,68 @@ public static class TinyFfrAvaloniaExtensions {
 		}
 	}
 
+	/// <summary>
+	/// Starts a render/animation loop that ticks once per Avalonia animation frame.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This ticks once per Avalonia animation frame (<c>TopLevel.RequestAnimationFrame</c>), i.e. at the display's refresh rate, rather than from a timer. It drives a TinyFFR application loop from that clock
+	/// rather than letting the loop drive itself, which is what keeps everything on the UI thread and stops TinyFFR's usual input polling from
+	/// stealing events the framework needs. To tick from a fixed-rate timer instead, use <c>StartAvaloniaUiLoopViaDispatcher()</c>.
+	/// </para>
+	/// <para>
+	/// The callback is invoked on the UI thread, so it is safe to touch both your UI and your TinyFFR objects inside it. Render
+	/// your scene there, as you would inside a standalone application loop.
+	/// </para>
+	/// <para>
+	/// If <paramref name="frameRateCapHz"/> is set, ticks that arrive before the next one is due are skipped. Because ticks can only happen on display frames, the
+	/// achieved rate is the refresh rate divided by a whole number: for example a cap of <c>100</c> on a 144Hz display results in roughly 72 ticks per second.
+	/// </para>
+	/// <para>
+	/// Dispose the returned object to stop the loop.
+	/// </para>
+	/// </remarks>
+	/// <param name="this">The application loop builder to create the underlying loop with.</param>
+	/// <param name="tickCallback">The callback to invoke on the UI thread each tick. Its argument is the time elapsed since the previous tick.</param>
+	/// <param name="frameRateCapHz">An optional maximum number of ticks per second, or <see langword="null"/> (the default) to tick on every Avalonia animation frame. Must be positive if set.</param>
+	/// <param name="name">The name to give the underlying application loop resource. May be left empty.</param>
 	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, Action<TimeSpan> tickCallback, int? frameRateCapHz = null, ReadOnlySpan<char> name = default) {
 		ArgumentNullException.ThrowIfNull(tickCallback);
 		return StartAvaloniaAnimationFrameLoop(@this, tickCallback, null, null, frameRateCapHz, name);
 	}
 
+	/// <summary>
+	/// Starts a render/animation loop that ticks once per Avalonia animation frame, supplying TinyFFR input gathered from the given element.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This ticks once per Avalonia animation frame (<c>TopLevel.RequestAnimationFrame</c>), i.e. at the display's refresh rate, rather than from a timer. It drives a TinyFFR application loop from that clock
+	/// rather than letting the loop drive itself, which is what keeps everything on the UI thread and stops TinyFFR's usual input polling from
+	/// stealing events the framework needs. To tick from a fixed-rate timer instead, use <c>StartAvaloniaUiLoopViaDispatcher()</c>.
+	/// </para>
+	/// <para>
+	/// The callback is invoked on the UI thread, so it is safe to touch both your UI and your TinyFFR objects inside it. Render
+	/// your scene there, as you would inside a standalone application loop.
+	/// </para>
+	/// <para>
+	/// If <paramref name="frameRateCapHz"/> is set, ticks that arrive before the next one is due are skipped. Because ticks can only happen on display frames, the
+	/// achieved rate is the refresh rate divided by a whole number: for example a cap of <c>100</c> on a 144Hz display results in roughly 72 ticks per second.
+	/// </para>
+	/// <para>
+	/// The retriever handed to your callback is fed from Avalonia's input events rather than from TinyFFR's usual polling, so the same input-handling code you
+	/// would write for a standalone application works unchanged. Input is scoped to the element you nominate: keyboard events are observed only whilst it has
+	/// focus, and mouse buttons and the wheel whilst the pointer is over it. Game controllers are not supported under UI framework integration, and there is no
+	/// equivalent of locking the cursor.
+	/// </para>
+	/// <para>
+	/// Dispose the returned object to stop the loop; doing so also unsubscribes from the element's events.
+	/// </para>
+	/// </remarks>
+	/// <param name="this">The application loop builder to create the underlying loop with.</param>
+	/// <param name="inputSource">The element whose input events are observed. Usually the scene view itself, though a containing window may be passed to widen the scope. Note that mouse positions are reported relative to this element, so it must be the scene view for those to line up with the rendered image.</param>
+	/// <param name="tickCallback">The callback to invoke on the UI thread each tick. Its arguments are the time elapsed since the previous tick and the input accumulated over that time.</param>
+	/// <param name="frameRateCapHz">An optional maximum number of ticks per second, or <see langword="null"/> (the default) to tick on every Avalonia animation frame. Must be positive if set.</param>
+	/// <param name="name">The name to give the underlying application loop resource. May be left empty.</param>
 	public static IDisposable StartAvaloniaUiLoop(this ILocalApplicationLoopBuilder @this, InputElement inputSource, Action<TimeSpan, ILatestInputRetriever> tickCallback, int? frameRateCapHz = null, ReadOnlySpan<char> name = default) {
 		ArgumentNullException.ThrowIfNull(tickCallback);
 		ArgumentNullException.ThrowIfNull(inputSource);
