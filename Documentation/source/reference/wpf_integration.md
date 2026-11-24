@@ -97,6 +97,49 @@ Compositor = factory.RendererBuilder.CreateBindableCompositor(); // (1)!
 
 1. Like `CreateBindableRenderer`, this extension method is provided in the `Egodystonic.TinyFFR.Wpf` package under the `Egodystonic.TinyFFR.Rendering` namespace.
 
+### GPU Shared Frames
+
+Wherever possible, TinyFFR hands each rendered frame to WPF directly on the GPU. This avoids copying every frame from the GPU to the CPU and back again (which can cost considerable CPU time, especially at higher resolutions).
+
+This happens automatically; you don't need to do anything to enable it. When it isn't possible, the scene view falls back to *CPU-copied frames* instead, which work everywhere but cost more per frame.
+
+GPU shared frames are shown via a [`D3DImage`](https://learn.microsoft.com/en-us/dotnet/api/system.windows.interop.d3dimage), which WPF composites with Direct3D 9. TinyFFR shares each frame with it as a Direct3D 11 texture, which requires:
+
+* A GPU and driver that support Direct3D 9Ex and sharing textures between Direct3D 11 and Direct3D 9Ex (true of practically every Windows GPU).
+* TinyFFR and WPF rendering with the same GPU. This can matter on laptops with both an integrated and a dedicated GPU, where TinyFFR and WPF may otherwise end up on different GPUs.
+
+When the scene view falls back to CPU-copied frames without having been asked to, it writes a message explaining why to the console, e.g.:
+
+```
+GPU shared frames are unavailable: <reason>. Falling back to CPU-copied frames.
+```
+
+The following properties can be used to control or inspect this:
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `PreferCpuRenderBuffer`
+
+:   Set this on the `BindableRendererCreationConfig` (or `BindableRendererCompositorCreationConfig`) to always use CPU-copied frames, even where GPU shared frames are available. This can be useful to rule out a driver or interop problem. Defaults to `false`.
+
+	```csharp
+	Renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator, new BindableRendererCreationConfig {
+		PreferCpuRenderBuffer = true
+	});
+	```
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TinyFfrSceneView.IsUsingGpuSharedFrames`
+
+:   `true` if the scene view is currently receiving GPU shared frames; `false` if it is receiving CPU-copied frames (or nothing is bound).
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TinyFfrSceneView.GpuSharedFramesUnavailableReason`
+
+:   A description of why the scene view is not currently using GPU shared frames, or `null` if it is (or if no reason is known, e.g. because `PreferCpuRenderBuffer` was set).
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TinyFfrSceneView.DisplayedFrameCount`
+
+:   The total number of frames the scene view has displayed so far. Sample it periodically to measure the frame rate actually being displayed, which can be lower than the rate you are rendering at.
+
+The `GpuSynchronizationFrameBufferCount` setting (see [GPU Synchronization](render_throughput_and_latency.md#gpu-synchronization)) on `BindableRendererCreationConfig` also limits how many GPU shared frames can be in flight to WPF at once. Higher values can increase the frame rate slightly at the cost of slightly more latency; lower values improve latency but lower framerate.
+
 ## Looping
 
 ???+ danger "Primary Thread Safety"
@@ -109,7 +152,7 @@ If your application requires the scene view to be animated you can achieve this 
 
 1. This extension method is provided in the `Egodystonic.TinyFFR.Wpf` package under the `Egodystonic.TinyFFR.Wpf` namespace.
 
-This method allows you to supply a callback delegate that will be invoked at a target frequency (e.g. 30Hz) on the UI context (e.g. the UI thread). You can render your scene on each tick (like you would inside an `ApplicationLoop` in a standalone TinyFFR application):
+This method allows you to supply a callback delegate that will be invoked once per display frame on the UI context (e.g. the UI thread). You can render your scene on each tick (like you would inside an `ApplicationLoop` in a standalone TinyFFR application):
 
 ```csharp
 // You can start this loop like so...
@@ -117,7 +160,7 @@ var loopTerminationDisposable = factory.ApplicationLoopBuilder.StartWpfUiLoop(Ti
 
 // Example Tick function
 void Tick(TimeSpan tickIterationTime) {
-	var deltaTime = tickIterationTime.AsDeltaTime()
+	var deltaTime = tickIterationTime.AsDeltaTime();
 
 	// Render one frame each tick
 	Renderer.Render();
@@ -135,22 +178,37 @@ void Tick(TimeSpan tickIterationTime) {
 loopTerminationDisposable.Dispose();
 ```
 
-This function schedules your tick/render loop on the pre-existing WPF dispatcher loop, integrating it in to the UI subsystem, and is preferred over creating an `ApplicationLoop` manually (see warning above). The function takes optional arguments as follows:
+This function ticks your loop from WPF's own frame clock (`CompositionTarget.Rendering`), so your scene renders in step with the display's refresh rate and WPF's own rendering. It is preferred over creating an `ApplicationLoop` manually (see warning above). The function takes optional arguments as follows:
 
-<span class="def-icon">:material-code-block-parentheses:</span> `StartWpfUiLoop(tickCallback, tickRateHz, priority, name)`
+<span class="def-icon">:material-code-block-parentheses:</span> `StartWpfUiLoop(tickCallback, frameRateCapHz, name)`
 
 :   * `tickCallback` is the `Action<TimeSpan>` that you wish to be invoked on the UI thread/context. The singular argument is a `TimeSpan` indicating the "delta time" since the last 'tick'.
 
-	* `tickRateHz` is optional, this sets the target framerate for the animation loop. Please note that the maximum framerate may be limited by the UI framework compositor and/or dispatcher loop mechanism. You should also note that the 'consistency' (e.g. jitter) of the framerate will likely be much more variable than with a typical standalone TinyFFR application loop.
+	* `frameRateCapHz` is optional, and sets a maximum number of ticks per second. If left `null` (the default), the loop ticks on every composition frame.(1) Because ticks can only happen on display frames, the rate achieved is always the display's refresh rate divided by a whole number: For example, a cap of `100` on a 144Hz display results in roughly 72 ticks per second.
+		{ .annotate }
 
-	* `priority` is optional, this sets the [DispatcherPriority](https://learn.microsoft.com/en-us/dotnet/api/system.windows.threading.dispatcherpriority) with which this loop will be instigated.
+		1. 	The display's refresh rate therefore acts as a frame rate cap of its own.
 
 	* `name` is optional, this will set the name of the underlying `ApplicationLoop` resource used internally by TinyFFR.
 
 	This function returns an `IDisposable` that should be disposed when you wish to terminate the loop.
 
+#### Timer-Driven Alternative
+
+If you specifically want a fixed tick rate that is independent of the display's refresh rate, use `StartWpfUiLoopViaDispatcher()` instead. This schedules your tick on a timer on the WPF dispatcher rather than on WPF's frame clock. It takes the same callbacks as `StartWpfUiLoop()`, and returns an `IDisposable` in the same way.
+
+Please note that the maximum framerate may be limited by the UI framework compositor and/or dispatcher loop mechanism. You should also note that the 'consistency' (e.g. jitter) of the framerate will likely be much more variable than with a typical standalone TinyFFR application loop.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `StartWpfUiLoopViaDispatcher(tickCallback, tickRateHz, priority, name)`
+
+:   * `tickRateHz` is optional, this sets the target framerate for the animation loop (defaults to `60`). Typically the dispatcher loop for a WPF application does not tick faster than 60Hz.
+
+	* `priority` is optional, this sets the [DispatcherPriority](https://learn.microsoft.com/en-us/dotnet/api/system.windows.threading.dispatcherpriority) with which this loop will be instigated.
+
+	* `tickCallback` and `name` behave as described above.
+
 !!! warning "Application.Current must be set"
-	The loop is scheduled on `Application.Current.Dispatcher`, so a WPF `Application` must already exist when you call `StartWpfUiLoop()`. This is the case for any normal WPF application, but it is worth bearing in mind if you are hosting WPF content inside another framework.
+	`StartWpfUiLoopViaDispatcher()` schedules its timer on `Application.Current.Dispatcher`, so a WPF `Application` must already exist when you call it. This is the case for any normal WPF application, but it is worth bearing in mind if you are hosting WPF content inside another framework.
 
 ## Input
 
@@ -189,17 +247,17 @@ void Tick(TimeSpan tickIterationTime, ILatestInputRetriever input) { // (2)!
 	In this example we're using keyboard/mouse controls to drive a [Camera Controller](camera_controllers.md).
 
 
-<span class="def-icon">:material-code-block-parentheses:</span> `StartWpfUiLoop(inputSource, tickCallback, tickRateHz, priority, name)`
+<span class="def-icon">:material-code-block-parentheses:</span> `StartWpfUiLoop(inputSource, tickCallback, frameRateCapHz, name)`
 
 :   * `inputSource` is the [`UIElement`](https://learn.microsoft.com/en-us/dotnet/api/system.windows.uielement) whose input events will be observed; usually your `TinyFfrSceneView`, but you may pass any element (e.g. the containing window) if you want a wider scope.
 
 	* `tickCallback` is the `Action<TimeSpan, ILatestInputRetriever>` that you wish to be invoked on the UI thread/context. The second argument supplies the input state accumulated since the previous 'tick'.
 
-	* `tickRateHz` behaves as described above.
-
-	* `priority` and `name` behave as described above.
+	* `frameRateCapHz` and `name` behave as described above.
 
 	This function returns an `IDisposable` that should be disposed when you wish to terminate the loop; doing so also unsubscribes from the `inputSource`'s events.
+
+	`StartWpfUiLoopViaDispatcher()` has an equivalent overload: `StartWpfUiLoopViaDispatcher(inputSource, tickCallback, tickRateHz, priority, name)`.
 
 #### Scope and semantics
 

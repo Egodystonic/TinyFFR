@@ -10,6 +10,7 @@ description: Information on how to render in to off-screen buffers with TinyFFR,
     * A `RenderOutputBuffer` is an off-screen render target. Renderers and compositors can draw in to it instead of a window. :material-arrow-right: [Render Output Buffers](#render-output-buffers)
     * The pixels of each frame rendered to a buffer can be read back on the CPU. It's also possible to just capture screenshots from any renderer. :material-arrow-right: [Reading Frames](#reading-frames), [Screenshots](#screenshots)
     * A buffer can also be used directly as a texture, e.g. for an in-world screen showing a second camera's view. :material-arrow-right: [Using a Buffer as a Texture](#using-a-buffer-as-a-texture)
+    * To hand frames to another graphics API or UI framework without copying them via the CPU, use an exportable render surface instead. :material-arrow-right: [GPU Render Exporting](gpu_render_exporting.md)
 
 </div>
 
@@ -47,7 +48,10 @@ A *render output buffer* (`RenderOutputBuffer`) is an image that TinyFFR can ren
 
 Buffers don't need a window, a display, or even a desktop: In [headless mode](creating_and_managing_windows.md#the-windowbuilder), buffers are the only way to render. Rendering to a buffer is never paced by a display's refresh rate ([vsync](render_throughput_and_latency.md#vsync) only applies to windows).
 
-The [WPF](wpf_integration.md), [Avalonia](avalonia_integration.md), and [WinForms](winforms_integration.md) integrations render in to buffers behind the scenes, and copy each frame in to their controls for you.
+The [WinForms](winforms_integration.md) integration renders in to buffers behind the scenes, and copies each frame in to its control for you. The [WPF](wpf_integration.md#gpu-shared-frames) and [Avalonia](avalonia_integration.md#gpu-shared-frames) integrations share frames with their UI framework directly on the GPU where possible, and fall back to buffers otherwise.
+
+!!! tip "GPU-Based Image Export"
+	Reading frames back on the CPU (as described below) is simple and works everywhere, but costs a GPU-to-CPU copy per frame. If you want to hand frames to another graphics API or UI framework (e.g. Vulkan, Direct3D, Metal, or a compositor) without that copy, see [GPU Render Exporting](gpu_render_exporting.md).
 
 ## Reading Frames
 
