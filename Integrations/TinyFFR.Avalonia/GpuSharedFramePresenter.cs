@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -15,7 +16,7 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Avalonia;
 
-sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
+sealed partial class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	const int VkImageLayoutTransferSrcOptimal = 6;
 	const int MaxImageCount = 8;
 	readonly Visual _owner;
@@ -343,6 +344,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 	bool TryImportImageSet(ExportableRenderSurface surface, ExportableRenderSurfaceImageSet imageSet) {
 		var interop = _interop!;
 		var imageCount = imageSet.ImageCount;
+		var handlesToCloseAfterImport = new List<(Task ImportCompleted, ResourceHandle Handle)>();
 		try {
 			for (var i = 0; i < imageCount; ++i) {
 				if (imageSet.ExtractImage(i) is not { } handles) {
@@ -376,6 +378,7 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 						surface.CloseExportedHandle(handles.ImageHandle);
 						throw;
 					}
+					handlesToCloseAfterImport.Add((_images[i]!.ImportCompleted, handles.ImageHandle));
 					continue;
 				}
 				try {
@@ -411,11 +414,35 @@ sealed class GpuSharedFramePresenter : IBindableRendererGpuFrameSink {
 			_ = ReleaseImports();
 			return false;
 		}
+		finally {
+			if (handlesToCloseAfterImport.Count > 0) _ = CloseNtHandlesAfterImportAsync(surface, handlesToCloseAfterImport);
+		}
 
 		_importedImageSet = imageSet;
 		_importedImageCount = imageCount;
 		return true;
 	}
+
+	static async Task CloseNtHandlesAfterImportAsync(ExportableRenderSurface surface, List<(Task ImportCompleted, ResourceHandle Handle)> handles) {
+		foreach (var (importCompleted, _) in handles) {
+			try {
+				await importCompleted;
+			}
+			catch { }
+		}
+		foreach (var (_, handle) in handles) {
+			try {
+				surface.CloseExportedHandle(handle);
+			}
+			catch (ObjectDisposedException) {
+				CloseHandle((nint) handle.AsInteger);
+			}
+		}
+	}
+
+	[LibraryImport("kernel32.dll")]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static partial bool CloseHandle(nint handle);
 
 	static PlatformHandle CreatePlatformHandle(ResourceHandle exportedHandle, string handleType) => new((nint) exportedHandle.AsInteger, handleType);
 

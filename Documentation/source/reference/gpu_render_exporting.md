@@ -160,13 +160,23 @@ Your consumer should probably check the `CurrentImageSet`'s `Generation` before 
 
 ### Handle Ownership
 
-Every call to `ExtractImage()` creates *new* handles, and your consumer owns them. Once you've imported an image, either hand the handles to an importer that takes ownership of them (e.g. Vulkan takes ownership of file descriptors it successfully imports), or close them:
+Every call to `ExtractImage()` creates *new* handles, and your consumer owns them. What you must do with them once you've imported an image depends on how your importer treats them:
+
+* **Importers that take ownership** of the handles they successfully import must be left to close them. Closing them yourself as well would close them twice. For example, Vulkan (`vkImportMemoryFdKHR`, `vkImportSemaphoreFdKHR`) and OpenGL (`glImportMemoryFdEXT`) take ownership of file descriptors they import successfully. If an import *fails*, ownership is not transferred, and you must close the handle yourself.
+* **Importers that only open or reference the handle** leave you owning it, so you must close it once the import has finished. For example, Direct3D 11's `OpenSharedResource1()` opens a texture from an NT handle but does not close the handle, and macOS objects such as `IOSurfaceRef` are reference-counted, so an importer retains its own reference.
+
+Check your importer's documentation for which applies. Handles that are neither handed over nor closed are leaked; and a leaked image handle can also keep the image's GPU memory allocated, so a consumer that re-imports on every resize can leak a whole set of images each time.
+
+To close a handle:
 
 <span class="def-icon">:material-code-block-parentheses:</span> `surface.CloseExportedHandle(exportedHandle)`
 
 :   Closes/releases an exported handle in the way appropriate to the surface's handle type (closing the file descriptor or NT handle, or releasing the retained Core Foundation object). Note that `default` handles are ignored, so it's safe to pass every handle of an `ExportedRenderSurfaceImage` regardless of sync kind.
 
-Handles that are neither handed over nor closed are leaked. The exception is `D3D11TextureLegacySharedHandle`: Legacy shared handles aren't owned by the caller, so closing them is a no-op.
+`D3D11TextureLegacySharedHandle` images are the one exception to all of the above: Legacy shared handles aren't owned by the caller, so there's nothing to close (and `CloseExportedHandle()` does nothing with them).
+
+!!! warning "Deferred Imports"
+	Some importers don't use the handle straight away. Avalonia, for example, queues the actual import to run later on its render thread, and reports when it has finished via `ICompositionImportedGpuImage.ImportCompleted`. If your importer doesn't take ownership of the handle, keep it open until that deferred import has finished, and only then close it; closing it earlier can make the import fail.
 
 ## Taking & Returning Images
 
@@ -304,7 +314,7 @@ sealed class MyExportedFrameConsumer : IDisposable {
 
 7.	`null` means this set was superseded whilst it was being imported; the new set will be imported on the next `Update()`.
 
-8.	Closes every handle exported for this image. This assumes `MyGraphicsApi.ImportImage()` doesn't take ownership of the handle (if it does, don't close it). Unused semaphore handles are `default`, which `CloseExportedHandle()` ignores.
+8.	Closes every handle exported for this image. This assumes `MyGraphicsApi.ImportImage()` imports synchronously and doesn't take ownership of the handle: If it takes ownership, only close the handles when the import fails; and if it imports later, close them once that import has finished (see [Handle Ownership](#handle-ownership)). Unused semaphore handles are `default`, which `CloseExportedHandle()` ignores.
 
 9.	Gives back the image that was being displayed. If the set has been superseded, this is simply ignored.
 
