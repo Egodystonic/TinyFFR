@@ -54,6 +54,12 @@
     <ClInclude Include="tffr\headers\scene\native_impl_scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tffr\headers\scene\native_impl_exportable_surface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tffr\headers\scene\native_impl_exportable_surface_vulkan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="tffr\headers\scene\native_impl_render.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -108,6 +114,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tffr\impl\scene\native_impl_scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_linux.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_metal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_unsupported.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_vulkan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_windows.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tffr\impl\scene\native_impl_render.cpp">

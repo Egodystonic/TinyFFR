@@ -108,6 +108,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			[typeof(Scene)] = SceneBuilder,
 			[typeof(Renderer)] = RendererBuilder,
 			[typeof(RenderOutputBuffer)] = RendererBuilder,
+			[typeof(ExportableRenderSurface)] = RendererBuilder,
 			[typeof(RendererCompositor)] = RendererBuilder,
 			[typeof(BackdropTexture)] = AssetLoader,
 			[typeof(Font)] = AssetLoader,

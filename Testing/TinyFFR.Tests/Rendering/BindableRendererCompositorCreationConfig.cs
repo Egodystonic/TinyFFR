@@ -17,6 +17,7 @@ class BindableRendererCompositorCreationConfigTest {
 	public void ShouldUseExpectedDefaults() {
 		var config = new BindableRendererCompositorCreationConfig();
 		Assert.AreEqual(BindableRendererCreationConfig.DefaultDefaultBufferSize, config.DefaultBufferSize);
+		Assert.AreEqual(BindableRendererCreationConfig.DefaultPreferCpuRenderBuffer, config.PreferCpuRenderBuffer);
 		Assert.AreEqual(true, config.Name.IsEmpty);
 	}
 

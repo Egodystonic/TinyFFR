@@ -11,7 +11,7 @@ description: An example on how to make a simple cube appear using TinyFFR.
     
     This example demonstrates the simplest possible application using TinyFFR. 
     
-    This tutorial will show you how to get started with the basics of TinyFFR. In this example, we will:
+    In this example, we will:
 
 	* Import TinyFFR;
 	* Create a window;

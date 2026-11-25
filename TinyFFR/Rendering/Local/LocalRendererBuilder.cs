@@ -16,7 +16,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering.Local;
 
-sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IResourceDirectory<RendererCompositor>, IDisposable, ILocalResourceImplProvider {
+sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IResourceDirectory<ExportableRenderSurface>, IResourceDirectory<RendererCompositor>, IDisposable, ILocalResourceImplProvider {
 	enum RenderOrdering { Standalone, First, Middle, Last }
 
 	[StructLayout(LayoutKind.Explicit)]
@@ -28,13 +28,18 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		public readonly Window AsWindow;
 		[FieldOffset(UnionRenderTargetOffset)]
 		public readonly RenderOutputBuffer AsBuffer;
+		[FieldOffset(UnionRenderTargetOffset)]
+		public readonly ExportableRenderSurface AsExportableSurface;
 
 		public bool IsWindow => TypeHandle == ResourceHandle<Window>.TypeHandle;
 		public bool IsBuffer => TypeHandle == ResourceHandle<RenderOutputBuffer>.TypeHandle;
+		public bool IsExportableSurface => TypeHandle == ResourceHandle<ExportableRenderSurface>.TypeHandle;
+		public bool UsesSwapChain => IsWindow || IsExportableSurface;
 		public ResourceHandle RawHandle {
 			get {
 				if (TypeHandle == ResourceHandle<Window>.TypeHandle) return AsWindow.Handle;
 				if (TypeHandle == ResourceHandle<RenderOutputBuffer>.TypeHandle) return AsBuffer.Handle;
+				if (TypeHandle == ResourceHandle<ExportableRenderSurface>.TypeHandle) return AsExportableSurface.Handle;
 				throw new InvalidOperationException($"Unknown render target type ({TypeHandle}).");
 			}
 		}
@@ -44,6 +49,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				static XYPair<int> GetViewportOffset<T>(in T target) where T : IRenderTarget => target.ViewportOffset;
 				if (IsWindow) return GetViewportOffset(AsWindow);
 				if (IsBuffer) return GetViewportOffset(AsBuffer);
+				if (IsExportableSurface) return GetViewportOffset(AsExportableSurface);
 				throw new InvalidOperationException();
 			}
 		}
@@ -52,6 +58,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				static XYPair<int> GetViewportDimensions<T>(in T target) where T : IRenderTarget => target.ViewportDimensions;
 				if (IsWindow) return GetViewportDimensions(AsWindow);
 				if (IsBuffer) return GetViewportDimensions(AsBuffer);
+				if (IsExportableSurface) return GetViewportDimensions(AsExportableSurface);
 				throw new InvalidOperationException();
 			}
 		}
@@ -61,6 +68,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				static XYPair<int> GetLogicalDimensions<T>(in T target) where T : IRenderTarget => target.LogicalDimensions;
 				if (IsWindow) return GetLogicalDimensions(AsWindow);
 				if (IsBuffer) return GetLogicalDimensions(AsBuffer);
+				if (IsExportableSurface) return GetLogicalDimensions(AsExportableSurface);
 				throw new InvalidOperationException();
 			}
 		}
@@ -73,6 +81,10 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			TypeHandle = ResourceHandle<RenderOutputBuffer>.TypeHandle;
 			AsBuffer = buffer;
 		}
+		public RenderTargetUnion(ExportableRenderSurface surface) {
+			TypeHandle = ResourceHandle<ExportableRenderSurface>.TypeHandle;
+			AsExportableSurface = surface;
+		}
 
 		public bool Equals(RenderTargetUnion other) => TypeHandle == other.TypeHandle && RawHandle == other.RawHandle;
 		public override bool Equals(object? obj) => obj is RenderTargetUnion other && Equals(other);
@@ -80,7 +92,11 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		public static bool operator ==(RenderTargetUnion left, RenderTargetUnion right) => left.Equals(right);
 		public static bool operator !=(RenderTargetUnion left, RenderTargetUnion right) => !left.Equals(right);
 
-		public override string ToString() => IsWindow ? AsWindow.ToString() : AsBuffer.ToString();
+		public override string ToString() {
+			if (IsWindow) return AsWindow.ToString();
+			if (IsExportableSurface) return AsExportableSurface.ToString();
+			return AsBuffer.ToString();
+		}
 	}
 	
 	[StructLayout(LayoutKind.Explicit)]
@@ -226,6 +242,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		_sceneBuilder = sceneBuilder;
 		_config = config;
 		_renderOutputBufferImplProvider = new(this);
+		_exportableRenderSurfaceImplProvider = new(this);
 		_rendererCompositorImplProvider = new(this);
 		_textureImplProvider = new(this);
 		AllocateRenderer(out _reclamationRendererHandle).ThrowIfFailure();
@@ -266,11 +283,28 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			@this._loadedTargets.Add(result, new(rendererHandle, null, false, result.ViewportDimensions));
 			return result;
 		}
+		static RenderTargetUnion SetUpExportableSurfaceRenderer(LocalRendererBuilder @this, ExportableRenderSurface surface) {
+			var result = new RenderTargetUnion(surface);
+
+			if (@this._loadedTargets.ContainsKey(result)) return result;
+
+			AllocateExportableSwapChain(
+				@this._loadedExportableSurfaces[surface.Handle].DescriptorHandle,
+				out var swapChainHandle
+			).ThrowIfFailure();
+			AllocateRenderer(
+				out var rendererHandle
+			).ThrowIfFailure();
+
+			@this._loadedTargets.Add(result, new(rendererHandle, swapChainHandle, false, result.ViewportDimensions));
+			return result;
+		}
 
 		lock (_loadedTargetDataMutationLock) {
 			return renderTarget switch {
 				Window w => SetUpWindowRenderer(this, w),
 				RenderOutputBuffer b => SetUpBufferRenderer(this, b),
+				ExportableRenderSurface e => SetUpExportableSurfaceRenderer(this, e),
 				_ => throw new InvalidOperationException($"{this} does not support render targets of type {typeof(TRenderTarget).Name}.")
 			};	
 		}
@@ -417,17 +451,26 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			var hasRenderTargetActuallyResized = targetHasNonZeroArea && targetData.LastObservedRenderTargetSize != curRealTargetSize;
 			var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetHasNonZeroArea && (targetData.SwapchainShouldBeRenewed || hasRenderTargetActuallyResized);
 
-			if (shouldRenewSwapChainIfIsWindowAndAlreadyExists && rendererData.RenderTarget.IsWindow && targetData.SwapChainPtr.HasValue) {
+			if (shouldRenewSwapChainIfIsWindowAndAlreadyExists && rendererData.RenderTarget.UsesSwapChain && targetData.SwapChainPtr.HasValue) {
 				DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();
 				// These next three lines ensure we don't hold on to the VRAM represented by this swap chain
 				// while allocating the next. If it's a 4K double back buffer that's a lot of memory.
 				if (_loadedRenderers[fenceEmittingHandle].EmitFences) LocalFrameSynchronizationManager.FlushAllPendingFences(fenceEmittingHandle);
 				LocalFrameSynchronizationManager.StallForPendingCallbacksHeadless();
 				CollectGpuGarbage();
-				AllocateSwapChain(
-					rendererData.RenderTarget.AsWindow.Handle,
-					out var newSwapChainHandle
-				).ThrowIfFailure();
+				UIntPtr newSwapChainHandle;
+				if (rendererData.RenderTarget.IsWindow) {
+					AllocateSwapChain(
+						rendererData.RenderTarget.AsWindow.Handle,
+						out newSwapChainHandle
+					).ThrowIfFailure();
+				}
+				else {
+					AllocateExportableSwapChain(
+						_loadedExportableSurfaces[rendererData.RenderTarget.AsExportableSurface.Handle].DescriptorHandle,
+						out newSwapChainHandle
+					).ThrowIfFailure();
+				}
 				targetData = targetData with { SwapChainPtr = newSwapChainHandle, SwapchainShouldBeRenewed = false, LastObservedRenderTargetSize = curRealTargetSize };
 				lock (_loadedTargetDataMutationLock) {
 					_loadedTargets[rendererData.RenderTarget] = targetData;
@@ -447,7 +490,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			}
 		}
 
-		var isWindow = rendererData.RenderTarget.IsWindow;
+		var usesSwapChain = rendererData.RenderTarget.UsesSwapChain;
 		(bool Translucent, bool ClearDepth) desiredCompositing = compositionType switch {
 			RenderCompositionType.RetainPreviousScenes => (true, true),
 			_ => (false, false)
@@ -458,7 +501,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			_loadedRenderers[handle] = rendererData;
 		}
 
-		if (isWindow) {
+		if (usesSwapChain) {
 			RenderScene(
 				targetData.RendererPtr,
 				rendererData.Viewport.Handle,
@@ -1495,6 +1538,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Scene);
 		if (data.RenderTarget.IsWindow) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsWindow);
 		if (data.RenderTarget.IsBuffer) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsBuffer);
+		if (data.RenderTarget.IsExportableSurface) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsExportableSurface);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 
 		DisposeViewDescriptor(
@@ -1555,6 +1599,9 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 			while (_loadedBuffers.Count > 0) {
 				Dispose(_loadedBuffers.GetPairAtIndex(0).Key);
 			}
+			while (_loadedExportableSurfaces.Count > 0) {
+				Dispose(_loadedExportableSurfaces.GetPairAtIndex(0).Key);
+			}
 			CollectGpuGarbage();
 
 			DisposeRenderer(_reclamationRendererHandle).ThrowIfFailure();
@@ -1566,6 +1613,7 @@ sealed partial class LocalRendererBuilder : IRendererBuilder, IRendererImplProvi
 				_loadedTargets.Dispose();
 			}
 			_loadedBuffers.Dispose();
+			_loadedExportableSurfaces.Dispose();
 			_compositedRendererVectorPool.Dispose();
 		}
 		finally {

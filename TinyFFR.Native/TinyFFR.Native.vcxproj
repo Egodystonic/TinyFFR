@@ -120,6 +120,8 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <ClInclude Include="tffr\headers\scene\lights\native_impl_lights.h" />
     <ClInclude Include="tffr\headers\scene\native_impl_scene.h" />
     <ClInclude Include="tffr\headers\scene\objects\native_impl_objects.h" />
+    <ClInclude Include="tffr\headers\scene\native_impl_exportable_surface.h" />
+    <ClInclude Include="tffr\headers\scene\native_impl_exportable_surface_vulkan.h" />
     <ClInclude Include="tffr\headers\scene\native_impl_render.h" />
     <ClInclude Include="tffr\headers\utils_and_constants.h" />
     <ClInclude Include="third_party\headers\stb\stb_image.h" />
@@ -143,6 +145,12 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <ClCompile Include="tffr\impl\native_impl_init.cpp" />
     <ClCompile Include="tffr\impl\scene\camera\native_impl_camera.cpp" />
     <ClCompile Include="tffr\impl\scene\lights\native_impl_lights.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_linux.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_metal.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_unsupported.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_vulkan.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_exportable_surface_windows.cpp" />
     <ClCompile Include="tffr\impl\scene\native_impl_render.cpp" />
     <ClCompile Include="tffr\impl\scene\native_impl_scene.cpp" />
     <ClCompile Include="tffr\impl\scene\objects\native_impl_objects.cpp" />

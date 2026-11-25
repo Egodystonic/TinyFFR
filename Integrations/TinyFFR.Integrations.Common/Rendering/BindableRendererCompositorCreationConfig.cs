@@ -28,6 +28,28 @@ public readonly ref struct BindableRendererCompositorCreationConfig {
 	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
 
 	/// <summary>
+	/// If <see langword="true"/>, the compositor always hands frames to its bound control by copying them through the CPU, even where they could be shared
+	/// directly on the GPU. Defaults to <see cref="BindableRendererCreationConfig.DefaultPreferCpuRenderBuffer"/>.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// By default, where the platform and the UI framework support it, the bound control receives frames as GPU images shared directly with the
+	/// framework's compositor ("GPU shared frames"), which avoids copying every frame back to the CPU and uploading it again. Where that is not possible
+	/// (e.g. an unsupported platform, rendering backend or framework rendering mode, or the renderer and the framework running on different GPUs),
+	/// the control falls back to CPU-copied frames automatically and a message explaining the cause is written to the console.
+	/// </para>
+	/// <para>
+	/// When frames are shared on the GPU, the number that may be in flight to the UI framework is governed by the lowest non-negative
+	/// <see cref="BindableRendererCreationConfig.GpuSynchronizationFrameBufferCount"/> among the compositor's added renderers.
+	/// </para>
+	/// <para>
+	/// Set this to <see langword="true"/> to always use CPU-copied frames, e.g. to rule out a driver or interop problem, or where the frames
+	/// must be readable on the CPU anyway.
+	/// </para>
+	/// </remarks>
+	public bool PreferCpuRenderBuffer { get; init; } = BindableRendererCreationConfig.DefaultPreferCpuRenderBuffer;
+
+	/// <summary>
 	/// The name to give the compositor. May be left empty.
 	/// </summary>
 	public ReadOnlySpan<char> Name { get; init; }

@@ -207,7 +207,9 @@ ExtensionSet getInstanceExtensions(ExtensionSet const& externallyRequiredExts = 
     return exts;
 }
 
-ExtensionSet getDeviceExtensions(VkPhysicalDevice device) {
+// === Begin TinyFFR Alteration ===
+ExtensionSet getDeviceExtensions(VkPhysicalDevice device, ExtensionSet const& externallyRequiredExts = {}) {
+// === End TinyFFR Alteration ===
     ExtensionSet const TARGET_EXTS = {
 #if FVK_ENABLED(FVK_DEBUG_DEBUG_UTILS)
         VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
@@ -248,7 +250,9 @@ ExtensionSet getDeviceExtensions(VkPhysicalDevice device) {
             continue;
         }
 
-        if (setContains(TARGET_EXTS, name)) {
+        // === Begin TinyFFR Alteration ===
+        if (setContains(TARGET_EXTS, name) || setContains(externallyRequiredExts, name)) {
+        // === End TinyFFR Alteration ===
             exts.insert(name);
         }
     }
@@ -829,7 +833,9 @@ Driver* VulkanPlatform::createDriver(void* sharedContext,
     ExtensionSet deviceExts;
     // If using a shared context, we do not assume any extensions.
     if (!mImpl->mSharedContext) {
-        deviceExts = getDeviceExtensions(mImpl->mPhysicalDevice);
+        // === Begin TinyFFR Alteration ===
+        deviceExts = getDeviceExtensions(mImpl->mPhysicalDevice, getRequiredDeviceExtensions());
+        // === End TinyFFR Alteration ===
         auto [prunedInstExts, prunedDeviceExts] =
                 pruneExtensions(mImpl->mPhysicalDevice, driverConfig, instExts, deviceExts);
         instExts = prunedInstExts;

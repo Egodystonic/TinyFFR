@@ -10,7 +10,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
-sealed class BindableRendererImplProvider : IRendererImplProvider {
+sealed class BindableRendererImplProvider : IRendererImplProvider, IBindableRendererGpuFrameSource {
 	enum ViewportOverrideKind { None, Fraction, Pixel }
 
 	const string DefaultRendererName = "Unnamed Bindable Renderer";
@@ -20,9 +20,16 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	readonly string _name;
 	readonly ResourceGroup _sceneAndCamera;
 	readonly bool _autoUpdateCameraAspectRatio;
+	readonly bool _preferCpuRenderBuffer;
+	readonly int _gpuSynchronizationFrameBufferCount;
+	readonly int _maxFramesInFlight;
 	byte[] _serializedConfig;
 	Renderer _actualRenderer;
 	RenderOutputBuffer _actualRendererTarget;
+	ExportableRenderSurface? _gpuSurface;
+	IBindableRendererGpuFrameSink? _gpuSink;
+	bool _hasDeferredGpuFrame;
+	uint _gpuHandleTypesUnsupportedByBuilderMask;
 	XYPair<int> _bufferSizePixels;
 	XYPair<int> _cursorCoordinateSpaceSize = XYPair<int>.Zero;
 	bool? _frustumCullingEnabled;
@@ -64,6 +71,9 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_sceneAndCamera.Seal();
 
 		_autoUpdateCameraAspectRatio = config.AutoUpdateCameraAspectRatio;
+		_preferCpuRenderBuffer = config.PreferCpuRenderBuffer;
+		_gpuSynchronizationFrameBufferCount = config.GpuSynchronizationFrameBufferCount;
+		_maxFramesInFlight = MapGpuSynchronizationFrameBufferCountToMaxFramesInFlight(_gpuSynchronizationFrameBufferCount);
 		_serializedConfig = new byte[BindableRendererCreationConfig.GetHeapStorageFormattedLength(config)];
 		BindableRendererCreationConfig.AllocateAndConvertToHeapStorage(_serializedConfig, config);
 
@@ -71,6 +81,17 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	}
 
 	public static bool IsBindableRenderer(Renderer r) => r.Implementation is BindableRendererImplProvider;
+
+	internal const int MaxFramesInFlightWhenUnsynchronized = 2;
+	const int MaxFramesInFlightCap = 3;
+
+	internal static int MapGpuSynchronizationFrameBufferCountToMaxFramesInFlight(int gpuSynchronizationFrameBufferCount) {
+		if (gpuSynchronizationFrameBufferCount < 0) return MaxFramesInFlightWhenUnsynchronized;
+		return Int32.Clamp(gpuSynchronizationFrameBufferCount, 1, MaxFramesInFlightCap);
+	}
+
+	internal bool SynchronizesWithGpu => _gpuSynchronizationFrameBufferCount >= 0;
+	public int MaxFramesInFlight => _maxFramesInFlight;
 
 	internal static BindableRendererImplProvider GetBindableImplementationOrThrow(Renderer r) {
 		return r.Implementation as BindableRendererImplProvider ?? throw new InvalidOperationException($"Given {nameof(Renderer)} ({r}) is not a bindable renderer.");
@@ -81,7 +102,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		impl.ThrowIfAttachedToCompositor();
 		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
 
-		if (bufferSizePixels == impl._bufferSizePixels) {
+		if (impl._gpuSurface == null && bufferSizePixels == impl._bufferSizePixels) {
 			impl._actualRendererTarget.StartReadingFrames(handler, presentFramesTopToBottom: true);
 			impl._currentFrameHandler = handler;
 			return;
@@ -90,21 +111,90 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		impl.RecreateTargetBuffer(bufferSizePixels, handler);
 	}
 
+	public static bool TryStartOrContinueHandlingGpuFrames(Renderer r, XYPair<int> bufferSizePixels, XYPair<int> cursorCoordinateSpaceSize, IBindableRendererGpuFrameSink sink) {
+		ArgumentNullException.ThrowIfNull(sink);
+		var impl = GetBindableImplementationOrThrow(r);
+		impl.ThrowIfAttachedToCompositor();
+		var requiredHandleType = sink.RequiredImageHandleType;
+		var requiredHandleTypeBit = 1U << (int) requiredHandleType;
+		if (impl._preferCpuRenderBuffer || (impl._gpuHandleTypesUnsupportedByBuilderMask & requiredHandleTypeBit) != 0) return false;
+		impl._cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
+
+		if (impl._gpuSurface is { } surface && surface.Capabilities.ImageHandleType == requiredHandleType) {
+			if (bufferSizePixels != impl._bufferSizePixels) {
+				surface.Dimensions = bufferSizePixels;
+				impl._bufferSizePixels = bufferSizePixels;
+			}
+			if (!ReferenceEquals(impl._gpuSink, sink)) {
+				impl._gpuSink?.OnSurfaceDetached(surface);
+				impl._gpuSink = sink;
+				sink.OnSurfaceAttached(surface, impl);
+			}
+			return true;
+		}
+
+		if (impl.TryCreateGpuSurface(bufferSizePixels, requiredHandleType) is not { } newSurface) {
+			impl._gpuHandleTypesUnsupportedByBuilderMask |= requiredHandleTypeBit;
+			Console.WriteLine($"GPU shared frames are unavailable: " +
+				$"This platform/device cannot create exportable render surfaces with handle type {requiredHandleType} for renderer '{impl._name}'. " +
+				$"Falling back to CPU-copied frames.");
+			return false;
+		}
+		impl.DisposeCurrentOutput();
+		impl.AttachGpuSurface(newSurface, bufferSizePixels, sink);
+		return true;
+	}
+
 	public static void StopHandlingFrames(Renderer r) {
 		var impl = GetBindableImplementationOrThrow(r);
 		impl.ThrowIfAttachedToCompositor();
+		if (impl._gpuSurface != null) {
+			impl.RecreateTargetBuffer(impl._bufferSizePixels, null);
+			return;
+		}
 		impl._actualRendererTarget.StopReadingFrames(cancelQueuedFrames: true);
 		impl._currentFrameHandler = null;
 	}
 
 	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
+		DisposeCurrentOutput();
+		CreateTargetBuffer(size, handler);
+	}
+
+	void DisposeCurrentOutput() {
 		// We stop frame reading + wait for GPU to fast-dispose all internal back buffer resources to avoid catastrophic VRAM
 		// runaway when the UI control is resized over a number of frames (e.g. user drags window corner)
+		if (_gpuSurface is { } surface) {
+			_actualRenderer.WaitForGpu();
+			_actualRenderer.Dispose();
+			var sink = _gpuSink;
+			_gpuSink = null;
+			_gpuSurface = null;
+			sink?.OnSurfaceDetached(surface);
+			surface.Dispose();
+			return;
+		}
 		_actualRendererTarget.StopReadingFrames(cancelQueuedFrames: true);
 		_actualRenderer.WaitForGpu();
 		_actualRenderer.Dispose();
 		_actualRendererTarget.Dispose();
-		CreateTargetBuffer(size, handler);
+	}
+
+	ExportableRenderSurface? TryCreateGpuSurface(XYPair<int> size, ExportableRenderSurfaceImageHandleType imageHandleType) {
+		return _rendererBuilder.TryCreateExportableRenderSurface(new ExportableRenderSurfaceCreationConfig {
+			Name = $"{_name} exportable surface",
+			Dimensions = size,
+			RequiredImageHandleType = imageHandleType
+		});
+	}
+
+	void AttachGpuSurface(ExportableRenderSurface surface, XYPair<int> size, IBindableRendererGpuFrameSink sink) {
+		_bufferSizePixels = size;
+		_gpuSurface = surface;
+		_currentFrameHandler = null;
+		CreateActualRenderer(surface);
+		_gpuSink = sink;
+		sink.OnSurfaceAttached(surface, this);
 	}
 
 	void CreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgba32>>? handler) {
@@ -119,7 +209,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		CreateActualRenderer(_actualRendererTarget);
 	}
 
-	void CreateActualRenderer(RenderOutputBuffer target) {
+	void CreateActualRenderer<TRenderTarget>(TRenderTarget target) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
 		var scene = _sceneAndCamera.GetNthResourceOfType<Scene>(0);
 		var camera = _sceneAndCamera.GetNthResourceOfType<Camera>(0);
 		_actualRenderer = _rendererBuilder.CreateRenderer(
@@ -137,15 +227,15 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 				_actualRenderer.SetRenderSubAreaPixels(_viewportAnchor, _viewportPixelOffset, _viewportPixelDimensions);
 				break;
 		}
-		if (_autoUpdateCameraAspectRatio && target.TextureDimensions.Ratio is { } ratio) camera.SetAspectRatio(ratio);
+		if (_autoUpdateCameraAspectRatio && target.ViewportDimensions.Ratio is { } ratio) camera.SetAspectRatio(ratio);
 	}
 
-	internal Renderer AttachToCompositor(BindableRendererCompositorImplProvider compositor, RenderOutputBuffer sharedBuffer, XYPair<int> sharedBufferSizePixels, XYPair<int> cursorCoordinateSpaceSize) {
+	internal Renderer AttachToCompositor<TSharedTarget>(BindableRendererCompositorImplProvider compositor, TSharedTarget sharedTarget, XYPair<int> sharedBufferSizePixels, XYPair<int> cursorCoordinateSpaceSize) where TSharedTarget : IRenderTarget, IResource<TSharedTarget> {
 		if (_isDisposed) throw new ObjectDisposedException(nameof(Renderer));
 		if (_attachedCompositor != null) {
 			throw new InvalidOperationException($"{BindableRendererInstance} has already been added to a bindable {nameof(RendererCompositor)}.");
 		}
-		if (_currentFrameHandler != null) {
+		if (_currentFrameHandler != null || _gpuSurface != null) {
 			throw new InvalidOperationException($"{BindableRendererInstance} is currently supplying frames directly (e.g. to a scene view control). Unbind it before adding it to a {nameof(RendererCompositor)}.");
 		}
 
@@ -154,16 +244,16 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_attachedCompositor = compositor;
 		_bufferSizePixels = sharedBufferSizePixels;
 		_cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
-		CreateActualRenderer(sharedBuffer);
+		CreateActualRenderer(sharedTarget);
 		return _actualRenderer;
 	}
 
 	internal void DisposeActualRendererForCompositorRecreation() => _actualRenderer.Dispose();
 
-	internal Renderer RecreateActualRendererOnSharedBuffer(RenderOutputBuffer sharedBuffer, XYPair<int> sharedBufferSizePixels, XYPair<int> cursorCoordinateSpaceSize) {
+	internal Renderer RecreateActualRendererOnSharedTarget<TSharedTarget>(TSharedTarget sharedTarget, XYPair<int> sharedBufferSizePixels, XYPair<int> cursorCoordinateSpaceSize) where TSharedTarget : IRenderTarget, IResource<TSharedTarget> {
 		_bufferSizePixels = sharedBufferSizePixels;
 		_cursorCoordinateSpaceSize = cursorCoordinateSpaceSize;
-		CreateActualRenderer(sharedBuffer);
+		CreateActualRenderer(sharedTarget);
 		return _actualRenderer;
 	}
 
@@ -212,7 +302,16 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		}
 		try {
 			_actualRenderer.Dispose();
-			_actualRendererTarget.Dispose();
+			if (_gpuSurface is { } surface) {
+				var sink = _gpuSink;
+				_gpuSink = null;
+				_gpuSurface = null;
+				sink?.OnSurfaceDetached(surface);
+				surface.Dispose();
+			}
+			else {
+				_actualRendererTarget.Dispose();
+			}
 			_sceneAndCamera.Dispose();
 			BindableRendererCreationConfig.DisposeAllocatedHeapStorage(_serializedConfig);
 		}
@@ -242,7 +341,24 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	}
 	public void Render(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		if (_gpuSurface is { } surface && _gpuSink is { } sink) {
+			if (!sink.CanAcceptFrame) {
+				_hasDeferredGpuFrame = true;
+				return;
+			}
+			_hasDeferredGpuFrame = false;
+			_actualRenderer.Render();
+			sink.OnFrameRendered(surface);
+			return;
+		}
 		_actualRenderer.Render();
+	}
+
+	void IBindableRendererGpuFrameSource.RenderDeferredFrameIfPending() {
+		if (_isDisposed || !_hasDeferredGpuFrame || _gpuSurface is not { } surface || _gpuSink is not { } sink || !sink.CanAcceptFrame) return;
+		_hasDeferredGpuFrame = false;
+		_actualRenderer.Render();
+		sink.OnFrameRendered(surface);
 	}
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);

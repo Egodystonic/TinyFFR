@@ -8,6 +8,18 @@ hide:
   - footer
 ---
 
+## <span style="font-size: 1.2em; font-weight: bold;">1.1</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Dec 2026</span>
+
+__:simple-github: [Downloads](https://github.com/Egodystonic/TinyFFR/releases/tag/v1.1.0) | [Code](https://github.com/Egodystonic/TinyFFR/tree/v1.0.0)__
+
+### Major Features
+
+* Added GPU surface exporting to support third-party integrations not having to use CPU copying for render output :material-chevron-right: [:material-link-box: GPU Render Exporting](/reference/gpu_render_exporting.md)
+
+### Improvements
+
+* Vastly improved performance of Avalonia + WPF integration
+
 ## <span style="font-size: 1.2em; font-weight: bold;">1.0</span> <span style="font-size: 0.7em; opacity: 0.5;">:material-calendar: Oct 2026</span>
 
 __:simple-github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v1.0.0)__

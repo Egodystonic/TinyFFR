@@ -26,7 +26,7 @@ class RadianceHdrConformerTest {
 		return result;
 	}
 
-	static byte[] CreateHdrFile(int width, int height, byte[] rgbe, bool useRle, string resolutionLine = null) {
+	static byte[] CreateHdrFile(int width, int height, byte[] rgbe, bool useRle, string? resolutionLine = null) {
 		var stream = new MemoryStream();
 		var header = "#?RADIANCE\n# Created with Blender\nEXPOSURE=          1.0000000000000\nFORMAT=32-bit_rle_rgbe\n\n" + (resolutionLine ?? $"-Y {height} +X {width}") + "\n";
 		stream.Write(Encoding.ASCII.GetBytes(header));

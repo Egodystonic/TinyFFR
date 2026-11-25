@@ -22,7 +22,8 @@ class BindableRendererCreationConfigTest {
 			Quality = new() {
 				ShadowQuality = Quality.VeryHigh
 			},
-			DefaultBufferSize = (123, 456)
+			DefaultBufferSize = (123, 456),
+			PreferCpuRenderBuffer = true
 		};
 		var testConfigB = new BindableRendererCreationConfig {
 			AutoUpdateCameraAspectRatio = false,
@@ -31,7 +32,8 @@ class BindableRendererCreationConfigTest {
 			Quality = new() {
 				ShadowQuality = Quality.VeryLow
 			},
-			DefaultBufferSize = (100, 200)
+			DefaultBufferSize = (100, 200),
+			PreferCpuRenderBuffer = false
 		};
 
 		static void ComparisonFunc(BindableRendererCreationConfig expected, BindableRendererCreationConfig actual) {
@@ -40,6 +42,7 @@ class BindableRendererCreationConfigTest {
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 			Assert.AreEqual(expected.Quality?.ShadowQuality, actual.Quality?.ShadowQuality);
 			Assert.AreEqual(expected.DefaultBufferSize, actual.DefaultBufferSize);
+			Assert.AreEqual(expected.PreferCpuRenderBuffer, actual.PreferCpuRenderBuffer);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
@@ -47,11 +50,13 @@ class BindableRendererCreationConfigTest {
 
 		AssertHeapSerializationWithObjects<BindableRendererCreationConfig>()
 			.Obj(new XYPair<int>(123, 456))
+			.Bool(true)
 			.SubConfig(testConfigA.BaseConfig)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<BindableRendererCreationConfig>()
 			.Obj(new XYPair<int>(100, 200))
+			.Bool(false)
 			.SubConfig(testConfigB.BaseConfig)
 			.For(testConfigB);
 
@@ -62,6 +67,7 @@ class BindableRendererCreationConfigTest {
 			.Including(nameof(BindableRendererCreationConfig.Quality))
 			.Including(nameof(BindableRendererCreationConfig.BaseConfig))
 			.Including(nameof(BindableRendererCreationConfig.DefaultBufferSize))
+			.Including(nameof(BindableRendererCreationConfig.PreferCpuRenderBuffer))
 			.End();
 	}
 }

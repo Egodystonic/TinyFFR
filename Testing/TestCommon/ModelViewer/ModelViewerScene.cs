@@ -38,7 +38,7 @@ public sealed class ModelViewerScene : IDisposable {
 	readonly SpotLight _cameraLight;
 	readonly DirectionalLight _sunlight;
 	readonly Scene _scene;
-	readonly Renderer _mainRenderer;
+	Renderer _mainRenderer;
 	readonly Dictionary<string, LoadedModel> _loadedModels = new();
 
 	BackdropTexture? _backdrop;
@@ -63,12 +63,17 @@ public sealed class ModelViewerScene : IDisposable {
 	ViewerShadingStyle _shadingStyle = ViewerShadingStyle.Textured;
 	ViewerBackdropMode _backdropMode = ViewerBackdropMode.Texture;
 	float _backdropIntensity = 1f;
+	BuiltInQualityConfiguration _quality = BuiltInQualityConfiguration.Ultra;
+	bool _preferCpuRenderBuffer;
+	int _gpuSynchronizationFrameBufferCount = RendererCreationConfig.DefaultGpuSynchronizationFrameBufferCount;
 
 	public bool IsDisposed { get; private set; }
 	public Renderer? ActiveRenderer { get; private set; }
 	public RendererCompositor? ActiveCompositor { get; private set; }
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => _factory.ApplicationLoopBuilder;
 	public string ResourceListing => _displayed?.ResourceListing ?? "";
+	public bool PreferCpuRenderBuffer => _preferCpuRenderBuffer;
+	public int GpuSynchronizationFrameBufferCount => _gpuSynchronizationFrameBufferCount;
 
 	public ModelViewerScene() {
 		_factory = new LocalTinyFfrFactory(factoryConfig: new LocalTinyFfrFactoryConfig { HeadlessMode = true });
@@ -77,8 +82,7 @@ public sealed class ModelViewerScene : IDisposable {
 		_cameraLight = _factory.LightBuilder.CreateSpotLight(position: _camera.Position, coneDirection: _camera.ViewDirection, highQuality: true, brightness: 0f);
 		_sunlight = _factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		_scene = _factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.None);
-		_mainRenderer = _factory.RendererBuilder.CreateBindableRenderer(_scene, _camera, _factory.ResourceAllocator);
-		_mainRenderer.SetQuality(BuiltInQualityConfiguration.Ultra);
+		_mainRenderer = CreateMainRenderer();
 
 		_scene.Add(_cameraLight);
 		_scene.Add(_sunlight);
@@ -232,7 +236,62 @@ public sealed class ModelViewerScene : IDisposable {
 		}
 	}
 
-	public void SetQuality(BuiltInQualityConfiguration quality) => _mainRenderer.SetQuality(quality);
+	public void SetQuality(BuiltInQualityConfiguration quality) {
+		_quality = quality;
+		_mainRenderer.SetQuality(quality);
+	}
+
+	Renderer CreateMainRenderer() {
+		var result = _factory.RendererBuilder.CreateBindableRenderer(_scene, _camera, _factory.ResourceAllocator, new BindableRendererCreationConfig {
+			PreferCpuRenderBuffer = _preferCpuRenderBuffer,
+			GpuSynchronizationFrameBufferCount = _gpuSynchronizationFrameBufferCount
+		});
+		result.SetQuality(_quality);
+		return result;
+	}
+
+	public void SetPreferCpuRenderBuffer(bool preferCpuRenderBuffer) {
+		if (preferCpuRenderBuffer == _preferCpuRenderBuffer) return;
+		_preferCpuRenderBuffer = preferCpuRenderBuffer;
+		RecreateMainRendererAndCompositor();
+	}
+
+	public void SetGpuSynchronizationFrameBufferCount(int gpuSynchronizationFrameBufferCount) {
+		if (gpuSynchronizationFrameBufferCount == _gpuSynchronizationFrameBufferCount) return;
+		_gpuSynchronizationFrameBufferCount = gpuSynchronizationFrameBufferCount;
+		RecreateMainRendererAndCompositor();
+	}
+
+	void RecreateMainRendererAndCompositor() {
+		var wasComposited = _compositor != null;
+		if (_compositor is { } oldCompositor) {
+			oldCompositor.Dispose();
+			_compositor = null;
+		}
+
+		_mainRenderer.Dispose();
+		_mainRenderer = CreateMainRenderer();
+
+		if (wasComposited) {
+			_compositor = CreateCompositor();
+			ActiveRenderer = null;
+			ActiveCompositor = _compositor;
+		}
+		else {
+			ActiveRenderer = _mainRenderer;
+			ActiveCompositor = null;
+		}
+	}
+
+	RendererCompositor CreateCompositor() {
+		var compositor = _factory.RendererBuilder.CreateBindableCompositor(new BindableRendererCompositorCreationConfig {
+			PreferCpuRenderBuffer = _preferCpuRenderBuffer
+		});
+		compositor.Add(_mainRenderer, RenderCompositionType.Standard);
+		compositor.Add(_overlayRenderer!.Value, RenderCompositionType.RetainPreviousScenes);
+		if (!_overlayEnabled) compositor.SetEnabledState(_overlayRenderer.Value, false);
+		return compositor;
+	}
 
 	public async Task SetCompositeModeAsync(bool enabled) {
 		if (enabled == (_compositor != null)) return;
@@ -241,10 +300,7 @@ public sealed class ModelViewerScene : IDisposable {
 			await EnsureOverlayResourcesExistAsync();
 			if (IsDisposed || _compositor != null) return;
 
-			var compositor = _factory.RendererBuilder.CreateBindableCompositor();
-			compositor.Add(_mainRenderer, RenderCompositionType.Standard);
-			compositor.Add(_overlayRenderer!.Value, RenderCompositionType.RetainPreviousScenes);
-			if (!_overlayEnabled) compositor.SetEnabledState(_overlayRenderer.Value, false);
+			var compositor = CreateCompositor();
 			_compositor = compositor;
 			ActiveRenderer = null;
 			ActiveCompositor = compositor;
@@ -294,7 +350,9 @@ public sealed class ModelViewerScene : IDisposable {
 		_overlayMaterial = overlayMaterial;
 		_overlayInstance = overlayInstance;
 		_overlayLight = overlayLight;
-		_overlayRenderer = _factory.RendererBuilder.CreateBindableRenderer(overlayScene, overlayCamera, _factory.ResourceAllocator);
+		_overlayRenderer = _factory.RendererBuilder.CreateBindableRenderer(overlayScene, overlayCamera, _factory.ResourceAllocator, new BindableRendererCreationConfig {
+			GpuSynchronizationFrameBufferCount = -1
+		});
 	}
 
 	public void Tick(float deltaTime, ILatestKeyboardAndMouseInputRetriever input) {

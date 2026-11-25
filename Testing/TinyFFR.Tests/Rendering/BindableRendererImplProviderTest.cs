@@ -267,4 +267,90 @@ class BindableRendererImplProviderTest {
 		Assert.AreEqual(bufferCountAfterFirstStart, _builder.CreatedBuffers.Count);
 		Assert.AreEqual(new XYPair<int>(200, 100), _builder.CreatedRenderers[^1].RenderSurfaceRayCalls[0].PixelCoord);
 	}
+
+	sealed class RecordingGpuFrameSink : IBindableRendererGpuFrameSink {
+		public int AttachedCount { get; private set; }
+		public int DetachedCount { get; private set; }
+		public int FrameCount { get; private set; }
+		public ExportableRenderSurfaceImageHandleType RequiredImageHandleType { get; init; } = ExportableRenderSurfaceImageHandleType.VulkanOpaqueFileDescriptor;
+		public bool CanAcceptFrame => true;
+		public void OnSurfaceAttached(ExportableRenderSurface surface, IBindableRendererGpuFrameSource source) => AttachedCount++;
+		public void OnSurfaceDetached(ExportableRenderSurface surface) => DetachedCount++;
+		public void OnFrameRendered(ExportableRenderSurface surface) => FrameCount++;
+	}
+
+	[Test]
+	public void ShouldDeclineGpuFramesWhenBuilderDoesNotSupportExportableSurfaces() {
+		var renderer = CreateRenderer();
+		var sink = new RecordingGpuFrameSink();
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), sink));
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
+		Assert.AreEqual(1, _builder.CreatedRenderers.Count);
+		Assert.AreEqual(1, _builder.CreatedBuffers.Count);
+		Assert.AreEqual(false, _builder.CreatedBuffers[0].Disposed);
+		Assert.AreEqual(0, sink.AttachedCount);
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), sink));
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
+
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(renderer, (100, 50), (100, 50), NoopFrameHandler);
+		Assert.AreEqual(2, _builder.CreatedRenderers.Count);
+	}
+
+	[Test]
+	public void ShouldDeclineGpuFramesWhenCpuRenderBufferIsPreferred() {
+		_builder.SupportsExportableRenderSurfaces = true;
+		var renderer = CreateRenderer(new BindableRendererCreationConfig { PreferCpuRenderBuffer = true });
+		var sink = new RecordingGpuFrameSink();
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), sink));
+		Assert.AreEqual(0, _builder.ExportableRenderSurfaceCreationAttempts);
+		Assert.AreEqual(1, _builder.CreatedRenderers.Count);
+		Assert.AreEqual(0, sink.AttachedCount);
+	}
+
+	[Test]
+	public void ShouldAttemptGpuSurfaceCreationWhenSupportedAndNotPreferringCpu() {
+		_builder.SupportsExportableRenderSurfaces = true;
+		var renderer = CreateRenderer();
+		var sink = new RecordingGpuFrameSink();
+
+		Assert.Throws<NotSupportedException>(() => BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), sink));
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
+	}
+
+	[Test]
+	public void ShouldDeriveMaxFramesInFlightFromGpuSynchronizationFrameBufferCount() {
+		int MaxFramesInFlightFor(int gpuSynchronizationFrameBufferCount) {
+			var renderer = CreateRenderer(new BindableRendererCreationConfig { GpuSynchronizationFrameBufferCount = gpuSynchronizationFrameBufferCount });
+			return ((IBindableRendererGpuFrameSource) renderer.Implementation).MaxFramesInFlight;
+		}
+
+		Assert.AreEqual(2, MaxFramesInFlightFor(-1));
+		Assert.AreEqual(1, MaxFramesInFlightFor(0));
+		Assert.AreEqual(1, MaxFramesInFlightFor(1));
+		Assert.AreEqual(2, MaxFramesInFlightFor(2));
+		Assert.AreEqual(3, MaxFramesInFlightFor(3));
+		Assert.AreEqual(3, MaxFramesInFlightFor(5));
+		Assert.AreEqual(3, ((IBindableRendererGpuFrameSource) CreateRenderer().Implementation).MaxFramesInFlight);
+	}
+
+	[Test]
+	public void ShouldRequestTheSinksHandleTypeAndOnlyRememberDeclinesPerHandleType() {
+		var renderer = CreateRenderer();
+		var ntSink = new RecordingGpuFrameSink { RequiredImageHandleType = ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle };
+		var legacySink = new RecordingGpuFrameSink { RequiredImageHandleType = ExportableRenderSurfaceImageHandleType.D3D11TextureLegacySharedHandle };
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), ntSink));
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
+		Assert.AreEqual(ExportableRenderSurfaceImageHandleType.D3D11TextureNtHandle, _builder.LastRequestedExportableRenderSurfaceHandleType);
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), ntSink));
+		Assert.AreEqual(1, _builder.ExportableRenderSurfaceCreationAttempts);
+
+		Assert.IsFalse(BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(renderer, (100, 50), (100, 50), legacySink));
+		Assert.AreEqual(2, _builder.ExportableRenderSurfaceCreationAttempts);
+		Assert.AreEqual(ExportableRenderSurfaceImageHandleType.D3D11TextureLegacySharedHandle, _builder.LastRequestedExportableRenderSurfaceHandleType);
+	}
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Input;
@@ -25,6 +26,11 @@ public partial class MainViewModel : ViewModelBase {
 	bool _startInFlight;
 	bool _compositorSwitchInFlight;
 	bool _hasDisplayedAModel;
+	long _performanceWindowStartTimestamp = Stopwatch.GetTimestamp();
+	long _performanceWindowStartDisplayedFrameCount;
+	int _performanceWindowFrameCount;
+	double _performanceWindowTotalFrameMs;
+	double _performanceWindowMaxFrameMs;
 
 	// Set by the view; the UI loop needs an element to source TinyFFR's input abstraction from.
 	// Rendering can only start once we have it, so this doubles as the trigger for the initial start.
@@ -135,6 +141,18 @@ public partial class MainViewModel : ViewModelBase {
 	public partial bool OverlayEnabled { get; set; } = true;
 
 	[ObservableProperty]
+	public partial bool PreferCpuRenderBuffer { get; set; }
+
+	[ObservableProperty]
+	public partial bool UseDispatcherLoop { get; set; }
+
+	[ObservableProperty]
+	public partial decimal? GpuSynchronizationFrameBufferCount { get; set; } = RendererCreationConfig.DefaultGpuSynchronizationFrameBufferCount;
+
+	[ObservableProperty]
+	public partial string PerformanceText { get; set; } = "-- FPS";
+
+	[ObservableProperty]
 	public partial ResolutionOption? SelectedResolution { get; set; }
 
 	[ObservableProperty]
@@ -191,6 +209,8 @@ public partial class MainViewModel : ViewModelBase {
 
 			var viewer = new ModelViewerScene();
 			_viewer = viewer;
+			viewer.SetPreferCpuRenderBuffer(PreferCpuRenderBuffer);
+			if (GpuSynchronizationFrameBufferCount is { } syncCount) viewer.SetGpuSynchronizationFrameBufferCount((int) syncCount);
 
 			PushAllSettings();
 
@@ -199,7 +219,9 @@ public partial class MainViewModel : ViewModelBase {
 			IsRendering = true;
 			StatusText = "Rendering. Models are streaming in asynchronously.";
 
-			_loop = viewer.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput);
+			_loop = UseDispatcherLoop
+				? viewer.ApplicationLoopBuilder.StartAvaloniaUiLoopViaDispatcher(inputSource, TickWithInput)
+				: viewer.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput);
 
 			await viewer.LoadBackdropAsync();
 			if (!ReferenceEquals(_viewer, viewer)) return;
@@ -276,6 +298,7 @@ public partial class MainViewModel : ViewModelBase {
 		LoadProgressText = "";
 		ResourceListing = "";
 		StatusText = "Not rendering.";
+		PerformanceText = "-- FPS";
 		_hasDisplayedAModel = false;
 		SelectedModel = null;
 	}
@@ -302,7 +325,40 @@ public partial class MainViewModel : ViewModelBase {
 			StatusText = viewer.PickAt(input.KeyboardAndMouse.MouseCursorPosition);
 			if (!Animate) viewer.Render();
 		}
-		if (Animate) viewer.Render();
+		if (!Animate) return;
+
+		var frameStartTimestamp = Stopwatch.GetTimestamp();
+		viewer.Render();
+		RecordRenderedFrame(Stopwatch.GetElapsedTime(frameStartTimestamp).TotalMilliseconds);
+	}
+
+	void RecordRenderedFrame(double frameMs) {
+		++_performanceWindowFrameCount;
+		_performanceWindowTotalFrameMs += frameMs;
+		if (frameMs > _performanceWindowMaxFrameMs) _performanceWindowMaxFrameMs = frameMs;
+
+		var windowSeconds = Stopwatch.GetElapsedTime(_performanceWindowStartTimestamp).TotalSeconds;
+		if (windowSeconds < 0.5d) return;
+
+		var renderRate = _performanceWindowFrameCount / windowSeconds;
+		var averageFrameMs = _performanceWindowTotalFrameMs / _performanceWindowFrameCount;
+		var displayedFrameCount = (_inputSource as TinyFfrSceneView)?.DisplayedFrameCount ?? 0L;
+		var displayedFps = (displayedFrameCount - _performanceWindowStartDisplayedFrameCount) / windowSeconds;
+		PerformanceText = $"{displayedFps:F1} FPS displayed | Render() {renderRate:F1}/s, avg {averageFrameMs:F2} ms, max {_performanceWindowMaxFrameMs:F2} ms | {DescribeFramePath()} | {(UseDispatcherLoop ? "dispatcher timer loop" : "animation frame loop")}";
+
+		_performanceWindowStartDisplayedFrameCount = displayedFrameCount;
+		_performanceWindowStartTimestamp = Stopwatch.GetTimestamp();
+		_performanceWindowFrameCount = 0;
+		_performanceWindowTotalFrameMs = 0d;
+		_performanceWindowMaxFrameMs = 0d;
+	}
+
+	string DescribeFramePath() {
+		var target = Compositor != null ? "compositor" : "renderer";
+		if (_inputSource is TinyFfrSceneView { IsUsingGpuSharedFrames: true }) return $"GPU shared frames ({target})";
+		if (PreferCpuRenderBuffer) return $"CPU copy (preferred, {target})";
+		var reason = (_inputSource as TinyFfrSceneView)?.GpuSharedFramesUnavailableReason;
+		return reason != null ? $"CPU copy ({reason}, {target})" : $"CPU copy (GPU path unavailable, {target})";
 	}
 
 	partial void OnSelectedModelChanged(ModelListEntry? value) {
@@ -335,6 +391,56 @@ public partial class MainViewModel : ViewModelBase {
 	partial void OnSelectedMaxResolutionChanged(ResolutionOption? value) => InternalRenderResolutionMax = value?.Value;
 
 	partial void OnUseCompositorChanged(bool value) => _ = ApplyCompositorAsync(value);
+
+	partial void OnUseDispatcherLoopChanged(bool value) {
+		if (_viewer is not { } viewer || _loop == null || _inputSource is not { } inputSource) return;
+
+		try {
+			_loop.Dispose();
+			_loop = value
+				? viewer.ApplicationLoopBuilder.StartAvaloniaUiLoopViaDispatcher(inputSource, TickWithInput)
+				: viewer.ApplicationLoopBuilder.StartAvaloniaUiLoop(inputSource, TickWithInput);
+			StatusText = value ? "Switched to the dispatcher timer loop." : "Switched to the animation frame loop.";
+		}
+		catch (Exception e) {
+			_loop = null;
+			StatusText = $"Failed to change tick mode: {e.GetBaseException().Message}";
+		}
+	}
+
+	partial void OnGpuSynchronizationFrameBufferCountChanged(decimal? value) {
+		if (value is not { } syncCount || _viewer is not { } viewer || _compositorSwitchInFlight) return;
+
+		try {
+			Renderer = null;
+			Compositor = null;
+			viewer.SetGpuSynchronizationFrameBufferCount((int) syncCount);
+			Renderer = viewer.ActiveRenderer;
+			Compositor = viewer.ActiveCompositor;
+			StatusText = $"Main renderer recreated with GPU synchronization frame buffer count {(int) syncCount}.";
+			if (!Animate) viewer.Render();
+		}
+		catch (Exception e) {
+			StatusText = $"Failed to change GPU synchronization frame buffer count: {e.GetBaseException().Message}";
+		}
+	}
+
+	partial void OnPreferCpuRenderBufferChanged(bool value) {
+		if (_viewer is not { } viewer || _compositorSwitchInFlight) return;
+
+		try {
+			Renderer = null;
+			Compositor = null;
+			viewer.SetPreferCpuRenderBuffer(value);
+			Renderer = viewer.ActiveRenderer;
+			Compositor = viewer.ActiveCompositor;
+			StatusText = value ? "Main renderer recreated preferring the CPU render buffer." : "Main renderer recreated allowing GPU shared frames.";
+			if (!Animate) viewer.Render();
+		}
+		catch (Exception e) {
+			StatusText = $"Failed to change render buffer preference: {e.GetBaseException().Message}";
+		}
+	}
 
 	async Task ApplyCompositorAsync(bool value) {
 		if (_viewer is not { } viewer || _compositorSwitchInFlight) return;

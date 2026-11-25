@@ -78,6 +78,10 @@ class LocalResourceDirectoryTest {
 		TestDirectoryRetrieval(n => factory.LightBuilder.CreateDirectionalLight(name: n));
 		TestDirectoryRetrieval(n => factory.SceneBuilder.CreateScene(name: n));
 		TestDirectoryRetrieval(n => factory.RendererBuilder.CreateRenderOutputBuffer(name: n));
+		if (factory.RendererBuilder.TryCreateExportableRenderSurface() is { } supportProbeSurface) {
+			supportProbeSurface.Dispose();
+			TestDirectoryRetrieval(n => factory.RendererBuilder.TryCreateExportableRenderSurface(name: n)!.Value);
+		}
 		var boneIdx = MeshVertexSkeletal.BoneIndexArray.Create(0, 0, 0, 0);
 		var boneWgt = MeshVertexSkeletal.BoneWeightArray.Create(1f, 0f, 0f, 0f);
 		var skeletalVertices = new MeshVertexSkeletal[] {

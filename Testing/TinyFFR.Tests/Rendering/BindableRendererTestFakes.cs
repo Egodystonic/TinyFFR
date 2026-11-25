@@ -213,6 +213,16 @@ sealed class FakeRendererBuilder : IRendererBuilder {
 	public readonly List<FakeRendererImplProvider> CreatedRenderers = new();
 	public readonly List<FakeRenderOutputBufferImplProvider> CreatedBuffers = new();
 	public readonly List<FakeCompositorImplProvider> CreatedCompositors = new();
+	public bool SupportsExportableRenderSurfaces { get; set; }
+	public int ExportableRenderSurfaceCreationAttempts { get; private set; }
+	public ExportableRenderSurfaceImageHandleType? LastRequestedExportableRenderSurfaceHandleType { get; private set; }
+
+	public ExportableRenderSurface? TryCreateExportableRenderSurface(in ExportableRenderSurfaceCreationConfig config) {
+		ExportableRenderSurfaceCreationAttempts++;
+		LastRequestedExportableRenderSurfaceHandleType = config.RequiredImageHandleType;
+		if (!SupportsExportableRenderSurfaces) return null;
+		throw new NotSupportedException();
+	}
 
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
 		var impl = new FakeRendererImplProvider(++_previousHandleId, scene, camera, (RenderOutputBuffer) (object) renderTarget, in config);
@@ -283,7 +293,7 @@ sealed class FakeResourceAllocator : IResourceAllocator {
 	nuint _previousHandleId = 0;
 	public readonly List<FakeResourceGroupImplProvider> CreatedGroups = new();
 
-	public IJobExecutionFacade ParallelizingFacade { get; set; }
+	public IJobExecutionFacade ParallelizingFacade { get; set; } = new SynchronousWorkExecutionFacade();
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, 0);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, ReadOnlySpan<char>.Empty, initialCapacity);
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) => CreateResourceGroup(disposeContainedResourcesWhenDisposed, name, 0);

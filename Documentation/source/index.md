@@ -54,7 +54,7 @@ Full PBR workflow :material-drag-vertical-variant: Post-processing enabled out-o
 <img src="index_versatile.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Versatile Rendering</p>
-<p>Built-in support for picture-in-picture, splitscreen, render-to-texture, CPU readback streaming, screenshot capture, and scene compositing.</p>
+<p>Built-in support for picture-in-picture, splitscreen, render-to-texture, CPU + GPU readback streaming, screenshot capture, and scene compositing.</p>
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">
@@ -305,7 +305,7 @@ Avalonia, WPF, WinForms &amp; ImGui Integration :material-drag-vertical-variant:
 <img src="index_modern_dotnet.jpg" alt="" loading="lazy">
 <div>
 <p class="tffr-showcase__card-title">Modern .NET</p>
-<p>No interpreters, additional runtimes, external CLR hosts or rewriting compilers. Just a single NuGet package that supports every .NET version from 9+ (including the latest).</p>
+<p>No interpreters, additional runtimes, external CLR hosts or rewriting compilers. Just a single NuGet package that supports every .NET version from 10+ (including the latest).</p>
 </div>
 </div></div>
 <div class="tffr-showcase__card"><div class="tffr-showcase__card-inner">

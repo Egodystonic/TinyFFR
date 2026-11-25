@@ -92,6 +92,74 @@ Compositor = factory.RendererBuilder.CreateBindableCompositor(); // (1)!
 
 1. Like `CreateBindableRenderer`, this extension method is provided in the `Egodystonic.TinyFFR.Avalonia` package under the `Egodystonic.TinyFFR.Rendering` namespace.
 
+### GPU Shared Frames
+
+Wherever possible, TinyFFR hands each rendered frame to Avalonia directly on the GPU. This avoids copying every frame from the GPU to the CPU and back again (which can cost considerable CPU time, especially at higher resolutions).
+
+This happens automatically; you don't need to do anything to enable it. When it isn't possible, the scene view falls back to *CPU-copied frames* instead, which work everywhere but cost more per frame.
+
+| Platform | Requirements |
+| :------- | :----------- |
+| Windows  | Avalonia's default rendering mode (ANGLE, backed by Direct3D 11). Frames are shared as Direct3D 11 textures. |
+| Linux    | Avalonia's default (OpenGL) rendering mode, with GPU drivers that support Vulkan/OpenGL memory sharing. Frames are shared as Vulkan images. |
+| macOS    | Avalonia's Metal rendering mode. Frames are shared as `IOSurface`s. |
+
+On every platform, TinyFFR and Avalonia must also be rendering with the same GPU. This can matter on laptops with both an integrated and a dedicated GPU, where TinyFFR and Avalonia may otherwise end up on different GPUs.
+
+When the scene view falls back to CPU-copied frames without having been asked to, it writes a message explaining why to the console, e.g.:
+
+```
+GPU shared frames are unavailable: <reason>. Falling back to CPU-copied frames.
+```
+
+The following properties can be used to control or inspect this:
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `PreferCpuRenderBuffer`
+
+:   Set this on the `BindableRendererCreationConfig` (or `BindableRendererCompositorCreationConfig`) to always use CPU-copied frames, even where GPU shared frames are available. This can be useful to rule out a driver or interop problem. Defaults to `false`.
+
+	```csharp
+	Renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator, new BindableRendererCreationConfig {
+		PreferCpuRenderBuffer = true
+	});
+	```
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TinyFfrSceneView.IsUsingGpuSharedFrames`
+
+:   `true` if the scene view is currently receiving GPU shared frames; `false` if it is receiving CPU-copied frames (or nothing is bound).
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TinyFfrSceneView.GpuSharedFramesUnavailableReason`
+
+:   A description of why the scene view is not currently using GPU shared frames, or `null` if it is (or if no reason is known, e.g. because `PreferCpuRenderBuffer` was set).
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TinyFfrSceneView.DisplayedFrameCount`
+
+:   The total number of frames the scene view has displayed so far. Sample it periodically to measure the frame rate actually being displayed, which can be lower than the rate you are rendering at.
+
+The `GpuSynchronizationFrameBufferCount` setting (see [GPU Synchronization](render_throughput_and_latency.md#gpu-synchronization)) on `BindableRendererCreationConfig` also limits how many GPU shared frames can be in flight to Avalonia at once. Higher values can increase the frame rate slightly at the cost of slightly more latency; lower values improve latency but lower framerate.
+
+??? tip "Windows: Low-Latency Composition"
+	On Windows, asking Avalonia to prefer a low-latency DXGI swap chain for presenting its windows can noticeably raise the frame rate achieved with GPU shared frames:
+
+	```csharp
+	public static AppBuilder BuildAvaloniaApp() {
+		return AppBuilder.Configure<App>()
+			.UsePlatformDetect()
+			.With(new Win32PlatformOptions { 
+				CompositionMode = [
+					Win32CompositionMode.LowLatencyDxgiSwapChain, // (1)!
+					Win32CompositionMode.DirectComposition, 
+					Win32CompositionMode.RedirectionSurface
+				] 
+			})
+			.WithInterFont();
+	}
+	```
+
+	1.	Modes are tried in order, so the remaining entries are fallbacks for systems where the low-latency swap chain is not available.
+
+	This setting applies to your whole application, and the low-latency swap chain does not support window transparency effects such as acrylic or mica blur. Only use it if your application does not rely on those.
+
 ## Looping
 
 ???+ danger "Primary Thread Safety"
@@ -104,7 +172,7 @@ If your application requires the scene view to be animated you can achieve this 
 
 1. This extension method is provided in the `Egodystonic.TinyFFR.Avalonia` package under the `Egodystonic.TinyFFR.Avalonia` namespace.
 
-This method allows you to supply a callback delegate that will be invoked at a target frequency (e.g. 30Hz) on the UI context (e.g. the UI thread). You can render your scene on each tick (like you would inside an `ApplicationLoop` in a standalone TinyFFR application):
+This method allows you to supply a callback delegate that will be invoked once per display frame on the UI context (e.g. the UI thread). You can render your scene on each tick (like you would inside an `ApplicationLoop` in a standalone TinyFFR application):
 
 ```csharp
 // You can start this loop like so...
@@ -112,7 +180,7 @@ var loopTerminationDisposable = factory.ApplicationLoopBuilder.StartAvaloniaUiLo
 
 // Example Tick function
 void Tick(TimeSpan tickIterationTime) {
-	var deltaTime = tickIterationTime.AsDeltaTime()
+	var deltaTime = tickIterationTime.AsDeltaTime();
 
 	// Render one frame each tick
 	Renderer.Render();
@@ -130,19 +198,36 @@ void Tick(TimeSpan tickIterationTime) {
 loopTerminationDisposable.Dispose();
 ```
 
-This function schedules your tick/render loop on the pre-existing Avalonia UI dispatcher loop, integrating it in to the UI subsystem, and is preferred over creating an `ApplicationLoop` manually (see warning above). The function takes optional arguments as follows:
+This function ticks your loop from Avalonia's own frame clock (`TopLevel.RequestAnimationFrame()`), so your scene renders in step with the display's refresh rate and Avalonia's own rendering. It is preferred over creating an `ApplicationLoop` manually (see warning above). The function takes optional arguments as follows:
 
-<span class="def-icon">:material-code-block-parentheses:</span> `StartAvaloniaUiLoop(tickCallback, tickRateHz, priority, name)`
+<span class="def-icon">:material-code-block-parentheses:</span> `StartAvaloniaUiLoop(tickCallback, frameRateCapHz, name)`
 
 :   * `tickCallback` is the `Action<TimeSpan>` that you wish to be invoked on the UI thread/context. The singular argument is a `TimeSpan` indicating the "delta time" since the last 'tick'.
 
-	* `tickRateHz` is optional, this sets the target framerate for the animation loop. Please note that the maximum framerate may be limited by the UI framework compositor and/or dispatcher loop mechanism. You should also note that the 'consistency' (e.g. jitter) of the framerate will likely be much more variable than with a typical standalone TinyFFR application loop.
+	* `frameRateCapHz` is optional, and sets a maximum number of ticks per second. If left `null` (the default), the loop ticks on every animation frame.(1) Because ticks can only happen on display frames, the rate achieved is always the display's refresh rate divided by a whole number: For example, a cap of `100` on a 144Hz display results in roughly 72 ticks per second.
+		{ .annotate }
 
-	* `priority` is optional, this sets the [DispatcherPriority](https://api-docs.avaloniaui.net/docs/T_Avalonia_Threading_DispatcherPriority) with which this loop will be instigated.
+		1. 	The display's refresh rate therefore acts as a frame rate cap of its own.
 
 	* `name` is optional, this will set the name of the underlying `ApplicationLoop` resource used internally by TinyFFR.
 
 	This function returns an `IDisposable` that should be disposed when you wish to terminate the loop.
+
+	Without an `inputSource`, the loop follows the frames of your application's main window (or main view, on single-view platforms). If your application has neither (e.g. it has not finished starting yet), the loop waits until one exists.
+
+#### Timer-Driven Alternative
+
+If you specifically want a fixed tick rate that is independent of the display's refresh rate, use `StartAvaloniaUiLoopViaDispatcher()` instead. This schedules your tick on a timer on the Avalonia dispatcher rather than on Avalonia's frame clock. It takes the same callbacks as `StartAvaloniaUiLoop()`, and returns an `IDisposable` in the same way.
+
+Please note that the maximum framerate may be limited by the UI framework compositor and/or dispatcher loop mechanism. You should also note that the 'consistency' (e.g. jitter) of the framerate will likely be much more variable than with a typical standalone TinyFFR application loop.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `StartAvaloniaUiLoopViaDispatcher(tickCallback, tickRateHz, priority, name)`
+
+:   * `tickRateHz` is optional, this sets the target framerate for the animation loop (defaults to `60`). Typically the dispatcher loop for an Avalonia application does not tick faster than 60Hz.
+
+	* `priority` is optional, this sets the [DispatcherPriority](https://api-docs.avaloniaui.net/docs/T_Avalonia_Threading_DispatcherPriority) with which this loop will be instigated.
+
+	* `tickCallback` and `name` behave as described above.
 
 ## Input
 
@@ -181,17 +266,17 @@ void Tick(TimeSpan tickIterationTime, ILatestInputRetriever input) { // (2)!
 	In this example we're using keyboard/mouse controls to drive a [Camera Controller](camera_controllers.md).
 
 
-<span class="def-icon">:material-code-block-parentheses:</span> `StartAvaloniaUiLoop(inputSource, tickCallback, tickRateHz, priority, name)`
+<span class="def-icon">:material-code-block-parentheses:</span> `StartAvaloniaUiLoop(inputSource, tickCallback, frameRateCapHz, name)`
 
 :   * `inputSource` is the [`InputElement`](https://api-docs.avaloniaui.net/docs/T_Avalonia_Input_InputElement) whose input events will be observed; usually your `TinyFfrSceneView`, but you may pass any element (e.g. the containing window) if you want a wider scope.
 
 	* `tickCallback` is the `Action<TimeSpan, ILatestInputRetriever>` that you wish to be invoked on the UI thread/context. The second argument supplies the input state accumulated since the previous 'tick'.
 
-	* `tickRateHz` behaves as described above.
-
-	* `priority` and `name` behave as described above.
+	* `frameRateCapHz` and `name` behave as described above.
 
 	This function returns an `IDisposable` that should be disposed when you wish to terminate the loop; doing so also unsubscribes from the `inputSource`'s events.
+
+	`StartAvaloniaUiLoopViaDispatcher()` has an equivalent overload: `StartAvaloniaUiLoopViaDispatcher(inputSource, tickCallback, tickRateHz, priority, name)`.
 
 #### Scope and semantics
 

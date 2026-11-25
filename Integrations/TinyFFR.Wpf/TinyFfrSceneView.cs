@@ -31,9 +31,17 @@ namespace Egodystonic.TinyFFR.Wpf;
 /// <see cref="FallbackBrush"/>. Do not leave a disposed renderer bound; set the property to <see langword="null"/>
 /// first.
 /// </para>
+/// <para>
+/// Where possible, frames are shared with WPF directly on the GPU ("GPU shared frames"), so they are never copied back to the CPU. This uses a <c>D3DImage</c> backed by a Direct3D 9Ex surface shared with TinyFFR's Vulkan renderer, and requires TinyFFR's Vulkan backend and a Direct3D 9 adapter matching TinyFFR's GPU.
+/// Where that is not possible, or where <c>PreferCpuRenderBuffer</c> is set on the renderer's/compositor's creation config, frames are instead copied via the CPU.
+/// When the control falls back to CPU-copied frames without having been asked to, it writes a message explaining the cause to the console; the cause is also
+/// available from <see cref="GpuSharedFramesUnavailableReason"/>.
+/// </para>
 /// </remarks>
 public class TinyFfrSceneView : Control {
+	readonly WpfGpuSharedFramePresenter _gpuPresenter;
 	WriteableBitmap? _bitmap;
+	long _cpuFramesDrawn;
 
 	/// <summary>
 	/// Identifies the <see cref="Renderer"/> property.
@@ -176,7 +184,32 @@ public class TinyFfrSceneView : Control {
 	public TinyFfrSceneView() {
 		Focusable = true;
 		RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.HighQuality);
+		_gpuPresenter = new WpfGpuSharedFramePresenter(IdempotentlyUpdateRendererStateAccordingToControlState, InvalidateVisual);
 	}
+
+	/// <summary>
+	/// <see langword="true"/> if this control is currently receiving frames as GPU shared frames; <see langword="false"/> if it is receiving CPU-copied frames
+	/// (or nothing is bound).
+	/// </summary>
+	/// <remarks>
+	/// See the remarks on <see cref="TinyFfrSceneView"/> for when GPU shared frames are used.
+	/// </remarks>
+	public bool IsUsingGpuSharedFrames => _gpuPresenter.IsPresenting;
+
+	/// <summary>
+	/// A human-readable explanation of why this control is not currently using GPU shared frames, or <see langword="null"/> if it is, or if no reason is known
+	/// (for example because CPU-copied frames were explicitly requested via <c>PreferCpuRenderBuffer</c>).
+	/// </summary>
+	public string? GpuSharedFramesUnavailableReason => _gpuPresenter.IsPresenting ? null : _gpuPresenter.UnavailableReason;
+
+	/// <summary>
+	/// The total number of frames this control has displayed so far, across both GPU shared frames and CPU-copied frames.
+	/// </summary>
+	/// <remarks>
+	/// Each new image shown by the control counts once. Sample it periodically to measure the displayed frame rate,
+	/// which can be lower than the rate at which the bound renderer is rendering.
+	/// </remarks>
+	public long DisplayedFrameCount => _cpuFramesDrawn + _gpuPresenter.DisplayedFrameCount;
 
 	/// <summary>
 	/// Re-evaluates the internal render resolution when the display's scaling factor changes, then defers to the base implementation.
@@ -238,6 +271,7 @@ public class TinyFfrSceneView : Control {
 		finally {
 			_bitmap.Unlock();
 		}
+		_cpuFramesDrawn++;
 
 		InvalidateVisual();
 	}
@@ -250,6 +284,11 @@ public class TinyFfrSceneView : Control {
 	/// <param name="context">The drawing context to draw in to.</param>
 	protected override void OnRender(DrawingContext context) {
 		base.OnRender(context);
+
+		if (_gpuPresenter.ImageToDraw is { } gpuImage) {
+			context.DrawImage(gpuImage, new Rect(BoundsSize));
+			return;
+		}
 
 		if (_bitmap == null) {
 			context.DrawRectangle(FallbackBrush, null, new Rect(BoundsSize));
@@ -327,7 +366,25 @@ public class TinyFfrSceneView : Control {
 			throw new InvalidOperationException($"Only one of {nameof(Renderer)} or {nameof(Compositor)} may be set on a {nameof(TinyFfrSceneView)}.");
 		}
 
-		if (rendererLocal != null) BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
-		else BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		if (rendererLocal != null) {
+			if (_gpuPresenter.IsUsable && BindableRendererImplProvider.TryStartOrContinueHandlingGpuFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, _gpuPresenter)) {
+				DropCpuBitmap();
+				return;
+			}
+			BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		}
+		else {
+			if (_gpuPresenter.IsUsable && BindableRendererCompositorImplProvider.TryStartOrContinueHandlingGpuFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, _gpuPresenter)) {
+				DropCpuBitmap();
+				return;
+			}
+			BindableRendererCompositorImplProvider.StartOrContinueHandlingFrames(compositorLocal!.Value, targetSize, cursorCoordinateSpaceSize, WriteFrame);
+		}
+	}
+
+	void DropCpuBitmap() {
+		if (_bitmap == null) return;
+		_bitmap = null;
+		InvalidateVisual();
 	}
 }

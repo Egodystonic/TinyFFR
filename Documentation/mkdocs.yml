@@ -143,6 +143,7 @@ nav:
         - reference/avalonia_integration.md
         - reference/wpf_integration.md
         - reference/winforms_integration.md
+        - reference/other_frameworks.md
     - Asset Loading & Creation:
         - reference/bundled_assets.md
         - Meshes:
@@ -208,6 +209,7 @@ nav:
         - reference/render_throughput_and_latency.md
         - reference/compositing.md
         - reference/capturing_render_output.md
+        - reference/gpu_render_exporting.md
     - Math API:
         - reference/vector_types.md
         - reference/angle_rotation_orientation.md
