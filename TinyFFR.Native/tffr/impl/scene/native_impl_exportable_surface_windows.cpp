@@ -192,6 +192,15 @@ void tffr_vulkan_platform::create_shared_image(exportable_surface_descriptor con
 void tffr_vulkan_platform::release_shared_image_os_resources(exportable_image_slot& slot) {
 	if (slot.osSharedHandle != nullptr && slot.osSharedHandleOwned) CloseHandle(static_cast<HANDLE>(slot.osSharedHandle));
 	if (slot.osTexture != nullptr) static_cast<ID3D11Texture2D*>(slot.osTexture)->Release();
+	if (shared_texture_device != nullptr) {
+		ID3D11DeviceContext* context = nullptr;
+		shared_texture_device->GetImmediateContext(&context);
+		if (context != nullptr) {
+			context->ClearState();
+			context->Flush();
+			context->Release();
+		}
+	}
 	slot.osSharedHandle = nullptr;
 	slot.osSharedHandleOwned = false;
 	slot.osTexture = nullptr;
